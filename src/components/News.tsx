@@ -168,6 +168,44 @@ export default function News() {
     };
   }, [selectedNews]);
 
+  // Deep linking and URL synchronization for newsId
+  useEffect(() => {
+    if (beritaList.length > 0) {
+      const params = new URLSearchParams(window.location.search);
+      const urlNewsId = params.get('newsId');
+      if (urlNewsId) {
+        const found = beritaList.find(item => item.id === urlNewsId);
+        if (found) {
+          handleOpenNews(found);
+          setTimeout(() => {
+            const element = document.getElementById('berita-section');
+            if (element) {
+              element.scrollIntoView({ behavior: 'smooth' });
+            }
+          }, 300);
+        }
+      }
+    }
+  }, [beritaList]);
+
+  useEffect(() => {
+    if (selectedNews) {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('newsId') !== selectedNews.id) {
+        params.set('newsId', selectedNews.id);
+        window.history.pushState({}, '', `${window.location.pathname}?${params.toString()}`);
+      }
+    } else {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has('newsId')) {
+        params.delete('newsId');
+        const query = params.toString();
+        const url = query ? `${window.location.pathname}?${query}` : window.location.pathname;
+        window.history.pushState({}, '', url);
+      }
+    }
+  }, [selectedNews]);
+
   const fetchNews = async () => {
     try {
       setLoading(true);

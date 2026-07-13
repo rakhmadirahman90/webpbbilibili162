@@ -128,7 +128,13 @@ export default function App() {
   const [activeAthleteFilter, setActiveAthleteFilter] = useState('all');
 
   // STATE UNTUK DEDICATED FULL-PAGE VIEWS
-  const [activeView, setActiveView] = useState<string | null>(null);
+  const [activeView, setActiveView] = useState<string | null>(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('gallery') || params.has('galleryId') || params.has('photoId') || params.has('videoId')) {
+      return 'galeri';
+    }
+    return null;
+  });
 
   // STATE UNTUK MEDETEKSI OVERLAY AKTIF (Agar control dock tersembunyi dengan elegan)
   const [isOverlayActive, setIsOverlayActive] = useState(false);

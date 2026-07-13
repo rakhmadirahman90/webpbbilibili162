@@ -46,6 +46,46 @@ export default function Gallery() {
     };
   }, [selectedId]);
 
+  // Deep linking and URL synchronization for gallery/photo/video
+  useEffect(() => {
+    if (galleryItems.length > 0) {
+      const params = new URLSearchParams(window.location.search);
+      const urlGalleryId = params.get('gallery') || params.get('galleryId') || params.get('photoId') || params.get('videoId');
+      if (urlGalleryId) {
+        const found = galleryItems.find(item => item.id === urlGalleryId);
+        if (found) {
+          setActiveTab(found.type);
+          setSelectedId(found.id);
+          setActiveImgIndex(0);
+        }
+      }
+    }
+  }, [galleryItems]);
+
+  useEffect(() => {
+    if (selectedId) {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('gallery') !== selectedId) {
+        params.set('gallery', selectedId);
+        window.history.pushState({}, '', `${window.location.pathname}?${params.toString()}`);
+      }
+    } else {
+      const params = new URLSearchParams(window.location.search);
+      let changed = false;
+      ['gallery', 'galleryId', 'photoId', 'videoId'].forEach(p => {
+        if (params.has(p)) {
+          params.delete(p);
+          changed = true;
+        }
+      });
+      if (changed) {
+        const query = params.toString();
+        const url = query ? `${window.location.pathname}?${query}` : window.location.pathname;
+        window.history.pushState({}, '', url);
+      }
+    }
+  }, [selectedId]);
+
   const handleLike = (e: React.MouseEvent | React.KeyboardEvent, itemId: string) => {
     e.stopPropagation();
     const newLiked = new Set(likedItems);
