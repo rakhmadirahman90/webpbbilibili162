@@ -10,6 +10,7 @@ import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import About from './components/About';
 import News from './components/News';
+import PrayerTimes from './components/PrayerTimes';
 import Athletes from './components/Players'; 
 import Ranking from './components/Rankings'; 
 import BadmintonQuiz from './components/BadmintonQuiz'; 
@@ -229,6 +230,10 @@ export default function App() {
               {!activeView ? (
                 <motion.div key="landing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full">
                   <Hero />
+                  {/* Jadwal Sholat Khusus Seluler - Tampil Tepat di Bawah Slider Hero */}
+                  <div className="block lg:hidden max-w-xl mx-auto px-4 sm:px-6 md:px-8 mt-6 mb-2">
+                    <PrayerTimes />
+                  </div>
                   <section id="berita-section"><News /></section>
                 </motion.div>
               ) : (

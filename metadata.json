@@ -1,6 +1,6 @@
 {
   "name": "PB Bilibili 162",
   "description": "Aplikasi Manajemen Klub Bulu Tangkis PB Bilibili 162",
-  "requestFramePermissions": [],
+  "requestFramePermissions": ["geolocation"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

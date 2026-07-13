@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from "../supabase";
 import { motion, AnimatePresence } from 'framer-motion';
 import LazyImage from './LazyImage';
+import PrayerTimes from './PrayerTimes';
 
 // Interface untuk Komentar
 interface Komentar {
@@ -212,7 +213,7 @@ export default function News() {
     }
   };
 
-  const visibleNews = showAll ? beritaList : beritaList.slice(0, 4);
+  const visibleNews = showAll ? beritaList : beritaList.slice(0, 3);
 
   if (loading) {
     return (
@@ -233,73 +234,84 @@ export default function News() {
           <p className="text-sm text-gray-500 font-medium">Update terbaru tentang prestasi dan kegiatan klub PB US 162</p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {visibleNews.map((news) => (
-            <div
-              key={news.id}
-              className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all group flex flex-col border border-gray-100"
-            >
-              <div className="relative h-48 overflow-hidden bg-gray-100">
-                <LazyImage 
-                  src={news.gambar_url} 
-                  alt={news.judul} 
-                  containerClassName="w-full h-full"
-                  className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500" 
-                />
-                <div className="absolute top-4 left-4 bg-blue-600 text-white px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-widest">
-                  {news.kategori}
-                </div>
-                
-                <div className="absolute inset-0 bg-black/40 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                   <button onClick={() => handleShare(news, 'wa')} className="p-2 bg-green-500 text-white rounded-full hover:scale-110 transition-transform"><Share2 size={16} /></button>
-                   <button onClick={() => handleShare(news, 'copy')} className="p-2 bg-white text-gray-900 rounded-full hover:scale-110 transition-transform">
-                      {copySuccess === news.id ? <span className="text-[8px] font-bold px-1 text-blue-600">COPIED</span> : <Link2 size={16} />}
-                   </button>
-                </div>
-
-                <button 
-                  onClick={(e) => handleLike(e, news.id)}
-                  className={`absolute bottom-4 right-4 w-9 h-9 rounded-full flex items-center justify-center shadow-lg transition-all active:scale-90 z-10 ${likedPosts.has(news.id) ? 'bg-rose-500 text-white' : 'bg-white text-gray-400 hover:text-rose-500'}`}
+        {/* RESPONSIVE LAYOUT DUAL COLUMN: BERITA DAN JADWAL SHOLAT */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Sisi Kiri: Daftar Berita */}
+          <div className="lg:col-span-8 xl:col-span-9">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
+              {visibleNews.map((news) => (
+                <div
+                  key={news.id}
+                  className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group flex flex-col border border-gray-100/80"
                 >
-                  <Heart size={18} fill={likedPosts.has(news.id) ? "currentColor" : "none"} />
+                  <div className="relative h-40 sm:h-44 overflow-hidden bg-gray-100">
+                    <LazyImage 
+                      src={news.gambar_url} 
+                      alt={news.judul} 
+                      containerClassName="w-full h-full"
+                      className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-700" 
+                    />
+                    <div className="absolute top-3 left-3 bg-blue-600 text-white px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest shadow-md">
+                      {news.kategori}
+                    </div>
+                    
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                       <button onClick={() => handleShare(news, 'wa')} className="p-2 bg-green-500 text-white rounded-full hover:scale-110 transition-transform shadow-md"><Share2 size={14} /></button>
+                       <button onClick={() => handleShare(news, 'copy')} className="p-2 bg-white text-gray-900 rounded-full hover:scale-110 transition-transform shadow-md">
+                          {copySuccess === news.id ? <span className="text-[8px] font-bold px-1.5 text-blue-600">COPIED</span> : <Link2 size={14} />}
+                       </button>
+                    </div>
+
+                    <button 
+                      onClick={(e) => handleLike(e, news.id)}
+                      className={`absolute bottom-3 right-3 w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center shadow-md transition-all active:scale-90 z-10 ${likedPosts.has(news.id) ? 'bg-rose-500 text-white' : 'bg-white/95 text-gray-500 hover:text-rose-500 hover:bg-white'}`}
+                    >
+                      <Heart size={16} fill={likedPosts.has(news.id) ? "currentColor" : "none"} />
+                    </button>
+                  </div>
+
+                  <div className="p-4 sm:p-5 flex flex-col flex-grow">
+                    <div className="text-gray-400 text-[9px] mb-1.5 font-bold uppercase tracking-widest">{news.tanggal}</div>
+                    <h3 
+                      onClick={() => handleOpenNews(news)}
+                      className="text-sm sm:text-base font-black text-gray-900 mb-2.5 line-clamp-2 italic uppercase leading-tight group-hover:text-blue-600 transition-colors cursor-pointer"
+                    >
+                      {news.judul}
+                    </h3>
+                    
+                    <div className="mt-auto pt-3 border-t border-gray-100 flex items-center justify-between">
+                      <div className="flex items-center gap-1 text-gray-500">
+                        <div className="w-5 h-5 bg-gray-100 rounded-full flex items-center justify-center text-gray-400 shrink-0"><User size={9} /></div>
+                        <span className="text-[8.5px] font-black uppercase tracking-tight truncate max-w-[70px]">{news.penulis || 'ADMIN'}</span>
+                      </div>
+                      <div className="flex items-center gap-2.5 text-gray-400">
+                        <div className="flex items-center gap-0.5"><Eye size={11} /><span className="text-[9px] font-bold">{news.views || 0}</span></div>
+                        <div className="flex items-center gap-0.5"><Heart size={11} className={likedPosts.has(news.id) ? 'text-rose-500' : ''} fill={likedPosts.has(news.id) ? "currentColor" : "none"} /><span className="text-[9px] font-bold">{news.likes || 0}</span></div>
+                        <div className="flex items-center gap-0.5"><MessageCircle size={11} /><span className="text-[9px] font-bold">{news.comments_count || 0}</span></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {beritaList.length > 3 && (
+              <div className="text-center mt-6">
+                <button 
+                  onClick={() => setShowAll(!showAll)}
+                  className="inline-flex items-center gap-2 bg-gray-900 hover:bg-blue-600 text-white px-8 py-3 rounded-xl font-bold transition-all shadow-lg active:scale-95 uppercase text-xs tracking-widest"
+                >
+                  {showAll ? <><ChevronUp size={18} /> Sembunyikan</> : <>Lihat Semua Berita <ChevronDown size={18} /></>}
                 </button>
               </div>
-
-              <div className="p-5 flex flex-col flex-grow">
-                <div className="text-gray-400 text-[10px] mb-2 font-bold uppercase tracking-tight">{news.tanggal}</div>
-                <h3 
-                  onClick={() => handleOpenNews(news)}
-                  className="text-md font-black text-gray-900 mb-3 line-clamp-2 italic uppercase leading-tight group-hover:text-blue-600 transition-colors cursor-pointer"
-                >
-                  {news.judul}
-                </h3>
-                
-                <div className="mt-auto pt-4 border-t border-gray-50 flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 text-gray-400">
-                    <div className="w-5 h-5 bg-gray-100 rounded-full flex items-center justify-center"><User size={10} /></div>
-                    <span className="text-[9px] font-black uppercase tracking-tighter truncate max-w-[60px]">{news.penulis || 'ADMIN'}</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-gray-400">
-                    <div className="flex items-center gap-1"><Eye size={12} /><span className="text-[10px] font-bold">{news.views || 0}</span></div>
-                    <div className="flex items-center gap-1"><Heart size={12} className={likedPosts.has(news.id) ? 'text-rose-500' : ''} fill={likedPosts.has(news.id) ? "currentColor" : "none"} /><span className="text-[10px] font-bold">{news.likes || 0}</span></div>
-                    <div className="flex items-center gap-1"><MessageCircle size={12} /><span className="text-[10px] font-bold">{news.comments_count || 0}</span></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {beritaList.length > 4 && (
-          <div className="text-center mt-6">
-            <button 
-              onClick={() => setShowAll(!showAll)}
-              className="inline-flex items-center gap-2 bg-gray-900 hover:bg-blue-600 text-white px-8 py-3 rounded-xl font-bold transition-all shadow-lg active:scale-95 uppercase text-xs tracking-widest"
-            >
-              {showAll ? <><ChevronUp size={18} /> Sembunyikan</> : <>Lihat Semua Berita <ChevronDown size={18} /></>}
-            </button>
+            )}
           </div>
-        )}
+
+          {/* Sisi Kanan: Jadwal Sholat 5 Waktu (Sembunyi di mobile karena sudah ada di bawah Hero) */}
+          <div className="hidden lg:block lg:col-span-4 xl:col-span-3 lg:sticky lg:top-24 w-full">
+            <PrayerTimes />
+          </div>
+        </div>
       </div>
 
       <AnimatePresence>
