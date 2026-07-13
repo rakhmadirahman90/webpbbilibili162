@@ -69,7 +69,7 @@ export default function Hero() {
   };
 
   return (
-    <section id="home" className="relative w-full h-[100dvh] overflow-hidden bg-black flex flex-col items-center justify-center">
+    <section id="home" className="relative w-full mt-14 md:mt-16 aspect-[2.4/1] md:aspect-[3/1] lg:aspect-[3.2/1] overflow-hidden bg-black flex flex-col items-center justify-center">
       
       {/* Background Visual Layer */}
       <div className="absolute inset-0 z-0">
@@ -96,53 +96,48 @@ export default function Hero() {
               src={slide.image}
               alt=""
               className={`w-full h-full object-cover transition-transform duration-[20000ms] ease-out select-none relative z-10
-                ${index === currentSlide ? 'scale-105 md:scale-115' : 'scale-100 md:scale-105'}
+                ${index === currentSlide ? 'scale-105' : 'scale-100'}
               `}
             />
 
             {/* Overlay Gradient: Menyediakan kontras untuk teks navigasi bawah */}
-            <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent via-40% to-black/80 z-20" />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent via-50% to-black/60 z-20" />
           </div>
         ))}
       </div>
 
-      {/* Navigasi Samping */}
-      <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-4 z-40">
+      {/* Floating Side Navigation Arrows */}
+      {slides.length > 1 && (
+        <>
+          <button
+            onClick={handlePrev}
+            className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-30 p-1.5 sm:p-2.5 rounded-full bg-black/30 hover:bg-black/60 text-white/80 hover:text-white backdrop-blur-xs transition-all active:scale-90"
+            aria-label="Previous slide"
+          >
+            <ChevronLeft className="w-4 h-4 sm:w-6 sm:h-6" />
+          </button>
+          <button
+            onClick={handleNext}
+            className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-30 p-1.5 sm:p-2.5 rounded-full bg-black/30 hover:bg-black/60 text-white/80 hover:text-white backdrop-blur-xs transition-all active:scale-90"
+            aria-label="Next slide"
+          >
+            <ChevronRight className="w-4 h-4 sm:w-6 sm:h-6" />
+          </button>
+        </>
+      )}
+
+      {/* Slide Indicators: Bottom-center Dots */}
+      <div className="absolute bottom-3 sm:bottom-6 left-1/2 -translate-x-1/2 flex gap-1.5 sm:gap-2.5 z-30">
         {slides.map((_, index) => (
           <button
             key={index}
             onClick={() => !isTransitioning && setCurrentSlide(index)}
-            className={`transition-all duration-700 rounded-full ${
-              index === currentSlide ? 'h-8 w-1.5 bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.8)]' : 'h-2 w-1.5 bg-white/20'
+            className={`h-1 sm:h-1.5 rounded-full transition-all duration-300 ${
+              index === currentSlide ? 'w-4 sm:w-6 bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]' : 'w-1 sm:w-1.5 bg-white/40 hover:bg-white/70'
             }`}
+            aria-label={`Go to slide ${index + 1}`}
           />
         ))}
-      </div>
-
-      {/* Navigasi Bawah & Discovery */}
-      <div className="absolute bottom-0 left-0 w-full p-8 flex flex-col items-center gap-8 z-40">
-        <div className="w-full flex items-center justify-between max-w-7xl">
-          <div className="flex items-center bg-black/40 backdrop-blur-xl rounded-full border border-white/10 p-1">
-            <button onClick={handlePrev} className="p-3 text-white/70 active:scale-75 transition-all">
-              <ChevronLeft size={22} />
-            </button>
-            <div className="w-[1px] h-6 bg-white/10" />
-            <button onClick={handleNext} className="p-3 text-white/70 active:scale-75 transition-all">
-              <ChevronRight size={22} />
-            </button>
-          </div>
-        </div>
-
-        {/* Scroll Discovery */}
-        <button 
-          onClick={scrollToAbout}
-          className="group flex flex-col items-center gap-2 opacity-70 hover:opacity-100 transition-opacity"
-        >
-          <span className="text-[7px] font-black uppercase tracking-[0.4em] text-white">Discovery</span>
-          <div className="w-[1px] h-10 bg-gradient-to-b from-blue-500 to-transparent relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-1/2 bg-white animate-scroll-line" />
-          </div>
-        </button>
       </div>
 
       {/* Loading Overlay */}

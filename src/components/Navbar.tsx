@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Globe, ChevronDown, Menu, X, MapPin, UserPlus, Wallet, FileText, Trophy, BrainCircuit } from 'lucide-react';
+import { Globe, ChevronDown, Menu, X, MapPin, UserPlus, Wallet, FileText, Trophy, BrainCircuit, ArrowLeft, Youtube, Instagram, Facebook, Twitter, Radio } from 'lucide-react';
 import { supabase } from '../supabase'; 
 
 interface NavbarProps {
@@ -331,94 +331,133 @@ export default function Navbar({ onNavigate }: NavbarProps) {
           .mobile-sub-link { text-align: left; font-size: 13.5px; font-weight: 500; color: #94a3b8; text-transform: none; padding: 6px 0; }
           @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
           @keyframes slideInFromTop { from { transform: translateY(-10px); } to { transform: translateY(0); } }
-          @keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
+          @keyframes slideInLeft { from { transform: translateX(-100%); } to { transform: translateX(0); } }
           .animate-in { animation: fadeIn 0.2s ease-out, slideInFromTop 0.2s ease-out; }
           .animate-fade-in { animation: fadeIn 0.2s ease-out forwards; }
-          .animate-slide-in-right { animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+          .animate-slide-in-left { animation: slideInLeft 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         `}</style>
       </nav>
 
-      {/* MOBILE MENU BACKDROP AND DRAWER (Siblings to avoid backdrop-filter constraint) */}
+      {/* MOBILE MENU BACKDROP AND DRAWER */}
       {isMobileMenuOpen && (
         <>
           {/* Backdrop Overlay */}
           <div 
-            className="md:hidden fixed inset-0 z-[999998] bg-slate-950/65 backdrop-blur-xs animate-fade-in cursor-pointer"
+            className="md:hidden fixed inset-0 z-[999998] bg-black/60 backdrop-blur-xs animate-fade-in cursor-pointer"
             onClick={() => setIsMobileMenuOpen(false)}
           />
           
-          {/* Drawer Panel */}
-          <div className="md:hidden fixed top-[62px] right-4 w-[230px] max-h-[calc(100vh-76px)] z-[999999] bg-[#0b1224]/98 border border-white/10 rounded-2xl flex flex-col p-3.5 overflow-y-auto shadow-2xl animate-in fade-in slide-in-from-top-2 duration-200">
+          {/* Left-aligned Drawer Panel */}
+          <div className="md:hidden fixed inset-y-0 left-0 w-[300px] max-w-[85vw] h-full z-[999999] bg-[#0b1224] border-r border-white/10 flex flex-col overflow-hidden shadow-2xl animate-slide-in-left">
             
-            {/* HEADER SECTION INSIDE OVERLAY */}
-            <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/10">
-              <span className="text-[9px] text-slate-400 font-bold tracking-[0.2em] uppercase">Menu Utama</span>
-              
-              {/* CLOSE BUTTON */}
+            {/* LOGO & BRANDING HEADER SECTION */}
+            <div className="flex flex-col items-center justify-center pt-8 pb-6 px-4 relative border-b border-white/10 shrink-0 bg-[#070d1a]/50">
+              {/* Back Arrow Button (Close Menu) */}
               <button 
                 onClick={() => setIsMobileMenuOpen(false)} 
-                className="text-white hover:text-slate-300 p-1 hover:bg-white/5 rounded-full transition-all active:scale-95"
+                className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-full hover:bg-white/5 transition-all active:scale-95 flex items-center justify-center"
               >
-                <X size={16} />
+                <ArrowLeft size={20} />
               </button>
+
+              {/* Logo Container */}
+              <div className="relative w-20 h-20 flex items-center justify-center shrink-0">
+                <div className="absolute inset-0 bg-blue-500/5 rounded-full blur-xl animate-pulse"></div>
+                <div className="relative w-18 h-18 rounded-full overflow-hidden border border-white/10 shadow-2xl flex items-center justify-center bg-white">
+                  <img src={branding.logo_url} alt="Logo" className="w-full h-full object-cover" />
+                </div>
+              </div>
+              <div className="mt-3 text-center">
+                <h3 className="font-black text-sm tracking-tighter uppercase italic text-white leading-none">
+                  {branding.brand_name_main} <span className="text-blue-500">{branding.brand_name_accent}</span>
+                </h3>
+                <span className="text-[7px] text-slate-400 font-bold tracking-[0.2em] uppercase mt-1 block">Club Bulutangkis Terpadu</span>
+              </div>
             </div>
 
-            {/* MENU ITEMS */}
-            <div className="flex flex-col gap-2.5 mt-1">
+            {/* SCROLLABLE MENU ITEMS LIST */}
+            <div className="flex-grow overflow-y-auto py-2">
               {navData.filter(item => !item.parent_id).sort((a, b) => a.order_index - b.order_index).map((menu) => {
                 const subMenus = getSubMenus(menu.id);
                 const isDropdown = menu.type === 'dropdown' || subMenus.length > 0;
+                const isExpanded = activeDropdown === menu.id;
                 return (
-                  <React.Fragment key={menu.id}>
+                  <div key={menu.id} className="border-b border-white/5 last:border-0">
                     <button 
                       onClick={() => !isDropdown ? handleNavClick(menu.path) : (activeDropdown === menu.id ? setActiveDropdown(null) : setActiveDropdown(menu.id))}
-                      className="flex justify-between items-center w-full py-0.5 text-[12.5px] font-black italic tracking-widest uppercase text-slate-100 hover:text-blue-400 transition-colors duration-200 text-left"
+                      className="flex justify-between items-center w-full px-6 py-4 text-[12px] font-bold tracking-wider uppercase text-slate-100 hover:bg-blue-600/10 hover:text-blue-400 transition-all duration-200 text-left"
                     >
                       <span>{menu.label}</span>
-                      {isDropdown && <ChevronDown size={12} className={`text-slate-400 transition-transform duration-300 ${activeDropdown === menu.id ? 'rotate-180 text-blue-400' : ''}`} />}
+                      {isDropdown && <ChevronDown size={14} className={`text-slate-400 transition-transform duration-300 ${isExpanded ? 'rotate-180 text-blue-400' : ''}`} />}
                     </button>
-                    {isDropdown && activeDropdown === menu.id && (
-                      <div className="flex flex-col gap-1.5 pl-3 pr-1.5 ml-1 py-1 border-l-2 border-blue-600/20 animate-in fade-in duration-200">
+                    
+                    {isDropdown && isExpanded && (
+                      <div className="bg-[#070c18]/40 border-t border-white/5 flex flex-col py-2 pl-8 pr-4 gap-1 animate-in fade-in duration-200">
                         {subMenus.map((sub) => (
                           <button 
                             key={sub.id} 
                             onClick={() => handleNavClick(menu.path, sub.path)} 
-                            className="text-left py-0.5 text-[11px] font-bold italic uppercase tracking-wider text-slate-400 hover:text-white transition-colors flex items-center justify-between"
+                            className="text-left py-2.5 text-[11px] font-semibold tracking-wider uppercase text-slate-400 hover:text-white transition-colors flex items-center justify-between"
                           >
                             <span className="flex items-center gap-2">
-                              {sub.path === 'quiz' && <BrainCircuit size={10} className="text-blue-400" />}
+                              {sub.path === 'quiz' && <BrainCircuit size={12} className="text-blue-400" />}
                               {sub.label}
                             </span>
-                            {sub.path === 'peringkat' && <Trophy size={10} className="text-yellow-500" />}
-                            {sub.path === 'dokumen-penting' && <FileText size={10} className="text-blue-500" />}
+                            {sub.path === 'peringkat' && <Trophy size={11} className="text-yellow-500" />}
+                            {sub.path === 'dokumen-penting' && <FileText size={11} className="text-blue-500" />}
                           </button>
                         ))}
                       </div>
                     )}
-                  </React.Fragment>
+                  </div>
                 );
               })}
+
+              {/* Hubungi Kami Item with Divider */}
+              <div className="border-b border-white/5">
+                <button 
+                  onClick={() => handleNavClick('contact')}
+                  className="flex items-center gap-2.5 w-full px-6 py-4 text-[12px] font-bold tracking-wider uppercase text-slate-100 hover:bg-blue-600/10 hover:text-blue-400 transition-all duration-200 text-left"
+                >
+                  <MapPin size={14} className="text-blue-500 shrink-0" />
+                  <span>Hubungi Kami</span>
+                </button>
+              </div>
             </div>
-            
-            {/* DIVIDER */}
-            <div className="h-[1px] bg-white/10 my-2"></div>
-            
-            {/* CONTACT & REGISTRATION LINKS */}
-            <button 
-              onClick={() => handleNavClick('contact')}
-              className="flex items-center gap-2 text-left py-0.5 text-slate-100 font-black italic uppercase tracking-widest text-[12px] hover:text-blue-400 transition-colors mb-1.5"
-            >
-              <MapPin size={12} className="text-blue-500" />
-              <span>Hubungi Kami</span>
-            </button>
-            
-            <button 
-              onClick={() => handleNavClick('register')}
-              className="w-full py-2 px-3 bg-blue-600 hover:bg-blue-500 rounded-xl text-white font-black uppercase italic text-[10px] tracking-[0.08em] flex items-center justify-center gap-1.5 transition-all active:scale-95 shadow-md shadow-blue-600/10"
-            >
-              <UserPlus size={11} />
-              <span>Pendaftaran Atlet</span>
-            </button>
+
+            {/* DRAWER FOOTER SECTION: HIGHLIGHT BLOCK & SOCIAL MEDIA */}
+            <div className="p-6 border-t border-white/10 bg-[#070d1a] shrink-0 flex flex-col gap-5">
+              {/* LIVESIGNAL/REGISTRATION HIGHLIGHT BLOCK */}
+              <button 
+                onClick={() => handleNavClick('register')}
+                className="flex items-center gap-4 bg-[#151d30]/40 border border-white/5 hover:border-blue-500/30 p-3 rounded-2xl text-left transition-all hover:bg-blue-600/5 group"
+              >
+                <div className="w-9 h-9 rounded-full bg-blue-600/10 flex items-center justify-center text-blue-500 group-hover:bg-blue-600 group-hover:text-white transition-all shrink-0">
+                  <Radio size={16} className="animate-pulse" />
+                </div>
+                <div className="flex flex-col justify-center leading-tight">
+                  <span className="text-[9px] font-black tracking-widest text-blue-400 group-hover:text-blue-300 uppercase">Pendaftaran</span>
+                  <span className="text-[11px] font-bold text-white uppercase mt-0.5 tracking-wider">Gabung Atlet Baru</span>
+                </div>
+              </button>
+
+              {/* SOCIAL MEDIA ICONS */}
+              <div className="flex items-center justify-center gap-6 pt-1">
+                <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-white transition-colors" aria-label="YouTube">
+                  <Youtube size={18} />
+                </a>
+                <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-white transition-colors" aria-label="Instagram">
+                  <Instagram size={18} />
+                </a>
+                <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-white transition-colors" aria-label="Facebook">
+                  <Facebook size={18} />
+                </a>
+                <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-white transition-colors" aria-label="Twitter">
+                  <Twitter size={18} />
+                </a>
+              </div>
+            </div>
+
           </div>
         </>
       )}
