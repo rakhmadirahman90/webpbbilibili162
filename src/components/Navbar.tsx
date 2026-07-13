@@ -19,6 +19,36 @@ export default function Navbar({ onNavigate }: NavbarProps) {
     default_lang: 'ID'
   });
 
+  const [time, setTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const getIndonesianDateTime = (date: Date) => {
+    const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'];
+    
+    const dayName = days[date.getDay()];
+    const dateNum = date.getDate();
+    const monthName = months[date.getMonth()];
+    const year = date.getFullYear();
+    
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+    
+    return {
+      dayName,
+      dateStr: `${dateNum} ${monthName} ${year}`,
+      timeStr: `${hours}:${minutes}:${seconds}`,
+      shortDate: `${dateNum} ${monthName}`,
+    };
+  };
+
+  const dt = getIndonesianDateTime(time);
+
   // --- FETCH DATA NAVIGASI ---
   const fetchNavSettings = useCallback(async () => {
     try {
@@ -180,20 +210,37 @@ export default function Navbar({ onNavigate }: NavbarProps) {
       <nav className="fixed top-0 w-full bg-slate-900/95 backdrop-blur-md text-white border-b border-white/10 shadow-2xl transition-all duration-300 overflow-visible h-20 z-[10000]">
         <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center overflow-visible">
           
-          {/* LOGO */}
-          <div className="flex items-center gap-4 cursor-pointer group" onClick={() => handleNavClick('home')}>
-            <div className="relative w-12 h-12 flex items-center justify-center">
-              <div className="absolute inset-0 border border-white/30 rounded-full group-hover:border-blue-500/50 transition-colors duration-300"></div>
-              <div className="w-11 h-11 rounded-full overflow-hidden bg-white flex items-center justify-center transition-transform duration-500 group-hover:scale-105 shadow-inner">
-                <img src={branding.logo_url} alt="Logo" className="w-full h-full object-cover" />
+          {/* LEFT WING: LOGO, BRAND, & REAL-TIME CLOCK */}
+          <div className="flex items-center gap-2.5 sm:gap-5 overflow-visible">
+            {/* LOGO */}
+            <div className="flex items-center gap-2 sm:gap-3 cursor-pointer group" onClick={() => handleNavClick('home')}>
+              <div className="relative w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center shrink-0">
+                <div className="absolute inset-0 border border-white/30 rounded-full group-hover:border-blue-500/50 transition-colors duration-300"></div>
+                <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full overflow-hidden bg-white flex items-center justify-center transition-transform duration-500 group-hover:scale-105 shadow-inner">
+                  <img src={branding.logo_url} alt="Logo" className="w-full h-full object-cover" />
+                </div>
+              </div>
+              <div className="flex flex-col justify-center">
+                <div className="flex items-center gap-1 sm:gap-1.5 leading-none mb-0.5 sm:mb-1">
+                  <span className="font-black text-base sm:text-xl md:text-2xl tracking-tighter uppercase italic text-white leading-none">{branding.brand_name_main}</span>
+                  <span className="font-black text-base sm:text-xl md:text-2xl tracking-tighter uppercase italic text-blue-500 leading-none">{branding.brand_name_accent}</span>
+                </div>
+                <span className="text-[6.5px] sm:text-[8px] md:text-[9px] text-slate-400 font-bold tracking-[0.2em] sm:tracking-[0.3em] uppercase leading-none">Professional Club</span>
               </div>
             </div>
-            <div className="flex flex-col justify-center">
-              <div className="flex items-center gap-1.5 leading-none mb-1">
-                <span className="font-black text-xl md:text-2xl tracking-tighter uppercase italic text-white">{branding.brand_name_main}</span>
-                <span className="font-black text-xl md:text-2xl tracking-tighter uppercase italic text-blue-500">{branding.brand_name_accent}</span>
+
+            {/* REAL-TIME DIGITAL CLOCK WITH NEON STATUS DOT */}
+            <div className="flex items-center gap-1.5 px-2 py-1 sm:px-2.5 sm:py-1.5 bg-[#151d30]/60 border border-white/10 rounded-full backdrop-blur-md shadow-inner shrink-0 select-none">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+              </span>
+              <div className="flex items-center gap-1 sm:gap-1.5 text-[8px] sm:text-[10px] md:text-xs font-mono font-bold tracking-wider text-slate-300 leading-none">
+                <span className="hidden sm:inline opacity-80">{dt.dayName}, {dt.dateStr}</span>
+                <span className="sm:hidden opacity-80">{dt.shortDate}</span>
+                <span className="opacity-40">•</span>
+                <span className="text-blue-400 font-extrabold tracking-widest">{dt.timeStr}</span>
               </div>
-              <span className="text-[8px] md:text-[9px] text-slate-400 font-bold tracking-[0.3em] uppercase leading-none">Professional Badminton Club</span>
             </div>
           </div>
 
