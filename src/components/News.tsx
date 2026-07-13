@@ -2,6 +2,7 @@ import { Calendar, ArrowRight, X, ChevronDown, ChevronUp, Loader2, User, Eye, He
 import { useState, useEffect } from 'react';
 import { supabase } from "../supabase";
 import { motion, AnimatePresence } from 'framer-motion';
+import LazyImage from './LazyImage';
 
 // Interface untuk Komentar
 interface Komentar {
@@ -239,7 +240,12 @@ export default function News() {
               className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all group flex flex-col border border-gray-100"
             >
               <div className="relative h-48 overflow-hidden bg-gray-100">
-                <img src={news.gambar_url} alt={news.judul} className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500" />
+                <LazyImage 
+                  src={news.gambar_url} 
+                  alt={news.judul} 
+                  containerClassName="w-full h-full"
+                  className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500" 
+                />
                 <div className="absolute top-4 left-4 bg-blue-600 text-white px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-widest">
                   {news.kategori}
                 </div>
@@ -306,7 +312,12 @@ export default function News() {
               
               <div className="overflow-y-auto hide-scrollbar flex-grow scroll-smooth">
                 <div className="relative w-full bg-slate-900">
-                  <img src={selectedNews.gambar_url} alt={selectedNews.judul} className="w-full h-auto block max-h-[70vh] object-contain object-top" />
+                  <LazyImage 
+                    src={selectedNews.gambar_url} 
+                    alt={selectedNews.judul} 
+                    containerClassName="w-full h-full max-h-[70vh]"
+                    className="w-full h-auto block max-h-[70vh] object-contain object-top" 
+                  />
                   <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white to-transparent"></div>
                   
                   <button 

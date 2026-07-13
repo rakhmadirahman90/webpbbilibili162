@@ -365,36 +365,34 @@ const Rankings: React.FC = () => {
         )}
 
         <div className="bg-slate-900 border border-slate-800 rounded-[2rem] overflow-hidden shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-1000">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[700px]">
-              <thead>
-                <tr className="bg-slate-800/30 text-slate-500 text-[10px] font-black uppercase tracking-widest border-b border-slate-800">
-                  <th className="px-8 py-6 text-center w-24">Rank</th>
-                  <th className="px-6 py-6">Atlet</th>
-                  <th className="px-6 py-6 w-40 text-center">Kategori / Seed</th>
-                  <th className="px-6 py-6 text-right w-40">Total Poin</th>
-                  <th className="px-8 py-6 text-center w-32">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/50">
-                {loading ? (
-                  <tr>
-                    <td colSpan={5} className="py-24 text-center">
-                      <Loader2 className="animate-spin mx-auto text-blue-500 mb-4" size={40} />
-                      <p className="text-slate-500 font-black text-[10px] uppercase tracking-widest">Sinkronisasi Database...</p>
-                    </td>
-                  </tr>
-                ) : currentPlayers.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="py-24 text-center">
-                      <div className="flex flex-col items-center gap-2 opacity-20">
-                        <Search size={40} />
-                        <p className="font-black text-xs uppercase tracking-widest">Atlet tidak ditemukan</p>
-                      </div>
-                    </td>
-                  </tr>
-                ) : (
-                  currentPlayers.map((player) => {
+          {loading ? (
+            <div className="py-24 text-center">
+              <Loader2 className="animate-spin mx-auto text-blue-500 mb-4" size={40} />
+              <p className="text-slate-500 font-black text-[10px] uppercase tracking-widest">Sinkronisasi Database...</p>
+            </div>
+          ) : currentPlayers.length === 0 ? (
+            <div className="py-24 text-center">
+              <div className="flex flex-col items-center gap-2 opacity-20">
+                <Search size={40} />
+                <p className="font-black text-xs uppercase tracking-widest">Atlet tidak ditemukan</p>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* DESKTOP TABLE VIEW */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-left border-collapse min-w-[700px]">
+                  <thead>
+                    <tr className="bg-slate-800/30 text-slate-500 text-[10px] font-black uppercase tracking-widest border-b border-slate-800">
+                      <th className="px-8 py-6 text-center w-24">Rank</th>
+                      <th className="px-6 py-6">Atlet</th>
+                      <th className="px-6 py-6 w-40 text-center">Kategori / Seed</th>
+                      <th className="px-6 py-6 text-right w-40">Total Poin</th>
+                      <th className="px-8 py-6 text-center w-32">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/50">
+                    {currentPlayers.map((player) => {
                     const globalRank = dbRankings.findIndex((p) => p.id === player.id) + 1;
                     const style = getCategoryStyles(player.seed);
                     const isExpanded = expandedPlayer === player.id;
@@ -554,10 +552,118 @@ const Rankings: React.FC = () => {
                       </React.Fragment>
                     );
                   })
-                )}
+                }
               </tbody>
             </table>
           </div>
+
+          {/* MOBILE CARD VIEW */}
+          <div className="md:hidden divide-y divide-slate-800/40">
+            {currentPlayers.map((player) => {
+              const globalRank = dbRankings.findIndex((p) => p.id === player.id) + 1;
+              const style = getCategoryStyles(player.seed);
+              const isExpanded = expandedPlayer === player.id;
+
+              return (
+                <div key={player.id} className="p-4">
+                  <div 
+                    onClick={() => toggleExpand(player)}
+                    className={`flex items-center justify-between gap-4 p-2.5 rounded-2xl cursor-pointer ${isExpanded ? 'bg-blue-600/10 border border-blue-500/20' : 'hover:bg-white/[0.01]'}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 font-mono font-black italic text-sm ${globalRank <= 3 ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-slate-800 text-slate-500'}`}>
+                        #{String(globalRank).padStart(2, '0')}
+                      </div>
+                      
+                      <div className="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 overflow-hidden shrink-0">
+                        {player.photo_url ? (
+                          <img src={player.photo_url} className="w-full h-full object-cover" alt="" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-slate-600"><User size={18} /></div>
+                        )}
+                      </div>
+                      
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-black italic uppercase text-sm text-white truncate max-w-[130px]">{player.player_name}</span>
+                          {globalRank === 1 && <Trophy size={14} className="text-amber-400 shrink-0" />}
+                        </div>
+                        <span className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">{player.category}</span>
+                      </div>
+                    </div>
+
+                    <div className="text-right shrink-0">
+                      <div className="font-mono font-black text-white text-base">
+                        {Number(player.total_points || 0).toLocaleString()}
+                      </div>
+                      <div className="flex items-center justify-end gap-1 mt-1">
+                        <span className={`text-[8px] font-black px-1.5 py-0.5 rounded border uppercase ${style.bg} ${style.text} ${style.border}`}>
+                          {player.seed || 'UNSEEDED'}
+                        </span>
+                        {player.bonus !== undefined && player.bonus !== 0 && (
+                          <span className={`text-[8px] font-bold px-1 py-0.5 rounded ${player.bonus > 0 ? 'text-emerald-500 bg-emerald-500/10' : 'text-red-500 bg-red-500/10'}`}>
+                            {player.bonus > 0 ? `+${player.bonus}` : player.bonus}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Expandable Panel for Mobile */}
+                  {isExpanded && (
+                    <div className="mt-3 p-4 bg-slate-950/80 rounded-2xl border border-blue-500/20 animate-in slide-in-from-top-4 duration-300 space-y-4">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-800">
+                          <p className="text-[7px] font-black text-slate-500 uppercase tracking-widest">Global Rank</p>
+                          <p className="text-xs font-black italic text-white uppercase">Peringkat #{globalRank}</p>
+                        </div>
+                        <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-800">
+                          <p className="text-[7px] font-black text-slate-500 uppercase tracking-widest">Status Data</p>
+                          <p className="text-xs font-black italic text-emerald-500 uppercase flex items-center gap-1"><ShieldCheck size={10} /> Live</p>
+                        </div>
+                      </div>
+
+                      <div className="border-t border-slate-800/80 pt-3">
+                        <p className="text-[8px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3 flex items-center gap-1">
+                          <History size={10} className="text-blue-500" /> Log Aktivitas Terbaru
+                        </p>
+
+                        {loadingHistory ? (
+                          <div className="flex items-center justify-center py-6 gap-2">
+                            <Loader2 className="animate-spin text-blue-500" size={16} />
+                            <span className="text-[8px] font-black text-slate-600 uppercase tracking-wider animate-pulse">Syncing...</span>
+                          </div>
+                        ) : playerHistory.length > 0 ? (
+                          <div className="space-y-3">
+                            {playerHistory.map((log) => {
+                              const isGain = log.perubahan > 0;
+                              return (
+                                <div key={log.id} className={`p-3 rounded-xl border flex items-center justify-between gap-3 ${isGain ? 'bg-emerald-500/[0.02] border-emerald-500/10' : 'bg-red-500/[0.02] border-red-500/10'}`}>
+                                  <div className="min-w-0">
+                                    <div className="text-[8px] font-mono text-slate-500 mb-0.5">
+                                      {new Date(log.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                    </div>
+                                    <p className="text-[9px] font-bold text-slate-300 uppercase truncate">{log.tipe_kegiatan || 'Aktivitas Rutin'}</p>
+                                  </div>
+                                  <div className="text-right shrink-0">
+                                    <div className={`text-sm font-black font-mono ${isGain ? 'text-emerald-400' : 'text-red-400'}`}>{isGain ? '+' : ''}{log.perubahan}</div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className="text-center py-4 text-slate-600 font-bold uppercase text-[8px] tracking-widest">Belum ada riwayat aktivitas poin</div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
           
           {/* Footer Controls */}
           <div className="p-6 flex flex-col md:flex-row items-center justify-between border-t border-slate-800 bg-slate-900/80 backdrop-blur-xl gap-4">

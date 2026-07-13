@@ -270,7 +270,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
             <React.Fragment key={menu.id}>
               <button 
                 onClick={() => menu.type !== 'dropdown' ? handleNavClick(menu.path) : (activeDropdown === menu.id ? setActiveDropdown(null) : setActiveDropdown(menu.id))}
-                className={`mobile-nav-link flex justify-between items-center ${activeDropdown === menu.id ? 'text-blue-400' : ''}`}
+                className={`mobile-nav-link flex justify-between items-center py-2 ${activeDropdown === menu.id ? 'text-blue-400' : ''}`}
               >
                 <span className="flex items-center gap-2">{menu.label}</span>
                 {menu.type === 'dropdown' && <ChevronDown size={16} className={activeDropdown === menu.id ? 'rotate-180' : ''} />}
@@ -290,6 +290,24 @@ export default function Navbar({ onNavigate }: NavbarProps) {
               )}
             </React.Fragment>
           ))}
+          
+          <div className="h-[1px] bg-white/10 my-2"></div>
+          
+          <button 
+            onClick={() => handleNavClick('contact')}
+            className="mobile-nav-link flex items-center gap-3 text-left py-2 text-slate-300 hover:text-white"
+          >
+            <MapPin size={18} className="text-blue-500" />
+            <span>Hubungi Kami</span>
+          </button>
+          
+          <button 
+            onClick={() => handleNavClick('register')}
+            className="mobile-nav-link flex items-center justify-center gap-3 py-4 px-6 bg-blue-600 rounded-2xl text-white font-black uppercase text-xs tracking-widest hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20"
+          >
+            <UserPlus size={16} />
+            <span>Pendaftaran Atlet</span>
+          </button>
         </div>
       )}
 

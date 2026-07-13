@@ -138,32 +138,32 @@ export default function About({ activeTab: propsActiveTab, onTabChange }: AboutP
         <div className="flex flex-col items-center mb-10">
            
            {/* HEADER BIDANG: Teks "Bidang XXX" di atas foto */}
-           <div className="bg-white px-6 py-2 rounded-full border border-slate-200 shadow-sm mb-8">
-              <h4 className="text-blue-600 font-black italic uppercase text-[10px] md:text-[12px] tracking-[0.2em]">
+           <div className="bg-[#1a1d26] px-6 py-2.5 rounded-full border border-white/5 shadow-md mb-8">
+              <h4 className="text-blue-400 font-black italic uppercase text-[10px] md:text-[12px] tracking-[0.2em]">
                 {title}
               </h4>
            </div>
            
            {coordinator && (
              <div className="flex flex-col items-center mb-10">
-                <div className="bg-white p-4 rounded-[2rem] border-2 border-blue-100 shadow-xl text-center w-56 hover:border-blue-400 transition-colors">
+                <div className="bg-[#1a1d26] p-4 rounded-[2rem] border border-blue-500/20 shadow-xl text-center w-56 hover:border-blue-500/50 transition-colors">
                   <div className="w-24 h-24 mx-auto mb-3">
                     <img 
                       src={coordinator.photo_url || `https://ui-avatars.com/api/?name=${coordinator.name}`} 
-                      className="w-full h-full rounded-2xl object-cover border-4 border-slate-50" 
+                      className="w-full h-full rounded-2xl object-cover border-4 border-zinc-800" 
                       alt={coordinator.name}
                     />
                   </div>
-                  <p className="font-black text-[11px] uppercase italic text-slate-900 leading-tight">{coordinator.name}</p>
-                  <p className="text-[8px] text-blue-600 font-bold uppercase mt-1">{coordinator.role}</p>
+                  <p className="font-black text-[11px] uppercase italic text-white leading-tight">{coordinator.name}</p>
+                  <p className="text-[8px] text-blue-400 font-bold uppercase mt-1">{coordinator.role}</p>
                 </div>
-                {staffs.length > 0 && <div className="w-0.5 h-10 bg-gradient-to-b from-blue-200 to-transparent"></div>}
+                {staffs.length > 0 && <div className="w-0.5 h-10 bg-gradient-to-b from-blue-500/20 to-transparent"></div>}
              </div>
            )}
 
            <div className="flex flex-wrap justify-center gap-4 md:gap-6 w-full max-w-5xl">
               {staffs.map(p => (
-                <div key={p.id} className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4 w-64 md:w-72 hover:shadow-md transition-all">
+                <div key={p.id} className="bg-[#1a1d26] p-3 rounded-2xl border border-white/5 shadow-sm flex items-center gap-4 w-64 md:w-72 hover:border-blue-500/30 transition-all">
                   <div className="w-14 h-14 shrink-0">
                     <img 
                       src={p.photo_url || `https://ui-avatars.com/api/?name=${p.name}`} 
@@ -172,8 +172,8 @@ export default function About({ activeTab: propsActiveTab, onTabChange }: AboutP
                     />
                   </div>
                   <div className="flex flex-col min-w-0">
-                    <p className="font-black text-[10px] md:text-[11px] uppercase italic text-slate-900 truncate leading-tight">{p.name}</p>
-                    <p className="text-blue-500 font-bold text-[8px] uppercase mt-1">{p.role}</p>
+                    <p className="font-black text-[10px] md:text-[11px] uppercase italic text-white truncate leading-tight">{p.name}</p>
+                    <p className="text-blue-400 font-bold text-[8px] uppercase mt-1">{p.role}</p>
                   </div>
                 </div>
               ))}
@@ -184,26 +184,26 @@ export default function About({ activeTab: propsActiveTab, onTabChange }: AboutP
   };
 
   return (
-    <section id="tentang-kami" className="relative w-full h-screen bg-white flex flex-col items-center overflow-hidden font-sans">
-      <div className="max-w-7xl mx-auto px-4 w-full h-full flex flex-col py-2 md:py-6">
+    <section id="tentang-kami" className="relative w-full min-h-screen bg-[#0b0e14] text-white flex flex-col items-center font-sans py-6 md:py-12">
+      <div className="max-w-7xl mx-auto px-4 w-full flex flex-col">
         
-        <div className="text-center mb-4 shrink-0">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-600 rounded-full mb-2">
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-full mb-4">
             <Users2 size={12} className="animate-pulse" />
-            <span className="text-[8px] font-black uppercase tracking-[0.2em]">Profil Organisasi</span>
+            <span className="text-[9px] font-black uppercase tracking-[0.2em]">Profil Organisasi</span>
           </div>
-          <h2 className="text-2xl md:text-5xl font-black text-slate-900 tracking-tighter uppercase leading-none italic">
-            Tentang <span className="text-blue-600">Kami</span>
+          <h2 className="text-3xl md:text-6xl font-black text-white tracking-tighter uppercase leading-none italic">
+            Tentang <span className="text-blue-500">Kami</span>
           </h2>
         </div>
 
-        <div className="flex flex-wrap justify-center gap-2 mb-6 shrink-0">
+        <div className="flex flex-wrap justify-center gap-2 mb-10">
           {['sejarah', 'visi-misi', 'fasilitas'].map((id) => (
             <button
               key={id}
               onClick={() => handleTabChange(id)}
-              className={`px-4 md:px-8 py-2 md:py-3 rounded-xl font-black text-[9px] md:text-[11px] uppercase border-2 transition-all active:scale-95 ${
-                activeTab === id ? 'bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-200' : 'bg-white text-slate-400 border-slate-100 hover:border-blue-200'
+              className={`px-4 md:px-8 py-3 md:py-4 rounded-xl font-black text-[9px] md:text-[11px] uppercase border transition-all active:scale-95 ${
+                activeTab === id ? 'bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-500/20' : 'bg-[#1a1d26] text-zinc-400 border-white/5 hover:border-blue-500/30'
               }`}
             >
               {id.replace('-', ' ')}
@@ -211,15 +211,15 @@ export default function About({ activeTab: propsActiveTab, onTabChange }: AboutP
           ))}
           <button
             onClick={() => handleTabChange('organisasi')}
-            className={`px-4 md:px-8 py-2 md:py-3 rounded-xl font-black text-[9px] md:text-[11px] uppercase border-2 flex items-center gap-2 transition-all active:scale-95 ${
-              activeTab === 'organisasi' ? 'bg-slate-900 text-white border-slate-900 shadow-lg shadow-slate-200' : 'bg-white text-slate-900 border-slate-900 hover:bg-slate-50'
+            className={`px-4 md:px-8 py-3 md:py-4 rounded-xl font-black text-[9px] md:text-[11px] uppercase border flex items-center gap-2 transition-all active:scale-95 ${
+              activeTab === 'organisasi' ? 'bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-500/20' : 'bg-[#1a1d26] text-zinc-300 border-white/5 hover:border-blue-500/30'
             }`}
           >
             Struktur Organisasi <ArrowRight size={14} />
           </button>
         </div>
 
-        <div className="flex-1 min-h-0 bg-slate-50/50 rounded-[2rem] md:rounded-[3.5rem] p-4 md:p-12 border border-slate-100 shadow-inner relative overflow-y-auto custom-scrollbar">
+        <div className="w-full bg-[#12141c]/60 rounded-[2.5rem] md:rounded-[3.5rem] p-6 md:p-14 border border-white/5 shadow-2xl relative">
           {loading ? (
             <div className="flex flex-col items-center justify-center h-full gap-4">
               <Loader2 className="animate-spin text-blue-600" size={40} />
@@ -231,15 +231,15 @@ export default function About({ activeTab: propsActiveTab, onTabChange }: AboutP
                 <div className="max-w-4xl mx-auto py-4 animate-in fade-in slide-in-from-bottom-8 duration-700">
                   <div className="flex flex-col md:flex-row gap-12 items-center md:items-start">
                     <div className="w-full md:w-2/5 shrink-0">
-                      <div className="relative aspect-square rounded-[3rem] overflow-hidden border-8 border-white shadow-2xl -rotate-2">
+                      <div className="relative aspect-square rounded-[3rem] overflow-hidden border-4 border-white/10 bg-[#1a1d26] shadow-2xl -rotate-2">
                         <img src={dynamicContent.sejarah_image} className="w-full h-full object-cover" alt="Sejarah" />
                       </div>
                     </div>
                     <div className="flex-1 text-center md:text-left">
-                      <h3 className="text-3xl font-black text-slate-900 uppercase italic mb-6">
-                        {dynamicContent.sejarah_title} <span className="text-blue-600">{dynamicContent.sejarah_accent}</span>
+                      <h3 className="text-3xl font-black text-white uppercase italic mb-6">
+                        {dynamicContent.sejarah_title} <span className="text-blue-500">{dynamicContent.sejarah_accent}</span>
                       </h3>
-                      <p className="text-slate-600 leading-relaxed text-sm md:text-lg font-medium whitespace-pre-line">
+                      <p className="text-zinc-300 leading-relaxed text-sm md:text-lg font-medium whitespace-pre-line">
                         {dynamicContent.sejarah}
                       </p>
                     </div>
@@ -251,18 +251,18 @@ export default function About({ activeTab: propsActiveTab, onTabChange }: AboutP
                 <div className="max-w-5xl mx-auto py-4 animate-in fade-in slide-in-from-bottom-8 duration-700">
                   <div className="grid md:grid-cols-2 gap-12">
                     <div className="space-y-6">
-                      <div className="inline-block px-4 py-1 bg-amber-100 text-amber-700 rounded-lg text-[10px] font-black uppercase">Visi</div>
-                      <div className="bg-white p-10 rounded-[3rem] border-2 border-blue-50 shadow-xl shadow-blue-500/5 font-black italic text-xl md:text-2xl text-slate-800 leading-tight">
+                      <div className="inline-block px-4 py-1.5 bg-amber-500/10 border border-amber-500/20 text-amber-500 rounded-lg text-[10px] font-black uppercase">Visi</div>
+                      <div className="bg-[#1a1d26] p-10 rounded-[3rem] border border-white/5 shadow-2xl shadow-blue-500/5 font-black italic text-xl md:text-2xl text-white leading-tight">
                         "{dynamicContent.visi}"
                       </div>
                     </div>
                     <div className="space-y-6">
-                      <div className="inline-block px-4 py-1 bg-blue-100 text-blue-700 rounded-lg text-[10px] font-black uppercase">Misi</div>
+                      <div className="inline-block px-4 py-1.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-lg text-[10px] font-black uppercase">Misi</div>
                       <div className="space-y-4">
                         {dynamicContent.misi.map((item: any, i: number) => (
-                          <div key={i} className="flex items-start gap-4 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                          <div key={i} className="flex items-start gap-4 bg-[#1a1d26] p-6 rounded-3xl border border-white/5 shadow-sm hover:border-blue-500/30 transition-all">
                             <div className="bg-emerald-500 p-1 rounded-full shrink-0 mt-1"><CheckCircle2 size={14} className="text-white" /></div>
-                            <p className="text-slate-700 text-[11px] md:text-[13px] font-black uppercase tracking-tight leading-snug">
+                            <p className="text-zinc-300 text-[11px] md:text-[13px] font-black uppercase tracking-tight leading-snug">
                               {typeof item === 'string' ? item : item.text}
                             </p>
                           </div>
@@ -276,30 +276,30 @@ export default function About({ activeTab: propsActiveTab, onTabChange }: AboutP
               {activeTab === 'fasilitas' && (
                 <div className="max-w-6xl mx-auto py-4 animate-in fade-in slide-in-from-bottom-8 duration-700">
                   <div className="text-center mb-12">
-                    <h3 className="text-3xl font-black text-slate-900 uppercase italic mb-2">{dynamicContent.fasilitas_title}</h3>
+                    <h3 className="text-3xl font-black text-white uppercase italic mb-2">{dynamicContent.fasilitas_title}</h3>
                     <div className="h-1.5 w-24 bg-blue-600 mx-auto rounded-full"></div>
                   </div>
                   
                   <div className="grid md:grid-cols-3 gap-6 mb-12">
                     {[dynamicContent.fasilitas_main_image, dynamicContent.fasilitas_img1, dynamicContent.fasilitas_img2].map((img, idx) => (
                       img && (
-                        <div key={idx} className="group relative aspect-[4/3] rounded-[2rem] overflow-hidden border-4 border-white shadow-lg">
+                        <div key={idx} className="group relative aspect-[4/3] rounded-[2rem] overflow-hidden border-4 border-white/10 shadow-lg">
                           <img src={img} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt={`Fasilitas ${idx + 1}`} />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-6">
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-6">
                             <span className="text-white font-black uppercase text-[10px] tracking-widest">Fasilitas Organisasi</span>
                           </div>
                         </div>
                       )
                     ))}
                   </div>
-
+                  
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {dynamicContent.fasilitas_list.map((item: any, i: number) => (
-                      <div key={i} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex flex-col items-center text-center gap-3 hover:border-blue-200 transition-all group">
-                        <div className="bg-blue-50 p-3 rounded-2xl text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                      <div key={i} className="bg-[#1a1d26] p-6 rounded-3xl border border-white/5 shadow-sm flex flex-col items-center text-center gap-3 hover:border-blue-500/30 transition-all group">
+                        <div className="bg-blue-500/10 p-3 rounded-2xl text-blue-500 group-hover:bg-blue-600 group-hover:text-white transition-colors">
                           <Zap size={20} />
                         </div>
-                        <p className="font-black text-[10px] md:text-[11px] uppercase text-slate-800 tracking-tight leading-tight">
+                        <p className="font-black text-[10px] md:text-[11px] uppercase text-zinc-200 tracking-tight leading-tight">
                           {typeof item === 'string' ? item : item.title || item.text}
                         </p>
                       </div>
@@ -319,14 +319,14 @@ export default function About({ activeTab: propsActiveTab, onTabChange }: AboutP
                         <div className="flex flex-wrap justify-center gap-6 md:gap-12 relative z-10">
                           {levelMembers.map(p => (
                             <div key={p.id} className="flex flex-col items-center">
-                              <div className={`bg-white p-4 rounded-[2.5rem] border-2 shadow-2xl text-center transition-transform hover:scale-105 ${lvl === 4 ? 'w-64 md:w-72 border-blue-500 ring-8 ring-blue-50' : 'w-48 md:w-56 border-slate-100'}`}>
+                              <div className={`bg-[#1a1d26] p-4 rounded-[2.5rem] border shadow-2xl text-center transition-transform hover:scale-105 ${lvl === 4 ? 'w-64 md:w-72 border-blue-500 shadow-[0_0_35px_rgba(37,99,235,0.15)]' : 'w-48 md:w-56 border-white/5'}`}>
                                 <div className={`${lvl === 4 ? 'w-32 h-32' : 'w-24 h-24'} mx-auto mb-4`}>
-                                  <img src={p.photo_url || `https://ui-avatars.com/api/?name=${p.name}`} className="w-full h-full rounded-[2rem] object-cover border-4 border-slate-50 shadow-inner" alt={p.name} />
+                                  <img src={p.photo_url || `https://ui-avatars.com/api/?name=${p.name}`} className="w-full h-full rounded-[2rem] object-cover border-4 border-zinc-800 shadow-inner" alt={p.name} />
                                 </div>
-                                <p className="font-black text-[11px] md:text-[13px] uppercase italic text-slate-900 leading-tight mb-2 truncate">{p.name}</p>
+                                <p className="font-black text-[11px] md:text-[13px] uppercase italic text-white leading-tight mb-2 truncate">{p.name}</p>
                                 <span className={`text-[8px] text-white px-4 py-1 rounded-full font-black uppercase tracking-widest ${getLevelColor(p.level)}`}>{p.role}</span>
                               </div>
-                              <div className="w-0.5 h-16 bg-gradient-to-b from-slate-200 to-transparent"></div>
+                              <div className="w-0.5 h-16 bg-gradient-to-b from-blue-500/20 to-transparent"></div>
                             </div>
                           ))}
                         </div>
@@ -337,7 +337,7 @@ export default function About({ activeTab: propsActiveTab, onTabChange }: AboutP
                   <div className="w-full max-w-6xl mt-10">
                     <div className="text-center mb-20">
                       <div className="inline-block h-1 w-20 bg-blue-600 rounded-full mb-4"></div>
-                      <h3 className="text-2xl font-black uppercase italic text-slate-900 tracking-widest">Koordinator & Anggota Bidang</h3>
+                      <h3 className="text-2xl font-black uppercase italic text-white tracking-widest">Koordinator & Anggota Bidang</h3>
                     </div>
                     
                     {renderDepartment("Bidang Pertandingan", "Pertandingan")}

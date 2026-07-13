@@ -298,7 +298,8 @@ export default function PublicKasView() {
 
       {/* Main Table Area */}
       <div className="bg-white border border-slate-100 rounded-[2.5rem] overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
+        {/* DESKTOP TABLE VIEW */}
+        <div className="hidden lg:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-900 text-white">
@@ -354,12 +355,12 @@ export default function PublicKasView() {
                     </td>
                     <td className="p-6 text-center">
                        {item.jumlah_bola > 0 ? (
-                         <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-50 text-amber-700 rounded-xl border border-amber-100 shadow-sm">
-                            <Package size={12} className="text-amber-500" />
-                            <span className="text-[10px] font-black uppercase tracking-tighter">{item.jumlah_bola} Pcs</span>
-                         </div>
+                          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-50 text-amber-700 rounded-xl border border-amber-100 shadow-sm">
+                             <Package size={12} className="text-amber-500" />
+                             <span className="text-[10px] font-black uppercase tracking-tighter">{item.jumlah_bola} Pcs</span>
+                          </div>
                        ) : (
-                         <span className="text-slate-200 font-black">--</span>
+                          <span className="text-slate-200 font-black">--</span>
                        )}
                     </td>
                     <td className="p-6 text-center">
@@ -376,6 +377,61 @@ export default function PublicKasView() {
               })}
             </tbody>
           </table>
+        </div>
+
+        {/* MOBILE CARD VIEW */}
+        <div className="lg:hidden divide-y divide-slate-100">
+          {loading ? (
+            <div className="p-16 text-center">
+              <Loader2 className="animate-spin text-blue-600 mx-auto" size={36} />
+              <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mt-2">Menyinkronkan Database...</p>
+            </div>
+          ) : currentItems.length === 0 ? (
+            <div className="p-16 text-center">
+              <Search className="text-slate-300 mx-auto mb-4" size={32} />
+              <p className="text-slate-950 font-black uppercase text-xs tracking-widest">Data Kosong / Tidak Ditemukan</p>
+              <p className="text-xs text-slate-400 mt-2">Coba periksa filter nama atau tanggal.</p>
+            </div>
+          ) : (
+            currentItems.map((item) => {
+              const isIncome = item.jenis_transaksi === 'Masuk';
+              return (
+                <div key={item.id} className="p-6 hover:bg-slate-50 transition-all flex flex-col gap-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                      <Calendar size={12} className="text-blue-500" />
+                      {new Date(item.tanggal_transaksi).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    </span>
+                    <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest ${isIncome ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' : 'bg-rose-100 text-rose-700 border border-rose-200'}`}>
+                      {isIncome ? <ArrowUpCircle size={8}/> : <ArrowDownCircle size={8}/>}
+                      {item.jenis_transaksi}
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-black text-slate-800 uppercase text-sm tracking-tight">{item.nama_pembayar}</p>
+                      <div className="flex gap-2 mt-2 items-center flex-wrap">
+                        <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-lg text-[9px] font-black uppercase tracking-wider border border-slate-200">
+                          {item.kategori}
+                        </span>
+                        {item.jumlah_bola > 0 && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-700 rounded-lg border border-amber-100 text-[9px] font-black">
+                            <Package size={10} className="text-amber-500" />
+                            {item.jumlah_bola} Pcs
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className={`text-right font-black text-base tracking-tighter shrink-0 ${isIncome ? 'text-emerald-600' : 'text-rose-600'}`}>
+                      {isIncome ? '+' : '-'} Rp {item.jumlah_bayar.toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
 
         {/* Pagination Section */}

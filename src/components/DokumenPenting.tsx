@@ -132,7 +132,7 @@ export default function DokumenPenting() {
         </div>
       ) : (
         <>
-          <div className="grid md:grid-cols-2 gap-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
             <AnimatePresence mode='popLayout'>
               {filteredDocs.map((doc, index) => (
                 <motion.div
@@ -142,7 +142,7 @@ export default function DokumenPenting() {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ delay: index * 0.05 }}
-                  className="group relative bg-zinc-900/40 border border-zinc-800/80 p-10 rounded-[3rem] hover:border-blue-600/50 hover:bg-zinc-900/60 transition-all duration-500 shadow-2xl overflow-hidden"
+                  className="group relative bg-zinc-900/40 border border-zinc-800/80 p-6 md:p-10 rounded-[2rem] md:rounded-[3rem] hover:border-blue-600/50 hover:bg-zinc-900/60 transition-all duration-500 shadow-2xl overflow-hidden"
                 >
                   {/* Dekorasi Background */}
                   <div className="absolute -top-10 -right-10 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity rotate-12">
@@ -150,51 +150,52 @@ export default function DokumenPenting() {
                   </div>
 
                   <div className="relative flex flex-col h-full z-10">
-                    <div className="flex justify-between items-start mb-8">
-                      <div className="flex items-center gap-5">
-                        <div className="w-20 h-20 bg-zinc-800/50 border border-zinc-700/50 rounded-3xl flex items-center justify-center text-zinc-400 group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-500 group-hover:shadow-[0_10px_30px_rgba(37,99,235,0.3)] transition-all duration-500">
-                          <FileText size={36} />
+                    <div className="flex justify-between items-start mb-6 md:mb-8">
+                      <div className="flex items-center gap-4 md:gap-5">
+                        <div className="w-14 h-14 md:w-20 md:h-20 bg-zinc-800/50 border border-zinc-700/50 rounded-2xl md:rounded-3xl flex items-center justify-center text-zinc-400 group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-500 group-hover:shadow-[0_10px_30px_rgba(37,99,235,0.3)] transition-all duration-500 shrink-0">
+                          <FileText size={28} className="md:hidden" />
+                          <FileText size={36} className="hidden md:block" />
                         </div>
                         <div>
-                          <div className="flex items-center gap-3 mb-2">
-                            <span className="px-3 py-1 rounded-lg bg-zinc-800 text-[10px] font-black text-zinc-300 uppercase tracking-widest border border-zinc-700/50 group-hover:text-blue-300">
+                          <div className="flex items-center gap-2 md:gap-3 mb-1.5 md:mb-2 flex-wrap">
+                            <span className="px-2 py-0.5 md:px-3 md:py-1 rounded bg-zinc-800 text-[8px] md:text-[10px] font-black text-zinc-300 uppercase tracking-widest border border-zinc-700/50 group-hover:text-blue-300">
                               {doc.file_type || 'PDF'}
                             </span>
-                            <span className="flex items-center gap-1.5 text-[10px] text-zinc-500 font-bold uppercase tracking-tight">
-                              <Clock size={12} className="text-blue-600" /> {new Date(doc.created_at).toLocaleDateString('id-ID')}
+                            <span className="flex items-center gap-1 text-[8px] md:text-[10px] text-zinc-500 font-bold uppercase tracking-tight">
+                              <Clock size={10} className="text-blue-600" /> {new Date(doc.created_at).toLocaleDateString('id-ID')}
                             </span>
                           </div>
-                          <h3 className="text-2xl font-black uppercase italic leading-tight tracking-tighter text-zinc-100 group-hover:text-white transition-colors">
+                          <h3 className="text-lg md:text-2xl font-black uppercase italic leading-tight tracking-tighter text-zinc-100 group-hover:text-white transition-colors">
                             {doc.title}
                           </h3>
                         </div>
                       </div>
                     </div>
 
-                    <p className="text-zinc-400 text-sm leading-relaxed mb-10 line-clamp-2 pr-12 group-hover:text-zinc-300 transition-colors">
+                    <p className="text-zinc-400 text-xs md:text-sm leading-relaxed mb-6 md:mb-10 line-clamp-2 pr-4 md:pr-12 group-hover:text-zinc-300 transition-colors">
                       {doc.description || "Arsip resmi ini tersedia untuk kepentingan administratif dan dokumentasi klub."}
                     </p>
 
-                    <div className="mt-auto flex flex-wrap items-center justify-between gap-6 pt-8 border-t border-zinc-800/50">
-                      <div className="flex gap-3">
+                    <div className="mt-auto flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-6 border-t border-zinc-800/50">
+                      <div className="flex gap-2.5">
                         <button 
                           onClick={() => setSelectedDocUrl(doc.file_url)}
-                          className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest bg-zinc-800/80 hover:bg-zinc-700 text-zinc-100 px-6 py-4 rounded-2xl transition-all active:scale-95 border border-zinc-700/50"
+                          className="flex items-center justify-center gap-1.5 text-[9px] md:text-[11px] font-black uppercase tracking-widest bg-zinc-800/80 hover:bg-zinc-700 text-zinc-100 px-4 py-3 md:px-6 md:py-4 rounded-xl md:rounded-2xl transition-all active:scale-95 border border-zinc-700/50 flex-1 sm:flex-initial"
                         >
-                          <Eye size={16} className="text-blue-500" /> View
+                          <Eye size={14} className="text-blue-500" /> View
                         </button>
                         
                         <a 
                           href={doc.file_url} 
                           download 
-                          className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest bg-blue-600 hover:bg-blue-500 text-white px-6 py-4 rounded-2xl transition-all active:scale-95 shadow-lg shadow-blue-600/20"
+                          className="flex items-center justify-center gap-1.5 text-[9px] md:text-[11px] font-black uppercase tracking-widest bg-blue-600 hover:bg-blue-500 text-white px-4 py-3 md:px-6 md:py-4 rounded-xl md:rounded-2xl transition-all active:scale-95 shadow-lg shadow-blue-600/20 flex-1 sm:flex-initial"
                         >
-                          <DownloadCloud size={16} /> Download
+                          <DownloadCloud size={14} /> Download
                         </a>
                       </div>
-                      <div className="text-right">
-                        <p className="text-[9px] text-zinc-500 font-black uppercase tracking-[0.2em] mb-1">File Size</p>
-                        <span className="text-xs font-mono text-zinc-300 font-bold bg-zinc-800/50 px-2 py-1 rounded">
+                      <div className="text-left sm:text-right flex sm:flex-col items-center sm:items-end justify-between sm:justify-start">
+                        <p className="text-[8px] md:text-[9px] text-zinc-500 font-black uppercase tracking-[0.2em] sm:mb-1">File Size</p>
+                        <span className="text-[10px] md:text-xs font-mono text-zinc-300 font-bold bg-zinc-800/50 px-2 py-0.5 rounded">
                           {formatFileSize(doc.file_size)}
                         </span>
                       </div>

@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { supabase } from "../supabase"; 
 import { X, Camera, Info, ChevronDown, ChevronUp, PlayCircle, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import LazyImage from './LazyImage';
 
 export default function Gallery() {
   const [galleryItems, setGalleryItems] = useState<any[]>([]);
@@ -170,9 +171,10 @@ export default function Gallery() {
                         preload="metadata"
                       />
                     ) : (
-                      <img
+                      <LazyImage
                         src={getThumbnail(item)}
                         alt={item.title}
+                        containerClassName="w-full h-full"
                         className="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 group-hover:scale-110 transition-all duration-700"
                         onError={(e: any) => {
                           const videoId = getYouTubeID(item.url);
