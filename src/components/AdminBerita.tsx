@@ -554,7 +554,9 @@ export default function AdminBerita() {
                         <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black italic ${c.nama_user.includes("ADMIN") ? 'bg-blue-600 text-white' : 'bg-blue-600/20 text-blue-500'}`}><User size={12}/></div>
                         <span className={`text-xs font-black uppercase italic ${c.nama_user.includes("ADMIN") ? 'text-blue-400' : 'text-zinc-300'}`}>{c.nama_user}</span>
                         {c.nama_user.includes("ADMIN") && <span className="bg-blue-600 text-white text-[7px] px-1.5 py-0.5 rounded font-black">OFFICIAL</span>}
-                        <span className="text-[9px] font-bold text-zinc-500">{new Date(c.tanggal).toLocaleDateString('id-ID')}</span>
+                        <span className="text-[9px] font-bold text-zinc-500">
+                          {new Date(c.tanggal).toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' })} pukul {new Date(c.tanggal).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
                       </div>
                       <p className={`text-sm font-medium leading-relaxed ${c.nama_user.includes("ADMIN") ? 'text-white' : 'text-zinc-400'}`}>{c.isi_komentar}</p>
                     </div>

@@ -959,7 +959,9 @@ export default function News() {
                                 {c.nama_user.includes("ADMIN") && (
                                   <span className="bg-blue-600 text-white text-[7px] font-black px-1.5 py-0.5 rounded tracking-widest">OFFICIAL</span>
                                 )}
-                                <span className="text-[10px] text-slate-400 font-semibold">{new Date(c.tanggal).toLocaleDateString('id-ID')}</span>
+                                <span className="text-[10px] text-slate-400 font-semibold">
+                                  {new Date(c.tanggal).toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' })} pukul {new Date(c.tanggal).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                                </span>
                               </div>
                               <p className="text-slate-600 text-xs sm:text-sm leading-relaxed font-medium">{c.isi_komentar}</p>
                             </div>
