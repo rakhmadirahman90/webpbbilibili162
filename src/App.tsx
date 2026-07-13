@@ -130,6 +130,22 @@ export default function App() {
   // STATE UNTUK DEDICATED FULL-PAGE VIEWS
   const [activeView, setActiveView] = useState<string | null>(null);
 
+  // STATE UNTUK MEDETEKSI OVERLAY AKTIF (Agar control dock tersembunyi dengan elegan)
+  const [isOverlayActive, setIsOverlayActive] = useState(false);
+
+  useEffect(() => {
+    const handleOpen = () => setIsOverlayActive(true);
+    const handleClose = () => setIsOverlayActive(false);
+
+    window.addEventListener('pb-overlay-open', handleOpen);
+    window.addEventListener('pb-overlay-close', handleClose);
+
+    return () => {
+      window.removeEventListener('pb-overlay-open', handleOpen);
+      window.removeEventListener('pb-overlay-close', handleClose);
+    };
+  }, []);
+
   // AUDIO LOGIC
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isMarsPlaying, setIsMarsPlaying] = useState(false);
@@ -384,19 +400,6 @@ export default function App() {
     }
   };
 
-  const BackToHomeButton = () => (
-    <motion.button 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      whileHover={{ scale: 1.03, backgroundColor: '#2563eb' }}
-      whileTap={{ scale: 0.97 }}
-      onClick={() => { setActiveView(null); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-      className="fixed bottom-10 left-1/2 -translate-x-1/2 px-7 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-full font-semibold text-xs tracking-wider shadow-[0_12px_30px_rgba(37,99,235,0.3)] z-[9999] uppercase flex items-center gap-2.5 border border-white/10 backdrop-blur-md transition-all duration-200"
-    >
-      <ArrowLeft size={15} /> Kembali ke Beranda
-    </motion.button>
-  );
-
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-[#0b0e14]">
         <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
@@ -475,31 +478,81 @@ export default function App() {
               </AnimatePresence>
             </div>
             
-            {/* MUSIC CONTROLLER */}
-            <div className="fixed bottom-6 right-6 z-[99999] flex flex-col items-end gap-3 pointer-events-none">
-                <AnimatePresence>
-                  {isMarsPlaying && (
-                    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="bg-slate-900/95 backdrop-blur-md border border-white/10 px-4 py-2.5 rounded-2xl shadow-xl flex items-center gap-3">
-                        <div className="flex gap-0.5">
-                           {[1,2,3,4].map(i => <motion.div key={i} animate={{ height: [4, 12, 4] }} transition={{ repeat: Infinity, duration: 0.6, delay: i * 0.1 }} className="w-1 bg-blue-500 rounded-full" />)}
-                        </div>
-                        <p className="text-[10.5px] font-semibold uppercase tracking-wider text-white italic">Mars PB 162</p>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-                <motion.button 
-                  whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
-                  onClick={() => {
-                    if (audioRef.current) {
-                      isMarsPlaying ? audioRef.current.pause() : audioRef.current.play();
-                      setIsMarsPlaying(!isMarsPlaying);
-                    }
-                  }}
-                  className="pointer-events-auto w-14 h-14 bg-blue-600 text-white rounded-full shadow-2xl flex items-center justify-center border border-white/20 group overflow-hidden"
+            {/* BACK TO HOME BUTTON (Centered bottom) */}
+            <AnimatePresence>
+              {activeView && !isOverlayActive && (
+                <motion.div
+                  initial={{ opacity: 0, y: 30, x: "-50%" }}
+                  animate={{ opacity: 1, y: 0, x: "-50%" }}
+                  exit={{ opacity: 0, y: 30, x: "-50%" }}
+                  transition={{ type: 'spring', damping: 25, stiffness: 220 }}
+                  style={{ x: "-50%" }}
+                  className="fixed bottom-6 left-1/2 z-[99999]"
                 >
-                  {isMarsPlaying ? <Volume2 size={20} /> : <VolumeX size={20} className="text-white/60" />}
-                </motion.button>
-            </div>
+                  <button 
+                    onClick={() => { setActiveView(null); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-full font-black text-[10px] uppercase tracking-[0.15em] transition-all duration-200 active:scale-95 cursor-pointer border border-white/10 shadow-[0_12px_30px_rgba(37,99,235,0.35)] hover:shadow-blue-600/40"
+                  >
+                    <ArrowLeft size={13} />
+                    <span>Kembali ke Beranda</span>
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* AUDIO CONTROLLER (Floating bottom right, smaller size, neat & professional) */}
+            <AnimatePresence>
+              {!isOverlayActive && (
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  className="fixed bottom-6 right-6 z-[99999] flex items-center gap-2 pointer-events-none"
+                >
+                  {/* Subtle playing text / visualizer, elegant & professional */}
+                  <AnimatePresence>
+                    {isMarsPlaying && (
+                      <motion.div 
+                        initial={{ opacity: 0, x: 10, filter: "blur(4px)" }} 
+                        animate={{ opacity: 1, x: 0, filter: "blur(0px)" }} 
+                        exit={{ opacity: 0, x: 10, filter: "blur(4px)" }} 
+                        className="bg-slate-900/95 backdrop-blur-md border border-white/10 px-2.5 py-1.5 rounded-xl shadow-lg flex items-center gap-1.5 pointer-events-auto"
+                      >
+                        <div className="flex gap-0.5 items-end h-2.5">
+                           {[1,2,3].map(i => (
+                             <motion.div 
+                               key={i} 
+                               animate={{ height: [2, 7, 2] }} 
+                               transition={{ repeat: Infinity, duration: 0.6, delay: i * 0.15 }} 
+                               className="w-0.5 bg-blue-400 rounded-full" 
+                             />
+                           ))}
+                        </div>
+                        <span className="text-[8px] font-extrabold uppercase tracking-widest text-slate-300 italic whitespace-nowrap">Mars PB 162</span>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* Play / Mute Circle Icon - smaller & neat */}
+                  <button 
+                    onClick={() => {
+                      if (audioRef.current) {
+                        isMarsPlaying ? audioRef.current.pause() : audioRef.current.play();
+                        setIsMarsPlaying(!isMarsPlaying);
+                      }
+                    }}
+                    className={`pointer-events-auto w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 cursor-pointer border shadow-[0_4px_12px_rgba(0,0,0,0.3)] ${
+                      isMarsPlaying 
+                        ? 'bg-blue-600 text-white border-blue-500/50 hover:bg-blue-500' 
+                        : 'bg-slate-800 text-slate-400 border-white/5 hover:bg-slate-700 hover:text-slate-200'
+                    }`}
+                    title={isMarsPlaying ? "Pause Mars PB 162" : "Play Mars PB 162"}
+                  >
+                    {isMarsPlaying ? <Volume2 size={13} className="animate-pulse" /> : <VolumeX size={13} />}
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             <AnimatePresence mode="wait">
               {!activeView ? (
@@ -534,8 +587,6 @@ export default function App() {
                     {(activeView === 'tentang-kami' || activeView === 'about') && <About activeTab={activeAboutTab} onTabChange={setActiveAboutTab} />}
                     {(activeView === 'galeri' || activeView === 'gallery') && <Gallery />}
                   </div>
-                  
-                  <BackToHomeButton />
                 </motion.div>
               )}
             </AnimatePresence>

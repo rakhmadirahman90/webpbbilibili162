@@ -156,6 +156,18 @@ export default function News() {
     localStorage.setItem('pb_us_liked_posts', JSON.stringify(Array.from(likedPosts)));
   }, [likedPosts]);
 
+  // Dispatch overlay events to control App.tsx's unified control dock visibility
+  useEffect(() => {
+    if (selectedNews) {
+      window.dispatchEvent(new CustomEvent('pb-overlay-open'));
+    } else {
+      window.dispatchEvent(new CustomEvent('pb-overlay-close'));
+    }
+    return () => {
+      window.dispatchEvent(new CustomEvent('pb-overlay-close'));
+    };
+  }, [selectedNews]);
+
   const fetchNews = async () => {
     try {
       setLoading(true);
@@ -904,9 +916,10 @@ export default function News() {
                   <div className="mt-16">
                     <button 
                       onClick={() => setSelectedNews(null)} 
-                      className="w-full bg-slate-950 hover:bg-blue-600 text-white py-4 rounded-xl font-black uppercase text-xs tracking-[0.2em] transition-all transform active:scale-95 shadow-md"
+                      className="w-full py-4.5 bg-gradient-to-r from-blue-700 to-indigo-700 hover:from-blue-600 hover:to-indigo-600 text-white rounded-2xl font-extrabold uppercase text-xs tracking-[0.15em] transition-all duration-300 shadow-lg shadow-blue-950/20 active:scale-98 flex items-center justify-center gap-2.5 border border-white/10 group cursor-pointer"
                     >
-                      Kembali ke Daftar Berita
+                      <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform duration-200" />
+                      <span>Kembali ke Daftar Berita</span>
                     </button>
                   </div>
 

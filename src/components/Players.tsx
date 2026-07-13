@@ -79,6 +79,18 @@ const Players: React.FC<{ initialFilter?: string }> = ({
     };
   }, [fetchPlayersFromDB]);
 
+  // Dispatch overlay events to control App.tsx's unified control dock visibility
+  useEffect(() => {
+    if (selectedPlayer) {
+      window.dispatchEvent(new CustomEvent('pb-overlay-open'));
+    } else {
+      window.dispatchEvent(new CustomEvent('pb-overlay-close'));
+    }
+    return () => {
+      window.dispatchEvent(new CustomEvent('pb-overlay-close'));
+    };
+  }, [selectedPlayer]);
+
   const processedPlayers = useMemo(() => {
     if (!dbPlayers) return [];
     const uniquePlayersMap = new Map();
