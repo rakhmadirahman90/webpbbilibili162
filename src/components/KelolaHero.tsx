@@ -183,12 +183,24 @@ const KelolaHero: React.FC = () => {
         title: title.trim(),
         subtitle: subtitle.trim(),
         image: imageUrl,
+        active: true,
       };
       updatedSlides = [...slides, newSlide];
     }
 
     await saveToDatabase(updatedSlides);
     resetForm();
+  };
+
+  const toggleSlideActive = async (id: number) => {
+    const updatedSlides = slides.map(s => {
+      if (s.id === id) {
+        const currentActive = s.active !== false;
+        return { ...s, active: !currentActive };
+      }
+      return s;
+    });
+    await saveToDatabase(updatedSlides);
   };
 
   const deleteFromStorage = async (url: string) => {
@@ -430,20 +442,50 @@ const KelolaHero: React.FC = () => {
             ) : (
               slides.map((slide, index) => (
                 <div key={slide.id} className={`group flex flex-col md:flex-row items-center gap-6 bg-zinc-900 border ${editingId === slide.id ? 'border-blue-600' : 'border-white/5'} p-6 rounded-[2.5rem] hover:border-blue-600/40 transition-all relative overflow-hidden`}>
-                  <div className="relative w-full md:w-56 h-36 rounded-[1.5rem] overflow-hidden flex-shrink-0 shadow-2xl">
-                    <img src={slide.image} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                  <div className="relative w-full md:w-56 h-36 rounded-[1.5rem] overflow-hidden flex-shrink-0 shadow-2xl bg-black">
+                    <img src={slide.image} alt="" className={`w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ${slide.active === false ? 'opacity-30 grayscale' : ''}`} />
                     <div className="absolute top-4 left-4 bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-black">
                       {index + 1}
                     </div>
+                    {slide.active === false && (
+                      <div className="absolute inset-0 bg-black/55 flex items-center justify-center">
+                        <span className="text-[8px] font-black uppercase tracking-widest bg-red-600 text-white px-2.5 py-1 rounded-full shadow-lg">Nonaktif</span>
+                      </div>
+                    )}
                   </div>
-                  <div className="flex-grow">
-                    <h4 className="font-black uppercase italic text-lg tracking-tighter text-white mb-2">{slide.title}</h4>
-                    <p className="text-[10px] text-zinc-500 font-bold uppercase leading-relaxed line-clamp-2">{slide.subtitle}</p>
+                  <div className="flex-grow w-full">
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                      <h4 className={`font-black uppercase italic text-lg tracking-tighter ${slide.active === false ? 'text-zinc-500' : 'text-white'}`}>{slide.title}</h4>
+                      {slide.active !== false ? (
+                        <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[8px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full">Aktif</span>
+                      ) : (
+                        <span className="bg-red-500/10 text-red-400 border border-red-500/20 text-[8px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full">Sembunyi</span>
+                      )}
+                    </div>
+                    <p className={`text-[10px] font-bold uppercase leading-relaxed line-clamp-2 ${slide.active === false ? 'text-zinc-600' : 'text-zinc-500'}`}>{slide.subtitle}</p>
+                    
+                    {/* TOGGLE SWITCH */}
+                    <div className="mt-4 flex items-center gap-3">
+                      <span className="text-[9px] font-black uppercase tracking-widest text-zinc-400">Aktifkan Slider:</span>
+                      <button
+                        type="button"
+                        onClick={() => toggleSlideActive(slide.id)}
+                        className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors focus:outline-none ${
+                          slide.active !== false ? 'bg-blue-600' : 'bg-zinc-800'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform duration-250 ${
+                            slide.active !== false ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex md:flex-col gap-2">
-                    <div className="flex bg-black p-1.5 rounded-2xl border border-white/5">
-                      <button onClick={() => moveSlide(index, 'up')} className="p-2 text-zinc-500 hover:text-white"><MoveUp size={18}/></button>
-                      <button onClick={() => moveSlide(index, 'down')} className="p-2 text-zinc-500 hover:text-white"><MoveDown size={18}/></button>
+                  <div className="flex md:flex-col gap-2 shrink-0">
+                    <div className="flex bg-black p-1.5 rounded-2xl border border-white/5 justify-center">
+                      <button onClick={() => moveSlide(index, 'up')} className="p-2 text-zinc-500 hover:text-white transition-colors"><MoveUp size={18}/></button>
+                      <button onClick={() => moveSlide(index, 'down')} className="p-2 text-zinc-500 hover:text-white transition-colors"><MoveDown size={18}/></button>
                     </div>
                     <div className="flex gap-2">
                       <button onClick={() => startEdit(slide)} className="flex-1 p-4 bg-blue-600/10 text-blue-500 hover:bg-blue-600 hover:text-white rounded-2xl transition-all"><Edit3 size={20} /></button>

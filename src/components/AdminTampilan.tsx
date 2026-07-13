@@ -53,6 +53,7 @@ interface HeroSlide {
   titleSize?: number;
   subtitleSize?: number;
   fontFamily?: string;
+  active?: boolean;
 }
 
 export default function AdminTampilan() {
@@ -155,7 +156,8 @@ export default function AdminTampilan() {
       image: '',
       titleSize: 24,
       subtitleSize: 10,
-      fontFamily: 'font-sans'
+      fontFamily: 'font-sans',
+      active: true
     }]);
   };
 
@@ -358,11 +360,39 @@ export default function AdminTampilan() {
                       </div>
                       <div className="relative h-20 w-full bg-black rounded-xl overflow-hidden border border-zinc-800 shadow-inner group">
                         {slide.image ? (
-                          <img src={slide.image} key={slide.image} className="w-full h-full object-cover object-center opacity-80" alt="Preview" />
+                          <img src={slide.image} key={slide.image} className={`w-full h-full object-cover object-center transition-all ${slide.active === false ? 'opacity-30 grayscale' : 'opacity-80'}`} alt="Preview" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-zinc-800 text-[10px] font-black uppercase italic">No Image</div>
                         )}
+                        {slide.active === false && (
+                          <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                            <span className="text-[8px] font-black uppercase tracking-widest bg-red-600 text-white px-2 py-0.5 rounded-md shadow">NONAKTIF</span>
+                          </div>
+                        )}
                         <button onClick={() => removeSlide(slide.id)} className="absolute top-2 right-2 p-2 bg-red-600/20 hover:bg-red-600 text-red-500 hover:text-white rounded-xl transition-all opacity-0 group-hover:opacity-100"><Trash2 size={14} /></button>
+                      </div>
+                      
+                      {/* TOGGLE ACTIVE SWITCH */}
+                      <div className="flex items-center justify-between pt-1 border-t border-zinc-900/50 mt-1">
+                        <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Status Slider:</span>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-[8px] font-black uppercase tracking-wider ${slide.active !== false ? 'text-emerald-400' : 'text-zinc-500'}`}>
+                            {slide.active !== false ? 'AKTIF' : 'SEMBUYNI'}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => updateSlideContent(slide.id, 'active', slide.active === false ? true : false)}
+                            className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors focus:outline-none ${
+                              slide.active !== false ? 'bg-blue-600' : 'bg-zinc-800'
+                            }`}
+                          >
+                            <span
+                              className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform duration-250 ${
+                                slide.active !== false ? 'translate-x-6' : 'translate-x-1'
+                              }`}
+                            />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -404,9 +434,9 @@ export default function AdminTampilan() {
             {activeTab === 'hero' ? (
               <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
                 {slides.map((s, i) => (
-                  <div key={s.id} className="relative h-[320px] w-full bg-black rounded-[2.5rem] overflow-hidden flex items-center p-8 border border-white/5 shadow-2xl transition-all duration-500">
+                  <div key={s.id} className={`relative h-[320px] w-full bg-black rounded-[2.5rem] overflow-hidden flex items-center p-8 border ${s.active === false ? 'border-red-500/20 bg-red-950/5' : 'border-white/5'} shadow-2xl transition-all duration-500`}>
                     {s.image ? (
-                      <img src={s.image} key={s.image} className="absolute inset-0 w-full h-full object-cover object-[center_15%] opacity-50" alt={`Slide ${i+1}`} />
+                      <img src={s.image} key={s.image} className={`absolute inset-0 w-full h-full object-cover object-[center_15%] transition-all ${s.active === false ? 'opacity-15 grayscale' : 'opacity-50'}`} alt={`Slide ${i+1}`} />
                     ) : (
                        <div className="absolute inset-0 bg-zinc-950 flex items-center justify-center text-zinc-900 font-black italic text-4xl">NO IMAGE</div>
                     )}
@@ -414,20 +444,25 @@ export default function AdminTampilan() {
                     <div className="absolute inset-0 bg-gradient-to-r from-black via-black/40 to-transparent z-0" />
                     
                     <div className="relative z-10 w-full">
-                      <div className="text-blue-500 text-[8px] font-black uppercase mb-2 tracking-[0.4em]">Slide 0{i+1}</div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="text-blue-500 text-[8px] font-black uppercase tracking-[0.4em]">Slide 0{i+1}</div>
+                        {s.active === false && (
+                          <span className="bg-red-600/20 text-red-400 border border-red-500/30 text-[7px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full">Sembunyi dari Slider</span>
+                        )}
+                      </div>
                       <h2 
-                        className={`font-black italic tracking-tighter mb-2 text-white leading-[1.1] transition-all drop-shadow-xl ${s.fontFamily || 'font-sans'}`}
+                        className={`font-black italic tracking-tighter mb-2 leading-[1.1] transition-all drop-shadow-xl ${s.active === false ? 'text-zinc-500' : 'text-white'} ${s.fontFamily || 'font-sans'}`}
                         style={{ fontSize: `${s.titleSize || 24}px` }}
                       >
                         {s.title || 'Judul Slide'}
                       </h2>
                       <p 
-                        className={`text-zinc-200 font-medium mb-5 max-w-[260px] line-clamp-3 leading-relaxed drop-shadow-md ${s.fontFamily || 'font-sans'}`}
+                        className={`font-medium mb-5 max-w-[260px] line-clamp-3 leading-relaxed drop-shadow-md ${s.active === false ? 'text-zinc-600' : 'text-zinc-200'} ${s.fontFamily || 'font-sans'}`}
                         style={{ fontSize: `${s.subtitleSize || 10}px` }}
                       >
                         {s.subtitle || 'Deskripsi slide...'}
                       </p>
-                      <div className="inline-flex px-6 py-2.5 bg-blue-600 rounded-full items-center justify-center text-[9px] font-black tracking-widest uppercase shadow-lg shadow-blue-600/40 cursor-default">
+                      <div className={`inline-flex px-6 py-2.5 rounded-full items-center justify-center text-[9px] font-black tracking-widest uppercase shadow-lg cursor-default ${s.active === false ? 'bg-zinc-800 text-zinc-600 shadow-none' : 'bg-blue-600 text-white shadow-blue-600/40'}`}>
                         DAFTAR SEKARANG
                       </div>
                     </div>

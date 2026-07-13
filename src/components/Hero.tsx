@@ -27,7 +27,9 @@ export default function Hero() {
 
         if (data?.value) {
           const config = data.value;
-          setSlides(config.slides || config);
+          const allSlides = config.slides || (Array.isArray(config) ? config : []);
+          const activeSlides = allSlides.filter((s: any) => s.active !== false);
+          setSlides(activeSlides.length > 0 ? activeSlides : defaultSlides);
           setSettings(config.settings || { duration: 7 });
         }
       } catch (err) {
