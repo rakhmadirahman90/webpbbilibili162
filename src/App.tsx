@@ -173,12 +173,12 @@ export default function App() {
     <motion.button 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={{ scale: 1.05, backgroundColor: '#2563eb' }}
-      whileTap={{ scale: 0.95 }}
+      whileHover={{ scale: 1.03, backgroundColor: '#2563eb' }}
+      whileTap={{ scale: 0.97 }}
       onClick={() => { setActiveView(null); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-      className="fixed bottom-10 left-1/2 -translate-x-1/2 px-8 py-4 bg-blue-600 text-white rounded-full font-black text-[11px] tracking-[0.3em] shadow-[0_20px_50px_rgba(37,99,235,0.4)] z-[9999] uppercase flex items-center gap-3 border border-white/20 backdrop-blur-md"
+      className="fixed bottom-10 left-1/2 -translate-x-1/2 px-7 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-full font-semibold text-xs tracking-wider shadow-[0_12px_30px_rgba(37,99,235,0.3)] z-[9999] uppercase flex items-center gap-2.5 border border-white/10 backdrop-blur-md transition-all duration-200"
     >
-      <ArrowLeft size={16} /> Kembali ke Beranda
+      <ArrowLeft size={15} /> Kembali ke Beranda
     </motion.button>
   );
 
@@ -203,11 +203,11 @@ export default function App() {
             <div className="fixed bottom-6 right-6 z-[99999] flex flex-col items-end gap-3 pointer-events-none">
                 <AnimatePresence>
                   {isMarsPlaying && (
-                    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="bg-slate-900/90 backdrop-blur-md border border-white/10 px-4 py-2 rounded-2xl shadow-xl flex items-center gap-3">
+                    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="bg-slate-900/95 backdrop-blur-md border border-white/10 px-4 py-2.5 rounded-2xl shadow-xl flex items-center gap-3">
                         <div className="flex gap-0.5">
                            {[1,2,3,4].map(i => <motion.div key={i} animate={{ height: [4, 12, 4] }} transition={{ repeat: Infinity, duration: 0.6, delay: i * 0.1 }} className="w-1 bg-blue-500 rounded-full" />)}
                         </div>
-                        <p className="text-[9px] font-black uppercase tracking-widest text-white italic">Mars PB 162</p>
+                        <p className="text-[10.5px] font-semibold uppercase tracking-wider text-white italic">Mars PB 162</p>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -293,10 +293,10 @@ function AdminLayout({ session }: { session: any }) {
     <div className="flex h-screen w-full bg-[#050505] overflow-hidden">
       <Sidebar email={session.user.email} isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
       <main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
-        <div className="md:hidden flex items-center justify-between bg-[#0F172A] p-4 border-b border-white/5">
-          <button onClick={() => setIsSidebarOpen(true)} className="text-white p-2 hover:bg-white/10 rounded-lg"><Menu /></button>
-          <div className="text-white font-black italic tracking-tighter text-sm uppercase">Admin Console</div>
-          <div className="w-8"></div>
+        <div className="md:hidden flex items-center justify-between bg-[#0F172A] px-4 py-3.5 border-b border-white/5">
+          <button onClick={() => setIsSidebarOpen(true)} className="text-white p-2 hover:bg-white/10 rounded-xl transition-colors"><Menu size={20} /></button>
+          <div className="text-white font-bold tracking-tight text-[13.5px] uppercase">Admin Console</div>
+          <div className="w-9"></div>
         </div>
         <div className="flex-1 overflow-y-auto bg-[#050505] custom-scrollbar">
           <Routes>
