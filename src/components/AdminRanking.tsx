@@ -38,6 +38,18 @@ interface Ranking {
   updated_at?: string;
 }
 
+const formatNumber = (val: number | string | undefined | null) => {
+  if (val === undefined || val === null || val === '') return '';
+  if (val === 0) return '';
+  const numberString = val.toString().replace(/[^0-9]/g, '');
+  return numberString.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+};
+
+const parseNumber = (str: string) => {
+  const clean = str.replace(/[^0-9]/g, '');
+  return clean ? parseInt(clean) : 0;
+};
+
 export default function AdminRanking() {
   const [rankings, setRankings] = useState<Ranking[]>([]);
   const [loading, setLoading] = useState(true);
@@ -573,11 +585,23 @@ const paginatedRankings = filteredRankings.slice(startIndex, startIndex + itemsP
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <label className="text-[10px] font-black text-zinc-500 uppercase ml-2">Base Points</label>
-                    <input type="number" className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-4 font-bold focus:border-blue-500" value={formData.poin} onChange={(e) => setFormData({ ...formData, poin: Number(e.target.value) })} />
+                    <input 
+                      type="text" 
+                      inputMode="numeric"
+                      className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-4 font-bold focus:border-blue-500" 
+                      value={formatNumber(formData.poin)} 
+                      onChange={(e) => setFormData({ ...formData, poin: parseNumber(e.target.value) })} 
+                    />
                   </div>
                   <div className="space-y-1">
                     <label className="text-[10px] font-black text-emerald-500 uppercase ml-2">Added Points (Stats)</label>
-                    <input type="number" className="w-full bg-zinc-900 border border-emerald-500/20 rounded-2xl p-4 font-bold text-emerald-500 focus:border-emerald-500" value={formData.bonus} onChange={(e) => setFormData({ ...formData, bonus: Number(e.target.value) })} />
+                    <input 
+                      type="text" 
+                      inputMode="numeric"
+                      className="w-full bg-zinc-900 border border-emerald-500/20 rounded-2xl p-4 font-bold text-emerald-500 focus:border-emerald-500" 
+                      value={formatNumber(formData.bonus)} 
+                      onChange={(e) => setFormData({ ...formData, bonus: parseNumber(e.target.value) })} 
+                    />
                   </div>
                 </div>
 

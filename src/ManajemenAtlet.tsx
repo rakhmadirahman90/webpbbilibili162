@@ -52,6 +52,18 @@ const createImage = (url: string): Promise<HTMLImageElement> =>
     image.src = url;
   });
 
+const formatNumber = (val: number | string | undefined | null) => {
+  if (val === undefined || val === null || val === '') return '';
+  if (val === 0) return '';
+  const numberString = val.toString().replace(/[^0-9]/g, '');
+  return numberString.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+};
+
+const parseNumber = (str: string) => {
+  const clean = str.replace(/[^0-9]/g, '');
+  return clean ? parseInt(clean) : 0;
+};
+
 export default function ManajemenAtlet() {
   const [atlets, setAtlets] = useState<Registrant[]>([]);
   const [loading, setLoading] = useState(true);
@@ -884,13 +896,14 @@ export default function ManajemenAtlet() {
                       Points
                     </label>
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="numeric"
                       className="w-full px-5 py-3 bg-slate-100 rounded-xl font-black"
-                      value={editingStats.points || 0}
+                      value={formatNumber(editingStats.points)}
                       onChange={(e) =>
                         setEditingStats({
                           ...editingStats,
-                          points: parseInt(e.target.value),
+                          points: parseNumber(e.target.value),
                         })
                       }
                     />

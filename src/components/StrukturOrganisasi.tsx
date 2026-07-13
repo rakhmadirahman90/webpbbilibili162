@@ -198,9 +198,9 @@ export default function StrukturOrganisasi() {
             alt={m.name} 
           />
         </div>
-        <h4 className="text-[9px] font-black text-slate-800 uppercase italic text-center leading-tight px-1 truncate w-full">{m.name}</h4>
+        <h4 className="text-[11px] font-black text-slate-800 uppercase italic text-center leading-tight px-1 truncate w-full">{m.name}</h4>
         <div className="absolute -bottom-3 bg-blue-600 px-3 py-1 rounded-full shadow-lg border-2 border-white min-w-[80px] text-center">
-          <p className="text-[7px] text-white font-black uppercase tracking-tighter whitespace-nowrap">{m.role}</p>
+          <p className="text-[9px] text-white font-black uppercase tracking-tighter whitespace-nowrap">{m.role}</p>
         </div>
       </div>
     </motion.div>
@@ -217,7 +217,7 @@ export default function StrukturOrganisasi() {
     <div className="flex h-screen bg-[#0F172A] overflow-hidden font-sans">
       
       {/* LEFT PANEL: DATABASE MANAGEMENT (EDITOR) */}
-      <div className="w-85 border-r border-slate-800 flex flex-col bg-[#0A0F1E] p-6 overflow-hidden shadow-2xl z-10">
+      <div className="w-80 border-r border-slate-800 flex flex-col bg-[#0A0F1E] p-6 overflow-hidden shadow-2xl z-10">
         <div className="flex items-center gap-3 mb-6">
           <div className="p-2 bg-blue-500/10 rounded-lg text-blue-500"><Settings size={20} /></div>
           <div>

@@ -18,6 +18,18 @@ const DAFTAR_PEMASUKAN = [
   'Sumbangan Sukarela'
 ];
 
+const formatRupiah = (val: number | string | undefined | null) => {
+  if (val === undefined || val === null || val === '') return '';
+  if (val === 0) return '';
+  const numberString = val.toString().replace(/[^0-9]/g, '');
+  return numberString.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+};
+
+const parseRupiah = (str: string) => {
+  const clean = str.replace(/[^0-9]/g, '');
+  return clean ? parseInt(clean) : 0;
+};
+
 interface Atlet {
   id: string;
   player_name: string;
@@ -409,7 +421,13 @@ export default function KasManager() {
 
               <div>
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Nominal (Rp)</label>
-                <input type="number" className="w-full bg-black border border-white/10 rounded-xl p-4 text-sm outline-none font-bold text-blue-400" value={formData.jumlah_bayar} onChange={(e) => setFormData({...formData, jumlah_bayar: parseInt(e.target.value) || 0})} />
+                <input 
+                  type="text" 
+                  inputMode="numeric"
+                  className="w-full bg-black border border-white/10 rounded-xl p-4 text-sm outline-none font-bold text-blue-400" 
+                  value={formatRupiah(formData.jumlah_bayar)} 
+                  onChange={(e) => setFormData({...formData, jumlah_bayar: parseRupiah(e.target.value)})} 
+                />
               </div>
 
               <div className="flex gap-2">

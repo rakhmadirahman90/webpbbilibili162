@@ -154,8 +154,8 @@ export default function About({ activeTab: propsActiveTab, onTabChange }: AboutP
                       alt={coordinator.name}
                     />
                   </div>
-                  <p className="font-black text-[11px] uppercase italic text-white leading-tight">{coordinator.name}</p>
-                  <p className="text-[8px] text-blue-400 font-bold uppercase mt-1">{coordinator.role}</p>
+                  <p className="font-black text-[13px] uppercase italic text-white leading-tight">{coordinator.name}</p>
+                  <p className="text-[9.5px] text-blue-400 font-bold uppercase mt-1.5">{coordinator.role}</p>
                 </div>
                 {staffs.length > 0 && <div className="w-0.5 h-10 bg-gradient-to-b from-blue-500/20 to-transparent"></div>}
              </div>
@@ -172,8 +172,8 @@ export default function About({ activeTab: propsActiveTab, onTabChange }: AboutP
                     />
                   </div>
                   <div className="flex flex-col min-w-0">
-                    <p className="font-black text-[10px] md:text-[11px] uppercase italic text-white truncate leading-tight">{p.name}</p>
-                    <p className="text-blue-400 font-bold text-[8px] uppercase mt-1">{p.role}</p>
+                    <p className="font-black text-xs md:text-[13px] uppercase italic text-white truncate leading-tight">{p.name}</p>
+                    <p className="text-blue-400 font-bold text-[9.5px] uppercase mt-1">{p.role}</p>
                   </div>
                 </div>
               ))}
@@ -323,8 +323,8 @@ export default function About({ activeTab: propsActiveTab, onTabChange }: AboutP
                                 <div className={`${lvl === 4 ? 'w-32 h-32' : 'w-24 h-24'} mx-auto mb-4`}>
                                   <img src={p.photo_url || `https://ui-avatars.com/api/?name=${p.name}`} className="w-full h-full rounded-[2rem] object-cover border-4 border-zinc-800 shadow-inner" alt={p.name} />
                                 </div>
-                                <p className="font-black text-[11px] md:text-[13px] uppercase italic text-white leading-tight mb-2 truncate">{p.name}</p>
-                                <span className={`text-[8px] text-white px-4 py-1 rounded-full font-black uppercase tracking-widest ${getLevelColor(p.level)}`}>{p.role}</span>
+                                <p className="font-black text-xs md:text-[14px] uppercase italic text-white leading-tight mb-2 truncate">{p.name}</p>
+                                <span className={`text-[9.5px] text-white px-4 py-1 rounded-full font-black uppercase tracking-widest ${getLevelColor(p.level)}`}>{p.role}</span>
                               </div>
                               <div className="w-0.5 h-16 bg-gradient-to-b from-blue-500/20 to-transparent"></div>
                             </div>
