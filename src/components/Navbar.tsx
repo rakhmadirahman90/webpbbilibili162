@@ -265,7 +265,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
                     {menu.label} 
                     {isDropdown && <ChevronDown size={10} className={`transition-transform duration-300 ${activeDropdown === menu.id ? 'rotate-180' : ''}`} />}
                   </button>
-...
+
                   {isDropdown && activeDropdown === menu.id && (
                     <div className={`dropdown-container animate-in fade-in slide-in-from-top-2 duration-200 ${isLastFew ? 'right-0' : 'left-0'}`}>
                       <div className="dropdown-content">
