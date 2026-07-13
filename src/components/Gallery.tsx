@@ -9,6 +9,7 @@ import { getOptimizedImageUrl } from '../utils/imageOptimizer';
 export default function Gallery() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [galleryItems, setGalleryItems] = useState<any[]>([]);
+  const [hasInitializedUrlGallery, setHasInitializedUrlGallery] = useState(false);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showAll, setShowAll] = useState(false);
@@ -48,9 +49,9 @@ export default function Gallery() {
     };
   }, [selectedId]);
 
-  // Deep linking and URL synchronization for gallery/photo/video using reactive SearchParams
+  // Stage 1: Load query parameter once on mount when galleryItems has finished loading
   useEffect(() => {
-    if (galleryItems.length > 0) {
+    if (galleryItems.length > 0 && !hasInitializedUrlGallery) {
       const urlGalleryId = searchParams.get('gallery') || searchParams.get('galleryId') || searchParams.get('photoId') || searchParams.get('videoId');
       if (urlGalleryId) {
         const found = galleryItems.find(item => item.id === urlGalleryId);
@@ -60,10 +61,14 @@ export default function Gallery() {
           setActiveImgIndex(0);
         }
       }
+      setHasInitializedUrlGallery(true);
     }
-  }, [galleryItems, searchParams]);
+  }, [galleryItems, searchParams, hasInitializedUrlGallery]);
 
+  // Stage 2: Reactively synchronize state changes with URL query parameters
   useEffect(() => {
+    if (!hasInitializedUrlGallery) return;
+
     const urlGalleryId = searchParams.get('gallery') || searchParams.get('galleryId') || searchParams.get('photoId') || searchParams.get('videoId');
     if (selectedId) {
       if (searchParams.get('gallery') !== selectedId) {
@@ -84,7 +89,7 @@ export default function Gallery() {
         }, { replace: true });
       }
     }
-  }, [selectedId, searchParams, setSearchParams]);
+  }, [selectedId, hasInitializedUrlGallery, searchParams, setSearchParams]);
 
   const handleLike = (e: React.MouseEvent | React.KeyboardEvent, itemId: string) => {
     e.stopPropagation();

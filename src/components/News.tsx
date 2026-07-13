@@ -34,6 +34,7 @@ export default function News() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [beritaList, setBeritaList] = useState<Berita[]>([]);
   const [selectedNews, setSelectedNews] = useState<Berita | null>(null);
+  const [hasInitializedUrlNews, setHasInitializedUrlNews] = useState(false);
   const [showAll, setShowAll] = useState(false);
   const [loading, setLoading] = useState(true);
   
@@ -170,13 +171,13 @@ export default function News() {
     };
   }, [selectedNews]);
 
-  // Deep linking and URL synchronization for newsId using reactive SearchParams
+  // Stage 1: Load query parameter once on mount when beritaList has finished loading
   useEffect(() => {
-    const urlNewsId = searchParams.get('newsId');
-    if (beritaList.length > 0 && urlNewsId) {
-      const found = beritaList.find(item => item.id === urlNewsId);
-      if (found) {
-        if (!selectedNews || selectedNews.id !== found.id) {
+    if (beritaList.length > 0 && !hasInitializedUrlNews) {
+      const urlNewsId = searchParams.get('newsId');
+      if (urlNewsId) {
+        const found = beritaList.find(item => item.id === urlNewsId);
+        if (found) {
           handleOpenNews(found);
           setTimeout(() => {
             const element = document.getElementById('berita-section');
@@ -186,10 +187,14 @@ export default function News() {
           }, 300);
         }
       }
+      setHasInitializedUrlNews(true);
     }
-  }, [beritaList, searchParams, selectedNews]);
+  }, [beritaList, searchParams, hasInitializedUrlNews]);
 
+  // Stage 2: Reactively synchronize state changes with URL query parameters
   useEffect(() => {
+    if (!hasInitializedUrlNews) return;
+
     const urlNewsId = searchParams.get('newsId');
     if (selectedNews) {
       if (urlNewsId !== selectedNews.id) {
@@ -208,7 +213,7 @@ export default function News() {
         }, { replace: true });
       }
     }
-  }, [selectedNews, searchParams, setSearchParams]);
+  }, [selectedNews, hasInitializedUrlNews, searchParams, setSearchParams]);
 
   const fetchNews = async () => {
     try {
