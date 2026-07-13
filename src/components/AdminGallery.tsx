@@ -239,7 +239,7 @@ export default function AdminGallery() {
   };
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white p-4 md:p-12 font-sans selection:bg-blue-600/30">
+    <div className="min-h-screen bg-[#070d1a] text-white p-4 md:p-12 font-sans selection:bg-blue-600/30">
       <div className="max-w-6xl mx-auto">
         
         {successMsg && (

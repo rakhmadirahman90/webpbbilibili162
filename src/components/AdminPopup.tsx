@@ -327,7 +327,7 @@ export default function AdminPopup() {
   };
 
   return (
-    <div className="p-4 md:p-8 max-w-6xl mx-auto min-h-screen bg-[#050505]">
+    <div className="p-4 md:p-8 max-w-6xl mx-auto min-h-screen bg-[#070d1a]">
       <header className="mb-10 flex justify-between items-end">
         <div>
             <h1 className="text-3xl md:text-4xl font-black text-white uppercase italic tracking-tighter">

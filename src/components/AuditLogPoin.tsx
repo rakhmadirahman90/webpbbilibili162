@@ -66,7 +66,7 @@ export default function AuditLogPoin() {
   }, [searchTerm, logs]);
 
   return (
-    <div className="p-4 md:p-8 bg-[#050505] min-h-screen text-white font-sans relative overflow-hidden">
+    <div className="p-4 md:p-8 bg-[#070d1a] min-h-screen text-white font-sans relative overflow-hidden">
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/5 blur-[120px] pointer-events-none" />
       
       <div className="max-w-6xl mx-auto relative z-10">

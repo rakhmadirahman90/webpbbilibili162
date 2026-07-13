@@ -356,7 +356,7 @@ const Rankings: React.FC = () => {
   const currentPlayers = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
-    <section id="rankings" className="min-h-screen py-20 bg-slate-950 text-white font-sans relative overflow-hidden">
+    <section id="rankings" className="min-h-screen py-20 bg-[#070d1a] text-white font-sans relative overflow-hidden">
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(circle_at_50%_-20%,#1e3a8a33,transparent_50%)] pointer-events-none" />
       <div className="max-w-5xl mx-auto px-4 relative z-10">
         <div className="mb-12 grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
@@ -406,7 +406,7 @@ const Rankings: React.FC = () => {
               onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
             />
           </div>
-          <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar bg-slate-950/50 p-2 rounded-2xl border border-slate-800/50">
+          <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar bg-[#0b1224]/50 p-2 rounded-2xl border border-slate-800/50">
             <div className="flex items-center px-2 text-slate-600 border-r border-slate-800 mr-2">
                 <Filter size={14} />
             </div>
@@ -521,21 +521,21 @@ const Rankings: React.FC = () => {
                             <td colSpan={5} className="px-8 py-0 border-none bg-blue-500/[0.02]">
                               <div className="border-x border-b border-blue-500/20 rounded-b-[2.5rem] p-6 mb-6 animate-in slide-in-from-top-4 duration-500 bg-slate-900/50 backdrop-blur-sm">
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                                  <div className="bg-slate-950/80 p-5 rounded-2xl border border-slate-800 flex items-center gap-4 shadow-xl">
+                                  <div className="bg-[#0b1224]/80 p-5 rounded-2xl border border-slate-800 flex items-center gap-4 shadow-xl">
                                     <div className="p-3 bg-blue-500/10 rounded-xl text-blue-400"><User size={22} /></div>
                                     <div>
                                       <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Atlet Profile</p>
                                       <p className="text-sm font-black italic text-white uppercase">{player.player_name}</p>
                                     </div>
                                   </div>
-                                  <div className="bg-slate-950/80 p-5 rounded-2xl border border-slate-800 flex items-center gap-4 shadow-xl">
+                                  <div className="bg-[#0b1224]/80 p-5 rounded-2xl border border-slate-800 flex items-center gap-4 shadow-xl">
                                     <div className="p-3 bg-amber-500/10 rounded-xl text-amber-500"><Hash size={22} /></div>
                                     <div>
                                       <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Global Rank</p>
                                       <p className="text-sm font-black italic text-white uppercase">Peringkat #{globalRank}</p>
                                     </div>
                                   </div>
-                                  <div className="bg-slate-950/80 p-5 rounded-2xl border border-slate-800 flex items-center gap-4 shadow-xl">
+                                  <div className="bg-[#0b1224]/80 p-5 rounded-2xl border border-slate-800 flex items-center gap-4 shadow-xl">
                                     <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-500"><Clock size={22} /></div>
                                     <div>
                                       <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Status Data</p>
@@ -590,7 +590,7 @@ const Rankings: React.FC = () => {
                                           </div>
                                           <div className="text-right">
                                             <div className={`text-2xl font-black font-mono transition-transform group-hover/item:translate-x-[-4px] ${isGain ? 'text-emerald-400' : 'text-red-400'}`}>{isGain ? '+' : ''}{log.perubahan}</div>
-                                            <div className="text-[9px] text-slate-500 font-bold uppercase tracking-tighter flex items-center justify-end gap-2 bg-slate-950/50 px-2 py-1 rounded-lg mt-1">
+                                            <div className="text-[9px] text-slate-500 font-bold uppercase tracking-tighter flex items-center justify-end gap-2 bg-[#0b1224]/50 px-2 py-1 rounded-lg mt-1">
                                               <span>Prev: {log.poin_sebelum}</span>
                                               <ChevronRight size={8} className="text-blue-500" />
                                               <span className="text-blue-400">New: {log.poin_sesudah}</span>
@@ -676,7 +676,7 @@ const Rankings: React.FC = () => {
 
                   {/* Expandable Panel for Mobile */}
                   {isExpanded && (
-                    <div className="mt-3 p-4 bg-slate-950/80 rounded-2xl border border-blue-500/20 animate-in slide-in-from-top-4 duration-300 space-y-4">
+                    <div className="mt-3 p-4 bg-[#0b1224]/80 rounded-2xl border border-blue-500/20 animate-in slide-in-from-top-4 duration-300 space-y-4">
                       <div className="grid grid-cols-2 gap-3">
                         <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-800">
                           <p className="text-[7px] font-black text-slate-500 uppercase tracking-widest">Global Rank</p>

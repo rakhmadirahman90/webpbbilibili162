@@ -284,7 +284,7 @@ export default function ManajemenPoin() {
   );
 
   return (
-    <div className="p-8 bg-[#050505] min-h-screen text-white font-sans relative overflow-hidden">
+    <div className="p-8 bg-[#070d1a] min-h-screen text-white font-sans relative overflow-hidden">
       {/* Visual Background */}
       <div className="absolute top-0 left-0 w-96 h-96 bg-blue-600/5 blur-[120px] rounded-full -z-10" />
 

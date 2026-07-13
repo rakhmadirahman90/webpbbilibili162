@@ -117,7 +117,7 @@ export default function AdminLaporan() {
   };
 
   return (
-    <div className="p-6 md:p-12 bg-[#050505] min-h-screen text-white font-sans">
+    <div className="p-6 md:p-12 bg-[#070d1a] min-h-screen text-white font-sans">
       
       {/* Header & Filter */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">

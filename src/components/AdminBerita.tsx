@@ -290,7 +290,7 @@ export default function AdminBerita() {
     .sort((a, b) => sortBy === 'baru' ? new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime() : new Date(a.tanggal).getTime() - new Date(b.tanggal).getTime());
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white p-6 md:p-12 relative overflow-hidden">
+    <div className="min-h-screen bg-[#070d1a] text-white p-6 md:p-12 relative overflow-hidden">
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/10 blur-[120px] rounded-full -z-10" />
       
       <div className="max-w-7xl mx-auto relative z-10">

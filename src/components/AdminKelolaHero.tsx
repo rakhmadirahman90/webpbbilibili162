@@ -129,14 +129,14 @@ export default function HeroAdmin() {
       
       {/* MODAL CROPPER DENGAN OVERLAY TERPISAH */}
       {showCropper && imageSrc && (
-        <div className="fixed inset-0 z-[99999] bg-zinc-950 flex flex-col">
-          <div className="p-4 border-b border-zinc-800 flex justify-between items-center bg-black">
+        <div className="fixed inset-0 z-[99999] bg-[#070d1a] flex flex-col">
+          <div className="p-4 border-b border-zinc-800 flex justify-between items-center bg-[#0b1224]">
             <h2 className="font-bold text-blue-500 uppercase italic">Crop Image 16:9</h2>
             <button onClick={() => setShowCropper(false)}><X size={28}/></button>
           </div>
 
           {/* BOX CROPPER - Di sinilah kuncinya */}
-          <div className="relative flex-grow w-full bg-[#050505]">
+          <div className="relative flex-grow w-full bg-[#070d1a]">
             <Cropper
               image={imageSrc}
               crop={crop}

@@ -257,7 +257,7 @@ const KelolaHero: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white p-6 md:p-12 font-sans selection:bg-blue-500/30">
+    <div className="min-h-screen bg-[#070d1a] text-white p-6 md:p-12 font-sans selection:bg-blue-500/30">
       
       {/* MODAL CROPPER */}
       {showCropModal && imageToCrop && (

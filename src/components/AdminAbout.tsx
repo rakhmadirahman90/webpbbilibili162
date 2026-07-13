@@ -225,14 +225,14 @@ export default function AdminAbout() {
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-[#050505]">
+      <div className="flex h-screen items-center justify-center bg-[#070d1a]">
         <Loader2 className="animate-spin text-blue-500" size={40} />
       </div>
     );
   }
 
   return (
-    <div className="p-4 md:p-8 bg-[#050505] min-h-screen text-white pb-24 font-sans">
+    <div className="p-4 md:p-8 bg-[#070d1a] min-h-screen text-white pb-24 font-sans">
       {/* HEADER */}
       <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
         <div>

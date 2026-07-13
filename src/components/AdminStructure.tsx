@@ -356,7 +356,7 @@ export default function AdminStructure() {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-screen bg-[#050505] text-white font-sans overflow-hidden">
+    <div className="flex flex-col lg:flex-row min-h-screen bg-[#070d1a] text-white font-sans overflow-hidden">
       <AnimatePresence>
         {toast && <Toast message={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
       </AnimatePresence>
@@ -418,7 +418,7 @@ export default function AdminStructure() {
               required 
               value={formData.name} 
               onChange={e => setFormData({...formData, name: e.target.value})} 
-              className="w-full bg-[#050505] border border-white/10 rounded-xl px-4 py-3 text-xs focus:border-blue-500 outline-none transition-all" 
+              className="w-full bg-[#0b1224] border border-white/10 rounded-xl px-4 py-3 text-xs focus:border-blue-500 outline-none transition-all" 
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -428,7 +428,7 @@ export default function AdminStructure() {
                 required 
                 value={formData.role} 
                 onChange={e => setFormData({...formData, role: e.target.value})} 
-                className="w-full bg-[#050505] border border-white/10 rounded-xl px-4 py-3 text-xs focus:border-blue-500 outline-none transition-all" 
+                className="w-full bg-[#0b1224] border border-white/10 rounded-xl px-4 py-3 text-xs focus:border-blue-500 outline-none transition-all" 
               />
             </div>
             <div className="space-y-1">
@@ -436,7 +436,7 @@ export default function AdminStructure() {
               <select 
                 value={formData.level} 
                 onChange={e => setFormData({...formData, level: parseInt(e.target.value)})} 
-                className="w-full bg-[#050505] border border-white/10 rounded-xl px-4 py-3 text-[10px] font-bold outline-none cursor-pointer"
+                className="w-full bg-[#0b1224] border border-white/10 rounded-xl px-4 py-3 text-[10px] font-bold outline-none cursor-pointer"
               >
                 <option value={1}>Lvl 1: Png Jawab</option>
                 <option value={2}>Lvl 2: Penasehat</option>
@@ -453,7 +453,7 @@ export default function AdminStructure() {
             <div className="flex gap-3">
               <div className="flex-1 relative group h-12">
                 <input type="file" accept="image/*" onChange={onFileChange} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
-                <div className="w-full h-full bg-[#050505] border border-dashed border-white/20 rounded-xl flex items-center justify-center text-[9px] font-black uppercase text-slate-500 group-hover:border-blue-500/50 transition-all">
+                <div className="w-full h-full bg-[#0b1224] border border-dashed border-white/20 rounded-xl flex items-center justify-center text-[9px] font-black uppercase text-slate-500 group-hover:border-blue-500/50 transition-all">
                   <Upload size={14} className="mr-2" /> Pilih Foto
                 </div>
               </div>

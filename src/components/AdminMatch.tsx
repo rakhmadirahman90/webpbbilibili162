@@ -275,7 +275,7 @@ const AdminMatch: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white p-6 md:p-12 font-sans relative overflow-hidden">
+    <div className="min-h-screen bg-[#070d1a] text-white p-6 md:p-12 font-sans relative overflow-hidden">
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/10 blur-[120px] rounded-full -z-10" />
       
       <div className="max-w-5xl mx-auto relative z-10">

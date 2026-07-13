@@ -143,7 +143,7 @@ export default function ManajemenDokumen() {
   );
 
   return (
-    <div className="p-4 md:p-8 bg-[#050505] min-h-screen text-white font-sans relative">
+    <div className="p-4 md:p-8 bg-[#070d1a] min-h-screen text-white font-sans relative">
       
       {/* MODAL PRATINJAU (In-Page Preview) */}
       <AnimatePresence>

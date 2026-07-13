@@ -308,7 +308,7 @@ export default function KasManager() {
   };
 
   return (
-    <div className="p-6 lg:p-10 bg-[#050505] min-h-screen text-white font-sans">
+    <div className="p-6 lg:p-10 bg-[#070d1a] min-h-screen text-white font-sans">
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-10">
         <div>
           <div className="flex items-center gap-3 mb-2">

@@ -618,7 +618,7 @@ export default function News() {
               className="fixed inset-0 z-[110000] bg-white overflow-y-auto flex flex-col scroll-smooth"
             >
               {/* Sticky Top Header Bar */}
-              <div className="sticky top-0 bg-zinc-950 text-white px-4 py-3 md:py-4 flex items-center justify-between z-[110] shadow-md">
+              <div className="sticky top-0 bg-[#0b1224] text-white px-4 py-3 md:py-4 flex items-center justify-between z-[110] shadow-md">
                 <button 
                   onClick={() => setSelectedNews(null)} 
                   className="flex items-center gap-2 text-zinc-300 hover:text-white transition-colors py-1.5 px-3 rounded-lg hover:bg-white/10 active:scale-95"

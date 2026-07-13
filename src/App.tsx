@@ -519,7 +519,7 @@ export default function App() {
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.4 }}
-                  className="min-h-screen w-full flex flex-col items-center bg-[#0b0e14] pt-20 pb-14"
+                  className="min-h-screen w-full flex flex-col items-center bg-[#070d1a] pt-20 pb-14"
                 >
                   <div className="w-full h-full max-w-7xl px-4 md:px-8 mx-auto">
                     {/* Render Komponen dengan Props masing-masing */}
@@ -541,7 +541,7 @@ export default function App() {
             </AnimatePresence>
             
             {/* Footer Custom */}
-            <footer className="w-full py-3 text-center text-slate-500 text-[10px] font-black uppercase tracking-[0.25em] border-t border-white/5 bg-[#0b0e14]">
+            <footer className="w-full py-3 text-center text-slate-500 text-[10px] font-black uppercase tracking-[0.25em] border-t border-white/5 bg-[#070d1a]">
               <p>© 2026 PB BILIBILI 162</p>
             </footer>
           </div>
@@ -557,11 +557,11 @@ export default function App() {
         
         /* Custom scrollbar untuk panel admin */
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #050505; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #070d1a; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
         
         /* Global Background Smoothness */
-        body { background-color: #0b0e14; }
+        body { background-color: #070d1a; }
       `}</style>
     </Router>
   );
@@ -570,7 +570,7 @@ export default function App() {
 function AdminLayout({ session }: { session: any }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   return (
-    <div className="flex h-screen w-full bg-[#050505] overflow-hidden">
+    <div className="flex h-screen w-full bg-[#070d1a] overflow-hidden">
       <Sidebar email={session.user.email} isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
       <main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         <div className="md:hidden flex items-center justify-between bg-[#0F172A] px-4 py-3.5 border-b border-white/5">
@@ -578,7 +578,7 @@ function AdminLayout({ session }: { session: any }) {
           <div className="text-white font-bold tracking-tight text-[13.5px] uppercase">Admin Console</div>
           <div className="w-9"></div>
         </div>
-        <div className="flex-1 overflow-y-auto bg-[#050505] custom-scrollbar">
+        <div className="flex-1 overflow-y-auto bg-[#070d1a] custom-scrollbar">
           <Routes>
             <Route path="dashboard" element={<ManajemenPendaftaran />} />
             <Route path="atlet" element={<ManajemenAtlet />} />

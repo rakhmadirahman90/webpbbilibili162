@@ -313,7 +313,7 @@ const paginatedRankings = filteredRankings.slice(startIndex, startIndex + itemsP
   };
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white p-4 md:p-12 font-sans">
+    <div className="min-h-screen bg-[#070d1a] text-white p-4 md:p-12 font-sans">
       <div className="max-w-7xl mx-auto">
         {successMsg && (
           <div className="fixed top-10 left-1/2 -translate-x-1/2 z-[150] bg-blue-600 text-white px-6 py-3 rounded-full font-bold text-xs uppercase flex items-center gap-3 shadow-2xl animate-in fade-in slide-in-from-top-4">
