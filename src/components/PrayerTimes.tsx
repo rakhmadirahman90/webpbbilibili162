@@ -69,28 +69,28 @@ export default function PrayerTimes() {
     // Helper to fetch IP-based location
     const fetchIpLocation = async () => {
       try {
-        const res = await fetch('https://ipapi.co/json/');
+        const res = await fetch('https://freeipapi.com/api/json');
         if (res.ok) {
           const data = await res.json();
-          if (data.latitude && data.longitude) {
+          if (data && typeof data.latitude === 'number' && typeof data.longitude === 'number') {
             const lat = data.latitude;
             const lon = data.longitude;
             setDetectedCoords({ lat, lon });
-            const cityName = data.city || 'Lokasi Saya';
+            const cityName = data.cityName || 'Lokasi Saya';
             setDetectedCityName(cityName);
             setSelectedCity({ name: `📍 ${cityName}`, apiName: 'detected' });
             return;
           }
         }
-        throw new Error('Gagal deteksi IP');
       } catch (e) {
-        console.warn('IP lookup failed:', e);
-        // Fallback to Parepare
-        setSelectedCity(INDONESIAN_CITIES[0]);
-        setError('Akses lokasi ditolak. Menggunakan Parepare.');
-      } finally {
-        setLoading(false);
+        console.warn('IP lookup failed or blocked:', e);
       }
+      
+      // Fallback silently and safely to Parepare
+      setSelectedCity(INDONESIAN_CITIES[0]);
+      setDetectedCoords(null);
+      setError('Akses lokasi ditolak. Menggunakan Parepare.');
+      setLoading(false);
     };
 
     if (navigator.geolocation) {
