@@ -4,6 +4,7 @@ import { supabase } from "../supabase";
 import { motion, AnimatePresence } from 'framer-motion';
 import LazyImage from './LazyImage';
 import PrayerTimes from './PrayerTimes';
+import { getOptimizedImageUrl } from '../utils/imageOptimizer';
 
 // Interface untuk Komentar
 interface Komentar {
@@ -407,7 +408,7 @@ export default function News() {
                         onClick={() => { setLightboxIndex(idx); setIsLightboxOpen(true); }}
                       >
                         <img 
-                          src={img} 
+                          src={getOptimizedImageUrl(img, 1200)} 
                           alt="" 
                           className="w-full h-full object-cover object-center" 
                           referrerPolicy="no-referrer"
@@ -529,7 +530,7 @@ export default function News() {
                             className="group relative aspect-[4/3] sm:aspect-[3/2] rounded-xl overflow-hidden cursor-zoom-in bg-slate-50 border border-gray-100/60 shadow-xs hover:shadow-md transition-all duration-300"
                           >
                             <img 
-                              src={img} 
+                              src={getOptimizedImageUrl(img, 500)} 
                               alt="" 
                               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
                               referrerPolicy="no-referrer"
@@ -699,7 +700,7 @@ export default function News() {
                           animate={{ opacity: 1, scale: 1 }}
                           exit={{ opacity: 0, scale: 0.95 }}
                           transition={{ duration: 0.2 }}
-                          src={newsImages[lightboxIndex]} 
+                          src={getOptimizedImageUrl(newsImages[lightboxIndex], 1600)} 
                           alt="" 
                           className="max-w-full max-h-[75vh] object-contain rounded-sm"
                           referrerPolicy="no-referrer"
@@ -716,7 +717,7 @@ export default function News() {
                             onClick={() => setLightboxIndex(idx)}
                             className={`w-14 h-10 rounded overflow-hidden shrink-0 border-2 transition-all ${lightboxIndex === idx ? 'border-blue-500 scale-105 opacity-100' : 'border-transparent opacity-45 hover:opacity-85'}`}
                           >
-                            <img src={img} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                            <img src={getOptimizedImageUrl(img, 150)} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                           </button>
                         ))}
                       </div>

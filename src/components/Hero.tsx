@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '../supabase'; 
+import { getOptimizedImageUrl } from '../utils/imageOptimizer'; 
 
 const defaultSlides = [
   { id: 1, image: '/whatsapp_image_2026-02-02_at_08.39.03.jpeg' },
@@ -83,7 +84,7 @@ export default function Hero() {
             {/* Ambient Blurred Background Layer for Mobile & Wide Ratios */}
             <div className="absolute inset-0 overflow-hidden">
               <img
-                src={slide.image}
+                src={getOptimizedImageUrl(slide.image, 150, 40)}
                 alt=""
                 className="w-full h-full object-cover blur-3xl opacity-60 scale-110 select-none pointer-events-none"
               />
@@ -93,7 +94,7 @@ export default function Hero() {
                 Using object-cover to completely and perfectly fit the screen in portrait mode on mobile and wide mode on desktop.
             */}
             <img
-              src={slide.image}
+              src={getOptimizedImageUrl(slide.image, 1600)}
               alt=""
               className={`w-full h-full object-cover transition-transform duration-[20000ms] ease-out select-none relative z-10
                 ${index === currentSlide ? 'scale-105' : 'scale-100'}

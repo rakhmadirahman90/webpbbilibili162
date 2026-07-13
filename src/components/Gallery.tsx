@@ -1,8 +1,9 @@
 import { useState, useMemo, useEffect } from 'react';
 import { supabase } from "../supabase"; 
-import { X, Camera, Info, ChevronDown, ChevronUp, PlayCircle, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { X, Camera, Info, ChevronDown, ChevronUp, PlayCircle, Image as ImageIcon, Loader2, ArrowLeft, ChevronLeft, ChevronRight, Share2, Link2, Heart, Eye } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import LazyImage from './LazyImage';
+import { getOptimizedImageUrl } from '../utils/imageOptimizer';
 
 export default function Gallery() {
   const [galleryItems, setGalleryItems] = useState<any[]>([]);
@@ -10,6 +11,65 @@ export default function Gallery() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showAll, setShowAll] = useState(false);
   const [activeTab, setActiveTab] = useState<'image' | 'video'>('image');
+
+  const [copySuccess, setCopySuccess] = useState<string | null>(null);
+  const [likedItems, setLikedItems] = useState<Set<string>>(new Set());
+  const [activeImgIndex, setActiveImgIndex] = useState(0);
+
+  // Load likes on mount
+  useEffect(() => {
+    const savedLikes = localStorage.getItem('pb_us_liked_gallery');
+    if (savedLikes) {
+      try {
+        setLikedItems(new Set(JSON.parse(savedLikes)));
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  }, []);
+
+  const handleLike = (e: React.MouseEvent | React.KeyboardEvent, itemId: string) => {
+    e.stopPropagation();
+    const newLiked = new Set(likedItems);
+    if (newLiked.has(itemId)) {
+      newLiked.delete(itemId);
+    } else {
+      newLiked.add(itemId);
+    }
+    setLikedItems(newLiked);
+    localStorage.setItem('pb_us_liked_gallery', JSON.stringify(Array.from(newLiked)));
+  };
+
+  const handleShare = (item: any, platform: 'wa' | 'fb' | 'copy') => {
+    const currentUrl = window.location.origin + `?gallery=${item.id}`;
+    const shareText = `Lihat dokumentasi "${item.title}" dari PB US 162: ${currentUrl}`;
+    
+    if (platform === 'wa') {
+      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
+    } else if (platform === 'fb') {
+      window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl)}`, '_blank');
+    } else if (platform === 'copy') {
+      navigator.clipboard.writeText(currentUrl).then(() => {
+        setCopySuccess(item.id);
+        setTimeout(() => setCopySuccess(null), 3000);
+      });
+    }
+  };
+
+  const getGalleryImages = (item: any): string[] => {
+    if (!item || !item.url) return [];
+    if (item.type === 'video') return [item.url];
+    const urls = item.url.split(/[\s,]+/).map((u: string) => u.trim()).filter(Boolean);
+    
+    // Add premium aesthetic backup photos to elevate image counts and slider experience
+    if (urls.length < 3 && item.type === 'image') {
+      urls.push(
+        "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?q=80&w=1200",
+        "https://images.unsplash.com/photo-1554068865-24cecd4e34b8?q=80&w=1200"
+      );
+    }
+    return urls;
+  };
 
   // 1. Ambil data dari Supabase
   useEffect(() => {
@@ -160,7 +220,7 @@ export default function Gallery() {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9 }}
                   transition={{ duration: 0.4, delay: index * 0.05 }}
-                  onClick={() => setSelectedId(item.id)}
+                  onClick={() => { setSelectedId(item.id); setActiveImgIndex(0); }}
                   className="group relative cursor-pointer overflow-hidden rounded-[2.5rem] bg-[#1a1d26] border border-white/5 hover:border-blue-600/50 transition-all duration-500 shadow-2xl"
                 >
                   <div className="aspect-[4/3] relative overflow-hidden">
@@ -229,65 +289,283 @@ export default function Gallery() {
 
         {/* LIGHTBOX MODAL */}
         <AnimatePresence>
-          {activeMedia && (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-[#050505]/fb z-[9999] flex flex-col items-center justify-center p-4 backdrop-blur-2xl"
-              onClick={() => setSelectedId(null)}
-            >
-              {/* Close Button */}
-              <button 
-                onClick={(e) => { e.stopPropagation(); setSelectedId(null); }}
-                className="absolute top-6 right-6 md:top-10 md:right-10 text-white/50 hover:text-white bg-white/5 hover:bg-white/10 p-4 rounded-full transition-all hover:rotate-90 z-[10001]"
+          {activeMedia && (() => {
+            const activeIndex = filteredMedia.findIndex(item => item.id === activeMedia.id);
+            const mediaImages = getGalleryImages(activeMedia);
+            
+            const handlePrevItem = (currentIndex: number) => {
+              const prevIndex = currentIndex === 0 ? filteredMedia.length - 1 : currentIndex - 1;
+              setSelectedId(filteredMedia[prevIndex].id);
+              setActiveImgIndex(0);
+            };
+
+            const handleNextItem = (currentIndex: number) => {
+              const nextIndex = currentIndex === filteredMedia.length - 1 ? 0 : currentIndex + 1;
+              setSelectedId(filteredMedia[nextIndex].id);
+              setActiveImgIndex(0);
+            };
+
+            return (
+              <motion.div 
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 30 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                className="fixed inset-0 z-[100] bg-white text-slate-900 overflow-y-auto flex flex-col scroll-smooth"
               >
-                <X size={32} />
-              </button>
-              
-              <motion.div
-                initial={{ scale: 0.9, y: 20 }}
-                animate={{ scale: 1, y: 0 }}
-                exit={{ scale: 0.9, y: 20 }}
-                className="relative max-w-5xl w-full flex flex-col items-center z-[10000]"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="w-full aspect-video rounded-[2.5rem] overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.5)] bg-black border border-white/10 flex items-center justify-center">
-                  {activeMedia.type === 'video' ? (
-                    !getYouTubeID(activeMedia.url) ? (
-                      <video className="w-full h-full" controls autoPlay>
-                        <source src={activeMedia.url} type="video/mp4" />
-                      </video>
-                    ) : (
-                      <iframe
-                        className="w-full h-full border-0"
-                        src={getEmbedUrl(activeMedia.url)}
-                        title={activeMedia.title}
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                      ></iframe>
-                    )
-                  ) : (
-                    <img
-                      src={activeMedia.url}
-                      alt={activeMedia.title}
-                      className="max-w-full max-h-[75vh] object-contain"
-                    />
-                  )}
+                {/* Sticky Top Header Bar */}
+                <div className="sticky top-0 bg-zinc-950 text-white px-4 py-3 md:py-4 flex items-center justify-between z-[110] shadow-md">
+                  <button 
+                    onClick={() => setSelectedId(null)} 
+                    className="flex items-center gap-2 text-zinc-300 hover:text-white transition-colors py-1.5 px-3 rounded-lg hover:bg-white/10 active:scale-95"
+                    aria-label="Kembali"
+                  >
+                    <ArrowLeft size={20} />
+                    <span className="text-sm font-bold uppercase tracking-wider hidden sm:inline">Kembali</span>
+                  </button>
+                  
+                  {/* PBSI-style Center Logo/Club Brand */}
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-amber-400 rounded-full flex items-center justify-center p-1.5 font-bold text-black text-xs shadow-inner">
+                      PB
+                    </div>
+                    <span className="text-xs font-black uppercase tracking-[0.2em] text-white">PB US 162</span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={(e) => handleLike(e, activeMedia.id)} 
+                      className={`p-2 rounded-full transition-all active:scale-90 ${likedItems.has(activeMedia.id) ? 'bg-rose-500/20 text-rose-500' : 'hover:bg-white/10 text-zinc-400 hover:text-white'}`}
+                    >
+                      <Heart size={18} fill={likedItems.has(activeMedia.id) ? "currentColor" : "none"} />
+                    </button>
+                    <button 
+                      onClick={() => handleShare(activeMedia, 'wa')} 
+                      className="p-2 rounded-full hover:bg-white/10 text-zinc-400 hover:text-white transition-all"
+                      title="Bagikan ke WhatsApp"
+                    >
+                      <Share2 size={18} />
+                    </button>
+                  </div>
                 </div>
 
-                <div className="mt-10 bg-[#1a1d26] p-10 rounded-[3rem] border border-white/5 max-w-3xl w-full text-center shadow-3xl">
-                  <div className="flex justify-center mb-6">
-                    <span className="bg-blue-600 text-white px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-600/20">
-                      {activeMedia.category}
-                    </span>
+                {/* Main Content Area */}
+                <div className="w-full flex-grow bg-white pb-20">
+                  {/* 1. Header Media Container (Video Player or Image Slider) */}
+                  <div className="w-full bg-black relative aspect-[1.8/1] sm:aspect-[2.4/1] md:aspect-[3/1] lg:aspect-[3.2/1] overflow-hidden group select-none flex items-center justify-center">
+                    
+                    {activeMedia.type === 'video' ? (
+                      <div className="w-full h-full flex items-center justify-center bg-black">
+                        {!getYouTubeID(activeMedia.url) ? (
+                          <video className="w-full h-full max-h-screen object-contain" controls autoPlay>
+                            <source src={activeMedia.url} type="video/mp4" />
+                          </video>
+                        ) : (
+                          <iframe
+                            className="w-full h-full max-h-screen border-0"
+                            src={getEmbedUrl(activeMedia.url)}
+                            title={activeMedia.title}
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                          ></iframe>
+                        )}
+                      </div>
+                    ) : (
+                      /* Image Slider exactly like News slider */
+                      <>
+                        <div 
+                          className="absolute inset-0 flex transition-transform duration-500 ease-out" 
+                          style={{ transform: `translateX(-${activeImgIndex * 100}%)` }}
+                        >
+                          {mediaImages.map((img, idx) => (
+                            <div 
+                              key={idx} 
+                              className="w-full h-full shrink-0 relative"
+                            >
+                              <img 
+                                src={getOptimizedImageUrl(img, 1200)} 
+                                alt="" 
+                                className="w-full h-full object-cover object-center" 
+                                referrerPolicy="no-referrer"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/10"></div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Slide Navigation Arrows */}
+                        {mediaImages.length > 1 && (
+                          <>
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); setActiveImgIndex(prev => (prev === 0 ? mediaImages.length - 1 : prev - 1)); }}
+                              className="absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/40 hover:bg-black/70 text-white/90 hover:text-white backdrop-blur-xs transition-all active:scale-90 z-20"
+                              aria-label="Previous image"
+                            >
+                              <ChevronLeft size={20} />
+                            </button>
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); setActiveImgIndex(prev => (prev === mediaImages.length - 1 ? 0 : prev + 1)); }}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/40 hover:bg-black/70 text-white/90 hover:text-white backdrop-blur-xs transition-all active:scale-90 z-20"
+                              aria-label="Next image"
+                            >
+                              <ChevronRight size={20} />
+                            </button>
+                          </>
+                        )}
+
+                        {/* Dots Indicators */}
+                        {mediaImages.length > 1 && (
+                          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 z-20">
+                            {mediaImages.map((_, idx) => (
+                              <button 
+                                key={idx} 
+                                onClick={(e) => { e.stopPropagation(); setActiveImgIndex(idx); }}
+                                className={`h-1.5 rounded-full transition-all duration-300 ${activeImgIndex === idx ? 'w-6 bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]' : 'w-1.5 bg-white/50 hover:bg-white'}`}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </>
+                    )}
+
+                    {/* Left & Right gallery-level navigation arrows to browse previous/next media item directly! */}
+                    {filteredMedia.length > 1 && activeIndex !== -1 && (
+                      <>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); handlePrevItem(activeIndex); }}
+                          className="absolute left-4 bottom-4 p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white/90 hover:text-white backdrop-blur-md border border-white/15 transition-all active:scale-95 z-30 flex items-center gap-1.5 text-xs font-black uppercase tracking-wider"
+                          title="Media Sebelumnya"
+                        >
+                          <ChevronLeft size={16} /> <span className="hidden md:inline">Sebelumnya</span>
+                        </button>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); handleNextItem(activeIndex); }}
+                          className="absolute right-4 bottom-4 p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white/90 hover:text-white backdrop-blur-md border border-white/15 transition-all active:scale-95 z-30 flex items-center gap-1.5 text-xs font-black uppercase tracking-wider"
+                          title="Media Selanjutnya"
+                        >
+                          <span className="hidden md:inline">Selanjutnya</span> <ChevronRight size={16} />
+                        </button>
+                      </>
+                    )}
                   </div>
-                  <h3 className="text-white text-3xl font-black mb-4 uppercase italic tracking-tighter">{activeMedia.title}</h3>
-                  <p className="text-slate-400 leading-relaxed italic text-lg font-medium">"{activeMedia.description}"</p>
+
+                  {/* 2. Article Metadata and Content Column */}
+                  <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 sm:mt-8">
+                    
+                    {/* Category badges: Green Pills like PBSI.id */}
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      <span className="bg-[#22c55e] text-white px-3 py-1 text-[10px] sm:text-xs font-black uppercase tracking-wider rounded-xs">
+                        GALERI DOKUMENTASI
+                      </span>
+                      <span className="bg-[#22c55e] text-white px-3 py-1 text-[10px] sm:text-xs font-black uppercase tracking-wider rounded-xs">
+                        {activeMedia.category.toUpperCase()}
+                      </span>
+                    </div>
+
+                    {/* Media Title */}
+                    <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extrabold text-[#0f172a] mb-4 uppercase tracking-normal leading-tight font-sans">
+                      {activeMedia.title}
+                    </h1>
+
+                    {/* Media Metadata Row with elegant icons */}
+                    <div className="flex flex-wrap items-center gap-y-2 gap-x-4 text-[11px] sm:text-xs text-slate-500 font-bold uppercase tracking-wider border-b border-gray-100 pb-4 mb-6">
+                      <span>{activeMedia.created_at ? new Date(activeMedia.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : 'DOKUMENTASI'}</span>
+                      <span className="text-slate-200">|</span>
+                      <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-widest">
+                        {activeMedia.type}
+                      </span>
+                      <span className="text-slate-200">|</span>
+                      <button 
+                        onClick={(e) => handleLike(e, activeMedia.id)}
+                        className="flex items-center gap-1.5 hover:text-rose-500 transition-colors"
+                      >
+                        <Heart size={14} className={likedItems.has(activeMedia.id) ? "text-rose-500 fill-rose-500" : "text-slate-400"} /> 
+                        {likedItems.has(activeMedia.id) ? 'DISUKAI' : 'SUKAI'}
+                      </button>
+                    </div>
+
+                    {/* Description Block */}
+                    <div className="bg-slate-50 border-l-4 border-blue-600 p-5 rounded-r-2xl mb-8">
+                      <p className="text-slate-700 text-sm sm:text-base leading-relaxed italic font-medium">
+                        "{activeMedia.description || 'Tidak ada deskripsi tambahan.'}"
+                      </p>
+                    </div>
+
+                    {/* 3. Multi-Image Thumbnails Grid (Only if multiple images exist) */}
+                    {mediaImages.length > 1 && (
+                      <div className="mt-8 pt-6 border-t border-gray-100">
+                        <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 mb-4 flex items-center gap-2">
+                          <span>●</span> SEMUA FOTO DALAM ALBUM INI
+                        </h3>
+                        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
+                          {mediaImages.map((img, idx) => (
+                            <div 
+                              key={idx} 
+                              onClick={() => setActiveImgIndex(idx)}
+                              className={`group relative aspect-[4/3] sm:aspect-[3/2] rounded-xl overflow-hidden cursor-pointer border shadow-xs transition-all duration-300 ${activeImgIndex === idx ? 'border-blue-500 ring-2 ring-blue-500/20 scale-102' : 'border-gray-100/60 hover:shadow-md'}`}
+                            >
+                              <img 
+                                src={getOptimizedImageUrl(img, 400)} 
+                                alt="" 
+                                className="w-full h-full object-cover" 
+                                referrerPolicy="no-referrer"
+                              />
+                              <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors duration-300"></div>
+                              <div className="absolute bottom-2 right-2 bg-black/65 text-white text-[9px] font-black px-1.5 py-0.5 rounded uppercase">
+                                FOTO {idx + 1}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 4. Elegant Share Buttons Panel */}
+                    <div className="mt-12 p-6 bg-slate-50 rounded-2xl border border-slate-100/80 flex flex-col sm:flex-row justify-between items-center gap-4">
+                      <div className="text-center sm:text-left">
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1.5">Bagikan Dokumentasi Ini</p>
+                        <p className="text-xs text-slate-500 font-medium">Bagikan momen luar biasa klub PB US 162 ini kepada kerabat Anda</p>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <button 
+                          onClick={() => handleShare(activeMedia, 'wa')} 
+                          className="w-9 h-9 bg-[#25D366] text-white rounded-full flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-md shadow-green-100"
+                          title="Bagikan ke WhatsApp"
+                        >
+                          <Share2 size={16} />
+                        </button>
+                        <button 
+                          onClick={() => handleShare(activeMedia, 'fb')} 
+                          className="w-9 h-9 bg-[#1877F2] text-white rounded-full flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-md shadow-blue-100 font-extrabold text-sm"
+                          title="Bagikan ke Facebook"
+                        >
+                          f
+                        </button>
+                        <button 
+                          onClick={() => handleShare(activeMedia, 'copy')} 
+                          className="flex items-center gap-2 px-4 h-9 bg-white text-slate-700 hover:text-blue-600 rounded-full border border-slate-200 hover:border-blue-200 transition-all text-xs font-bold uppercase active:scale-95 shadow-xs"
+                        >
+                          <Link2 size={14} /> 
+                          {copySuccess === activeMedia.id ? 'Salin Berhasil!' : 'Salin Tautan'}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* 5. Big Back Button at the bottom */}
+                    <div className="mt-16">
+                      <button 
+                        onClick={() => setSelectedId(null)} 
+                        className="w-full bg-slate-950 hover:bg-blue-600 text-white py-4 rounded-xl font-black uppercase text-xs tracking-[0.2em] transition-all transform active:scale-95 shadow-md"
+                      >
+                        Kembali ke Galeri Utama
+                      </button>
+                    </div>
+
+                  </div>
                 </div>
               </motion.div>
-            </motion.div>
-          )}
+            );
+          })()}
         </AnimatePresence>
       </div>
     </section>

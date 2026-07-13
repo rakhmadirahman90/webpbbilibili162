@@ -1,11 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
+import { getOptimizedImageUrl } from '../utils/imageOptimizer';
 
 interface LazyImageProps {
   src: string;
   alt: string;
   className?: string;
   containerClassName?: string;
+  width?: number;
+  quality?: number;
   onClick?: (e: any) => void;
   onError?: (e: any) => void;
 }
@@ -15,12 +18,16 @@ export default function LazyImage({
   alt,
   className = '',
   containerClassName = '',
+  width,
+  quality = 80,
   onClick,
   onError,
 }: LazyImageProps) {
   const [isInView, setIsInView] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const optimizedSrc = getOptimizedImageUrl(src, width, quality);
 
   useEffect(() => {
     if (!('IntersectionObserver' in window)) {
@@ -63,7 +70,7 @@ export default function LazyImage({
       {/* Actual image loaded dynamically when in view */}
       {isInView && (
         <motion.img
-          src={src}
+          src={optimizedSrc}
           alt={alt}
           referrerPolicy="no-referrer"
           onLoad={() => setIsLoaded(true)}
