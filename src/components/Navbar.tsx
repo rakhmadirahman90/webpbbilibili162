@@ -284,99 +284,96 @@ export default function Navbar({ onNavigate }: NavbarProps) {
           .mobile-sub-link { text-align: left; font-size: 13.5px; font-weight: 500; color: #94a3b8; text-transform: none; padding: 6px 0; }
           @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
           @keyframes slideInFromTop { from { transform: translateY(-10px); } to { transform: translateY(0); } }
+          @keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
           .animate-in { animation: fadeIn 0.2s ease-out, slideInFromTop 0.2s ease-out; }
+          .animate-fade-in { animation: fadeIn 0.2s ease-out forwards; }
+          .animate-slide-in-right { animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         `}</style>
       </nav>
 
-      {/* FULL-SCREEN MOBILE OVERLAY MENU (Siblings to avoid backdrop-filter constraint) */}
+      {/* MOBILE MENU BACKDROP AND DRAWER (Siblings to avoid backdrop-filter constraint) */}
       {isMobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-[999999] bg-[#0b1224] flex flex-col p-6 overflow-y-auto animate-in fade-in duration-200">
+        <>
+          {/* Backdrop Overlay */}
+          <div 
+            className="md:hidden fixed inset-0 z-[999998] bg-slate-950/65 backdrop-blur-xs animate-fade-in cursor-pointer"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
           
-          {/* HEADER SECTION INSIDE OVERLAY */}
-          <div className="flex items-center justify-between pb-6 mb-4 border-b border-white/10">
-            {/* BRANDING / LOGO */}
-            <div className="flex items-center gap-3 cursor-pointer" onClick={() => handleNavClick('home')}>
-              <div className="relative w-12 h-12 flex items-center justify-center">
-                <div className="absolute inset-0 border border-white/20 rounded-full"></div>
-                <div className="w-11 h-11 rounded-full overflow-hidden bg-white flex items-center justify-center">
-                  <img src={branding.logo_url} alt="Logo" className="w-full h-full object-cover" />
-                </div>
-              </div>
-              <div className="flex flex-col justify-center">
-                <div className="flex items-center gap-1 leading-none mb-0.5">
-                  <span className="font-black text-xl tracking-tight uppercase italic text-white">{branding.brand_name_main}</span>
-                  <span className="font-black text-xl tracking-tight uppercase italic text-blue-500">{branding.brand_name_accent}</span>
-                </div>
-                <span className="text-[8.5px] text-slate-400 font-bold tracking-[0.25em] uppercase leading-none">Professional Badminton Club</span>
-              </div>
+          {/* Drawer Panel */}
+          <div className="md:hidden fixed top-[74px] right-4 w-[230px] max-h-[calc(100vh-90px)] z-[999999] bg-[#0b1224]/98 border border-white/10 rounded-2xl flex flex-col p-3.5 overflow-y-auto shadow-2xl animate-in fade-in slide-in-from-top-2 duration-200">
+            
+            {/* HEADER SECTION INSIDE OVERLAY */}
+            <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/10">
+              <span className="text-[9px] text-slate-400 font-bold tracking-[0.2em] uppercase">Menu Utama</span>
+              
+              {/* CLOSE BUTTON */}
+              <button 
+                onClick={() => setIsMobileMenuOpen(false)} 
+                className="text-white hover:text-slate-300 p-1 hover:bg-white/5 rounded-full transition-all active:scale-95"
+              >
+                <X size={16} />
+              </button>
             </div>
 
-            {/* CLOSE BUTTON */}
+            {/* MENU ITEMS */}
+            <div className="flex flex-col gap-2.5 mt-1">
+              {navData.filter(item => !item.parent_id).sort((a, b) => a.order_index - b.order_index).map((menu) => {
+                const subMenus = getSubMenus(menu.id);
+                const isDropdown = menu.type === 'dropdown' || subMenus.length > 0;
+                return (
+                  <React.Fragment key={menu.id}>
+                    <button 
+                      onClick={() => !isDropdown ? handleNavClick(menu.path) : (activeDropdown === menu.id ? setActiveDropdown(null) : setActiveDropdown(menu.id))}
+                      className="flex justify-between items-center w-full py-0.5 text-[12.5px] font-black italic tracking-widest uppercase text-slate-100 hover:text-blue-400 transition-colors duration-200 text-left"
+                    >
+                      <span>{menu.label}</span>
+                      {isDropdown && <ChevronDown size={12} className={`text-slate-400 transition-transform duration-300 ${activeDropdown === menu.id ? 'rotate-180 text-blue-400' : ''}`} />}
+                    </button>
+                    {isDropdown && activeDropdown === menu.id && (
+                      <div className="flex flex-col gap-1.5 pl-3 pr-1.5 ml-1 py-1 border-l-2 border-blue-600/20 animate-in fade-in duration-200">
+                        {subMenus.map((sub) => (
+                          <button 
+                            key={sub.id} 
+                            onClick={() => handleNavClick(menu.path, sub.path)} 
+                            className="text-left py-0.5 text-[11px] font-bold italic uppercase tracking-wider text-slate-400 hover:text-white transition-colors flex items-center justify-between"
+                          >
+                            <span className="flex items-center gap-2">
+                              {sub.path === 'quiz' && <BrainCircuit size={10} className="text-blue-400" />}
+                              {sub.label}
+                            </span>
+                            {sub.path === 'peringkat' && <Trophy size={10} className="text-yellow-500" />}
+                            {sub.path === 'dokumen-penting' && <FileText size={10} className="text-blue-500" />}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </div>
+            
+            {/* DIVIDER */}
+            <div className="h-[1px] bg-white/10 my-2"></div>
+            
+            {/* CONTACT & REGISTRATION LINKS */}
             <button 
-              onClick={() => setIsMobileMenuOpen(false)} 
-              className="text-white hover:text-slate-300 p-2 hover:bg-white/5 rounded-full transition-all active:scale-95"
+              onClick={() => handleNavClick('contact')}
+              className="flex items-center gap-2 text-left py-0.5 text-slate-100 font-black italic uppercase tracking-widest text-[12px] hover:text-blue-400 transition-colors mb-1.5"
             >
-              <X size={26} />
+              <MapPin size={12} className="text-blue-500" />
+              <span>Hubungi Kami</span>
+            </button>
+            
+            <button 
+              onClick={() => handleNavClick('register')}
+              className="w-full py-2 px-3 bg-blue-600 hover:bg-blue-500 rounded-xl text-white font-black uppercase italic text-[10px] tracking-[0.08em] flex items-center justify-center gap-1.5 transition-all active:scale-95 shadow-md shadow-blue-600/10"
+            >
+              <UserPlus size={11} />
+              <span>Pendaftaran Atlet</span>
             </button>
           </div>
-
-          {/* MENU ITEMS */}
-          <div className="flex flex-col gap-6 flex-1 mt-6">
-            {navData.filter(item => !item.parent_id).sort((a, b) => a.order_index - b.order_index).map((menu) => {
-              const subMenus = getSubMenus(menu.id);
-              const isDropdown = menu.type === 'dropdown' || subMenus.length > 0;
-              return (
-                <React.Fragment key={menu.id}>
-                  <button 
-                    onClick={() => !isDropdown ? handleNavClick(menu.path) : (activeDropdown === menu.id ? setActiveDropdown(null) : setActiveDropdown(menu.id))}
-                    className="flex justify-between items-center w-full py-1 text-[16px] font-black italic tracking-widest uppercase text-slate-100 hover:text-blue-400 transition-colors duration-200 text-left"
-                  >
-                    <span>{menu.label}</span>
-                    {isDropdown && <ChevronDown size={18} className={`text-slate-400 transition-transform duration-300 ${activeDropdown === menu.id ? 'rotate-180 text-blue-400' : ''}`} />}
-                  </button>
-                  {isDropdown && activeDropdown === menu.id && (
-                    <div className="flex flex-col gap-4 pl-4 pr-2 ml-2 py-3 border-l-2 border-blue-600/30 animate-in fade-in duration-200">
-                      {subMenus.map((sub) => (
-                        <button 
-                          key={sub.id} 
-                          onClick={() => handleNavClick(menu.path, sub.path)} 
-                          className="text-left py-1 text-[14px] font-bold italic uppercase tracking-wider text-slate-400 hover:text-white transition-colors flex items-center justify-between"
-                        >
-                          <span className="flex items-center gap-2.5">
-                            {sub.path === 'quiz' && <BrainCircuit size={15} className="text-blue-400" />}
-                            {sub.label}
-                          </span>
-                          {sub.path === 'peringkat' && <Trophy size={15} className="text-yellow-500" />}
-                          {sub.path === 'dokumen-penting' && <FileText size={15} className="text-blue-500" />}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </React.Fragment>
-              );
-            })}
-          </div>
-          
-          {/* DIVIDER */}
-          <div className="h-[1px] bg-white/10 my-6"></div>
-          
-          {/* CONTACT & REGISTRATION LINKS */}
-          <button 
-            onClick={() => handleNavClick('contact')}
-            className="flex items-center gap-3.5 text-left py-2 text-slate-100 font-black italic uppercase tracking-widest text-[16px] hover:text-blue-400 transition-colors mb-4"
-          >
-            <MapPin size={18} className="text-blue-500" />
-            <span>Hubungi Kami</span>
-          </button>
-          
-          <button 
-            onClick={() => handleNavClick('register')}
-            className="w-full py-4 px-6 bg-blue-600 hover:bg-blue-500 rounded-2xl text-white font-black uppercase italic text-sm tracking-[0.18em] flex items-center justify-center gap-3 transition-all active:scale-95 shadow-lg shadow-blue-600/20"
-          >
-            <UserPlus size={16} />
-            <span>Pendaftaran Atlet</span>
-          </button>
-        </div>
+        </>
       )}
     </>
   );

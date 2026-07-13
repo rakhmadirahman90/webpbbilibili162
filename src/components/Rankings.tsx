@@ -60,6 +60,64 @@ const WeeklySpotlight: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const fetchDynamicWeeklyTop = async () => {
+      try {
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        
+        const { data, error } = await supabase
+          .from('audit_poin')
+          .select('atlet_nama, perubahan')
+          .gte('created_at', sevenDaysAgo.toISOString());
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          const statsMap: Record<string, { total_gain: number; total_aktivitas: number }> = {};
+          
+          data.forEach(item => {
+            const name = item.atlet_nama;
+            if (!name) return;
+            
+            const gain = item.perubahan > 0 ? item.perubahan : 0;
+            
+            if (!statsMap[name]) {
+              statsMap[name] = { total_gain: 0, total_aktivitas: 0 };
+            }
+            statsMap[name].total_gain += gain;
+            statsMap[name].total_aktivitas += 1;
+          });
+
+          let topPlayerName = '';
+          let maxGain = 0;
+          let topStats = { total_gain: 0, total_aktivitas: 0 };
+
+          Object.entries(statsMap).forEach(([name, stats]) => {
+            if (stats.total_gain > maxGain) {
+              maxGain = stats.total_gain;
+              topPlayerName = name;
+              topStats = stats;
+            }
+          });
+
+          if (topPlayerName && maxGain > 0) {
+            setTopGainer({
+              atlet_nama: topPlayerName,
+              total_gain: topStats.total_gain,
+              total_aktivitas: topStats.total_aktivitas
+            });
+          } else {
+            setTopGainer(null);
+          }
+        } else {
+          setTopGainer(null);
+        }
+      } catch (err) {
+        console.error('Dynamic Weekly Spotlight calculation error:', err);
+        setTopGainer(null);
+      }
+    };
+
     const fetchWeeklyTop = async () => {
       try {
         const { data, error } = await supabase
@@ -69,13 +127,20 @@ const WeeklySpotlight: React.FC = () => {
           .maybeSingle();
 
         if (error) throw error;
-        if (data) setTopGainer(data);
+        if (data) {
+          setTopGainer(data);
+        } else {
+          await fetchDynamicWeeklyTop();
+        }
       } catch (err) {
-        console.error('Weekly Spotlight Error:', err);
+        // Fallback gracefully without throwing a console.error
+        console.warn('weekly_top_performers view not available, calculating dynamically...');
+        await fetchDynamicWeeklyTop();
       } finally {
         setLoading(false);
       }
     };
+
     fetchWeeklyTop();
   }, []);
 
