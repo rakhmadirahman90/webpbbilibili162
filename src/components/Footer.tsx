@@ -82,41 +82,41 @@ export default function Footer() {
   };
 
   return (
-    <footer className="bg-slate-900 text-white pt-16 pb-8 relative z-10">
+    <footer className="bg-slate-900 text-white pt-10 pb-5 relative z-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid md:grid-cols-4 gap-8 mb-12">
+        <div className="grid md:grid-cols-4 gap-6 mb-6">
           
           {/* Brand & Deskripsi */}
           <div className="animate-in fade-in duration-700">
-            <div className="flex items-center space-x-3 mb-4">
+            <div className="flex items-center space-x-3 mb-3">
               {/* FIXED LOGO: Tetap bulat presisi dengan aspect-square dan object-cover */}
-              <div className="w-14 h-14 shrink-0 overflow-hidden rounded-full border-2 border-slate-700 bg-white">
+              <div className="w-12 h-12 shrink-0 overflow-hidden rounded-full border-2 border-slate-700 bg-white">
                 <img
                   src={config.logo_url || "/photo_2026-02-03_00-32-07.jpg"}
                   alt="Logo PB US 162"
                   className="w-full h-full object-cover" 
                 />
               </div>
-              <h3 className="text-xl font-bold italic tracking-tighter uppercase leading-tight">
+              <h3 className="text-lg font-bold italic tracking-tighter uppercase leading-tight">
                 {config.site_name.replace(config.site_name_highlight, '')}
                 <span className="text-blue-500">{config.site_name_highlight}</span>
               </h3>
             </div>
-            <p className="text-gray-400 text-sm leading-relaxed">
+            <p className="text-gray-400 text-xs leading-relaxed">
               {config.description}
             </p>
           </div>
 
           {/* Navigasi Dinamis - Terhubung dengan Admin */}
           <div>
-            <h4 className="text-lg font-bold mb-6 text-blue-400 uppercase tracking-widest text-xs">Navigasi</h4>
-            <ul className="space-y-3">
+            <h4 className="font-bold mb-3 text-blue-400 uppercase tracking-widest text-[11px] italic">Navigasi</h4>
+            <ul className="space-y-1.5">
               {config.navigation.map((item, idx) => (
                 <li key={idx}>
                   <a 
                     href={`#${item.id}`}
                     onClick={(e) => scrollToSection(e, item.id)}
-                    className="text-gray-400 hover:text-white hover:translate-x-2 transition-all duration-300 text-sm inline-block cursor-pointer font-medium"
+                    className="text-gray-400 hover:text-white hover:translate-x-1.5 transition-all duration-300 text-xs inline-block cursor-pointer font-medium"
                   >
                     {item.name}
                   </a>
@@ -127,23 +127,23 @@ export default function Footer() {
 
           {/* Kontak Dinamis */}
           <div>
-            <h4 className="text-lg font-bold mb-6 text-blue-400 uppercase tracking-widest text-xs">Hubungi Kami</h4>
-            <ul className="space-y-4">
-              <li className="flex items-start space-x-3 group">
-                <MapPin size={18} className="text-blue-500 mt-1 shrink-0 group-hover:scale-110 transition-transform" />
-                <span className="text-gray-400 text-sm">
+            <h4 className="font-bold mb-3 text-blue-400 uppercase tracking-widest text-[11px] italic">Hubungi Kami</h4>
+            <ul className="space-y-2.5">
+              <li className="flex items-start space-x-2.5 group">
+                <MapPin size={15} className="text-blue-500 mt-0.5 shrink-0 group-hover:scale-110 transition-transform" />
+                <span className="text-gray-400 text-xs">
                   {config.address}
                 </span>
               </li>
-              <li className="flex items-center space-x-3 group">
-                <Phone size={18} className="text-blue-500 shrink-0 group-hover:scale-110 transition-transform" />
-                <a href={`tel:${config.phone.replace(/\s+/g, '')}`} className="text-gray-400 hover:text-white text-sm transition-colors">
+              <li className="flex items-center space-x-2.5 group">
+                <Phone size={15} className="text-blue-500 shrink-0 group-hover:scale-110 transition-transform" />
+                <a href={`tel:${config.phone.replace(/\s+/g, '')}`} className="text-gray-400 hover:text-white text-xs transition-colors">
                   {config.phone}
                 </a>
               </li>
-              <li className="flex items-center space-x-3 group">
-                <Mail size={18} className="text-blue-500 shrink-0 group-hover:scale-110 transition-transform" />
-                <a href={`mailto:${config.email}`} className="text-gray-400 hover:text-white text-sm transition-colors">
+              <li className="flex items-center space-x-2.5 group">
+                <Mail size={15} className="text-blue-500 shrink-0 group-hover:scale-110 transition-transform" />
+                <a href={`mailto:${config.email}`} className="text-gray-400 hover:text-white text-xs transition-colors">
                   {config.email}
                 </a>
               </li>
@@ -152,8 +152,8 @@ export default function Footer() {
 
           {/* Social Media Dinamis */}
           <div>
-            <h4 className="text-lg font-bold mb-6 text-blue-400 uppercase tracking-widest text-xs">Ikuti Kami</h4>
-            <div className="flex flex-wrap gap-4">
+            <h4 className="font-bold mb-3 text-blue-400 uppercase tracking-widest text-[11px] italic">Ikuti Kami</h4>
+            <div className="flex flex-wrap gap-2.5">
               {[
                 { Icon: Facebook, link: config.socials.facebook },
                 { Icon: Instagram, link: config.socials.instagram },
@@ -166,17 +166,17 @@ export default function Footer() {
                     href={social.link}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="bg-slate-800 hover:bg-blue-600 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 shadow-lg hover:-translate-y-1"
+                    className="bg-slate-800 hover:bg-blue-600 w-8.5 h-8.5 rounded-full flex items-center justify-center transition-all duration-300 shadow-lg hover:-translate-y-1"
                   >
-                    <social.Icon size={18} />
+                    <social.Icon size={15} />
                   </a>
                 )
               ))}
             </div>
             
             {loading && (
-              <div className="mt-4 flex items-center gap-2 text-[10px] text-slate-500 font-bold uppercase tracking-widest">
-                <Loader2 size={10} className="animate-spin" /> Syncing Data...
+              <div className="mt-3 flex items-center gap-2 text-[9px] text-slate-500 font-bold uppercase tracking-widest">
+                <Loader2 size={9} className="animate-spin" /> Syncing...
               </div>
             )}
           </div>
@@ -184,7 +184,7 @@ export default function Footer() {
         </div>
 
         {/* Bottom Footer Dinamis */}
-        <div className="border-t border-slate-800 pt-8 text-center">
+        <div className="border-t border-slate-800 pt-4 text-center">
           <p className="text-gray-500 text-[10px] font-bold uppercase tracking-[0.2em]">
             {config.copyright}
           </p>

@@ -239,7 +239,7 @@ export default function App() {
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.4 }}
-                  className="min-h-screen w-full flex flex-col items-center bg-[#0b0e14] pt-24 pb-32"
+                  className="min-h-screen w-full flex flex-col items-center bg-[#0b0e14] pt-24 pb-14"
                 >
                   <div className="w-full h-full max-w-7xl px-4 md:px-8 mx-auto">
                     {/* Render Komponen dengan Props masing-masing */}
@@ -261,7 +261,7 @@ export default function App() {
             </AnimatePresence>
             
             {/* Footer Custom */}
-            <footer className="w-full py-8 text-center text-slate-500 text-sm border-t border-white/5 bg-[#0b0e14]">
+            <footer className="w-full py-3 text-center text-slate-500 text-[10px] font-black uppercase tracking-[0.25em] border-t border-white/5 bg-[#0b0e14]">
               <p>© 2026 PB BILIBILI 162</p>
             </footer>
           </div>

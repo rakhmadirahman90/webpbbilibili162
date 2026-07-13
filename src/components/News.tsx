@@ -224,13 +224,13 @@ export default function News() {
   }
 
   return (
-    <section id="news" className="py-20 bg-gray-50">
+    <section id="news" className="py-12 bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <h2 className="text-4xl font-extrabold text-gray-900 mb-4 italic uppercase tracking-tighter">
+        <div className="text-center mb-8">
+          <h2 className="text-3xl font-extrabold text-gray-900 mb-2 italic uppercase tracking-tighter">
             Berita <span className="text-blue-600">Terkini</span>
           </h2>
-          <p className="text-xl text-gray-600">Update terbaru tentang prestasi dan kegiatan klub PB US 162</p>
+          <p className="text-sm text-gray-500 font-medium">Update terbaru tentang prestasi dan kegiatan klub PB US 162</p>
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -291,7 +291,7 @@ export default function News() {
         </div>
 
         {beritaList.length > 4 && (
-          <div className="text-center mt-12">
+          <div className="text-center mt-6">
             <button 
               onClick={() => setShowAll(!showAll)}
               className="inline-flex items-center gap-2 bg-gray-900 hover:bg-blue-600 text-white px-8 py-3 rounded-xl font-bold transition-all shadow-lg active:scale-95 uppercase text-xs tracking-widest"
