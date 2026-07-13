@@ -207,35 +207,35 @@ export default function Navbar({ onNavigate }: NavbarProps) {
 
   return (
     <>
-      <nav className="fixed top-0 w-full bg-slate-900/95 backdrop-blur-md text-white border-b border-white/10 shadow-2xl transition-all duration-300 overflow-visible h-14 md:h-16 z-[10000]">
-        <div className="max-w-7xl mx-auto px-6 h-14 md:h-16 flex justify-between items-center overflow-visible">
+      <nav className="fixed top-0 w-full bg-slate-900/95 backdrop-blur-md text-white border-b border-white/10 shadow-2xl transition-all duration-300 overflow-visible h-14 lg:h-16 z-[10000]">
+        <div className="max-w-7xl mx-auto px-6 h-14 lg:h-16 flex justify-between items-center overflow-visible">
           
           {/* LEFT WING: LOGO, BRAND, & REAL-TIME CLOCK */}
-          <div className="flex items-center gap-2 sm:gap-4 overflow-visible">
+          <div className="flex items-center gap-2 sm:gap-4 overflow-visible shrink-0">
             {/* LOGO */}
-            <div className="flex items-center gap-1.5 sm:gap-2.5 cursor-pointer group" onClick={() => handleNavClick('home')}>
-              <div className="relative w-8 h-8 md:w-10 md:h-10 flex items-center justify-center shrink-0">
+            <div className="flex items-center gap-1.5 sm:gap-2.5 cursor-pointer group shrink-0" onClick={() => handleNavClick('home')}>
+              <div className="relative w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center shrink-0">
                 <div className="absolute inset-0 border border-white/30 rounded-full group-hover:border-blue-500/50 transition-colors duration-300"></div>
-                <div className="w-7 h-7 md:w-9 md:h-9 rounded-full overflow-hidden bg-white flex items-center justify-center transition-transform duration-500 group-hover:scale-105 shadow-inner">
+                <div className="w-7 h-7 lg:w-9 lg:h-9 rounded-full overflow-hidden bg-white flex items-center justify-center transition-transform duration-500 group-hover:scale-105 shadow-inner">
                   <img src={branding.logo_url} alt="Logo" className="w-full h-full object-cover" />
                 </div>
               </div>
-              <div className="flex flex-col justify-center">
-                <div className="flex items-center gap-1 sm:gap-1.5 leading-none mb-0.5 sm:mb-1">
-                  <span className="font-black text-sm sm:text-lg md:text-xl tracking-tighter uppercase italic text-white leading-none">{branding.brand_name_main}</span>
-                  <span className="font-black text-sm sm:text-lg md:text-xl tracking-tighter uppercase italic text-blue-500 leading-none">{branding.brand_name_accent}</span>
+              <div className="flex flex-col justify-center shrink-0">
+                <div className="flex items-center gap-1 sm:gap-1.5 leading-none mb-0.5 sm:mb-1 whitespace-nowrap">
+                  <span className="font-black text-sm sm:text-lg lg:text-xl tracking-tighter uppercase italic text-white leading-none whitespace-nowrap">{branding.brand_name_main}</span>
+                  <span className="font-black text-sm sm:text-lg lg:text-xl tracking-tighter uppercase italic text-blue-500 leading-none whitespace-nowrap">{branding.brand_name_accent}</span>
                 </div>
-                <span className="text-[5.5px] sm:text-[7.5px] md:text-[8px] text-slate-400 font-bold tracking-[0.15em] sm:tracking-[0.25em] uppercase leading-none">Professional Club</span>
+                <span className="text-[5.5px] sm:text-[7.5px] lg:text-[8px] text-slate-400 font-bold tracking-[0.15em] sm:tracking-[0.25em] uppercase leading-none whitespace-nowrap">Professional Club</span>
               </div>
             </div>
 
-            {/* REAL-TIME DIGITAL CLOCK WITH NEON STATUS DOT */}
-            <div className="flex items-center gap-1.5 px-2 py-1 sm:px-2.5 sm:py-1.5 bg-[#151d30]/60 border border-white/10 rounded-full backdrop-blur-md shadow-inner shrink-0 select-none">
+            {/* REAL-TIME DIGITAL CLOCK WITH NEON STATUS DOT (Responsive: visible on mobile, hidden on lg, visible on xl) */}
+            <div className="flex xl:flex lg:hidden items-center gap-1.5 px-2 py-1 sm:px-2.5 sm:py-1.5 bg-[#151d30]/60 border border-white/10 rounded-full backdrop-blur-md shadow-inner shrink-0 select-none">
               <span className="relative flex h-1.5 w-1.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
               </span>
-              <div className="flex items-center gap-1 sm:gap-1.5 text-[8px] sm:text-[10px] md:text-xs font-mono font-bold tracking-wider text-slate-300 leading-none">
+              <div className="flex items-center gap-1 sm:gap-1.5 text-[8px] sm:text-[10px] lg:text-xs font-mono font-bold tracking-wider text-slate-300 leading-none">
                 <span className="hidden sm:inline opacity-80">{dt.dayName}, {dt.dateStr}</span>
                 <span className="sm:hidden opacity-80">{dt.shortDate}</span>
                 <span className="opacity-40">•</span>
@@ -244,8 +244,8 @@ export default function Navbar({ onNavigate }: NavbarProps) {
             </div>
           </div>
 
-          {/* DESKTOP NAV */}
-          <div className="hidden md:flex items-center gap-8 overflow-visible">
+          {/* DESKTOP NAV (Optimized gaps for different screen sizes) */}
+          <div className="hidden lg:flex items-center lg:gap-4 xl:gap-8 overflow-visible">
             {navData.filter(item => !item.parent_id).sort((a, b) => a.order_index - b.order_index).map((menu, index, arr) => {
               const subMenus = getSubMenus(menu.id);
               const isDropdown = menu.type === 'dropdown' || subMenus.length > 0;
@@ -253,7 +253,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
               return (
                 <div 
                   key={menu.id} 
-                  className="relative h-14 md:h-16 flex items-center overflow-visible"
+                  className="relative h-14 lg:h-16 flex items-center overflow-visible"
                   onMouseEnter={() => isDropdown && setActiveDropdown(menu.id)}
                   onMouseLeave={() => setActiveDropdown(null)}
                 >
@@ -270,7 +270,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
                     <div className={`dropdown-container animate-in fade-in slide-in-from-top-2 duration-200 ${isLastFew ? 'right-0' : 'left-0'}`}>
                       <div className="dropdown-content">
                         {subMenus.map((sub) => (
-                          <button 
+                           <button 
                             key={sub.id} 
                             onClick={() => handleNavClick(menu.path, sub.path)} 
                             className="dropdown-item flex items-center justify-between"
@@ -291,9 +291,9 @@ export default function Navbar({ onNavigate }: NavbarProps) {
             })}
 
             {/* KONTAK */}
-            <div className="relative h-14 md:h-16 flex items-center overflow-visible" onMouseEnter={() => setActiveDropdown('contact-action')} onMouseLeave={() => setActiveDropdown(null)}>
-              <button className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-full text-[12px] font-semibold uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-lg shadow-blue-500/20 hover:-translate-y-0.5 active:scale-95">
-                <MapPin size={13} /> Kontak <ChevronDown size={11} className={activeDropdown === 'contact-action' ? 'rotate-180' : ''} />
+            <div className="relative h-14 lg:h-16 flex items-center overflow-visible" onMouseEnter={() => setActiveDropdown('contact-action')} onMouseLeave={() => setActiveDropdown(null)}>
+              <button className="px-3 py-1.5 lg:px-4 lg:py-2 bg-blue-600 hover:bg-blue-500 rounded-full text-[10px] lg:text-[11px] xl:text-[12px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-lg shadow-blue-500/20 hover:-translate-y-0.5 active:scale-95 cursor-pointer">
+                <MapPin size={12} /> <span className="whitespace-nowrap">Kontak</span> <ChevronDown size={11} className={activeDropdown === 'contact-action' ? 'rotate-180' : ''} />
               </button>
               {activeDropdown === 'contact-action' && (
                 <div className="dropdown-container right-0 animate-in fade-in slide-in-from-top-2 duration-200">
@@ -312,13 +312,19 @@ export default function Navbar({ onNavigate }: NavbarProps) {
           </div>
 
           {/* MOBILE MENU TRIGGER */}
-          <button className="md:hidden p-2 text-slate-300 hover:text-white transition-colors" onClick={() => setIsMobileMenuOpen(true)}>
+          <button className="lg:hidden p-2 text-slate-300 hover:text-white transition-colors" onClick={() => setIsMobileMenuOpen(true)}>
             <Menu size={28} />
           </button>
         </div>
 
         <style>{`
-          .nav-link { font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #cbd5e1; cursor: pointer; position: relative; transition: all 0.25s ease; }
+          .nav-link { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #94a3b8; cursor: pointer; position: relative; transition: all 0.25s ease; }
+          @media (min-width: 1024px) {
+            .nav-link { font-size: 12.5px; }
+          }
+          @media (min-width: 1280px) {
+            .nav-link { font-size: 13.5px; }
+          }
           .nav-link:hover { color: #ffffff; }
           .nav-link::after { content: ''; position: absolute; bottom: -6px; left: 50%; width: 0; height: 2px; background: #3b82f6; transition: all 0.25s ease; transform: translateX(-50%); }
           .nav-link:hover::after { width: 100%; }
@@ -343,12 +349,12 @@ export default function Navbar({ onNavigate }: NavbarProps) {
         <>
           {/* Backdrop Overlay */}
           <div 
-            className="md:hidden fixed inset-0 z-[999998] bg-black/60 backdrop-blur-xs animate-fade-in cursor-pointer"
+            className="lg:hidden fixed inset-0 z-[999998] bg-black/60 backdrop-blur-xs animate-fade-in cursor-pointer"
             onClick={() => setIsMobileMenuOpen(false)}
           />
           
           {/* Left-aligned Drawer Panel */}
-          <div className="md:hidden fixed inset-y-0 left-0 w-[300px] max-w-[85vw] h-full z-[999999] bg-[#0b1224] border-r border-white/10 flex flex-col overflow-hidden shadow-2xl animate-slide-in-left">
+          <div className="lg:hidden fixed inset-y-0 left-0 w-[300px] max-w-[85vw] h-full z-[999999] bg-[#0b1224] border-r border-white/10 flex flex-col overflow-hidden shadow-2xl animate-slide-in-left">
             
             {/* LOGO & BRANDING HEADER SECTION */}
             <div className="flex flex-col items-center justify-center pt-8 pb-6 px-4 relative border-b border-white/10 shrink-0 bg-[#070d1a]/50">
