@@ -514,7 +514,8 @@ const totalSeniorPutri = registrants.filter(r =>
 
         {/* TABLE SECTION (RESPONSIVE NO SCROLL ON DESKTOP) */}
         <section className="bg-white rounded-[2rem] border border-slate-100 shadow-xl overflow-hidden mb-6">
-          <div className="overflow-x-auto">
+          {/* DESKTOP TABLE VIEW */}
+          <div className="hidden lg:block overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="bg-slate-900 text-white whitespace-nowrap">
@@ -620,6 +621,86 @@ const totalSeniorPutri = registrants.filter(r =>
                 ))}
               </tbody>
             </table>
+          </div>
+
+          {/* MOBILE CARD VIEW */}
+          <div className="lg:hidden divide-y divide-slate-100">
+            {loading && registrants.length === 0 ? (
+              <div className="py-16 text-center text-slate-400 font-bold uppercase text-[10px] tracking-widest">
+                Memuat Database Atlet...
+              </div>
+            ) : currentItems.length === 0 ? (
+              <div className="py-16 text-center text-slate-400 font-bold uppercase text-[10px] tracking-widest">
+                Tidak ada data atlet ditemukan
+              </div>
+            ) : (
+              currentItems.map((item, index) => (
+                <div key={item.id} className="p-5 flex flex-col gap-4 hover:bg-blue-50/20 transition-all duration-200">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-1 rounded-md">
+                      #{String((currentPage - 1) * itemsPerPage + index + 1).padStart(2, '0')}
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${item.jenis_kelamin === 'Putra' ? 'bg-blue-100 text-blue-700' : 'bg-rose-100 text-rose-700'}`}>
+                        {item.jenis_kelamin || '-'}
+                      </span>
+                      <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${item.kategori_atlet === 'Muda' ? 'bg-indigo-100 text-indigo-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                        {item.kategori_atlet || 'MUDA'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <div 
+                      onClick={() => item.foto_url && setPreviewImage(item.foto_url)}
+                      className="w-14 h-14 rounded-xl bg-slate-200 border border-slate-100 shadow-sm overflow-hidden flex-shrink-0 cursor-zoom-in"
+                    >
+                      {item.foto_url ? (
+                        <img src={item.foto_url} className="w-full h-full object-cover object-top" alt={item.nama} />
+                      ) : (
+                        <User className="m-auto mt-2 text-slate-400" size={28} />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-black text-slate-800 text-sm uppercase leading-tight truncate">{item.nama || 'No Name'}</h4>
+                      <p className="text-[10px] font-bold text-slate-500 mt-0.5 uppercase tracking-wider">{item.kategori || '-'}</p>
+                      <div className="inline-flex items-center gap-1 mt-1 text-slate-400 uppercase text-[9px] font-bold">
+                        <MapPin size={10} className="text-rose-500 shrink-0" /> {item.domisili || '-'}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-1.5 pt-2 border-t border-slate-100 text-[10px]">
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-400 font-bold uppercase tracking-wider">Kontak WhatsApp</span>
+                      <a href={`https://wa.me/${(item.whatsapp || '').replace(/\D/g, '')}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-bold text-slate-600 hover:text-green-600 transition-colors">
+                        <Phone size={10} className="text-green-500" /> {item.whatsapp || '-'}
+                      </a>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-400 font-bold uppercase tracking-wider">Tanggal Daftar</span>
+                      <span className="text-slate-600 font-bold">{new Date(item.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                    </div>
+                  </div>
+
+                  {/* ACTION BUTTONS selalu accessible di mobile */}
+                  <div className="flex justify-end gap-2 pt-3 border-t border-dashed border-slate-100">
+                    <button 
+                      onClick={() => { setEditingItem(item); setIsEditModalOpen(true); }} 
+                      className="flex-1 max-w-[120px] py-2 bg-blue-50 hover:bg-blue-600 text-blue-600 hover:text-white rounded-xl transition-all font-bold text-[10px] uppercase tracking-widest border border-blue-100 flex items-center justify-center gap-1.5"
+                    >
+                      <Edit3 size={12} /> Edit
+                    </button>
+                    <button 
+                      onClick={() => handleDelete(item.id, item.nama, item.foto_url)} 
+                      className="flex-1 max-w-[120px] py-2 bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white rounded-xl transition-all font-bold text-[10px] uppercase tracking-widest border border-rose-100 flex items-center justify-center gap-1.5"
+                    >
+                      <Trash2 size={12} /> Hapus
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </section>
 

@@ -396,11 +396,11 @@ export default function ManajemenAtlet() {
   const totalPages = Math.ceil(filteredAtlets.length / itemsPerPage);
 
   return (
-    <div className="h-screen flex flex-col bg-[#f8fafc] font-sans relative overflow-hidden">
+    <div className="min-h-screen lg:h-screen flex flex-col bg-[#f8fafc] font-sans relative overflow-y-auto lg:overflow-hidden pb-16 lg:pb-0">
       {/* HEADER SECTION */}
       <div className="flex-shrink-0 p-4 md:p-8 pb-4">
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-end gap-4 mb-8">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-8">
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <Sparkles size={18} className="text-blue-600 animate-pulse" />
@@ -413,10 +413,10 @@ export default function ManajemenAtlet() {
               </h1>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full md:w-auto">
               <button
                 onClick={() => setIsAddModalOpen(true)}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-[1.5rem] shadow-xl shadow-blue-200 flex items-center gap-3 transition-all active:scale-95 group"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-[1.5rem] shadow-xl shadow-blue-200 flex items-center justify-center gap-3 transition-all active:scale-95 group w-full sm:w-auto"
               >
                 <Plus
                   size={20}
@@ -427,7 +427,7 @@ export default function ManajemenAtlet() {
                 </span>
               </button>
 
-              <div className="bg-white px-8 py-4 rounded-[2rem] shadow-xl shadow-blue-900/5 border border-slate-100 flex items-center gap-6">
+              <div className="bg-white px-8 py-4 rounded-[2rem] shadow-xl shadow-blue-900/5 border border-slate-100 flex items-center justify-around sm:justify-center gap-6">
                 <div className="text-center">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
                     Total
@@ -465,7 +465,7 @@ export default function ManajemenAtlet() {
       </div>
 
       {/* MAIN LIST SECTION */}
-      <div className="flex-1 overflow-y-auto px-4 md:px-8 pb-32">
+      <div className="flex-1 lg:overflow-y-auto px-4 md:px-8 pb-32">
         <div className="max-w-7xl mx-auto pt-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {loading ? (
@@ -539,7 +539,7 @@ export default function ManajemenAtlet() {
       </div>
 
       {/* FOOTER PAGINATION */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-t border-slate-100 p-4 z-50">
+      <div className="fixed lg:absolute bottom-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-t border-slate-100 p-4 z-50">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest hidden md:block">
             Halaman {currentPage} dari {totalPages}
@@ -595,7 +595,7 @@ export default function ManajemenAtlet() {
       {/* MODAL TAMBAH ATLET BARU */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/95 backdrop-blur-xl overflow-y-auto">
-          <div className="bg-white w-full max-w-4xl rounded-[3rem] shadow-2xl relative flex flex-col md:flex-row overflow-hidden">
+          <div className="bg-white w-full max-w-4xl rounded-[3rem] shadow-2xl relative flex flex-col md:flex-row overflow-y-auto max-h-[90vh] lg:max-h-none lg:overflow-visible">
             <button
               onClick={() => setIsAddModalOpen(false)}
               className="absolute top-6 right-6 z-10 p-3 bg-slate-100 rounded-full hover:bg-red-500 hover:text-white transition-all"
@@ -785,7 +785,7 @@ export default function ManajemenAtlet() {
       {/* MODAL DETAIL */}
       {selectedAtlet && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-xl animate-in fade-in duration-500">
-          <div className="relative w-full max-w-5xl bg-[#0a0a0a] rounded-[3rem] overflow-hidden flex flex-col md:flex-row shadow-2xl border border-white/5">
+          <div className="relative w-full max-w-5xl bg-[#0a0a0a] rounded-[3rem] overflow-y-auto lg:overflow-hidden max-h-[90vh] lg:max-h-none flex flex-col md:flex-row shadow-2xl border border-white/5">
             <button
               onClick={() => setSelectedAtlet(null)}
               className="absolute top-8 right-8 z-50 p-3 bg-white/5 hover:bg-red-500 text-white rounded-full transition-all"
