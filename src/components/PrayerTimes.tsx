@@ -181,6 +181,25 @@ export default function PrayerTimes() {
     };
   }, [selectedCity, detectedCoords]);
 
+  // Synchronize timings with localStorage and dispatch custom event for App.tsx
+  useEffect(() => {
+    if (timings) {
+      try {
+        localStorage.setItem('cached_prayer_timings', JSON.stringify(timings));
+        localStorage.setItem('cached_prayer_city', JSON.stringify(selectedCity));
+      } catch (e) {
+        console.warn('Failed to save prayer times to localStorage', e);
+      }
+      
+      window.dispatchEvent(new CustomEvent('prayer-times-loaded', {
+        detail: {
+          timings,
+          cityName: selectedCity.name
+        }
+      }));
+    }
+  }, [timings, selectedCity]);
+
   // Determine Upcoming/Next Prayer
   useEffect(() => {
     if (!timings) return;

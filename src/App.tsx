@@ -134,6 +134,220 @@ export default function App() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isMarsPlaying, setIsMarsPlaying] = useState(false);
 
+  // --- REAL-TIME PRAYER NOTIFICATION SYSTEM ---
+  const [prayerTimings, setPrayerTimings] = useState<any>(() => {
+    try {
+      const cached = localStorage.getItem('cached_prayer_timings');
+      return cached ? JSON.parse(cached) : null;
+    } catch (e) {
+      return null;
+    }
+  });
+
+  const [prayerCity, setPrayerCity] = useState<string>(() => {
+    try {
+      const cached = localStorage.getItem('cached_prayer_city');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        return parsed.name || 'Parepare';
+      }
+    } catch (e) {}
+    return 'Parepare';
+  });
+
+  const [notifications, setNotifications] = useState<Array<{
+    id: string;
+    title: string;
+    message: string;
+    type: 'warning' | 'now';
+    time: string;
+    prayerName: string;
+  }>>([]);
+
+  const [triggeredKeys, setTriggeredKeys] = useState<string[]>(() => {
+    try {
+      const cached = sessionStorage.getItem('triggered_prayer_notifications');
+      return cached ? JSON.parse(cached) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  const dismissNotification = (id: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  };
+
+  // Keep triggeredKeys in sessionStorage to prevent duplicate triggers in the same tab session
+  useEffect(() => {
+    sessionStorage.setItem('triggered_prayer_notifications', JSON.stringify(triggeredKeys));
+  }, [triggeredKeys]);
+
+  // Listen to Custom Events from PrayerTimes
+  useEffect(() => {
+    const handlePrayerTimesLoaded = (event: any) => {
+      const { timings, cityName } = event.detail;
+      if (timings) setPrayerTimings(timings);
+      if (cityName) setPrayerCity(cityName);
+    };
+
+    window.addEventListener('prayer-times-loaded', handlePrayerTimesLoaded);
+    return () => {
+      window.removeEventListener('prayer-times-loaded', handlePrayerTimesLoaded);
+    };
+  }, []);
+
+  // Interval checker for prayer times
+  useEffect(() => {
+    if (!prayerTimings) return;
+
+    const playNotificationChime = () => {
+      try {
+        const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+        if (!AudioContext) return;
+        const ctx = new AudioContext();
+        
+        // G5 tone
+        const osc1 = ctx.createOscillator();
+        const gain1 = ctx.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(783.99, ctx.currentTime);
+        gain1.gain.setValueAtTime(0.12, ctx.currentTime);
+        gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+        osc1.connect(gain1);
+        gain1.connect(ctx.destination);
+        osc1.start();
+        osc1.stop(ctx.currentTime + 0.6);
+        
+        // E5 tone after 150ms
+        setTimeout(() => {
+          const osc2 = ctx.createOscillator();
+          const gain2 = ctx.createGain();
+          osc2.type = 'sine';
+          osc2.frequency.setValueAtTime(659.25, ctx.currentTime);
+          gain2.gain.setValueAtTime(0.12, ctx.currentTime);
+          gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.0);
+          osc2.connect(gain2);
+          gain2.connect(ctx.destination);
+          osc2.start();
+          osc2.stop(ctx.currentTime + 1.0);
+        }, 180);
+      } catch (err) {
+        console.error("Chime failed", err);
+      }
+    };
+
+    const triggerVibrate = (type: 'warning' | 'now') => {
+      if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+        try {
+          if (type === 'warning') {
+            // Pattern for 10-minute warning: 2 distinct pulses (150ms vibration, 100ms gap, 150ms vibration)
+            navigator.vibrate([150, 100, 150]);
+          } else {
+            // Pattern for exact time: 3 powerful pulsed vibrations (300ms vibration, 150ms gap, etc.)
+            navigator.vibrate([300, 150, 300, 150, 300]);
+          }
+        } catch (e) {
+          console.warn('Vibration failed', e);
+        }
+      }
+    };
+
+    const checkPrayerTimes = () => {
+      const now = new Date();
+      const currentHours = now.getHours();
+      const currentMinutes = now.getMinutes();
+      const currentTotalMinutes = currentHours * 60 + currentMinutes;
+
+      // Date string for unique notification ID
+      const todayString = now.getFullYear() + '-' + (now.getMonth() + 1) + '-' + now.getDate();
+
+      const activePrayers = [
+        { key: 'Imsak', time: prayerTimings.Imsak, label: 'Imsak' },
+        { key: 'Fajr', time: prayerTimings.Fajr, label: 'Subuh' },
+        { key: 'Dhuhr', time: prayerTimings.Dhuhr, label: 'Dzuhur' },
+        { key: 'Asr', time: prayerTimings.Asr, label: 'Ashar' },
+        { key: 'Maghrib', time: prayerTimings.Maghrib, label: 'Maghrib' },
+        { key: 'Isha', time: prayerTimings.Isha, label: 'Isya' },
+      ];
+
+      activePrayers.forEach((prayer) => {
+        if (!prayer.time) return;
+
+        const [pStrHours, pStrMinutes] = prayer.time.split(':');
+        const pHours = parseInt(pStrHours, 10);
+        const pMinutes = parseInt(pStrMinutes, 10);
+        const prayerTotalMinutes = pHours * 60 + pMinutes;
+
+        const diffMinutes = prayerTotalMinutes - currentTotalMinutes;
+        const cleanCityName = prayerCity.replace(/^📍\s*/, '');
+
+        // 1. Check 10-minutes-before warning
+        if (diffMinutes === 10) {
+          const warnKey = `${prayer.key}-warning-${todayString}`;
+          if (!triggeredKeys.includes(warnKey)) {
+            setTriggeredKeys(prev => [...prev, warnKey]);
+            
+            const newNotif = {
+              id: warnKey,
+              title: `🕌 Pengingat Sholat ${prayer.label}`,
+              message: `10 menit lagi memasuki waktu sholat ${prayer.label} (${prayer.time}) untuk wilayah ${cleanCityName}. Bersiaplah.`,
+              type: 'warning' as const,
+              time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+              prayerName: prayer.label
+            };
+            
+            setNotifications(prev => {
+              if (prev.some(n => n.id === warnKey)) return prev;
+              return [newNotif, ...prev];
+            });
+
+            playNotificationChime();
+            triggerVibrate('warning');
+          }
+        }
+
+        // 2. Check exact-time alert
+        if (diffMinutes === 0) {
+          const nowKey = `${prayer.key}-now-${todayString}`;
+          if (!triggeredKeys.includes(nowKey)) {
+            setTriggeredKeys(prev => [...prev, nowKey]);
+
+            const newNotif = {
+              id: nowKey,
+              title: `📢 Waktu Sholat ${prayer.label} Tiba`,
+              message: `Waktu sholat ${prayer.label} telah masuk (${prayer.time}) untuk wilayah ${cleanCityName}. Mari menunaikan sholat fardhu berjamaah.`,
+              type: 'now' as const,
+              time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+              prayerName: prayer.label
+            };
+
+            setNotifications(prev => {
+              if (prev.some(n => n.id === nowKey)) return prev;
+              return [newNotif, ...prev];
+            });
+
+            playNotificationChime();
+            triggerVibrate('now');
+          }
+        }
+      });
+    };
+
+    checkPrayerTimes();
+
+    const interval = setInterval(checkPrayerTimes, 10000);
+    return () => clearInterval(interval);
+  }, [prayerTimings, prayerCity, triggeredKeys]);
+
+  // Auto-dismiss handler for notifications
+  useEffect(() => {
+    if (notifications.length === 0) return;
+    const timer = setTimeout(() => {
+      setNotifications(prev => prev.slice(0, prev.length - 1));
+    }, 45000);
+    return () => clearTimeout(timer);
+  }, [notifications]);
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -199,6 +413,67 @@ export default function App() {
           <div className="min-h-screen bg-[#0b0e14] w-full overflow-x-hidden">
             <ImagePopup />
             <Navbar onNavigate={handleNavigate} />
+            
+            {/* REAL-TIME PRAYER NOTIFICATION PANEL */}
+            <div className="fixed top-16 md:top-20 right-4 z-[9999999] flex flex-col gap-3 w-full max-w-[360px] p-4 pointer-events-none">
+              <AnimatePresence>
+                {notifications.map((notif) => (
+                  <motion.div
+                    key={notif.id}
+                    initial={{ opacity: 0, y: -20, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 20, scale: 0.95 }}
+                    className={`pointer-events-auto w-full p-4 rounded-xl shadow-2xl border flex flex-col gap-2 relative overflow-hidden backdrop-blur-md ${
+                      notif.type === 'warning' 
+                        ? 'bg-amber-950/90 border-amber-500/30 text-amber-100' 
+                        : 'bg-emerald-950/90 border-emerald-500/30 text-emerald-100'
+                    }`}
+                  >
+                    {/* Glow effect */}
+                    <div className={`absolute top-0 left-0 w-1.5 h-full ${
+                      notif.type === 'warning' ? 'bg-amber-500' : 'bg-emerald-500'
+                    }`} />
+                    
+                    <div className="flex items-start justify-between pl-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-base">
+                          {notif.type === 'warning' ? '🔔' : '🕌'}
+                        </span>
+                        <span className="font-black tracking-wide text-xs uppercase">
+                          {notif.title}
+                        </span>
+                      </div>
+                      <button 
+                        onClick={() => dismissNotification(notif.id)}
+                        className="text-slate-400 hover:text-white transition-colors p-1"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                    
+                    <p className="text-xs font-medium pl-2 leading-relaxed opacity-90">
+                      {notif.message}
+                    </p>
+                    
+                    <div className="flex items-center justify-between pl-2 pt-1">
+                      <span className="text-[9px] font-bold uppercase tracking-widest opacity-60">
+                        {notif.time} • Realtime Alert
+                      </span>
+                      <button 
+                        onClick={() => dismissNotification(notif.id)}
+                        className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md border transition-all ${
+                          notif.type === 'warning'
+                            ? 'bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/20 text-amber-400'
+                            : 'bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/20 text-emerald-400'
+                        }`}
+                      >
+                        Mengerti
+                      </button>
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
             
             {/* MUSIC CONTROLLER */}
             <div className="fixed bottom-6 right-6 z-[99999] flex flex-col items-end gap-3 pointer-events-none">
