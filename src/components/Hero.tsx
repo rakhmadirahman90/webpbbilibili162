@@ -70,7 +70,7 @@ export default function Hero() {
   };
 
   return (
-    <section id="home" className="relative w-full mt-14 md:mt-16 aspect-[2.4/1] md:aspect-[3/1] lg:aspect-[3.2/1] overflow-hidden bg-black flex flex-col items-center justify-center">
+    <section id="home" className="relative w-full mt-14 lg:mt-16 aspect-[2.4/1] md:aspect-[16/9] overflow-hidden bg-black flex flex-col items-center justify-center">
       
       {/* Background Visual Layer */}
       <div className="absolute inset-0 z-0">
@@ -91,12 +91,12 @@ export default function Hero() {
             </div>
 
             {/* Main Slide Image:
-                Using object-cover to completely and perfectly fit the screen in portrait mode on mobile and wide mode on desktop.
+                Using object-contain on desktop to perfectly display the entire image without any cropping.
             */}
             <img
               src={getOptimizedImageUrl(slide.image, 1600)}
               alt=""
-              className={`w-full h-full object-cover transition-transform duration-[20000ms] ease-out select-none relative z-10
+              className={`w-full h-full object-cover md:object-contain transition-transform duration-[20000ms] ease-out select-none relative z-10
                 ${index === currentSlide ? 'scale-105' : 'scale-100'}
               `}
             />
