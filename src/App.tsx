@@ -244,7 +244,7 @@ export default function App() {
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.4 }}
-                  className="min-h-screen w-full flex flex-col items-center bg-[#0b0e14] pt-24 pb-14"
+                  className="min-h-screen w-full flex flex-col items-center bg-[#0b0e14] pt-20 pb-14"
                 >
                   <div className="w-full h-full max-w-7xl px-4 md:px-8 mx-auto">
                     {/* Render Komponen dengan Props masing-masing */}

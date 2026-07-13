@@ -207,25 +207,25 @@ export default function Navbar({ onNavigate }: NavbarProps) {
 
   return (
     <>
-      <nav className="fixed top-0 w-full bg-slate-900/95 backdrop-blur-md text-white border-b border-white/10 shadow-2xl transition-all duration-300 overflow-visible h-20 z-[10000]">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center overflow-visible">
+      <nav className="fixed top-0 w-full bg-slate-900/95 backdrop-blur-md text-white border-b border-white/10 shadow-2xl transition-all duration-300 overflow-visible h-14 md:h-16 z-[10000]">
+        <div className="max-w-7xl mx-auto px-6 h-14 md:h-16 flex justify-between items-center overflow-visible">
           
           {/* LEFT WING: LOGO, BRAND, & REAL-TIME CLOCK */}
-          <div className="flex items-center gap-2.5 sm:gap-5 overflow-visible">
+          <div className="flex items-center gap-2 sm:gap-4 overflow-visible">
             {/* LOGO */}
-            <div className="flex items-center gap-2 sm:gap-3 cursor-pointer group" onClick={() => handleNavClick('home')}>
-              <div className="relative w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center shrink-0">
+            <div className="flex items-center gap-1.5 sm:gap-2.5 cursor-pointer group" onClick={() => handleNavClick('home')}>
+              <div className="relative w-8 h-8 md:w-10 md:h-10 flex items-center justify-center shrink-0">
                 <div className="absolute inset-0 border border-white/30 rounded-full group-hover:border-blue-500/50 transition-colors duration-300"></div>
-                <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full overflow-hidden bg-white flex items-center justify-center transition-transform duration-500 group-hover:scale-105 shadow-inner">
+                <div className="w-7 h-7 md:w-9 md:h-9 rounded-full overflow-hidden bg-white flex items-center justify-center transition-transform duration-500 group-hover:scale-105 shadow-inner">
                   <img src={branding.logo_url} alt="Logo" className="w-full h-full object-cover" />
                 </div>
               </div>
               <div className="flex flex-col justify-center">
                 <div className="flex items-center gap-1 sm:gap-1.5 leading-none mb-0.5 sm:mb-1">
-                  <span className="font-black text-base sm:text-xl md:text-2xl tracking-tighter uppercase italic text-white leading-none">{branding.brand_name_main}</span>
-                  <span className="font-black text-base sm:text-xl md:text-2xl tracking-tighter uppercase italic text-blue-500 leading-none">{branding.brand_name_accent}</span>
+                  <span className="font-black text-sm sm:text-lg md:text-xl tracking-tighter uppercase italic text-white leading-none">{branding.brand_name_main}</span>
+                  <span className="font-black text-sm sm:text-lg md:text-xl tracking-tighter uppercase italic text-blue-500 leading-none">{branding.brand_name_accent}</span>
                 </div>
-                <span className="text-[6.5px] sm:text-[8px] md:text-[9px] text-slate-400 font-bold tracking-[0.2em] sm:tracking-[0.3em] uppercase leading-none">Professional Club</span>
+                <span className="text-[5.5px] sm:text-[7.5px] md:text-[8px] text-slate-400 font-bold tracking-[0.15em] sm:tracking-[0.25em] uppercase leading-none">Professional Club</span>
               </div>
             </div>
 
@@ -253,7 +253,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
               return (
                 <div 
                   key={menu.id} 
-                  className="relative h-20 flex items-center overflow-visible"
+                  className="relative h-14 md:h-16 flex items-center overflow-visible"
                   onMouseEnter={() => isDropdown && setActiveDropdown(menu.id)}
                   onMouseLeave={() => setActiveDropdown(null)}
                 >
@@ -291,8 +291,8 @@ export default function Navbar({ onNavigate }: NavbarProps) {
             })}
 
             {/* KONTAK */}
-            <div className="relative h-20 flex items-center overflow-visible" onMouseEnter={() => setActiveDropdown('contact-action')} onMouseLeave={() => setActiveDropdown(null)}>
-              <button className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 rounded-full text-[13px] font-semibold uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-lg shadow-blue-500/20 hover:-translate-y-0.5 active:scale-95">
+            <div className="relative h-14 md:h-16 flex items-center overflow-visible" onMouseEnter={() => setActiveDropdown('contact-action')} onMouseLeave={() => setActiveDropdown(null)}>
+              <button className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-full text-[12px] font-semibold uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-lg shadow-blue-500/20 hover:-translate-y-0.5 active:scale-95">
                 <MapPin size={13} /> Kontak <ChevronDown size={11} className={activeDropdown === 'contact-action' ? 'rotate-180' : ''} />
               </button>
               {activeDropdown === 'contact-action' && (
@@ -348,7 +348,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
           />
           
           {/* Drawer Panel */}
-          <div className="md:hidden fixed top-[74px] right-4 w-[230px] max-h-[calc(100vh-90px)] z-[999999] bg-[#0b1224]/98 border border-white/10 rounded-2xl flex flex-col p-3.5 overflow-y-auto shadow-2xl animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="md:hidden fixed top-[62px] right-4 w-[230px] max-h-[calc(100vh-76px)] z-[999999] bg-[#0b1224]/98 border border-white/10 rounded-2xl flex flex-col p-3.5 overflow-y-auto shadow-2xl animate-in fade-in slide-in-from-top-2 duration-200">
             
             {/* HEADER SECTION INSIDE OVERLAY */}
             <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/10">
