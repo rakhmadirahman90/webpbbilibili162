@@ -1,5 +1,6 @@
 import { Calendar, ArrowRight, X, ChevronDown, ChevronUp, Loader2, User, Eye, Heart, MessageCircle, Send, Share2, Link2, ArrowLeft, ChevronLeft, ChevronRight, Plus, Filter } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from "../supabase";
 import { motion, AnimatePresence } from 'framer-motion';
 import LazyImage from './LazyImage';
@@ -30,6 +31,7 @@ interface Berita {
 }
 
 export default function News() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [beritaList, setBeritaList] = useState<Berita[]>([]);
   const [selectedNews, setSelectedNews] = useState<Berita | null>(null);
   const [showAll, setShowAll] = useState(false);
@@ -168,14 +170,13 @@ export default function News() {
     };
   }, [selectedNews]);
 
-  // Deep linking and URL synchronization for newsId
+  // Deep linking and URL synchronization for newsId using reactive SearchParams
   useEffect(() => {
-    if (beritaList.length > 0) {
-      const params = new URLSearchParams(window.location.search);
-      const urlNewsId = params.get('newsId');
-      if (urlNewsId) {
-        const found = beritaList.find(item => item.id === urlNewsId);
-        if (found) {
+    const urlNewsId = searchParams.get('newsId');
+    if (beritaList.length > 0 && urlNewsId) {
+      const found = beritaList.find(item => item.id === urlNewsId);
+      if (found) {
+        if (!selectedNews || selectedNews.id !== found.id) {
           handleOpenNews(found);
           setTimeout(() => {
             const element = document.getElementById('berita-section');
@@ -186,25 +187,28 @@ export default function News() {
         }
       }
     }
-  }, [beritaList]);
+  }, [beritaList, searchParams, selectedNews]);
 
   useEffect(() => {
+    const urlNewsId = searchParams.get('newsId');
     if (selectedNews) {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('newsId') !== selectedNews.id) {
-        params.set('newsId', selectedNews.id);
-        window.history.pushState({}, '', `${window.location.pathname}?${params.toString()}`);
+      if (urlNewsId !== selectedNews.id) {
+        setSearchParams(prev => {
+          const next = new URLSearchParams(prev);
+          next.set('newsId', selectedNews.id);
+          return next;
+        }, { replace: true });
       }
     } else {
-      const params = new URLSearchParams(window.location.search);
-      if (params.has('newsId')) {
-        params.delete('newsId');
-        const query = params.toString();
-        const url = query ? `${window.location.pathname}?${query}` : window.location.pathname;
-        window.history.pushState({}, '', url);
+      if (urlNewsId) {
+        setSearchParams(prev => {
+          const next = new URLSearchParams(prev);
+          next.delete('newsId');
+          return next;
+        }, { replace: true });
       }
     }
-  }, [selectedNews]);
+  }, [selectedNews, searchParams, setSearchParams]);
 
   const fetchNews = async () => {
     try {

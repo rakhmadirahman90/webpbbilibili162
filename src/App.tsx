@@ -62,6 +62,22 @@ function ScrollToTop() {
   return null;
 }
 
+// HELPER: Reactively synchronize URL query params with App activeView
+function UrlSynchronizer({ setActiveView }: { setActiveView: (view: string | null) => void }) {
+  const location = useLocation();
+  
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.has('newsId')) {
+      setActiveView(null);
+    } else if (params.has('gallery') || params.has('galleryId') || params.has('photoId') || params.has('videoId')) {
+      setActiveView('galeri');
+    }
+  }, [location.search, setActiveView]);
+
+  return null;
+}
+
 /**
  * FIXED POPUP COMPONENT WITH FALLBACK
  */
@@ -415,6 +431,7 @@ export default function App() {
   return (
     <Router>
       <ScrollToTop />
+      <UrlSynchronizer setActiveView={setActiveView} />
       <audio ref={audioRef} src={MARS_URL} loop />
       
       <Routes>

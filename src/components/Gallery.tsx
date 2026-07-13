@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from "../supabase"; 
 import { X, Camera, Info, ChevronDown, ChevronUp, PlayCircle, Image as ImageIcon, Loader2, ArrowLeft, ChevronLeft, ChevronRight, Share2, Link2, Heart, Eye, Plus, Calendar } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -6,6 +7,7 @@ import LazyImage from './LazyImage';
 import { getOptimizedImageUrl } from '../utils/imageOptimizer';
 
 export default function Gallery() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [galleryItems, setGalleryItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -46,11 +48,10 @@ export default function Gallery() {
     };
   }, [selectedId]);
 
-  // Deep linking and URL synchronization for gallery/photo/video
+  // Deep linking and URL synchronization for gallery/photo/video using reactive SearchParams
   useEffect(() => {
     if (galleryItems.length > 0) {
-      const params = new URLSearchParams(window.location.search);
-      const urlGalleryId = params.get('gallery') || params.get('galleryId') || params.get('photoId') || params.get('videoId');
+      const urlGalleryId = searchParams.get('gallery') || searchParams.get('galleryId') || searchParams.get('photoId') || searchParams.get('videoId');
       if (urlGalleryId) {
         const found = galleryItems.find(item => item.id === urlGalleryId);
         if (found) {
@@ -60,31 +61,30 @@ export default function Gallery() {
         }
       }
     }
-  }, [galleryItems]);
+  }, [galleryItems, searchParams]);
 
   useEffect(() => {
+    const urlGalleryId = searchParams.get('gallery') || searchParams.get('galleryId') || searchParams.get('photoId') || searchParams.get('videoId');
     if (selectedId) {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('gallery') !== selectedId) {
-        params.set('gallery', selectedId);
-        window.history.pushState({}, '', `${window.location.pathname}?${params.toString()}`);
+      if (searchParams.get('gallery') !== selectedId) {
+        setSearchParams(prev => {
+          const next = new URLSearchParams(prev);
+          next.set('gallery', selectedId);
+          // clean up legacy variants to avoid URL pollution
+          ['galleryId', 'photoId', 'videoId'].forEach(p => next.delete(p));
+          return next;
+        }, { replace: true });
       }
     } else {
-      const params = new URLSearchParams(window.location.search);
-      let changed = false;
-      ['gallery', 'galleryId', 'photoId', 'videoId'].forEach(p => {
-        if (params.has(p)) {
-          params.delete(p);
-          changed = true;
-        }
-      });
-      if (changed) {
-        const query = params.toString();
-        const url = query ? `${window.location.pathname}?${query}` : window.location.pathname;
-        window.history.pushState({}, '', url);
+      if (urlGalleryId) {
+        setSearchParams(prev => {
+          const next = new URLSearchParams(prev);
+          ['gallery', 'galleryId', 'photoId', 'videoId'].forEach(p => next.delete(p));
+          return next;
+        }, { replace: true });
       }
     }
-  }, [selectedId]);
+  }, [selectedId, searchParams, setSearchParams]);
 
   const handleLike = (e: React.MouseEvent | React.KeyboardEvent, itemId: string) => {
     e.stopPropagation();
