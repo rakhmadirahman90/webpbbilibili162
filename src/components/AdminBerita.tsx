@@ -24,6 +24,10 @@ interface Berita {
   konten: string;
   kategori: string;
   gambar_url: string;
+  gambar_url_2?: string;
+  gambar_url_3?: string;
+  gambar_url_4?: string;
+  gambar_url_5?: string;
   tanggal: string;
   created_at?: string;
   comments_count?: number;
@@ -61,6 +65,10 @@ export default function AdminBerita() {
     konten: '',
     kategori: 'Prestasi',
     gambar_url: '',
+    gambar_url_2: '',
+    gambar_url_3: '',
+    gambar_url_4: '',
+    gambar_url_5: '',
     tanggal: new Date().toISOString().split('T')[0]
   });
 
@@ -203,6 +211,22 @@ export default function AdminBerita() {
     } catch (err: any) { setFormError("Gagal: " + err.message); } finally { setIsUploading(false); }
   };
 
+  const uploadDirectFile = async (file: File, field: 'gambar_url_2' | 'gambar_url_3' | 'gambar_url_4' | 'gambar_url_5') => {
+    setIsUploading(true);
+    try {
+      const fileName = `${Math.random()}_additional.jpg`;
+      const filePath = `berita/${fileName}`;
+      const { error: uploadError } = await supabase.storage.from('images').upload(filePath, file);
+      if (uploadError) throw uploadError;
+      const { data: { publicUrl } } = supabase.storage.from('images').getPublicUrl(filePath);
+      setFormData(prev => ({ ...prev, [field]: publicUrl }));
+    } catch (err: any) {
+      setFormError("Gagal upload gambar tambahan: " + err.message);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.gambar_url) return setFormError("Wajib upload gambar.");
@@ -228,7 +252,33 @@ export default function AdminBerita() {
   };
 
   const openModal = (item?: Berita) => {
-    setFormData(item || { judul: '', ringkasan: '', konten: '', kategori: 'Prestasi', gambar_url: '', tanggal: new Date().toISOString().split('T')[0] });
+    if (item) {
+      setFormData({
+        judul: item.judul || '',
+        ringkasan: item.ringkasan || '',
+        konten: item.konten || '',
+        kategori: item.kategori || 'Prestasi',
+        gambar_url: item.gambar_url || '',
+        gambar_url_2: item.gambar_url_2 || '',
+        gambar_url_3: item.gambar_url_3 || '',
+        gambar_url_4: item.gambar_url_4 || '',
+        gambar_url_5: item.gambar_url_5 || '',
+        tanggal: item.tanggal || new Date().toISOString().split('T')[0]
+      });
+    } else {
+      setFormData({
+        judul: '',
+        ringkasan: '',
+        konten: '',
+        kategori: 'Prestasi',
+        gambar_url: '',
+        gambar_url_2: '',
+        gambar_url_3: '',
+        gambar_url_4: '',
+        gambar_url_5: '',
+        tanggal: new Date().toISOString().split('T')[0]
+      });
+    }
     setEditingId(item?.id || null);
     setIsModalOpen(true);
   };
@@ -386,6 +436,46 @@ export default function AdminBerita() {
                       </div>
                    </div>
                  )}
+              </div>
+
+              <div className="space-y-3">
+                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block">Gambar Tambahan (Carousel - Maksimal 4 Foto)</label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  {[2, 3, 4, 5].map((num) => {
+                    const field = `gambar_url_${num}` as 'gambar_url_2' | 'gambar_url_3' | 'gambar_url_4' | 'gambar_url_5';
+                    const currentUrl = formData[field];
+                    return (
+                      <div key={num} className="relative aspect-video rounded-xl bg-white/5 border border-white/5 overflow-hidden flex flex-col items-center justify-center group/add">
+                        {currentUrl ? (
+                          <>
+                            <img src={currentUrl} className="absolute inset-0 w-full h-full object-cover" alt="" />
+                            <button
+                              type="button"
+                              onClick={() => setFormData(prev => ({ ...prev, [field]: '' }))}
+                              className="absolute top-1 right-1 p-1 bg-red-600 text-white rounded-full hover:scale-110 active:scale-95 transition-all z-10"
+                            >
+                              <X size={10} />
+                            </button>
+                          </>
+                        ) : (
+                          <label className="w-full h-full flex flex-col items-center justify-center cursor-pointer hover:bg-white/10 transition-colors">
+                            <Plus size={16} className="text-zinc-500 group-hover/add:text-blue-500" />
+                            <span className="text-[8px] font-black uppercase text-zinc-500 mt-1">Foto {num - 1}</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) uploadDirectFile(file, field);
+                              }}
+                            />
+                          </label>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
               <div className="space-y-2">

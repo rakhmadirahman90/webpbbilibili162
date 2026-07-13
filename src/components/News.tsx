@@ -1,5 +1,5 @@
-import { Calendar, ArrowRight, X, ChevronDown, ChevronUp, Loader2, User, Eye, Heart, MessageCircle, Send, Share2, Link2, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { Calendar, ArrowRight, X, ChevronDown, ChevronUp, Loader2, User, Eye, Heart, MessageCircle, Send, Share2, Link2, ArrowLeft, ChevronLeft, ChevronRight, Plus, Filter } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from "../supabase";
 import { motion, AnimatePresence } from 'framer-motion';
 import LazyImage from './LazyImage';
@@ -49,6 +49,75 @@ export default function News() {
   const [activeImgIndex, setActiveImgIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+
+  // Temporary UI states for filter dropdowns
+  const [tempCategory, setTempCategory] = useState('ALL ARTICLES');
+  const [tempOrderBy, setTempOrderBy] = useState('ARTICLE DATE');
+  const [tempOrderDirection, setTempOrderDirection] = useState('DESCENDING');
+
+  // Committed filter states
+  const [selectedCategory, setSelectedCategory] = useState('ALL ARTICLES');
+  const [orderBy, setOrderBy] = useState('ARTICLE DATE');
+  const [orderDirection, setOrderDirection] = useState('DESCENDING');
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Dropdown open states
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+  const [showOrderByDropdown, setShowOrderByDropdown] = useState(false);
+  const [showOrderDirDropdown, setShowOrderDirDropdown] = useState(false);
+
+  // Extract available categories dynamically from beritaList
+  const availableCategories = useMemo(() => {
+    const cats = new Set<string>();
+    beritaList.forEach(item => {
+      if (item.kategori) cats.add(item.kategori.toUpperCase());
+    });
+    return ['ALL ARTICLES', ...Array.from(cats)];
+  }, [beritaList]);
+
+  // Compute filtered news
+  const filteredNews = useMemo(() => {
+    let result = [...beritaList];
+
+    // Filter by Category
+    if (selectedCategory !== 'ALL ARTICLES') {
+      result = result.filter(item => item.kategori?.toUpperCase() === selectedCategory.toUpperCase());
+    }
+
+    // Sort
+    result.sort((a, b) => {
+      let comparison = 0;
+      if (orderBy === 'ARTICLE DATE') {
+        comparison = new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime();
+      } else if (orderBy === 'POPULARITY') {
+        comparison = ((b.views || 0) + (b.likes || 0)) - ((a.views || 0) + (a.likes || 0));
+      } else if (orderBy === 'TITLE') {
+        comparison = a.judul.localeCompare(b.judul);
+      }
+
+      return orderDirection === 'DESCENDING' ? comparison : -comparison;
+    });
+
+    return result;
+  }, [beritaList, selectedCategory, orderBy, orderDirection]);
+
+  // Pagination calculations
+  const itemsPerPage = 6;
+  const totalPages = Math.max(1, Math.ceil(filteredNews.length / itemsPerPage));
+  const paginatedNews = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredNews.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredNews, currentPage]);
+
+  const handleApplyFilters = () => {
+    setSelectedCategory(tempCategory);
+    setOrderBy(tempOrderBy);
+    setOrderDirection(tempOrderDirection);
+    setCurrentPage(1);
+    setShowCategoryDropdown(false);
+    setShowOrderByDropdown(false);
+    setShowOrderDirDropdown(false);
+  };
 
   // Helper untuk mendapatkan semua gambar dari berita
   const getNewsImages = (news: Berita): string[] => {
@@ -245,81 +314,233 @@ export default function News() {
     }
   };
 
-  const visibleNews = showAll ? beritaList : beritaList.slice(0, 3);
-
-  if (loading) {
-    return (
-      <div className="py-20 text-center bg-gray-50">
-        <Loader2 className="animate-spin m-auto text-blue-600 mb-4" size={40} />
-        <p className="text-gray-500 font-bold uppercase tracking-widest">Memuat Berita Terkini...</p>
-      </div>
-    );
-  }
-
   return (
-    <section id="news" className="py-12 bg-gray-50">
+    <section id="news" className="bg-[#f8fafc] pb-24 pt-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-extrabold text-gray-900 mb-2 italic uppercase tracking-tighter">
-            Berita <span className="text-blue-600">Terkini</span>
-          </h2>
-          <p className="text-sm text-gray-500 font-medium">Update terbaru tentang prestasi dan kegiatan klub PB US 162</p>
-        </div>
-
-        {/* RESPONSIVE LAYOUT DUAL COLUMN: BERITA DAN JADWAL SHOLAT */}
+        {/* RESPONSIVE LAYOUT DUAL COLUMN: FILTERS + NEWS AND SIDEBAR */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Sisi Kiri: Daftar Berita */}
-          <div className="lg:col-span-8 xl:col-span-9">
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
-              {visibleNews.map((news) => (
+          
+          {/* Sisi Kiri: Filter Panel (Sesuai Persis Lampiran Gambar 1) */}
+          <div className="lg:col-span-4 xl:col-span-3 lg:sticky lg:top-24 space-y-6">
+            <div className="bg-white border border-slate-100 rounded-xl shadow-sm p-6">
+              <div className="flex items-center gap-2 mb-6 pb-4 border-b border-slate-100">
+                <Filter size={18} className="text-[#22c55e]" />
+                <h3 className="font-black text-xs uppercase tracking-widest text-[#0f172a]">Saring Berita</h3>
+              </div>
+
+              <div className="space-y-5">
+                {/* 1. Category Selector */}
+                <div className="relative">
+                  <span className="block text-[10px] font-black tracking-wider text-slate-400 uppercase mb-1.5">CATEGORY</span>
+                  <button
+                    onClick={() => {
+                      setShowCategoryDropdown(!showCategoryDropdown);
+                      setShowOrderByDropdown(false);
+                      setShowOrderDirDropdown(false);
+                    }}
+                    className="w-full flex items-center justify-between bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-lg px-4 py-3.5 text-left transition-all"
+                  >
+                    <span className="font-extrabold text-xs text-[#0f172a] uppercase">{tempCategory}</span>
+                    <ChevronDown size={14} className={`text-slate-500 transition-transform duration-300 ${showCategoryDropdown ? 'rotate-180' : ''}`} />
+                  </button>
+                  <AnimatePresence>
+                    {showCategoryDropdown && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 8 }}
+                        className="absolute left-0 right-0 mt-1 bg-white border border-slate-100 rounded-lg shadow-xl z-30 max-h-52 overflow-y-auto"
+                      >
+                        {availableCategories.map(cat => (
+                          <button
+                            key={cat}
+                            onClick={() => {
+                              setTempCategory(cat);
+                              setShowCategoryDropdown(false);
+                            }}
+                            className={`w-full text-left px-4 py-3 text-xs font-bold uppercase transition-colors hover:bg-slate-50 ${tempCategory === cat ? 'text-[#22c55e] bg-emerald-50/50' : 'text-slate-700'}`}
+                          >
+                            {cat}
+                          </button>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {/* 2. Order By Selector */}
+                <div className="relative">
+                  <span className="block text-[10px] font-black tracking-wider text-slate-400 uppercase mb-1.5">ORDER BY</span>
+                  <button
+                    onClick={() => {
+                      setShowOrderByDropdown(!showOrderByDropdown);
+                      setShowCategoryDropdown(false);
+                      setShowOrderDirDropdown(false);
+                    }}
+                    className="w-full flex items-center justify-between bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-lg px-4 py-3.5 text-left transition-all"
+                  >
+                    <span className="font-extrabold text-xs text-[#0f172a] uppercase">{tempOrderBy}</span>
+                    <ChevronDown size={14} className={`text-slate-500 transition-transform duration-300 ${showOrderByDropdown ? 'rotate-180' : ''}`} />
+                  </button>
+                  <AnimatePresence>
+                    {showOrderByDropdown && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 8 }}
+                        className="absolute left-0 right-0 mt-1 bg-white border border-slate-100 rounded-lg shadow-xl z-30"
+                      >
+                        {['ARTICLE DATE', 'POPULARITY', 'TITLE'].map(item => (
+                          <button
+                            key={item}
+                            onClick={() => {
+                              setTempOrderBy(item);
+                              setShowOrderByDropdown(false);
+                            }}
+                            className={`w-full text-left px-4 py-3 text-xs font-bold uppercase transition-colors hover:bg-slate-50 ${tempOrderBy === item ? 'text-[#22c55e] bg-emerald-50/50' : 'text-slate-700'}`}
+                          >
+                            {item}
+                          </button>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {/* 3. Order Direction Selector */}
+                <div className="relative">
+                  <span className="block text-[10px] font-black tracking-wider text-slate-400 uppercase mb-1.5">ORDER</span>
+                  <button
+                    onClick={() => {
+                      setShowOrderDirDropdown(!showOrderDirDropdown);
+                      setShowCategoryDropdown(false);
+                      setShowOrderByDropdown(false);
+                    }}
+                    className="w-full flex items-center justify-between bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-lg px-4 py-3.5 text-left transition-all"
+                  >
+                    <span className="font-extrabold text-xs text-[#0f172a] uppercase">{tempOrderDirection}</span>
+                    <ChevronDown size={14} className={`text-slate-500 transition-transform duration-300 ${showOrderDirDropdown ? 'rotate-180' : ''}`} />
+                  </button>
+                  <AnimatePresence>
+                    {showOrderDirDropdown && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 8 }}
+                        className="absolute left-0 right-0 mt-1 bg-white border border-slate-100 rounded-lg shadow-xl z-30"
+                      >
+                        {['DESCENDING', 'ASCENDING'].map(item => (
+                          <button
+                            key={item}
+                            onClick={() => {
+                              setTempOrderDirection(item);
+                              setShowOrderDirDropdown(false);
+                            }}
+                            className={`w-full text-left px-4 py-3 text-xs font-bold uppercase transition-colors hover:bg-slate-50 ${tempOrderDirection === item ? 'text-[#22c55e] bg-emerald-50/50' : 'text-slate-700'}`}
+                          >
+                            {item}
+                          </button>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
+
+              {/* Apply Filters Button */}
+              <button
+                onClick={handleApplyFilters}
+                className="w-full bg-[#1e293b] hover:bg-slate-700 text-white font-black text-xs py-4 rounded-lg tracking-widest uppercase shadow-xs mt-6 transition-colors active:scale-98"
+              >
+                FILTER NEWS
+              </button>
+            </div>
+
+            {/* Prayer Times widget side box */}
+            <div className="hidden lg:block w-full">
+              <PrayerTimes />
+            </div>
+          </div>
+
+          {/* Sisi Kanan: Daftar Berita (Sesuai Persis Lampiran Gambar 2) */}
+          <div className="lg:col-span-8 xl:col-span-9 flex flex-col">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {paginatedNews.map((news) => (
                 <div
                   key={news.id}
-                  className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group flex flex-col border border-gray-100/80"
+                  className="bg-white rounded-xl overflow-hidden shadow-xs hover:shadow-lg hover:-translate-y-1.5 transition-all duration-300 group flex flex-col border border-slate-100"
                 >
-                  <div className="relative h-40 sm:h-44 overflow-hidden bg-gray-100">
+                  {/* News Card Image with Floating elements */}
+                  <div className="relative aspect-[1.8/1] overflow-hidden bg-slate-100">
                     <LazyImage 
                       src={news.gambar_url} 
                       alt={news.judul} 
                       containerClassName="w-full h-full"
-                      className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-700" 
+                      className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700" 
                     />
-                    <div className="absolute top-3 left-3 bg-blue-600 text-white px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest shadow-md">
-                      {news.kategori}
-                    </div>
                     
-                    <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                       <button onClick={() => handleShare(news, 'wa')} className="p-2 bg-green-500 text-white rounded-full hover:scale-110 transition-transform shadow-md"><Share2 size={14} /></button>
-                       <button onClick={() => handleShare(news, 'copy')} className="p-2 bg-white text-gray-900 rounded-full hover:scale-110 transition-transform shadow-md">
-                          {copySuccess === news.id ? <span className="text-[8px] font-bold px-1.5 text-blue-600">COPIED</span> : <Link2 size={14} />}
+                    {/* PBSI style Green Tag Overlapping Image (Top-Left) */}
+                    <div className="absolute top-4 left-4 bg-[#22c55e] text-white px-3 py-1.5 rounded-sm text-[10px] font-black uppercase tracking-wider shadow-sm z-10 max-w-[85%] truncate">
+                      {news.kategori || 'UMUM'}
+                    </div>
+
+                    {/* Social share actions on hover */}
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
+                       <button onClick={() => handleShare(news, 'wa')} className="p-2.5 bg-[#22c55e] text-white rounded-full hover:scale-110 transition-transform shadow-md"><Share2 size={16} /></button>
+                       <button onClick={() => handleShare(news, 'copy')} className="p-2.5 bg-white text-slate-900 rounded-full hover:scale-110 transition-transform shadow-md">
+                          {copySuccess === news.id ? <span className="text-[9px] font-bold px-1.5 text-blue-600">COPIED</span> : <Link2 size={16} />}
                        </button>
                     </div>
 
+                    {/* Like button absolute */}
                     <button 
                       onClick={(e) => handleLike(e, news.id)}
-                      className={`absolute bottom-3 right-3 w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center shadow-md transition-all active:scale-90 z-10 ${likedPosts.has(news.id) ? 'bg-rose-500 text-white' : 'bg-white/95 text-gray-500 hover:text-rose-500 hover:bg-white'}`}
+                      className={`absolute top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center shadow-md transition-all active:scale-90 z-10 ${likedPosts.has(news.id) ? 'bg-rose-500 text-white' : 'bg-white/95 text-slate-500 hover:text-rose-500 hover:bg-white'}`}
                     >
                       <Heart size={16} fill={likedPosts.has(news.id) ? "currentColor" : "none"} />
                     </button>
+
+                    {/* PBSI style Green Action Button "+" Overlapping the image bottom edge */}
+                    <button 
+                      onClick={() => handleOpenNews(news)}
+                      className="absolute -bottom-5 right-5 w-11 h-11 bg-[#22c55e] hover:bg-green-600 active:scale-95 text-white rounded-full flex items-center justify-center shadow-lg transition-all duration-200 z-10 hover:rotate-90"
+                      title="Baca Selengkapnya"
+                    >
+                      <Plus size={20} className="stroke-[3]" />
+                    </button>
                   </div>
 
-                  <div className="p-4 sm:p-5 flex flex-col flex-grow">
-                    <div className="text-gray-400 text-[9px] mb-1.5 font-bold uppercase tracking-widest">{news.tanggal}</div>
+                  {/* News Card Content */}
+                  <div className="p-6 sm:p-7 flex flex-col flex-grow">
+                    <div className="text-slate-400 text-[10px] mb-2 font-extrabold uppercase tracking-widest">
+                      {news.tanggal}
+                    </div>
+                    
                     <h3 
                       onClick={() => handleOpenNews(news)}
-                      className="text-sm sm:text-base font-black text-gray-900 mb-2.5 line-clamp-2 italic uppercase leading-tight group-hover:text-blue-600 transition-colors cursor-pointer"
+                      className="text-base sm:text-lg font-black text-slate-900 mb-6 line-clamp-2 uppercase leading-snug group-hover:text-[#22c55e] transition-colors cursor-pointer"
                     >
                       {news.judul}
                     </h3>
                     
-                    <div className="mt-auto pt-3 border-t border-gray-100 flex items-center justify-between">
-                      <div className="flex items-center gap-1 text-gray-500">
-                        <div className="w-5 h-5 bg-gray-100 rounded-full flex items-center justify-center text-gray-400 shrink-0"><User size={9} /></div>
-                        <span className="text-[8.5px] font-black uppercase tracking-tight truncate max-w-[70px]">{news.penulis || 'ADMIN'}</span>
-                      </div>
-                      <div className="flex items-center gap-2.5 text-gray-400">
-                        <div className="flex items-center gap-0.5"><Eye size={11} /><span className="text-[9px] font-bold">{news.views || 0}</span></div>
-                        <div className="flex items-center gap-0.5"><Heart size={11} className={likedPosts.has(news.id) ? 'text-rose-500' : ''} fill={likedPosts.has(news.id) ? "currentColor" : "none"} /><span className="text-[9px] font-bold">{news.likes || 0}</span></div>
-                        <div className="flex items-center gap-0.5"><MessageCircle size={11} /><span className="text-[9px] font-bold">{news.comments_count || 0}</span></div>
+                    {/* PBSI style Card Footer */}
+                    <div className="mt-auto pt-4 border-t border-slate-100 flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                        {news.penulis || 'HUMAS PB US 162'}
+                      </span>
+                      <div className="flex items-center gap-3.5 text-slate-400">
+                        <div className="flex items-center gap-1">
+                          <Eye size={13} />
+                          <span className="text-[10px] font-bold text-slate-500">{news.views || 0}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Heart size={13} className={likedPosts.has(news.id) ? 'text-rose-500' : ''} fill={likedPosts.has(news.id) ? "currentColor" : "none"} />
+                          <span className="text-[10px] font-bold text-slate-500">{news.likes || 0}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <MessageCircle size={13} />
+                          <span className="text-[10px] font-bold text-slate-500">{news.comments_count || 0}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -327,22 +548,61 @@ export default function News() {
               ))}
             </div>
 
-            {beritaList.length > 3 && (
-              <div className="text-center mt-6">
-                <button 
-                  onClick={() => setShowAll(!showAll)}
-                  className="inline-flex items-center gap-2 bg-gray-900 hover:bg-blue-600 text-white px-8 py-3 rounded-xl font-bold transition-all shadow-lg active:scale-95 uppercase text-xs tracking-widest"
+            {/* Zero Results State */}
+            {filteredNews.length === 0 && (
+              <div className="text-center py-20 bg-white border border-slate-100 rounded-xl">
+                <Filter size={36} className="m-auto text-slate-300 mb-3" />
+                <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">Tidak ada berita yang cocok dengan filter Anda.</p>
+              </div>
+            )}
+
+            {/* 3. PBSI-style Custom Pagination (Sesuai Persis Lampiran Gambar 2) */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2 mt-12 pb-6">
+                {/* Previous Button */}
+                <button
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  className={`w-10 h-10 rounded border text-xs font-bold uppercase flex items-center justify-center transition-all ${
+                    currentPage === 1 
+                      ? 'border-slate-100 bg-slate-50 text-slate-300 cursor-not-allowed' 
+                      : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700 active:scale-95'
+                  }`}
                 >
-                  {showAll ? <><ChevronUp size={18} /> Sembunyikan</> : <>Lihat Semua Berita <ChevronDown size={18} /></>}
+                  <ChevronLeft size={16} />
+                </button>
+
+                {/* Page numbers */}
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`w-10 h-10 rounded text-xs font-bold transition-all ${
+                      currentPage === page 
+                        ? 'bg-[#facc15] border border-[#facc15] text-white font-black shadow-sm' 
+                        : 'border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 active:scale-95'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+
+                {/* Next Button */}
+                <button
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  className={`w-10 h-10 rounded border text-xs font-bold uppercase flex items-center justify-center transition-all ${
+                    currentPage === totalPages 
+                      ? 'border-slate-100 bg-slate-50 text-slate-300 cursor-not-allowed' 
+                      : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700 active:scale-95'
+                  }`}
+                >
+                  <ChevronRight size={16} />
                 </button>
               </div>
             )}
           </div>
 
-          {/* Sisi Kanan: Jadwal Sholat 5 Waktu (Sembunyi di mobile karena sudah ada di bawah Hero) */}
-          <div className="hidden lg:block lg:col-span-4 xl:col-span-3 lg:sticky lg:top-24 w-full">
-            <PrayerTimes />
-          </div>
         </div>
       </div>
 
@@ -355,7 +615,7 @@ export default function News() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 30 }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed inset-0 z-[100] bg-white overflow-y-auto flex flex-col scroll-smooth"
+              className="fixed inset-0 z-[110000] bg-white overflow-y-auto flex flex-col scroll-smooth"
             >
               {/* Sticky Top Header Bar */}
               <div className="sticky top-0 bg-zinc-950 text-white px-4 py-3 md:py-4 flex items-center justify-between z-[110] shadow-md">
@@ -370,10 +630,10 @@ export default function News() {
                 
                 {/* PBSI-style Center Logo/Club Brand */}
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-amber-400 rounded-full flex items-center justify-center p-1.5 font-bold text-black text-xs shadow-inner">
-                    PB
+                  <div className="w-8 h-8 rounded-full overflow-hidden bg-white flex items-center justify-center shadow-inner shrink-0">
+                    <img src="/photo_2026-02-03_00-32-07.jpg" alt="Logo" className="w-full h-full object-cover" />
                   </div>
-                  <span className="text-xs font-black uppercase tracking-[0.2em] text-white">PB US 162</span>
+                  <span className="text-xs font-black uppercase tracking-[0.2em] text-white">PB BILIBILI 162</span>
                 </div>
 
                 <div className="flex items-center gap-2">

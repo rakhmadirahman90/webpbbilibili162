@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { supabase } from "../supabase"; 
-import { X, Camera, Info, ChevronDown, ChevronUp, PlayCircle, Image as ImageIcon, Loader2, ArrowLeft, ChevronLeft, ChevronRight, Share2, Link2, Heart, Eye } from 'lucide-react';
+import { X, Camera, Info, ChevronDown, ChevronUp, PlayCircle, Image as ImageIcon, Loader2, ArrowLeft, ChevronLeft, ChevronRight, Share2, Link2, Heart, Eye, Plus, Calendar } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import LazyImage from './LazyImage';
 import { getOptimizedImageUrl } from '../utils/imageOptimizer';
@@ -11,10 +11,16 @@ export default function Gallery() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showAll, setShowAll] = useState(false);
   const [activeTab, setActiveTab] = useState<'image' | 'video'>('image');
+  const [currentPage, setCurrentPage] = useState(1);
 
   const [copySuccess, setCopySuccess] = useState<string | null>(null);
   const [likedItems, setLikedItems] = useState<Set<string>>(new Set());
   const [activeImgIndex, setActiveImgIndex] = useState(0);
+
+  // Reset page on tab change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab]);
 
   // Load likes on mount
   useEffect(() => {
@@ -131,73 +137,51 @@ export default function Gallery() {
   };
 
   const filteredMedia = useMemo(() => {
-    const filtered = galleryItems.filter(item => item.type === activeTab);
-    return showAll ? filtered : filtered.slice(0, 6);
-  }, [activeTab, showAll, galleryItems]);
+    return galleryItems.filter(item => item.type === activeTab);
+  }, [activeTab, galleryItems]);
+
+  const totalItems = useMemo(() => {
+    return filteredMedia.length;
+  }, [filteredMedia]);
+
+  const itemsPerPage = 6;
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+
+  const paginatedMedia = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredMedia.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredMedia, currentPage]);
 
   const activeMedia = useMemo(() => 
     galleryItems.find((item) => item.id === selectedId),
   [selectedId, galleryItems]);
 
   return (
-    <section id="gallery" className="py-24 bg-[#0b0e14] text-white min-h-screen relative overflow-hidden">
-      {/* Ornamen Latar Belakang */}
-      <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-blue-600/5 blur-[120px] rounded-full -z-0" />
-      <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-indigo-600/5 blur-[120px] rounded-full -z-0" />
-
+    <section id="gallery" className="bg-[#f8fafc] pb-24 pt-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
-        {/* Header Section */}
-        <div className="text-center mb-16">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }} 
-            whileInView={{ opacity: 1, y: 0 }}
-            className="flex justify-center mb-6"
-          >
-            <div className="bg-blue-600/10 p-4 rounded-3xl text-blue-500 border border-blue-600/20 shadow-lg shadow-blue-600/5">
-              <Camera size={32} />
-            </div>
-          </motion.div>
-          <motion.h2 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="text-4xl md:text-5xl font-black mb-4 tracking-tighter uppercase italic"
-          >
-            Lensa <span className="text-blue-600">PB 162</span>
-          </motion.h2>
-          <motion.p 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="text-lg text-slate-400 max-w-2xl mx-auto font-medium"
-          >
-            Aktivitas dan prestasi kami dalam format visual berkualitas tinggi.
-          </motion.p>
-        </div>
-
-        {/* Tab Switcher - Styled for Dark Mode */}
-        <div className="flex justify-center mb-16">
-          <div className="inline-flex bg-[#1a1d26] p-1.5 rounded-[2rem] border border-white/5 shadow-2xl backdrop-blur-md">
+        {/* Tab Switcher - Styled professionally with custom borders */}
+        <div className="flex justify-center mb-12">
+          <div className="inline-flex bg-white p-1.5 rounded-full border border-slate-200/80 shadow-xs">
             <button
-              onClick={() => { setActiveTab('image'); setShowAll(false); }}
-              className={`flex items-center gap-3 px-10 py-4 rounded-[1.5rem] font-black text-xs tracking-widest transition-all duration-300 ${
+              onClick={() => { setActiveTab('image'); }}
+              className={`flex items-center gap-2.5 px-8 py-3.5 rounded-full font-black text-xs tracking-wider transition-all duration-300 ${
                 activeTab === 'image' 
-                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' 
-                : 'text-slate-500 hover:text-white'
+                ? 'bg-[#1e293b] text-white shadow-xs' 
+                : 'text-slate-500 hover:text-slate-800'
               }`}
             >
-              <ImageIcon size={18} /> FOTO
+              <ImageIcon size={16} /> FOTO
             </button>
             <button
-              onClick={() => { setActiveTab('video'); setShowAll(false); }}
-              className={`flex items-center gap-3 px-10 py-4 rounded-[1.5rem] font-black text-xs tracking-widest transition-all duration-300 ${
+              onClick={() => { setActiveTab('video'); }}
+              className={`flex items-center gap-2.5 px-8 py-3.5 rounded-full font-black text-xs tracking-wider transition-all duration-300 ${
                 activeTab === 'video' 
-                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' 
-                : 'text-slate-500 hover:text-white'
+                ? 'bg-[#1e293b] text-white shadow-xs' 
+                : 'text-slate-500 hover:text-slate-800'
               }`}
             >
-              <PlayCircle size={18} /> VIDEO
+              <PlayCircle size={16} /> VIDEO
             </button>
           </div>
         </div>
@@ -205,29 +189,30 @@ export default function Gallery() {
         {/* Loading State */}
         {loading ? (
           <div className="flex flex-col items-center justify-center py-32 text-slate-500">
-            <Loader2 className="animate-spin mb-6 text-blue-600" size={48} />
-            <p className="font-black uppercase tracking-[0.3em] text-[10px]">Sinkronisasi Galeri...</p>
+            <Loader2 className="animate-spin mb-4 text-emerald-500" size={40} />
+            <p className="font-bold uppercase tracking-widest text-[10px]">Sinkronisasi Galeri...</p>
           </div>
         ) : (
-          /* Media Grid */
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          /* Media Grid (Matching News Grid Layout) */
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <AnimatePresence mode="popLayout">
-              {filteredMedia.length > 0 ? filteredMedia.map((item, index) => (
+              {paginatedMedia.length > 0 ? paginatedMedia.map((item, index) => (
                 <motion.div
                   layout
                   key={item.id}
-                  initial={{ opacity: 0, scale: 0.9 }}
+                  initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ duration: 0.4, delay: index * 0.05 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.3, delay: index * 0.05 }}
                   onClick={() => { setSelectedId(item.id); setActiveImgIndex(0); }}
-                  className="group relative cursor-pointer overflow-hidden rounded-[2.5rem] bg-[#1a1d26] border border-white/5 hover:border-blue-600/50 transition-all duration-500 shadow-2xl"
+                  className="group relative cursor-pointer overflow-hidden rounded-xl bg-white border border-slate-100 hover:border-slate-200 hover:shadow-lg hover:-translate-y-1.5 transition-all duration-300 flex flex-col shadow-xs"
                 >
-                  <div className="aspect-[4/3] relative overflow-hidden">
+                  {/* Media Wrapper */}
+                  <div className="aspect-[1.5/1] relative overflow-hidden bg-slate-100 shrink-0">
                     {item.type === 'video' && !getYouTubeID(item.url) ? (
                       <video 
                         src={`${item.url}#t=0.5`} 
-                        className="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 group-hover:scale-110 transition-all duration-700"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                         preload="metadata"
                       />
                     ) : (
@@ -235,7 +220,7 @@ export default function Gallery() {
                         src={getThumbnail(item)}
                         alt={item.title}
                         containerClassName="w-full h-full"
-                        className="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 group-hover:scale-110 transition-all duration-700"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                         onError={(e: any) => {
                           const videoId = getYouTubeID(item.url);
                           if (videoId) e.target.src = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
@@ -243,46 +228,109 @@ export default function Gallery() {
                       />
                     )}
                     
-                    {/* Play Button Overlay for Videos */}
-                    {item.type === 'video' && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-all">
-                        <div className="w-16 h-16 bg-white/10 backdrop-blur-md border border-white/20 rounded-full flex items-center justify-center text-white shadow-2xl group-hover:scale-110 transition-transform duration-500">
-                          <PlayCircle size={32} fill="currentColor" fillOpacity={0.4} />
-                        </div>
-                      </div>
-                    )}
+                    {/* PBSI style Green Tag Overlapping Image (Top-Left) */}
+                    <div className="absolute top-4 left-4 bg-[#22c55e] text-white px-3 py-1.5 rounded-sm text-[10px] font-black uppercase tracking-wider shadow-sm z-10 max-w-[85%] truncate">
+                      {item.category || 'DOKUMENTASI'}
+                    </div>
 
-                    {/* Gradient Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#0b0e14] via-transparent to-transparent opacity-60 group-hover:opacity-90 transition-all duration-500" />
+                    {/* Like button absolute */}
+                    <button 
+                      onClick={(e) => handleLike(e, item.id)}
+                      className={`absolute top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center shadow-md transition-all active:scale-90 z-10 ${likedItems.has(item.id) ? 'bg-rose-500 text-white' : 'bg-white/95 text-slate-500 hover:text-rose-500 hover:bg-white'}`}
+                    >
+                      <Heart size={15} fill={likedItems.has(item.id) ? "currentColor" : "none"} />
+                    </button>
+
+                    {/* PBSI style Green Action Button "+" / "Play" Overlapping the image bottom edge */}
+                    <div className="absolute -bottom-5 right-5 w-11 h-11 bg-[#22c55e] group-hover:bg-green-600 active:scale-95 text-white rounded-full flex items-center justify-center shadow-lg transition-all duration-200 z-10 group-hover:rotate-90">
+                      {item.type === 'video' ? (
+                        <PlayCircle size={18} fill="currentColor" fillOpacity={0.3} className="stroke-[3]" />
+                      ) : (
+                        <Plus size={18} className="stroke-[3]" />
+                      )}
+                    </div>
                   </div>
                   
-                  {/* Content Overlay */}
-                  <div className="absolute inset-0 flex flex-col justify-end p-8 translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-                    <span className="text-blue-500 text-[10px] font-black uppercase tracking-[0.2em] mb-2">{item.category}</span>
-                    <h3 className="text-white text-xl font-black leading-tight uppercase italic">{item.title}</h3>
-                    <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-4 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                      {item.type === 'video' ? <PlayCircle size={14} className="text-blue-500" /> : <Info size={14} className="text-blue-500" />} 
-                      {item.type === 'video' ? 'Putar Video' : 'Lihat Detail'}
-                    </p>
+                  {/* Content Panel */}
+                  <div className="p-6 sm:p-7 flex flex-col flex-grow">
+                    <div className="text-slate-400 text-[10px] mb-2 font-extrabold uppercase tracking-widest flex items-center gap-1.5">
+                      <Calendar size={12} className="text-slate-300" />
+                      {item.created_at ? new Date(item.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : 'DOKUMENTASI'}
+                    </div>
+
+                    <h3 className="text-slate-900 text-base sm:text-base font-black leading-snug uppercase line-clamp-2 mb-4 group-hover:text-[#22c55e] transition-colors">
+                      {item.title}
+                    </h3>
+                    
+                    {/* Card Footer */}
+                    <div className="mt-auto pt-4 border-t border-slate-100 flex items-center justify-between">
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+                        {item.type === 'video' ? 'VIDEO MULTIMEDIA' : 'PHOTO GALLERY'}
+                      </span>
+                      <div className="flex items-center gap-3 text-slate-400">
+                        <div className="flex items-center gap-1">
+                          <Heart size={13} className={likedItems.has(item.id) ? 'text-rose-500' : ''} fill={likedItems.has(item.id) ? "currentColor" : "none"} />
+                          <span className="text-[10px] font-bold text-slate-500">{likedItems.has(item.id) ? 1 : 0}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Eye size={13} />
+                          <span className="text-[10px] font-bold text-slate-500">1</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </motion.div>
               )) : (
-                <div className="col-span-full py-32 text-center text-slate-600 font-black uppercase tracking-[0.4em] border-2 border-dashed border-white/5 rounded-[3.5rem] bg-[#1a1d26]/30">
-                  Belum ada {activeTab === 'image' ? 'foto' : 'video'}
+                <div className="col-span-full py-24 text-center text-slate-400 font-bold uppercase tracking-widest border border-slate-200 border-dashed rounded-xl bg-white">
+                  Belum ada {activeTab === 'image' ? 'foto' : 'video'} di galeri.
                 </div>
               )}
             </AnimatePresence>
           </div>
         )}
 
-        {/* Load More Button */}
-        {!loading && galleryItems.filter(item => item.type === activeTab).length > 6 && (
-          <div className="text-center mt-20">
-            <button 
-              onClick={() => setShowAll(!showAll)}
-              className="inline-flex items-center gap-4 bg-white text-black hover:bg-blue-600 hover:text-white px-12 py-5 rounded-full font-black text-xs uppercase tracking-[0.2em] transition-all shadow-2xl active:scale-95"
+        {/* 3. PBSI-style Custom Pagination (Sesuai Persis Lampiran Gambar 2) */}
+        {!loading && totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2 mt-12 pb-6">
+            {/* Previous Button */}
+            <button
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              className={`w-10 h-10 rounded border text-xs font-bold uppercase flex items-center justify-center transition-all ${
+                currentPage === 1 
+                  ? 'border-slate-100 bg-slate-50 text-slate-300 cursor-not-allowed' 
+                  : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700 active:scale-95'
+              }`}
             >
-              {showAll ? <>Sembunyikan <ChevronUp size={20} /></> : <>Lihat Selengkapnya <ChevronDown size={20} /></>}
+              <ChevronLeft size={16} />
+            </button>
+
+            {/* Page numbers */}
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <button
+                key={page}
+                onClick={() => setCurrentPage(page)}
+                className={`w-10 h-10 rounded text-xs font-bold transition-all ${
+                  currentPage === page 
+                    ? 'bg-[#facc15] border border-[#facc15] text-white font-black shadow-sm' 
+                    : 'border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 active:scale-95'
+                }`}
+              >
+                {page}
+              </button>
+            ))}
+
+            {/* Next Button */}
+            <button
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              className={`w-10 h-10 rounded border text-xs font-bold uppercase flex items-center justify-center transition-all ${
+                currentPage === totalPages 
+                  ? 'border-slate-100 bg-slate-50 text-slate-300 cursor-not-allowed' 
+                  : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700 active:scale-95'
+              }`}
+            >
+              <ChevronRight size={16} />
             </button>
           </div>
         )}
@@ -311,7 +359,7 @@ export default function Gallery() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 30 }}
                 transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                className="fixed inset-0 z-[100] bg-white text-slate-900 overflow-y-auto flex flex-col scroll-smooth"
+                className="fixed inset-0 z-[110000] bg-white text-slate-900 overflow-y-auto flex flex-col scroll-smooth"
               >
                 {/* Sticky Top Header Bar */}
                 <div className="sticky top-0 bg-zinc-950 text-white px-4 py-3 md:py-4 flex items-center justify-between z-[110] shadow-md">
@@ -326,10 +374,10 @@ export default function Gallery() {
                   
                   {/* PBSI-style Center Logo/Club Brand */}
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-amber-400 rounded-full flex items-center justify-center p-1.5 font-bold text-black text-xs shadow-inner">
-                      PB
+                    <div className="w-8 h-8 rounded-full overflow-hidden bg-white flex items-center justify-center shadow-inner shrink-0">
+                      <img src="/photo_2026-02-03_00-32-07.jpg" alt="Logo" className="w-full h-full object-cover" />
                     </div>
-                    <span className="text-xs font-black uppercase tracking-[0.2em] text-white">PB US 162</span>
+                    <span className="text-xs font-black uppercase tracking-[0.2em] text-white">PB BILIBILI 162</span>
                   </div>
 
                   <div className="flex items-center gap-2">

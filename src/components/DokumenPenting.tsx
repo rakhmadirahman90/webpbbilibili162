@@ -45,7 +45,7 @@ export default function DokumenPenting() {
       {/* --- MODAL PRATINJAU INTEGRASI --- */}
       <AnimatePresence>
         {selectedDocUrl && (
-          <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 md:p-12">
+          <div className="fixed inset-0 z-[110000] flex items-center justify-center p-4 md:p-12">
             {/* Overlay Backdrop */}
             <motion.div 
               initial={{ opacity: 0 }}

@@ -123,43 +123,55 @@ export default function AdminGallery() {
     return filteredItems.slice(start, start + itemsPerPage);
   }, [filteredItems, currentPage]);
 
-  // BARU: Validasi File dan Handle Upload
+  // BARU: Validasi File dan Handle Upload (Mendukung Multi-Upload untuk Galeri Foto)
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement> | React.DragEvent) => {
-    let file: File | undefined;
+    let files: FileList | File[] | null = null;
     
     if ('files' in e.target && e.target.files) {
-      file = e.target.files[0];
+      files = e.target.files;
     } else if ('dataTransfer' in e && e.dataTransfer.files) {
-      file = e.dataTransfer.files[0];
+      files = e.dataTransfer.files;
     }
 
-    if (!file) return;
+    if (!files || files.length === 0) return;
 
-    // Validasi Ukuran (Max 15MB untuk Video, 5MB untuk Foto)
-    const maxSize = formData.type === 'video' ? 15 * 1024 * 1024 : 5 * 1024 * 1024;
-    if (file.size > maxSize) {
-      alert(`Ukuran file terlalu besar! Maksimal ${formData.type === 'video' ? '15MB' : '5MB'}`);
-      return;
-    }
+    const filesArray = Array.from(files);
 
     setIsUploading(true);
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
-      const filePath = `uploads/${fileName}`;
+      const uploadedUrls: string[] = [];
 
-      const { error: uploadError } = await supabase.storage
-        .from('gallery')
-        .upload(filePath, file);
+      for (const file of filesArray) {
+        // Validasi Ukuran (Max 15MB untuk Video, 5MB untuk Foto)
+        const maxSize = formData.type === 'video' ? 15 * 1024 * 1024 : 5 * 1024 * 1024;
+        if (file.size > maxSize) {
+          alert(`File "${file.name}" terlalu besar! Maksimal ${formData.type === 'video' ? '15MB' : '5MB'}`);
+          continue;
+        }
 
-      if (uploadError) throw uploadError;
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+        const filePath = `uploads/${fileName}`;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('gallery')
-        .getPublicUrl(filePath);
+        const { error: uploadError } = await supabase.storage
+          .from('gallery')
+          .upload(filePath, file);
 
-      setFormData({ ...formData, url: publicUrl, is_local: true });
-      showToast("Media berhasil diunggah ke cloud!");
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('gallery')
+          .getPublicUrl(filePath);
+
+        uploadedUrls.push(publicUrl);
+      }
+
+      if (uploadedUrls.length > 0) {
+        const existingUrls = formData.url ? formData.url.split(/[\s,]+/).filter(Boolean) : [];
+        const newUrls = [...existingUrls, ...uploadedUrls].join(', ');
+        setFormData(prev => ({ ...prev, url: newUrls, is_local: true }));
+        showToast(`${uploadedUrls.length} Media berhasil diunggah ke cloud!`);
+      }
     } catch (err: any) {
       alert("Gagal upload: " + err.message);
     } finally {
@@ -478,19 +490,41 @@ export default function AdminGallery() {
                    Media Payload
                 </label>
 
-                {(formData.type === 'image' || videoInputMethod === 'file') ? (
+                 {(formData.type === 'image' || videoInputMethod === 'file') ? (
                     <div 
                         onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
                         onDragLeave={() => setDragActive(false)}
                         onDrop={(e) => { e.preventDefault(); handleFileUpload(e); }}
                         onClick={() => !isUploading && fileInputRef.current?.click()}
-                        className={`group relative h-56 rounded-[2.5rem] border-4 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all overflow-hidden ${dragActive ? 'bg-blue-600/10 border-blue-600 scale-[0.98]' : 'bg-zinc-900/30 border-white/5 hover:border-blue-600/40'}`}
+                        className={`group relative min-h-56 rounded-[2.5rem] border-4 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all overflow-hidden ${dragActive ? 'bg-blue-600/10 border-blue-600 scale-[0.98]' : 'bg-zinc-900/30 border-white/5 hover:border-blue-600/40'}`}
                     >
                         {formData.url && formData.is_local ? (
                             formData.type === 'image' ? (
-                                <img src={formData.url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                              <div className="w-full h-full p-4 grid grid-cols-3 gap-3">
+                                {formData.url.split(/[\s,]+/).filter(Boolean).map((imgUrl, index) => (
+                                  <div key={index} className="relative aspect-square rounded-2xl overflow-hidden border border-white/10 group/img shadow-md">
+                                    <img src={imgUrl} className="w-full h-full object-cover" />
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const currentUrls = formData.url.split(/[\s,]+/).filter(Boolean);
+                                        const filtered = currentUrls.filter((_, i) => i !== index);
+                                        setFormData(prev => ({ ...prev, url: filtered.join(', ') }));
+                                      }}
+                                      className="absolute top-1.5 right-1.5 p-1 bg-red-600 hover:bg-red-700 text-white rounded-full transition-colors z-10"
+                                    >
+                                      <X size={10} />
+                                    </button>
+                                  </div>
+                                ))}
+                                <div className="aspect-square rounded-2xl border-2 border-dashed border-white/15 hover:border-blue-500 flex flex-col items-center justify-center text-zinc-500 hover:text-white transition-colors cursor-pointer" onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}>
+                                  <Plus size={20} />
+                                  <span className="text-[7px] font-black uppercase mt-1">Tambah</span>
+                                </div>
+                              </div>
                             ) : (
-                                <div className="flex flex-col items-center text-blue-500 text-center px-10">
+                                <div className="flex flex-col items-center text-blue-500 text-center px-10 py-6">
                                     <div className="w-16 h-16 bg-blue-600/10 rounded-full flex items-center justify-center mb-4">
                                        <Video size={32} />
                                     </div>
@@ -513,7 +547,7 @@ export default function AdminGallery() {
                         )}
                         
                         {isUploading && (
-                        <div className="absolute inset-0 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-300">
+                        <div className="absolute inset-0 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-300 z-20">
                             <div className="relative">
                                 <Loader2 className="animate-spin text-blue-600 mb-4" size={48} />
                                 <div className="absolute inset-0 animate-pulse bg-blue-600/20 rounded-full blur-2xl"></div>
@@ -559,6 +593,7 @@ export default function AdminGallery() {
                     onChange={handleFileUpload} 
                     className="hidden" 
                     accept={formData.type === 'image' ? 'image/jpeg,image/png,image/webp' : 'video/mp4,video/webm'} 
+                    multiple={formData.type === 'image'}
                 />
               </div>
 

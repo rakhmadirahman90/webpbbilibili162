@@ -140,7 +140,7 @@ const Players: React.FC<{ initialFilter?: string }> = ({
       {/* MODAL DETAIL - Menggunakan Framer Motion untuk transisi halus */}
       <AnimatePresence>
         {selectedPlayer && (
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-8">
+          <div className="fixed inset-0 z-[110000] flex items-center justify-center p-4 md:p-8">
             <motion.div 
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="absolute inset-0 bg-black/90 backdrop-blur-xl" 
