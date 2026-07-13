@@ -91,7 +91,7 @@ function ImagePopup() {
           }
         }
       } catch (err) {
-        console.error("Gagal memuat pop-up:", err);
+        console.warn("Gagal memuat pop-up:", err);
       }
     };
     fetchActivePopups();

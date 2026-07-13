@@ -165,7 +165,7 @@ export default function PrayerTimes() {
           setHijri(resData.data.date.hijri);
         }
       } catch (err: any) {
-        console.error(err);
+        console.warn("Gagal fetch jadwal sholat:", err.message || err);
         if (active) {
           setError('Koneksi lambat. Menggunakan estimasi Parepare.');
           setTimings(FALLBACK_TIMINGS.Default);

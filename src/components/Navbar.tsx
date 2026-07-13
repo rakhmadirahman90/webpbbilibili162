@@ -108,7 +108,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
       }
       setNavData(finalNav);
     } catch (err) {
-      console.error("Fetch Nav Error:", err);
+      console.warn("Fetch Nav Error:", err);
     }
   }, []);
 
@@ -130,7 +130,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
         if (val.default_lang) setCurrentLang(val.default_lang);
       }
     } catch (err) {
-      console.error("Error fetching branding:", err);
+      console.warn("Error fetching branding:", err);
     }
   }, []);
 

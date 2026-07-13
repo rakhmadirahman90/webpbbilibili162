@@ -33,7 +33,7 @@ export default function Hero() {
           setSettings(config.settings || { duration: 7 });
         }
       } catch (err) {
-        console.error("Error fetching hero data:", err);
+        console.warn("Error fetching hero data:", err);
       } finally {
         setLoading(false);
       }
