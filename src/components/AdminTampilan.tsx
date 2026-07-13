@@ -9,7 +9,7 @@ import {
 const DEFAULT_SLIDES = [
   {
     id: 1,
-    title: 'Pusat Pelatihan PB US 162 Bilibili',
+    title: 'Pusat Pelatihan PB Bilibili 162',
     subtitle: 'Fasilitas lapangan berkualitas internasional dengan standar karpet BWF.',
     image: '/whatsapp_image_2026-02-02_at_08.39.03.jpeg',
     titleSize: 24,
@@ -65,8 +65,8 @@ export default function AdminTampilan() {
   const [slides, setSlides] = useState<HeroSlide[]>([]);
   const [heroSettings, setHeroSettings] = useState({ duration: 7 });
   const [footerData, setFooterData] = useState({
-    description: 'PB US 162 adalah klub bulutangkis profesional yang berfokus pada pembinaan atlet muda berbakat.',
-    copyright: '© 2026 PB US 162. All Rights Reserved.',
+    description: 'PB Bilibili 162 adalah klub bulutangkis profesional yang berfokus pada pembinaan atlet muda berbakat.',
+    copyright: '© 2026 PB Bilibili 162. All Rights Reserved.',
     address: 'Bilibili, Kabupaten Gowa, Sulawesi Selatan'
   });
 
@@ -472,7 +472,7 @@ export default function AdminTampilan() {
             ) : (
               <div className="bg-zinc-900/50 rounded-[2.5rem] p-8 border border-white/5 shadow-2xl">
                  <div className="border-l-4 border-blue-600 pl-6 space-y-3">
-                  <h4 className="font-black italic text-xl text-white tracking-tight">PB US 162 BILIBILI</h4>
+                  <h4 className="font-black italic text-xl text-white tracking-tight">PB BILIBILI 162</h4>
                   <p className="text-zinc-400 text-[11px] leading-relaxed italic">{footerData.description}</p>
                 </div>
               </div>

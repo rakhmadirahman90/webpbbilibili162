@@ -285,7 +285,7 @@ const AdminMatch: React.FC = () => {
                <div className="p-2 bg-blue-600/20 rounded-lg">
                   <Sparkles size={20} className="text-blue-500" />
                </div>
-               <p className="text-zinc-500 text-[10px] font-black tracking-[0.3em] uppercase">PB US 162 Admin Engine</p>
+               <p className="text-zinc-500 text-[10px] font-black tracking-[0.3em] uppercase">PB BILIBILI 162 Admin Engine</p>
             </div>
             <h1 className="text-4xl md:text-5xl font-black italic tracking-tighter uppercase leading-none">
               MANAGE <span className="text-blue-600">POINTS</span>

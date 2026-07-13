@@ -295,7 +295,7 @@ export default function PrayerTimes() {
                 Jadwal <span className="text-emerald-400">Sholat</span>
               </h3>
               <p className="text-[10px] text-slate-400 font-bold tracking-wider uppercase mt-1">
-                Klub PB US 162
+                Klub PB BILIBILI 162
               </p>
             </div>
           </div>

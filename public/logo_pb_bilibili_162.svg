@@ -1,0 +1,161 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <!-- Definitions for gradients and drop shadows -->
+  <defs>
+    <!-- Background Shield Gradient -->
+    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b318d" />
+      <stop offset="50%" stop-color="#0d42bc" />
+      <stop offset="100%" stop-color="#031b54" />
+    </linearGradient>
+    
+    <!-- Outer Metallic Border Gradient -->
+    <linearGradient id="borderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#89d4ff" />
+      <stop offset="30%" stop-color="#ffffff" />
+      <stop offset="70%" stop-color="#2a8fff" />
+      <stop offset="100%" stop-color="#004da3" />
+    </linearGradient>
+
+    <!-- Ribbon Gradient -->
+    <linearGradient id="ribbonGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#217cff" />
+      <stop offset="50%" stop-color="#0954cf" />
+      <stop offset="100%" stop-color="#043282" />
+    </linearGradient>
+
+    <!-- Highlight Gradient -->
+    <linearGradient id="glossGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.3" />
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+    </linearGradient>
+
+    <!-- Gold Accent Gradient -->
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffe600" />
+      <stop offset="100%" stop-color="#ff9900" />
+    </linearGradient>
+
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#000000" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+
+  <!-- Outer Glow Group -->
+  <g filter="url(#shadow)">
+    <!-- Main Outer Shield Shape -->
+    <!-- Base Path of the modern badminton shield -->
+    <path d="M 250,30 C 370,30 450,100 450,220 C 450,340 370,410 250,470 C 130,410 50,340 50,220 C 50,100 130,30 250,30 Z" 
+          fill="url(#borderGrad)" />
+          
+    <path d="M 250,42 C 358,42 438,106 438,218 C 438,326 358,394 250,452 C 142,394 62,326 62,218 C 62,106 142,42 250,42 Z" 
+          fill="#001845" />
+
+    <path d="M 250,48 C 352,48 428,110 428,216 C 428,320 352,386 250,442 C 148,386 72,320 72,216 C 72,110 148,48 250,48 Z" 
+          fill="url(#shieldGrad)" />
+  </g>
+
+  <!-- Star Patterns at the top -->
+  <g fill="#ffffff" transform="translate(0, 0)">
+    <!-- Center star -->
+    <polygon points="250,65 254,75 265,75 256,82 260,92 250,85 240,92 244,82 235,75 246,75" fill="url(#goldGrad)" />
+    <!-- Left star 1 -->
+    <polygon points="215,75 218,83 227,83 220,89 223,97 215,91 207,97 210,89 203,83 212,83" opacity="0.9" />
+    <!-- Right star 1 -->
+    <polygon points="285,75 288,83 297,83 290,89 293,97 285,91 277,97 280,89 273,83 282,83" opacity="0.9" />
+    <!-- Left star 2 -->
+    <polygon points="185,90 187,97 195,97 189,102 191,109 185,104 179,109 181,102 175,97 183,97" opacity="0.7" />
+    <!-- Right star 2 -->
+    <polygon points="315,90 317,97 325,97 319,102 321,109 315,104 309,109 311,102 305,97 313,97" opacity="0.7" />
+  </g>
+
+  <!-- Crossed Badminton Rackets Background -->
+  <g stroke="#ffffff" stroke-width="3" fill="none" opacity="0.75">
+    <!-- Racket 1 (Going Top-Right to Bottom-Left) -->
+    <!-- Head -->
+    <ellipse cx="330" cy="150" rx="45" ry="55" transform="rotate(30, 330, 150)" stroke="url(#borderGrad)" stroke-width="6" />
+    <!-- Grid strings -->
+    <line x1="295" y1="115" x2="365" y2="185" stroke-width="1.5" />
+    <line x1="310" y1="100" x2="350" y2="200" stroke-width="1.5" />
+    <line x1="280" y1="130" x2="380" y2="170" stroke-width="1.5" />
+    <line x1="290" y1="160" x2="370" y2="140" stroke-width="1.5" />
+    <!-- Shaft -->
+    <line x1="302" y1="190" x2="190" y2="310" stroke="url(#borderGrad)" stroke-width="5" />
+    <!-- Handle -->
+    <rect x="175" y="315" width="18" height="40" rx="3" transform="rotate(45, 184, 335)" fill="#ffffff" stroke="none" />
+
+    <!-- Racket 2 (Going Top-Left to Bottom-Right) -->
+    <!-- Head -->
+    <ellipse cx="170" cy="150" rx="45" ry="55" transform="rotate(-30, 170, 150)" stroke="url(#borderGrad)" stroke-width="6" />
+    <!-- Grid strings -->
+    <line x1="205" y1="115" x2="135" y2="185" stroke-width="1.5" />
+    <line x1="190" y1="100" x2="150" y2="200" stroke-width="1.5" />
+    <line x1="220" y1="130" x2="120" y2="170" stroke-width="1.5" />
+    <line x1="210" y1="160" x2="130" y2="140" stroke-width="1.5" />
+    <!-- Shaft -->
+    <line x1="198" y1="190" x2="310" y2="310" stroke="url(#borderGrad)" stroke-width="5" />
+    <!-- Handle -->
+    <rect x="307" y="315" width="18" height="40" rx="3" transform="rotate(-45, 316, 335)" fill="#ffffff" stroke="none" />
+  </g>
+
+  <!-- Left & Right Decorative Shuttlecocks -->
+  <!-- Left Side Shuttlecock -->
+  <g transform="translate(95, 180) rotate(-45) scale(0.65)" fill="#ffffff">
+    <path d="M0,0 C20,-10 40,-30 50,-50 C30,-40 10,-20 0,0" fill="#e2f1ff" opacity="0.9" />
+    <path d="M0,0 C-20,-10 -40,-30 -50,-50 C-30,-40 -10,-20 0,0" fill="#e2f1ff" opacity="0.9" />
+    <path d="M-15,-30 L0,15 L15,-30 Z" fill="#ffffff" />
+    <path d="M-15,15 C-15,25 15,25 15,15 Z" fill="#0072ff" />
+    <path d="M-12,20 C-12,27 12,27 12,20 Z" fill="#ffffff" />
+  </g>
+  <!-- Right Side Shuttlecock -->
+  <g transform="translate(405, 180) rotate(45) scale(0.65)" fill="#ffffff">
+    <path d="M0,0 C20,-10 40,-30 50,-50 C30,-40 10,-20 0,0" fill="#e2f1ff" opacity="0.9" />
+    <path d="M0,0 C-20,-10 -40,-30 -50,-50 C-30,-40 -10,-20 0,0" fill="#e2f1ff" opacity="0.9" />
+    <path d="M-15,-30 L0,15 L15,-30 Z" fill="#ffffff" />
+    <path d="M-15,15 C-15,25 15,25 15,15 Z" fill="#0072ff" />
+    <path d="M-12,20 C-12,27 12,27 12,20 Z" fill="#ffffff" />
+  </g>
+
+  <!-- Center Big Banner Ribbon for "PB BILIBILI" -->
+  <g filter="url(#shadow)">
+    <!-- Behind Ribbon fold left -->
+    <path d="M 45,280 L 80,240 L 80,310 Z" fill="#031b54" />
+    <path d="M 35,295 L 45,280 L 80,310 L 40,320 Z" fill="#0954cf" />
+    
+    <!-- Behind Ribbon fold right -->
+    <path d="M 455,280 L 420,240 L 420,310 Z" fill="#031b54" />
+    <path d="M 465,295 L 455,280 L 420,310 L 460,320 Z" fill="#0954cf" />
+
+    <!-- Main Banner Ribbon -->
+    <path d="M 60,240 Q 250,220 440,240 L 425,310 Q 250,295 75,310 Z" fill="url(#ribbonGrad)" stroke="url(#borderGrad)" stroke-width="4" />
+  </g>
+
+  <!-- Text inside the Ribbon: "PB BILIBILI" -->
+  <!-- We use a curved text path to match the ribbon curvature exactly -->
+  <path id="textPath" d="M 75,282 Q 250,263 425,282" fill="none" stroke="none" />
+  <text font-family="'Inter', 'Arial Black', sans-serif" font-weight="900" font-size="34" fill="#ffffff" letter-spacing="4">
+    <textPath href="#textPath" startOffset="50%" text-anchor="middle">PB BILIBILI</textPath>
+  </text>
+  
+  <!-- Number "162" below the ribbon -->
+  <text x="250" y="360" font-family="'Inter', 'Arial Black', sans-serif" font-weight="900" font-size="42" fill="#ffffff" text-anchor="middle" letter-spacing="2" filter="url(#shadow)">
+    162
+  </text>
+
+  <!-- Bottom Shuttlecock (Pointing upwards, centered) -->
+  <g transform="translate(250, 395) scale(0.95)" filter="url(#shadow)">
+    <!-- Shuttlecock feathers -->
+    <path d="M-25,15 C-20,-15 -5,-35 0,-50 C5,-35 20,-15 25,15 Z" fill="#ffffff" opacity="0.95" stroke="#89d4ff" stroke-width="1.5" />
+    <path d="M-15,15 L-5,-45 L5,-45 L15,15 Z" fill="#f0f7ff" stroke="#89d4ff" stroke-width="1" />
+    <path d="M-5,15 L0,-48 L5,15 Z" fill="#ffffff" />
+    <!-- Horizontal bands -->
+    <line x1="-18" y1="-5" x2="18" y2="-5" stroke="#0d42bc" stroke-width="3" />
+    <line x1="-22" y1="5" x2="22" y2="5" stroke="#0d42bc" stroke-width="3" />
+    <!-- Cork base -->
+    <path d="M-18,15 C-18,32 18,32 18,15 Z" fill="#0072ff" />
+    <path d="M-14,20 C-14,28 14,28 14,20 Z" fill="#ffffff" />
+  </g>
+
+  <!-- Top Glass/Gloss Reflection Highlight Overlay -->
+  <path d="M 250,42 C 358,42 438,106 438,218 C 438,225 350,150 250,150 C 150,150 62,225 62,218 C 62,106 142,42 250,42 Z" 
+        fill="url(#glossGrad)" />
+</svg>

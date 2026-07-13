@@ -14,9 +14,9 @@ const KelolaNavbar: React.FC = () => {
   
   // --- STATE UNTUK BRANDING & BAHASA ---
   const [brandSettings, setBrandSettings] = useState({
-    logo_url: '',
-    brand_name_main: 'US 162',
-    brand_name_accent: 'BILIBILI',
+    logo_url: '/logo_pb_bilibili_162.svg',
+    brand_name_main: 'PB Bilibili',
+    brand_name_accent: '162',
     sub_text: 'Professional Badminton',
     default_lang: 'ID'
   });

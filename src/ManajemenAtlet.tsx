@@ -88,7 +88,7 @@ export default function ManajemenAtlet() {
     domisili: '',
     seed: 'UNSEEDED',
     points: 0,
-    bio: 'Atlet PB US 162',
+    bio: 'Atlet PB Bilibili 162',
     prestasi: 'Regular Player',
     foto_url: '',
   });
@@ -343,7 +343,7 @@ export default function ManajemenAtlet() {
         domisili: '',
         seed: 'UNSEEDED',
         points: 0,
-        bio: 'Atlet PB US 162',
+        bio: 'Atlet PB Bilibili 162',
         prestasi: 'Regular Player',
         foto_url: '',
       });

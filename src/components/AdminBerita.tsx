@@ -130,20 +130,33 @@ export default function AdminBerita() {
         .from('komentar')
         .insert([{
           berita_id: selectedNewsForComments.id,
-          nama_user: "ADMIN PB US 162", // Identitas Balasan Admin
+          nama_user: "ADMIN PB BILIBILI 162", // Identitas Balasan Admin
           isi_komentar: replyText,
           tanggal: new Date().toISOString()
         }])
         .select();
 
-      if (!error && data) {
-        setComments([data[0], ...comments]);
-        setReplyText('');
-        // Update count di list utama
-        setNews(news.map(n => n.id === selectedNewsForComments.id ? { ...n, comments_count: (n.comments_count || 0) + 1 } : n));
+      if (error) {
+        console.error("Gagal mengirim balasan admin:", error);
+        alert(`Gagal mengirim balasan: ${error.message}`);
+        return;
       }
-    } catch (err) {
+
+      // Gunakan data dari server jika tersedia, atau buat objek lokal yang valid jika RLS menyembunyikannya
+      const insertedComment = {
+        id: data && data[0]?.id ? data[0].id : `temp-${Date.now()}`,
+        nama_user: "ADMIN PB BILIBILI 162",
+        isi_komentar: replyText,
+        tanggal: data && data[0]?.tanggal ? data[0].tanggal : new Date().toISOString()
+      };
+
+      setComments([insertedComment, ...comments]);
+      setReplyText('');
+      // Update count di list utama
+      setNews(news.map(n => n.id === selectedNewsForComments.id ? { ...n, comments_count: (n.comments_count || 0) + 1 } : n));
+    } catch (err: any) {
       console.error(err);
+      alert("Gagal mengirim balasan: " + (err.message || "Terjadi kesalahan"));
     } finally {
       setIsSubmittingReply(false);
     }

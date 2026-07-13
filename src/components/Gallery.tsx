@@ -105,7 +105,7 @@ export default function Gallery() {
 
   const handleShare = (item: any, platform: 'wa' | 'fb' | 'copy') => {
     const currentUrl = window.location.origin + `?gallery=${item.id}`;
-    const shareText = `Lihat dokumentasi "${item.title}" dari PB US 162: ${currentUrl}`;
+    const shareText = `Lihat dokumentasi "${item.title}" dari PB Bilibili 162: ${currentUrl}`;
     
     if (platform === 'wa') {
       window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
@@ -432,7 +432,7 @@ export default function Gallery() {
                   {/* PBSI-style Center Logo/Club Brand */}
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-full overflow-hidden bg-white flex items-center justify-center shadow-inner shrink-0">
-                      <img src="/photo_2026-02-03_00-32-07.jpg" alt="Logo" className="w-full h-full object-cover" />
+                      <img src="/logo_pb_bilibili_162.svg" alt="Logo" className="w-full h-full object-contain" />
                     </div>
                     <span className="text-xs font-black uppercase tracking-[0.2em] text-white">PB BILIBILI 162</span>
                   </div>
@@ -629,7 +629,7 @@ export default function Gallery() {
                     <div className="mt-12 p-6 bg-slate-50 rounded-2xl border border-slate-100/80 flex flex-col sm:flex-row justify-between items-center gap-4">
                       <div className="text-center sm:text-left">
                         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1.5">Bagikan Dokumentasi Ini</p>
-                        <p className="text-xs text-slate-500 font-medium">Bagikan momen luar biasa klub PB US 162 ini kepada kerabat Anda</p>
+                        <p className="text-xs text-slate-500 font-medium">Bagikan momen luar biasa klub PB Bilibili 162 ini kepada kerabat Anda</p>
                       </div>
                       <div className="flex flex-wrap gap-2">
                         <button 

@@ -13,9 +13,9 @@ export default function Navbar({ onNavigate }: NavbarProps) {
   
   const [navData, setNavData] = useState<any[]>([]);
   const [branding, setBranding] = useState({
-    logo_url: '/photo_2026-02-03_00-32-07.jpg', 
-    brand_name_main: 'US 162',
-    brand_name_accent: 'BILIBILI',
+    logo_url: '/logo_pb_bilibili_162.svg', 
+    brand_name_main: 'PB Bilibili',
+    brand_name_accent: '162',
     default_lang: 'ID'
   });
 
@@ -122,9 +122,9 @@ export default function Navbar({ onNavigate }: NavbarProps) {
       if (!error && data && data.value) {
         const val = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
         setBranding({
-          logo_url: val.logo_url || '/photo_2026-02-03_00-32-07.jpg',
-          brand_name_main: val.brand_name_main || 'US 162',
-          brand_name_accent: val.brand_name_accent || 'BILIBILI',
+          logo_url: val.logo_url || '/logo_pb_bilibili_162.svg',
+          brand_name_main: val.brand_name_main || 'PB Bilibili',
+          brand_name_accent: val.brand_name_accent || '162',
           default_lang: val.default_lang || 'ID'
         });
         if (val.default_lang) setCurrentLang(val.default_lang);

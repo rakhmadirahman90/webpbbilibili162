@@ -13,14 +13,14 @@ export default function AdminFooter() {
   
   // State footerConfig tetap dipertahankan & ditambahkan field logo_url dan site_name
   const [footerConfig, setFooterConfig] = useState({
-    site_name: 'PB US 162 BILIBILI',
-    site_name_highlight: 'Bilibili',
-    logo_url: '', 
+    site_name: 'PB Bilibili 162',
+    site_name_highlight: '162',
+    logo_url: '/logo_pb_bilibili_162.svg', 
     description: 'Membina legenda masa depan dengan fasilitas standar nasional dan sport-science.',
     address: 'Jl. Andi Makkasau No. 171, Parepare, Indonesia',
     phone: '+62 812 1902 7234',
-    email: 'info@pbus162bilibili.id',
-    copyright: '© 2026 PB US 162 BILIBILI. ALL RIGHTS RESERVED.',
+    email: 'info@pbbilibili162.id',
+    copyright: '© 2026 PB Bilibili 162. ALL RIGHTS RESERVED.',
     navigation: [
       { name: 'Beranda', id: 'home' },
       { name: 'Berita', id: 'news' },
@@ -225,7 +225,7 @@ export default function AdminFooter() {
                     className="w-full bg-[#0f111a] border border-white/10 rounded-xl p-4 pl-12 text-sm focus:border-blue-500 outline-none"
                     value={footerConfig.site_name}
                     onChange={(e) => setFooterConfig({...footerConfig, site_name: e.target.value})}
-                    placeholder="Contoh: PB US 162 BILIBILI"
+                    placeholder="Contoh: PB Bilibili 162"
                   />
                 </div>
               </div>

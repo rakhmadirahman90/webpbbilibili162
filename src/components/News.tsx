@@ -285,7 +285,7 @@ export default function News() {
 
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedNews || !newComment.nama || !newComment.pesan) return;
+    if (!selectedNews || !newComment.nama.trim() || !newComment.pesan.trim()) return;
 
     setIsSubmitting(true);
     try {
@@ -294,20 +294,34 @@ export default function News() {
         .insert([{
           berita_id: selectedNews.id,
           nama_user: newComment.nama,
-          isi_komentar: newComment.pesan
+          isi_komentar: newComment.pesan,
+          tanggal: new Date().toISOString()
         }])
         .select();
 
-      if (!error && data) {
-        setComments(prev => [data[0], ...prev]);
-        setNewComment({ nama: '', pesan: '' });
-        
-        setBeritaList(prev => prev.map(item => 
-          item.id === selectedNews.id ? { ...item, comments_count: (item.comments_count || 0) + 1 } : item
-        ));
+      if (error) {
+        console.error("Gagal mengirim komentar ke database:", error);
+        alert(`Gagal mengirim komentar: ${error.message}`);
+        return;
       }
-    } catch (err) {
-      alert("Gagal mengirim komentar");
+
+      // Gunakan data dari server jika tersedia, atau buat objek lokal yang valid jika RLS menyembunyikannya
+      const insertedComment: Komentar = {
+        id: data && data[0]?.id ? data[0].id : `temp-${Date.now()}`,
+        nama_user: newComment.nama,
+        isi_komentar: newComment.pesan,
+        tanggal: data && data[0]?.tanggal ? data[0].tanggal : new Date().toISOString()
+      };
+
+      setComments(prev => [insertedComment, ...prev]);
+      setNewComment({ nama: '', pesan: '' });
+      
+      setBeritaList(prev => prev.map(item => 
+        item.id === selectedNews.id ? { ...item, comments_count: (item.comments_count || 0) + 1 } : item
+      ));
+    } catch (err: any) {
+      console.error("Error submitting comment:", err);
+      alert("Gagal mengirim komentar: " + (err.message || "Terjadi kesalahan"));
     } finally {
       setIsSubmitting(false);
     }
@@ -349,7 +363,7 @@ export default function News() {
 
   const handleShare = async (news: Berita, platform: 'wa' | 'fb' | 'x' | 'copy') => {
     const shareUrl = `${window.location.origin}${window.location.pathname}?newsId=${news.id}`;
-    const shareText = `Cek berita terbaru dari PB US 162: "${news.judul}"`;
+    const shareText = `Cek berita terbaru dari PB Bilibili 162: "${news.judul}"`;
 
     switch (platform) {
       case 'wa':
@@ -585,7 +599,7 @@ export default function News() {
                     {/* PBSI style Card Footer */}
                     <div className="mt-auto pt-4 border-t border-slate-100 flex items-center justify-between">
                       <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
-                        {news.penulis || 'HUMAS PB US 162'}
+                        {news.penulis || 'HUMAS PB BILIBILI 162'}
                       </span>
                       <div className="flex items-center gap-3.5 text-slate-400">
                         <div className="flex items-center gap-1">
@@ -690,7 +704,7 @@ export default function News() {
                 {/* PBSI-style Center Logo/Club Brand */}
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-full overflow-hidden bg-white flex items-center justify-center shadow-inner shrink-0">
-                    <img src="/photo_2026-02-03_00-32-07.jpg" alt="Logo" className="w-full h-full object-cover" />
+                    <img src="/logo_pb_bilibili_162.svg" alt="Logo" className="w-full h-full object-contain" />
                   </div>
                   <span className="text-xs font-black uppercase tracking-[0.2em] text-white">PB BILIBILI 162</span>
                 </div>
@@ -818,7 +832,7 @@ export default function News() {
 
                   {/* Location and Date prefix line */}
                   <div className="text-slate-900 font-bold mb-5 text-sm sm:text-base italic">
-                    {selectedNews.penulis || "Humas PB US 162"}, {selectedNews.tanggal} —
+                    {selectedNews.penulis || "Humas PB Bilibili 162"}, {selectedNews.tanggal} —
                   </div>
 
                   {/* Article Text Content */}

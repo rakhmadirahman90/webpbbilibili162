@@ -39,9 +39,9 @@ export default function Login() {
           <div className="relative inline-flex mb-4">
             <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-blue-500/30 p-1 bg-slate-900/50 shadow-[0_0_20px_rgba(59,130,246,0.2)]">
               <img 
-                src="/photo_2026-02-03_00-32-07.jpg" 
+                src="/logo_pb_bilibili_162.svg" 
                 alt="Logo PB Bilibili 162" 
-                className="w-full h-full object-cover rounded-full"
+                className="w-full h-full object-contain"
                 onError={(e) => {
                   // Fallback if image fails to load
                   e.currentTarget.src = "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=150&auto=format&fit=crop&q=80";

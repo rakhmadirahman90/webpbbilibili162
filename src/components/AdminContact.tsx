@@ -139,7 +139,7 @@ export default function AdminContact() {
                   className="w-full bg-zinc-950/50 border border-white/10 rounded-2xl p-4 text-sm outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 transition-all font-semibold text-zinc-200 placeholder:text-zinc-700"
                   value={contactData.email}
                   onChange={e => setContactData({...contactData, email: e.target.value})}
-                  placeholder="e.g. hello@pbus162.com"
+                  placeholder="e.g. hello@pbbilibili162.com"
                 />
               </div>
 

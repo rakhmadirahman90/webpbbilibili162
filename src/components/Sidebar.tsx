@@ -142,7 +142,7 @@ export default function Sidebar({ email, isOpen, onClose }: SidebarProps) {
               </div>
               <div>
                 <h1 className="text-xl font-bold tracking-tight leading-none group-hover:text-blue-400 transition-colors">
-                  PB US 162
+                  PB Bilibili 162
                 </h1>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-[9px] font-semibold text-slate-500 uppercase tracking-[0.15em]">Authority Panel</span>

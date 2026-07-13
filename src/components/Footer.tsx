@@ -5,14 +5,14 @@ import { supabase } from '../supabase';
 export default function Footer() {
   // --- KODE BARU: State untuk Data Dinamis Sesuai AdminFooter ---
   const [config, setConfig] = useState({
-    site_name: 'PB US 162 BILIBILI',
-    site_name_highlight: 'Bilibili',
-    logo_url: '', // Tambahan untuk logo dinamis
+    site_name: 'PB Bilibili 162',
+    site_name_highlight: '162',
+    logo_url: '/logo_pb_bilibili_162.svg', // Tambahan untuk logo dinamis
     description: 'Membina legenda masa depan dengan fasilitas standar nasional dan sport-science.',
     address: 'Jl. Andi Makkasau No. 171, Parepare, Indonesia',
-    copyright: `© ${new Date().getFullYear()} PB US 162 Bilibili. All rights reserved.`,
+    copyright: `© ${new Date().getFullYear()} PB Bilibili 162. All rights reserved.`,
     phone: '+62 812 1902 7234',
-    email: 'info@pbus162bilibili.id',
+    email: 'info@pbbilibili162.id',
     navigation: [
       { name: 'Beranda', id: 'home' },
       { name: 'Berita', id: 'news' },
@@ -89,12 +89,12 @@ export default function Footer() {
           {/* Brand & Deskripsi */}
           <div className="animate-in fade-in duration-700">
             <div className="flex items-center space-x-3 mb-3">
-              {/* FIXED LOGO: Tetap bulat presisi dengan aspect-square dan object-cover */}
+              {/* FIXED LOGO: Tetap bulat presisi dengan aspect-square dan object-contain */}
               <div className="w-12 h-12 shrink-0 overflow-hidden rounded-full border-2 border-slate-700 bg-white">
                 <img
-                  src={config.logo_url || "/photo_2026-02-03_00-32-07.jpg"}
-                  alt="Logo PB US 162"
-                  className="w-full h-full object-cover" 
+                  src={config.logo_url || "/logo_pb_bilibili_162.svg"}
+                  alt="Logo PB Bilibili 162"
+                  className="w-full h-full object-contain" 
                 />
               </div>
               <h3 className="text-lg font-bold italic tracking-tighter uppercase leading-tight">

@@ -366,7 +366,7 @@ const Rankings: React.FC = () => {
               <span className="text-blue-400 text-[10px] font-black uppercase tracking-widest">Official Points System</span>
             </div>
             <h1 className="text-4xl md:text-5xl font-black mb-3 italic tracking-tighter uppercase">
-              PB US 162 <span className="text-blue-500">RANKINGS</span>
+              PB BILIBILI 162 <span className="text-blue-500">RANKINGS</span>
             </h1>
             <p className="text-slate-500 text-xs font-bold uppercase tracking-widest italic">Transparansi Perolehan Poin Atlet</p>
           </div>
