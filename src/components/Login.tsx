@@ -1,58 +1,107 @@
 import React, { useState } from 'react';
 import { supabase } from '../supabase';
-import { LogIn, Mail, Lock, Loader2 } from 'lucide-react';
+import { Mail, Lock, Loader2, ShieldCheck, AlertCircle } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setErrorMsg(null);
     
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     
     if (error) {
-      alert("Akses Ditolak: " + error.message);
+      setErrorMsg(error.message);
     }
     setLoading(false);
   };
 
   return (
-    <div className="min-h-screen bg-[#0F172A] flex items-center justify-center p-6">
-      <div className="w-full max-w-md bg-white p-8 md:p-10 rounded-2xl shadow-2xl">
+    <div className="min-h-screen bg-[#070d1a] flex items-center justify-center p-6 relative overflow-hidden">
+      {/* Decorative Glow Blobs */}
+      <div className="absolute top-1/4 left-1/4 w-[350px] h-[350px] bg-blue-600/15 blur-[100px] rounded-full pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-emerald-500/10 blur-[120px] rounded-full pointer-events-none" />
+
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
+        className="w-full max-w-md bg-[#0b1224]/85 backdrop-blur-xl p-8 md:p-10 rounded-[2.5rem] border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] relative z-10"
+      >
         <div className="text-center mb-8">
-          <div className="inline-flex p-3 rounded-2xl bg-blue-50 text-blue-600 mb-3">
-            <LogIn size={28} />
+          {/* Logo container */}
+          <div className="relative inline-flex mb-4">
+            <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-blue-500/30 p-1 bg-slate-900/50 shadow-[0_0_20px_rgba(59,130,246,0.2)]">
+              <img 
+                src="/photo_2026-02-03_00-32-07.jpg" 
+                alt="Logo PB Bilibili 162" 
+                className="w-full h-full object-cover rounded-full"
+                onError={(e) => {
+                  // Fallback if image fails to load
+                  e.currentTarget.src = "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=150&auto=format&fit=crop&q=80";
+                }}
+              />
+            </div>
+            <div className="absolute -bottom-1 -right-1 bg-blue-600 text-white p-1.5 rounded-full border-2 border-[#0b1224] shadow-md">
+              <ShieldCheck size={14} className="text-white" />
+            </div>
           </div>
-          <h2 className="text-2xl md:text-3xl font-extrabold text-slate-950 tracking-tight uppercase">Admin Login</h2>
-          <p className="text-slate-500 font-semibold text-[11px] uppercase tracking-wider mt-1.5">PB US 162 Bilibili System</p>
+
+          <h2 className="text-xl md:text-2xl font-black text-white tracking-tight italic uppercase">
+            Admin Console
+          </h2>
+          <p className="text-slate-400 font-bold text-[10px] uppercase tracking-[0.2em] mt-1.5">
+            PB BILIBILI 162 System
+          </p>
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-4">
+        {errorMsg && (
+          <motion.div 
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            className="mb-6 bg-red-500/10 border border-red-500/30 rounded-xl p-4 flex gap-3 text-red-400 text-xs font-semibold items-start leading-relaxed"
+          >
+            <AlertCircle size={16} className="shrink-0 mt-0.5" />
+            <div>
+              <p className="font-bold text-red-300">Akses Ditolak</p>
+              <p className="opacity-90 mt-0.5">{errorMsg}</p>
+            </div>
+          </motion.div>
+        )}
+
+        <form onSubmit={handleLogin} className="space-y-5">
           <div className="space-y-1.5">
-            <label className="text-[11.5px] font-semibold text-slate-600 ml-1">Alamat Email</label>
-            <div className="relative">
-              <Mail className="absolute left-4 top-3.5 text-slate-400" size={18} />
+            <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 ml-1">
+              Alamat Email
+            </label>
+            <div className="relative group">
+              <Mail className="absolute left-4 top-4 text-slate-500 group-focus-within:text-blue-500 transition-colors" size={16} />
               <input 
                 type="email" 
                 required
-                className="w-full pl-11 pr-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-medium outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-all text-sm"
-                placeholder="admin@pbus162.com"
+                className="w-full pl-11 pr-4 py-3.5 rounded-2xl bg-[#070d1a]/80 border border-white/10 text-white font-semibold outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm"
+                placeholder="admin@pbbilibili162.com"
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[11.5px] font-semibold text-slate-600 ml-1">Kata Sandi</label>
-            <div className="relative">
-              <Lock className="absolute left-4 top-3.5 text-slate-400" size={18} />
+            <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 ml-1">
+              Kata Sandi
+            </label>
+            <div className="relative group">
+              <Lock className="absolute left-4 top-4 text-slate-500 group-focus-within:text-blue-500 transition-colors" size={16} />
               <input 
                 type="password" 
                 required
-                className="w-full pl-11 pr-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-medium outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-all text-sm"
+                className="w-full pl-11 pr-4 py-3.5 rounded-2xl bg-[#070d1a]/80 border border-white/10 text-white font-semibold outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm"
                 placeholder="••••••••"
                 onChange={(e) => setPassword(e.target.value)}
               />
@@ -62,12 +111,18 @@ export default function Login() {
           <button 
             type="submit" 
             disabled={loading}
-            className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-semibold uppercase tracking-wider shadow-lg shadow-blue-600/10 hover:shadow-blue-600/20 active:scale-98 transition-all flex items-center justify-center gap-2.5 disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none mt-2"
+            className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-lg shadow-blue-600/20 active:scale-98 hover:shadow-blue-600/30 transition-all flex items-center justify-center gap-2.5 disabled:opacity-50 mt-4 cursor-pointer"
           >
-            {loading ? <Loader2 className="animate-spin" size={18} /> : "Masuk Sekarang"}
+            {loading ? (
+              <Loader2 className="animate-spin" size={18} />
+            ) : (
+              <>
+                <span>Masuk Sekarang</span>
+              </>
+            )}
           </button>
         </form>
-      </div>
+      </motion.div>
     </div>
   );
 }
