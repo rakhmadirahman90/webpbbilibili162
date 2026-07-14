@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabase';
+import Swal from 'sweetalert2';
 import { Trash2, Plus, Image as ImageIcon, Loader2, X, ZoomIn, ZoomOut, Check } from 'lucide-react';
 import Cropper from 'react-easy-crop';
 import imageCompression from 'browser-image-compression';
@@ -99,7 +100,17 @@ export default function HeroAdmin() {
   };
 
   const handlePublish = async () => {
-    if (!tempPreview || !newTitle) return alert("Lengkapi data!");
+    if (!tempPreview || !newTitle) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Data Tidak Lengkap',
+        text: 'Silakan isi judul dan pilih gambar slider hero terlebih dahulu.',
+        confirmButtonColor: '#3B82F6',
+        background: '#0F172A',
+        color: '#fff'
+      });
+      return;
+    }
     setUploading(true);
     try {
       const res = await fetch(tempPreview);
@@ -117,8 +128,23 @@ export default function HeroAdmin() {
       });
       setSlides(updated);
       setTempPreview(null); setNewTitle(''); setNewSubtitle('');
-    } catch (err) {
-      alert("Gagal Publish");
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: 'Slide berhasil ditambahkan',
+        showConfirmButton: false,
+        timer: 2000
+      });
+    } catch (err: any) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Gagal Publish',
+        text: err.message || 'Terjadi kesalahan saat mempublikasikan slide hero.',
+        confirmButtonColor: '#EF4444',
+        background: '#0F172A',
+        color: '#fff'
+      });
     } finally {
       setUploading(false);
     }
@@ -192,9 +218,43 @@ export default function HeroAdmin() {
               <img src={s.image} className="w-32 aspect-video object-cover rounded-xl" />
               <div className="flex-grow"><h4 className="font-bold">{s.title}</h4></div>
               <button onClick={async () => {
-                const filtered = slides.filter(x => x.id !== s.id);
-                await supabase.from('site_settings').upsert({ key: 'hero_config', value: { slides: filtered } });
-                setSlides(filtered);
+                const result = await Swal.fire({
+                  title: 'Hapus Slide?',
+                  text: "Apakah Anda yakin ingin menghapus slide ini secara permanen?",
+                  icon: 'warning',
+                  showCancelButton: true,
+                  confirmButtonColor: '#EF4444',
+                  cancelButtonColor: '#374151',
+                  confirmButtonText: 'Ya, Hapus!',
+                  cancelButtonText: 'Batal',
+                  background: '#0F172A',
+                  color: '#fff'
+                });
+
+                if (result.isConfirmed) {
+                  const filtered = slides.filter(x => x.id !== s.id);
+                  const { error } = await supabase.from('site_settings').upsert({ key: 'hero_config', value: { slides: filtered } });
+                  if (!error) {
+                    setSlides(filtered);
+                    Swal.fire({
+                      toast: true,
+                      position: 'top-end',
+                      icon: 'success',
+                      title: 'Slide berhasil dihapus',
+                      showConfirmButton: false,
+                      timer: 2000
+                    });
+                  } else {
+                    Swal.fire({
+                      icon: 'error',
+                      title: 'Gagal Menghapus',
+                      text: error.message,
+                      confirmButtonColor: '#EF4444',
+                      background: '#0F172A',
+                      color: '#fff'
+                    });
+                  }
+                }
               }} className="p-3 text-red-500"><Trash2/></button>
             </div>
           ))}

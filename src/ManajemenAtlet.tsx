@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import Cropper from 'react-easy-crop';
 import { supabase } from './supabase';
+import Swal from 'sweetalert2';
 import {
   Search,
   User,
@@ -281,11 +282,14 @@ export default function ManajemenAtlet() {
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
     } catch (err: any) {
-      alert(
-        "Upload Gagal! Pastikan Bucket '" +
-          BUCKET_NAME +
-          "' sudah dibuat di Supabase Storage."
-      );
+      Swal.fire({
+        icon: 'error',
+        title: 'Upload Gagal',
+        text: "Upload Gagal! Pastikan Bucket '" + BUCKET_NAME + "' sudah dibuat di Supabase Storage.",
+        confirmButtonColor: '#EF4444',
+        background: '#0F172A',
+        color: '#fff'
+      });
     } finally {
       setUploadingImage(false);
     }
@@ -351,7 +355,14 @@ export default function ManajemenAtlet() {
       await fetchAtlets();
       setTimeout(() => setShowSuccess(false), 3000);
     } catch (err: any) {
-      alert('Error: ' + err.message);
+      Swal.fire({
+        icon: 'error',
+        title: 'Gagal Menyimpan',
+        text: err.message,
+        confirmButtonColor: '#EF4444',
+        background: '#0F172A',
+        color: '#fff'
+      });
     } finally {
       setIsSaving(false);
       setIsSubmitting(false);
@@ -391,7 +402,14 @@ export default function ManajemenAtlet() {
       setIsEditModalOpen(false);
       setSelectedAtlet(null);
     } catch (err: any) {
-      alert('Error: ' + err.message);
+      Swal.fire({
+        icon: 'error',
+        title: 'Gagal Menyimpan Performa',
+        text: err.message,
+        confirmButtonColor: '#EF4444',
+        background: '#0F172A',
+        color: '#fff'
+      });
     } finally {
       setIsSaving(false);
       setIsSubmitting(false);

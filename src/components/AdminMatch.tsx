@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from "../supabase";
+import Swal from 'sweetalert2';
 import { 
   Trophy, User, Activity, CheckCircle2, 
   Plus, Loader2, Trash2, Send, Clock, AlertCircle, Sparkles, RefreshCcw, Search, X, RotateCcw,
@@ -123,31 +124,60 @@ const AdminMatch: React.FC = () => {
   }, [fetchPlayers, fetchRecentMatches]);
 
   const recalculateAllPoints = async () => {
-    if (!window.confirm("Hitung ulang seluruh poin berdasarkan riwayat untuk SEMUA atlet?")) return;
-    setIsRecalculating(true);
-    try {
-      const { data: allMatches } = await supabase.from('pertandingan').select('*');
-      const { data: allStats, error: statsErr } = await supabase.from('atlet_stats').select('pendaftaran_id');
-      if (statsErr) throw statsErr;
+    const result = await Swal.fire({
+      title: 'Hitung Ulang Seluruh Poin?',
+      text: "Tindakan ini akan mengalkulasi ulang semua total poin atlet berdasarkan data riwayat pertandingan!",
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#3B82F6',
+      cancelButtonColor: '#374151',
+      confirmButtonText: 'Ya, Hitung Ulang!',
+      cancelButtonText: 'Batal',
+      background: '#0F172A',
+      color: '#fff'
+    });
 
-      const updatePromises = allStats.map(async (atlet) => {
-        const matchPoints = (allMatches || [])
-          .filter(m => m.pendaftaran_id === atlet.pendaftaran_id)
-          .reduce((sum, m) => sum + (POINT_MAP[m.kategori_kegiatan]?.[m.hasil] || 0), 0);
+    if (result.isConfirmed) {
+      setIsRecalculating(true);
+      try {
+        const { data: allMatches } = await supabase.from('pertandingan').select('*');
+        const { data: allStats, error: statsErr } = await supabase.from('atlet_stats').select('pendaftaran_id');
+        if (statsErr) throw statsErr;
 
-        return supabase
-          .from('atlet_stats')
-          .update({ total_points: matchPoints })
-          .eq('pendaftaran_id', atlet.pendaftaran_id);
-      });
+        const updatePromises = allStats.map(async (atlet) => {
+          const matchPoints = (allMatches || [])
+            .filter(m => m.pendaftaran_id === atlet.pendaftaran_id)
+            .reduce((sum, m) => sum + (POINT_MAP[m.kategori_kegiatan]?.[m.hasil] || 0), 0);
 
-      await Promise.all(updatePromises);
-      await fetchPlayers();
-      alert(`Database ${allStats.length} Atlet Berhasil Disinkronkan!`);
-    } catch (err: any) {
-      alert("Error: " + err.message);
-    } finally {
-      setIsRecalculating(false);
+          return supabase
+            .from('atlet_stats')
+            .update({ total_points: matchPoints })
+            .eq('pendaftaran_id', atlet.pendaftaran_id);
+        });
+
+        await Promise.all(updatePromises);
+        await fetchPlayers();
+        
+        Swal.fire({
+          icon: 'success',
+          title: 'Sinkronisasi Berhasil!',
+          text: `Database ${allStats.length} Atlet berhasil disinkronkan.`,
+          confirmButtonColor: '#3B82F6',
+          background: '#0F172A',
+          color: '#fff'
+        });
+      } catch (err: any) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Gagal Sinkronisasi',
+          text: err.message,
+          confirmButtonColor: '#EF4444',
+          background: '#0F172A',
+          color: '#fff'
+        });
+      } finally {
+        setIsRecalculating(false);
+      }
     }
   };
 
@@ -248,7 +278,14 @@ const AdminMatch: React.FC = () => {
         setTimeout(() => setShowSuccess(false), 3000);
       }
     } catch (err: any) {
-      alert("Error: " + err.message);
+      Swal.fire({
+        icon: 'error',
+        title: 'Gagal Menyimpan Pertandingan',
+        text: err.message,
+        confirmButtonColor: '#3B82F6',
+        background: '#0F172A',
+        color: '#fff'
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -258,16 +295,48 @@ const AdminMatch: React.FC = () => {
     const matchToDelete = recentMatches.find(m => m.id === id);
     if (!matchToDelete) return;
     const pointsToSubtract = -(POINT_MAP[matchToDelete.kategori_kegiatan][matchToDelete.hasil] || 0);
-    if (!window.confirm(`Rollback poin untuk ${matchToDelete.pendaftaran?.nama}?`)) return;
     
-    setIsLoading(true);
-    try {
-      await syncPlayerPerformance(matchToDelete.pendaftaran_id, pointsToSubtract, matchToDelete.kategori_kegiatan, "Rollback");
-      await supabase.from('pertandingan').delete().eq('id', id);
-      setShowRollbackSuccess(true);
-      await Promise.all([fetchRecentMatches(), fetchPlayers()]);
-      setTimeout(() => setShowRollbackSuccess(false), 3000);
-    } catch (err: any) { alert(err.message); } finally { setIsLoading(false); }
+    const result = await Swal.fire({
+      title: 'Rollback Pertandingan?',
+      text: `Apakah Anda yakin ingin me-rollback pertandingan & poin untuk ${matchToDelete.pendaftaran?.nama}?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#EF4444',
+      cancelButtonColor: '#374151',
+      confirmButtonText: 'Ya, Rollback!',
+      cancelButtonText: 'Batal',
+      background: '#0F172A',
+      color: '#fff'
+    });
+
+    if (result.isConfirmed) {
+      setIsLoading(true);
+      try {
+        await syncPlayerPerformance(matchToDelete.pendaftaran_id, pointsToSubtract, matchToDelete.kategori_kegiatan, "Rollback");
+        await supabase.from('pertandingan').delete().eq('id', id);
+        
+        Swal.fire({
+          toast: true,
+          position: 'top-end',
+          icon: 'success',
+          title: 'Pertandingan berhasil di-rollback!',
+          showConfirmButton: false,
+          timer: 3000
+        });
+        await Promise.all([fetchRecentMatches(), fetchPlayers()]);
+      } catch (err: any) { 
+        Swal.fire({
+          icon: 'error',
+          title: 'Gagal Rollback',
+          text: err.message,
+          confirmButtonColor: '#3B82F6',
+          background: '#0F172A',
+          color: '#fff'
+        });
+      } finally { 
+        setIsLoading(false); 
+      }
+    }
   };
 
   const filteredPlayers = players.filter(p => 

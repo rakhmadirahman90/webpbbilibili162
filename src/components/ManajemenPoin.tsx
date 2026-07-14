@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabase';
+import Swal from 'sweetalert2';
 import {
   Trophy,
   Plus,
@@ -184,7 +185,14 @@ export default function ManajemenPoin() {
       fetchAtlets();
       setTimeout(() => setShowSuccess(false), 2000);
     } catch (err: any) {
-      alert('Gagal update Seed: ' + err.message);
+      Swal.fire({
+        icon: 'error',
+        title: 'Gagal Update Seed',
+        text: err.message,
+        confirmButtonColor: '#EF4444',
+        background: '#0F172A',
+        color: '#fff'
+      });
     } finally {
       setUpdatingId(null);
     }
@@ -267,7 +275,14 @@ export default function ManajemenPoin() {
       if (expandedId === atlet.id) fetchHistory(atlet.nama);
       setTimeout(() => setShowSuccess(false), 2000);
     } catch (err: any) {
-      alert('Sinkronisasi Gagal: ' + err.message);
+      Swal.fire({
+        icon: 'error',
+        title: 'Sinkronisasi Gagal',
+        text: err.message,
+        confirmButtonColor: '#EF4444',
+        background: '#0F172A',
+        color: '#fff'
+      });
     } finally {
       setUpdatingId(null);
     }

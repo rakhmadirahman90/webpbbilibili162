@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from "../supabase";
 import { motion, AnimatePresence } from 'framer-motion';
+import Swal from 'sweetalert2';
 import LazyImage from './LazyImage';
 import PrayerTimes from './PrayerTimes';
 import { getOptimizedImageUrl } from '../utils/imageOptimizer';
@@ -301,7 +302,12 @@ export default function News() {
 
       if (error) {
         console.error("Gagal mengirim komentar ke database:", error);
-        alert(`Gagal mengirim komentar: ${error.message}`);
+        Swal.fire({
+          icon: 'error',
+          title: 'Gagal Kirim Komentar',
+          text: error.message,
+          confirmButtonColor: '#3B82F6'
+        });
         return;
       }
 
@@ -319,9 +325,23 @@ export default function News() {
       setBeritaList(prev => prev.map(item => 
         item.id === selectedNews.id ? { ...item, comments_count: (item.comments_count || 0) + 1 } : item
       ));
+
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: 'Komentar berhasil dikirim!',
+        showConfirmButton: false,
+        timer: 3000
+      });
     } catch (err: any) {
       console.error("Error submitting comment:", err);
-      alert("Gagal mengirim komentar: " + (err.message || "Terjadi kesalahan"));
+      Swal.fire({
+        icon: 'error',
+        title: 'Terjadi Kesalahan',
+        text: err.message || "Gagal mengirim komentar",
+        confirmButtonColor: '#3B82F6'
+      });
     } finally {
       setIsSubmitting(false);
     }

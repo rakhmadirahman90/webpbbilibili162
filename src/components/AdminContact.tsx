@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from "../supabase";
+import Swal from 'sweetalert2';
 import { Save, MapPin, Phone, Mail, Link as LinkIcon, Loader2, CheckCircle2, Clock, Globe, Zap } from 'lucide-react';
 
 export default function AdminContact() {

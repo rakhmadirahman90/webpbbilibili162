@@ -68,10 +68,11 @@ export default function Navbar({ onNavigate }: NavbarProps) {
           { id: '3', label: 'Berita', path: 'berita', type: 'link', order_index: 2 },
           { id: '4', label: 'Peringkat', path: 'peringkat', type: 'dropdown', order_index: 3 },
           { id: '5', label: 'Kas', path: 'kas', type: 'link', order_index: 4 },
-          { id: '2-1', parent_id: '2', label: 'Sejarah', path: 'sejarah' },
-          { id: '2-2', parent_id: '2', label: 'Visi Misi', path: 'visi-misi' },
-          { id: '2-3', parent_id: '2', label: 'Fasilitas', path: 'fasilitas' },
-          { id: '2-4', parent_id: '2', label: 'Dokumen Penting', path: 'dokumen-penting' },
+          { id: '2-1', parent_id: '2', label: 'Sejarah', path: 'sejarah', order_index: 1 },
+          { id: '2-2', parent_id: '2', label: 'Visi & Misi', path: 'visi-misi', order_index: 2 },
+          { id: '2-3', parent_id: '2', label: 'Fasilitas', path: 'fasilitas', order_index: 3 },
+          { id: '2-4', parent_id: '2', label: 'Struktur Organisasi', path: 'organisasi', order_index: 4 },
+          { id: '2-5', parent_id: '2', label: 'Dokumen Penting', path: 'dokumen-penting', order_index: 5 },
           { id: '4-1', parent_id: '4', label: 'Ranking Atlet', path: 'peringkat' },
           { id: '4-2', parent_id: '4', label: 'Quiz Badminton', path: 'quiz' }
         ];
@@ -87,8 +88,20 @@ export default function Navbar({ onNavigate }: NavbarProps) {
         );
         const hasDocs = finalNav.some((item: any) => item.path === 'dokumen-penting');
         if (!hasDocs && parentTentang) {
-          finalNav.push({ id: 'docs-dynamic', parent_id: parentTentang.id, label: 'Dokumen Penting', path: 'dokumen-penting' });
+          finalNav.push({ id: 'docs-dynamic', parent_id: parentTentang.id, label: 'Dokumen Penting', path: 'dokumen-penting', order_index: 5 });
         }
+
+        // Update order_index for sub-menus of 'Tentang Kami' (id='2')
+        finalNav = finalNav.map((item: any) => {
+          if (item.parent_id === '2' || (parentTentang && item.parent_id === parentTentang.id)) {
+            if (item.path === 'sejarah') return { ...item, order_index: 1 };
+            if (item.path === 'visi-misi') return { ...item, order_index: 2 };
+            if (item.path === 'fasilitas') return { ...item, order_index: 3 };
+            if (item.path === 'organisasi') return { ...item, order_index: 4 };
+            if (item.path === 'dokumen-penting') return { ...item, order_index: 5 };
+          }
+          return item;
+        });
 
         let parentRanking = finalNav.find((item: any) => 
           item.path === 'peringkat' || item.path === 'ranking' || item.label.toLowerCase().includes('peringkat')
@@ -269,7 +282,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
                   {isDropdown && activeDropdown === menu.id && (
                     <div className={`dropdown-container animate-in fade-in slide-in-from-top-2 duration-200 ${isLastFew ? 'right-0' : 'left-0'}`}>
                       <div className="dropdown-content">
-                        {subMenus.map((sub) => (
+                        {subMenus.sort((a, b) => (a.order_index || 0) - (b.order_index || 0)).map((sub) => (
                            <button 
                             key={sub.id} 
                             onClick={() => handleNavClick(menu.path, sub.path)} 
@@ -399,7 +412,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
                     
                     {isDropdown && isExpanded && (
                       <div className="bg-[#070c18]/40 border-t border-white/5 flex flex-col py-2 pl-8 pr-4 gap-1 animate-in fade-in duration-200">
-                        {subMenus.map((sub) => (
+                        {subMenus.sort((a, b) => (a.order_index || 0) - (b.order_index || 0)).map((sub) => (
                           <button 
                             key={sub.id} 
                             onClick={() => handleNavClick(menu.path, sub.path)} 

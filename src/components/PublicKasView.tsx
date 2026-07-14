@@ -217,10 +217,10 @@ export default function PublicKasView() {
             <div className="p-2 bg-blue-600 rounded-2xl text-white shadow-xl shadow-blue-200"><Wallet size={28}/></div>
             TRANSPARANSI KAS
           </h2>
-          <p className="text-slate-500 mt-2 font-medium flex items-center gap-2">
+          <div className="text-slate-500 mt-2 font-medium flex items-center gap-2">
             <Info size={16} className="text-blue-500" />
             Pemantauan saldo dan mutasi dana PB. Bili Bili 162 secara terbuka.
-          </p>
+          </div>
         </div>
         
         <button 
@@ -275,24 +275,24 @@ export default function PublicKasView() {
           <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform">
             <TrendingUp size={120} className="text-emerald-600" />
           </div>
-          <p className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.3em] mb-2">Pemasukan Periode</p>
-          <p className="text-3xl font-black text-emerald-700 tracking-tighter">Rp {stats.masuk.toLocaleString()}</p>
+          <div className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.3em] mb-2">Pemasukan Periode</div>
+          <div className="text-3xl font-black text-emerald-700 tracking-tighter">Rp {stats.masuk.toLocaleString()}</div>
         </div>
         
         <div className="bg-rose-50 border border-rose-100 p-8 rounded-[2rem] relative overflow-hidden group">
           <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform">
             <TrendingDown size={120} className="text-rose-600" />
           </div>
-          <p className="text-[10px] font-black text-rose-600 uppercase tracking-[0.3em] mb-2">Pengeluaran Periode</p>
-          <p className="text-3xl font-black text-rose-700 tracking-tighter">Rp {stats.keluar.toLocaleString()}</p>
+          <div className="text-[10px] font-black text-rose-600 uppercase tracking-[0.3em] mb-2">Pengeluaran Periode</div>
+          <div className="text-3xl font-black text-rose-700 tracking-tighter">Rp {stats.keluar.toLocaleString()}</div>
         </div>
         
         <div className="bg-blue-600 p-8 rounded-[2rem] shadow-[0_20px_50px_rgba(37,99,235,0.2)] relative overflow-hidden group">
           <div className="absolute -right-4 -bottom-4 opacity-20 group-hover:scale-110 transition-transform">
             <Wallet size={120} className="text-white" />
           </div>
-          <p className="text-[10px] font-black text-blue-100 uppercase tracking-[0.3em] mb-2">Total Saldo Kas Global</p>
-          <p className="text-3xl font-black text-white tracking-tighter">Rp {saldoGlobalTerkini.toLocaleString()}</p>
+          <div className="text-[10px] font-black text-blue-100 uppercase tracking-[0.3em] mb-2">Total Saldo Kas Global</div>
+          <div className="text-3xl font-black text-white tracking-tighter">Rp {saldoGlobalTerkini.toLocaleString()}</div>
         </div>
       </div>
 
@@ -328,8 +328,8 @@ export default function PublicKasView() {
                       <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
                         <Search className="text-slate-300" size={32} />
                       </div>
-                      <p className="text-slate-900 font-black uppercase text-xs tracking-widest">Data Kosong / Tidak Ditemukan</p>
-                      <p className="text-xs text-slate-400 mt-2">Coba periksa kembali ejaan nama atlet atau filter tanggal.</p>
+                      <div className="text-slate-900 font-black uppercase text-xs tracking-widest">Data Kosong / Tidak Ditemukan</div>
+                      <div className="text-xs text-slate-400 mt-2">Coba periksa kembali ejaan nama atlet atau filter tanggal.</div>
                     </div>
                   </td>
                 </tr>
@@ -344,9 +344,9 @@ export default function PublicKasView() {
                       </div>
                     </td>
                     <td className="p-6">
-                      <p className="font-black text-slate-800 uppercase text-xs tracking-tight group-hover:text-blue-600 transition-colors">
+                      <div className="font-black text-slate-800 uppercase text-xs tracking-tight group-hover:text-blue-600 transition-colors">
                         {item.nama_pembayar}
-                      </p>
+                      </div>
                     </td>
                     <td className="p-6">
                        <span className="px-3 py-1.5 bg-slate-100 text-slate-600 rounded-xl text-[10px] font-black uppercase tracking-wider border border-slate-200">
@@ -389,8 +389,8 @@ export default function PublicKasView() {
           ) : currentItems.length === 0 ? (
             <div className="p-16 text-center">
               <Search className="text-slate-300 mx-auto mb-4" size={32} />
-              <p className="text-slate-950 font-black uppercase text-xs tracking-widest">Data Kosong / Tidak Ditemukan</p>
-              <p className="text-xs text-slate-400 mt-2">Coba periksa filter nama atau tanggal.</p>
+              <div className="text-slate-950 font-black uppercase text-xs tracking-widest">Data Kosong / Tidak Ditemukan</div>
+              <div className="text-xs text-slate-400 mt-2">Coba periksa filter nama atau tanggal.</div>
             </div>
           ) : (
             currentItems.map((item) => {
@@ -410,7 +410,7 @@ export default function PublicKasView() {
                   
                   <div className="flex justify-between items-start">
                     <div>
-                      <p className="font-black text-slate-800 uppercase text-sm tracking-tight">{item.nama_pembayar}</p>
+                      <div className="font-black text-slate-800 uppercase text-sm tracking-tight">{item.nama_pembayar}</div>
                       <div className="flex gap-2 mt-2 items-center flex-wrap">
                         <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-lg text-[9px] font-black uppercase tracking-wider border border-slate-200">
                           {item.kategori}
@@ -471,11 +471,11 @@ export default function PublicKasView() {
 
       {/* Footer Info */}
       <div className="mt-12 flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">
-        <p>© 2026 PB. BILI BILI 162</p>
-        <p className="flex items-center gap-2 italic">
+        <div>© 2026 PB. BILI BILI 162</div>
+        <div className="flex items-center gap-2 italic">
           <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" /> 
           Verified by Admin
-        </p>
+        </div>
       </div>
     </div>
   );

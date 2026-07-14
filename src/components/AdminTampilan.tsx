@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
+import Swal from 'sweetalert2';
 import { 
   Layout, Save, Image as ImageIcon, MousePointer2, Info, Loader2, 
   CheckCircle2, Columns, Plus, Trash2, ArrowUp, ArrowDown, Upload, RefreshCw,
@@ -106,10 +107,29 @@ export default function AdminTampilan() {
   };
 
   const handleResetToDefault = async () => {
-    if (confirm("Kembalikan semua slide ke pengaturan awal (Default)? Ini akan menghapus slide kustom Anda.")) {
+    const result = await Swal.fire({
+      title: 'Reset Slide?',
+      text: "Semua slide kustom Anda akan dihapus dan dikembalikan ke pengaturan awal!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#EF4444',
+      cancelButtonColor: '#374151',
+      confirmButtonText: 'Ya, Reset!',
+      cancelButtonText: 'Batal',
+      background: '#0F172A',
+      color: '#fff'
+    });
+
+    if (result.isConfirmed) {
       setSlides(DEFAULT_SLIDES);
-      setMessage("Slide telah di-reset ke default. Klik 'Publish Changes' untuk menyimpan permanen.");
-      setTimeout(() => setMessage(''), 5000);
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: 'Slide di-reset ke default. Klik Publish untuk menyimpan.',
+        showConfirmButton: false,
+        timer: 4000
+      });
     }
   };
 
@@ -124,14 +144,14 @@ export default function AdminTampilan() {
       const filePath = `hero/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('assets')
-        .upload(filePath, file);
+          .from('assets')
+          .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage
-        .from('assets')
-        .getPublicUrl(filePath);
+          .from('assets')
+          .getPublicUrl(filePath);
 
       setSlides(prev => prev.map(s => s.id === id ? { ...s, image: publicUrl } : s));
 
@@ -139,10 +159,23 @@ export default function AdminTampilan() {
         await supabase.storage.from('assets').remove([oldImagePath]);
       }
 
-      setMessage('Gambar terunggah! Tekan "Publish" untuk mengunci.');
-      setTimeout(() => setMessage(''), 4000);
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: 'Gambar berhasil diunggah! Tekan Publish untuk mengunci.',
+        showConfirmButton: false,
+        timer: 4000
+      });
     } catch (err: any) {
-      alert("Gagal upload: " + err.message);
+      Swal.fire({
+        icon: 'error',
+        title: 'Gagal Upload',
+        text: err.message,
+        confirmButtonColor: '#3B82F6',
+        background: '#0F172A',
+        color: '#fff'
+      });
     } finally {
       setLoading(false);
     }
@@ -162,7 +195,20 @@ export default function AdminTampilan() {
   };
 
   const removeSlide = async (id: number | string) => {
-    if (confirm("Hapus slide ini?")) {
+    const result = await Swal.fire({
+      title: 'Hapus Slide?',
+      text: "Slide ini akan dihapus dari daftar tampilan!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#EF4444',
+      cancelButtonColor: '#374151',
+      confirmButtonText: 'Ya, Hapus!',
+      cancelButtonText: 'Batal',
+      background: '#0F172A',
+      color: '#fff'
+    });
+
+    if (result.isConfirmed) {
       const slideToRemove = slides.find(s => s.id === id);
       const imagePath = slideToRemove?.image?.split('/assets/').pop();
       
@@ -171,6 +217,14 @@ export default function AdminTampilan() {
       }
       
       setSlides(slides.filter(s => s.id !== id));
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: 'Slide berhasil dihapus',
+        showConfirmButton: false,
+        timer: 2000
+      });
     }
   };
 
@@ -221,14 +275,28 @@ export default function AdminTampilan() {
         );
       if (footerErr) throw footerErr;
 
-      setMessage('BERHASIL! Data telah disinkronkan.');
+      setMessage('');
       await fetchData(); 
-      setTimeout(() => setMessage(''), 3000);
+      
+      Swal.fire({
+        icon: 'success',
+        title: 'Tampilan Berhasil Disimpan!',
+        text: 'Konfigurasi hero slides dan footer telah diperbarui secara live.',
+        confirmButtonColor: '#3B82F6',
+        background: '#0F172A',
+        color: '#fff'
+      });
     } catch (err: any) {
       console.error("Save error:", err);
-      // Pesan error lebih deskriptif untuk user
-      alert(`Simpan gagal: ${err.message}. Pastikan koneksi internet stabil.`);
       setMessage('Gagal menyimpan.');
+      Swal.fire({
+        icon: 'error',
+        title: 'Gagal Menyimpan Perubahan',
+        text: `Simpan gagal: ${err.message}. Pastikan koneksi internet stabil.`,
+        confirmButtonColor: '#EF4444',
+        background: '#0F172A',
+        color: '#fff'
+      });
     } finally {
       setLoading(false);
     }

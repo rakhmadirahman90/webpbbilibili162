@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from "../supabase";
+import Swal from 'sweetalert2';
 import { 
   Newspaper, Plus, Trash2, Edit3, Save, X, 
   Image as ImageIcon, Calendar, Tag, Loader2, Zap, Search, AlertCircle, 
@@ -138,7 +139,12 @@ export default function AdminBerita() {
 
       if (error) {
         console.error("Gagal mengirim balasan admin:", error);
-        alert(`Gagal mengirim balasan: ${error.message}`);
+        Swal.fire({
+          icon: 'error',
+          title: 'Gagal Kirim Balasan',
+          text: error.message,
+          confirmButtonColor: '#3B82F6'
+        });
         return;
       }
 
@@ -154,20 +160,64 @@ export default function AdminBerita() {
       setReplyText('');
       // Update count di list utama
       setNews(news.map(n => n.id === selectedNewsForComments.id ? { ...n, comments_count: (n.comments_count || 0) + 1 } : n));
+      
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: 'Balasan berhasil dikirim!',
+        showConfirmButton: false,
+        timer: 3000
+      });
     } catch (err: any) {
       console.error(err);
-      alert("Gagal mengirim balasan: " + (err.message || "Terjadi kesalahan"));
+      Swal.fire({
+        icon: 'error',
+        title: 'Terjadi Kesalahan',
+        text: err.message || "Gagal mengirim balasan",
+        confirmButtonColor: '#3B82F6'
+      });
     } finally {
       setIsSubmittingReply(false);
     }
   };
 
   const handleDeleteComment = async (commentId: string) => {
-    if (window.confirm("Hapus komentar ini secara permanen?")) {
+    const result = await Swal.fire({
+      title: 'Hapus Komentar?',
+      text: "Komentar ini akan dihapus secara permanen dari database!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#EF4444',
+      cancelButtonColor: '#374151',
+      confirmButtonText: 'Ya, Hapus!',
+      cancelButtonText: 'Batal',
+      background: '#0F172A',
+      color: '#fff'
+    });
+
+    if (result.isConfirmed) {
       const { error } = await supabase.from('komentar').delete().eq('id', commentId);
       if (!error) {
         setComments(comments.filter(c => c.id !== commentId));
         setNews(news.map(n => n.id === selectedNewsForComments?.id ? { ...n, comments_count: (n.comments_count || 1) - 1 } : n));
+        Swal.fire({
+          toast: true,
+          position: 'top-end',
+          icon: 'success',
+          title: 'Komentar telah dihapus',
+          showConfirmButton: false,
+          timer: 2000
+        });
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'Gagal Menghapus',
+          text: error.message,
+          confirmButtonColor: '#3B82F6',
+          background: '#0F172A',
+          color: '#fff'
+        });
       }
     }
   };
@@ -258,9 +308,42 @@ export default function AdminBerita() {
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm("Hapus Berita? Seluruh data terkait akan hilang.")) {
-      await supabase.from('berita').delete().eq('id', id);
-      fetchNews();
+    const result = await Swal.fire({
+      title: 'Hapus Berita?',
+      text: "Seluruh data terkait berita ini akan hilang secara permanen!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#EF4444',
+      cancelButtonColor: '#374151',
+      confirmButtonText: 'Ya, Hapus!',
+      cancelButtonText: 'Batal',
+      background: '#0F172A',
+      color: '#fff'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const { error } = await supabase.from('berita').delete().eq('id', id);
+        if (error) throw error;
+        await fetchNews();
+        Swal.fire({
+          toast: true,
+          position: 'top-end',
+          icon: 'success',
+          title: 'Berita berhasil dihapus',
+          showConfirmButton: false,
+          timer: 3000
+        });
+      } catch (err: any) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Gagal Menghapus Berita',
+          text: err.message || "Terjadi kesalahan database",
+          confirmButtonColor: '#3B82F6',
+          background: '#0F172A',
+          color: '#fff'
+        });
+      }
     }
   };
 

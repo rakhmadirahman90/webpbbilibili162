@@ -5,6 +5,7 @@ import {
   ChevronDown, Star, GraduationCap, History, Eye, Map,
   CheckCircle, Zap, Loader2
 } from 'lucide-react'; 
+import DokumenPenting from './DokumenPenting';
 import { supabase } from '../supabase'; 
 
 // --- IMPORT FALLBACK DATA ---
@@ -198,7 +199,13 @@ export default function About({ activeTab: propsActiveTab, onTabChange }: AboutP
         </div>
 
         <div className="flex flex-wrap justify-center gap-2 mb-10">
-          {['sejarah', 'visi-misi', 'fasilitas'].map((id) => (
+          {[
+            { id: 'sejarah', label: 'Sejarah' },
+            { id: 'visi-misi', label: 'Visi & Misi' },
+            { id: 'fasilitas', label: 'Fasilitas' },
+            { id: 'organisasi', label: 'Struktur Organisasi' },
+            { id: 'dokumen-penting', label: 'Dokumen Penting' }
+          ].map(({ id, label }) => (
             <button
               key={id}
               onClick={() => handleTabChange(id)}
@@ -206,63 +213,122 @@ export default function About({ activeTab: propsActiveTab, onTabChange }: AboutP
                 activeTab === id ? 'bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-500/20' : 'bg-[#1a1d26] text-zinc-400 border-white/5 hover:border-blue-500/30'
               }`}
             >
-              {id.replace('-', ' ')}
+              {label}
             </button>
           ))}
-          <button
-            onClick={() => handleTabChange('organisasi')}
-            className={`px-4 md:px-8 py-3 md:py-4 rounded-xl font-black text-[9px] md:text-[11px] uppercase border flex items-center gap-2 transition-all active:scale-95 ${
-              activeTab === 'organisasi' ? 'bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-500/20' : 'bg-[#1a1d26] text-zinc-300 border-white/5 hover:border-blue-500/30'
-            }`}
-          >
-            Struktur Organisasi <ArrowRight size={14} />
-          </button>
         </div>
 
-        <div className="w-full bg-[#12141c]/60 rounded-[2.5rem] md:rounded-[3.5rem] p-6 md:p-14 border border-white/5 shadow-2xl relative">
+        <div className={`w-full rounded-[2.5rem] md:rounded-[3.5rem] border shadow-2xl relative transition-all duration-500 overflow-hidden ${
+          activeTab === 'sejarah' 
+            ? 'bg-[#E5E7EB] border-zinc-300' 
+            : 'bg-[#12141c]/60 p-6 md:p-14 border-white/5'
+        }`}>
           {loading ? (
-            <div className="flex flex-col items-center justify-center h-full gap-4">
+            <div className="flex flex-col items-center justify-center h-full gap-4 py-20">
               <Loader2 className="animate-spin text-blue-600" size={40} />
               <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Sinkronisasi Database...</p>
             </div>
           ) : (
             <>
               {activeTab === 'sejarah' && (
-                <div className="max-w-4xl mx-auto py-4 animate-in fade-in slide-in-from-bottom-8 duration-700">
-                  <div className="flex flex-col md:flex-row gap-12 items-center md:items-start">
-                    <div className="w-full md:w-2/5 shrink-0">
-                      <div className="relative aspect-square rounded-[3rem] overflow-hidden border-4 border-white/10 bg-[#1a1d26] shadow-2xl -rotate-2">
-                        <img src={dynamicContent.sejarah_image} className="w-full h-full object-cover" alt="Sejarah" />
+                <div className="w-full animate-in fade-in duration-700 flex flex-col">
+                  {/* Sejarah Description Section */}
+                  <div className="px-6 sm:px-12 py-10 bg-white text-zinc-800 text-left">
+                    <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-8 items-start">
+                      <div className="w-full md:w-1/3 shrink-0">
+                        <img 
+                          src="/whatsapp_image_2026-02-05_at_10.36.22.jpeg" 
+                          alt="Founder PB Bilibili 162" 
+                          className="w-full aspect-[4/5] object-cover rounded-3xl shadow-xl border border-zinc-200"
+                          referrerPolicy="no-referrer"
+                        />
+                      </div>
+                      <div className="w-full md:w-2/3">
+                        {dynamicContent.sejarah ? (
+                          dynamicContent.sejarah.split('\n').filter((p: string) => p.trim() !== '').map((para: string, idx: number) => (
+                            <p key={idx} className="font-sans text-[16px] sm:text-[18px] md:text-[21px] leading-relaxed text-zinc-700 font-medium mb-6 last:mb-0">
+                              {para}
+                            </p>
+                          ))
+                        ) : (
+                          <p className="font-sans text-[16px] sm:text-[18px] md:text-[21px] leading-relaxed text-zinc-400 font-medium italic">
+                            Belum ada data sejarah yang ditambahkan.
+                          </p>
+                        )}
                       </div>
                     </div>
-                    <div className="flex-1 text-center md:text-left">
-                      <h3 className="text-3xl font-black text-white uppercase italic mb-6">
-                        {dynamicContent.sejarah_title} <span className="text-blue-500">{dynamicContent.sejarah_accent}</span>
-                      </h3>
-                      <p className="text-zinc-300 leading-relaxed text-sm md:text-lg font-medium whitespace-pre-line">
-                        {dynamicContent.sejarah}
-                      </p>
+                  </div>
+
+                  {/* Era Tabs Selector */}
+                  <div className="bg-[#E5E7EB] px-6 sm:px-12 pt-6 pb-2 text-left">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full max-w-2xl">
+                      {['2020', '2022', '2024', '2026'].map(era => (
+                        <button
+                          key={era}
+                          onClick={() => {}}
+                          className={`py-3.5 px-4 font-black text-xs uppercase tracking-wider text-center transition-all cursor-pointer ${
+                            era === '2020'
+                              ? 'bg-[#A17C17] text-white shadow-md'
+                              : 'bg-[#1F2937] text-white hover:bg-[#374151]'
+                          }`}
+                        >
+                          <div className="text-[10px] opacity-80">ERA</div>
+                          <div className="text-base sm:text-lg mt-0.5 font-bold">{era}</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Timeline Content */}
+                  <div className="bg-[#E5E7EB] px-6 sm:px-12 pb-12 pt-4 text-left">
+                    <div className="w-full flex flex-col gap-6">
+                      {[
+                        { year: '2020', text: 'PB Bilibili 162 didirikan dengan semangat membina bakat muda lokal.' },
+                        { year: '2021', text: 'Mulai menyelenggarakan latihan rutin untuk berbagai kelompok usia.' },
+                        { year: '2023', text: 'Meraih prestasi membanggakan pada turnamen bulutangkis tingkat daerah.' },
+                        { year: '2024', text: 'PB Bilibili 162 memperluas fasilitas latihan untuk menampung lebih banyak atlet.' },
+                        { year: '2025', text: 'Terus berkomitmen mencetak atlet berprestasi untuk masa depan.' },
+                        { year: '2026', text: 'PB Bilibili 162 merayakan tahun ke-6 dengan komitmen pengembangan atlet yang lebih profesional.' }
+                      ].map((item, index) => (
+                        <div key={index} className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
+                          <div className="bg-[#27272a] text-white font-extrabold text-[15px] sm:text-[16px] tracking-wider py-2.5 px-4 text-center shrink-0 w-24">
+                            {item.year}
+                          </div>
+                          <div className="text-zinc-800 text-[15px] sm:text-[16px] md:text-[18px] leading-relaxed font-normal">
+                            {item.text}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
               )}
 
               {activeTab === 'visi-misi' && (
-                <div className="max-w-5xl mx-auto py-4 animate-in fade-in slide-in-from-bottom-8 duration-700">
-                  <div className="grid md:grid-cols-2 gap-12">
+                <div className="max-w-5xl mx-auto py-6 md:py-10 animate-in fade-in slide-in-from-bottom-8 duration-700 px-6">
+                  <div className="grid md:grid-cols-2 gap-8 md:gap-12">
+                    {/* Visi Section */}
                     <div className="space-y-6">
-                      <div className="inline-block px-4 py-1.5 bg-amber-500/10 border border-amber-500/20 text-amber-500 rounded-lg text-[10px] font-black uppercase">Visi</div>
-                      <div className="bg-[#1a1d26] p-10 rounded-[3rem] border border-white/5 shadow-2xl shadow-blue-500/5 font-black italic text-xl md:text-2xl text-white leading-tight">
+                      <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-amber-500/10 border border-amber-500/20 text-amber-500 rounded-full text-[10px] font-black uppercase tracking-widest">
+                        <Target size={14} /> Visi
+                      </div>
+                      <div className="bg-gradient-to-br from-[#1a1d26] to-[#0b0e14] p-8 md:p-10 rounded-[2.5rem] border border-white/5 shadow-xl font-medium text-xl md:text-3xl text-zinc-100 leading-relaxed tracking-tight">
                         "{dynamicContent.visi}"
                       </div>
                     </div>
+                    
+                    {/* Misi Section */}
                     <div className="space-y-6">
-                      <div className="inline-block px-4 py-1.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-lg text-[10px] font-black uppercase">Misi</div>
+                      <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-full text-[10px] font-black uppercase tracking-widest">
+                        <CheckCircle2 size={14} /> Misi
+                      </div>
                       <div className="space-y-4">
                         {dynamicContent.misi.map((item: any, i: number) => (
-                          <div key={i} className="flex items-start gap-4 bg-[#1a1d26] p-6 rounded-3xl border border-white/5 shadow-sm hover:border-blue-500/30 transition-all">
-                            <div className="bg-emerald-500 p-1 rounded-full shrink-0 mt-1"><CheckCircle2 size={14} className="text-white" /></div>
-                            <p className="text-zinc-300 text-[11px] md:text-[13px] font-black uppercase tracking-tight leading-snug">
+                          <div key={i} className="flex items-start gap-4 bg-[#1a1d26] p-6 rounded-2xl border border-white/5 hover:border-blue-500/30 transition-all duration-300 shadow-sm group">
+                            <div className="bg-blue-500/10 p-2 rounded-xl shrink-0 mt-0.5 group-hover:bg-blue-600 transition-colors">
+                              <CheckCircle2 size={16} className="text-blue-500 group-hover:text-white" />
+                            </div>
+                            <p className="text-zinc-300 text-[14px] md:text-[16px] font-normal leading-relaxed">
                               {typeof item === 'string' ? item : item.text}
                             </p>
                           </div>
@@ -305,6 +371,12 @@ export default function About({ activeTab: propsActiveTab, onTabChange }: AboutP
                       </div>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {activeTab === 'dokumen-penting' && (
+                <div className="w-full animate-in fade-in slide-in-from-bottom-8 duration-700 p-6 md:p-12">
+                  <DokumenPenting />
                 </div>
               )}
 

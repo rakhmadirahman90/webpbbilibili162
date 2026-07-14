@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { supabase } from '../supabase';
+import Swal from 'sweetalert2';
 import { 
   Plus, Trash2, Shield, Edit3, X, Upload, Loader2, 
   ImageIcon, Search, ChevronLeft, ChevronRight, 
@@ -523,7 +524,20 @@ export default function AdminStructure() {
                     member={m} 
                     onEdit={startEdit} 
                     onDelete={async (member: any) => { 
-                      if(confirm(`Hapus ${member.name}? Data akan dihapus permanen.`)) { 
+                      const result = await Swal.fire({
+                        title: 'Hapus Pengurus?',
+                        text: `Apakah Anda yakin ingin menghapus ${member.name}? Data akan dihapus permanen.`,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#EF4444',
+                        cancelButtonColor: '#374151',
+                        confirmButtonText: 'Ya, Hapus!',
+                        cancelButtonText: 'Batal',
+                        background: '#0F172A',
+                        color: '#fff'
+                      });
+
+                      if (result.isConfirmed) { 
                         try {
                           const { error } = await supabase.from('organizational_structure').delete().eq('id', member.id); 
                           if (error) throw error;

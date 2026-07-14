@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../supabase';
+import Swal from 'sweetalert2';
 import {
   Plus,
   Trash2,
@@ -302,14 +303,44 @@ const paginatedRankings = filteredRankings.slice(startIndex, startIndex + itemsP
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Hapus data atlet ini? Tindakan ini tidak menghapus data pendaftaran asli.')) return;
-    try {
-      const { error } = await supabase.from('rankings').delete().eq('id', id);
-      if (error) throw error;
-      setSuccessMsg('Atlet dihapus dari ranking');
-      setTimeout(() => setSuccessMsg(null), 2000);
-      fetchRankings();
-    } catch (err: any) { alert(err.message); }
+    const result = await Swal.fire({
+      title: 'Hapus dari Ranking?',
+      text: "Tindakan ini tidak menghapus data pendaftaran asli atlet.",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#EF4444',
+      cancelButtonColor: '#374151',
+      confirmButtonText: 'Ya, Hapus!',
+      cancelButtonText: 'Batal',
+      background: '#0F172A',
+      color: '#fff'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const { error } = await supabase.from('rankings').delete().eq('id', id);
+        if (error) throw error;
+        
+        Swal.fire({
+          toast: true,
+          position: 'top-end',
+          icon: 'success',
+          title: 'Atlet dihapus dari ranking',
+          showConfirmButton: false,
+          timer: 3000
+        });
+        fetchRankings();
+      } catch (err: any) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Gagal Menghapus',
+          text: err.message,
+          confirmButtonColor: '#3B82F6',
+          background: '#0F172A',
+          color: '#fff'
+        });
+      }
+    }
   };
 
   return (

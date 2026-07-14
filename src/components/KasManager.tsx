@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabase';
+import Swal from 'sweetalert2';
 import { 
   Wallet, Plus, Search, FileText, Loader2, CheckCircle2, Filter, 
   Trash2, Edit3, X, ArrowUpCircle, ArrowDownCircle, Calendar,
@@ -288,8 +289,26 @@ export default function KasManager() {
       setEditingId(null); 
       setFormData(initialForm); 
       fetchData(); 
-      alert('Data Berhasil Disimpan!');
-    } catch (error: any) { alert(error.message); } finally { setSaving(false); }
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: 'Data Berhasil Disimpan!',
+        showConfirmButton: false,
+        timer: 3000
+      });
+    } catch (error: any) { 
+      Swal.fire({
+        icon: 'error',
+        title: 'Gagal Menyimpan Data',
+        text: error.message,
+        confirmButtonColor: '#3B82F6',
+        background: '#0F172A',
+        color: '#fff'
+      });
+    } finally { 
+      setSaving(false); 
+    }
   };
 
   const handleEdit = (item: KasEntry) => {
@@ -305,6 +324,47 @@ export default function KasManager() {
       keterangan: item.keterangan || ''
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleDelete = async (id: string) => {
+    const result = await Swal.fire({
+      title: 'Hapus Data Transaksi?',
+      text: "Data transaksi kas ini akan dihapus secara permanen!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#EF4444',
+      cancelButtonColor: '#374151',
+      confirmButtonText: 'Ya, Hapus!',
+      cancelButtonText: 'Batal',
+      background: '#0F172A',
+      color: '#fff'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const { error } = await supabase.from('kas_pb').delete().eq('id', id);
+        if (error) throw error;
+        
+        Swal.fire({
+          toast: true,
+          position: 'top-end',
+          icon: 'success',
+          title: 'Transaksi berhasil dihapus',
+          showConfirmButton: false,
+          timer: 3000
+        });
+        fetchData();
+      } catch (err: any) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Gagal Menghapus',
+          text: err.message,
+          confirmButtonColor: '#3B82F6',
+          background: '#0F172A',
+          color: '#fff'
+        });
+      }
+    }
   };
 
   return (
@@ -492,7 +552,7 @@ export default function KasManager() {
                         <td className="p-6">
                           <div className="flex justify-center gap-1 md:gap-2">
                             <button onClick={() => handleEdit(item)} className="p-2 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500 hover:text-white transition-all"><Edit3 size={14}/></button>
-                            <button onClick={async () => { if(confirm("Hapus data ini?")) { await supabase.from('kas_pb').delete().eq('id', item.id); fetchData(); } }} className="p-2 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500 hover:text-white transition-all"><Trash2 size={14}/></button>
+                            <button onClick={() => handleDelete(item.id)} className="p-2 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500 hover:text-white transition-all"><Trash2 size={14}/></button>
                           </div>
                         </td>
                       </tr>

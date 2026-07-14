@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from "../supabase";
+import Swal from 'sweetalert2';
 import { 
   Plus, Trash2, MoveUp, MoveDown, 
   Image as ImageIcon, RefreshCcw, 
@@ -161,7 +162,14 @@ const KelolaHero: React.FC = () => {
       triggerSuccess();
     } else {
       console.error("Database Save Error:", error.message);
-      alert("Gagal menyimpan ke database: " + error.message);
+      Swal.fire({
+        icon: 'error',
+        title: 'Gagal Menyimpan',
+        text: 'Gagal menyimpan ke database: ' + error.message,
+        confirmButtonColor: '#EF4444',
+        background: '#0F172A',
+        color: '#fff'
+      });
     }
   };
 
@@ -216,14 +224,34 @@ const KelolaHero: React.FC = () => {
 
   const deleteSlide = async (id: number) => {
     const target = slides.find(s => s.id === id);
-    if (!target || !window.confirm("Hapus slide ini secara permanen?")) return;
-    
-    // Opsional: Hapus dari storage jika diinginkan
-    // await deleteFromStorage(target.image); 
-    
-    const updatedSlides = slides.filter(s => s.id !== id);
-    if (editingId === id) resetForm();
-    await saveToDatabase(updatedSlides);
+    if (!target) return;
+
+    const result = await Swal.fire({
+      title: 'Hapus Slide?',
+      text: "Apakah Anda yakin ingin menghapus slide hero ini secara permanen?",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#EF4444',
+      cancelButtonColor: '#374151',
+      confirmButtonText: 'Ya, Hapus!',
+      cancelButtonText: 'Batal',
+      background: '#0F172A',
+      color: '#fff'
+    });
+
+    if (result.isConfirmed) {
+      const updatedSlides = slides.filter(s => s.id !== id);
+      if (editingId === id) resetForm();
+      await saveToDatabase(updatedSlides);
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: 'Slide berhasil dihapus',
+        showConfirmButton: false,
+        timer: 2000
+      });
+    }
   };
 
   const startEdit = (slide: any) => {

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from "../supabase";
+import Swal from 'sweetalert2';
 import { 
   Menu, Plus, Trash2, MoveUp, MoveDown, 
   Link as LinkIcon, Layers, RefreshCcw, CheckCircle2,
@@ -120,7 +121,14 @@ const KelolaNavbar: React.FC = () => {
         triggerSuccess();
       }
     } catch (err: any) {
-      alert("Gagal upload: " + err.message);
+      Swal.fire({
+        icon: 'error',
+        title: 'Upload Gagal',
+        text: err.message,
+        confirmButtonColor: '#EF4444',
+        background: '#0F172A',
+        color: '#fff'
+      });
     } finally {
       setIsUploading(false);
     }
@@ -133,7 +141,14 @@ const KelolaNavbar: React.FC = () => {
       if (error) throw error;
       triggerSuccess();
     } catch (err: any) {
-      alert("Error simpan branding: " + err.message);
+      Swal.fire({
+        icon: 'error',
+        title: 'Gagal Menyimpan Branding',
+        text: err.message,
+        confirmButtonColor: '#EF4444',
+        background: '#0F172A',
+        color: '#fff'
+      });
     } finally {
       setIsSavingBrand(false);
     }
@@ -211,9 +226,42 @@ const KelolaNavbar: React.FC = () => {
   };
 
   const deleteMenu = async (id: string) => {
-    if (!window.confirm("Hapus menu ini?")) return;
-    await supabase.from('navbar_settings').delete().eq('id', id);
-    fetchNavbar();
+    const result = await Swal.fire({
+      title: 'Hapus Menu?',
+      text: "Apakah Anda yakin ingin menghapus item menu navigasi ini?",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#EF4444',
+      cancelButtonColor: '#374151',
+      confirmButtonText: 'Ya, Hapus!',
+      cancelButtonText: 'Batal',
+      background: '#0F172A',
+      color: '#fff'
+    });
+
+    if (result.isConfirmed) {
+      const { error } = await supabase.from('navbar_settings').delete().eq('id', id);
+      if (!error) {
+        Swal.fire({
+          toast: true,
+          position: 'top-end',
+          icon: 'success',
+          title: 'Menu berhasil dihapus',
+          showConfirmButton: false,
+          timer: 2000
+        });
+        fetchNavbar();
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'Gagal Menghapus',
+          text: error.message,
+          confirmButtonColor: '#3B82F6',
+          background: '#0F172A',
+          color: '#fff'
+        });
+      }
+    }
   };
 
   const triggerSuccess = () => {

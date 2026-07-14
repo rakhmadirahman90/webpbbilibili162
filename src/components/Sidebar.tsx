@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
+import Swal from 'sweetalert2';
 import { 
   Users, 
   Newspaper, 
@@ -61,7 +62,20 @@ export default function Sidebar({ email, isOpen, onClose }: SidebarProps) {
   }, []);
 
   const handleLogout = async () => {
-    if (window.confirm("Apakah Anda yakin ingin keluar dari sistem?")) {
+    const result = await Swal.fire({
+      title: 'Keluar Sistem?',
+      text: "Anda harus login kembali untuk mengelola dashboard admin.",
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#EF4444',
+      cancelButtonColor: '#374151',
+      confirmButtonText: 'Ya, Keluar!',
+      cancelButtonText: 'Batal',
+      background: '#0F172A',
+      color: '#fff'
+    });
+
+    if (result.isConfirmed) {
       const { error } = await supabase.auth.signOut();
       if (!error) navigate('/login');
     }

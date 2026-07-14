@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { supabase } from "../supabase";
+import Swal from 'sweetalert2';
 import { 
   Plus, Trash2, Image as ImageIcon, Video, 
   Upload, X, Loader2, CheckCircle2,
@@ -218,23 +219,53 @@ export default function AdminGallery() {
       handleCloseModal();
       fetchGallery();
     } catch (err: any) {
-      alert(err.message);
+      Swal.fire({
+        icon: 'error',
+        title: 'Gagal Menyimpan',
+        text: err.message,
+        confirmButtonColor: '#3B82F6',
+        background: '#0F172A',
+        color: '#fff'
+      });
     }
   };
 
   const handleDelete = async (id: string, url: string) => {
-    if (!window.confirm("Hapus media ini selamanya?")) return;
-    try {
-      await supabase.from('gallery').delete().eq('id', id);
-      if (url.includes('supabase.co')) {
-        const pathParts = url.split('/');
-        const fileName = pathParts[pathParts.length - 1];
-        await supabase.storage.from('gallery').remove([`uploads/${fileName}`]);
+    const result = await Swal.fire({
+      title: 'Hapus Media?',
+      text: "Momen/media ini akan dihapus secara permanen dari galeri!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#EF4444',
+      cancelButtonColor: '#374151',
+      confirmButtonText: 'Ya, Hapus!',
+      cancelButtonText: 'Batal',
+      background: '#0F172A',
+      color: '#fff'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const { error } = await supabase.from('gallery').delete().eq('id', id);
+        if (error) throw error;
+        
+        if (url.includes('supabase.co')) {
+          const pathParts = url.split('/');
+          const fileName = pathParts[pathParts.length - 1];
+          await supabase.storage.from('gallery').remove([`uploads/${fileName}`]);
+        }
+        showToast("Momen dihapus dari galeri");
+        fetchGallery();
+      } catch (err: any) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Gagal Menghapus',
+          text: err.message || "Terjadi kesalahan database",
+          confirmButtonColor: '#3B82F6',
+          background: '#0F172A',
+          color: '#fff'
+        });
       }
-      showToast("Momen dihapus dari galeri");
-      fetchGallery();
-    } catch (err: any) {
-      alert(err.message);
     }
   };
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
+import Swal from 'sweetalert2';
 import { 
   Calendar, Download, Filter, FileText, 
   TrendingUp, Users, Zap, Newspaper, Image as ImageIcon,
@@ -109,7 +110,17 @@ export default function AdminLaporan() {
   );
 
   const exportToExcel = () => {
-    if (filteredLogs.length === 0) return alert("Tidak ada data");
+    if (filteredLogs.length === 0) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Data Kosong',
+        text: 'Tidak ada data log aktivitas audit poin untuk diekspor ke Excel.',
+        confirmButtonColor: '#3B82F6',
+        background: '#0F172A',
+        color: '#fff'
+      });
+      return;
+    }
     const ws = XLSX.utils.json_to_sheet(filteredLogs);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Laporan");

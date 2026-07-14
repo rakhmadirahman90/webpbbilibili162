@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../supabase'; 
+import Swal from 'sweetalert2';
 import { 
   Loader2, Send, CheckCircle2, User, Phone, 
   MapPin, Award, Image as ImageIcon, ChevronDown, 
@@ -99,7 +100,14 @@ export default function RegistrationForm() {
       
     } catch (err: any) {
       console.error("Registration Error:", err);
-      alert("Kesalahan: " + err.message);
+      Swal.fire({
+        icon: 'error',
+        title: 'Gagal Mendaftar',
+        text: "Kesalahan: " + err.message,
+        confirmButtonColor: '#EF4444',
+        background: '#1A1D26',
+        color: '#fff'
+      });
     } finally {
       setLoading(false);
     }

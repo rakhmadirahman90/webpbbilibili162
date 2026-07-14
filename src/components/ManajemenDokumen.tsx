@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
+import Swal from 'sweetalert2';
 import { FileText, Plus, Trash2, Download, Search, Loader2, UploadCloud, Eye, X, AlertCircle, Edit3, Save } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import imageCompression from 'browser-image-compression'; // Library untuk kompresi
@@ -41,7 +42,14 @@ export default function ManajemenDokumen() {
     let file = e.target.files?.[0];
     if (!file) return;
     if (!formData.title) {
-      alert("Silakan isi Judul Dokumen terlebih dahulu!");
+      Swal.fire({
+        icon: 'warning',
+        title: 'Judul Kosong',
+        text: 'Silakan isi Judul Dokumen terlebih dahulu sebelum memilih file!',
+        confirmButtonColor: '#3B82F6',
+        background: '#0F172A',
+        color: '#fff'
+      });
       e.target.value = '';
       return;
     }
@@ -88,9 +96,23 @@ export default function ManajemenDokumen() {
       setFormData({ title: '', description: '' });
       e.target.value = ''; 
       fetchDocs();
-      alert("Dokumen berhasil dikompres & diunggah!");
+      Swal.fire({
+        icon: 'success',
+        title: 'Berhasil Unggah',
+        text: 'Dokumen berhasil dikompres & diunggah!',
+        confirmButtonColor: '#3B82F6',
+        background: '#0F172A',
+        color: '#fff'
+      });
     } catch (error: any) {
-      alert("Gagal mengunggah: " + error.message);
+      Swal.fire({
+        icon: 'error',
+        title: 'Gagal Mengunggah',
+        text: error.message,
+        confirmButtonColor: '#EF4444',
+        background: '#0F172A',
+        color: '#fff'
+      });
     } finally {
       setUploading(false);
     }
@@ -113,9 +135,23 @@ export default function ManajemenDokumen() {
       setEditingId(null);
       setFormData({ title: '', description: '' });
       fetchDocs();
-      alert("Dokumen berhasil diperbarui!");
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: 'Dokumen berhasil diperbarui!',
+        showConfirmButton: false,
+        timer: 3000
+      });
     } catch (error: any) {
-      alert(error.message);
+      Swal.fire({
+        icon: 'error',
+        title: 'Gagal Memperbarui',
+        text: error.message,
+        confirmButtonColor: '#EF4444',
+        background: '#0F172A',
+        color: '#fff'
+      });
     }
   };
 
@@ -126,15 +162,45 @@ export default function ManajemenDokumen() {
   };
 
   const deleteDoc = async (id: string, fileUrl: string) => {
-    if (!confirm("Apakah Anda yakin ingin menghapus dokumen ini?")) return;
-    try {
-      const urlParts = fileUrl.split('/');
-      const fileName = urlParts[urlParts.length - 1];
-      await supabase.storage.from('assets').remove([`docs/${fileName}`]);
-      await supabase.from('documents').delete().eq('id', id);
-      fetchDocs();
-    } catch (error: any) {
-      alert(error.message);
+    const result = await Swal.fire({
+      title: 'Hapus Dokumen?',
+      text: "Dokumen ini akan dihapus secara permanen dari server!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#EF4444',
+      cancelButtonColor: '#374151',
+      confirmButtonText: 'Ya, Hapus!',
+      cancelButtonText: 'Batal',
+      background: '#0F172A',
+      color: '#fff'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const urlParts = fileUrl.split('/');
+        const fileName = urlParts[urlParts.length - 1];
+        await supabase.storage.from('assets').remove([`docs/${fileName}`]);
+        await supabase.from('documents').delete().eq('id', id);
+        
+        Swal.fire({
+          toast: true,
+          position: 'top-end',
+          icon: 'success',
+          title: 'Dokumen berhasil dihapus',
+          showConfirmButton: false,
+          timer: 3000
+        });
+        fetchDocs();
+      } catch (error: any) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Gagal Menghapus',
+          text: error.message,
+          confirmButtonColor: '#EF4444',
+          background: '#0F172A',
+          color: '#fff'
+        });
+      }
     }
   };
 
