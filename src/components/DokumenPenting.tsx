@@ -84,7 +84,7 @@ export default function DokumenPenting() {
               {/* Iframe View */}
               <div className="flex-1 bg-zinc-950">
                 <iframe 
-                  src={`${selectedDocUrl}#toolbar=0`} 
+                  src={`https://docs.google.com/viewer?url=${encodeURIComponent(selectedDocUrl)}&embedded=true`} 
                   className="w-full h-full border-none"
                   title="Document Preview"
                 />
@@ -132,74 +132,55 @@ export default function DokumenPenting() {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
+          <div className="flex flex-col gap-4">
             <AnimatePresence mode='popLayout'>
               {filteredDocs.map((doc, index) => (
                 <motion.div
                   key={doc.id}
                   layout
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ delay: index * 0.05 }}
-                  className="group relative bg-zinc-900/40 border border-zinc-800/80 p-6 md:p-10 rounded-[2rem] md:rounded-[3rem] hover:border-blue-600/50 hover:bg-zinc-900/60 transition-all duration-500 shadow-2xl overflow-hidden"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ delay: index * 0.03 }}
+                  className="group flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 bg-zinc-900/30 border border-zinc-800/80 p-6 rounded-2xl hover:border-blue-600/50 hover:bg-zinc-900/60 transition-all duration-300 shadow-sm"
                 >
-                  {/* Dekorasi Background */}
-                  <div className="absolute -top-10 -right-10 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity rotate-12">
-                    <FileText size={240} />
+                  {/* File Icon */}
+                  <div className="w-12 h-12 bg-zinc-800/50 rounded-xl flex items-center justify-center text-zinc-400 group-hover:bg-blue-600 group-hover:text-white transition-colors shrink-0">
+                    <FileText size={20} />
                   </div>
 
-                  <div className="relative flex flex-col h-full z-10">
-                    <div className="flex justify-between items-start mb-6 md:mb-8">
-                      <div className="flex items-center gap-4 md:gap-5">
-                        <div className="w-14 h-14 md:w-20 md:h-20 bg-zinc-800/50 border border-zinc-700/50 rounded-2xl md:rounded-3xl flex items-center justify-center text-zinc-400 group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-500 group-hover:shadow-[0_10px_30px_rgba(37,99,235,0.3)] transition-all duration-500 shrink-0">
-                          <FileText size={28} className="md:hidden" />
-                          <FileText size={36} className="hidden md:block" />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2 md:gap-3 mb-1.5 md:mb-2 flex-wrap">
-                            <span className="px-2 py-0.5 md:px-3 md:py-1 rounded bg-zinc-800 text-[8px] md:text-[10px] font-black text-zinc-300 uppercase tracking-widest border border-zinc-700/50 group-hover:text-blue-300">
-                              {doc.file_type || 'PDF'}
-                            </span>
-                            <span className="flex items-center gap-1 text-[8px] md:text-[10px] text-zinc-500 font-bold uppercase tracking-tight">
-                              <Clock size={10} className="text-blue-600" /> {new Date(doc.created_at).toLocaleDateString('id-ID')}
-                            </span>
-                          </div>
-                          <h3 className="text-lg md:text-2xl font-black uppercase italic leading-tight tracking-tighter text-zinc-100 group-hover:text-white transition-colors">
-                            {doc.title}
-                          </h3>
-                        </div>
-                      </div>
+                  {/* Document Details */}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-sm md:text-base font-bold text-zinc-100 truncate mb-1">
+                      {doc.title}
+                    </h3>
+                    <div className="flex flex-wrap gap-3 items-center text-[10px] md:text-xs text-zinc-500 font-bold uppercase tracking-wider">
+                      <span className="bg-zinc-800/50 px-2 py-0.5 rounded text-zinc-300">
+                        {doc.file_type || 'PDF'}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Clock size={10} className="text-blue-500" /> 
+                        {new Date(doc.created_at).toLocaleDateString('id-ID')}
+                      </span>
+                      <span>{formatFileSize(doc.file_size)}</span>
                     </div>
+                  </div>
 
-                    <p className="text-zinc-400 text-xs md:text-sm leading-relaxed mb-6 md:mb-10 line-clamp-2 pr-4 md:pr-12 group-hover:text-zinc-300 transition-colors text-justify">
-                      {doc.description || "Arsip resmi ini tersedia untuk kepentingan administratif dan dokumentasi klub."}
-                    </p>
-
-                    <div className="mt-auto flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-6 border-t border-zinc-800/50">
-                      <div className="flex gap-2.5">
-                        <button 
-                          onClick={() => setSelectedDocUrl(doc.file_url)}
-                          className="flex items-center justify-center gap-1.5 text-[9px] md:text-[11px] font-black uppercase tracking-widest bg-zinc-800/80 hover:bg-zinc-700 text-zinc-100 px-4 py-3 md:px-6 md:py-4 rounded-xl md:rounded-2xl transition-all active:scale-95 border border-zinc-700/50 flex-1 sm:flex-initial"
-                        >
-                          <Eye size={14} className="text-blue-500" /> View
-                        </button>
-                        
-                        <a 
-                          href={doc.file_url} 
-                          download 
-                          className="flex items-center justify-center gap-1.5 text-[9px] md:text-[11px] font-black uppercase tracking-widest bg-blue-600 hover:bg-blue-500 text-white px-4 py-3 md:px-6 md:py-4 rounded-xl md:rounded-2xl transition-all active:scale-95 shadow-lg shadow-blue-600/20 flex-1 sm:flex-initial"
-                        >
-                          <DownloadCloud size={14} /> Download
-                        </a>
-                      </div>
-                      <div className="text-left sm:text-right flex sm:flex-col items-center sm:items-end justify-between sm:justify-start">
-                        <p className="text-[8px] md:text-[9px] text-zinc-500 font-black uppercase tracking-[0.2em] sm:mb-1">File Size</p>
-                        <span className="text-[10px] md:text-xs font-mono text-zinc-300 font-bold bg-zinc-800/50 px-2 py-0.5 rounded">
-                          {formatFileSize(doc.file_size)}
-                        </span>
-                      </div>
-                    </div>
+                  {/* Actions */}
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <button 
+                      onClick={() => setSelectedDocUrl(doc.file_url)}
+                      className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-[11px] font-black uppercase tracking-widest bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white px-6 py-3 rounded-xl transition-all"
+                    >
+                      <Eye size={14} /> View
+                    </button>
+                    <a 
+                      href={doc.file_url} 
+                      download 
+                      className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-[11px] font-black uppercase tracking-widest bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-xl transition-all shadow-lg shadow-blue-600/20"
+                    >
+                      <DownloadCloud size={14} /> Download
+                    </a>
                   </div>
                 </motion.div>
               ))}
