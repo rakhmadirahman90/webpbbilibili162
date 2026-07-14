@@ -233,7 +233,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
               <div className="relative w-8 h-8 lg:w-9 lg:h-9 flex items-center justify-center shrink-0">
                 <div className="absolute inset-0 border border-white/30 rounded-full group-hover:border-blue-500/50 transition-colors duration-300"></div>
                 <div className="w-7 h-7 lg:w-8 lg:h-8 rounded-full overflow-hidden bg-white flex items-center justify-center transition-transform duration-500 group-hover:scale-105 shadow-inner">
-                  <img src={branding.logo_url} alt="Logo" className="w-full h-full object-cover" />
+                  <img src={branding.logo_url} alt="Logo" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                 </div>
               </div>
               <div className="flex flex-col justify-center shrink-0">
@@ -389,7 +389,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
               <div className="relative w-20 h-20 flex items-center justify-center shrink-0">
                 <div className="absolute inset-0 bg-blue-500/5 rounded-full blur-xl animate-pulse"></div>
                 <div className="relative w-18 h-18 rounded-full overflow-hidden border border-white/10 shadow-2xl flex items-center justify-center bg-white">
-                  <img src={branding.logo_url} alt="Logo" className="w-full h-full object-cover" />
+                  <img src={branding.logo_url} alt="Logo" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                 </div>
               </div>
               <div className="mt-3 text-center">

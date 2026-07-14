@@ -138,6 +138,9 @@ function ImagePopup() {
                className={`w-full h-auto object-cover ${isImageLoading ? 'hidden' : 'block'}`} 
                alt={current.judul} 
                onLoad={() => setIsImageLoading(false)} 
+               onError={() => setIsImageLoading(false)}
+               loading="lazy"
+               decoding="async"
              />
              <div className="p-8">
                 <h3 className="text-xl font-black uppercase mb-4 text-blue-700">{current.judul}</h3>

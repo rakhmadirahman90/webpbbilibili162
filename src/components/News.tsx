@@ -221,7 +221,7 @@ export default function News() {
       setLoading(true);
       const { data, error } = await supabase
         .from('berita')
-        .select(`*, komentar(count)`)
+        .select('*')
         .order('tanggal', { ascending: false });
 
       if (error) throw error;
@@ -229,14 +229,19 @@ export default function News() {
       if (data) {
         const formattedData = data.map(item => ({
           ...item,
-          comments_count: item.komentar?.[0]?.count || 0,
+          comments_count: 0, // Fallback since we aren't joining komentar
           likes: Number(item.likes) || 0,
-          views: Number(item.views) || 0 // PAKSA MENJADI ANGKA AGAR TIDAK RESET 0
+          views: Number(item.views) || 0
         }));
         setBeritaList(formattedData as Berita[]);
       }
     } catch (err) {
       console.error("Gagal memuat berita:", err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error memuat berita',
+        text: err instanceof Error ? err.message : 'Terjadi kesalahan tidak diketahui'
+      });
     } finally {
       setLoading(false);
     }

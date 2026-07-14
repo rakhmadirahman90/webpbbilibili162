@@ -73,6 +73,8 @@ export default function LazyImage({
           src={optimizedSrc}
           alt={alt}
           referrerPolicy="no-referrer"
+          loading="lazy"
+          decoding="async"
           onLoad={() => setIsLoaded(true)}
           onError={onError}
           initial={{ filter: 'blur(20px)', opacity: 0 }}

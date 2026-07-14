@@ -87,6 +87,8 @@ export default function Hero() {
                 src={getOptimizedImageUrl(slide.image, 150, 40)}
                 alt=""
                 className="w-full h-full object-cover blur-3xl opacity-60 scale-110 select-none pointer-events-none"
+                loading={index === 0 ? "eager" : "lazy"}
+                decoding="async"
               />
             </div>
 
@@ -96,6 +98,8 @@ export default function Hero() {
             <img
               src={getOptimizedImageUrl(slide.image, 1600)}
               alt=""
+              loading={index === 0 ? "eager" : "lazy"}
+              decoding="async"
               className={`w-full h-full object-cover md:object-contain transition-transform duration-[20000ms] ease-out select-none relative z-10
                 ${index === currentSlide ? 'scale-105' : 'scale-100'}
               `}
