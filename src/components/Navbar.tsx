@@ -198,8 +198,11 @@ export default function Navbar({ onNavigate }: NavbarProps) {
 
     // 6. Tentang Kami
     if (path === 'tentang-kami' || path === 'about') {
-      onNavigate('tentang-kami', subPath);
-      scrollToSection('tentang-kami');
+      if (subPath) {
+        onNavigate(subPath);
+      } else {
+        onNavigate('tentang-kami');
+      }
       return;
     }
 

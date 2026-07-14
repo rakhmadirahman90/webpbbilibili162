@@ -8,7 +8,9 @@ import popupFallback from './data/konfigurasi_popup.json';
 // Import Komponen Landing Page
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
-import About from './components/About';
+import Sejarah from './components/Sejarah';
+import VisiMisi from './components/VisiMisi';
+import Fasilitas from './components/Fasilitas';
 import News from './components/News';
 import PrayerTimes from './components/PrayerTimes';
 import Athletes from './components/Players'; 
@@ -398,16 +400,9 @@ export default function App() {
   }, []);
 
   const handleNavigate = (sectionId: string, subPath?: string) => {
-    const fullPageMenus = ['kas', 'quiz', 'contact', 'kontak', 'struktur', 'dokumen-penting', 'register', 'pendaftaran', 'peringkat', 'rankings', 'atlet', 'players', 'tentang-kami', 'about', 'galeri', 'gallery'];
+    const fullPageMenus = ['kas', 'quiz', 'contact', 'kontak', 'struktur', 'dokumen-penting', 'register', 'pendaftaran', 'peringkat', 'rankings', 'atlet', 'players', 'tentang-kami', 'about', 'galeri', 'gallery', 'sejarah', 'visi-misi', 'fasilitas'];
 
     if (fullPageMenus.includes(sectionId)) {
-        if (sectionId === 'tentang-kami' || sectionId === 'about') {
-            if (subPath) setActiveAboutTab(subPath);
-        }
-        if (sectionId === 'atlet' || sectionId === 'players') {
-            if (subPath) setActiveAthleteFilter(subPath.toLowerCase());
-        }
-        
         setActiveView(sectionId);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
@@ -607,7 +602,9 @@ export default function App() {
                     {(activeView === 'register' || activeView === 'pendaftaran') && <RegistrationForm />}
                     {(activeView === 'peringkat' || activeView === 'rankings') && <Ranking />}
                     {(activeView === 'atlet' || activeView === 'players') && <Athletes initialFilter={activeAthleteFilter} />}
-                    {(activeView === 'tentang-kami' || activeView === 'about') && <About activeTab={activeAboutTab} onTabChange={setActiveAboutTab} />}
+                    {(activeView === 'sejarah') && <Sejarah />}
+                    {(activeView === 'visi-misi') && <VisiMisi />}
+                    {(activeView === 'fasilitas') && <Fasilitas />}
                     {(activeView === 'galeri' || activeView === 'gallery') && <Gallery />}
                   </div>
                 </motion.div>

@@ -223,10 +223,24 @@ const Players: React.FC<{ initialFilter?: string }> = ({
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-blue-600 transition-colors" size={16} />
             <input 
               type="text" 
+              value={searchTerm}
               placeholder="Cari nama atlet..." 
-              className="w-full bg-[#1a1d26] border border-white/5 rounded-2xl py-4 pl-12 pr-4 text-xs outline-none focus:border-blue-600/50 transition-all text-white placeholder:text-zinc-600" 
+              className="w-full bg-[#1a1d26] border border-white/5 rounded-2xl py-4 pl-12 pr-12 text-xs outline-none focus:border-blue-600/50 transition-all text-white placeholder:text-zinc-600" 
               onChange={(e) => setSearchTerm(e.target.value)} 
             />
+            {searchTerm && (
+              <button 
+                onClick={() => setSearchTerm('')}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors"
+              >
+                <X size={16} />
+              </button>
+            )}
+            {searchTerm && (
+              <div className="absolute -bottom-6 left-0 text-[10px] font-bold text-blue-500 uppercase tracking-widest animate-pulse">
+                Ditemukan {filteredPlayers.length} Atlet
+              </div>
+            )}
           </div>
         </div>
 
