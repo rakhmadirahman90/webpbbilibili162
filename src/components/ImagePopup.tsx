@@ -112,7 +112,7 @@ function ImagePopup() {
             <X size={18} />
           </button>
 
-          <div ref={scrollRef} className="flex-1 overflow-y-auto hide-scrollbar scroll-smooth">
+          <div ref={scrollRef} className="overflow-y-auto hide-scrollbar scroll-smooth">
             <div className="relative w-full h-72 bg-slate-100 shrink-0">
               <img src={current.url_gambar} className="w-full h-full object-cover object-center" alt="Banner" />
               <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent" />

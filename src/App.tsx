@@ -144,9 +144,20 @@ function ImagePopup() {
     fetchActivePopups();
   }, []);
 
+  useEffect(() => {
+    if (promoImages.length <= 1 || !isOpen) return;
+    
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % promoImages.length);
+    }, 5000);
+    
+    return () => clearInterval(interval);
+  }, [promoImages.length, isOpen]);
+
   const closePopup = () => {
       setIsOpen(false);
       setIsImageLoading(true);
+      setCurrentIndex(0);
   };
   if (promoImages.length === 0 || !isOpen) return null;
   const current = promoImages[currentIndex];
@@ -157,7 +168,7 @@ function ImagePopup() {
         <div className="absolute inset-0" onClick={closePopup} />
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative w-full max-w-[420px] max-h-[85vh] bg-white rounded-[2rem] shadow-2xl flex flex-col overflow-hidden border border-white/20" onClick={(e) => e.stopPropagation()}>
           <button onClick={closePopup} className="absolute top-4 right-4 z-50 p-2 bg-white/90 hover:bg-rose-500 hover:text-white text-slate-900 rounded-full shadow-lg transition-all"><X size={18} /></button>
-          <div ref={scrollRef} className="flex-1 overflow-y-auto hide-scrollbar">
+          <div ref={scrollRef} className="overflow-y-auto hide-scrollbar">
              {/* Image container with fixed height and object-cover for consistent, polished look */}
              <div className="relative w-full h-72 bg-slate-100 overflow-hidden">
                <img 
@@ -168,6 +179,18 @@ function ImagePopup() {
                    (e.target as HTMLImageElement).style.display = 'none';
                  }}
                />
+               
+               {/* Dots Indicator */}
+               {promoImages.length > 1 && (
+                 <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-1.5">
+                   {promoImages.map((_, index) => (
+                     <div 
+                       key={index}
+                       className={`h-1.5 rounded-full transition-all duration-300 ${index === currentIndex ? 'w-6 bg-white' : 'w-1.5 bg-white/50'}`}
+                     />
+                   ))}
+                 </div>
+               )}
              </div>
              <div className="p-8">
                 <h3 className="text-xl font-black uppercase mb-4 text-blue-700">{current.judul}</h3>
