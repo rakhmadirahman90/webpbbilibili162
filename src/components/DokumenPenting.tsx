@@ -172,7 +172,7 @@ export default function DokumenPenting() {
                       </div>
                     </div>
 
-                    <p className="text-zinc-400 text-xs md:text-sm leading-relaxed mb-6 md:mb-10 line-clamp-2 pr-4 md:pr-12 group-hover:text-zinc-300 transition-colors">
+                    <p className="text-zinc-400 text-xs md:text-sm leading-relaxed mb-6 md:mb-10 line-clamp-2 pr-4 md:pr-12 group-hover:text-zinc-300 transition-colors text-justify">
                       {doc.description || "Arsip resmi ini tersedia untuk kepentingan administratif dan dokumentasi klub."}
                     </p>
 
@@ -232,7 +232,7 @@ export default function DokumenPenting() {
           </div>
           <div>
             <h4 className="font-black italic uppercase text-lg leading-none mb-2">Pusat Informasi Dokumen</h4>
-            <p className="text-sm text-zinc-500 max-w-sm font-medium leading-relaxed">
+            <p className="text-sm text-zinc-500 max-w-sm font-medium leading-relaxed text-justify">
               Arsip ini dikelola oleh tim administrasi **Authority Panel PB Bilibili 162**. Hubungi sekretariat jika membutuhkan akses dokumen fisik.
             </p>
           </div>

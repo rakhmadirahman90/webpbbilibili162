@@ -58,7 +58,7 @@ function ImagePopup() {
       return (
         <p 
           key={i} 
-          className="mb-2 last:mb-0 leading-[1.6] text-slate-700 text-left text-[14px]"
+          className="mb-2 last:mb-0 leading-[1.6] text-slate-700 text-justify text-[14px]"
           style={{ 
             overflowWrap: 'break-word', // Perbaikan: Kata tidak akan terpotong di tengah
             wordWrap: 'break-word',

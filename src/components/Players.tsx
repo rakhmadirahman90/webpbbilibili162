@@ -187,7 +187,7 @@ const Players: React.FC<{ initialFilter?: string }> = ({
                   </h2>
                   <div className="relative mb-10">
                     <div className="absolute -left-4 top-0 bottom-0 w-1 bg-blue-600 rounded-full shadow-[0_0_15px_rgba(37,99,235,0.5)]" />
-                    <p className="text-zinc-400 text-lg italic leading-relaxed pl-4">"{selectedPlayer.bio}"</p>
+                    <p className="text-zinc-400 text-lg italic leading-relaxed pl-4 text-justify">"{selectedPlayer.bio}"</p>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     <div className="bg-[#1a1d26] border border-white/5 p-6 rounded-[2rem] hover:border-blue-600/30 transition-colors">

@@ -56,7 +56,7 @@ export default function About({ activeTab: propsActiveTab, onTabChange }: AboutP
   useEffect(() => {
     fetchAllData();
 
-    const channel = supabase
+    const orgChannel = supabase
       .channel('public:organizational_structure')
       .on('postgres_changes', { 
         event: '*', 
@@ -67,7 +67,21 @@ export default function About({ activeTab: propsActiveTab, onTabChange }: AboutP
       })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    const settingsChannel = supabase
+      .channel('public:site_settings')
+      .on('postgres_changes', { 
+        event: '*', 
+        table: 'site_settings', 
+        schema: 'public' 
+      }, () => {
+        fetchAllData();
+      })
+      .subscribe();
+
+    return () => { 
+      supabase.removeChannel(orgChannel); 
+      supabase.removeChannel(settingsChannel);
+    };
   }, []);
 
   const fetchAllData = async () => {
@@ -237,7 +251,7 @@ export default function About({ activeTab: propsActiveTab, onTabChange }: AboutP
                     <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-8 items-start">
                       <div className="w-full md:w-1/3 shrink-0">
                         <img 
-                          src="/whatsapp_image_2026-02-05_at_10.36.22.jpeg" 
+                          src={dynamicContent.sejarah_image} 
                           alt="Founder PB Bilibili 162" 
                           className="w-full aspect-[4/5] object-cover rounded-3xl shadow-xl border border-zinc-200"
                           referrerPolicy="no-referrer"
@@ -246,7 +260,7 @@ export default function About({ activeTab: propsActiveTab, onTabChange }: AboutP
                       <div className="w-full md:w-2/3">
                         {dynamicContent.sejarah ? (
                           dynamicContent.sejarah.split('\n').filter((p: string) => p.trim() !== '').map((para: string, idx: number) => (
-                            <p key={idx} className="font-sans text-[16px] sm:text-[18px] md:text-[21px] leading-relaxed text-zinc-700 font-medium mb-6 last:mb-0">
+                            <p key={idx} className="font-sans text-[16px] sm:text-[18px] md:text-[21px] leading-relaxed text-zinc-700 font-medium mb-6 last:mb-0 text-justify">
                               {para}
                             </p>
                           ))
@@ -294,7 +308,7 @@ export default function About({ activeTab: propsActiveTab, onTabChange }: AboutP
                           <div className="bg-[#27272a] text-white font-extrabold text-[15px] sm:text-[16px] tracking-wider py-2.5 px-4 text-center shrink-0 w-24">
                             {item.year}
                           </div>
-                          <div className="text-zinc-800 text-[15px] sm:text-[16px] md:text-[18px] leading-relaxed font-normal">
+                          <div className="text-zinc-800 text-[15px] sm:text-[16px] md:text-[18px] leading-relaxed font-normal text-justify">
                             {item.text}
                           </div>
                         </div>
@@ -312,7 +326,7 @@ export default function About({ activeTab: propsActiveTab, onTabChange }: AboutP
                       <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-amber-500/10 border border-amber-500/20 text-amber-500 rounded-full text-[10px] font-black uppercase tracking-widest">
                         <Target size={14} /> Visi
                       </div>
-                      <div className="bg-gradient-to-br from-[#1a1d26] to-[#0b0e14] p-8 md:p-10 rounded-[2.5rem] border border-white/5 shadow-xl font-medium text-xl md:text-3xl text-zinc-100 leading-relaxed tracking-tight">
+                      <div className="bg-gradient-to-br from-[#1a1d26] to-[#0b0e14] p-8 md:p-10 rounded-[2.5rem] border border-white/5 shadow-xl font-medium text-xl md:text-3xl text-zinc-100 leading-relaxed tracking-tight text-justify">
                         "{dynamicContent.visi}"
                       </div>
                     </div>
@@ -328,7 +342,7 @@ export default function About({ activeTab: propsActiveTab, onTabChange }: AboutP
                             <div className="bg-blue-500/10 p-2 rounded-xl shrink-0 mt-0.5 group-hover:bg-blue-600 transition-colors">
                               <CheckCircle2 size={16} className="text-blue-500 group-hover:text-white" />
                             </div>
-                            <p className="text-zinc-300 text-[14px] md:text-[16px] font-normal leading-relaxed">
+                            <p className="text-zinc-300 text-[14px] md:text-[16px] font-normal leading-relaxed text-justify">
                               {typeof item === 'string' ? item : item.text}
                             </p>
                           </div>

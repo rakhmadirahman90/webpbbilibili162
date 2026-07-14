@@ -282,7 +282,10 @@ export default function Navbar({ onNavigate }: NavbarProps) {
                   {isDropdown && activeDropdown === menu.id && (
                     <div className={`dropdown-container animate-in fade-in slide-in-from-top-2 duration-200 ${isLastFew ? 'right-0' : 'left-0'}`}>
                       <div className="dropdown-content">
-                        {subMenus.sort((a, b) => (a.order_index || 0) - (b.order_index || 0)).map((sub) => (
+                        {subMenus.sort((a, b) => {
+                          const order: Record<string, number> = { 'sejarah': 1, 'visi-misi': 2, 'fasilitas': 3, 'organisasi': 4, 'dokumen-penting': 5 };
+                          return (order[a.path] || 99) - (order[b.path] || 99);
+                        }).map((sub) => (
                            <button 
                             key={sub.id} 
                             onClick={() => handleNavClick(menu.path, sub.path)} 
@@ -412,7 +415,10 @@ export default function Navbar({ onNavigate }: NavbarProps) {
                     
                     {isDropdown && isExpanded && (
                       <div className="bg-[#070c18]/40 border-t border-white/5 flex flex-col py-2 pl-8 pr-4 gap-1 animate-in fade-in duration-200">
-                        {subMenus.sort((a, b) => (a.order_index || 0) - (b.order_index || 0)).map((sub) => (
+                        {subMenus.sort((a, b) => {
+                          const order: Record<string, number> = { 'sejarah': 1, 'visi-misi': 2, 'fasilitas': 3, 'organisasi': 4, 'dokumen-penting': 5 };
+                          return (order[a.path] || 99) - (order[b.path] || 99);
+                        }).map((sub) => (
                           <button 
                             key={sub.id} 
                             onClick={() => handleNavClick(menu.path, sub.path)} 
