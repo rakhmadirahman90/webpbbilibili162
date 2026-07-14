@@ -101,12 +101,12 @@ function ImagePopup() {
         
         if (!error && data && data.length > 0) {
           setPromoImages(data);
-          setTimeout(() => setIsOpen(true), 1000);
+          setTimeout(() => { setIsImageLoading(true); setIsOpen(true); }, 1000);
         } else {
           const activeFallbacks = (popupFallback as any[]).filter(p => p.is_active);
           if (activeFallbacks.length > 0) {
             setPromoImages(activeFallbacks);
-            setTimeout(() => setIsOpen(true), 1000);
+            setTimeout(() => { setIsImageLoading(true); setIsOpen(true); }, 1000);
           }
         }
       } catch (err) {
@@ -135,7 +135,7 @@ function ImagePopup() {
              )}
              <img 
                src={current.url_gambar} 
-               className={`w-full h-auto object-cover ${isImageLoading ? 'hidden' : 'block'}`} 
+               className={`w-full h-auto object-cover transition-opacity duration-300 ${isImageLoading ? 'opacity-0' : 'opacity-100'}`} 
                alt={current.judul} 
                onLoad={() => setIsImageLoading(false)} 
                onError={() => setIsImageLoading(false)}
