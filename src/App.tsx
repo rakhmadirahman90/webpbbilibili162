@@ -80,6 +80,34 @@ function UrlSynchronizer({ setActiveView }: { setActiveView: (view: string | nul
   return null;
 }
 
+
+const renderDescriptionWithLinks = (text: string) => {
+  if (!text) return null;
+  const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+)/g;
+  
+  return text.split('\n').map((line, i) => (
+    <p key={i} className="mb-4 last:mb-0 leading-relaxed text-zinc-700 text-justify whitespace-normal">
+      {line.split(urlRegex).map((part, index) => {
+        if (part.match(urlRegex)) {
+          const cleanUrl = part.startsWith('www.') ? `https://${part}` : part;
+          return (
+            <a 
+              key={index} 
+              href={cleanUrl} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="text-blue-400 underline hover:text-blue-300 inline break-all whitespace-normal"
+            >
+              {part}
+            </a>
+          );
+        }
+        return part;
+      })}
+    </p>
+  ));
+};
+
 /**
  * FIXED POPUP COMPONENT WITH FALLBACK
  */
@@ -130,21 +158,20 @@ function ImagePopup() {
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative w-full max-w-[420px] max-h-[85vh] bg-white rounded-[2rem] shadow-2xl flex flex-col overflow-hidden border border-white/20" onClick={(e) => e.stopPropagation()}>
           <button onClick={closePopup} className="absolute top-4 right-4 z-50 p-2 bg-white/90 hover:bg-rose-500 hover:text-white text-slate-900 rounded-full shadow-lg transition-all"><X size={18} /></button>
           <div ref={scrollRef} className="flex-1 overflow-y-auto hide-scrollbar">
-             {isImageLoading && (
-               <div className="w-full aspect-video bg-slate-200 animate-pulse" />
-             )}
-             <img 
-               src={current.url_gambar} 
-               className={`w-full h-auto object-cover transition-opacity duration-300 ${isImageLoading ? 'opacity-0' : 'opacity-100'}`} 
-               alt={current.judul} 
-               onLoad={() => setIsImageLoading(false)} 
-               onError={() => setIsImageLoading(false)}
-               loading="lazy"
-               decoding="async"
-             />
+             {/* Image container with fixed height and object-cover for consistent, polished look */}
+             <div className="relative w-full h-72 bg-slate-100 overflow-hidden">
+               <img 
+                 src={current.url_gambar} 
+                 className="w-full h-full object-cover object-center" 
+                 alt={current.judul} 
+                 onError={(e) => {
+                   (e.target as HTMLImageElement).style.display = 'none';
+                 }}
+               />
+             </div>
              <div className="p-8">
                 <h3 className="text-xl font-black uppercase mb-4 text-blue-700">{current.judul}</h3>
-                <p className="text-zinc-700 text-[15px] leading-relaxed text-justify mb-6">{current.deskripsi}</p>
+                <div className="text-zinc-700 text-[15px] mb-6">{renderDescriptionWithLinks(current.deskripsi)}</div>
                 <button onClick={closePopup} className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold uppercase tracking-widest text-[10px] mb-2">Tutup</button>
                 {navigator.share && (
                   <button
