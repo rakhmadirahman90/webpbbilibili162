@@ -58,11 +58,10 @@ function ImagePopup() {
       return (
         <p 
           key={i} 
-          className="mb-2 last:mb-0 leading-[1.6] text-slate-700 text-justify text-[14px]"
+          className="mb-5 last:mb-0 !leading-7 text-zinc-800 !text-justify text-[15px]"
           style={{ 
-            overflowWrap: 'break-word', // Perbaikan: Kata tidak akan terpotong di tengah
-            wordWrap: 'break-word',
-            whiteSpace: 'pre-wrap'
+            overflowWrap: 'break-word', 
+            wordWrap: 'break-word'
           }}
         >
           {line.split(urlRegex).map((part, index) => {
@@ -126,11 +125,11 @@ function ImagePopup() {
                 </span>
               </div>
               
-              <h3 className="text-xl font-bold text-slate-900 leading-snug text-center mb-5 px-2">
+              <h3 className="text-2xl font-black text-blue-700 leading-tight text-center mb-6 px-4 uppercase tracking-tighter">
                 {current.judul}
               </h3>
 
-              <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 mb-6">
+              <div className="bg-slate-50 border border-slate-100 rounded-3xl p-6 mb-8 shadow-inner">
                 {renderCleanDescription(current.deskripsi)}
               </div>
               

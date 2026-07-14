@@ -87,6 +87,7 @@ function ImagePopup() {
   const [isOpen, setIsOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [promoImages, setPromoImages] = useState<any[]>([]);
+  const [isImageLoading, setIsImageLoading] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -115,7 +116,10 @@ function ImagePopup() {
     fetchActivePopups();
   }, []);
 
-  const closePopup = () => setIsOpen(false);
+  const closePopup = () => {
+      setIsOpen(false);
+      setIsImageLoading(true);
+  };
   if (promoImages.length === 0 || !isOpen) return null;
   const current = promoImages[currentIndex];
 
@@ -126,11 +130,33 @@ function ImagePopup() {
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative w-full max-w-[420px] max-h-[85vh] bg-white rounded-[2rem] shadow-2xl flex flex-col overflow-hidden border border-white/20" onClick={(e) => e.stopPropagation()}>
           <button onClick={closePopup} className="absolute top-4 right-4 z-50 p-2 bg-white/90 hover:bg-rose-500 hover:text-white text-slate-900 rounded-full shadow-lg transition-all"><X size={18} /></button>
           <div ref={scrollRef} className="flex-1 overflow-y-auto hide-scrollbar">
-             <img src={current.url_gambar} className="w-full h-auto object-cover" alt={current.judul} />
+             {isImageLoading && (
+               <div className="w-full aspect-video bg-slate-200 animate-pulse" />
+             )}
+             <img 
+               src={current.url_gambar} 
+               className={`w-full h-auto object-cover ${isImageLoading ? 'hidden' : 'block'}`} 
+               alt={current.judul} 
+               onLoad={() => setIsImageLoading(false)} 
+             />
              <div className="p-8">
-                <h3 className="text-xl font-black uppercase mb-4">{current.judul}</h3>
-                <p className="text-slate-600 text-sm leading-relaxed mb-6">{current.deskripsi}</p>
-                <button onClick={closePopup} className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold uppercase tracking-widest text-[10px]">Tutup</button>
+                <h3 className="text-xl font-black uppercase mb-4 text-blue-700">{current.judul}</h3>
+                <p className="text-zinc-700 text-[15px] leading-relaxed text-justify mb-6">{current.deskripsi}</p>
+                <button onClick={closePopup} className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold uppercase tracking-widest text-[10px] mb-2">Tutup</button>
+                {navigator.share && (
+                  <button
+                    onClick={() => {
+                      navigator.share({
+                        title: current.judul,
+                        text: current.deskripsi,
+                        url: window.location.href,
+                      }).catch((err) => console.error("Error sharing:", err));
+                    }}
+                    className="w-full py-4 bg-green-600 text-white rounded-xl font-bold uppercase tracking-widest text-[10px]"
+                  >
+                    Share
+                  </button>
+                )}
              </div>
           </div>
         </motion.div>

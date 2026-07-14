@@ -42,7 +42,7 @@ const renderDescriptionWithLinks = (text: string) => {
   
   return text.split('\n').map((line, i) => (
     /* PERBAIKAN: break-words dan whitespace-normal memastikan baris baru tercipta */
-    <p key={i} className="mb-1 last:mb-0 break-words overflow-hidden text-justify whitespace-normal">
+    <p key={i} className="mb-4 last:mb-0 leading-relaxed text-zinc-700 text-justify whitespace-normal">
       {line.split(urlRegex).map((part, index) => {
         if (part.match(urlRegex)) {
           const cleanUrl = part.startsWith('www.') ? `https://${part}` : part;
