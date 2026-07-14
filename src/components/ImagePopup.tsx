@@ -1,3 +1,8 @@
+import { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, Download } from 'lucide-react';
+import { supabase } from '../supabase';
+
 function ImagePopup() {
   const [isOpen, setIsOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -87,7 +92,19 @@ function ImagePopup() {
   };
   // ------------------------------------
 
+  const [isExpanded, setIsExpanded] = useState(false);
   const closePopup = () => setIsOpen(false);
+
+  const handleDragEnd = (e: any, { offset, velocity }: any) => {
+    const swipe = Math.abs(offset.x) > 50; 
+    if (swipe) {
+      if (offset.x < 0) {
+        setCurrentIndex((prev) => (prev + 1) % promoImages.length);
+      } else {
+        setCurrentIndex((prev) => (prev - 1 + promoImages.length) % promoImages.length);
+      }
+    }
+  };
 
   if (promoImages.length === 0 || !isOpen) return null;
   const current = promoImages[currentIndex];
@@ -99,9 +116,15 @@ function ImagePopup() {
         
         <motion.div 
           key={current.id || `popup-${currentIndex}`}
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.95 }}
+          initial={{ opacity: 0, scale: 0.9, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.9, y: -20 }}
+          transition={{ 
+            type: "spring",
+            stiffness: 400,
+            damping: 30,
+            mass: 0.8
+          }}
           className="relative w-full max-w-[400px] max-h-[85vh] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
@@ -113,48 +136,71 @@ function ImagePopup() {
           </button>
 
           <div ref={scrollRef} className="overflow-y-auto hide-scrollbar scroll-smooth">
-            <div className="relative w-full h-72 bg-slate-100 shrink-0">
-              <img src={current.url_gambar} className="w-full h-full object-cover object-center" alt="Banner" />
-              <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent" />
-            </div>
-
-            <div className="px-6 pt-2 pb-8 bg-white">
-              <div className="flex justify-center mb-4">
-                <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-bold uppercase tracking-widest border border-blue-100">
-                  Pengumuman
-                </span>
-              </div>
-              
-              <h3 className="text-2xl font-black text-blue-700 leading-tight text-center mb-6 px-4 uppercase tracking-tighter">
-                {current.judul}
-              </h3>
-
-              <div className="bg-slate-50 border border-slate-100 rounded-3xl p-6 mb-8 shadow-inner">
-                {renderCleanDescription(current.deskripsi)}
-              </div>
-              
-              <div className="space-y-3 px-1">
-                {current.file_url && current.file_url.length > 5 && (
-                  <motion.a 
-                    whileHover={{ scale: 1.01 }}
-                    whileTap={{ scale: 0.98 }}
-                    href={current.file_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 w-full py-3.5 bg-slate-900 text-white rounded-xl font-bold text-[12px] tracking-wider shadow-lg"
-                  >
-                    <Download size={14} /> LIHAT LAMPIRAN
-                  </motion.a>
-                )}
-
-                <button 
-                  onClick={closePopup} 
-                  className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-[12px] tracking-wider transition-all shadow-md"
+            <AnimatePresence>
+              <motion.div 
+                key={currentIndex}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <motion.div 
+                  drag="x"
+                  dragConstraints={{ left: 0, right: 0 }}
+                  onDragEnd={handleDragEnd}
+                  className="relative w-full h-72 bg-slate-100 shrink-0 cursor-grab active:cursor-grabbing"
                 >
-                  MENGERTI
-                </button>
-              </div>
-            </div>
+                  <img src={current.url_gambar} className="w-full h-full object-cover object-center" alt="Banner" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent" />
+                </motion.div>
+
+                <div className="px-6 pt-2 pb-8 bg-white">
+                  <div className="flex justify-center mb-4">
+                    <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-bold uppercase tracking-widest border border-blue-100">
+                      Pengumuman
+                    </span>
+                  </div>
+                  
+                  <h3 className="text-2xl font-black text-blue-700 leading-tight text-center mb-6 px-4 uppercase tracking-tighter">
+                    {current.judul}
+                  </h3>
+
+                  <div className="bg-slate-50 border border-slate-100 rounded-3xl p-6 mb-8 shadow-inner">
+                    <div className={`transition-all duration-300 ${isExpanded ? '' : 'line-clamp-3'}`}>
+                      {renderCleanDescription(current.deskripsi)}
+                    </div>
+                    <button 
+                      onClick={() => setIsExpanded(!isExpanded)}
+                      className="text-blue-600 text-xs font-bold mt-2 hover:underline"
+                    >
+                      {isExpanded ? 'Read Less' : 'Read More'}
+                    </button>
+                  </div>
+                  
+                  <div className="space-y-3 px-1">
+                    {current.file_url && current.file_url.length > 5 && (
+                      <motion.a 
+                        whileHover={{ scale: 1.01 }}
+                        whileTap={{ scale: 0.98 }}
+                        href={current.file_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-2 w-full py-3.5 bg-slate-900 text-white rounded-xl font-bold text-[12px] tracking-wider shadow-lg"
+                      >
+                        <Download size={14} /> LIHAT LAMPIRAN
+                      </motion.a>
+                    )}
+
+                    <button 
+                      onClick={closePopup} 
+                      className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-[12px] tracking-wider transition-all shadow-md"
+                    >
+                      MENGERTI
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </AnimatePresence>
           </div>
         </motion.div>
       </div>
