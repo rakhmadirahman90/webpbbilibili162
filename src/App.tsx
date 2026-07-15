@@ -22,12 +22,13 @@ import Contact from './components/Contact';
 // import Footer from './components/Footer'; // Footer lama dinonaktifkan
 import PublicKasView from './components/PublicKasView';
 import DokumenPenting from './components/DokumenPenting'; 
-import StrukturOrganisasi from './components/StrukturOrganisasi'; 
+import StrukturOrganisasiPublic from './components/StrukturOrganisasiPublic';
 
 // Import Komponen Admin
 import Login from './components/Login';
 import Sidebar from './components/Sidebar';
 import ManajemenPendaftaran from './ManajemenPendaftaran';
+import AdminDashboard from './components/AdminDashboard';
 import ManajemenAtlet from './ManajemenAtlet';
 import AdminBerita from './components/AdminBerita';
 import AdminMatch from './components/AdminMatch'; 
@@ -45,6 +46,9 @@ import AdminPopup from './components/AdminPopup';
 import AdminFooter from './components/AdminFooter'; 
 import AdminAbout from './components/AdminAbout';
 import AdminStructure from './components/AdminStructure'; 
+import AdminSejarah from './components/AdminSejarah';
+import AdminVisiMisi from './components/AdminVisiMisi';
+import AdminFasilitas from './components/AdminFasilitas';
 import ManajemenDokumen from './components/ManajemenDokumen'; 
 import { KelolaSurat } from './components/KelolaSurat'; 
 import KasManager from './components/KasManager'; 
@@ -479,15 +483,18 @@ export default function App() {
   }, []);
 
   const handleNavigate = (sectionId: string, subPath?: string) => {
-    const fullPageMenus = ['kas', 'quiz', 'contact', 'kontak', 'struktur', 'dokumen-penting', 'register', 'pendaftaran', 'peringkat', 'rankings', 'atlet', 'players', 'tentang-kami', 'about', 'galeri', 'gallery', 'sejarah', 'visi-misi', 'fasilitas'];
+    const fullPageMenus = ['kas', 'quiz', 'contact', 'kontak', 'struktur', 'struktur-organisasi', 'dokumen-penting', 'register', 'pendaftaran', 'peringkat', 'rankings', 'atlet', 'players', 'tentang-kami', 'about', 'galeri', 'gallery', 'sejarah', 'visi-misi', 'fasilitas'];
 
-    if (fullPageMenus.includes(sectionId)) {
-        setActiveView(sectionId);
+    // Prioritaskan subPath jika ada, karena itu adalah target navigasi sebenarnya
+    const target = subPath || sectionId;
+
+    if (fullPageMenus.includes(target)) {
+        setActiveView(target);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
         setActiveView(null);
         setTimeout(() => {
-            const element = document.getElementById(sectionId);
+            const element = document.getElementById(target);
             if (element) {
                 const offset = 100;
                 window.scrollTo({ top: element.getBoundingClientRect().top + window.pageYOffset - offset, behavior: 'smooth' });
@@ -676,7 +683,7 @@ export default function App() {
                     {activeView === 'kas' && <PublicKasView />}
                     {(activeView === 'quiz') && <BadmintonQuiz />}
                     {(activeView === 'contact' || activeView === 'kontak') && <Contact />}
-                    {activeView === 'struktur' && <StrukturOrganisasi />}
+                    {(activeView === 'struktur' || activeView === 'struktur-organisasi') && <StrukturOrganisasiPublic />}
                     {activeView === 'dokumen-penting' && <DokumenPenting />}
                     {(activeView === 'register' || activeView === 'pendaftaran') && <RegistrationForm />}
                     {(activeView === 'peringkat' || activeView === 'rankings') && <Ranking />}
@@ -730,7 +737,8 @@ function AdminLayout({ session }: { session: any }) {
         </div>
         <div className="flex-1 overflow-y-auto bg-[#070d1a] custom-scrollbar">
           <Routes>
-            <Route path="dashboard" element={<ManajemenPendaftaran />} />
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="pendaftaran" element={<ManajemenPendaftaran />} />
             <Route path="atlet" element={<ManajemenAtlet />} />
             <Route path="surat" element={<KelolaSurat />} />
             <Route path="kas" element={<KasManager />} />
@@ -749,7 +757,9 @@ function AdminLayout({ session }: { session: any }) {
             <Route path="hero" element={<KelolaHero />} />
             <Route path="popup" element={<AdminPopup />} /> 
             <Route path="footer" element={<AdminFooter />} />
-            <Route path="about" element={<AdminAbout />} />
+            <Route path="sejarah" element={<AdminSejarah />} />
+            <Route path="visi-misi" element={<AdminVisiMisi />} />
+            <Route path="fasilitas" element={<AdminFasilitas />} />
             <Route path="struktur" element={<AdminStructure />} /> 
             <Route path="*" element={<Navigate to="dashboard" replace />} />
           </Routes>

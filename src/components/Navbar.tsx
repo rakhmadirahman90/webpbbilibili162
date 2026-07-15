@@ -61,6 +61,11 @@ export default function Navbar({ onNavigate }: NavbarProps) {
 
       let finalNav = data || [];
 
+      // Deduplicate finalNav by label or path to ensure no duplicates
+      finalNav = finalNav.filter((item, index, self) => 
+        index === self.findIndex((t) => t.label === item.label)
+      );
+
       if (finalNav.length === 0) {
         finalNav = [
           { id: '1', label: 'Home', path: 'home', type: 'link', order_index: 0 },
@@ -71,8 +76,8 @@ export default function Navbar({ onNavigate }: NavbarProps) {
           { id: '2-1', parent_id: '2', label: 'Sejarah', path: 'sejarah', order_index: 1 },
           { id: '2-2', parent_id: '2', label: 'Visi & Misi', path: 'visi-misi', order_index: 2 },
           { id: '2-3', parent_id: '2', label: 'Fasilitas', path: 'fasilitas', order_index: 3 },
-          { id: '2-4', parent_id: '2', label: 'Struktur Organisasi', path: 'organisasi', order_index: 4 },
-          { id: '2-5', parent_id: '2', label: 'Dokumen Penting', path: 'dokumen-penting', order_index: 5 },
+          { id: '2-4', parent_id: '2', label: 'Struktur Organisasi', path: 'struktur', order_index: 4 },
+          { id: '2-5', parent_id: '2', label: 'Dokumen Penting', path: 'dokumen', order_index: 5 },
           { id: '4-1', parent_id: '4', label: 'Ranking Atlet', path: 'peringkat' },
           { id: '4-2', parent_id: '4', label: 'Quiz Badminton', path: 'quiz' }
         ];
@@ -86,9 +91,9 @@ export default function Navbar({ onNavigate }: NavbarProps) {
         const parentTentang = finalNav.find((item: any) => 
           item.path === 'tentang-kami' || item.label.toLowerCase().includes('tentang')
         );
-        const hasDocs = finalNav.some((item: any) => item.path === 'dokumen-penting');
+        const hasDocs = finalNav.some((item: any) => item.path === 'dokumen');
         if (!hasDocs && parentTentang) {
-          finalNav.push({ id: 'docs-dynamic', parent_id: parentTentang.id, label: 'Dokumen Penting', path: 'dokumen-penting', order_index: 5 });
+          finalNav.push({ id: 'docs-dynamic', parent_id: parentTentang.id, label: 'Dokumen Penting', path: 'dokumen', order_index: 5 });
         }
 
         // Update order_index for sub-menus of 'Tentang Kami' (id='2')
@@ -97,11 +102,27 @@ export default function Navbar({ onNavigate }: NavbarProps) {
             if (item.path === 'sejarah') return { ...item, order_index: 1 };
             if (item.path === 'visi-misi') return { ...item, order_index: 2 };
             if (item.path === 'fasilitas') return { ...item, order_index: 3 };
-            if (item.path === 'organisasi') return { ...item, order_index: 4 };
-            if (item.path === 'dokumen-penting') return { ...item, order_index: 5 };
+            if (item.path === 'struktur-organisasi') return { ...item, order_index: 4 };
+            if (item.path === 'dokumen') return { ...item, order_index: 5 };
           }
           return item;
         });
+
+        // Pastikan 'Struktur Organisasi' ada di dalam sub-menu 'Tentang Kami'
+        if (parentTentang) {
+          // Remove any existing 'Struktur Organisasi' items (case insensitive) to replace them
+          finalNav = finalNav.filter((item: any) => 
+            !(item.label && item.label.toLowerCase() === 'struktur organisasi' && item.parent_id === parentTentang.id)
+          );
+          finalNav.push({ 
+            id: 'struktur-dynamic', 
+            parent_id: parentTentang.id, 
+            label: 'Struktur Organisasi', 
+            path: 'struktur-organisasi', 
+            order_index: 4,
+            type: 'link'
+          });
+        }
 
         let parentRanking = finalNav.find((item: any) => 
           item.path === 'peringkat' || item.path === 'ranking' || item.label.toLowerCase().includes('peringkat')
@@ -119,6 +140,17 @@ export default function Navbar({ onNavigate }: NavbarProps) {
           }
         }
       }
+      
+      // Final deduplication: keep only the first occurrence of each label, preferring the one with a path
+      const map = new Map();
+      finalNav.forEach(item => {
+        const label = item.label ? item.label.trim().toLowerCase() : '';
+        if (!map.has(label) || (item.path && !map.get(label).path)) {
+          map.set(label, item);
+        }
+      });
+      finalNav = Array.from(map.values());
+      
       setNavData(finalNav);
     } catch (err) {
       console.warn("Fetch Nav Error:", err);
@@ -153,7 +185,21 @@ export default function Navbar({ onNavigate }: NavbarProps) {
   }, [fetchNavSettings, fetchBrandingSettings]);
 
   const getSubMenus = (parentId: string) => {
-    return navData.filter(item => item.parent_id === parentId).sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
+    const sub = navData.filter(item => item.parent_id === parentId);
+    
+    // Force order for "Tentang Kami" (id '2')
+    if (parentId === '2') {
+       const order: Record<string, number> = { 
+         'Sejarah': 1, 
+         'Visi & Misi': 2, 
+         'Fasilitas': 3, 
+         'Struktur Organisasi': 4,
+         'Dokumen Penting': 5
+       };
+       return sub.sort((a, b) => (order[a.label] || 99) - (order[b.label] || 99));
+    }
+    
+    return sub.sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
   };
 
   // --- PERBAIKAN LOGIKA NAVIGASI ---
@@ -199,7 +245,13 @@ export default function Navbar({ onNavigate }: NavbarProps) {
     // 6. Tentang Kami
     if (path === 'tentang-kami' || path === 'about') {
       if (subPath) {
-        onNavigate(subPath);
+        if (subPath === 'dokumen') {
+          onNavigate('dokumen-penting');
+        } else if (subPath === 'struktur' || subPath === 'struktur-organisasi') {
+          onNavigate('struktur-organisasi');
+        } else {
+          onNavigate(subPath);
+        }
       } else {
         onNavigate('tentang-kami');
       }
@@ -285,10 +337,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
                   {isDropdown && activeDropdown === menu.id && (
                     <div className={`dropdown-container animate-in fade-in slide-in-from-top-2 duration-200 ${isLastFew ? 'right-0' : 'left-0'}`}>
                       <div className="dropdown-content">
-                        {subMenus.sort((a, b) => {
-                          const order: Record<string, number> = { 'sejarah': 1, 'visi-misi': 2, 'fasilitas': 3, 'organisasi': 4, 'dokumen-penting': 5 };
-                          return (order[a.path] || 99) - (order[b.path] || 99);
-                        }).map((sub) => (
+                        {subMenus.map((sub) => (
                            <button 
                             key={sub.id} 
                             onClick={() => handleNavClick(menu.path, sub.path)} 
@@ -409,7 +458,9 @@ export default function Navbar({ onNavigate }: NavbarProps) {
                 return (
                   <div key={menu.id} className="border-b border-white/5 last:border-0">
                     <button 
-                      onClick={() => !isDropdown ? handleNavClick(menu.path) : (activeDropdown === menu.id ? setActiveDropdown(null) : setActiveDropdown(menu.id))}
+                      onClick={() => {
+                        !isDropdown ? handleNavClick(menu.path) : (activeDropdown === menu.id ? setActiveDropdown(null) : setActiveDropdown(menu.id));
+                      }}
                       className="flex justify-between items-center w-full px-6 py-4 text-[12px] font-bold tracking-wider uppercase text-slate-100 hover:bg-blue-600/10 hover:text-blue-400 transition-all duration-200 text-left"
                     >
                       <span>{menu.label}</span>
@@ -418,13 +469,12 @@ export default function Navbar({ onNavigate }: NavbarProps) {
                     
                     {isDropdown && isExpanded && (
                       <div className="bg-[#070c18]/40 border-t border-white/5 flex flex-col py-2 pl-8 pr-4 gap-1 animate-in fade-in duration-200">
-                        {subMenus.sort((a, b) => {
-                          const order: Record<string, number> = { 'sejarah': 1, 'visi-misi': 2, 'fasilitas': 3, 'organisasi': 4, 'dokumen-penting': 5 };
-                          return (order[a.path] || 99) - (order[b.path] || 99);
-                        }).map((sub) => (
+                        {subMenus.map((sub) => (
                           <button 
                             key={sub.id} 
-                            onClick={() => handleNavClick(menu.path, sub.path)} 
+                            onClick={() => {
+                                handleNavClick(menu.path, sub.path);
+                            }} 
                             className="text-left py-2.5 text-[11px] font-semibold tracking-wider uppercase text-slate-400 hover:text-white transition-colors flex items-center justify-between"
                           >
                             <span className="flex items-center gap-2">

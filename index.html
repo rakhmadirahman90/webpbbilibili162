@@ -25,6 +25,14 @@
     <meta name="twitter:title" content="PB Bilibili 162 - Persatuan Bulutangkis Terpadu" />
     <meta name="twitter:description" content="Sistem Informasi Terpadu PB Bilibili 162. Kelola data atlet, pendaftaran, laporan kas, peringkat poin, berita bulutangkis, dan jadwal sholat secara realtime." />
     <meta name="twitter:image" content="https://pbilibili162.99apps.id/logo_pb_bilibili_162.svg" />
+    <link rel="manifest" href="/manifest.json" />
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js');
+        });
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -1,0 +1,16 @@
+{
+  "name": "PB Bilibili 162",
+  "short_name": "PB Bilibili",
+  "description": "Sistem Informasi PB Bilibili 162",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#070d1a",
+  "icons": [
+    {
+      "src": "/logo_pb_bilibili_162.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

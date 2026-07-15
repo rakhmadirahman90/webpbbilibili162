@@ -85,7 +85,8 @@ export default function Sidebar({ email, isOpen, onClose }: SidebarProps) {
     { 
       section: 'Main Dashboard', 
       items: [
-        { name: 'Pendaftaran', path: '/admin/dashboard', icon: LayoutDashboard },
+        { name: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
+        { name: 'Pendaftaran', path: '/admin/pendaftaran', icon: FileSpreadsheet },
         { name: 'Manajemen Atlet', path: '/admin/atlet', icon: Users },
       ]
     },
@@ -113,12 +114,15 @@ export default function Sidebar({ email, isOpen, onClose }: SidebarProps) {
     { 
       section: 'Site Settings', 
       items: [
+        { name: 'Kelola Sejarah', path: '/admin/sejarah', icon: Info }, 
+        { name: 'Kelola Visi Misi', path: '/admin/visi-misi', icon: Info }, 
+        { name: 'Kelola Fasilitas', path: '/admin/fasilitas', icon: Info }, 
+        { name: 'Kelola Struktur', path: '/admin/struktur', icon: Network },
+        { name: 'Kelola Dokumen', path: '/admin/dokumen', icon: BookOpen },
         { name: 'Kelola Tampilan', path: '/admin/tampilan', icon: Layout }, 
+        { name: 'Kelola Navbar', path: '/admin/navbar', icon: Menu }, 
         { name: 'Kelola Hero', path: '/admin/hero', icon: Images },
         { name: 'Kelola Pop-up', path: '/admin/popup', icon: Megaphone },
-        { name: 'Kelola Tentang', path: '/admin/about', icon: Info }, 
-        { name: 'Kelola Struktur', path: '/admin/struktur', icon: Network },
-        { name: 'Kelola Navbar', path: '/admin/navbar', icon: Menu }, 
         { name: 'Kelola Footer', path: '/admin/footer', icon: LayoutGrid }, 
         { name: 'Kelola Kontak', path: '/admin/kontak', icon: Phone },
       ]

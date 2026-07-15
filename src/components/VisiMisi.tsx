@@ -40,7 +40,7 @@ export default function VisiMisi() {
           <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-amber-500/10 border border-amber-500/20 text-amber-500 rounded-full text-[10px] font-black uppercase tracking-widest">
             <Target size={14} /> Visi
           </div>
-          <div className="bg-[#1a1d26] p-8 md:p-10 rounded-[2.5rem] border border-white/5 shadow-xl font-medium text-xl md:text-3xl text-zinc-100 leading-relaxed tracking-tight text-justify">
+          <div className="bg-[#1a1d26] p-8 md:p-10 rounded-[2.5rem] border border-white/5 shadow-xl font-normal text-[16px] md:text-[18px] text-zinc-300 leading-relaxed tracking-normal text-justify">
             "{dynamicContent.visi}"
           </div>
         </div>

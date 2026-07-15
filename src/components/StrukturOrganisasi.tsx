@@ -77,13 +77,18 @@ export default function StrukturOrganisasi() {
   // --- FETCH DATA: MUTLAK MENGGUNAKAN SORT_ORDER ---
   const fetchMembers = async () => {
     try {
+      console.log("Fetching members...");
       // Ambil data terbaru dari Supabase
       const { data, error } = await supabase
         .from('organizational_structure')
         .select('*')
         .order('sort_order', { ascending: true }); // Penentu utama tampilan
       
-      if (error) throw error;
+      if (error) {
+        console.error("Fetch Error:", error);
+        throw error;
+      }
+      console.log("Fetch success:", data);
       if (data) {
         setMembers(data);
       }
@@ -214,7 +219,7 @@ export default function StrukturOrganisasi() {
   );
 
   return (
-    <div className="flex h-screen bg-[#0F172A] overflow-hidden font-sans">
+    <div className="flex min-h-screen bg-[#0F172A] overflow-hidden font-sans">
       
       {/* LEFT PANEL: DATABASE MANAGEMENT (EDITOR) */}
       <div className="w-80 border-r border-slate-800 flex flex-col bg-[#0A0F1E] p-6 overflow-hidden shadow-2xl z-10">
