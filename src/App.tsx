@@ -660,7 +660,7 @@ export default function App() {
 
             <AnimatePresence mode="wait">
               {!activeView ? (
-                <motion.div key="landing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full">
+                <motion.div key="landing" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.3 }} className="w-full">
                   <Hero />
                   {/* Jadwal Sholat Khusus Seluler - Tampil Tepat di Bawah Slider Hero */}
                   <div className="block lg:hidden max-w-xl mx-auto px-4 sm:px-6 md:px-8 mt-6 mb-2">
@@ -671,11 +671,11 @@ export default function App() {
               ) : (
                 /* DEDICATED FULL-PAGE VIEW DENGAN DARK MODE KONSISTEN */
                 <motion.div 
-                  key="dedicated-view"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.4 }}
+                  key={`dedicated-view-${activeView}`}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.3 }}
                   className="min-h-screen w-full flex flex-col items-center bg-[#070d1a] pt-20 pb-14"
                 >
                   <div className="w-full h-full max-w-7xl px-4 md:px-8 mx-auto">

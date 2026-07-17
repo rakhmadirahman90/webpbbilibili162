@@ -13,6 +13,21 @@ interface Member {
   sort_order: number;
 }
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0 },
+};
+
 export default function StrukturOrganisasiPublic() {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,20 +71,26 @@ export default function StrukturOrganisasiPublic() {
     return fields;
   }, [members]);
 
+  const [selectedMember, setSelectedMember] = useState<Member | null>(null);
+
   const MemberCard = ({ m, size = 'md' }: { m: Member, size?: 'lg' | 'md' }) => (
     <motion.div 
-      className={`bg-white rounded-[2.5rem] shadow-xl border border-blue-50/50 flex flex-col items-center p-8 transition-all duration-500 ${size === 'lg' ? 'w-80' : 'w-72'}`}
+      variants={itemVariants}
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
+      onClick={() => setSelectedMember(m)}
+      className={`bg-white rounded-[1.2rem] sm:rounded-[2.5rem] shadow-xl border border-blue-50/50 flex flex-col items-center p-3 sm:p-6 md:p-8 transition-all duration-500 w-[150px] sm:w-64 md:w-72 ${size === 'lg' ? 'w-[200px] sm:w-80' : ''} cursor-pointer`}
     >
-      <div className={`${size === 'lg' ? 'w-36 h-36' : 'w-28 h-28'} rounded-[2.2rem] overflow-hidden mb-6 bg-slate-50 border-[6px] border-white shadow-inner`}>
+      <div className={`w-20 h-20 sm:w-28 sm:h-28 ${size === 'lg' ? 'md:w-36 md:h-36' : ''} rounded-[1.5rem] sm:rounded-[2.2rem] overflow-hidden mb-4 sm:mb-6 bg-slate-50 border-[4px] sm:border-[6px] border-white shadow-inner`}>
         <img 
           src={m.photo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(m.name)}&background=0D8ABC&color=fff`} 
           className="w-full h-full object-cover" 
           alt={m.name} 
         />
       </div>
-      <h3 className="text-slate-900 font-black italic uppercase text-center leading-tight tracking-tighter mb-3" style={{ fontSize: size === 'lg' ? '18px' : '15px' }}>{m.name}</h3>
-      <div className="bg-amber-500 px-5 py-2 rounded-full shadow-lg shadow-amber-500/20">
-        <span className="text-white font-black uppercase tracking-[0.15em]" style={{ fontSize: '9px' }}>{m.role}</span>
+      <h3 className="text-slate-900 font-black italic uppercase text-center leading-tight tracking-tighter mb-1.5 sm:mb-3 text-[10px] sm:text-[13px] md:text-[15px]" style={{ fontSize: size === 'lg' ? '14px' : undefined }}>{m.name}</h3>
+      <div className="bg-amber-500 px-2 py-0.5 sm:px-5 sm:py-2 rounded-full shadow-lg shadow-amber-500/20">
+        <span className="text-white font-black uppercase tracking-[0.05em] text-[6px] sm:text-[9px]">{m.role}</span>
       </div>
     </motion.div>
   );
@@ -85,7 +106,7 @@ export default function StrukturOrganisasiPublic() {
     <div className="w-full bg-[#FBFCFE] p-8 md:p-16">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-20">
-          <h1 className="text-5xl font-black text-slate-900 italic uppercase tracking-tighter mb-4">
+          <h1 className="text-3xl sm:text-5xl font-black text-slate-900 italic uppercase tracking-tighter mb-4">
             Struktur <span className="text-blue-600">Organisasi</span>
           </h1>
           <div className="w-24 h-1.5 bg-blue-600 mx-auto rounded-full mb-8" />
@@ -93,78 +114,116 @@ export default function StrukturOrganisasiPublic() {
 
         <LayoutGroup>
           <div className="relative flex flex-col items-center">
-            {/* LEVEL 1: PENANGGUNG JAWAB */}
-            <div className="relative z-10 flex flex-col items-center mb-24 w-full">
-              <div className="bg-amber-500 text-white p-4 rounded-3xl mb-12 shadow-2xl ring-[12px] ring-amber-500/10 flex items-center gap-3"><ShieldCheck size={24} /><span className="text-[10px] font-black uppercase tracking-widest">Penanggung Jawab</span></div>
-              <div className="flex justify-center flex-wrap gap-8">
-                {members.filter(m => m.level === 1).map(m => (<MemberCard key={m.id} m={m} size="lg" />))}
-              </div>
-            </div>
-
-            {/* LEVEL 2-6: Hierarki Utama */}
-            {[
-              { lvl: 2, icon: Award, label: 'Jajaran Penasehat', color: 'bg-blue-600' },
-              { lvl: 3, icon: Star, label: 'Jajaran Pembina', color: 'bg-indigo-600' },
-              { lvl: 4, icon: Target, label: 'Ketua Umum', color: 'bg-emerald-600', size: 'lg' as const },
-              { lvl: 5, icon: Briefcase, label: 'Pengurus Inti', color: 'bg-slate-800' },
-              { lvl: 6, icon: Users, label: 'Kepala Pelatih', color: 'bg-orange-600' }
-            ].map((section) => {
-              const filtered = members.filter(m => m.level === section.lvl);
-              if (filtered.length === 0) return null;
-              
-              return (
-                <div key={section.lvl} className="relative z-10 flex flex-col items-center mb-24 w-full">
-                  <div className={`${section.color} text-white p-3 rounded-2xl mb-10 shadow-xl ring-8 ring-white flex items-center gap-3`}>
-                    <section.icon size={20} /><span className="text-[10px] font-black uppercase tracking-widest">{section.label}</span>
-                  </div>
-                  <div className="flex flex-wrap justify-center gap-12">
-                    {filtered.map(m => (<MemberCard key={m.id} m={m} size={section.size} />))}
-                  </div>
+                {/* LEVEL 1: PENANGGUNG JAWAB */}
+                <div className="relative z-10 flex flex-col items-center mb-12 w-full">
+                  <div className="bg-amber-500 text-white py-1 px-4 rounded-full text-[8px] font-black uppercase tracking-widest shadow-lg mb-6 flex items-center gap-2"><ShieldCheck size={12} />Penanggung Jawab</div>
+                  <motion.div variants={containerVariants} initial="hidden" animate="visible" className="flex justify-center flex-wrap gap-2">
+                    {members.filter(m => m.level === 1).map(m => (<MemberCard key={m.id} m={m} size="lg" />))}
+                  </motion.div>
                 </div>
-              );
-            })}
 
-            {/* LEVEL 7: KOORDINATOR & ANGGOTA BIDANG */}
-            {Object.keys(groupedFields).length > 0 && (
-              <div className="relative z-10 flex flex-col items-center w-full">
-                <div className="bg-slate-400 text-white p-3 rounded-2xl mb-20 shadow-xl ring-8 ring-white flex items-center gap-3"><Users size={20} /><span className="text-[10px] font-black uppercase tracking-widest">Koordinator & Anggota Bidang</span></div>
-                <div className="space-y-32 w-full flex flex-col items-center">
-                  {Object.entries(groupedFields).map(([fieldName, fieldMembers]) => {
-                    const coordinator = fieldMembers.find(m => m.role.toLowerCase().includes("koordinator"));
-                    const staffs = fieldMembers.filter(m => !m.role.toLowerCase().includes("koordinator"));
-                    return (
-                      <div key={fieldName} className="flex flex-col items-center w-full">
-                        <div className="bg-white px-8 py-2 rounded-full border border-slate-200 shadow-sm mb-12"><h2 className="text-blue-600 font-black italic uppercase text-[12px] tracking-[0.2em]">{fieldName}</h2></div>
-                        {coordinator && (
-                          <div className="mb-16">
-                            <MemberCard m={coordinator} />
-                          </div>
-                        )}
-                        <div className="flex flex-wrap justify-center gap-6 px-4 max-w-6xl">
-                          {staffs.map(m => (
-                            <div key={m.id} className="bg-white p-4 rounded-[1.8rem] shadow-sm border border-slate-100 flex items-center gap-4 w-72">
-                              <div className="w-14 h-14 rounded-2xl overflow-hidden bg-slate-50 border-2 border-white shadow-sm shrink-0">
-                                <img 
-                                  src={m.photo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(m.name)}`} 
-                                  className="w-full h-full object-cover" 
-                                  alt={m.name}
-                                />
-                              </div>
-                              <div className="flex flex-col min-w-0">
-                                <h4 className="font-black text-slate-900 text-[11px] uppercase italic leading-tight truncate">{m.name}</h4>
-                                <p className="text-blue-600 font-bold text-[8px] uppercase tracking-widest mt-1">{m.role}</p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
+                {/* LEVEL 2-6: Hierarki Utama */}
+                {[
+                  { lvl: 2, icon: Award, label: 'Jajaran Penasehat', color: 'bg-blue-600' },
+                  { lvl: 3, icon: Star, label: 'Jajaran Pembina', color: 'bg-indigo-600' },
+                  { lvl: 4, icon: Target, label: 'Ketua Umum', color: 'bg-emerald-600', size: 'lg' as const },
+                  { lvl: 5, icon: Briefcase, label: 'Pengurus Inti', color: 'bg-slate-800' },
+                  { lvl: 6, icon: Users, label: 'Kepala Pelatih', color: 'bg-orange-600' }
+                ].map((section) => {
+                  const filtered = members.filter(m => m.level === section.lvl);
+                  if (filtered.length === 0) return null;
+                  
+                  return (
+                    <div key={section.lvl} className="relative z-10 flex flex-col items-center mb-8 w-full">
+                      <div className="h-8 w-[2px] bg-slate-200 -mt-8 mb-4"></div>
+                      <div className={`${section.color} text-white py-0.5 px-3 rounded-full text-[7px] font-black uppercase tracking-widest shadow-sm mb-4`}>
+                        {section.label}
                       </div>
-                    );
-                  })}
-                </div>
+                      <motion.div variants={containerVariants} initial="hidden" animate="visible" className="flex flex-wrap justify-center gap-2">
+                        {filtered.map(m => (<MemberCard key={m.id} m={m} size={section.size} />))}
+                      </motion.div>
+                    </div>
+                  );
+                })}
+
+                {/* LEVEL 7: KOORDINATOR & ANGGOTA BIDANG */}
+                {Object.keys(groupedFields).length > 0 && (
+                  <div className="relative z-10 flex flex-col items-center w-full">
+                    <div className="h-8 w-[2px] bg-slate-200 -mt-8 mb-4"></div>
+                    <div className="bg-slate-500 text-white py-1 px-4 rounded-full text-[8px] font-black uppercase tracking-widest shadow-lg mb-8">Koordinator & Anggota</div>
+                    <div className="space-y-8 w-full flex flex-col items-center">
+                      {Object.entries(groupedFields).map(([fieldName, fieldMembers]) => {
+                        const coordinator = fieldMembers.find(m => m.role.toLowerCase().includes("koordinator"));
+                        const staffs = fieldMembers.filter(m => !m.role.toLowerCase().includes("koordinator"));
+                        return (
+                          <div key={fieldName} className="flex flex-col items-center w-full">
+                            <div className="h-4 w-[2px] bg-slate-200 mb-2"></div>
+                            <div className="bg-white px-4 py-1 rounded-full border border-slate-200 shadow-sm mb-4"><h2 className="text-blue-600 font-black italic uppercase text-[8px] tracking-[0.1em]">{fieldName}</h2></div>
+                            {coordinator && (
+                              <div className="mb-4">
+                                <MemberCard m={coordinator} size="md" />
+                              </div>
+                            )}
+                            <div className="flex flex-wrap justify-center gap-2 px-2 max-w-6xl">
+                              {staffs.map(m => (
+                                <motion.div key={m.id} variants={itemVariants} onClick={() => setSelectedMember(m)} className="bg-white p-2 rounded-xl shadow-sm border border-slate-100 flex items-center gap-2 w-full sm:w-60 cursor-pointer hover:bg-slate-50 transition-colors">
+                                  <div className="w-8 h-8 rounded-lg overflow-hidden bg-slate-50 border border-white shadow-sm shrink-0">
+                                    <img 
+                                      src={m.photo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(m.name)}`} 
+                                      className="w-full h-full object-cover" 
+                                      alt={m.name}
+                                    />
+                                  </div>
+                                  <div className="flex flex-col min-w-0">
+                                    <h4 className="font-black text-slate-900 text-[8px] uppercase italic leading-tight truncate">{m.name}</h4>
+                                    <p className="text-blue-600 font-bold text-[6px] uppercase tracking-widest">{m.role}</p>
+                                  </div>
+                                </motion.div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        </LayoutGroup>
+            </LayoutGroup>
+
+        {selectedMember && (
+          <motion.div
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setSelectedMember(null)}
+          >
+            <motion.div
+              className="bg-white rounded-3xl p-6 shadow-2xl w-full max-w-xs flex flex-col items-center"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="w-32 h-32 rounded-2xl overflow-hidden bg-slate-50 mb-4 shadow-inner">
+                <img
+                  src={selectedMember.photo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedMember.name)}`}
+                  className="w-full h-full object-cover"
+                  alt={selectedMember.name}
+                />
+              </div>
+              <h2 className="text-slate-900 font-black italic uppercase text-center text-xl mb-1">{selectedMember.name}</h2>
+              <div className="bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest px-4 py-1 rounded-full mb-4">{selectedMember.role}</div>
+              <p className="text-slate-600 text-sm text-center">Informasi lebih lanjut tentang {selectedMember.name} akan ditampilkan di sini.</p>
+              <button
+                onClick={() => setSelectedMember(null)}
+                className="mt-6 w-full py-2 bg-slate-100 rounded-xl text-slate-600 font-bold text-sm hover:bg-slate-200 transition-colors"
+              >
+                Tutup
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
       </div>
     </div>
   );

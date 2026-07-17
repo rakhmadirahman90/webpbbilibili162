@@ -40,7 +40,7 @@ export default function DokumenPenting() {
   );
 
   return (
-    <div id="dokumen-section" className="max-w-7xl mx-auto px-6 py-24 min-h-screen text-zinc-100 relative">
+    <div id="dokumen-section" className="max-w-7xl mx-auto px-6 py-24 min-h-screen text-slate-100 relative bg-[#070d1a]">
       
       {/* --- MODAL PRATINJAU INTEGRASI --- */}
       <AnimatePresence>
@@ -52,7 +52,7 @@ export default function DokumenPenting() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setSelectedDocUrl(null)}
-              className="absolute inset-0 bg-black/95 backdrop-blur-md"
+              className="absolute inset-0 bg-[#070d1a]/95 backdrop-blur-md"
             />
             
             {/* Content Container */}
@@ -60,29 +60,29 @@ export default function DokumenPenting() {
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="relative w-full max-w-6xl h-[90vh] bg-zinc-900 border border-zinc-800 rounded-[2.5rem] overflow-hidden flex flex-col shadow-[0_0_50px_rgba(0,0,0,0.5)]"
+              className="relative w-full max-w-6xl h-[90vh] bg-[#0c1426] border border-slate-800 rounded-[2.5rem] overflow-hidden flex flex-col shadow-[0_0_50px_rgba(0,0,0,0.5)]"
             >
               {/* Header Modal */}
-              <div className="flex items-center justify-between p-6 border-b border-zinc-800 bg-zinc-900/80 backdrop-blur-xl">
+              <div className="flex items-center justify-between p-6 border-b border-slate-800 bg-[#0c1426]/80 backdrop-blur-xl">
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/20">
                     <FileText size={20} className="text-white" />
                   </div>
                   <div>
                     <h3 className="text-xs font-black uppercase italic tracking-[0.2em] text-blue-500 leading-none mb-1">Pratinjau Arsip</h3>
-                    <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-tight">Dokumen Resmi PB Bilibili 162</p>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">Dokumen Resmi PB Bilibili 162</p>
                   </div>
                 </div>
                 <button 
                   onClick={() => setSelectedDocUrl(null)}
-                  className="p-3 hover:bg-white/5 text-zinc-400 hover:text-white rounded-full transition-all active:scale-90"
+                  className="p-3 hover:bg-white/5 text-slate-400 hover:text-white rounded-full transition-all active:scale-90"
                 >
                   <X size={24} />
                 </button>
               </div>
 
               {/* Iframe View */}
-              <div className="flex-1 bg-zinc-950">
+              <div className="flex-1 bg-[#070d1a]">
                 <iframe 
                   src={`https://docs.google.com/viewer?url=${encodeURIComponent(selectedDocUrl)}&embedded=true`} 
                   className="w-full h-full border-none"
@@ -101,24 +101,24 @@ export default function DokumenPenting() {
         viewport={{ once: true }}
         className="text-center mb-24"
       >
-        <h2 className="text-5xl md:text-7xl font-black italic uppercase tracking-tighter mb-6">
-          DOKUMEN <span className="text-blue-600 drop-shadow-[0_0_15px_rgba(37,99,235,0.3)]">PENTING</span>
+        <h2 className="text-5xl md:text-7xl font-black italic uppercase tracking-tighter mb-6 text-slate-100">
+          DOKUMEN <span className="text-blue-500">PENTING</span>
         </h2>
         <div className="flex items-center justify-center gap-4">
-          <div className="h-[2px] w-16 bg-gradient-to-r from-transparent to-blue-600"></div>
-          <p className="text-zinc-400 uppercase text-[11px] font-black tracking-[0.4em]">Arsip Digital Authority Panel</p>
-          <div className="h-[2px] w-16 bg-gradient-to-l from-transparent to-blue-600"></div>
+          <div className="h-[2px] w-16 bg-gradient-to-r from-transparent to-blue-500"></div>
+          <p className="text-slate-400 uppercase text-[11px] font-black tracking-[0.4em]">Arsip Digital Authority Panel</p>
+          <div className="h-[2px] w-16 bg-gradient-to-l from-transparent to-blue-500"></div>
         </div>
       </motion.div>
 
       {/* --- SEARCH BAR --- */}
       <div className="relative max-w-3xl mx-auto mb-20 group">
-        <div className="absolute inset-0 bg-blue-600/10 blur-[60px] group-hover:bg-blue-600/15 transition-all -z-10"></div>
-        <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-blue-500" size={24} />
+        <div className="absolute inset-0 bg-blue-500/20 blur-[60px] rounded-full group-hover:bg-blue-500/30 transition-all -z-10"></div>
+        <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-blue-400" size={24} />
         <input 
           type="text" 
           placeholder="Cari judul dokumen atau deskripsi..." 
-          className="w-full bg-zinc-900/60 border border-zinc-800/80 rounded-[2rem] py-6 pl-16 pr-8 outline-none focus:border-blue-600/50 focus:ring-4 focus:ring-blue-600/5 transition-all backdrop-blur-3xl text-zinc-100 placeholder:text-zinc-600 font-medium"
+          className="w-full bg-slate-900/60 border border-slate-700 rounded-[2rem] py-6 pl-16 pr-8 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all backdrop-blur-3xl text-slate-100 placeholder:text-slate-500 font-medium shadow-lg"
           onChange={e => setSearch(e.target.value)}
         />
       </div>
@@ -127,7 +127,7 @@ export default function DokumenPenting() {
       {loading ? (
         <div className="grid md:grid-cols-2 gap-8">
           {[1, 2, 3, 4].map(i => (
-            <div key={i} className="h-60 bg-zinc-900/40 rounded-[3rem] border border-zinc-800/50 animate-pulse"></div>
+            <div key={i} className="h-60 bg-[#0c1426]/40 rounded-[3rem] border border-slate-800/50 animate-pulse"></div>
           ))}
         </div>
       ) : (
@@ -142,20 +142,20 @@ export default function DokumenPenting() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ delay: index * 0.03 }}
-                  className="group flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 bg-zinc-900/30 border border-zinc-800/80 p-6 rounded-2xl hover:border-blue-600/50 hover:bg-zinc-900/60 transition-all duration-300 shadow-sm"
+                  className="group flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 bg-[#0c1426]/30 border border-slate-800/80 p-6 rounded-2xl hover:border-blue-600/50 hover:bg-[#0c1426]/60 transition-all duration-300 shadow-sm"
                 >
                   {/* File Icon */}
-                  <div className="w-12 h-12 bg-zinc-800/50 rounded-xl flex items-center justify-center text-zinc-400 group-hover:bg-blue-600 group-hover:text-white transition-colors shrink-0">
+                  <div className="w-12 h-12 bg-slate-800/50 rounded-xl flex items-center justify-center text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-colors shrink-0">
                     <FileText size={20} />
                   </div>
 
                   {/* Document Details */}
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-sm md:text-base font-bold text-zinc-100 truncate mb-1">
+                    <h3 className="text-sm md:text-base font-bold text-slate-100 truncate mb-1">
                       {doc.title}
                     </h3>
-                    <div className="flex flex-wrap gap-3 items-center text-[10px] md:text-xs text-zinc-500 font-bold uppercase tracking-wider">
-                      <span className="bg-zinc-800/50 px-2 py-0.5 rounded text-zinc-300">
+                    <div className="flex flex-wrap gap-3 items-center text-[10px] md:text-xs text-slate-500 font-bold uppercase tracking-wider">
+                      <span className="bg-slate-800/50 px-2 py-0.5 rounded text-slate-300">
                         {doc.file_type || 'PDF'}
                       </span>
                       <span className="flex items-center gap-1">
@@ -170,7 +170,7 @@ export default function DokumenPenting() {
                   <div className="flex items-center gap-2 w-full sm:w-auto">
                     <button 
                       onClick={() => setSelectedDocUrl(doc.file_url)}
-                      className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-[11px] font-black uppercase tracking-widest bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white px-6 py-3 rounded-xl transition-all"
+                      className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-[11px] font-black uppercase tracking-widest bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white px-6 py-3 rounded-xl transition-all"
                     >
                       <Eye size={14} /> View
                     </button>
@@ -192,28 +192,28 @@ export default function DokumenPenting() {
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="text-center py-40 bg-zinc-900/10 rounded-[4rem] border border-dashed border-zinc-800"
+              className="text-center py-40 bg-[#0c1426]/10 rounded-[4rem] border border-dashed border-slate-800"
             >
-              <div className="w-24 h-24 bg-zinc-800/30 rounded-full flex items-center justify-center mx-auto mb-8 text-zinc-700">
+              <div className="w-24 h-24 bg-slate-800/30 rounded-full flex items-center justify-center mx-auto mb-8 text-slate-700">
                 <AlertCircle size={48} />
               </div>
-              <h3 className="text-2xl font-black text-zinc-500 uppercase italic">Hasil Tidak Ditemukan</h3>
-              <p className="text-zinc-600 text-xs mt-3 font-bold uppercase tracking-widest">Coba gunakan kata kunci arsip yang lain</p>
+              <h3 className="text-2xl font-black text-slate-500 uppercase italic">Hasil Tidak Ditemukan</h3>
+              <p className="text-slate-600 text-xs mt-3 font-bold uppercase tracking-widest">Coba gunakan kata kunci arsip yang lain</p>
             </motion.div>
           )}
-        </>
-      )}
+        </>)}
+
 
       {/* --- FOOTER INFO --- */}
-      <div className="mt-32 p-12 rounded-[4rem] bg-gradient-to-br from-zinc-900 to-black border border-zinc-800/50 flex flex-col md:flex-row items-center justify-between gap-10 shadow-2xl relative overflow-hidden group">
+      <div className="mt-32 p-12 rounded-[4rem] bg-gradient-to-br from-[#0c1426] to-black border border-slate-800/50 flex flex-col md:flex-row items-center justify-between gap-10 shadow-2xl relative overflow-hidden group">
         <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 blur-[100px] -z-10 group-hover:bg-blue-600/10 transition-colors"></div>
         <div className="flex items-center gap-6">
           <div className="w-16 h-16 rounded-2xl bg-blue-600 flex items-center justify-center shadow-[0_10px_20px_rgba(37,99,235,0.3)]">
             <DownloadCloud size={28} className="text-white" />
           </div>
           <div>
-            <h4 className="font-black italic uppercase text-lg leading-none mb-2">Pusat Informasi Dokumen</h4>
-            <p className="text-sm text-zinc-500 max-w-sm font-medium leading-relaxed text-justify">
+            <h4 className="font-black italic uppercase text-lg leading-none mb-2 text-slate-100">Pusat Informasi Dokumen</h4>
+            <p className="text-sm text-slate-500 max-w-sm font-medium leading-relaxed text-justify">
               Arsip ini dikelola oleh tim administrasi **Authority Panel PB Bilibili 162**. Hubungi sekretariat jika membutuhkan akses dokumen fisik.
             </p>
           </div>
