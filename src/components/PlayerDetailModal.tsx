@@ -29,9 +29,9 @@ export const PlayerDetailModal = ({ player, processedPlayers, onClose }: any) =>
             <X size={20} />
           </button>
 
-          <div className="flex-1 overflow-y-auto bg-white text-slate-800 scrollbar-hide">
+          <div className="flex-1 overflow-hidden bg-white text-slate-800">
             {/* Photo - Looks cooler now */}
-            <div className="relative w-full h-[40vh] md:h-[60vh] overflow-hidden rounded-b-3xl shadow-lg">
+            <div className="relative w-full h-[35vh] md:h-[50vh] overflow-hidden rounded-b-3xl shadow-lg">
               {player.img ? (
                 <img src={player.img} className="w-full h-full object-cover object-top" alt={player.name} />
               ) : (
