@@ -172,22 +172,26 @@ function ImagePopup() {
       <div className="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md">
         <div className="absolute inset-0" onClick={closePopup} />
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative w-full max-w-[420px] max-h-[85vh] bg-white rounded-[2rem] shadow-2xl flex flex-col overflow-hidden border border-white/20" onClick={(e) => e.stopPropagation()}>
-          <button onClick={closePopup} className="absolute top-4 right-4 z-50 p-2 bg-white/90 hover:bg-rose-500 hover:text-white text-slate-900 rounded-full shadow-lg transition-all"><X size={18} /></button>
+          <button onClick={closePopup} className="absolute top-4 right-4 z-[60] p-2 bg-white hover:bg-slate-100 text-slate-800 rounded-full shadow-xl border border-slate-200 transition-all active:scale-90"><X size={18} /></button>
           <div ref={scrollRef} className="overflow-y-auto hide-scrollbar">
-             {/* Image container with fixed height and object-cover for consistent, polished look */}
-             <div className="relative w-full h-72 bg-slate-100 overflow-hidden">
+             {/* Image container that fits perfectly with full width and proportional height, leaving no empty space on left/right and no cropping */}
+             <div className="relative w-full bg-slate-950 overflow-hidden flex items-center justify-center">
+               {/* Main Banner Image - Fully spans the width proportionally without cropping */}
                <img 
                  src={current.url_gambar} 
-                 className="w-full h-full object-cover object-center" 
+                 className="w-full h-auto block z-10 select-none pointer-events-none" 
                  alt={current.judul} 
                  onError={(e) => {
                    (e.target as HTMLImageElement).style.display = 'none';
                  }}
                />
                
+               {/* Subtle lighting gradient overlay */}
+               <div className="absolute inset-0 bg-gradient-to-t from-slate-950/25 via-transparent to-black/15 z-20 pointer-events-none" />
+               
                {/* Dots Indicator */}
                {promoImages.length > 1 && (
-                 <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-1.5">
+                 <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-1.5 z-30">
                    {promoImages.map((_, index) => (
                      <div 
                        key={index}

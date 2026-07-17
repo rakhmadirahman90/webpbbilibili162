@@ -130,7 +130,7 @@ function ImagePopup() {
         >
           <button 
             onClick={closePopup} 
-            className="absolute top-4 right-4 z-50 p-2 bg-black/10 hover:bg-black/20 text-white rounded-full transition-all active:scale-90"
+            className="absolute top-4 right-4 z-[60] p-2 bg-white hover:bg-slate-100 text-slate-800 rounded-full shadow-xl border border-slate-200 transition-all active:scale-90"
           >
             <X size={18} />
           </button>
@@ -144,14 +144,21 @@ function ImagePopup() {
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
               >
-                <motion.div 
+                 <motion.div 
                   drag="x"
                   dragConstraints={{ left: 0, right: 0 }}
                   onDragEnd={handleDragEnd}
-                  className="relative w-full h-72 bg-slate-100 shrink-0 cursor-grab active:cursor-grabbing"
+                  className="relative w-full bg-slate-950 shrink-0 cursor-grab active:cursor-grabbing overflow-hidden flex items-center justify-center"
                 >
-                  <img src={current.url_gambar} className="w-full h-full object-cover object-center" alt="Banner" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent" />
+                  {/* Main Banner Image - Fully spans the width proportionally without cropping */}
+                  <img 
+                    src={current.url_gambar} 
+                    className="w-full h-auto block z-10 select-none pointer-events-none" 
+                    alt="Banner" 
+                  />
+                  
+                  {/* Subtle lighting gradient overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/20 via-transparent to-black/10 z-20 pointer-events-none" />
                 </motion.div>
 
                 <div className="px-6 pt-2 pb-8 bg-white">

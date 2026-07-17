@@ -515,10 +515,10 @@ export default function Gallery() {
                   </div>
                 </div>
 
-                {/* Main Content Area */}
+                 {/* Main Content Area */}
                 <div className="w-full flex-grow bg-white pb-20">
                   {/* 1. Header Media Container (Video Player or Image Slider) */}
-                  <div className="w-full bg-black relative aspect-[1.8/1] sm:aspect-[2.4/1] md:aspect-[3/1] lg:aspect-[3.2/1] overflow-hidden group select-none flex items-center justify-center">
+                  <div className="w-full bg-[#030712] relative h-[38vh] sm:h-[48vh] md:h-[58vh] lg:h-[65vh] overflow-hidden group select-none flex items-center justify-center border-b border-slate-900/40">
                     
                     {activeMedia.type === 'video' ? (
                       <div className="w-full h-full flex items-center justify-center bg-black">
@@ -546,42 +546,50 @@ export default function Gallery() {
                           {mediaImages.map((img, idx) => (
                             <div 
                               key={idx} 
-                              className="w-full h-full shrink-0 relative"
+                              className="w-full h-full shrink-0 relative flex items-center justify-center overflow-hidden bg-[#030712]"
                             >
+                              {/* Ambient Blurred Background for visual depth (Premium UX) */}
+                              <img 
+                                src={getOptimizedImageUrl(img, 200)} 
+                                alt="" 
+                                className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-40 scale-110 pointer-events-none select-none" 
+                                referrerPolicy="no-referrer"
+                              />
+                              {/* Main Content Image - Always fitted and visible, never cropped! */}
                               <img 
                                 src={getOptimizedImageUrl(img, 1200)} 
                                 alt="" 
-                                className="w-full h-full object-cover object-center" 
+                                className="relative max-w-full max-h-full object-contain z-10 shadow-2xl transition-all duration-300" 
                                 referrerPolicy="no-referrer"
                               />
-                              <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/10"></div>
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/25 z-20 pointer-events-none"></div>
                             </div>
                           ))}
                         </div>
-
+ 
                         {/* Slide Navigation Arrows */}
                         {mediaImages.length > 1 && (
                           <>
                             <button 
                               onClick={(e) => { e.stopPropagation(); setActiveImgIndex(prev => (prev === 0 ? mediaImages.length - 1 : prev - 1)); }}
-                              className="absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/40 hover:bg-black/70 text-white/90 hover:text-white backdrop-blur-xs transition-all active:scale-90 z-20"
+                              className="absolute left-3.5 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/50 hover:bg-black/80 text-white backdrop-blur-md border border-white/10 transition-all active:scale-90 z-20"
                               aria-label="Previous image"
                             >
-                              <ChevronLeft size={20} />
+                              <ChevronLeft size={18} />
                             </button>
                             <button 
                               onClick={(e) => { e.stopPropagation(); setActiveImgIndex(prev => (prev === mediaImages.length - 1 ? 0 : prev + 1)); }}
-                              className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/40 hover:bg-black/70 text-white/90 hover:text-white backdrop-blur-xs transition-all active:scale-90 z-20"
+                              className="absolute right-3.5 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/50 hover:bg-black/80 text-white backdrop-blur-md border border-white/10 transition-all active:scale-90 z-20"
                               aria-label="Next image"
                             >
-                              <ChevronRight size={20} />
+                              <ChevronRight size={18} />
                             </button>
                           </>
                         )}
-
+ 
                         {/* Dots Indicators */}
                         {mediaImages.length > 1 && (
-                          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 z-20">
+                          <div className="absolute bottom-16 sm:bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 z-20 bg-black/30 px-3 py-1.5 rounded-full backdrop-blur-xs">
                             {mediaImages.map((_, idx) => (
                               <button 
                                 key={idx} 
@@ -593,23 +601,23 @@ export default function Gallery() {
                         )}
                       </>
                     )}
-
+ 
                     {/* Left & Right gallery-level navigation arrows to browse previous/next media item directly! */}
                     {filteredMedia.length > 1 && activeIndex !== -1 && (
                       <>
                         <button 
                           onClick={(e) => { e.stopPropagation(); handlePrevItem(activeIndex); }}
-                          className="absolute left-4 bottom-4 p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white/90 hover:text-white backdrop-blur-md border border-white/15 transition-all active:scale-95 z-30 flex items-center gap-1.5 text-xs font-black uppercase tracking-wider"
+                          className="absolute left-3.5 bottom-3.5 py-2 px-3 sm:py-2.5 sm:px-4 rounded-lg sm:rounded-xl bg-black/60 hover:bg-black/80 text-white backdrop-blur-md border border-white/10 transition-all active:scale-95 z-30 flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-xs font-black uppercase tracking-wider"
                           title="Media Sebelumnya"
                         >
-                          <ChevronLeft size={16} /> <span className="hidden md:inline">Sebelumnya</span>
+                          <ChevronLeft size={14} className="sm:w-[16px] sm:h-[16px]" /> <span className="hidden sm:inline">Sebelumnya</span>
                         </button>
                         <button 
                           onClick={(e) => { e.stopPropagation(); handleNextItem(activeIndex); }}
-                          className="absolute right-4 bottom-4 p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white/90 hover:text-white backdrop-blur-md border border-white/15 transition-all active:scale-95 z-30 flex items-center gap-1.5 text-xs font-black uppercase tracking-wider"
+                          className="absolute right-3.5 bottom-3.5 py-2 px-3 sm:py-2.5 sm:px-4 rounded-lg sm:rounded-xl bg-black/60 hover:bg-black/80 text-white backdrop-blur-md border border-white/10 transition-all active:scale-95 z-30 flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-xs font-black uppercase tracking-wider"
                           title="Media Selanjutnya"
                         >
-                          <span className="hidden md:inline">Selanjutnya</span> <ChevronRight size={16} />
+                          <span className="hidden sm:inline">Selanjutnya</span> <ChevronRight size={14} className="sm:w-[16px] sm:h-[16px]" />
                         </button>
                       </>
                     )}
