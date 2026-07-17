@@ -20,6 +20,7 @@ import {
   TrendingUp,
   Award,
 } from 'lucide-react';
+import { PlayerDetailModal } from './PlayerDetailModal';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const Players: React.FC<{ initialFilter?: string }> = ({
@@ -31,10 +32,19 @@ const Players: React.FC<{ initialFilter?: string }> = ({
   };
 
   const [currentAgeGroup, setCurrentAgeGroup] = useState(normalizeFilter(initialFilter));
+
+  useEffect(() => {
+    setCurrentAgeGroup(normalizeFilter(initialFilter));
+  }, [initialFilter]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPlayer, setSelectedPlayer] = useState<any | null>(null);
   const [dbPlayers, setDbPlayers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'profil' | 'stats'>('profil');
+
+  useEffect(() => {
+    setActiveTab('profil');
+  }, [selectedPlayer]);
 
   const prevRef = useRef<HTMLButtonElement>(null);
   const nextRef = useRef<HTMLButtonElement>(null);
@@ -144,88 +154,33 @@ const Players: React.FC<{ initialFilter?: string }> = ({
   }, [searchTerm, currentAgeGroup, processedPlayers]);
 
   return (
-    <section id="atlet" className="w-full bg-[#0b0e14] text-white min-h-screen relative overflow-hidden font-sans py-12 md:py-20">
+    <section id="atlet" className="w-full flex-grow pt-2 bg-[#0b0e14] text-white flex flex-col overflow-hidden font-sans">
       {/* Background Ornaments */}
       <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-blue-600/5 blur-[120px] rounded-full pointer-events-none" />
       <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-indigo-600/5 blur-[120px] rounded-full pointer-events-none" />
 
       {/* MODAL DETAIL - Menggunakan Framer Motion untuk transisi halus */}
-      <AnimatePresence>
-        {selectedPlayer && (
-          <div className="fixed inset-0 z-[110000] flex items-center justify-center p-4 md:p-8">
-            <motion.div 
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/90 backdrop-blur-xl" 
-              onClick={() => setSelectedPlayer(null)} 
-            />
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative bg-[#12141c] border border-white/10 w-full max-w-5xl rounded-[2.5rem] overflow-hidden shadow-[0_30px_100px_rgba(0,0,0,0.8)] z-10"
-            >
-              <div className="flex flex-col md:flex-row h-full">
-                <div className="w-full md:w-[45%] relative bg-[#1a1d26] overflow-hidden min-h-[350px]">
-                  {selectedPlayer.img ? (
-                    <img src={selectedPlayer.img} className="w-full h-full object-cover object-top scale-105" alt={selectedPlayer.name} />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-zinc-900"><User size={120} className="text-zinc-800" /></div>
-                  )}
-                  <div className="absolute top-8 left-8 bg-blue-600 px-6 py-2 rounded-2xl border border-white/20 shadow-xl">
-                    <p className="text-[10px] font-black uppercase tracking-tighter text-blue-100">Global Rank</p>
-                    <p className="text-3xl font-black italic">#{processedPlayers.findIndex((x) => x.id === selectedPlayer.id) + 1}</p>
-                  </div>
-                </div>
+      {selectedPlayer && (
+        <PlayerDetailModal
+          player={selectedPlayer}
+          processedPlayers={processedPlayers}
+          onClose={() => setSelectedPlayer(null)}
+        />
+      )}
 
-                <div className="flex-1 p-8 md:p-14 flex flex-col justify-center relative bg-[#0b0e14]">
-                  <button onClick={() => setSelectedPlayer(null)} className="absolute top-8 right-8 w-12 h-12 flex items-center justify-center bg-white/5 rounded-full text-zinc-400 hover:text-white transition-all"><X size={24} /></button>
-                  <div className="flex items-center gap-3 mb-6">
-                    <span className="px-4 py-1.5 bg-blue-600 text-white rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-blue-600/20"><ShieldCheck size={14} /> {selectedPlayer.ageGroup.toUpperCase()}</span>
-                    <span className="px-4 py-1.5 bg-white/5 border border-white/10 text-zinc-400 rounded-full text-[10px] font-black uppercase tracking-widest">{selectedPlayer.displaySeed}</span>
-                  </div>
-                  <h2 className="text-4xl md:text-6xl font-black uppercase italic mb-6 leading-none tracking-tighter">
-                    {selectedPlayer.name.split(' ')[0]} <br />
-                    <span className="text-blue-600">{selectedPlayer.name.split(' ').slice(1).join(' ')}</span>
-                  </h2>
-                  <div className="relative mb-10">
-                    <div className="absolute -left-4 top-0 bottom-0 w-1 bg-blue-600 rounded-full shadow-[0_0_15px_rgba(37,99,235,0.5)]" />
-                    <p className="text-zinc-400 text-lg italic leading-relaxed pl-4 text-justify">"{selectedPlayer.bio}"</p>
-                  </div>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    <div className="bg-[#1a1d26] border border-white/5 p-6 rounded-[2rem] hover:border-blue-600/30 transition-colors">
-                      <Trophy className="text-yellow-500 mb-3" size={24} />
-                      <p className="text-[10px] text-zinc-500 uppercase font-black mb-1">Total Points</p>
-                      <p className="text-2xl font-black text-white">{selectedPlayer.displayPoints.toLocaleString()}</p>
-                    </div>
-                    <div className="bg-[#1a1d26] border border-white/5 p-6 rounded-[2rem] hover:border-blue-600/30 transition-colors">
-                      <Star className="text-blue-500 mb-3" size={24} />
-                      <p className="text-[10px] text-zinc-500 uppercase font-black mb-1">Win Rate</p>
-                      <p className="text-2xl font-black text-white">88%</p>
-                    </div>
-                    <div className="bg-[#1a1d26] border border-white/5 p-6 rounded-[2rem] md:col-span-1 col-span-2 hover:border-blue-600/30 transition-colors">
-                      <TrendingUp className="text-green-500 mb-3" size={24} />
-                      <p className="text-[10px] text-zinc-500 uppercase font-black mb-1">Status</p>
-                      <p className="text-2xl font-black text-white uppercase italic">Active</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      <div className="max-w-7xl mx-auto px-6 relative z-10">
-        <div className="flex flex-col md:flex-row justify-between items-end gap-6 mb-12">
+      <div className="flex flex-col flex-grow max-w-7xl mx-auto px-4 mt-0 relative z-10 w-full gap-2">
+        <div className="flex flex-col md:flex-row justify-between items-end gap-1">
           <div>
-            <motion.h2 initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="text-4xl md:text-5xl font-black italic uppercase tracking-tighter">PROFIL <span className="text-blue-600">PEMAIN</span></motion.h2>
-            <p className="text-zinc-500 text-xs font-bold tracking-[0.2em] uppercase mt-2">Data Sinkron dengan Manajemen Atlet</p>
+            <motion.h2 initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="text-lg md:text-5xl font-black italic uppercase tracking-tighter">PROFIL <span className="text-blue-600">PEMAIN</span></motion.h2>
+            <p className="text-zinc-500 text-[9px] font-bold tracking-[0.2em] uppercase">Data Sinkron</p>
           </div>
-          <div className="relative w-full md:w-80 group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-blue-600 transition-colors" size={16} />
+          <div className="relative w-full md:w-60 group mt-2 md:mt-0">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-blue-600 transition-colors" size={14} />
             <input 
               type="text" 
               value={searchTerm}
-              placeholder="Cari nama atlet..." 
-              className="w-full bg-[#1a1d26] border border-white/5 rounded-2xl py-4 pl-12 pr-12 text-xs outline-none focus:border-blue-600/50 transition-all text-white placeholder:text-zinc-600" 
+              placeholder="Cari..." 
+              className="w-full bg-[#1a1d26] border border-white/5 rounded-2xl py-2 pl-10 pr-10 text-[10px] outline-none focus:border-blue-600/50 transition-all text-white placeholder:text-zinc-600" 
               onChange={(e) => setSearchTerm(e.target.value)} 
             />
             {searchTerm && (
@@ -245,7 +200,7 @@ const Players: React.FC<{ initialFilter?: string }> = ({
         </div>
 
         {/* TABS DENGAN DARK THEME */}
-        <div className="flex bg-[#1a1d26] p-1.5 rounded-full border border-white/5 w-fit mb-16 backdrop-blur-md shadow-2xl">
+        <div className="flex bg-[#1a1d26] p-1 rounded-full border border-white/5 w-fit backdrop-blur-md shadow-2xl">
           {[
             { id: 'Semua', label: 'SEMUA', count: counts.all },
             { id: 'Senior', label: 'SENIOR', count: counts.senior },
@@ -254,9 +209,9 @@ const Players: React.FC<{ initialFilter?: string }> = ({
             <button 
               key={tab.id} 
               onClick={() => setCurrentAgeGroup(tab.id)} 
-              className={`px-6 md:px-8 py-3 rounded-full text-[10px] md:text-[11px] font-black transition-all flex items-center gap-3 ${currentAgeGroup === tab.id ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-zinc-500 hover:text-white'}`}
+              className={`px-5 py-2 rounded-full text-[10px] font-black transition-all flex items-center gap-2 ${currentAgeGroup === tab.id ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-zinc-500 hover:text-white'}`}
             >
-              {tab.label} <span className={`text-[9px] px-2 py-0.5 rounded-lg ${currentAgeGroup === tab.id ? 'bg-white/20 text-white' : 'bg-zinc-800 text-zinc-600'}`}>{tab.count}</span>
+              {tab.label} <span className={`text-[9px] px-1.5 py-0.5 rounded-lg ${currentAgeGroup === tab.id ? 'bg-white/20 text-white' : 'bg-zinc-800 text-zinc-600'}`}>{tab.count}</span>
             </button>
           ))}
         </div>
@@ -270,14 +225,16 @@ const Players: React.FC<{ initialFilter?: string }> = ({
             <p className="text-xs font-black uppercase tracking-widest text-zinc-500">Sinkronisasi Database...</p>
           </div>
         ) : (
-          <div className="relative group/slider">
+          <div className="flex-1 overflow-hidden relative group/slider min-h-0">
             {filteredPlayers.length > 0 ? (
               <Swiper
                 key={`${currentAgeGroup}-${filteredPlayers.length}`}
                 modules={[Navigation, Pagination, Autoplay]}
                 spaceBetween={25}
                 slidesPerView={1.2}
-                autoplay={{ delay: 4000, disableOnInteraction: false }}
+                speed={400}
+                grabCursor={true}
+                autoplay={{ delay: 4000, disableOnInteraction: true }}
                 navigation={{ prevEl: prevRef.current, nextEl: nextRef.current }}
                 onBeforeInit={(swiper) => {
                   // @ts-ignore
@@ -286,7 +243,7 @@ const Players: React.FC<{ initialFilter?: string }> = ({
                   swiper.params.navigation.nextEl = nextRef.current;
                 }}
                 breakpoints={{ 640: { slidesPerView: 2.5 }, 1024: { slidesPerView: 4 } }}
-                className="!pb-20"
+                className="h-full"
               >
                 {filteredPlayers.map((player) => (
                   <SwiperSlide key={player.id}>

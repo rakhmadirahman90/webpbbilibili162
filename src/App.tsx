@@ -483,6 +483,23 @@ export default function App() {
   }, []);
 
   const handleNavigate = (sectionId: string, subPath?: string) => {
+    console.log("Navigating to:", sectionId, subPath);
+    
+    // New logic for Atlet
+    if (sectionId === 'atlet' || sectionId === 'players') {
+      setActiveView('atlet'); // Pastikan view tetap 'atlet'
+      if (subPath) {
+        const path = subPath.toLowerCase();
+        if (path.includes('senior')) setActiveAthleteFilter('Senior');
+        else if (path.includes('muda')) setActiveAthleteFilter('Muda');
+        else setActiveAthleteFilter('Semua');
+      } else {
+         setActiveAthleteFilter('Semua');
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
     const fullPageMenus = ['kas', 'quiz', 'contact', 'kontak', 'struktur', 'struktur-organisasi', 'dokumen-penting', 'register', 'pendaftaran', 'peringkat', 'rankings', 'atlet', 'players', 'tentang-kami', 'about', 'galeri', 'gallery', 'sejarah', 'visi-misi', 'fasilitas'];
 
     // Prioritaskan subPath jika ada, karena itu adalah target navigasi sebenarnya
@@ -670,37 +687,40 @@ export default function App() {
                 </motion.div>
               ) : (
                 /* DEDICATED FULL-PAGE VIEW DENGAN DARK MODE KONSISTEN */
-                <motion.div 
-                  key={`dedicated-view-${activeView}`}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.3 }}
-                  className="min-h-screen w-full flex flex-col items-center bg-[#070d1a] pt-20 pb-14"
-                >
-                  <div className="w-full h-full max-w-7xl px-4 md:px-8 mx-auto">
-                    {/* Render Komponen dengan Props masing-masing */}
-                    {activeView === 'kas' && <PublicKasView />}
-                    {(activeView === 'quiz') && <BadmintonQuiz />}
-                    {(activeView === 'contact' || activeView === 'kontak') && <Contact />}
-                    {(activeView === 'struktur' || activeView === 'struktur-organisasi') && <StrukturOrganisasiPublic />}
-                    {activeView === 'dokumen-penting' && <DokumenPenting />}
-                    {(activeView === 'register' || activeView === 'pendaftaran') && <RegistrationForm />}
-                    {(activeView === 'peringkat' || activeView === 'rankings') && <Ranking />}
-                    {(activeView === 'atlet' || activeView === 'players') && <Athletes initialFilter={activeAthleteFilter} />}
-                    {(activeView === 'sejarah') && <Sejarah />}
-                    {(activeView === 'visi-misi') && <VisiMisi />}
-                    {(activeView === 'fasilitas') && <Fasilitas />}
-                    {(activeView === 'galeri' || activeView === 'gallery') && <Gallery />}
-                  </div>
-                </motion.div>
+                <div className="flex flex-col h-dvh w-full bg-[#070d1a]">
+                  <AnimatePresence mode="wait">
+                    <motion.div 
+                      key={`dedicated-view-${activeView}`}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      transition={{ duration: 0.3 }}
+                      className="flex-grow w-full flex flex-col overflow-hidden"
+                    >
+                      <div className="w-full flex flex-col flex-grow overflow-y-auto max-w-7xl px-4 md:px-8 mx-auto">
+                        {/* Render Komponen dengan Props masing-masing */}
+                        {activeView === 'kas' && <PublicKasView />}
+                        {(activeView === 'quiz') && <BadmintonQuiz />}
+                        {(activeView === 'contact' || activeView === 'kontak') && <Contact />}
+                        {(activeView === 'struktur' || activeView === 'struktur-organisasi') && <StrukturOrganisasiPublic />}
+                        {activeView === 'dokumen-penting' && <DokumenPenting />}
+                        {(activeView === 'register' || activeView === 'pendaftaran') && <RegistrationForm />}
+                        {(activeView === 'peringkat' || activeView === 'rankings') && <Ranking />}
+                        {(activeView === 'atlet' || activeView === 'players') && <Athletes initialFilter={activeAthleteFilter} />}
+                        {(activeView === 'sejarah') && <Sejarah />}
+                        {(activeView === 'visi-misi') && <VisiMisi />}
+                        {(activeView === 'fasilitas') && <Fasilitas />}
+                        {(activeView === 'galeri' || activeView === 'gallery') && <Gallery />}
+                      </div>
+                    </motion.div>
+                  </AnimatePresence>
+                  
+                  <footer className="w-full py-2 text-center text-slate-500 text-[10px] font-black uppercase tracking-[0.25em] border-t border-white/5 bg-[#070d1a] flex-shrink-0">
+                    <p>© 2026 PB BILIBILI 162</p>
+                  </footer>
+                </div>
               )}
             </AnimatePresence>
-            
-            {/* Footer Custom */}
-            <footer className="w-full py-3 text-center text-slate-500 text-[10px] font-black uppercase tracking-[0.25em] border-t border-white/5 bg-[#070d1a]">
-              <p>© 2026 PB BILIBILI 162</p>
-            </footer>
           </div>
         } />
 

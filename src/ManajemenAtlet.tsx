@@ -2,6 +2,8 @@ import React, { useEffect, useState, useCallback } from 'react';
 import Cropper from 'react-easy-crop';
 import { supabase } from './supabase';
 import Swal from 'sweetalert2';
+import { Registrant } from './types';
+import AthleteProfileModal from './components/AthleteProfileModal';
 import {
   Search,
   User,
@@ -28,21 +30,7 @@ import {
   Upload,
 } from 'lucide-react';
 
-interface Registrant {
-  id: string;
-  nama: string;
-  whatsapp: string;
-  kategori: string;
-  domisili: string;
-  foto_url: string;
-  jenis_kelamin: string;
-  rank: number;
-  points: number;
-  seed: string;
-  bio: string;
-  prestasi: string;
-  status?: string;
-}
+/* Removed Registrant interface */
 
 const createImage = (url: string): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {
@@ -814,83 +802,14 @@ export default function ManajemenAtlet() {
 
       {/* MODAL DETAIL */}
       {selectedAtlet && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-xl animate-in fade-in duration-500">
-          <div className="relative w-full max-w-5xl bg-[#0a0a0a] rounded-[3rem] overflow-y-auto lg:overflow-hidden max-h-[90vh] lg:max-h-none flex flex-col md:flex-row shadow-2xl border border-white/5">
-            <button
-              onClick={() => setSelectedAtlet(null)}
-              className="absolute top-8 right-8 z-50 p-3 bg-white/5 hover:bg-red-500 text-white rounded-full transition-all"
-            >
-              <X size={24} />
-            </button>
-            <div className="w-full md:w-[45%] h-[400px] md:h-auto relative bg-zinc-900 overflow-hidden">
-              {selectedAtlet.foto_url ? (
-                <img
-                  src={selectedAtlet.foto_url}
-                  className="w-full h-full object-cover"
-                  alt={selectedAtlet.nama}
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-zinc-800">
-                  <User size={150} className="text-white/5" />
-                </div>
-              )}
-              <div className="absolute bottom-10 left-10 z-20">
-                <div className="bg-amber-400 text-black font-black text-[11px] px-5 py-2 rounded-xl flex items-center gap-3 italic uppercase tracking-tighter">
-                  <Trophy size={16} /> {selectedAtlet.prestasi}
-                </div>
-              </div>
-            </div>
-            <div className="w-full md:w-[55%] p-10 md:p-16 flex flex-col justify-center">
-              <div className="flex justify-between items-center mb-8">
-                <div className="flex gap-2">
-                  <span className="bg-blue-600/20 text-blue-400 text-[10px] font-black px-4 py-1.5 rounded-lg border border-blue-600/30 uppercase italic">
-                    {selectedAtlet.kategori}
-                  </span>
-                  <span className="bg-white/5 text-white/40 text-[10px] font-black px-4 py-1.5 rounded-lg border border-white/10 uppercase italic">
-                    {selectedAtlet.seed}
-                  </span>
-                </div>
-                <button
-                  onClick={() => {
-                    setEditingStats(selectedAtlet);
-                    setIsEditModalOpen(true);
-                  }}
-                  className="flex items-center gap-2 text-white/30 hover:text-blue-400 text-[10px] font-black uppercase tracking-widest"
-                >
-                  <Edit3 size={14} /> UPDATE PERFORMANCE
-                </button>
-              </div>
-              <h2 className="text-5xl md:text-7xl font-black text-white italic uppercase tracking-tighter mb-10 leading-[0.85]">
-                {selectedAtlet.nama}
-              </h2>
-              <div className="grid grid-cols-2 gap-4 mb-10">
-                <div className="bg-white/5 p-6 rounded-3xl border border-white/5 transition-colors">
-                  <TrendingUp className="text-blue-500 mb-3" size={24} />
-                  <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em] mb-1">
-                    Global Standing
-                  </p>
-                  <p className="text-3xl font-black text-white italic">
-                    #{selectedAtlet.rank > 0 ? selectedAtlet.rank : '??'}
-                  </p>
-                </div>
-                <div className="bg-white/5 p-6 rounded-3xl border border-white/5 transition-colors">
-                  <Zap className="text-amber-500 mb-3" size={24} />
-                  <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em] mb-1">
-                    Total Points
-                  </p>
-                  <p className="text-3xl font-black text-white italic">
-                    {selectedAtlet.points.toLocaleString()}
-                  </p>
-                </div>
-              </div>
-              <div className="bg-blue-600/5 p-8 rounded-3xl border border-blue-600/10 relative">
-                <p className="text-slate-400 text-sm leading-relaxed italic font-medium">
-                  "{selectedAtlet.bio}"
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
+        <AthleteProfileModal
+          atlet={selectedAtlet}
+          onClose={() => setSelectedAtlet(null)}
+          onEdit={() => {
+            setEditingStats(selectedAtlet);
+            setIsEditModalOpen(true);
+          }}
+        />
       )}
 
       {/* MODAL EDIT PERFORMANCE */}

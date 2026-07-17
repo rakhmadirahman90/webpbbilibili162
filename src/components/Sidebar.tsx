@@ -30,7 +30,9 @@ import {
   Network,
   Mail,
   Wallet,
-  FileText // TAMBAHAN: Ikon untuk Kelola Dokumen
+  FileText,
+  FileSpreadsheet,
+  BookOpen
 } from 'lucide-react';
 import { supabase } from '../supabase';
 

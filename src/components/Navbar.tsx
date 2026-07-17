@@ -204,6 +204,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
 
   // --- PERBAIKAN LOGIKA NAVIGASI ---
   const handleNavClick = (path: string, subPath?: string) => {
+    console.log("Nav click:", path, subPath);
     setActiveDropdown(null);
     setIsMobileMenuOpen(false);
 
@@ -242,7 +243,14 @@ export default function Navbar({ onNavigate }: NavbarProps) {
       return;
     }
 
-    // 6. Tentang Kami
+    // 7. Atlet
+    if (path === 'atlet' || path === 'players') {
+      onNavigate('atlet', subPath);
+      scrollToSection('atlet-section');
+      return;
+    }
+
+    // 8. Tentang Kami
     if (path === 'tentang-kami' || path === 'about') {
       if (subPath) {
         if (subPath === 'dokumen') {
