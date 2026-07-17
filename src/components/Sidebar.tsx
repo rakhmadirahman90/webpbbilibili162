@@ -197,11 +197,11 @@ export default function Sidebar({ email, isOpen, onClose }: SidebarProps) {
               </p>
               <div className="space-y-0">
                 {group.items.map((item) => {
-                  const isActive = location.pathname === item.path;
+                  const isActive = location.pathname === `/admin/${item.path}`;
                   return (
                     <NavLink
                       key={item.path}
-                      to={item.path}
+                      to={`/admin/${item.path}`}
                       onClick={onClose}
                       className={`group flex items-center justify-between px-1.5 py-0.5 rounded-lg font-medium text-[10px] tracking-wide transition-all duration-200 border relative overflow-hidden pointer-events-auto ${
                         isActive 

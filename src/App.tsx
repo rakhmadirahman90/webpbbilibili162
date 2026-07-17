@@ -786,7 +786,7 @@ function AdminLayout({ session }: { session: any }) {
             <Route path="visi-misi" element={<AdminVisiMisi />} />
             <Route path="fasilitas" element={<AdminFasilitas />} />
             <Route path="struktur" element={<AdminStructure />} /> 
-            <Route path="*" element={<Navigate to="dashboard" replace />} />
+            <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
           </Routes>
         </div>
       </main>
