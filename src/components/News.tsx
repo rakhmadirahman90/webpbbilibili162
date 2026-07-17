@@ -1,4 +1,4 @@
-import { Calendar, ArrowRight, X, ChevronDown, ChevronUp, Loader2, User, Eye, Heart, MessageCircle, Send, Share2, Link2, ArrowLeft, ChevronLeft, ChevronRight, Plus, Filter } from 'lucide-react';
+import { Calendar, ArrowRight, X, ChevronDown, ChevronUp, Loader2, User, Eye, Heart, MessageCircle, Send, Share2, Link2, ArrowLeft, ChevronLeft, ChevronRight, Plus, Filter, Search } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from "../supabase";
@@ -36,6 +36,7 @@ export default function News() {
   const [beritaList, setBeritaList] = useState<Berita[]>([]);
   const [selectedNews, setSelectedNews] = useState<Berita | null>(null);
   const [hasInitializedUrlNews, setHasInitializedUrlNews] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const [showAll, setShowAll] = useState(false);
   const [loading, setLoading] = useState(true);
   
@@ -88,6 +89,16 @@ export default function News() {
       result = result.filter(item => item.kategori?.toUpperCase() === selectedCategory.toUpperCase());
     }
 
+    // Search Filter
+    if (searchTerm) {
+      const lowerTerm = searchTerm.toLowerCase();
+      result = result.filter(item =>
+        item.judul.toLowerCase().includes(lowerTerm) ||
+        (item.ringkasan && item.ringkasan.toLowerCase().includes(lowerTerm)) ||
+        (item.konten && item.konten.toLowerCase().includes(lowerTerm))
+      );
+    }
+
     // Sort
     result.sort((a, b) => {
       let comparison = 0;
@@ -103,7 +114,7 @@ export default function News() {
     });
 
     return result;
-  }, [beritaList, selectedCategory, orderBy, orderDirection]);
+  }, [beritaList, selectedCategory, orderBy, orderDirection, searchTerm]);
 
   // Pagination calculations
   const itemsPerPage = 6;
@@ -413,20 +424,44 @@ export default function News() {
   };
 
   return (
-    <section id="news" className="bg-[#f8fafc] pb-24 pt-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="news" className="bg-[#f8fafc] pb-24 pt-8 w-full overflow-x-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
         {/* RESPONSIVE LAYOUT DUAL COLUMN: FILTERS + NEWS AND SIDEBAR */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start w-full">
           
           {/* Sisi Kiri: Filter Panel (Sesuai Persis Lampiran Gambar 1) */}
           <div className="lg:col-span-4 xl:col-span-3 lg:sticky lg:top-24 space-y-6">
             <div className="bg-white border border-slate-100 rounded-xl shadow-sm p-6">
-              <div className="flex items-center gap-2 mb-6 pb-4 border-b border-slate-100">
-                <Filter size={18} className="text-[#22c55e]" />
-                <h3 className="font-black text-xs uppercase tracking-widest text-[#0f172a]">Saring Berita</h3>
+              <div className="flex items-center justify-between gap-2 mb-6 pb-4 border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                    <Filter size={18} className="text-[#22c55e]" />
+                    <h3 className="font-black text-xs uppercase tracking-widest text-[#0f172a]">Saring Berita</h3>
+                </div>
+                {/* Collapsible toggle for mobile */}
+                <button 
+                  className="lg:hidden p-1.5 bg-slate-100 rounded-lg"
+                  onClick={() => setShowAll(!showAll)}
+                >
+                    {showAll ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                </button>
               </div>
 
-              <div className="space-y-5">
+              <div className={`space-y-5 ${showAll ? 'block' : 'hidden lg:block'}`}>
+                {/* 0. Search Input */}
+                <div className="relative">
+                  <span className="block text-[10px] font-black tracking-wider text-slate-400 uppercase mb-1.5">CARI BERITA</span>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                    <input
+                      type="text"
+                      placeholder="Cari kata kunci..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-10 pr-4 py-3 text-xs font-bold text-[#0f172a] placeholder:text-slate-400 focus:outline-none focus:border-[#22c55e] transition-all"
+                    />
+                  </div>
+                </div>
+
                 {/* 1. Category Selector */}
                 <div className="relative">
                   <span className="block text-[10px] font-black tracking-wider text-slate-400 uppercase mb-1.5">CATEGORY</span>
@@ -616,10 +651,21 @@ export default function News() {
                     
                     <h3 
                       onClick={() => handleOpenNews(news)}
-                      className="text-base sm:text-lg font-black text-slate-900 mb-6 line-clamp-2 uppercase leading-snug group-hover:text-[#22c55e] transition-colors cursor-pointer"
+                      className="text-base sm:text-lg font-black text-slate-900 mb-2 line-clamp-2 uppercase leading-snug group-hover:text-[#22c55e] transition-colors cursor-pointer"
                     >
                       {news.judul}
                     </h3>
+                    
+                    <p className="text-slate-600 text-xs sm:text-sm line-clamp-3 mb-4 flex-grow">
+                      {news.ringkasan || (news.konten ? news.konten.substring(0, 150) + '...' : '')}
+                    </p>
+
+                    <button 
+                        onClick={() => handleOpenNews(news)}
+                        className="text-[#22c55e] font-bold text-xs uppercase hover:underline mb-6 self-start flex items-center gap-1"
+                    >
+                        Baca Selengkapnya <ArrowRight size={14} />
+                    </button>
                     
                     {/* PBSI style Card Footer */}
                     <div className="mt-auto pt-4 border-t border-slate-100 flex items-center justify-between">
@@ -713,7 +759,7 @@ export default function News() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 30 }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed inset-0 z-[110000] bg-white overflow-y-auto flex flex-col scroll-smooth"
+              className="fixed inset-0 z-[110000] bg-white overflow-y-auto flex flex-col scroll-smooth w-full overflow-x-hidden"
             >
               {/* Sticky Top Header Bar */}
               <div className="sticky top-0 bg-[#0b1224] text-white px-4 py-3 md:py-4 flex items-center justify-between z-[110] shadow-md">

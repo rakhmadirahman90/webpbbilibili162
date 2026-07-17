@@ -87,46 +87,46 @@ export default function Sidebar({ email, isOpen, onClose }: SidebarProps) {
     { 
       section: 'Main Dashboard', 
       items: [
-        { name: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
-        { name: 'Pendaftaran', path: '/admin/pendaftaran', icon: FileSpreadsheet },
-        { name: 'Manajemen Atlet', path: '/admin/atlet', icon: Users },
+        { name: 'Dashboard', path: 'dashboard', icon: LayoutDashboard },
+        { name: 'Pendaftaran', path: 'pendaftaran', icon: FileSpreadsheet },
+        { name: 'Manajemen Atlet', path: 'atlet', icon: Users },
       ]
     },
     { 
       section: 'Live Updates', 
       items: [
-        { name: 'Update Skor & Poin', path: '/admin/skor', icon: Zap }, 
-        { name: 'Manajemen Poin', path: '/admin/poin', icon: Star },
-        { name: 'Audit Log Poin', path: '/admin/audit-poin', icon: History },
-        { name: 'Update Berita', path: '/admin/berita', icon: Newspaper },
-        { name: 'Update Ranking', path: '/admin/ranking', icon: Trophy },
-        { name: 'Galeri Media', path: '/admin/galeri', icon: Image },
+        { name: 'Update Skor & Poin', path: 'skor', icon: Zap }, 
+        { name: 'Manajemen Poin', path: 'poin', icon: Star },
+        { name: 'Audit Log Poin', path: 'audit-poin', icon: History },
+        { name: 'Update Berita', path: 'berita', icon: Newspaper },
+        { name: 'Update Ranking', path: 'ranking', icon: Trophy },
+        { name: 'Galeri Media', path: 'galeri', icon: Image },
       ]
     },
     {
       section: 'Data & Analytics',
       items: [
-        { name: 'Laporan & Rekap', path: '/admin/laporan', icon: BarChart3 },
-        { name: 'Kelola Kas', path: '/admin/kas', icon: Wallet }, 
-        { name: 'Kelola Surat', path: '/admin/surat', icon: Mail },
-        { name: 'Kelola Dokumen', path: '/admin/dokumen', icon: FileText }, // TAMBAHAN: Link Menu Dokumen Baru
-        { name: 'Log Aktivitas', path: '/admin/logs', icon: FileSearch },
+        { name: 'Laporan & Rekap', path: 'laporan', icon: BarChart3 },
+        { name: 'Kelola Kas', path: 'kas', icon: Wallet }, 
+        { name: 'Kelola Surat', path: 'surat', icon: Mail },
+        { name: 'Kelola Dokumen', path: 'dokumen', icon: FileText }, // TAMBAHAN: Link Menu Dokumen Baru
+        { name: 'Log Aktivitas', path: 'logs', icon: FileSearch },
       ]
     },
     { 
       section: 'Site Settings', 
       items: [
-        { name: 'Kelola Sejarah', path: '/admin/sejarah', icon: Info }, 
-        { name: 'Kelola Visi Misi', path: '/admin/visi-misi', icon: Info }, 
-        { name: 'Kelola Fasilitas', path: '/admin/fasilitas', icon: Info }, 
-        { name: 'Kelola Struktur', path: '/admin/struktur', icon: Network },
-        { name: 'Kelola Dokumen', path: '/admin/dokumen', icon: BookOpen },
-        { name: 'Kelola Tampilan', path: '/admin/tampilan', icon: Layout }, 
-        { name: 'Kelola Navbar', path: '/admin/navbar', icon: Menu }, 
-        { name: 'Kelola Hero', path: '/admin/hero', icon: Images },
-        { name: 'Kelola Pop-up', path: '/admin/popup', icon: Megaphone },
-        { name: 'Kelola Footer', path: '/admin/footer', icon: LayoutGrid }, 
-        { name: 'Kelola Kontak', path: '/admin/kontak', icon: Phone },
+        { name: 'Kelola Sejarah', path: 'sejarah', icon: Info }, 
+        { name: 'Kelola Visi Misi', path: 'visi-misi', icon: Info }, 
+        { name: 'Kelola Fasilitas', path: 'fasilitas', icon: Info }, 
+        { name: 'Kelola Struktur', path: 'struktur', icon: Network },
+        { name: 'Kelola Dokumen', path: 'dokumen', icon: BookOpen },
+        { name: 'Kelola Tampilan', path: 'tampilan', icon: Layout }, 
+        { name: 'Kelola Navbar', path: 'navbar', icon: Menu }, 
+        { name: 'Kelola Hero', path: 'hero', icon: Images },
+        { name: 'Kelola Pop-up', path: 'popup', icon: Megaphone },
+        { name: 'Kelola Footer', path: 'footer', icon: LayoutGrid }, 
+        { name: 'Kelola Kontak', path: 'kontak', icon: Phone },
       ]
     }
   ];
@@ -145,7 +145,7 @@ export default function Sidebar({ email, isOpen, onClose }: SidebarProps) {
       <div className={`
         fixed md:relative flex flex-col
         w-60 bg-[#0F172A] h-[100dvh] pt-4 pb-2 px-2 text-white shadow-2xl z-[101]
-        border-r border-slate-800 transition-all duration-500 overflow-hidden
+        border-r border-slate-800 transition-all duration-500 overflow-y-auto no-scrollbar
         ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
       `}>
         {/* Dynamic Background Gradients */}
@@ -203,7 +203,7 @@ export default function Sidebar({ email, isOpen, onClose }: SidebarProps) {
                       key={item.path}
                       to={item.path}
                       onClick={onClose}
-                      className={`group flex items-center justify-between px-1.5 py-0.5 rounded-lg font-medium text-[10px] tracking-wide transition-all duration-200 border relative overflow-hidden ${
+                      className={`group flex items-center justify-between px-1.5 py-0.5 rounded-lg font-medium text-[10px] tracking-wide transition-all duration-200 border relative overflow-hidden pointer-events-auto ${
                         isActive 
                           ? 'bg-blue-600 border-blue-500 text-white shadow-[0_4px_12px_rgba(37,99,235,0.25)]' 
                           : 'text-slate-400 border-transparent hover:bg-slate-800/40 hover:text-slate-200'

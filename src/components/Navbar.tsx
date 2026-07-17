@@ -70,7 +70,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
         finalNav = [
           { id: '1', label: 'Home', path: 'home', type: 'link', order_index: 0 },
           { id: '2', label: 'Tentang Kami', path: 'tentang-kami', type: 'dropdown', order_index: 1 },
-          { id: '3', label: 'Berita', path: 'berita', type: 'link', order_index: 2 },
+          { id: '3-1', label: 'Berita 1', path: 'berita-1', type: 'link', order_index: 2.1 },
           { id: '4', label: 'Peringkat', path: 'peringkat', type: 'dropdown', order_index: 3 },
           { id: '5', label: 'Kas', path: 'kas', type: 'link', order_index: 4 },
           { id: '2-1', parent_id: '2', label: 'Sejarah', path: 'sejarah', order_index: 1 },
@@ -86,6 +86,11 @@ export default function Navbar({ onNavigate }: NavbarProps) {
         const hasKas = finalNav.some((item: any) => item.path === 'kas');
         if (!hasKas) {
           finalNav.push({ id: 'kas-dynamic', label: 'Kas', path: 'kas', type: 'link', order_index: 98 });
+        }
+
+        const hasBerita = finalNav.some((item: any) => item.path === 'berita-1');
+        if (!hasBerita) {
+          finalNav.push({ id: 'berita-dynamic', label: 'Berita 1', path: 'berita-1', type: 'link', order_index: 2.1 });
         }
         
         const parentTentang = finalNav.find((item: any) => 
@@ -204,7 +209,6 @@ export default function Navbar({ onNavigate }: NavbarProps) {
 
   // --- PERBAIKAN LOGIKA NAVIGASI ---
   const handleNavClick = (path: string, subPath?: string) => {
-    console.log("Nav click:", path, subPath);
     setActiveDropdown(null);
     setIsMobileMenuOpen(false);
 
@@ -240,6 +244,13 @@ export default function Navbar({ onNavigate }: NavbarProps) {
     if (subPath === 'dokumen-penting' || path === 'dokumen-penting') {
       onNavigate('dokumen-penting');
       scrollToSection('dokumen-section');
+      return;
+    }
+
+    // 6. Berita
+    if (path === 'berita' || path.toLowerCase().includes('berita')) {
+      onNavigate('berita');
+      setIsMobileMenuOpen(false); // Close mobile menu
       return;
     }
 
@@ -459,7 +470,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
 
             {/* SCROLLABLE MENU ITEMS LIST */}
             <div className="flex-grow overflow-y-auto py-2">
-              {navData.filter(item => !item.parent_id).sort((a, b) => a.order_index - b.order_index).map((menu) => {
+              {navData.filter(item => !item.parent_id && item.label !== 'Berita' && item.path !== 'berita').sort((a, b) => a.order_index - b.order_index).map((menu) => {
                 const subMenus = getSubMenus(menu.id);
                 const isDropdown = menu.type === 'dropdown' || subMenus.length > 0;
                 const isExpanded = activeDropdown === menu.id;
@@ -467,7 +478,11 @@ export default function Navbar({ onNavigate }: NavbarProps) {
                   <div key={menu.id} className="border-b border-white/5 last:border-0">
                     <button 
                       onClick={() => {
-                        !isDropdown ? handleNavClick(menu.path) : (activeDropdown === menu.id ? setActiveDropdown(null) : setActiveDropdown(menu.id));
+                        if (isDropdown) {
+                          setActiveDropdown(activeDropdown === menu.id ? null : menu.id);
+                        } else {
+                          handleNavClick(menu.path);
+                        }
                       }}
                       className="flex justify-between items-center w-full px-6 py-4 text-[12px] font-bold tracking-wider uppercase text-slate-100 hover:bg-blue-600/10 hover:text-blue-400 transition-all duration-200 text-left"
                     >

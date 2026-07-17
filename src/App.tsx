@@ -8,6 +8,7 @@ import popupFallback from './data/konfigurasi_popup.json';
 // Import Komponen Landing Page
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
+import SambutanKetua from './components/SambutanKetua';
 import Sejarah from './components/Sejarah';
 import VisiMisi from './components/VisiMisi';
 import Fasilitas from './components/Fasilitas';
@@ -75,7 +76,7 @@ function UrlSynchronizer({ setActiveView }: { setActiveView: (view: string | nul
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     if (params.has('newsId')) {
-      setActiveView(null);
+      setActiveView('berita');
     } else if (params.has('gallery') || params.has('galleryId') || params.has('photoId') || params.has('videoId')) {
       setActiveView('galeri');
     }
@@ -483,9 +484,8 @@ export default function App() {
   }, []);
 
   const handleNavigate = (sectionId: string, subPath?: string) => {
-    console.log("Navigating to:", sectionId, subPath);
+    console.log("DEBUG: handleNavigate called with sectionId:", sectionId, "subPath:", subPath);
     
-    // New logic for Atlet
     if (sectionId === 'atlet' || sectionId === 'players') {
       setActiveView('atlet'); // Pastikan view tetap 'atlet'
       if (subPath) {
@@ -500,15 +500,18 @@ export default function App() {
       return;
     }
 
-    const fullPageMenus = ['kas', 'quiz', 'contact', 'kontak', 'struktur', 'struktur-organisasi', 'dokumen-penting', 'register', 'pendaftaran', 'peringkat', 'rankings', 'atlet', 'players', 'tentang-kami', 'about', 'galeri', 'gallery', 'sejarah', 'visi-misi', 'fasilitas'];
+    const fullPageMenus = ['kas', 'quiz', 'contact', 'kontak', 'struktur', 'struktur-organisasi', 'dokumen-penting', 'register', 'pendaftaran', 'peringkat', 'rankings', 'atlet', 'players', 'tentang-kami', 'about', 'galeri', 'gallery', 'sejarah', 'visi-misi', 'fasilitas', 'berita'];
 
     // Prioritaskan subPath jika ada, karena itu adalah target navigasi sebenarnya
-    const target = subPath || sectionId;
-
+    const target = (subPath || sectionId).toLowerCase();
+    console.log("DEBUG: handleNavigate target:", target);
+    
     if (fullPageMenus.includes(target)) {
+        console.log("DEBUG: Setting activeView to", target);
         setActiveView(target);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
+        console.log("DEBUG: Setting activeView to null, scrolling to", target);
         setActiveView(null);
         setTimeout(() => {
             const element = document.getElementById(target);
@@ -679,15 +682,16 @@ export default function App() {
               {!activeView ? (
                 <motion.div key="landing" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.3 }} className="w-full">
                   <Hero />
+                  <SambutanKetua />
                   {/* Jadwal Sholat Khusus Seluler - Tampil Tepat di Bawah Slider Hero */}
                   <div className="block lg:hidden max-w-xl mx-auto px-4 sm:px-6 md:px-8 mt-6 mb-2">
                     <PrayerTimes />
                   </div>
-                  <section id="berita-section"><News /></section>
+                  {/* Section berita dikembalikan ke halaman utama */}
                 </motion.div>
               ) : (
                 /* DEDICATED FULL-PAGE VIEW DENGAN DARK MODE KONSISTEN */
-                <div className="flex flex-col h-dvh w-full bg-[#070d1a]">
+                <div className="flex flex-col min-h-screen w-full bg-[#070d1a]">
                   <AnimatePresence mode="wait">
                     <motion.div 
                       key={`dedicated-view-${activeView}`}
@@ -710,6 +714,7 @@ export default function App() {
                         {(activeView === 'sejarah') && <Sejarah />}
                         {(activeView === 'visi-misi') && <VisiMisi />}
                         {(activeView === 'fasilitas') && <Fasilitas />}
+                        {(activeView === 'berita') && <News />}
                         {(activeView === 'galeri' || activeView === 'gallery') && <Gallery />}
                       </div>
                     </motion.div>

@@ -36,6 +36,7 @@ interface Berita {
 }
 
 export default function AdminBerita() {
+  console.log("AdminBerita mounted");
   const [news, setNews] = useState<Berita[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
