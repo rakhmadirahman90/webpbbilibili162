@@ -214,31 +214,31 @@ export default function Gallery() {
   [selectedId, galleryItems]);
 
   return (
-    <section id="gallery" className="bg-[#f8fafc] pb-24 pt-8">
+    <section id="gallery" className="bg-[#f8fafc] pb-24 pt-10 md:pt-14">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
         {/* Tab Switcher - Styled professionally with custom borders */}
-        <div className="flex justify-center mb-12">
+        <div className="flex justify-center mb-8 md:mb-12">
           <div className="inline-flex bg-white p-1.5 rounded-full border border-slate-200/80 shadow-xs">
             <button
               onClick={() => { setActiveTab('image'); }}
-              className={`flex items-center gap-2.5 px-8 py-3.5 rounded-full font-black text-xs tracking-wider transition-all duration-300 ${
+              className={`flex items-center gap-1.5 sm:gap-2.5 px-5 sm:px-8 py-2.5 sm:py-3.5 rounded-full font-black text-[11px] sm:text-xs tracking-wider transition-all duration-300 ${
                 activeTab === 'image' 
                 ? 'bg-[#1e293b] text-white shadow-xs' 
                 : 'text-slate-500 hover:text-slate-800'
               }`}
             >
-              <ImageIcon size={16} /> FOTO
+              <ImageIcon size={14} className="sm:w-[16px] sm:h-[16px]" /> FOTO
             </button>
             <button
               onClick={() => { setActiveTab('video'); }}
-              className={`flex items-center gap-2.5 px-8 py-3.5 rounded-full font-black text-xs tracking-wider transition-all duration-300 ${
+              className={`flex items-center gap-1.5 sm:gap-2.5 px-5 sm:px-8 py-2.5 sm:py-3.5 rounded-full font-black text-[11px] sm:text-xs tracking-wider transition-all duration-300 ${
                 activeTab === 'video' 
                 ? 'bg-[#1e293b] text-white shadow-xs' 
                 : 'text-slate-500 hover:text-slate-800'
               }`}
             >
-              <PlayCircle size={16} /> VIDEO
+              <PlayCircle size={14} className="sm:w-[16px] sm:h-[16px]" /> VIDEO
             </button>
           </div>
         </div>

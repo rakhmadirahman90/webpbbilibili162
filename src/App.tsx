@@ -20,7 +20,7 @@ import BadmintonQuiz from './components/BadmintonQuiz';
 import Gallery from './components/Gallery';
 import RegistrationForm from './components/RegistrationForm'; 
 import Contact from './components/Contact'; 
-// import Footer from './components/Footer'; // Footer lama dinonaktifkan
+import Footer from './components/Footer';
 import PublicKasView from './components/PublicKasView';
 import DokumenPenting from './components/DokumenPenting'; 
 import StrukturOrganisasiPublic from './components/StrukturOrganisasiPublic';
@@ -680,18 +680,21 @@ export default function App() {
 
             <AnimatePresence mode="wait">
               {!activeView ? (
-                <motion.div key="landing" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.3 }} className="w-full">
-                  <Hero />
-                  <SambutanKetua />
-                  {/* Jadwal Sholat Khusus Seluler - Tampil Tepat di Bawah Slider Hero */}
-                  <div className="block lg:hidden max-w-xl mx-auto px-4 sm:px-6 md:px-8 mt-6 mb-2">
-                    <PrayerTimes />
+                <motion.div key="landing" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.3 }} className="w-full flex flex-col min-h-screen">
+                  <div className="flex-grow">
+                    <Hero />
+                    <SambutanKetua />
+                    {/* Jadwal Sholat Khusus Seluler - Tampil Tepat di Bawah Slider Hero */}
+                    <div className="block lg:hidden max-w-xl mx-auto px-4 sm:px-6 md:px-8 mt-6 mb-2">
+                      <PrayerTimes />
+                    </div>
                   </div>
                   {/* Section berita dikembalikan ke halaman utama */}
+                  <Footer onNavigate={handleNavigate} />
                 </motion.div>
               ) : (
                 /* DEDICATED FULL-PAGE VIEW DENGAN DARK MODE KONSISTEN */
-                <div className="flex flex-col min-h-screen w-full bg-[#070d1a]">
+                <div className="flex flex-col min-h-screen w-full bg-[#070d1a] pt-14 lg:pt-16">
                   <AnimatePresence mode="wait">
                     <motion.div 
                       key={`dedicated-view-${activeView}`}
@@ -699,9 +702,9 @@ export default function App() {
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: -20 }}
                       transition={{ duration: 0.3 }}
-                      className="flex-grow w-full flex flex-col overflow-hidden"
+                      className="flex-grow w-full flex flex-col"
                     >
-                      <div className="w-full flex flex-col flex-grow overflow-y-auto max-w-7xl px-4 md:px-8 mx-auto">
+                      <div className="w-full flex flex-col flex-grow max-w-7xl px-4 md:px-8 mx-auto">
                         {/* Render Komponen dengan Props masing-masing */}
                         {activeView === 'kas' && <PublicKasView />}
                         {(activeView === 'quiz') && <BadmintonQuiz />}
@@ -720,9 +723,7 @@ export default function App() {
                     </motion.div>
                   </AnimatePresence>
                   
-                  <footer className="w-full py-2 text-center text-slate-500 text-[10px] font-black uppercase tracking-[0.25em] border-t border-white/5 bg-[#070d1a] flex-shrink-0">
-                    <p>© 2026 PB BILIBILI 162</p>
-                  </footer>
+                  <Footer onNavigate={handleNavigate} />
                 </div>
               )}
             </AnimatePresence>
