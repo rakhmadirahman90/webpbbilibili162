@@ -1,15 +1,8 @@
-const CACHE_NAME = 'pb-bilibili-v1';
-const ASSETS_TO_CACHE = [
-  '/',
-  '/index.html',
-];
+const CACHE_NAME = 'pb-bilibili-v2-nocache';
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE);
-    })
-  );
+  // Force active service worker to take control immediately
+  self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
@@ -17,31 +10,23 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
-            return caches.delete(cacheName);
-          }
+          // Delete ALL caches to clear any stale index.html or assets
+          return caches.delete(cacheName);
         })
       );
+    }).then(() => {
+      return self.clients.claim();
     })
   );
 });
 
 self.addEventListener('fetch', (event) => {
-  // Handle page navigation requests by returning index.html
-  if (event.request.mode === 'navigate') {
-    event.respondWith(
-      caches.match('/index.html').then((response) => {
-        return response || fetch(event.request).catch(() => {
-          return caches.match('/index.html');
-        });
-      })
-    );
-    return;
-  }
-
+  // Always prioritize the network to prevent stale index.html issues with new hashed assets.
+  // If offline, fall back to cache.
   event.respondWith(
-    caches.match(event.request).then((response) => {
-      return response || fetch(event.request);
+    fetch(event.request).catch(() => {
+      return caches.match(event.request);
     })
   );
 });
+
