@@ -64,14 +64,14 @@ export default function Navbar({ onNavigate }: NavbarProps) {
       // Deduplicate finalNav by label or path to ensure no duplicates
       finalNav = finalNav.filter((item, index, self) => 
         index === self.findIndex((t) => t.label === item.label) && 
-        item.label && item.label?.toLowerCase() !== 'berita' && item.path !== 'berita'
+        item.label && true
       );
 
       if (finalNav.length === 0) {
         finalNav = [
           { id: '1', label: 'Home', path: 'home', type: 'link', order_index: 0 },
           { id: '2', label: 'Tentang Kami', path: 'tentang-kami', type: 'dropdown', order_index: 1 },
-          { id: '3-1', label: 'Berita 1', path: 'berita-1', type: 'link', order_index: 2.1 },
+          { id: '3-1', label: 'Berita', path: 'berita', type: 'link', order_index: 2.1 },
           { id: '4', label: 'Peringkat', path: 'peringkat', type: 'dropdown', order_index: 3 },
           { id: '5', label: 'Kas', path: 'kas', type: 'link', order_index: 4 },
           { id: '2-1', parent_id: '2', label: 'Sejarah', path: 'sejarah', order_index: 1 },
@@ -89,9 +89,9 @@ export default function Navbar({ onNavigate }: NavbarProps) {
           finalNav.push({ id: 'kas-dynamic', label: 'Kas', path: 'kas', type: 'link', order_index: 98 });
         }
 
-        const hasBerita = finalNav.some((item: any) => item.path === 'berita-1');
+        const hasBerita = finalNav.some((item: any) => item.path === 'berita' || item.path === 'news');
         if (!hasBerita) {
-          finalNav.push({ id: 'berita-dynamic', label: 'Berita 1', path: 'berita-1', type: 'link', order_index: 2.1 });
+          finalNav.push({ id: 'berita-dynamic', label: 'Berita', path: 'berita', type: 'link', order_index: 2.1 });
         }
         
         const parentTentang = finalNav.find((item: any) => 
@@ -151,7 +151,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
       const map = new Map();
       finalNav.forEach(item => {
         const label = item.label ? item.label.trim().toLowerCase() : '';
-        if (label === 'berita' || item.path === 'berita') return;
+        
         if (!map.has(label) || (item.path && !map.get(label).path)) {
           map.set(label, item);
         }
@@ -250,7 +250,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
     }
 
     // 6. Berita
-    if (path === 'berita' || path.toLowerCase().includes('berita')) {
+    if (path === 'berita' || path === 'news' || path.toLowerCase().includes('berita')) {
       onNavigate('berita');
       setIsMobileMenuOpen(false); // Close mobile menu
       return;
@@ -335,7 +335,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
 
           {/* DESKTOP NAV (Optimized gaps for different screen sizes) */}
           <div className="hidden lg:flex items-center lg:gap-2.5 xl:gap-6.5 overflow-visible">
-            {navData.filter(item => !item.parent_id && item.label !== 'Berita' && item.path !== 'berita').sort((a, b) => a.order_index - b.order_index).map((menu, index, arr) => {
+            {navData.filter(item => !item.parent_id ).sort((a, b) => a.order_index - b.order_index).map((menu, index, arr) => {
               const subMenus = getSubMenus(menu.id);
               const isDropdown = menu.type === 'dropdown' || subMenus.length > 0;
               const isLastFew = index >= Math.floor(arr.length / 2);
@@ -472,7 +472,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
 
             {/* SCROLLABLE MENU ITEMS LIST */}
             <div className="flex-grow overflow-y-auto py-2">
-              {navData.filter(item => !item.parent_id && item.label !== 'Berita' && item.path !== 'berita').sort((a, b) => a.order_index - b.order_index).map((menu) => {
+              {navData.filter(item => !item.parent_id ).sort((a, b) => a.order_index - b.order_index).map((menu) => {
                 const subMenus = getSubMenus(menu.id);
                 const isDropdown = menu.type === 'dropdown' || subMenus.length > 0;
                 const isExpanded = activeDropdown === menu.id;

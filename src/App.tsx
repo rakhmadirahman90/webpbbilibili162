@@ -504,7 +504,7 @@ export default function App() {
       return;
     }
 
-    const fullPageMenus = ['kas', 'quiz', 'contact', 'kontak', 'struktur', 'struktur-organisasi', 'dokumen-penting', 'register', 'pendaftaran', 'peringkat', 'rankings', 'atlet', 'players', 'tentang-kami', 'about', 'galeri', 'gallery', 'sejarah', 'visi-misi', 'fasilitas', 'berita'];
+    const fullPageMenus = ['kas', 'quiz', 'contact', 'kontak', 'struktur', 'struktur-organisasi', 'dokumen-penting', 'register', 'pendaftaran', 'peringkat', 'rankings', 'atlet', 'players', 'tentang-kami', 'about', 'galeri', 'gallery', 'sejarah', 'visi-misi', 'fasilitas', 'berita', 'news'];
 
     // Prioritaskan subPath jika ada, karena itu adalah target navigasi sebenarnya
     const target = (subPath || sectionId).toLowerCase();
@@ -721,7 +721,7 @@ export default function App() {
                         {(activeView === 'sejarah') && <Sejarah />}
                         {(activeView === 'visi-misi') && <VisiMisi />}
                         {(activeView === 'fasilitas') && <Fasilitas />}
-                        {(activeView === 'berita') && <News />}
+                        {(activeView === 'berita' || activeView === 'news') && <News />}
                         {(activeView === 'galeri' || activeView === 'gallery') && <Gallery />}
                       </div>
                     </motion.div>
