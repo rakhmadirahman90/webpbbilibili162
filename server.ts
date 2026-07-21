@@ -28,6 +28,7 @@ async function startServer() {
       console.log(">>> [AI] Received generation request");
       try {
         const { perihal, tujuan_yth, jabatan_tujuan } = req.body;
+        console.log(">>> [AI] Context:", { perihal, tujuan_yth, jabatan_tujuan });
         
         if (!process.env.GEMINI_API_KEY) {
           console.error(">>> [AI] Error: GEMINI_API_KEY is missing");
@@ -37,39 +38,43 @@ async function startServer() {
         }
 
         const prompt = `
-          Tolong buatkan isi surat resmi untuk klub bulutangkis "PB Bilibili 162".
-          Konteks:
-          - Perihal: ${perihal}
-          - Tujuan: ${tujuan_yth} (${jabatan_tujuan})
+          Anda adalah sekretaris profesional untuk klub bulutangkis "PB Bilibili 162" di Parepare.
+          Tugas Anda adalah menulis isi surat resmi berdasarkan perihal berikut:
           
-          Persyaratan:
-          - Gunakan Bahasa Indonesia yang sangat formal, profesional, dan santun.
-          - Sesuaikan gaya bahasa dengan perihal surat.
-          - Tanpa salam pembuka dan tanpa salam penutup.
-          - Fokus pada inti penyampaian pesan.
-          - Jangan sertakan informasi tanggal, nomor surat, atau tanda tangan.
-          - Maksimal 2-3 paragraf yang padat dan jelas.
+          PERIHAL: ${perihal}
+          TUJUAN: ${tujuan_yth}
+          JABATAN TUJUAN: ${jabatan_tujuan}
+          
+          INSTRUKSI KHUSUS:
+          1. Tuliskan HANYA isi surat (paragraf utama).
+          2. JANGAN sertakan: kepala surat, nomor surat, tanggal, salam pembuka, salam penutup, atau bagian tanda tangan.
+          3. Gunakan Bahasa Indonesia yang sangat formal, baku, dan sopan.
+          4. Isi surat harus terdiri dari 2 sampai 3 paragraf yang padat.
+          5. Paragraf pertama harus langsung merujuk pada perihal "${perihal}".
+          6. Paragraf kedua berisi detail atau maksud utama dari surat tersebut.
+          7. Paragraf ketiga berisi harapan atau tindak lanjut yang diinginkan.
+          8. Gunakan istilah bulutangkis jika relevan (misal: pembinaan atlet, sparring, turnamen, dll).
         `;
 
-        console.log(">>> [AI] Sending request to Gemini (gemini-3-flash-preview)...");
+        console.log(">>> [AI] Sending request to Gemini (gemini-2.0-flash)...");
         const response = await ai.models.generateContent({
-          model: 'gemini-3-flash-preview',
+          model: 'gemini-2.0-flash',
           contents: [{ role: 'user', parts: [{ text: prompt }] }],
         });
         
         const text = response.text;
         
         if (!text) {
-          console.error(">>> [AI] Error: Empty text returned");
-          throw new Error("AI returned empty response.");
+          console.error(">>> [AI] Error: Empty text returned", response);
+          throw new Error("AI returned empty response. Please try again.");
         }
 
         console.log(">>> [AI] Success. Length:", text.length);
         res.json({ text: text.trim() });
       } catch (error: any) {
         console.error(">>> [AI] Catch Error:", error);
-        res.status(500).json({ 
-          error: error.message || "Unexpected error",
+        res.status(error.status || 500).json({ 
+          error: error.message || "Unexpected error during AI generation",
           details: error.toString()
         });
       }
