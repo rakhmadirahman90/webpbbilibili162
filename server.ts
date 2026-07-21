@@ -53,10 +53,10 @@ async function startServer() {
           - Gunakan istilah bulutangkis yang relevan jika sesuai konteks (seperti: sparring, pembinaan atlet, turnamen, dll).
         `;
 
-        console.log("Sending request to Gemini 3.5 Flash...");
+        console.log("Sending request to Gemini 2.0 Flash...");
         const response = await ai.models.generateContent({
-          model: 'gemini-3.5-flash',
-          contents: prompt,
+          model: 'gemini-2.0-flash',
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
         });
         
         const text = response.text;
