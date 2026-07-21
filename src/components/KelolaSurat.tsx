@@ -339,19 +339,30 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       });
 
       const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        const text = await response.text();
-        console.error("Non-JSON response received:", text);
-        // If it's HTML, it's likely the SPA fallback
-        if (text.includes("<!DOCTYPE html>") || text.includes("<html")) {
-          throw new Error("API route not found. Server might still be starting or path is incorrect. Please try again in a few seconds.");
+      if (!response.ok) {
+        let errorMsg = `Server error (${response.status})`;
+        try {
+          if (contentType && contentType.includes("application/json")) {
+            const errData = await response.json();
+            errorMsg = errData.error || errData.message || errorMsg;
+          } else {
+            const text = await response.text();
+            if (text.includes("<!DOCTYPE html>") || text.includes("<html")) {
+              errorMsg = "API route not found (404). Server might be restarting.";
+            } else {
+              errorMsg = text.slice(0, 100) || "Empty server response";
+            }
+          }
+        } catch (e) {
+          console.error("Error parsing error response:", e);
         }
-        throw new Error("Server returned an unexpected response: " + (text.slice(0, 100) || "Empty response"));
+        throw new Error(errorMsg);
       }
 
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error || 'Gagal generate AI');
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await response.text();
+        console.error("Non-JSON success response received:", text);
+        throw new Error("Server returned an unexpected success format (not JSON).");
       }
 
       const data = await response.json();

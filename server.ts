@@ -15,20 +15,22 @@ async function startServer() {
   });
 
   app.post("/api/generate-letter", async (req, res) => {
-    console.log("Received AI generation request");
+    console.log("Received AI generation request. Body:", JSON.stringify(req.body));
     try {
       const { perihal, tujuan_yth, jabatan_tujuan } = req.body;
       
       const apiKey = process.env.GEMINI_API_KEY;
       if (!apiKey) {
-        console.error("GEMINI_API_KEY is missing");
+        console.error("GEMINI_API_KEY is missing in environment variables");
         return res.status(500).json({ 
           error: "GEMINI_API_KEY is not configured in Settings > Secrets." 
         });
       }
 
+      console.log("Initializing Gemini with key starting with:", apiKey.substring(0, 4) + "...");
       const genAI = new GoogleGenAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+      // Use gemini-1.5-flash as it's the most stable and widely available
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
       const prompt = `
         Tolong buatkan isi surat resmi untuk klub bulutangkis "PB Bilibili 162".
@@ -47,14 +49,24 @@ async function startServer() {
         - Gunakan istilah bulutangkis yang relevan jika sesuai konteks (seperti: sparring, pembinaan atlet, turnamen, dll).
       `;
 
+      console.log("Sending request to Gemini model...");
       const result = await model.generateContent(prompt);
       const response = await result.response;
       const text = response.text();
+      
+      if (!text) {
+        console.error("Gemini returned empty text");
+        throw new Error("AI returned an empty response. Please check your prompt or API key.");
+      }
 
+      console.log("Successfully generated AI content. Length:", text.length);
       res.json({ text: text.trim() });
     } catch (error: any) {
-      console.error("AI Generation Error:", error);
-      res.status(500).json({ error: error.message || "An unexpected error occurred during generation." });
+      console.error("AI Generation Detailed Error:", error);
+      res.status(500).json({ 
+        error: error.message || "An unexpected error occurred during generation.",
+        details: error.toString()
+      });
     }
   });
 
