@@ -106,7 +106,9 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     cap_stempel_url: '',
     show_recipient: true,
     show_greetings: true,
-    title_override: ''
+    title_override: '',
+    include_lampiran_peserta: false,
+    lampiran_peserta: ''
   };
 
   const [formData, setFormData] = useState(defaultForm);
@@ -145,9 +147,22 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const imgHeight = (canvas.height * pdfWidth) / canvas.width;
       
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      let heightLeft = imgHeight;
+      let position = 0;
+      
+      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+      heightLeft -= pageHeight;
+      
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+      
       const pdfBlob = pdf.output('blob');
 
       const fileName = `surat_${surat.nomor_surat.replace(/[/\\?%*:|"<>]/g, '-')}_${Date.now()}.pdf`;
@@ -595,6 +610,29 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                     </button>
                   </div>
                   <textarea className="w-full p-2.5 bg-white/5 border border-white/10 rounded-lg text-xs h-32" value={formData.isi_surat} onChange={(e)=>setFormData({...formData, isi_surat: e.target.value})} />
+                  
+                  <div className="pt-2 border-t border-white/10 mt-2">
+                    <label className="flex items-center gap-2 cursor-pointer mb-2">
+                      <input 
+                        type="checkbox" 
+                        className="w-3.5 h-3.5 accent-blue-500 rounded bg-white/5 border-white/20"
+                        checked={formData.include_lampiran_peserta}
+                        onChange={(e) => setFormData({...formData, include_lampiran_peserta: e.target.checked})}
+                      />
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">Sertakan Lampiran Peserta (Hal. 2)</span>
+                    </label>
+                    {formData.include_lampiran_peserta && (
+                      <>
+                        <label className="text-[10px] font-bold text-slate-500 uppercase">Daftar Peserta (1 baris per nama)</label>
+                        <textarea 
+                          placeholder="Budi Santoso&#10;Andi Irawan&#10;Citra Lestari" 
+                          className="w-full p-2.5 bg-white/5 border border-white/10 rounded-lg text-xs h-24 mt-1 whitespace-pre-wrap" 
+                          value={formData.lampiran_peserta} 
+                          onChange={(e)=>setFormData({...formData, lampiran_peserta: e.target.value})} 
+                        />
+                      </>
+                    )}
+                  </div>
                 </div>
                 <div className="flex flex-col gap-2 pt-4">
                     <button onClick={handleSave} disabled={isSubmitting} className="w-full py-3 bg-blue-600 rounded-xl font-bold text-xs flex items-center justify-center gap-2 hover:bg-blue-700 transition-all">
@@ -702,6 +740,35 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                         <p className="font-bold underline uppercase">{formData.nama_sekretaris}</p>
                     </div>
                 </div>
+
+                {formData.include_lampiran_peserta && (
+                  <div style={{ pageBreakBefore: 'always', breakBefore: 'page' }} className="pt-[1.5cm] mt-[1.5cm]">
+                    <div className="mb-6">
+                      <p>Lampiran Surat Nomor : {formData.nomor_surat}</p>
+                      <p>Tanggal : {formData.tempat_tanggal.split(', ')[1] || formData.tempat_tanggal}</p>
+                      <p>Perihal : {formData.perihal}</p>
+                    </div>
+                    <h3 className="text-lg font-bold text-center mb-6 uppercase">Daftar Lampiran Peserta</h3>
+                    <table className="w-full border-collapse border border-black text-left font-sans text-[10pt]">
+                      <thead>
+                        <tr>
+                          <th className="border border-black p-2 text-center w-12 bg-gray-100">No</th>
+                          <th className="border border-black p-2 bg-gray-100">Nama Peserta</th>
+                          <th className="border border-black p-2 bg-gray-100">Keterangan</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {formData.lampiran_peserta.split('\n').filter(name => name.trim() !== '').map((name, i) => (
+                          <tr key={i}>
+                            <td className="border border-black p-2 text-center">{i + 1}</td>
+                            <td className="border border-black p-2">{name}</td>
+                            <td className="border border-black p-2"></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             </div>
           </div>
