@@ -20,7 +20,8 @@ const JENIS_SURAT_TEMPLATES = [
 
 Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bulan suci Ramadan 1447 H, kami dari PB Bilibili 162 bermaksud menyelenggarakan kegiatan kajian rutin secara daring. Mengingat kapasitas keilmuan dan ketokohan Bapak, kami dengan kerendahan hati memohon kesediaan Bapak untuk menjadi narasumber pada kegiatan tersebut.`,
     show_recipient: true,
-    show_greetings: true
+    show_greetings: true,
+    title_override: 'SURAT UNDANGAN'
   },
   { 
     id: 'surat_tugas',
@@ -41,7 +42,8 @@ Dengan ini memberikan tugas kepada personil yang namanya tercantum di bawah ini 
 
 Kegiatan ini sangat penting bagi perkembangan karir atlet dan membawa nama baik klub serta daerah dalam kancah olahraga bulutangkis.`,
     show_recipient: true,
-    show_greetings: true
+    show_greetings: true,
+    title_override: 'SURAT IZIN / DISPENSASI'
   },
   { 
     id: 'surat_undangan_match',
@@ -51,7 +53,8 @@ Kegiatan ini sangat penting bagi perkembangan karir atlet dan membawa nama baik 
 
 Besar harapan kami agar undangan ini dapat disambut baik demi kemajuan olahraga bulutangkis di wilayah kita.`,
     show_recipient: true,
-    show_greetings: true
+    show_greetings: true,
+    title_override: 'SURAT UNDANGAN'
   },
   { 
     id: 'surat_permohonan',
@@ -61,7 +64,8 @@ Besar harapan kami agar undangan ini dapat disambut baik demi kemajuan olahraga 
 
 Bersama surat ini, kami mengajukan permohonan kerjasama dan dukungan dalam bentuk fasilitas/sponsorship demi kelancaran program pembinaan atlet kami.`,
     show_recipient: true,
-    show_greetings: true
+    show_greetings: true,
+    title_override: 'SURAT PERMOHONAN'
   }
 ];
 
@@ -334,6 +338,13 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
         })
       });
 
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await response.text();
+        console.error("Non-JSON response:", text);
+        throw new Error("Server returned an unexpected response (not JSON). Please check if GEMINI_API_KEY is set in Settings.");
+      }
+
       if (!response.ok) {
         const err = await response.json();
         throw new Error(err.error || 'Gagal generate AI');
@@ -602,13 +613,14 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                   </div>
                 </div>
 
+                {formData.title_override && (
+                  <div className="mb-6 text-center">
+                    <h2 className="text-xl font-bold underline underline-offset-8 decoration-2 uppercase tracking-widest">{formData.title_override}</h2>
+                  </div>
+                )}
+
                 <div className="flex justify-between items-start mb-6">
                     <div className="flex-1">
-                        {formData.title_override && (
-                          <div className="mb-4 text-center">
-                            <h2 className="text-xl font-bold underline decoration-2 underline-offset-4">{formData.title_override}</h2>
-                          </div>
-                        )}
                         <p>Nomor : {formData.nomor_surat}</p>
                         <p>Lampiran : {formData.lampiran}</p>
                         <p>Perihal : <strong>{formData.perihal}</strong></p>

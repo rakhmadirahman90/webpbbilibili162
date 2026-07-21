@@ -19,7 +19,9 @@ async function startServer() {
       }
 
       const genAI = new GoogleGenAI(process.env.GEMINI_API_KEY);
-      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+      console.log("Generating letter with prompt context:", { perihal, tujuan_yth });
 
       const prompt = `
         Tolong buatkan isi surat resmi untuk klub bulutangkis "PB Bilibili 162".
