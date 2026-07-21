@@ -56,9 +56,9 @@ async function startServer() {
           8. Gunakan istilah bulutangkis jika relevan (misal: pembinaan atlet, sparring, turnamen, dll).
         `;
 
-        console.log(">>> [AI] Sending request to Gemini (gemini-2.0-flash)...");
+        console.log(">>> [AI] Sending request to Gemini (gemini-flash-latest)...");
         const response = await ai.models.generateContent({
-          model: 'gemini-2.0-flash',
+          model: 'gemini-flash-latest',
           contents: [{ role: 'user', parts: [{ text: prompt }] }],
         });
         
@@ -73,7 +73,16 @@ async function startServer() {
         res.json({ text: text.trim() });
       } catch (error: any) {
         console.error(">>> [AI] Catch Error:", error);
-        res.status(error.status || 500).json({ 
+        
+        let statusCode = 500;
+        if (typeof error.status === 'number') {
+          statusCode = error.status;
+        } else if (error.status && typeof error.status === 'string') {
+          // Some errors might have string status like "RESOURCE_EXHAUSTED"
+          statusCode = 500;
+        }
+
+        res.status(statusCode).json({ 
           error: error.message || "Unexpected error during AI generation",
           details: error.toString()
         });
