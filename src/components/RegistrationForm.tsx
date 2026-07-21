@@ -164,6 +164,33 @@ export default function RegistrationForm() {
       
       window.open(`https://wa.me/${adminPhoneNumber}?text=${waMessage}`, '_blank');
       setSubmitted(true);
+
+      // Elegant Modern Toast Notification
+      const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 5000,
+        timerProgressBar: true,
+        background: '#0f172a',
+        color: '#ffffff',
+        iconColor: '#10b981',
+        customClass: {
+          popup: 'rounded-2xl border border-emerald-500/20 shadow-2xl backdrop-blur-xl font-sans',
+          title: 'font-bold text-sm text-emerald-400',
+          htmlContainer: 'text-xs text-slate-300'
+        },
+        didOpen: (toast) => {
+          toast.addEventListener('mouseenter', Swal.stopTimer);
+          toast.addEventListener('mouseleave', Swal.resumeTimer);
+        }
+      });
+
+      Toast.fire({
+        icon: 'success',
+        title: 'Pendaftaran Berhasil!',
+        text: 'Data atlet telah diterima sistem PB Bilibili 162.'
+      });
       
     } catch (err: any) {
       console.error("Registration Error:", err);

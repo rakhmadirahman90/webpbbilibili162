@@ -63,7 +63,8 @@ export default function Navbar({ onNavigate }: NavbarProps) {
 
       // Deduplicate finalNav by label or path to ensure no duplicates
       finalNav = finalNav.filter((item, index, self) => 
-        index === self.findIndex((t) => t.label === item.label)
+        index === self.findIndex((t) => t.label === item.label) && 
+        item.label && item.label.toLowerCase() !== 'berita' && item.path !== 'berita'
       );
 
       if (finalNav.length === 0) {
@@ -150,6 +151,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
       const map = new Map();
       finalNav.forEach(item => {
         const label = item.label ? item.label.trim().toLowerCase() : '';
+        if (label === 'berita' || item.path === 'berita') return;
         if (!map.has(label) || (item.path && !map.get(label).path)) {
           map.set(label, item);
         }
@@ -333,7 +335,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
 
           {/* DESKTOP NAV (Optimized gaps for different screen sizes) */}
           <div className="hidden lg:flex items-center lg:gap-2.5 xl:gap-6.5 overflow-visible">
-            {navData.filter(item => !item.parent_id).sort((a, b) => a.order_index - b.order_index).map((menu, index, arr) => {
+            {navData.filter(item => !item.parent_id && item.label !== 'Berita' && item.path !== 'berita').sort((a, b) => a.order_index - b.order_index).map((menu, index, arr) => {
               const subMenus = getSubMenus(menu.id);
               const isDropdown = menu.type === 'dropdown' || subMenus.length > 0;
               const isLastFew = index >= Math.floor(arr.length / 2);

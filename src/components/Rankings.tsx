@@ -147,43 +147,43 @@ const WeeklySpotlight: React.FC = () => {
   if (loading || !topGainer) return null;
 
   return (
-    <div className="relative group overflow-hidden bg-gradient-to-br from-orange-600/20 via-slate-900 to-slate-900 border border-orange-500/30 p-6 rounded-[2.5rem] mb-10 shadow-[0_0_50px_-12px_rgba(249,115,22,0.15)] animate-in fade-in zoom-in duration-700">
+    <div className="relative group overflow-hidden bg-gradient-to-br from-orange-600/20 via-slate-900 to-slate-900 border border-orange-500/30 p-5 sm:p-6 rounded-[2.5rem] mb-10 shadow-[0_0_50px_-12px_rgba(249,115,22,0.15)] animate-in fade-in zoom-in duration-700">
       <Flame className="absolute -right-4 -bottom-4 w-32 h-32 text-orange-600/10 -rotate-12 group-hover:scale-110 transition-transform duration-700" />
       <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
-        <div className="flex items-center gap-5">
+        <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-5 text-center sm:text-left">
           <div className="relative">
             <div className="absolute inset-0 bg-orange-500 blur-xl opacity-20 animate-pulse" />
-            <div className="w-16 h-16 bg-orange-500 rounded-2xl flex items-center justify-center rotate-3 border-2 border-orange-400 shadow-lg shadow-orange-500/20">
-              <Award className="text-white w-8 h-8" />
+            <div className="w-14 h-14 sm:w-16 sm:h-16 bg-orange-500 rounded-2xl flex items-center justify-center rotate-3 border-2 border-orange-400 shadow-lg shadow-orange-500/20">
+              <Award className="text-white w-7 h-7 sm:w-8 sm:h-8" />
             </div>
           </div>
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-orange-500">
+            <div className="flex items-center justify-center sm:justify-start gap-2 mb-1">
+              <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.3em] text-orange-500">
                 Weekly Performance Hero
               </span>
-              <div className="h-[1px] w-8 bg-orange-500/30 rounded-full" />
+              <div className="h-[1px] w-8 bg-orange-500/30 rounded-full hidden sm:block" />
             </div>
-            <h2 className="text-3xl font-black italic uppercase tracking-tighter text-white">
+            <h2 className="text-2xl sm:text-3xl font-black italic uppercase tracking-tighter text-white">
               {topGainer.atlet_nama}
             </h2>
           </div>
         </div>
-        <div className="flex gap-4">
-          <div className="bg-white/5 backdrop-blur-md border border-white/10 p-4 rounded-2xl min-w-[120px] text-center transition-transform hover:scale-105">
-            <p className="text-[9px] font-bold text-slate-500 uppercase mb-1 tracking-widest">
+        <div className="flex w-full md:w-auto gap-3 sm:gap-4 justify-center">
+          <div className="flex-1 md:flex-none bg-white/5 backdrop-blur-md border border-white/10 p-3 sm:p-4 rounded-2xl min-w-[100px] sm:min-w-[120px] text-center transition-transform hover:scale-105">
+            <p className="text-[8px] sm:text-[9px] font-bold text-slate-500 uppercase mb-1 tracking-widest">
               Poin Didapat
             </p>
-            <div className="flex items-center justify-center gap-2 text-emerald-400 font-black text-xl">
-              <TrendingUp size={16} />+{topGainer.total_gain}
+            <div className="flex items-center justify-center gap-1.5 sm:gap-2 text-emerald-400 font-black text-lg sm:text-xl">
+              <TrendingUp size={14} className="shrink-0" />+{topGainer.total_gain}
             </div>
           </div>
-          <div className="bg-white/5 backdrop-blur-md border border-white/10 p-4 rounded-2xl min-w-[120px] text-center transition-transform hover:scale-105">
-            <p className="text-[9px] font-bold text-slate-500 uppercase mb-1 tracking-widest">
+          <div className="flex-1 md:flex-none bg-white/5 backdrop-blur-md border border-white/10 p-3 sm:p-4 rounded-2xl min-w-[100px] sm:min-w-[120px] text-center transition-transform hover:scale-105">
+            <p className="text-[8px] sm:text-[9px] font-bold text-slate-500 uppercase mb-1 tracking-widest">
               Aktivitas
             </p>
-            <div className="text-orange-400 font-black text-xl flex flex-items-center justify-center gap-2">
-              <Flame size={16} />
+            <div className="text-orange-400 font-black text-lg sm:text-xl flex items-center justify-center gap-1.5 sm:gap-2">
+              <Flame size={14} className="shrink-0" />
               {topGainer.total_aktivitas}x
             </div>
           </div>
@@ -394,27 +394,27 @@ const Rankings: React.FC = () => {
         <WeeklySpotlight />
 
         {/* Filter Bar */}
-        <div className="flex flex-col md:flex-row gap-4 mb-8 sticky top-4 z-50">
+        <div className="flex flex-col md:flex-row gap-3 md:gap-4 mb-8 sticky top-[60px] md:top-20 z-40 bg-[#070d1a]/90 backdrop-blur-md p-2.5 sm:p-3 rounded-2xl border border-slate-800/80 shadow-2xl transition-all">
           <div className="relative flex-1 group">
             <div className="absolute inset-0 bg-blue-500/10 blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity" />
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600" size={18} />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
             <input
               type="text"
               placeholder="Cari nama atlet..."
-              className="w-full bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-2xl py-4 pl-12 pr-4 focus:border-blue-500 outline-none font-bold text-sm transition-all shadow-xl"
+              className="w-full bg-slate-900/60 backdrop-blur-xl border border-slate-800/80 rounded-xl py-3 pl-11 pr-4 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none font-bold text-xs sm:text-sm transition-all placeholder:text-slate-600"
               value={searchTerm}
               onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
             />
           </div>
-          <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar bg-[#0b1224]/50 p-2 rounded-2xl border border-slate-800/50">
-            <div className="flex items-center px-2 text-slate-600 border-r border-slate-800 mr-2">
-                <Filter size={14} />
+          <div className="flex gap-1.5 overflow-x-auto pb-1 sm:pb-0 no-scrollbar bg-[#0b1224]/60 p-1.5 rounded-xl border border-slate-800/50">
+            <div className="flex items-center px-1.5 text-slate-500 border-r border-slate-800/80 mr-1 shrink-0">
+                <Filter size={13} />
             </div>
             {['All', 'A', 'B+', 'B-', 'C'].map((cat) => (
               <button
                 key={cat}
                 onClick={() => { setActiveCategory(cat); setCurrentPage(1); }}
-                className={`px-5 py-2 rounded-xl text-[10px] font-black border whitespace-nowrap transition-all ${activeCategory === cat ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-600/20' : 'bg-slate-900 text-slate-500 border-slate-800 hover:border-slate-600'}`}
+                className={`px-4 py-2 rounded-lg text-[9px] sm:text-[10px] font-black border whitespace-nowrap transition-all ${activeCategory === cat ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-600/20' : 'bg-slate-900 text-slate-500 border-slate-800 hover:border-slate-600'}`}
               >
                 {cat === 'All' ? 'SEMUA' : `SEED ${cat}`}
               </button>
@@ -623,50 +623,68 @@ const Rankings: React.FC = () => {
           </div>
 
           {/* MOBILE CARD VIEW */}
-          <div className="md:hidden divide-y divide-slate-800/40">
+          <div className="md:hidden divide-y divide-slate-800/30 bg-[#070d1a]/50">
             {currentPlayers.map((player) => {
               const globalRank = dbRankings.findIndex((p) => p.id === player.id) + 1;
               const style = getCategoryStyles(player.seed);
               const isExpanded = expandedPlayer === player.id;
 
+              // Premium rank badge styles based on actual stand
+              let rankBadgeStyle = 'bg-slate-800 text-slate-400 border border-slate-700/50';
+              if (globalRank === 1) {
+                rankBadgeStyle = 'bg-gradient-to-br from-amber-400 to-yellow-600 text-slate-950 font-black shadow-lg shadow-yellow-500/10 border border-yellow-400/30';
+              } else if (globalRank === 2) {
+                rankBadgeStyle = 'bg-gradient-to-br from-slate-200 to-slate-400 text-slate-950 font-black shadow-lg shadow-slate-400/10 border border-slate-300/30';
+              } else if (globalRank === 3) {
+                rankBadgeStyle = 'bg-gradient-to-br from-orange-400 to-amber-700 text-white font-black shadow-lg shadow-orange-500/10 border border-orange-500/30';
+              }
+
               return (
-                <div key={player.id} className="p-4">
+                <div key={player.id} className="p-3.5 transition-all">
                   <div 
                     onClick={() => toggleExpand(player)}
-                    className={`flex items-center justify-between gap-4 p-2.5 rounded-2xl cursor-pointer ${isExpanded ? 'bg-blue-600/10 border border-blue-500/20' : 'hover:bg-white/[0.01]'}`}
+                    className={`flex items-center justify-between gap-3 p-3 rounded-2xl cursor-pointer transition-all ${isExpanded ? 'bg-blue-500/10 border border-blue-500/30' : 'bg-slate-900/40 hover:bg-slate-900/80 border border-slate-800/40'}`}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 font-mono font-black italic text-sm ${globalRank <= 3 ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-slate-800 text-slate-500'}`}>
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      {/* Rank Indicator */}
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 font-mono font-black italic text-xs ${rankBadgeStyle}`}>
                         #{String(globalRank).padStart(2, '0')}
                       </div>
                       
-                      <div className="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 overflow-hidden shrink-0">
+                      {/* Photo/Avatar */}
+                      <div className="w-10 h-10 rounded-full bg-slate-850 border border-slate-700/80 overflow-hidden shrink-0 shadow-md">
                         {player.photo_url ? (
                           <img src={player.photo_url} className="w-full h-full object-cover" alt="" />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-slate-600"><User size={18} /></div>
+                          <div className="w-full h-full flex items-center justify-center text-slate-500 bg-slate-900"><User size={16} /></div>
                         )}
                       </div>
                       
-                      <div className="min-w-0">
+                      {/* Name & Seed Category */}
+                      <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-black italic uppercase text-sm text-white truncate max-w-[130px]">{player.player_name}</span>
-                          {globalRank === 1 && <Trophy size={14} className="text-amber-400 shrink-0" />}
+                          <span className="font-black italic uppercase text-xs sm:text-sm text-white truncate max-w-[150px] sm:max-w-none">{player.player_name}</span>
+                          {globalRank === 1 && <Trophy size={13} className="text-amber-400 shrink-0" />}
                         </div>
-                        <span className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">{player.category}</span>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider">{player.category}</span>
+                          <span className="text-slate-800 text-[8px]">•</span>
+                          <span className={`text-[7px] font-black px-1.5 py-0.5 rounded border uppercase tracking-widest ${style.bg} ${style.text} ${style.border}`}>
+                            {player.seed || 'UNSEEDED'}
+                          </span>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="text-right shrink-0">
-                      <div className="font-mono font-black text-white text-base">
+                    {/* Points Box */}
+                    <div className="text-right shrink-0 flex flex-col items-end justify-center pl-2 border-l border-slate-800/40 min-w-[75px]">
+                      <div className="font-mono font-black text-white text-sm sm:text-base tracking-tighter">
                         {Number(player.total_points || 0).toLocaleString()}
                       </div>
-                      <div className="flex items-center justify-end gap-1 mt-1">
-                        <span className={`text-[8px] font-black px-1.5 py-0.5 rounded border uppercase ${style.bg} ${style.text} ${style.border}`}>
-                          {player.seed || 'UNSEEDED'}
-                        </span>
+                      <div className="flex items-center justify-end gap-1 mt-0.5">
+                        <span className="text-[7px] font-black text-slate-600 uppercase tracking-widest">Poin</span>
                         {player.bonus !== undefined && player.bonus !== 0 && (
-                          <span className={`text-[8px] font-bold px-1 py-0.5 rounded ${player.bonus > 0 ? 'text-emerald-500 bg-emerald-500/10' : 'text-red-500 bg-red-500/10'}`}>
+                          <span className={`text-[7px] font-black px-1 py-0.5 rounded ${player.bonus > 0 ? 'text-emerald-400 bg-emerald-500/10' : 'text-red-400 bg-red-500/10'}`}>
                             {player.bonus > 0 ? `+${player.bonus}` : player.bonus}
                           </span>
                         )}
@@ -676,49 +694,49 @@ const Rankings: React.FC = () => {
 
                   {/* Expandable Panel for Mobile */}
                   {isExpanded && (
-                    <div className="mt-3 p-4 bg-[#0b1224]/80 rounded-2xl border border-blue-500/20 animate-in slide-in-from-top-4 duration-300 space-y-4">
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-800">
+                    <div className="mt-2.5 p-4 bg-[#0a101f]/95 rounded-2xl border border-blue-500/20 animate-in slide-in-from-top-3 duration-350 space-y-3.5 shadow-xl">
+                      <div className="grid grid-cols-2 gap-2.5">
+                        <div className="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/80">
                           <p className="text-[7px] font-black text-slate-500 uppercase tracking-widest">Global Rank</p>
-                          <p className="text-xs font-black italic text-white uppercase">Peringkat #{globalRank}</p>
+                          <p className="text-xs font-black italic text-white uppercase mt-0.5">Peringkat #{globalRank}</p>
                         </div>
-                        <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-800">
+                        <div className="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/80">
                           <p className="text-[7px] font-black text-slate-500 uppercase tracking-widest">Status Data</p>
-                          <p className="text-xs font-black italic text-emerald-500 uppercase flex items-center gap-1"><ShieldCheck size={10} /> Live</p>
+                          <p className="text-xs font-black italic text-emerald-400 uppercase flex items-center gap-1 mt-0.5"><ShieldCheck size={11} /> Live Sync</p>
                         </div>
                       </div>
 
-                      <div className="border-t border-slate-800/80 pt-3">
-                        <p className="text-[8px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3 flex items-center gap-1">
-                          <History size={10} className="text-blue-500" /> Log Aktivitas Terbaru
+                      <div className="border-t border-slate-800/60 pt-2.5">
+                        <p className="text-[8px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2.5 flex items-center gap-1">
+                          <History size={11} className="text-blue-500" /> Log Aktivitas Terbaru
                         </p>
 
                         {loadingHistory ? (
-                          <div className="flex items-center justify-center py-6 gap-2">
-                            <Loader2 className="animate-spin text-blue-500" size={16} />
-                            <span className="text-[8px] font-black text-slate-600 uppercase tracking-wider animate-pulse">Syncing...</span>
+                          <div className="flex items-center justify-center py-5 gap-2">
+                            <Loader2 className="animate-spin text-blue-500" size={14} />
+                            <span className="text-[8px] font-black text-slate-600 uppercase tracking-wider animate-pulse">Syncing logs...</span>
                           </div>
                         ) : playerHistory.length > 0 ? (
-                          <div className="space-y-3">
+                          <div className="space-y-2">
                             {playerHistory.map((log) => {
                               const isGain = log.perubahan > 0;
                               return (
-                                <div key={log.id} className={`p-3 rounded-xl border flex items-center justify-between gap-3 ${isGain ? 'bg-emerald-500/[0.02] border-emerald-500/10' : 'bg-red-500/[0.02] border-red-500/10'}`}>
-                                  <div className="min-w-0">
-                                    <div className="text-[8px] font-mono text-slate-500 mb-0.5">
+                                <div key={log.id} className={`p-2.5 rounded-xl border flex items-center justify-between gap-3 ${isGain ? 'bg-emerald-500/[0.02] border-emerald-500/10' : 'bg-red-500/[0.02] border-red-500/10'}`}>
+                                  <div className="min-w-0 flex-1">
+                                    <div className="text-[7px] font-mono text-slate-500">
                                       {new Date(log.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                                     </div>
-                                    <p className="text-[9px] font-bold text-slate-300 uppercase truncate">{log.tipe_kegiatan || 'Aktivitas Rutin'}</p>
+                                    <p className="text-[9px] font-bold text-slate-300 uppercase truncate mt-0.5">{log.tipe_kegiatan || 'Aktivitas Rutin'}</p>
                                   </div>
                                   <div className="text-right shrink-0">
-                                    <div className={`text-sm font-black font-mono ${isGain ? 'text-emerald-400' : 'text-red-400'}`}>{isGain ? '+' : ''}{log.perubahan}</div>
+                                    <div className={`text-xs font-black font-mono ${isGain ? 'text-emerald-400' : 'text-red-400'}`}>{isGain ? '+' : ''}{log.perubahan}</div>
                                   </div>
                                 </div>
                               );
                             })}
                           </div>
                         ) : (
-                          <div className="text-center py-4 text-slate-600 font-bold uppercase text-[8px] tracking-widest">Belum ada riwayat aktivitas poin</div>
+                          <div className="text-center py-5 border-2 border-dashed border-slate-800/40 rounded-xl bg-slate-900/10 text-slate-600 font-bold uppercase text-[8px] tracking-widest">Belum ada riwayat aktivitas poin</div>
                         )}
                       </div>
                     </div>
@@ -731,33 +749,33 @@ const Rankings: React.FC = () => {
       )}
           
           {/* Footer Controls */}
-          <div className="p-6 flex flex-col md:flex-row items-center justify-between border-t border-slate-800 bg-slate-900/80 backdrop-blur-xl gap-4">
+          <div className="p-4 sm:p-6 flex flex-col md:flex-row items-center justify-between border-t border-slate-800 bg-slate-900/80 backdrop-blur-xl gap-4">
             <button 
                 onClick={() => { fetchRankings(); }} 
                 disabled={loading} 
-                className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-400 hover:text-white transition-all text-[10px] font-black uppercase tracking-widest border border-slate-700"
+                className="w-full md:w-auto flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-400 hover:text-white transition-all text-[9px] sm:text-[10px] font-black uppercase tracking-widest border border-slate-700/80 shrink-0"
             >
-              <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+              <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
               {loading ? 'Syncing...' : 'Refresh Database'}
             </button>
-            <div className="flex items-center gap-6">
-              <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">
-                Showing {currentPlayers.length} of {filteredData.length} Athletes <span className="mx-2 opacity-30">|</span> Page {currentPage} / {totalPages || 1}
+            <div className="w-full md:w-auto flex flex-col sm:flex-row items-center gap-3 sm:gap-6 justify-between md:justify-end">
+              <span className="text-[9px] sm:text-[10px] font-black text-slate-500 uppercase tracking-widest text-center sm:text-left">
+                {currentPlayers.length} of {filteredData.length} Atlet <span className="mx-1 opacity-20">|</span> Hal {currentPage} / {totalPages || 1}
               </span>
-              <div className="flex gap-2">
+              <div className="flex gap-2 w-full sm:w-auto justify-center">
                 <button 
                     disabled={currentPage === 1 || loading} 
                     onClick={() => { setCurrentPage((c) => c - 1); window.scrollTo({ top: document.getElementById('rankings')?.offsetTop, behavior: 'smooth' }); }} 
-                    className="p-3 bg-slate-800 hover:bg-blue-600 rounded-xl disabled:opacity-10 transition-all border border-slate-700 hover:border-blue-500"
+                    className="p-2.5 sm:p-3 bg-slate-800 hover:bg-blue-600 rounded-xl disabled:opacity-10 disabled:hover:bg-slate-800 transition-all border border-slate-700 hover:border-blue-500 text-white"
                 >
-                    <ChevronLeft size={20} />
+                    <ChevronLeft size={16} />
                 </button>
                 <button 
                     disabled={currentPage === totalPages || totalPages === 0 || loading} 
                     onClick={() => { setCurrentPage((c) => c + 1); window.scrollTo({ top: document.getElementById('rankings')?.offsetTop, behavior: 'smooth' }); }} 
-                    className="p-3 bg-slate-800 hover:bg-blue-600 rounded-xl disabled:opacity-10 transition-all border border-slate-700 hover:border-blue-500"
+                    className="p-2.5 sm:p-3 bg-slate-800 hover:bg-blue-600 rounded-xl disabled:opacity-10 disabled:hover:bg-slate-800 transition-all border border-slate-700 hover:border-blue-500 text-white"
                 >
-                    <ChevronRight size={20} />
+                    <ChevronRight size={16} />
                 </button>
               </div>
             </div>

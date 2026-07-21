@@ -7,6 +7,53 @@ import Swal from 'sweetalert2';
 import html2canvas from 'html2canvas'; 
 import { jsPDF } from 'jspdf'; 
 
+const getRomanMonth = (monthIndex: number) => {
+  return ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'][monthIndex];
+};
+
+const JENIS_SURAT_TEMPLATES = [
+  { 
+    id: 'undangan_penceramah',
+    label: 'Undangan Narasumber', 
+    perihal: 'Permohonan Menjadi Narasumber (Penceramah) Kajian Ramadan Online',
+    isi: `Segala puji bagi Allah SWT atas segala nikmat dan karunia-Nya yang senantiasa menyertai aktivitas kita. Shalawat serta salam semoga tetap tercurah kepada teladan kita Nabi Muhammad SAW, keluarga, serta para sahabatnya.
+
+Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bulan suci Ramadan 1447 H, kami dari PB Bilibili 162 bermaksud menyelenggarakan kegiatan kajian rutin secara daring. Mengingat kapasitas keilmuan dan ketokohan Bapak, kami dengan kerendahan hati memohon kesediaan Bapak untuk menjadi narasumber pada kegiatan tersebut.`
+  },
+  { 
+    id: 'surat_tugas',
+    label: 'Surat Tugas', 
+    perihal: 'Surat Tugas Pendampingan Atlet Turnamen',
+    isi: `Dalam rangka pengembangan bakat dan peningkatan prestasi atlet, PB Bilibili 162 memandang perlu untuk mengirimkan delegasi pendamping pada kejuaraan bulutangkis yang akan datang.
+
+Dengan ini memberikan tugas kepada personil yang namanya tercantum di bawah ini untuk mendampingi, mengawasi, dan memberikan dukungan teknis kepada atlet PB Bilibili 162 selama berlangsungnya turnamen tersebut.`
+  },
+  { 
+    id: 'surat_izin',
+    label: 'Surat Izin / Dispensasi', 
+    perihal: 'Permohonan Izin Dispensasi Atlet',
+    isi: `Sehubungan dengan akan dilaksanakannya turnamen bulutangkis tingkat daerah/nasional yang akan diikuti oleh atlet kami, maka dengan ini kami memohon kesediaan Bapak/Ibu untuk memberikan izin dispensasi kepada atlet yang bersangkutan.
+
+Kegiatan ini sangat penting bagi perkembangan karir atlet dan membawa nama baik klub serta daerah dalam kancah olahraga bulutangkis.`
+  },
+  { 
+    id: 'surat_undangan_match',
+    label: 'Undangan Match', 
+    perihal: 'Undangan Pertandingan Persahabatan (Friendly Match)',
+    isi: `Salam olahraga! Dalam upaya mempererat tali silaturahmi antar klub bulutangkis serta sebagai ajang evaluasi hasil latihan para atlet, kami PB Bilibili 162 bermaksud mengundang klub yang Bapak/Ibu pimpin untuk melaksanakan pertandingan persahabatan.
+
+Besar harapan kami agar undangan ini dapat disambut baik demi kemajuan olahraga bulutangkis di wilayah kita.`
+  },
+  { 
+    id: 'surat_permohonan',
+    label: 'Surat Permohonan', 
+    perihal: 'Permohonan Dukungan dan Kerjasama',
+    isi: `PB Bilibili 162 senantiasa berkomitmen untuk membina bibit-bibit muda atlet bulutangkis agar mampu berprestasi di tingkat yang lebih tinggi. Untuk mewujudkan hal tersebut, diperlukan dukungan dari berbagai pihak.
+
+Bersama surat ini, kami mengajukan permohonan kerjasama dan dukungan dalam bentuk fasilitas/sponsorship demi kelancaran program pembinaan atlet kami.`
+  }
+];
+
 export function KelolaSurat() {
   const [suratList, setSuratList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -147,12 +194,22 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     setIsPreviewOnly(false);
     setStempelPos({ x: -40, y: 0 });
 
+    const currentYear = new Date().getFullYear().toString();
+    const currentMonthRoman = getRomanMonth(new Date().getMonth());
+
     if (suratList.length > 0) {
       const lastSurat = suratList[0];
-      const lastNomor = lastSurat.nomor_surat.split('/')[0];
-      const nextNumber = (parseInt(lastNomor) + 1).toString().padStart(3, '0');
-      const suffix = lastSurat.nomor_surat.substring(3);
-      const newFullNomor = `${nextNumber}${suffix}`;
+      const lastNomorStr = lastSurat.nomor_surat.split('/')[0];
+      const lastYear = lastSurat.nomor_surat.split('/').pop();
+      
+      // Jika tahun sama, lanjutkan nomor. Jika tahun beda, reset ke 001.
+      let nextNumber = 1;
+      if (lastYear === currentYear) {
+         nextNumber = parseInt(lastNomorStr) + 1;
+      }
+      
+      const nextNumberPadded = nextNumber.toString().padStart(3, '0');
+      const newFullNomor = `${nextNumberPadded}/PB-Bilibili162/${currentMonthRoman}/${currentYear}`;
 
       setFormData({
         ...defaultForm,
@@ -165,7 +222,7 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
         nama_sekretaris: lastSurat.nama_sekretaris
       });
     } else {
-      setFormData({ ...defaultForm, nomor_surat: '001/PB-Bilibili162/II/2026' });
+      setFormData({ ...defaultForm, nomor_surat: `001/PB-Bilibili162/${currentMonthRoman}/${currentYear}` });
     }
     setIsModalOpen(true);
   };
@@ -380,6 +437,29 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                           </label>
                       </div>
                   </div>
+                  <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase">Jenis / Template Surat</label>
+                      <select 
+                        className="w-full p-2.5 bg-blue-600/10 border border-blue-500/20 rounded-lg text-xs font-bold text-blue-400 outline-none"
+                        onChange={(e) => {
+                          const template = JENIS_SURAT_TEMPLATES.find(t => t.id === e.target.value);
+                          if (template) {
+                            setFormData(prev => ({
+                              ...prev,
+                              perihal: template.perihal,
+                              isi_surat: template.isi
+                            }));
+                          }
+                        }}
+                        defaultValue=""
+                      >
+                        <option value="" disabled className="bg-slate-900 text-slate-500">Pilih jenis surat...</option>
+                        {JENIS_SURAT_TEMPLATES.map(t => (
+                          <option key={t.id} value={t.id} className="bg-slate-900 text-white">{t.label}</option>
+                        ))}
+                      </select>
+                  </div>
+
                   <label className="text-[10px] font-bold text-slate-500 uppercase">Nomor Surat</label>
                   <input type="text" className="w-full p-2.5 bg-white/5 border border-white/10 rounded-lg text-xs font-mono text-blue-400" value={formData.nomor_surat} onChange={(e)=>setFormData({...formData, nomor_surat: e.target.value})} />
                   <div className="grid grid-cols-2 gap-2">
