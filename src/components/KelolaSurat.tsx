@@ -341,8 +341,12 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       const contentType = response.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
         const text = await response.text();
-        console.error("Non-JSON response:", text);
-        throw new Error("Server returned an unexpected response (not JSON). Please check if GEMINI_API_KEY is set in Settings.");
+        console.error("Non-JSON response received:", text);
+        // If it's HTML, it's likely the SPA fallback
+        if (text.includes("<!DOCTYPE html>") || text.includes("<html")) {
+          throw new Error("API route not found. Server might still be starting or path is incorrect. Please try again in a few seconds.");
+        }
+        throw new Error("Server returned an unexpected response: " + (text.slice(0, 100) || "Empty response"));
       }
 
       if (!response.ok) {

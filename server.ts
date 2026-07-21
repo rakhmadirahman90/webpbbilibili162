@@ -10,18 +10,31 @@ async function startServer() {
   app.use(express.json());
 
   // API Routes
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "ok" });
+  });
+
   app.post("/api/generate-letter", async (req, res) => {
+    console.log("Received AI generation request");
     try {
       const { perihal, tujuan_yth, jabatan_tujuan } = req.body;
       
-      if (!process.env.GEMINI_API_KEY) {
-        return res.status(500).json({ error: "GEMINI_API_KEY is not configured" });
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        console.error("GEMINI_API_KEY is missing");
+        return res.status(500).json({ 
+          error: "GEMINI_API_KEY is not configured in Settings > Secrets." 
+        });
       }
 
-      const genAI = new GoogleGenAI(process.env.GEMINI_API_KEY);
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
-      console.log("Generating letter with prompt context:", { perihal, tujuan_yth });
+      const ai = new GoogleGenAI({ 
+        apiKey,
+        httpOptions: {
+          headers: {
+            'User-Agent': 'aistudio-build',
+          }
+        }
+      });
 
       const prompt = `
         Tolong buatkan isi surat resmi untuk klub bulutangkis "PB Bilibili 162".
@@ -40,14 +53,16 @@ async function startServer() {
         - Gunakan istilah bulutangkis yang relevan jika sesuai konteks (seperti: sparring, pembinaan atlet, turnamen, dll).
       `;
 
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      const text = response.text().trim();
+      const response = await ai.models.generateContent({
+        model: "gemini-3.5-flash",
+        contents: prompt,
+      });
 
-      res.json({ text });
+      const text = response.text || "";
+      res.json({ text: text.trim() });
     } catch (error: any) {
       console.error("AI Generation Error:", error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: error.message || "An unexpected error occurred during generation." });
     }
   });
 
@@ -67,7 +82,7 @@ async function startServer() {
   }
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`Server running on http://0.0.0.0:${PORT}`);
   });
 }
 
