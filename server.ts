@@ -27,14 +27,8 @@ async function startServer() {
         });
       }
 
-      const ai = new GoogleGenAI({ 
-        apiKey,
-        httpOptions: {
-          headers: {
-            'User-Agent': 'aistudio-build',
-          }
-        }
-      });
+      const genAI = new GoogleGenAI(apiKey);
+      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
       const prompt = `
         Tolong buatkan isi surat resmi untuk klub bulutangkis "PB Bilibili 162".
@@ -53,12 +47,10 @@ async function startServer() {
         - Gunakan istilah bulutangkis yang relevan jika sesuai konteks (seperti: sparring, pembinaan atlet, turnamen, dll).
       `;
 
-      const response = await ai.models.generateContent({
-        model: "gemini-3.5-flash",
-        contents: prompt,
-      });
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
 
-      const text = response.text || "";
       res.json({ text: text.trim() });
     } catch (error: any) {
       console.error("AI Generation Error:", error);
