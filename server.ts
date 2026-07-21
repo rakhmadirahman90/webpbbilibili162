@@ -1,7 +1,7 @@
 import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 
 async function startServer() {
   try {
@@ -15,58 +15,61 @@ async function startServer() {
       res.json({ status: "ok" });
     });
 
+    const ai = new GoogleGenAI({
+      apiKey: process.env.GEMINI_API_KEY,
+      httpOptions: {
+        headers: {
+          'User-Agent': 'aistudio-build',
+        }
+      }
+    });
+
     app.post("/api/generate-letter", async (req, res) => {
-      console.log("Received AI generation request. Body:", JSON.stringify(req.body));
+      console.log(">>> [AI] Received generation request");
       try {
         const { perihal, tujuan_yth, jabatan_tujuan } = req.body;
         
-        const apiKey = process.env.GEMINI_API_KEY;
-        if (!apiKey) {
-          console.error("GEMINI_API_KEY is missing in environment variables");
+        if (!process.env.GEMINI_API_KEY) {
+          console.error(">>> [AI] Error: GEMINI_API_KEY is missing");
           return res.status(500).json({ 
-            error: "GEMINI_API_KEY is not configured in Settings > Secrets." 
+            error: "GEMINI_API_KEY is not configured." 
           });
         }
 
-        console.log("Initializing Gemini 1.5 Flash...");
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
         const prompt = `
           Tolong buatkan isi surat resmi untuk klub bulutangkis "PB Bilibili 162".
-          
           Konteks:
           - Perihal: ${perihal}
           - Tujuan: ${tujuan_yth} (${jabatan_tujuan})
           
           Persyaratan:
           - Gunakan Bahasa Indonesia yang sangat formal, profesional, dan santun.
-          - Sesuaikan gaya bahasa dengan perihal surat (misal: surat tugas harus instruktif tapi sopan, surat undangan harus persuasif dan ramah).
-          - Tanpa salam pembuka (Assalamu'alaikum) dan tanpa salam penutup (Wassalam), karena itu sudah ada di template.
-          - Fokus pada inti penyampaian pesan sesuai perihal.
-          - Jangan sertakan informasi tanggal, nomor surat, atau tanda tangan, cukup isi paragraf utamanya saja.
+          - Sesuaikan gaya bahasa dengan perihal surat.
+          - Tanpa salam pembuka dan tanpa salam penutup.
+          - Fokus pada inti penyampaian pesan.
+          - Jangan sertakan informasi tanggal, nomor surat, atau tanda tangan.
           - Maksimal 2-3 paragraf yang padat dan jelas.
-          - Gunakan istilah bulutangkis yang relevan jika sesuai konteks (seperti: sparring, pembinaan atlet, turnamen, dll).
         `;
 
-        console.log("Sending request to Gemini API...");
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const text = response.text();
+        console.log(">>> [AI] Sending request to Gemini (gemini-3-flash-preview)...");
+        const response = await ai.models.generateContent({
+          model: 'gemini-3-flash-preview',
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        });
+        
+        const text = response.text;
         
         if (!text) {
-          console.error("Gemini returned empty text");
-          throw new Error("AI returned an empty response. Please check your prompt or API key.");
+          console.error(">>> [AI] Error: Empty text returned");
+          throw new Error("AI returned empty response.");
         }
 
-        console.log("Successfully generated AI content. Length:", text.length);
+        console.log(">>> [AI] Success. Length:", text.length);
         res.json({ text: text.trim() });
       } catch (error: any) {
-        console.error("AI Generation Error:", error);
-        // Extract more info if available
-        const status = error.status || 500;
-        res.status(status).json({ 
-          error: error.message || "An unexpected error occurred during generation.",
+        console.error(">>> [AI] Catch Error:", error);
+        res.status(500).json({ 
+          error: error.message || "Unexpected error",
           details: error.toString()
         });
       }
