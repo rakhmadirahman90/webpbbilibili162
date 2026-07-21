@@ -18,7 +18,9 @@ const JENIS_SURAT_TEMPLATES = [
     perihal: 'Permohonan Menjadi Narasumber (Penceramah) Kajian Ramadan Online',
     isi: `Segala puji bagi Allah SWT atas segala nikmat dan karunia-Nya yang senantiasa menyertai aktivitas kita. Shalawat serta salam semoga tetap tercurah kepada teladan kita Nabi Muhammad SAW, keluarga, serta para sahabatnya.
 
-Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bulan suci Ramadan 1447 H, kami dari PB Bilibili 162 bermaksud menyelenggarakan kegiatan kajian rutin secara daring. Mengingat kapasitas keilmuan dan ketokohan Bapak, kami dengan kerendahan hati memohon kesediaan Bapak untuk menjadi narasumber pada kegiatan tersebut.`
+Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bulan suci Ramadan 1447 H, kami dari PB Bilibili 162 bermaksud menyelenggarakan kegiatan kajian rutin secara daring. Mengingat kapasitas keilmuan dan ketokohan Bapak, kami dengan kerendahan hati memohon kesediaan Bapak untuk menjadi narasumber pada kegiatan tersebut.`,
+    show_recipient: true,
+    show_greetings: true
   },
   { 
     id: 'surat_tugas',
@@ -26,7 +28,10 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     perihal: 'Surat Tugas Pendampingan Atlet Turnamen',
     isi: `Dalam rangka pengembangan bakat dan peningkatan prestasi atlet, PB Bilibili 162 memandang perlu untuk mengirimkan delegasi pendamping pada kejuaraan bulutangkis yang akan datang.
 
-Dengan ini memberikan tugas kepada personil yang namanya tercantum di bawah ini untuk mendampingi, mengawasi, dan memberikan dukungan teknis kepada atlet PB Bilibili 162 selama berlangsungnya turnamen tersebut.`
+Dengan ini memberikan tugas kepada personil yang namanya tercantum di bawah ini untuk mendampingi, mengawasi, dan memberikan dukungan teknis kepada atlet PB Bilibili 162 selama berlangsungnya turnamen tersebut.`,
+    show_recipient: false,
+    show_greetings: false,
+    title_override: 'SURAT TUGAS'
   },
   { 
     id: 'surat_izin',
@@ -34,7 +39,9 @@ Dengan ini memberikan tugas kepada personil yang namanya tercantum di bawah ini 
     perihal: 'Permohonan Izin Dispensasi Atlet',
     isi: `Sehubungan dengan akan dilaksanakannya turnamen bulutangkis tingkat daerah/nasional yang akan diikuti oleh atlet kami, maka dengan ini kami memohon kesediaan Bapak/Ibu untuk memberikan izin dispensasi kepada atlet yang bersangkutan.
 
-Kegiatan ini sangat penting bagi perkembangan karir atlet dan membawa nama baik klub serta daerah dalam kancah olahraga bulutangkis.`
+Kegiatan ini sangat penting bagi perkembangan karir atlet dan membawa nama baik klub serta daerah dalam kancah olahraga bulutangkis.`,
+    show_recipient: true,
+    show_greetings: true
   },
   { 
     id: 'surat_undangan_match',
@@ -42,7 +49,9 @@ Kegiatan ini sangat penting bagi perkembangan karir atlet dan membawa nama baik 
     perihal: 'Undangan Pertandingan Persahabatan (Friendly Match)',
     isi: `Salam olahraga! Dalam upaya mempererat tali silaturahmi antar klub bulutangkis serta sebagai ajang evaluasi hasil latihan para atlet, kami PB Bilibili 162 bermaksud mengundang klub yang Bapak/Ibu pimpin untuk melaksanakan pertandingan persahabatan.
 
-Besar harapan kami agar undangan ini dapat disambut baik demi kemajuan olahraga bulutangkis di wilayah kita.`
+Besar harapan kami agar undangan ini dapat disambut baik demi kemajuan olahraga bulutangkis di wilayah kita.`,
+    show_recipient: true,
+    show_greetings: true
   },
   { 
     id: 'surat_permohonan',
@@ -50,7 +59,9 @@ Besar harapan kami agar undangan ini dapat disambut baik demi kemajuan olahraga 
     perihal: 'Permohonan Dukungan dan Kerjasama',
     isi: `PB Bilibili 162 senantiasa berkomitmen untuk membina bibit-bibit muda atlet bulutangkis agar mampu berprestasi di tingkat yang lebih tinggi. Untuk mewujudkan hal tersebut, diperlukan dukungan dari berbagai pihak.
 
-Bersama surat ini, kami mengajukan permohonan kerjasama dan dukungan dalam bentuk fasilitas/sponsorship demi kelancaran program pembinaan atlet kami.`
+Bersama surat ini, kami mengajukan permohonan kerjasama dan dukungan dalam bentuk fasilitas/sponsorship demi kelancaran program pembinaan atlet kami.`,
+    show_recipient: true,
+    show_greetings: true
   }
 ];
 
@@ -88,7 +99,10 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     logo_url: '', 
     ttd_ketua_url: '', 
     ttd_sekretaris_url: '',
-    cap_stempel_url: ''    
+    cap_stempel_url: '',
+    show_recipient: true,
+    show_greetings: true,
+    title_override: ''
   };
 
   const [formData, setFormData] = useState(defaultForm);
@@ -244,7 +258,8 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
 
   const handleSave = async () => {
     setIsSubmitting(true);
-    const { id, created_at, ...payload } = formData as any;
+    // Filter out UI-only fields that might not exist in the database schema
+    const { id, created_at, show_recipient, show_greetings, title_override, ...payload } = formData as any;
 
     try {
       if (editId) {
@@ -491,7 +506,10 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                             setFormData(prev => ({
                               ...prev,
                               perihal: template.perihal,
-                              isi_surat: template.isi
+                              isi_surat: template.isi,
+                              show_recipient: template.show_recipient ?? true,
+                              show_greetings: template.show_greetings ?? true,
+                              title_override: template.title_override ?? ''
                             }));
                           }
                         }}
@@ -502,6 +520,17 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                           <option key={t.id} value={t.id} className="bg-slate-900 text-white">{t.label}</option>
                         ))}
                       </select>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 mt-1">
+                    <div className="flex items-center gap-2 p-2 bg-white/5 border border-white/10 rounded-lg cursor-pointer hover:bg-white/10 transition-all" onClick={() => setFormData({...formData, show_recipient: !formData.show_recipient})}>
+                      <input type="checkbox" checked={formData.show_recipient} onChange={() => {}} className="w-3 h-3 rounded bg-blue-600 border-none pointer-events-none" />
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Tampilkan Penerima</span>
+                    </div>
+                    <div className="flex items-center gap-2 p-2 bg-white/5 border border-white/10 rounded-lg cursor-pointer hover:bg-white/10 transition-all" onClick={() => setFormData({...formData, show_greetings: !formData.show_greetings})}>
+                      <input type="checkbox" checked={formData.show_greetings} onChange={() => {}} className="w-3 h-3 rounded bg-blue-600 border-none pointer-events-none" />
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Tampilkan Salam</span>
+                    </div>
                   </div>
 
                   <label className="text-[10px] font-bold text-slate-500 uppercase">Nomor Surat</label>
@@ -575,6 +604,11 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
 
                 <div className="flex justify-between items-start mb-6">
                     <div className="flex-1">
+                        {formData.title_override && (
+                          <div className="mb-4 text-center">
+                            <h2 className="text-xl font-bold underline decoration-2 underline-offset-4">{formData.title_override}</h2>
+                          </div>
+                        )}
                         <p>Nomor : {formData.nomor_surat}</p>
                         <p>Lampiran : {formData.lampiran}</p>
                         <p>Perihal : <strong>{formData.perihal}</strong></p>
@@ -584,17 +618,22 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                     </div>
                 </div>
 
-                <div className="mb-6">
-                    <p>Kepada Yth.</p>
-                    <p className="font-bold">{formData.tujuan_yth}</p>
-                    {/* PERBAIKAN DI SINI: Jabatan dinamis sesuai input, bukan tulisan tetap */}
-                    {formData.jabatan_tujuan && <p>{formData.jabatan_tujuan}</p>}
-                    <p>Di - Tempat</p>
-                </div>
+                {formData.show_recipient && (
+                  <div className="mb-6">
+                      <p>Kepada Yth.</p>
+                      <p className="font-bold">{formData.tujuan_yth}</p>
+                      {formData.jabatan_tujuan && <p>{formData.jabatan_tujuan}</p>}
+                      <p>Di - Tempat</p>
+                  </div>
+                )}
 
                 <div className="space-y-4 text-justify">
-                    <p>Assalamu'alaikum Warahmatullahi Wabarakatuh,</p>
-                    <p className="font-bold">Dengan hormat,</p>
+                    {formData.show_greetings && (
+                      <>
+                        <p>Assalamu'alaikum Warahmatullahi Wabarakatuh,</p>
+                        <p className="font-bold">Dengan hormat,</p>
+                      </>
+                    )}
                     <p className="whitespace-pre-line">{formData.isi_surat}</p>
                 </div>
 

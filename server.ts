@@ -29,12 +29,13 @@ async function startServer() {
         - Tujuan: ${tujuan_yth} (${jabatan_tujuan})
         
         Persyaratan:
-        - Bahasa Indonesia yang sangat formal dan sopan.
+        - Gunakan Bahasa Indonesia yang sangat formal, profesional, dan santun.
+        - Sesuaikan gaya bahasa dengan perihal surat (misal: surat tugas harus instruktif tapi sopan, surat undangan harus persuasif dan ramah).
         - Tanpa salam pembuka (Assalamu'alaikum) dan tanpa salam penutup (Wassalam), karena itu sudah ada di template.
         - Fokus pada inti penyampaian pesan sesuai perihal.
         - Jangan sertakan informasi tanggal, nomor surat, atau tanda tangan, cukup isi paragraf utamanya saja.
-        - Maksimal 2-3 paragraf.
-        - Relevan dengan dunia olahraga bulutangkis jika memungkinkan.
+        - Maksimal 2-3 paragraf yang padat dan jelas.
+        - Gunakan istilah bulutangkis yang relevan jika sesuai konteks (seperti: sparring, pembinaan atlet, turnamen, dll).
       `;
 
       const result = await model.generateContent(prompt);
