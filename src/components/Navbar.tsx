@@ -57,14 +57,14 @@ export default function Navbar({ onNavigate }: NavbarProps) {
         .select('*')
         .order('order_index', { ascending: true });
       
-      if (error) throw error;
+      if (error) console.warn(error);
 
       let finalNav = data || [];
 
       // Deduplicate finalNav by label or path to ensure no duplicates
       finalNav = finalNav.filter((item, index, self) => 
         index === self.findIndex((t) => t.label === item.label) && 
-        item.label && item.label.toLowerCase() !== 'berita' && item.path !== 'berita'
+        item.label && item.label?.toLowerCase() !== 'berita' && item.path !== 'berita'
       );
 
       if (finalNav.length === 0) {
@@ -95,7 +95,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
         }
         
         const parentTentang = finalNav.find((item: any) => 
-          item.path === 'tentang-kami' || item.label.toLowerCase().includes('tentang')
+          item.path === 'tentang-kami' || item.label?.toLowerCase()?.includes('tentang')
         );
         const hasDocs = finalNav.some((item: any) => item.path === 'dokumen');
         if (!hasDocs && parentTentang) {
@@ -118,7 +118,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
         if (parentTentang) {
           // Remove any existing 'Struktur Organisasi' items (case insensitive) to replace them
           finalNav = finalNav.filter((item: any) => 
-            !(item.label && item.label.toLowerCase() === 'struktur organisasi' && item.parent_id === parentTentang.id)
+            !(item.label && item.label?.toLowerCase() === 'struktur organisasi' && item.parent_id === parentTentang.id)
           );
           finalNav.push({ 
             id: 'struktur-dynamic', 
@@ -131,7 +131,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
         }
 
         let parentRanking = finalNav.find((item: any) => 
-          item.path === 'peringkat' || item.path === 'ranking' || item.label.toLowerCase().includes('peringkat')
+          item.path === 'peringkat' || item.path === 'ranking' || item.label?.toLowerCase()?.includes('peringkat')
         );
 
         if (parentRanking) {
