@@ -729,7 +729,7 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                                 )}
                             </div>
                         )}
-                        <p className="font-bold underline uppercase">{formData.nama_ketua}</p>
+                        <p className="font-bold underline uppercase whitespace-nowrap">{formData.nama_ketua}</p>
                     </div>
 
                     <div className="text-center w-48 relative">
@@ -737,7 +737,7 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                         {formData.ttd_sekretaris_url && (
                             <img src={formData.ttd_sekretaris_url} alt="TTD Sekretaris" className="absolute top-6 left-1/2 -translate-x-1/2 h-20 object-contain mix-blend-multiply" />
                         )}
-                        <p className="font-bold underline uppercase">{formData.nama_sekretaris}</p>
+                        <p className="font-bold underline uppercase whitespace-nowrap">{formData.nama_sekretaris}</p>
                     </div>
                 </div>
 
