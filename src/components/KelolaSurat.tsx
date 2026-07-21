@@ -366,6 +366,12 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       }
 
       const data = await response.json();
+      
+      if (!data || typeof data.text !== 'string') {
+        console.error("Invalid response data format:", data);
+        throw new Error("Server returned invalid data format (missing 'text' field).");
+      }
+
       setFormData(prev => ({ ...prev, isi_surat: data.text }));
       
       Swal.fire({
