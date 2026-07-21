@@ -83,7 +83,7 @@ export default function Sidebar({ email, isOpen, onClose }: SidebarProps) {
     }
   };
 
-  const menuItems = [
+  const allMenuItems = [
     { 
       section: 'Main Dashboard', 
       items: [
@@ -104,7 +104,8 @@ export default function Sidebar({ email, isOpen, onClose }: SidebarProps) {
       ]
     },
     {
-      section: 'Data & Analytics',
+      section: 'Administrasi',
+      adminOnly: true,
       items: [
         { name: 'Laporan & Rekap', path: 'laporan', icon: BarChart3 },
         { name: 'Kelola Kas', path: 'kas', icon: Wallet }, 
@@ -114,7 +115,8 @@ export default function Sidebar({ email, isOpen, onClose }: SidebarProps) {
       ]
     },
     { 
-      section: 'Site Settings', 
+      section: 'Site Settings',
+      adminOnly: true, 
       items: [
         { name: 'Kelola Sejarah', path: 'sejarah', icon: Info }, 
         { name: 'Kelola Visi Misi', path: 'visi-misi', icon: Info }, 
@@ -130,6 +132,14 @@ export default function Sidebar({ email, isOpen, onClose }: SidebarProps) {
       ]
     }
   ];
+
+  const menuItems = allMenuItems.map(section => ({
+    ...section,
+    items: section.items.filter(item => 
+      role === 'admin' ? true : (!section.adminOnly && !['pendaftaran', 'atlet', 'poin'].includes(item.path))
+    )
+  })).filter(section => section.items.length > 0);
+
 
   return (
     <>

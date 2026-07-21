@@ -27,7 +27,9 @@ export default function RegistrationForm() {
     jenis_kelamin: 'Putra',
     kategori: kategoriUmur[0],
     domisili: '',
-    pengalaman: ''
+    pengalaman: '',
+    email: '',
+    password: ''
   });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -44,8 +46,9 @@ export default function RegistrationForm() {
     }
   };
 
-  const handleNextStep = () => {
-    if (!formData.nama.trim()) {
+  const handleNextStep = (currentStep: number) => {
+    if (currentStep === 1) {
+      if (!formData.nama.trim()) {
       Swal.fire({
         icon: 'warning',
         title: 'Nama Lengkap Wajib Diisi',
@@ -67,7 +70,19 @@ export default function RegistrationForm() {
       });
       return;
     }
-    setStep(2);
+      setStep(2);
+    } else if (currentStep === 2) {
+      if (!formData.domisili.trim()) {
+        Swal.fire({ icon: 'warning', title: 'Domisili Wajib Diisi', background: '#1e293b', color: '#fff' });
+        return;
+      }
+      // file check already done in step 2
+    if (!file) {
+        Swal.fire({ icon: 'warning', title: 'Foto Identitas Wajib Diunggah', background: '#1e293b', color: '#fff' });
+        return;
+      }
+      setStep(3);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -129,6 +144,18 @@ export default function RegistrationForm() {
           
         publicUrl = urlData.publicUrl;
       }
+
+      const { error: authError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            role: 'anggota',
+            full_name: formData.nama.toUpperCase().trim()
+          }
+        }
+      });
+      if (authError) throw new Error("Gagal membuat akun: " + authError.message);
 
       const { error: dbError } = await supabase
         .from('pendaftaran')
@@ -254,7 +281,7 @@ export default function RegistrationForm() {
             <div className="flex items-center flex-col">
               <button 
                 type="button"
-                onClick={() => step === 2 && setStep(1)}
+                onClick={() => step >= 2 && setStep(1)}
                 className={`w-7 h-7 rounded-full flex items-center justify-center font-black text-xs transition-all duration-300 ${step === 1 ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 ring-4 ring-blue-600/10' : 'bg-blue-600/20 text-blue-400 cursor-pointer'}`}
               >
                 1
@@ -262,17 +289,30 @@ export default function RegistrationForm() {
               <span className="text-[8px] font-bold uppercase tracking-wider text-slate-500 mt-1">Biodata</span>
             </div>
             <div className="flex-1 h-[2px] bg-slate-800 mx-2 -mt-4">
-              <div className="h-full bg-blue-500 transition-all duration-300" style={{ width: step === 2 ? '100%' : '0%' }}></div>
+              <div className="h-full bg-blue-500 transition-all duration-300" style={{ width: step >= 2 ? '100%' : '0%' }}></div>
             </div>
             <div className="flex items-center flex-col">
               <button 
                 type="button"
-                onClick={() => step === 1 && handleNextStep()}
-                className={`w-7 h-7 rounded-full flex items-center justify-center font-black text-xs transition-all duration-300 ${step === 2 ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 ring-4 ring-blue-600/10' : 'bg-slate-800 text-slate-500'}`}
+                onClick={() => step === 1 ? handleNextStep(1) : setStep(2)}
+                className={`w-7 h-7 rounded-full flex items-center justify-center font-black text-xs transition-all duration-300 ${step === 2 ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 ring-4 ring-blue-600/10' : step === 3 ? 'bg-blue-600/20 text-blue-400 cursor-pointer' : 'bg-slate-800 text-slate-500'}`}
               >
                 2
               </button>
               <span className="text-[8px] font-bold uppercase tracking-wider text-slate-500 mt-1">Berkas</span>
+            </div>
+            <div className="flex-1 h-[2px] bg-slate-800 mx-2 -mt-4">
+              <div className="h-full bg-blue-500 transition-all duration-300" style={{ width: step === 3 ? '100%' : '0%' }}></div>
+            </div>
+            <div className="flex items-center flex-col">
+              <button 
+                type="button"
+                onClick={() => step === 2 && handleNextStep(2)}
+                className={`w-7 h-7 rounded-full flex items-center justify-center font-black text-xs transition-all duration-300 ${step === 3 ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 ring-4 ring-blue-600/10' : 'bg-slate-800 text-slate-500'}`}
+              >
+                3
+              </button>
+              <span className="text-[8px] font-bold uppercase tracking-wider text-slate-500 mt-1">Akun</span>
             </div>
           </div>
 
@@ -319,7 +359,7 @@ export default function RegistrationForm() {
                     </div>
                   </div>
                 </motion.div>
-              ) : (
+              ) : step === 2 ? (
                 <motion.div
                   key="step-kategori"
                   initial={{ opacity: 0, x: 15 }}
@@ -404,16 +444,34 @@ export default function RegistrationForm() {
                     </div>
                   </div>
                 </motion.div>
-              )}
+              ) : step === 3 ? (
+                <motion.div
+                  key="step-akun"
+                  initial={{ opacity: 0, x: -15 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 15 }}
+                  transition={{ duration: 0.15 }}
+                  className="space-y-4"
+                >
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider ml-1">Alamat Email *</label>
+                    <input required type="email" className="w-full px-4 py-3 rounded-xl bg-slate-950/40 border border-slate-800 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-white font-medium text-xs transition-all outline-none" placeholder="email@domain.com" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider ml-1">Kata Sandi *</label>
+                    <input required type="password" className="w-full px-4 py-3 rounded-xl bg-slate-950/40 border border-slate-800 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-white font-medium text-xs transition-all outline-none" placeholder="Minimal 6 karakter" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} />
+                  </div>
+                </motion.div>
+              ) : null}
             </AnimatePresence>
           </div>
 
           {/* Actions / Buttons Footer */}
           <div className="mt-5 pt-4 border-t border-slate-800/60 shrink-0">
-            {step === 1 ? (
+            {step < 3 ? (
               <button 
                 type="button" 
-                onClick={handleNextStep}
+                onClick={() => handleNextStep(step)}
                 className="w-full bg-blue-600 hover:bg-white hover:text-black text-white py-3.5 rounded-xl font-bold uppercase text-xs tracking-wider shadow-lg shadow-blue-600/10 transition-all flex items-center justify-center gap-2 active:scale-95"
               >
                 Lanjutkan <ArrowRight size={14} />
@@ -422,7 +480,7 @@ export default function RegistrationForm() {
               <div className="flex gap-3">
                 <button 
                   type="button" 
-                  onClick={() => setStep(1)}
+                  onClick={() => setStep(step - 1)}
                   className="px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 py-3.5 rounded-xl font-bold uppercase text-xs transition-all flex items-center justify-center gap-1.5"
                 >
                   <ArrowLeft size={14} />

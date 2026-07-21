@@ -54,7 +54,7 @@ export default function Login() {
           </div>
 
           <h2 className="text-xl md:text-2xl font-black text-white tracking-tight italic uppercase">
-            Admin Console
+            Portal Login
           </h2>
           <p className="text-slate-400 font-bold text-[10px] uppercase tracking-[0.2em] mt-1.5">
             PB BILIBILI 162 System
@@ -86,7 +86,7 @@ export default function Login() {
                 type="email" 
                 required
                 className="w-full pl-11 pr-4 py-3.5 rounded-2xl bg-[#070d1a]/80 border border-white/10 text-white font-semibold outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm"
-                placeholder="admin@pbbilibili162.com"
+                placeholder="email@domain.com"
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
@@ -122,6 +122,11 @@ export default function Login() {
             )}
           </button>
         </form>
+        <div className="mt-6 p-4 rounded-xl bg-blue-900/10 border border-blue-500/10 text-center text-[10px] text-slate-400 font-medium leading-relaxed">
+          <p className="uppercase tracking-wider font-bold text-slate-300 mb-1">Info Login Anggota Lama</p>
+          <p>Email: <span className="text-blue-400 font-bold">[namatanpaspasi]@pb162.com</span></p>
+          <p className="mt-0.5">Sandi: <span className="text-blue-400 font-bold">pbilibili162</span></p>
+        </div>
       </motion.div>
     </div>
   );
