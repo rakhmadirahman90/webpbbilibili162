@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabase'; 
 import { 
-  Plus, FileText, Download, Trash2, Search, Mail, X, Send, Loader2, Eye, Printer, Upload, Image as ImageIcon, Move, Edit, MessageCircle 
+  Plus, FileText, Download, Trash2, Search, Mail, X, Send, Loader2, Eye, Printer, Upload, Image as ImageIcon, Move, Edit, MessageCircle, Sparkles 
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import html2canvas from 'html2canvas'; 
@@ -61,6 +61,7 @@ export function KelolaSurat() {
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [isPreviewOnly, setIsPreviewOnly] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
@@ -300,6 +301,49 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
   };
   const handleMouseUp = () => setIsDragging(false);
 
+  const handleGenerateAI = async () => {
+    if (!formData.perihal) {
+      Swal.fire('Info', 'Mohon isi perihal surat terlebih dahulu agar AI bisa memahami konteksnya.', 'info');
+      return;
+    }
+
+    setIsGeneratingAI(true);
+    try {
+      const response = await fetch('/api/generate-letter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          perihal: formData.perihal,
+          tujuan_yth: formData.tujuan_yth,
+          jabatan_tujuan: formData.jabatan_tujuan
+        })
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || 'Gagal generate AI');
+      }
+
+      const data = await response.json();
+      setFormData(prev => ({ ...prev, isi_surat: data.text }));
+      
+      Swal.fire({
+        title: 'Berhasil!',
+        text: 'Isi surat telah digenerate sesuai konteks.',
+        icon: 'success',
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000
+      });
+    } catch (error: any) {
+      console.error(error);
+      Swal.fire('AI Error', 'Gagal generate konten: ' + error.message, 'error');
+    } finally {
+      setIsGeneratingAI(false);
+    }
+  };
+
   const handlePrint = () => {
     const content = printRef.current;
     if (!content) return;
@@ -478,7 +522,17 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                   <input type="text" className="w-full p-2.5 bg-white/5 border border-white/10 rounded-lg text-xs" value={formData.jabatan_tujuan} onChange={(e)=>setFormData({...formData, jabatan_tujuan: e.target.value})} />
                   <label className="text-[10px] font-bold text-slate-500 uppercase">Perihal</label>
                   <textarea className="w-full p-2.5 bg-white/5 border border-white/10 rounded-lg text-xs h-16" value={formData.perihal} onChange={(e)=>setFormData({...formData, perihal: e.target.value})} />
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Isi Paragraf</label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase">Isi Paragraf</label>
+                    <button 
+                      onClick={handleGenerateAI}
+                      disabled={isGeneratingAI}
+                      className="flex items-center gap-1.5 px-2 py-1 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 rounded-md text-[9px] font-black uppercase tracking-wider border border-blue-500/20 transition-all disabled:opacity-50"
+                    >
+                      {isGeneratingAI ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
+                      {isGeneratingAI ? 'Generating...' : 'Generate AI'}
+                    </button>
+                  </div>
                   <textarea className="w-full p-2.5 bg-white/5 border border-white/10 rounded-lg text-xs h-32" value={formData.isi_surat} onChange={(e)=>setFormData({...formData, isi_surat: e.target.value})} />
                 </div>
                 <div className="flex flex-col gap-2 pt-4">
