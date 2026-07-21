@@ -1,7 +1,7 @@
 import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 async function startServer() {
   try {
@@ -15,26 +15,22 @@ async function startServer() {
       res.json({ status: "ok" });
     });
 
-    const ai = new GoogleGenAI({
-      apiKey: process.env.GEMINI_API_KEY,
-      httpOptions: {
-        headers: {
-          'User-Agent': 'aistudio-build',
-        }
-      }
-    });
-
     app.post("/api/generate-letter", async (req, res) => {
       console.log("Received AI generation request. Body:", JSON.stringify(req.body));
       try {
         const { perihal, tujuan_yth, jabatan_tujuan } = req.body;
         
-        if (!process.env.GEMINI_API_KEY) {
+        const apiKey = process.env.GEMINI_API_KEY;
+        if (!apiKey) {
           console.error("GEMINI_API_KEY is missing in environment variables");
           return res.status(500).json({ 
             error: "GEMINI_API_KEY is not configured in Settings > Secrets." 
           });
         }
+
+        console.log("Initializing Gemini 1.5 Flash...");
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
         const prompt = `
           Tolong buatkan isi surat resmi untuk klub bulutangkis "PB Bilibili 162".
@@ -53,13 +49,10 @@ async function startServer() {
           - Gunakan istilah bulutangkis yang relevan jika sesuai konteks (seperti: sparring, pembinaan atlet, turnamen, dll).
         `;
 
-        console.log("Sending request to Gemini 2.0 Flash...");
-        const response = await ai.models.generateContent({
-          model: 'gemini-2.0-flash',
-          contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        });
-        
-        const text = response.text;
+        console.log("Sending request to Gemini API...");
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const text = response.text();
         
         if (!text) {
           console.error("Gemini returned empty text");
@@ -69,8 +62,10 @@ async function startServer() {
         console.log("Successfully generated AI content. Length:", text.length);
         res.json({ text: text.trim() });
       } catch (error: any) {
-        console.error("AI Generation Detailed Error:", error);
-        res.status(500).json({ 
+        console.error("AI Generation Error:", error);
+        // Extract more info if available
+        const status = error.status || 500;
+        res.status(status).json({ 
           error: error.message || "An unexpected error occurred during generation.",
           details: error.toString()
         });
