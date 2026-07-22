@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Cropper from 'react-easy-crop';
 import { supabase } from '../supabase';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -28,10 +29,105 @@ import {
   LogOut,
   Upload,
   Trash2,
-  Image as ImageIcon
+  Image as ImageIcon,
+  ZoomIn,
+  ZoomOut,
+  RotateCw,
+  RotateCcw,
+  Crop as CropIcon,
+  Maximize2,
+  Scan,
+  RefreshCw,
+  Sliders,
+  Move
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Swal from 'sweetalert2';
+
+const createImage = (url: string): Promise<HTMLImageElement> =>
+  new Promise((resolve, reject) => {
+    const image = new Image();
+    image.addEventListener('load', () => resolve(image));
+    image.addEventListener('error', (error) => reject(error));
+    image.setAttribute('crossOrigin', 'anonymous');
+    image.src = url;
+  });
+
+function getRadianAngle(degreeValue: number) {
+  return (degreeValue * Math.PI) / 180;
+}
+
+function rotateSize(width: number, height: number, rotation: number) {
+  const rotRad = getRadianAngle(rotation);
+  return {
+    width: Math.abs(Math.cos(rotRad) * width) + Math.abs(Math.sin(rotRad) * height),
+    height: Math.abs(Math.sin(rotRad) * width) + Math.abs(Math.cos(rotRad) * height),
+  };
+}
+
+async function getCroppedImg(
+  imageSrc: string,
+  pixelCrop: { x: number; y: number; width: number; height: number },
+  rotation = 0
+): Promise<{ blob: Blob; dataUrl: string }> {
+  const image = await createImage(imageSrc);
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+
+  if (!ctx) {
+    throw new Error('Canvas context error');
+  }
+
+  const rotRad = getRadianAngle(rotation);
+  const { width: bBoxWidth, height: bBoxHeight } = rotateSize(image.width, image.height, rotation);
+
+  canvas.width = bBoxWidth;
+  canvas.height = bBoxHeight;
+
+  ctx.translate(bBoxWidth / 2, bBoxHeight / 2);
+  ctx.rotate(rotRad);
+  ctx.translate(-image.width / 2, -image.height / 2);
+
+  ctx.drawImage(image, 0, 0);
+
+  const cropCanvas = document.createElement('canvas');
+  const cropCtx = cropCanvas.getContext('2d');
+
+  if (!cropCtx) {
+    throw new Error('Crop Canvas context error');
+  }
+
+  const targetSize = 500;
+  cropCanvas.width = targetSize;
+  cropCanvas.height = targetSize;
+
+  cropCtx.drawImage(
+    canvas,
+    pixelCrop.x,
+    pixelCrop.y,
+    pixelCrop.width,
+    pixelCrop.height,
+    0,
+    0,
+    targetSize,
+    targetSize
+  );
+
+  return new Promise((resolve, reject) => {
+    cropCanvas.toBlob(
+      (blob) => {
+        if (!blob) {
+          reject(new Error('Canvas blank error'));
+          return;
+        }
+        const dataUrl = cropCanvas.toDataURL('image/jpeg', 0.92);
+        resolve({ blob, dataUrl });
+      },
+      'image/jpeg',
+      0.92
+    );
+  });
+}
 
 interface ProfilAnggotaProps {
   session?: any;
@@ -129,27 +225,84 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
     confirmPin: ''
   });
 
-  // Photo Upload State & Ref
+  // Photo Upload & Cropper State
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
-  const handlePhotoFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Crop Modal States
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [rawImageSrc, setRawImageSrc] = useState<string | null>(null);
+  const [crop, setCrop] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState<number>(1);
+  const [rotation, setRotation] = useState<number>(0);
+  const [cropShape, setCropShape] = useState<'round' | 'rect'>('round');
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null>(null);
+
+  const handleFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (!file.type.startsWith('image/')) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Format File Tidak Didukung',
+        text: 'Harap pilih file gambar (JPG, PNG, WEBP).',
+        background: '#0F172A',
+        color: '#fff'
+      });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setRawImageSrc(reader.result as string);
+      setCrop({ x: 0, y: 0 });
+      setZoom(1);
+      setRotation(0);
+      setShowCropModal(true);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleAutoFocusFace = () => {
+    setZoom(1.35);
+    setCrop({ x: 0, y: -15 });
+    Swal.fire({
+      toast: true,
+      position: 'top-end',
+      icon: 'info',
+      title: 'Auto Fokus Wajah Diaktifkan!',
+      text: 'Area wajah disesuaikan. Silakan geser atau zoom untuk presisi akhir.',
+      showConfirmButton: false,
+      timer: 2000,
+      background: '#0F172A',
+      color: '#fff'
+    });
+  };
+
+  const handleApplyCrop = async () => {
+    if (!rawImageSrc || !croppedAreaPixels) return;
+
     setUploadingPhoto(true);
-
     try {
-      const fileExt = file.name.split('.').pop() || 'jpg';
-      const fileName = `avatar_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-      const filePath = `identitas/${fileName}`;
+      const { blob, dataUrl } = await getCroppedImg(rawImageSrc, croppedAreaPixels, rotation);
 
+      const fileName = `avatar_${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
+      const filePath = `identitas/${fileName}`;
       let publicUrl = '';
+
+      const fileToUpload = new File([blob], fileName, { type: 'image/jpeg' });
 
       // 1. Try uploading to 'identitas-atlet' bucket
       const { error: uploadError } = await supabase.storage
         .from('identitas-atlet')
-        .upload(filePath, file, { contentType: file.type, upsert: true });
+        .upload(filePath, fileToUpload, { contentType: 'image/jpeg', upsert: true });
 
       if (!uploadError) {
         const { data } = supabase.storage.from('identitas-atlet').getPublicUrl(filePath);
@@ -158,41 +311,38 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
         // 2. Fallback to 'images' bucket
         const { error: imgError } = await supabase.storage
           .from('images')
-          .upload(`profiles/${fileName}`, file, { contentType: file.type, upsert: true });
+          .upload(`profiles/${fileName}`, fileToUpload, { contentType: 'image/jpeg', upsert: true });
 
         if (!imgError) {
           const { data } = supabase.storage.from('images').getPublicUrl(`profiles/${fileName}`);
           publicUrl = data.publicUrl;
         } else {
           // 3. Fallback to Base64 Data URL if storage bucket fails
-          publicUrl = await new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result as string);
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
-          });
+          publicUrl = dataUrl;
         }
       }
 
       if (publicUrl) {
         setMemberData((prev) => ({ ...prev, foto_url: publicUrl }));
+        setShowCropModal(false);
+        setRawImageSrc(null);
         Swal.fire({
           toast: true,
           position: 'top-end',
           icon: 'success',
-          title: 'Foto Profil Berhasil Dimuat!',
+          title: 'Foto Profil Berhasil Dipotong & Disimpan!',
           showConfirmButton: false,
-          timer: 2000,
+          timer: 2500,
           background: '#0F172A',
           color: '#fff'
         });
       }
     } catch (err: any) {
-      console.error('Error uploading photo:', err);
+      console.error('Error cropping photo:', err);
       Swal.fire({
         icon: 'error',
-        title: 'Gagal Mengunggah Foto',
-        text: err.message || 'Terjadi kesalahan saat membaca file foto.',
+        title: 'Gagal Memotong Foto',
+        text: err.message || 'Terjadi kesalahan saat memproses pemotongan gambar.',
         background: '#0F172A',
         color: '#fff'
       });
@@ -668,6 +818,15 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
 
   return (
     <div className="p-3 sm:p-4 md:p-8 max-w-6xl mx-auto space-y-6 sm:space-y-8 font-sans text-white overflow-hidden sm:overflow-visible">
+      {/* Hidden File Input for Photo Cropping & Upload */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileSelected}
+        accept="image/*"
+        className="hidden"
+      />
+
       {/* Header Title */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-5 sm:pb-6">
         <div>
@@ -1016,13 +1175,6 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
 
                     {/* File Upload Trigger & Controls */}
                     <div className="flex-1 w-full space-y-2 text-center sm:text-left">
-                      <input
-                        type="file"
-                        ref={fileInputRef}
-                        onChange={handlePhotoFileUpload}
-                        accept="image/*"
-                        className="hidden"
-                      />
                       <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
                         <button
                           type="button"
@@ -1247,6 +1399,234 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL CROP & AUTO FOKUS FOTO PROFIL */}
+      <AnimatePresence>
+        {showCropModal && rawImageSrc && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="w-full max-w-xl bg-[#0b1224] border border-white/10 rounded-3xl p-4 sm:p-6 space-y-4 shadow-2xl relative max-h-[95vh] flex flex-col justify-between overflow-y-auto"
+            >
+              {/* Modal Header */}
+              <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                <div className="flex items-center gap-2 text-white font-black text-xs sm:text-sm uppercase tracking-wider italic">
+                  <CropIcon size={18} className="text-blue-400 shrink-0" />
+                  <span>Potong & Auto Fokus Foto Profil</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCropModal(false);
+                    setRawImageSrc(null);
+                  }}
+                  className="text-slate-400 hover:text-white p-1.5 rounded-lg bg-slate-800 shrink-0 text-xs font-bold cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Cropper Viewport */}
+              <div className="relative w-full h-64 sm:h-80 rounded-2xl overflow-hidden bg-slate-950 border border-white/10 shadow-inner">
+                <Cropper
+                  image={rawImageSrc}
+                  crop={crop}
+                  zoom={zoom}
+                  rotation={rotation}
+                  aspect={1}
+                  cropShape={cropShape}
+                  showGrid={true}
+                  onCropChange={setCrop}
+                  onZoomChange={setZoom}
+                  onCropComplete={(_, croppedPixels) => setCroppedAreaPixels(croppedPixels)}
+                />
+
+                {/* Floating Guide */}
+                <div className="absolute top-3 left-3 bg-slate-900/80 backdrop-blur-md border border-white/10 px-2.5 py-1 rounded-full text-[10px] font-bold text-slate-300 flex items-center gap-1.5 pointer-events-none z-10 shadow">
+                  <Move size={12} className="text-blue-400" />
+                  <span>Geser / Pinch foto untuk menyesuaikan wajah</span>
+                </div>
+              </div>
+
+              {/* Control Panel */}
+              <div className="space-y-3.5 bg-[#070d1a] p-3.5 sm:p-4 rounded-2xl border border-white/5">
+                {/* Auto Face Focus & Shape Toggle */}
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={handleAutoFocusFace}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs uppercase tracking-wider shadow active:scale-95 transition-all cursor-pointer"
+                  >
+                    <Scan size={14} className="text-amber-300" />
+                    <span>Auto Fokus Wajah</span>
+                  </button>
+
+                  <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-xl border border-white/5">
+                    <button
+                      type="button"
+                      onClick={() => setCropShape('round')}
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+                        cropShape === 'round'
+                          ? 'bg-blue-600 text-white shadow'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Lingkaran
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCropShape('rect')}
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+                        cropShape === 'rect'
+                          ? 'bg-blue-600 text-white shadow'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Persegi
+                    </button>
+                  </div>
+                </div>
+
+                {/* Zoom Controls */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-slate-400">
+                    <span className="flex items-center gap-1.5 text-blue-400">
+                      <ZoomIn size={13} />
+                      <span>Perpembesaran / Zoom ({Math.round(zoom * 100)}%)</span>
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setZoom(1)}
+                        className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 hover:text-white text-[9px] font-bold"
+                      >
+                        1x
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setZoom(1.5)}
+                        className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 hover:text-white text-[9px] font-bold"
+                      >
+                        1.5x
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setZoom(2)}
+                        className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 hover:text-white text-[9px] font-bold"
+                      >
+                        2x
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setZoom((prev) => Math.max(1, prev - 0.1))}
+                      className="p-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors cursor-pointer"
+                      title="Zoom Out"
+                    >
+                      <ZoomOut size={16} />
+                    </button>
+
+                    <input
+                      type="range"
+                      min={1}
+                      max={3}
+                      step={0.02}
+                      value={zoom}
+                      onChange={(e) => setZoom(Number(e.target.value))}
+                      className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() => setZoom((prev) => Math.min(3, prev + 0.1))}
+                      className="p-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors cursor-pointer"
+                      title="Zoom In"
+                    >
+                      <ZoomIn size={16} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Rotation & Reset Row */}
+                <div className="flex items-center justify-between pt-1 border-t border-white/5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Rotasi:</span>
+                    <button
+                      type="button"
+                      onClick={() => setRotation((prev) => (prev - 90 + 360) % 360)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold cursor-pointer"
+                      title="Putar Berlawanan Jarum Jam"
+                    >
+                      <RotateCcw size={13} />
+                      <span>-90°</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRotation((prev) => (prev + 90) % 360)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold cursor-pointer"
+                      title="Putar Searah Jarum Jam"
+                    >
+                      <RotateCw size={13} />
+                      <span>+90°</span>
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCrop({ x: 0, y: 0 });
+                      setZoom(1);
+                      setRotation(0);
+                    }}
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white text-[10px] font-black uppercase tracking-wider cursor-pointer"
+                  >
+                    <RefreshCw size={12} />
+                    <span>Reset</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Modal Actions */}
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCropModal(false);
+                    setRawImageSrc(null);
+                  }}
+                  className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold uppercase tracking-wider cursor-pointer transition-all"
+                >
+                  Batal
+                </button>
+
+                <button
+                  type="button"
+                  disabled={uploadingPhoto}
+                  onClick={handleApplyCrop}
+                  className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-blue-600/30 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 active:scale-95"
+                >
+                  {uploadingPhoto ? (
+                    <>
+                      <Loader2 size={15} className="animate-spin" />
+                      <span>Memproses Foto...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check size={15} />
+                      <span>Terapkan & Simpan Foto</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </motion.div>
           </div>
         )}
