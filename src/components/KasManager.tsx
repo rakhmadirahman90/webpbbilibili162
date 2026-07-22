@@ -557,7 +557,7 @@ export default function KasManager() {
   };
 
   return (
-    <div className="w-full h-full flex flex-col justify-between p-2.5 sm:p-5 md:p-8 space-y-2.5 sm:space-y-4 md:space-y-6 overflow-hidden md:overflow-visible min-h-0 select-none">
+    <div className="w-full min-h-full flex flex-col p-3 sm:p-5 md:p-8 space-y-3 sm:space-y-4 md:space-y-6 overflow-y-auto select-none pb-28 md:pb-8">
       {/* Header Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gradient-to-r from-slate-900 via-[#0b1224] to-slate-900 p-3 sm:p-5 md:p-6 rounded-2xl md:rounded-3xl border border-white/10 shadow-2xl relative overflow-hidden shrink-0">
         <div className="absolute top-0 right-0 w-48 h-48 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
@@ -595,28 +595,28 @@ export default function KasManager() {
       </div>
 
       {/* Mobile Tab Switcher */}
-      <div className="flex md:hidden bg-slate-900/90 p-1 rounded-xl border border-white/10 shrink-0 gap-1">
+      <div className="flex md:hidden bg-slate-900/90 p-1.5 rounded-2xl border border-white/10 shrink-0 gap-1.5 shadow-xl">
         <button
           type="button"
           onClick={() => setActiveMobileTab('list')}
-          className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+          className={`flex-1 py-2.5 px-3 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
             activeMobileTab === 'list'
-              ? 'bg-blue-600 text-white shadow-md'
-              : 'text-slate-400 hover:text-white'
+              ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+              : 'text-slate-400 hover:text-white bg-black/40'
           }`}
         >
-          Daftar Transaksi ({kasData.length})
+          📋 Daftar Transaksi ({kasData.length})
         </button>
         <button
           type="button"
           onClick={() => setActiveMobileTab('form')}
-          className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+          className={`flex-1 py-2.5 px-3 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
             activeMobileTab === 'form'
-              ? 'bg-blue-600 text-white shadow-md'
-              : 'text-slate-400 hover:text-white'
+              ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+              : 'text-slate-400 hover:text-white bg-black/40'
           }`}
         >
-          {editingId ? 'Edit Record' : '+ Tambah Kas'}
+          {editingId ? '✏️ Edit Record' : '➕ Tambah Kas'}
         </button>
       </div>
 
@@ -682,11 +682,11 @@ export default function KasManager() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6 flex-1 min-h-0 items-stretch">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6 flex-1 min-h-0 items-stretch pb-10 md:pb-0">
         {/* Form Column */}
         <div className={`lg:col-span-4 flex flex-col min-h-0 ${activeMobileTab === 'form' ? 'flex' : 'hidden md:flex'}`}>
-          <div className="bg-[#0b1224]/90 border border-white/10 p-3 sm:p-6 rounded-2xl md:rounded-[2.5rem] flex flex-col h-full overflow-y-auto no-scrollbar shadow-xl">
-            <h3 className="text-blue-400 font-black italic uppercase tracking-tighter text-sm sm:text-lg mb-3 flex items-center gap-2">
+          <div className="bg-[#0b1224]/90 border border-white/10 p-3 sm:p-5 rounded-2xl md:rounded-[2.5rem] flex flex-col h-auto max-h-[85vh] md:h-full min-h-0 overflow-y-auto shadow-xl">
+            <h3 className="text-blue-400 font-black italic uppercase tracking-tighter text-sm sm:text-lg mb-3 flex items-center gap-2 shrink-0">
               {editingId ? <Edit3 size={16} /> : <Plus size={16} />} {editingId ? 'Edit Record' : 'Add Entry'}
             </h3>
             <form onSubmit={handleSave} className="space-y-3">
@@ -768,7 +768,7 @@ export default function KasManager() {
         </div>
 
         <div className={`lg:col-span-8 flex flex-col min-h-0 ${activeMobileTab === 'list' ? 'flex' : 'hidden md:flex'}`}>
-          <div className="bg-[#0b1224]/90 border border-white/10 rounded-2xl md:rounded-[2.5rem] overflow-hidden flex flex-col h-full shadow-xl">
+          <div className="bg-[#0b1224]/90 border border-white/10 rounded-2xl md:rounded-[2.5rem] overflow-hidden flex flex-col h-auto max-h-[85vh] md:h-full min-h-0 shadow-xl">
             <div className="p-3 sm:p-5 border-b border-white/5 flex items-center justify-between shrink-0 bg-black/20">
               <h3 className="text-[10px] sm:text-xs font-black uppercase tracking-[0.3em] text-slate-400">Transaction_Ledger.log</h3>
               <div className="flex items-center gap-2">
