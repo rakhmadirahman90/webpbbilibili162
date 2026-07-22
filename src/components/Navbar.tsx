@@ -475,41 +475,46 @@ export default function Navbar({ onNavigate }: NavbarProps) {
           />
           
           {/* Left-aligned Drawer Panel */}
-          <div className="lg:hidden fixed inset-y-0 left-0 w-[300px] max-w-[85vw] h-full z-[999999] bg-[#0b1224] border-r border-white/10 flex flex-col overflow-hidden shadow-2xl animate-slide-in-left">
+          <div className="lg:hidden fixed inset-y-0 left-0 w-[270px] sm:w-[290px] max-w-[85vw] h-[100dvh] z-[999999] bg-[#0b1224] border-r border-white/10 flex flex-col justify-between overflow-hidden shadow-2xl animate-slide-in-left">
             
             {/* LOGO & BRANDING HEADER SECTION */}
-            <div className="flex flex-col items-center justify-center pt-8 pb-6 px-4 relative border-b border-white/10 shrink-0 bg-[#070d1a]/50">
-              {/* Back Arrow Button (Close Menu) */}
-              <button 
-                onClick={() => setIsMobileMenuOpen(false)} 
-                className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-full hover:bg-white/5 transition-all active:scale-95 flex items-center justify-center"
-              >
-                <ArrowLeft size={20} />
-              </button>
-
-              {/* Logo Container */}
-              <div className="relative w-20 h-20 flex items-center justify-center shrink-0">
-                <div className="absolute inset-0 bg-blue-500/5 rounded-full blur-xl animate-pulse"></div>
-                <div className="relative w-18 h-18 rounded-full overflow-hidden border border-white/10 shadow-2xl flex items-center justify-center bg-white">
-                  <img src={branding.logo_url} alt="Logo" className="w-full h-full object-cover" loading="lazy" decoding="async" />
+            <div className="flex items-center justify-between py-2.5 px-3.5 border-b border-white/10 shrink-0 bg-[#070d1a]/80 relative">
+              <div className="flex items-center gap-2.5 min-w-0">
+                {/* Logo Container */}
+                <div className="relative w-10 h-10 flex items-center justify-center shrink-0">
+                  <div className="absolute inset-0 bg-blue-500/10 rounded-full blur-md animate-pulse"></div>
+                  <div className="relative w-9 h-9 rounded-full overflow-hidden border border-white/10 shadow-lg flex items-center justify-center bg-white">
+                    <img src={branding.logo_url} alt="Logo" className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                  </div>
+                </div>
+                <div className="min-w-0 flex flex-col">
+                  <h3 className="font-black text-xs tracking-tighter uppercase italic text-white leading-tight truncate">
+                    {branding.brand_name_main} <span className="text-blue-500">{branding.brand_name_accent}</span>
+                  </h3>
+                  <span className="text-[6.5px] text-slate-400 font-bold tracking-[0.15em] uppercase leading-none mt-0.5 block truncate">
+                    Club Bulutangkis Terpadu
+                  </span>
                 </div>
               </div>
-              <div className="mt-3 text-center">
-                <h3 className="font-black text-sm tracking-tighter uppercase italic text-white leading-none">
-                  {branding.brand_name_main} <span className="text-blue-500">{branding.brand_name_accent}</span>
-                </h3>
-                <span className="text-[7px] text-slate-400 font-bold tracking-[0.2em] uppercase mt-1 block">Club Bulutangkis Terpadu</span>
-              </div>
+
+              {/* Close Arrow Button */}
+              <button 
+                onClick={() => setIsMobileMenuOpen(false)} 
+                className="text-slate-400 hover:text-white p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 transition-all active:scale-95 flex items-center justify-center shrink-0 ml-1"
+                title="Tutup Menu"
+              >
+                <X size={16} />
+              </button>
             </div>
 
             {/* SCROLLABLE MENU ITEMS LIST */}
-            <div className="flex-grow overflow-y-auto py-2">
+            <div className="flex-1 overflow-y-auto no-scrollbar py-1 px-1.5 space-y-0.5 flex flex-col justify-evenly">
               {navData.filter(item => !item.parent_id ).sort((a, b) => a.order_index - b.order_index).map((menu) => {
                 const subMenus = getSubMenus(menu.id);
                 const isDropdown = menu.type === 'dropdown' || subMenus.length > 0;
                 const isExpanded = activeDropdown === menu.id;
                 return (
-                  <div key={menu.id} className="border-b border-white/5 last:border-0">
+                  <div key={menu.id} className="rounded-lg overflow-hidden">
                     <button 
                       onClick={() => {
                         if (isDropdown) {
@@ -518,28 +523,30 @@ export default function Navbar({ onNavigate }: NavbarProps) {
                           handleNavClick(menu.path);
                         }
                       }}
-                      className="flex justify-between items-center w-full px-6 py-4 text-[12px] font-bold tracking-wider uppercase text-slate-100 hover:bg-blue-600/10 hover:text-blue-400 transition-all duration-200 text-left"
+                      className={`flex justify-between items-center w-full px-3 py-2 text-[11px] font-bold tracking-wider uppercase rounded-lg text-slate-200 hover:bg-blue-600/15 hover:text-blue-400 transition-all duration-200 text-left ${
+                        isExpanded ? 'bg-blue-600/15 text-blue-400' : ''
+                      }`}
                     >
                       <span>{menu.label}</span>
-                      {isDropdown && <ChevronDown size={14} className={`text-slate-400 transition-transform duration-300 ${isExpanded ? 'rotate-180 text-blue-400' : ''}`} />}
+                      {isDropdown && <ChevronDown size={12} className={`text-slate-400 transition-transform duration-300 ${isExpanded ? 'rotate-180 text-blue-400' : ''}`} />}
                     </button>
                     
                     {isDropdown && isExpanded && (
-                      <div className="bg-[#070c18]/40 border-t border-white/5 flex flex-col py-2 pl-8 pr-4 gap-1 animate-in fade-in duration-200">
+                      <div className="bg-[#070c18]/60 border-l-2 border-blue-500/50 my-0.5 ml-2 pl-2 pr-1 flex flex-col py-1 gap-0.5 animate-in fade-in duration-200 rounded-r-lg">
                         {subMenus.map((sub) => (
                           <button 
                             key={sub.id} 
                             onClick={() => {
                                 handleNavClick(menu.path, sub.path);
                             }} 
-                            className="text-left py-2.5 text-[11px] font-semibold tracking-wider uppercase text-slate-400 hover:text-white transition-colors flex items-center justify-between"
+                            className="text-left py-1.5 px-2 text-[10px] font-semibold tracking-wider uppercase text-slate-300 hover:text-white hover:bg-white/5 rounded transition-colors flex items-center justify-between"
                           >
-                            <span className="flex items-center gap-2">
-                              {sub.path === 'quiz' && <BrainCircuit size={12} className="text-blue-400" />}
+                            <span className="flex items-center gap-1.5">
+                              {sub.path === 'quiz' && <BrainCircuit size={11} className="text-blue-400" />}
                               {sub.label}
                             </span>
-                            {sub.path === 'peringkat' && <Trophy size={11} className="text-yellow-500" />}
-                            {sub.path === 'dokumen-penting' && <FileText size={11} className="text-blue-500" />}
+                            {sub.path === 'peringkat' && <Trophy size={10} className="text-yellow-500" />}
+                            {sub.path === 'dokumen-penting' && <FileText size={10} className="text-blue-500" />}
                           </button>
                         ))}
                       </div>
@@ -548,33 +555,33 @@ export default function Navbar({ onNavigate }: NavbarProps) {
                 );
               })}
 
-              {/* Hubungi Kami Item with Divider */}
-              <div className="border-b border-white/5">
+              {/* Hubungi Kami Item */}
+              <div>
                 <button 
                   onClick={() => handleNavClick('contact')}
-                  className="flex items-center gap-2.5 w-full px-6 py-4 text-[12px] font-bold tracking-wider uppercase text-slate-100 hover:bg-blue-600/10 hover:text-blue-400 transition-all duration-200 text-left"
+                  className="flex items-center gap-2 w-full px-3 py-2 text-[11px] font-bold tracking-wider uppercase text-slate-200 hover:bg-blue-600/15 hover:text-blue-400 rounded-lg transition-all duration-200 text-left"
                 >
-                  <MapPin size={14} className="text-blue-500 shrink-0" />
+                  <MapPin size={13} className="text-blue-500 shrink-0" />
                   <span>Hubungi Kami</span>
                 </button>
               </div>
 
               {/* Portal Login / Dashboard Item for Mobile */}
-              <div className="border-b border-white/5">
+              <div>
                 {session ? (
                   <button 
                     onClick={() => { setIsMobileMenuOpen(false); navigate('/admin/dashboard'); }}
-                    className="flex items-center gap-2.5 w-full px-6 py-4 text-[12px] font-bold tracking-wider uppercase text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 transition-all duration-200 text-left"
+                    className="flex items-center gap-2 w-full px-3 py-2 text-[11px] font-bold tracking-wider uppercase text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-lg transition-all duration-200 text-left border border-emerald-500/20"
                   >
-                    <LayoutDashboard size={15} className="text-emerald-400 shrink-0" />
+                    <LayoutDashboard size={14} className="text-emerald-400 shrink-0" />
                     <span>Dashboard Admin</span>
                   </button>
                 ) : (
                   <button 
                     onClick={() => { setIsMobileMenuOpen(false); navigate('/login'); }}
-                    className="flex items-center gap-2.5 w-full px-6 py-4 text-[12px] font-bold tracking-wider uppercase text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 transition-all duration-200 text-left"
+                    className="flex items-center gap-2 w-full px-3 py-2 text-[11px] font-bold tracking-wider uppercase text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg transition-all duration-200 text-left border border-blue-500/20"
                   >
-                    <LogIn size={15} className="text-blue-400 shrink-0" />
+                    <LogIn size={14} className="text-blue-400 shrink-0" />
                     <span>Portal Login</span>
                   </button>
                 )}
@@ -582,34 +589,34 @@ export default function Navbar({ onNavigate }: NavbarProps) {
             </div>
 
             {/* DRAWER FOOTER SECTION: HIGHLIGHT BLOCK & SOCIAL MEDIA */}
-            <div className="p-6 border-t border-white/10 bg-[#070d1a] shrink-0 flex flex-col gap-5">
+            <div className="p-2.5 border-t border-white/10 bg-[#070d1a] shrink-0 flex flex-col gap-2">
               {/* LIVESIGNAL/REGISTRATION HIGHLIGHT BLOCK */}
               <button 
                 onClick={() => handleNavClick('register')}
-                className="flex items-center gap-4 bg-[#151d30]/40 border border-white/5 hover:border-blue-500/30 p-3 rounded-2xl text-left transition-all hover:bg-blue-600/5 group"
+                className="flex items-center gap-3 bg-[#151d30]/60 border border-white/10 hover:border-blue-500/40 p-2 rounded-xl text-left transition-all hover:bg-blue-600/10 group"
               >
-                <div className="w-9 h-9 rounded-full bg-blue-600/10 flex items-center justify-center text-blue-500 group-hover:bg-blue-600 group-hover:text-white transition-all shrink-0">
-                  <Radio size={16} className="animate-pulse" />
+                <div className="w-7 h-7 rounded-lg bg-blue-600/20 flex items-center justify-center text-blue-400 group-hover:bg-blue-600 group-hover:text-white transition-all shrink-0">
+                  <Radio size={14} className="animate-pulse" />
                 </div>
-                <div className="flex flex-col justify-center leading-tight">
-                  <span className="text-[9px] font-black tracking-widest text-blue-400 group-hover:text-blue-300 uppercase">Pendaftaran</span>
-                  <span className="text-[11px] font-bold text-white uppercase mt-0.5 tracking-wider">Gabung Atlet Baru</span>
+                <div className="flex flex-col justify-center leading-tight min-w-0">
+                  <span className="text-[8px] font-black tracking-widest text-blue-400 group-hover:text-blue-300 uppercase">Pendaftaran</span>
+                  <span className="text-[10px] font-bold text-white uppercase mt-0.5 tracking-wider truncate">Gabung Atlet Baru</span>
                 </div>
               </button>
 
               {/* SOCIAL MEDIA ICONS */}
-              <div className="flex items-center justify-center gap-6 pt-1">
+              <div className="flex items-center justify-center gap-5 pt-0.5">
                 <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-white transition-colors" aria-label="YouTube">
-                  <Youtube size={18} />
+                  <Youtube size={15} />
                 </a>
                 <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-white transition-colors" aria-label="Instagram">
-                  <Instagram size={18} />
+                  <Instagram size={15} />
                 </a>
                 <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-white transition-colors" aria-label="Facebook">
-                  <Facebook size={18} />
+                  <Facebook size={15} />
                 </a>
                 <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-white transition-colors" aria-label="Twitter">
-                  <Twitter size={18} />
+                  <Twitter size={15} />
                 </a>
               </div>
             </div>

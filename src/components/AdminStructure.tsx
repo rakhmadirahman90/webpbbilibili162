@@ -283,17 +283,23 @@ export default function AdminStructure() {
     if (members.length === 0) return;
     setIsSavingOrder(true);
     try {
-      const updates = members.map((m, index) => ({ 
-        id: m.id, 
-        sort_order: index, 
-        name: m.name, 
-        level: m.level, 
-        role: m.role, 
-        category: m.category,
-        photo_url: m.photo_url 
-      }));
+      const updatesMap = new Map<string, any>();
+      members.forEach((m, index) => {
+        if (m.id) {
+          updatesMap.set(m.id, {
+            id: m.id, 
+            sort_order: index, 
+            name: m.name, 
+            level: m.level, 
+            role: m.role, 
+            category: m.category,
+            photo_url: m.photo_url 
+          });
+        }
+      });
+      const uniqueUpdates = Array.from(updatesMap.values());
       
-      const { error } = await supabase.from('organizational_structure').upsert(updates);
+      const { error } = await supabase.from('organizational_structure').upsert(uniqueUpdates);
       if (error) throw error;
       setToast({ msg: 'URUTAN BERHASIL DIPUBLIKASIKAN!', type: 'success' });
     } catch (err: any) { 

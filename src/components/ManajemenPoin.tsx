@@ -66,14 +66,25 @@ export default function ManajemenPoin() {
 
         await supabase.from('atlet_stats').insert(insertData);
         
-        // Inisialisasi juga di tabel rankings untuk publik
-        const rankingData = newAthletes.map(a => ({
-          player_name: a.nama,
-          total_points: 0,
-          updated_at: new Date().toISOString()
-        }));
+        // Inisialisasi juga di tabel rankings untuk publik (deduplicate player_name)
+        const uniqueRankingMap = new Map<string, any>();
+        newAthletes.forEach(a => {
+          if (a.nama) {
+            const key = a.nama.trim().toUpperCase();
+            if (!uniqueRankingMap.has(key)) {
+              uniqueRankingMap.set(key, {
+                player_name: a.nama,
+                total_points: 0,
+                updated_at: new Date().toISOString()
+              });
+            }
+          }
+        });
         
-        await supabase.from('rankings').upsert(rankingData, { onConflict: 'player_name' });
+        const uniqueRankingData = Array.from(uniqueRankingMap.values());
+        if (uniqueRankingData.length > 0) {
+          await supabase.from('rankings').upsert(uniqueRankingData, { onConflict: 'player_name' });
+        }
       }
     } catch (err) {
       console.error('Gagal sinkronisasi atlet baru:', err);

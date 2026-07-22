@@ -121,9 +121,25 @@ export default function AdminRanking() {
       }).filter(Boolean);
 
       if (finalDataArray.length > 0) {
+        // Deduplicate by player_name to prevent PostgreSQL "ON CONFLICT DO UPDATE command cannot affect row a second time" error
+        const uniqueDataMap = new Map<string, any>();
+        for (const item of finalDataArray) {
+          if (!item || !item.player_name) continue;
+          const key = item.player_name;
+          if (!uniqueDataMap.has(key)) {
+            uniqueDataMap.set(key, item);
+          } else {
+            const existing = uniqueDataMap.get(key);
+            if (item.total_points > existing.total_points) {
+              uniqueDataMap.set(key, item);
+            }
+          }
+        }
+        const uniqueFinalData = Array.from(uniqueDataMap.values());
+
         const { error: upsertError } = await supabase
           .from('rankings')
-          .upsert(finalDataArray, { onConflict: 'player_name' });
+          .upsert(uniqueFinalData, { onConflict: 'player_name' });
         
         if (upsertError) throw upsertError;
         return true;

@@ -136,14 +136,20 @@ export default function StrukturOrganisasi() {
     setIsSaving(true);
     try {
       // PERBAIKAN: Hanya update ID dan Sort Order agar tidak konflik dengan data lain
-      const updates = members.map((m, index) => ({ 
-        id: m.id,
-        sort_order: index 
-      }));
+      const updatesMap = new Map<string, any>();
+      members.forEach((m, index) => {
+        if (m.id) {
+          updatesMap.set(m.id, {
+            id: m.id,
+            sort_order: index 
+          });
+        }
+      });
+      const uniqueUpdates = Array.from(updatesMap.values());
 
       const { error } = await supabase
         .from('organizational_structure')
-        .upsert(updates, { onConflict: 'id' });
+        .upsert(uniqueUpdates, { onConflict: 'id' });
 
       if (error) throw error;
 

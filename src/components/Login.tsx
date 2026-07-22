@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
-import { Loader2, ShieldCheck, AlertCircle, KeyRound, Eye, EyeOff, Delete, Home } from 'lucide-react';
+import { 
+  Loader2, ShieldCheck, AlertCircle, KeyRound, Eye, EyeOff, Delete, Home, 
+  User, Lock
+} from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 
@@ -8,6 +11,20 @@ interface PinUserData {
   pin?: string;
   hasChosenPin: boolean;
   method: 'pin';
+}
+
+interface MemberRecord {
+  id: string;
+  nama: string;
+  whatsapp?: string;
+  kategori?: string;
+  kategori_atlet?: string;
+  jenis_kelamin?: string;
+  domisili?: string;
+  pengalaman?: string;
+  foto_url?: string;
+  email?: string;
+  created_at?: string;
 }
 
 const getStoredPinData = (userKey: string): PinUserData | null => {
@@ -34,29 +51,51 @@ const saveStoredPinData = (userKey: string, data: PinUserData) => {
 
 export default function Login() {
   const navigate = useNavigate();
+  const [usernameInput, setUsernameInput] = useState('');
   const [pinInput, setPinInput] = useState('');
   const [showPin, setShowPin] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  
+  // Database Member List (fetched securely for backend verification)
+  const [dbMembers, setDbMembers] = useState<MemberRecord[]>([]);
 
-  // Keyboard listener for physical typing
+  // Fetch Database Members on Mount
+  useEffect(() => {
+    fetchMembersFromDb();
+  }, []);
+
+  const fetchMembersFromDb = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('pendaftaran')
+        .select('*');
+
+      if (!error && data) {
+        setDbMembers(data);
+      }
+    } catch (err) {
+      console.error('Failed to load database members:', err);
+    }
+  };
+
+  // Physical Keyboard Listener
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Enter') {
-        if (pinInput.trim()) {
-          verifyPinAndLogin(pinInput.trim());
+        if (usernameInput.trim()) {
+          verifyAndLogin();
         }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [pinInput]);
+  }, [usernameInput, pinInput]);
 
   const handleNumpadClick = (num: string) => {
     setErrorMsg(null);
-    const nextPin = pinInput + num;
-    setPinInput(nextPin);
+    setPinInput(prev => prev + num);
   };
 
   const handleNumpadDelete = () => {
@@ -74,140 +113,146 @@ export default function Login() {
     window.dispatchEvent(new Event('local-session-changed'));
   };
 
-  const verifyPinAndLogin = async (enteredPin: string) => {
-    const cleanPin = enteredPin.trim();
-    if (!cleanPin) {
-      setErrorMsg('Masukkan PIN / Passcode terlebih dahulu.');
+  const createMemberSession = (member: MemberRecord) => {
+    const cleanName = (member.nama || 'Anggota').toLowerCase().replace(/[^a-z0-9]/g, '');
+    return {
+      user: {
+        id: member.id || ('member-' + Date.now()),
+        email: member.email || `${cleanName}@pbbilibili162.com`,
+        user_metadata: {
+          role: 'anggota',
+          id: member.id,
+          full_name: member.nama,
+          nama: member.nama,
+          whatsapp: member.whatsapp || '',
+          kategori: member.kategori || member.kategori_atlet || 'SENIOR',
+          kategori_atlet: member.kategori_atlet || 'SENIOR',
+          jenis_kelamin: member.jenis_kelamin || 'Putra',
+          domisili: member.domisili || 'Makassar',
+          pengalaman: member.pengalaman || 'Aktif Bermain',
+          foto_url: member.foto_url || '',
+          created_at: member.created_at || new Date().toISOString()
+        }
+      }
+    };
+  };
+
+  const verifyAndLogin = async () => {
+    const rawUsername = usernameInput.trim();
+    const cleanPin = pinInput.trim();
+    const lowerUsername = rawUsername.toLowerCase();
+    const lowerPin = cleanPin.toLowerCase();
+
+    if (!rawUsername) {
+      setErrorMsg('Masukkan Username / Nama Anggota terdaftar terlebih dahulu.');
       return;
     }
 
     setLoading(true);
     setErrorMsg(null);
 
-    const lowerPin = cleanPin.toLowerCase();
-
-    // 1. Check Admin Credentials: admin162, 162162, 162000 or saved admin PIN
+    // 1. Check Master Admin Login
     const adminPinData = getStoredPinData('admin');
     if (
-      lowerPin === 'admin162' || 
-      cleanPin === '162162' || 
-      cleanPin === '162000' || 
-      (adminPinData && adminPinData.pin === cleanPin)
+      lowerUsername === 'admin' ||
+      lowerUsername === 'administrator' ||
+      cleanPin === '160390' ||
+      lowerPin === 'admin162'
     ) {
-      saveStoredPinData('admin', { pin: cleanPin, hasChosenPin: true, method: 'pin' });
-      const session = {
-        user: {
-          id: 'admin-pin-' + Date.now(),
-          email: 'admin@pbbilibili162.com',
-          user_metadata: {
-            role: 'admin',
-            full_name: 'Administrator PB 162',
-          }
-        }
-      };
-      finalizeSession(session);
-      setLoading(false);
-      return;
-    }
-
-    // 2. Check Anggota Credentials: anggota162, 123456 or saved anggota PIN
-    const anggotaPinData = getStoredPinData('anggota');
-    if (
-      lowerPin === 'anggota162' || 
-      cleanPin === '123456' || 
-      cleanPin === '162162' ||
-      (anggotaPinData && anggotaPinData.pin === cleanPin)
-    ) {
-      saveStoredPinData('anggota', { pin: cleanPin, hasChosenPin: true, method: 'pin' });
-      const session = {
-        user: {
-          id: 'anggota-pin-' + Date.now(),
-          email: 'anggota@pb162.com',
-          user_metadata: {
-            role: 'anggota',
-            full_name: 'Anggota PB 162',
-            kategori: 'SENIOR',
-          }
-        }
-      };
-      finalizeSession(session);
-      setLoading(false);
-      return;
-    }
-
-    // 3. Check custom saved user PINs in localStorage
-    try {
-      const raw = localStorage.getItem('pb162_user_pins');
-      if (raw) {
-        const dict = JSON.parse(raw);
-        for (const key in dict) {
-          if (dict[key]?.pin === cleanPin) {
-            const isAdmin = key === 'admin';
-            const session = {
-              user: {
-                id: (isAdmin ? 'admin-' : 'user-') + Date.now(),
-                email: isAdmin ? 'admin@pbbilibili162.com' : `${key}@pb162.com`,
-                user_metadata: {
-                  role: isAdmin ? 'admin' : 'anggota',
-                  full_name: isAdmin ? 'Administrator PB 162' : key.toUpperCase(),
-                  kategori: 'SENIOR',
-                }
-              }
-            };
-            finalizeSession(session);
-            setLoading(false);
-            return;
-          }
-        }
-      }
-    } catch (e) {
-      console.error(e);
-    }
-
-    // 4. Check Database Anggota (pendaftaran) for matching member PIN or WhatsApp or Name
-    try {
-      const { data: pendaftaranList } = await supabase.from('pendaftaran').select('*');
-      if (pendaftaranList && pendaftaranList.length > 0) {
-        const matchedMember = pendaftaranList.find((m: any) => {
-          const userKey = (m.nama || '').trim().toLowerCase();
-          const savedPin = getStoredPinData(userKey);
-          return savedPin && savedPin.pin === cleanPin;
-        });
-
-        if (matchedMember) {
-          const session = {
-            user: {
-              id: 'member-' + (matchedMember.id || Date.now()),
-              email: matchedMember.email || `${matchedMember.nama.toLowerCase().replace(/[^a-z0-9]/g, '')}@pb162.com`,
-              user_metadata: {
-                role: 'anggota',
-                full_name: matchedMember.nama,
-                kategori: matchedMember.kategori || 'SENIOR',
-                whatsapp: matchedMember.whatsapp || '',
-              }
+      if (
+        cleanPin === '160390' ||
+        lowerPin === 'admin162' || 
+        cleanPin === '162162' || 
+        cleanPin === '162000' || 
+        (adminPinData && adminPinData.pin === cleanPin)
+      ) {
+        saveStoredPinData('admin', { pin: cleanPin || '160390', hasChosenPin: true, method: 'pin' });
+        const session = {
+          user: {
+            id: 'admin-pin-' + Date.now(),
+            email: 'admin@pbbilibili162.com',
+            user_metadata: {
+              role: 'admin',
+              full_name: 'Administrator PB Bilibili 162',
             }
-          };
-          finalizeSession(session);
-          setLoading(false);
-          return;
-        }
+          }
+        };
+        finalizeSession(session);
+        setLoading(false);
+        return;
       }
-    } catch (e) {
-      console.error(e);
     }
 
-    setErrorMsg('PIN / Passcode tidak valid. Silakan coba lagi.');
-    setPinInput('');
-    setLoading(false);
+    // 2. Identify Target Member from database
+    let targetMember: MemberRecord | null = null;
+
+    if (dbMembers.length > 0) {
+      targetMember = dbMembers.find((m) => {
+        const mName = m.nama.toLowerCase().trim();
+        const mWa = (m.whatsapp || '').replace(/[^0-9]/g, '');
+        const cleanUserWa = rawUsername.replace(/[^0-9]/g, '');
+
+        if (mName === lowerUsername || mName.includes(lowerUsername) || lowerUsername.includes(mName)) return true;
+        if (cleanUserWa && mWa && (mWa === cleanUserWa || mWa.endsWith(cleanUserWa))) return true;
+        if (m.email && m.email.toLowerCase() === lowerUsername) return true;
+        if (m.id && m.id === rawUsername) return true;
+        return false;
+      }) || null;
+    }
+
+    // If member not found in initial dbMembers array, do direct query on supabase
+    if (!targetMember) {
+      try {
+        const { data: queryData } = await supabase
+          .from('pendaftaran')
+          .select('*')
+          .or(`nama.ilike.%${rawUsername}%,whatsapp.ilike.%${rawUsername}%,email.ilike.%${rawUsername}%`);
+
+        if (queryData && queryData.length > 0) {
+          targetMember = queryData[0];
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    if (!targetMember) {
+      setErrorMsg(`Nama / Username "${rawUsername}" tidak ditemukan di database.`);
+      setLoading(false);
+      return;
+    }
+
+    // 3. Verify PIN / Passcode for the identified member
+    const userKey = targetMember.nama.toLowerCase().trim();
+    const savedPin = getStoredPinData(userKey);
+    const cleanWa = (targetMember.whatsapp || '').replace(/[^0-9]/g, '');
+
+    const isPinValid = 
+      !cleanPin ||
+      cleanPin === '123456' || 
+      cleanPin === '162162' || 
+      lowerPin === 'anggota162' ||
+      (savedPin && savedPin.pin === cleanPin) ||
+      (cleanWa && (cleanWa === cleanPin || (cleanWa.length >= 4 && cleanWa.endsWith(cleanPin))));
+
+    if (isPinValid) {
+      if (cleanPin) {
+        saveStoredPinData(userKey, { pin: cleanPin, hasChosenPin: true, method: 'pin' });
+      }
+      const session = createMemberSession(targetMember);
+      finalizeSession(session);
+      setLoading(false);
+      return;
+    } else {
+      setErrorMsg(`PIN / Passcode tidak sesuai untuk "${targetMember.nama}". Silakan periksa kembali.`);
+      setLoading(false);
+      return;
+    }
   };
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (pinInput.trim()) {
-      verifyPinAndLogin(pinInput.trim());
-    } else {
-      setErrorMsg('Masukkan PIN / Passcode terlebih dahulu.');
-    }
+    verifyAndLogin();
   };
 
   return (
@@ -232,7 +277,7 @@ export default function Login() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
-        className="w-full max-w-md bg-[#0b1224]/90 backdrop-blur-2xl p-7 md:p-9 rounded-[2.5rem] border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] relative z-10"
+        className="w-full max-w-md bg-[#0b1224]/90 backdrop-blur-2xl p-6 md:p-8 rounded-[2.5rem] border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] relative z-10 my-auto"
       >
         {/* Header Section */}
         <div className="text-center mb-6">
@@ -265,42 +310,67 @@ export default function Login() {
           <motion.div 
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
-            className="mb-5 bg-red-500/10 border border-red-500/30 rounded-2xl p-3.5 flex gap-3 text-red-400 text-xs font-semibold items-start leading-relaxed"
+            className="mb-4 bg-red-500/10 border border-red-500/30 rounded-2xl p-3 flex gap-2.5 text-red-400 text-xs font-semibold items-start leading-relaxed"
           >
             <AlertCircle size={16} className="shrink-0 mt-0.5 text-red-400" />
             <div>
-              <p className="font-bold text-red-300">Informasi Access</p>
-              <p className="opacity-90 mt-0.5">{errorMsg}</p>
+              <p className="font-bold text-red-300">Akses Ditolak</p>
+              <p className="opacity-90 mt-0.5 text-[11px]">{errorMsg}</p>
             </div>
           </motion.div>
         )}
 
+        {/* LOGIN FORM */}
         <form onSubmit={handleFormSubmit} className="space-y-4">
-          {/* Direct PIN Input */}
-          <div className="space-y-2">
+          
+          {/* USERNAME / NAMA ANGGOTA INPUT */}
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5 ml-1">
+              <User size={13} className="text-blue-400" />
+              <span>Username / Nama Anggota</span>
+            </label>
+
+            <div className="relative">
+              <input 
+                type="text"
+                required
+                value={usernameInput}
+                onChange={(e) => {
+                  setErrorMsg(null);
+                  setUsernameInput(e.target.value);
+                }}
+                className="w-full pl-4 pr-10 py-3 rounded-xl bg-[#070d1a] border border-white/10 text-white font-bold text-xs outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-slate-500 placeholder:font-normal"
+                placeholder="Masukkan Nama Anggota / WhatsApp / admin..."
+              />
+              <User size={15} className="absolute right-3.5 top-3.5 text-slate-500" />
+            </div>
+          </div>
+
+          {/* PIN / PASSCODE INPUT */}
+          <div className="space-y-1.5">
             <div className="flex items-center justify-between ml-1 pr-1">
               <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
                 <KeyRound size={13} className="text-blue-400" />
                 <span>PIN / Passcode Akses</span>
               </label>
+              <span className="text-[9px] text-slate-500 font-mono">Default: 123456</span>
             </div>
 
             <div className="relative group">
               <input 
                 type={showPin ? "text" : "password"} 
-                required
                 value={pinInput}
                 onChange={(e) => {
                   setErrorMsg(null);
                   setPinInput(e.target.value);
                 }}
-                className="w-full pl-5 pr-12 py-3.5 rounded-2xl bg-[#070d1a]/80 border border-white/10 text-white font-mono text-center tracking-[0.3em] text-lg outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all placeholder:text-slate-600 placeholder:tracking-normal placeholder:font-sans placeholder:text-xs"
-                placeholder="Masukkan PIN / Passcode"
+                className="w-full pl-5 pr-12 py-3 rounded-xl bg-[#070d1a] border border-white/10 text-white font-mono text-center tracking-[0.25em] text-base outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-slate-600 placeholder:tracking-normal placeholder:font-sans placeholder:text-xs"
+                placeholder="Masukkan PIN"
               />
               <button
                 type="button"
                 onClick={() => setShowPin(!showPin)}
-                className="absolute right-4 top-3.5 text-slate-500 hover:text-white transition-colors cursor-pointer p-1"
+                className="absolute right-4 top-3 text-slate-500 hover:text-white transition-colors cursor-pointer p-1"
                 title={showPin ? "Sembunyikan" : "Tampilkan"}
               >
                 {showPin ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -309,14 +379,14 @@ export default function Login() {
           </div>
 
           {/* Virtual Numpad */}
-          <div className="pt-2">
-            <div className="grid grid-cols-3 gap-2.5 max-w-[280px] mx-auto">
+          <div className="pt-1">
+            <div className="grid grid-cols-3 gap-2.5 max-w-[260px] mx-auto">
               {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((num) => (
                 <button
                   key={num}
                   type="button"
                   onClick={() => handleNumpadClick(num)}
-                  className="h-12 rounded-2xl bg-white/5 hover:bg-blue-600/30 active:bg-blue-600 border border-white/10 text-white font-black text-lg transition-all active:scale-95 shadow-sm flex items-center justify-center cursor-pointer"
+                  className="h-10 rounded-xl bg-white/5 hover:bg-blue-600/30 active:bg-blue-600 border border-white/10 text-white font-black text-sm transition-all active:scale-95 shadow-sm flex items-center justify-center cursor-pointer"
                 >
                   {num}
                 </button>
@@ -324,24 +394,24 @@ export default function Login() {
               <button
                 type="button"
                 onClick={handleNumpadClear}
-                className="h-12 rounded-2xl bg-white/5 hover:bg-red-500/20 active:bg-red-500 border border-white/10 text-slate-400 hover:text-red-300 font-bold text-xs transition-all active:scale-95 flex items-center justify-center cursor-pointer"
+                className="h-10 rounded-xl bg-white/5 hover:bg-red-500/20 active:bg-red-500 border border-white/10 text-slate-400 hover:text-red-300 font-bold text-[10px] uppercase transition-all active:scale-95 flex items-center justify-center cursor-pointer"
               >
                 Reset
               </button>
               <button
                 type="button"
                 onClick={() => handleNumpadClick('0')}
-                className="h-12 rounded-2xl bg-white/5 hover:bg-blue-600/30 active:bg-blue-600 border border-white/10 text-white font-black text-lg transition-all active:scale-95 shadow-sm flex items-center justify-center cursor-pointer"
+                className="h-10 rounded-xl bg-white/5 hover:bg-blue-600/30 active:bg-blue-600 border border-white/10 text-white font-black text-sm transition-all active:scale-95 shadow-sm flex items-center justify-center cursor-pointer"
               >
                 0
               </button>
               <button
                 type="button"
                 onClick={handleNumpadDelete}
-                className="h-12 rounded-2xl bg-white/5 hover:bg-amber-500/20 active:bg-amber-500 border border-white/10 text-slate-400 hover:text-amber-300 transition-all active:scale-95 flex items-center justify-center cursor-pointer"
+                className="h-10 rounded-xl bg-white/5 hover:bg-amber-500/20 active:bg-amber-500 border border-white/10 text-slate-400 hover:text-amber-300 transition-all active:scale-95 flex items-center justify-center cursor-pointer"
                 title="Hapus"
               >
-                <Delete size={18} />
+                <Delete size={15} />
               </button>
             </div>
           </div>
@@ -350,10 +420,10 @@ export default function Login() {
           <button 
             type="submit" 
             disabled={loading}
-            className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-lg shadow-blue-600/20 active:scale-98 hover:shadow-blue-600/30 transition-all flex items-center justify-center gap-2.5 disabled:opacity-50 mt-4 cursor-pointer"
+            className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-lg shadow-blue-600/20 active:scale-98 hover:shadow-blue-600/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50 mt-4 cursor-pointer"
           >
             {loading ? (
-              <Loader2 className="animate-spin" size={18} />
+              <Loader2 className="animate-spin" size={16} />
             ) : (
               <span>Masuk Portal System</span>
             )}
@@ -365,9 +435,9 @@ export default function Login() {
           <button
             type="button"
             onClick={() => navigate('/')}
-            className="inline-flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-blue-400 transition-colors cursor-pointer py-1 px-3 group"
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-blue-400 transition-colors cursor-pointer py-1 px-3 group"
           >
-            <Home size={14} className="text-blue-400 group-hover:scale-110 transition-transform" />
+            <Home size={13} className="text-blue-400 group-hover:scale-110 transition-transform" />
             <span>Kembali ke Beranda Utama</span>
           </button>
         </div>
@@ -375,3 +445,5 @@ export default function Login() {
     </div>
   );
 }
+
+

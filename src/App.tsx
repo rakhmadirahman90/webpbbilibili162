@@ -53,6 +53,7 @@ import AdminFasilitas from './components/AdminFasilitas';
 import ManajemenDokumen from './components/ManajemenDokumen'; 
 import { KelolaSurat } from './components/KelolaSurat'; 
 import KasManager from './components/KasManager'; 
+import ProfilAnggota from './components/ProfilAnggota'; 
 
 import { X, ChevronLeft, ChevronRight, Menu, Zap, Download, ExternalLink, Volume2, VolumeX, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -677,7 +678,7 @@ export default function App() {
                              />
                            ))}
                         </div>
-                        <span className="text-[8px] font-extrabold uppercase tracking-widest text-slate-300 italic whitespace-nowrap">Mars PB 162</span>
+                        <span className="text-[8px] font-extrabold uppercase tracking-widest text-slate-300 italic whitespace-nowrap">Mars PB Bilibili 162</span>
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -695,7 +696,7 @@ export default function App() {
                         ? 'bg-blue-600 text-white border-blue-500/50 hover:bg-blue-500' 
                         : 'bg-slate-800 text-slate-400 border-white/5 hover:bg-slate-700 hover:text-slate-200'
                     }`}
-                    title={isMarsPlaying ? "Pause Mars PB 162" : "Play Mars PB 162"}
+                    title={isMarsPlaying ? "Pause Mars PB Bilibili 162" : "Play Mars PB Bilibili 162"}
                   >
                     {isMarsPlaying ? <Volume2 size={13} className="animate-pulse" /> : <VolumeX size={13} />}
                   </button>
@@ -777,41 +778,50 @@ export default function App() {
 
 function AdminLayout({ session }: { session: any }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const userRole = session?.user?.user_metadata?.role || 'admin';
+  const isAdmin = userRole === 'admin';
+
   return (
     <div className="flex h-screen w-full bg-[#070d1a] overflow-hidden">
-      <Sidebar email={session.user.email} role={session.user?.user_metadata?.role || 'admin'} isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+      <Sidebar email={session?.user?.email || ''} role={userRole} isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
       <main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         <div className="md:hidden flex items-center justify-between bg-[#0F172A] px-4 py-3.5 border-b border-white/5">
           <button onClick={() => setIsSidebarOpen(true)} className="text-white p-2 hover:bg-white/10 rounded-xl transition-colors"><Menu size={20} /></button>
-          <div className="text-white font-bold tracking-tight text-[13.5px] uppercase">Admin Console</div>
+          <div className="text-white font-bold tracking-tight text-[13.5px] uppercase">
+            {isAdmin ? 'Admin Console' : 'Portal Anggota'}
+          </div>
           <div className="w-9"></div>
         </div>
         <div className="flex-1 overflow-y-auto bg-[#070d1a] custom-scrollbar">
           <Routes>
+            {/* Accessible to both Anggota & Admin */}
             <Route path="dashboard" element={<AdminDashboard />} />
-            <Route path="pendaftaran" element={<ManajemenPendaftaran />} />
-            <Route path="atlet" element={<ManajemenAtlet />} />
-            <Route path="surat" element={<KelolaSurat />} />
-            <Route path="kas" element={<KasManager />} />
-            <Route path="dokumen" element={<ManajemenDokumen />} /> 
-            <Route path="poin" element={<ManajemenPoin />} />
-            <Route path="audit-poin" element={<AuditLogPoin />} />
+            <Route path="profil" element={<ProfilAnggota session={session} />} />
+            <Route path="ranking" element={<AdminRanking />} />
             <Route path="skor" element={<AdminMatch />} />
             <Route path="berita" element={<AdminBerita />} />
-            <Route path="ranking" element={<AdminRanking />} />
             <Route path="galeri" element={<AdminGallery />} />
-            <Route path="kontak" element={<AdminContact />} />
-            <Route path="navbar" element={<KelolaNavbar />} />
-            <Route path="laporan" element={<AdminLaporan />} />
-            <Route path="logs" element={<AdminLogs />} />
-            <Route path="tampilan" element={<AdminTampilan />} />
-            <Route path="hero" element={<KelolaHero />} />
-            <Route path="popup" element={<AdminPopup />} /> 
-            <Route path="footer" element={<AdminFooter />} />
-            <Route path="sejarah" element={<AdminSejarah />} />
-            <Route path="visi-misi" element={<AdminVisiMisi />} />
-            <Route path="fasilitas" element={<AdminFasilitas />} />
-            <Route path="struktur" element={<AdminStructure />} /> 
+            <Route path="dokumen" element={<ManajemenDokumen />} /> 
+
+            {/* Admin Only Routes - Redirect Anggota to Dashboard */}
+            <Route path="pendaftaran" element={isAdmin ? <ManajemenPendaftaran /> : <Navigate to="/admin/dashboard" replace />} />
+            <Route path="atlet" element={isAdmin ? <ManajemenAtlet /> : <Navigate to="/admin/dashboard" replace />} />
+            <Route path="surat" element={isAdmin ? <KelolaSurat /> : <Navigate to="/admin/dashboard" replace />} />
+            <Route path="kas" element={isAdmin ? <KasManager /> : <Navigate to="/admin/dashboard" replace />} />
+            <Route path="poin" element={isAdmin ? <ManajemenPoin /> : <Navigate to="/admin/dashboard" replace />} />
+            <Route path="audit-poin" element={isAdmin ? <AuditLogPoin /> : <Navigate to="/admin/dashboard" replace />} />
+            <Route path="kontak" element={isAdmin ? <AdminContact /> : <Navigate to="/admin/dashboard" replace />} />
+            <Route path="navbar" element={isAdmin ? <KelolaNavbar /> : <Navigate to="/admin/dashboard" replace />} />
+            <Route path="laporan" element={isAdmin ? <AdminLaporan /> : <Navigate to="/admin/dashboard" replace />} />
+            <Route path="logs" element={isAdmin ? <AdminLogs /> : <Navigate to="/admin/dashboard" replace />} />
+            <Route path="tampilan" element={isAdmin ? <AdminTampilan /> : <Navigate to="/admin/dashboard" replace />} />
+            <Route path="hero" element={isAdmin ? <KelolaHero /> : <Navigate to="/admin/dashboard" replace />} />
+            <Route path="popup" element={isAdmin ? <AdminPopup /> : <Navigate to="/admin/dashboard" replace />} /> 
+            <Route path="footer" element={isAdmin ? <AdminFooter /> : <Navigate to="/admin/dashboard" replace />} />
+            <Route path="sejarah" element={isAdmin ? <AdminSejarah /> : <Navigate to="/admin/dashboard" replace />} />
+            <Route path="visi-misi" element={isAdmin ? <AdminVisiMisi /> : <Navigate to="/admin/dashboard" replace />} />
+            <Route path="fasilitas" element={isAdmin ? <AdminFasilitas /> : <Navigate to="/admin/dashboard" replace />} />
+            <Route path="struktur" element={isAdmin ? <AdminStructure /> : <Navigate to="/admin/dashboard" replace />} /> 
             <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
           </Routes>
         </div>

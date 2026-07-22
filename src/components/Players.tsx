@@ -110,7 +110,7 @@ const Players: React.FC<{ initialFilter?: string }> = ({
       const uniqueKey = info.id || p.id;
       if (uniquePlayersMap.has(uniqueKey)) return;
 
-      const name = info.nama || 'Atlet PB 162';
+      const name = info.nama || 'Atlet PB Bilibili 162';
       const photo = info.foto_url || null;
       const calculatedPoints = (Number(p.points) || 0) + (Number(p.total_points) || 0);
       const dbCategory = info.kategori_atlet;
@@ -132,7 +132,7 @@ const Players: React.FC<{ initialFilter?: string }> = ({
         ageGroup,
         displayPoints: calculatedPoints,
         displaySeed: p.seed || 'UNSEEDED',
-        bio: p.bio || 'Dedikasi dan semangat tinggi untuk membawa nama baik PB 162 Bilibili di kancah nasional.',
+        bio: p.bio || 'Dedikasi dan semangat tinggi untuk membawa nama baik PB Bilibili 162 di kancah nasional.',
       });
     });
 
