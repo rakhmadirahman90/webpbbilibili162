@@ -35,7 +35,16 @@ interface Berita {
   likes?: number; // Menampilkan jumlah like
 }
 
-export default function AdminBerita() {
+export default function AdminBerita({ session }: { session?: any }) {
+  const userRole = session?.user?.user_metadata?.role || (() => {
+    const raw = localStorage.getItem('local_admin_session');
+    if (raw) {
+      try { return JSON.parse(raw)?.user?.user_metadata?.role || 'admin'; } catch (e) {}
+    }
+    return 'admin';
+  })();
+  const isAdmin = userRole === 'admin';
+
   console.log("AdminBerita mounted");
   const [news, setNews] = useState<Berita[]>([]);
   const [loading, setLoading] = useState(true);
@@ -401,9 +410,11 @@ export default function AdminBerita() {
               MANAJEMEN <span className="text-blue-600">BERITA</span>
             </h1>
           </div>
-          <button onClick={() => openModal()} className="flex items-center gap-3 bg-blue-600 hover:bg-blue-700 px-8 py-4 rounded-2xl font-black uppercase text-xs tracking-widest transition-all shadow-lg active:scale-95 group">
-            <Plus size={18} className="group-hover:rotate-90 transition-transform" /> Buat Artikel Baru
-          </button>
+          {isAdmin && (
+            <button onClick={() => openModal()} className="flex items-center gap-3 bg-blue-600 hover:bg-blue-700 px-8 py-4 rounded-2xl font-black uppercase text-xs tracking-widest transition-all shadow-lg active:scale-95 group cursor-pointer">
+              <Plus size={18} className="group-hover:rotate-90 transition-transform" /> Buat Artikel Baru
+            </button>
+          )}
         </div>
 
         {/* Filter Section */}
@@ -465,10 +476,12 @@ export default function AdminBerita() {
                   <h3 className="text-xl font-black italic uppercase tracking-tighter group-hover:text-blue-500 transition-colors">{item.judul}</h3>
                   <p className="text-zinc-400 text-sm line-clamp-1 italic font-medium opacity-70">{item.ringkasan}</p>
                 </div>
-                <div className="flex gap-2">
-                  <button onClick={() => openModal(item)} className="p-4 bg-zinc-800/50 hover:bg-blue-600 text-zinc-400 hover:text-white rounded-xl transition-all"><Edit3 size={18} /></button>
-                  <button onClick={() => handleDelete(item.id)} className="p-4 bg-zinc-800/50 hover:bg-red-600 text-zinc-400 hover:text-white rounded-xl transition-all"><Trash2 size={18} /></button>
-                </div>
+                {isAdmin && (
+                  <div className="flex gap-2">
+                    <button onClick={() => openModal(item)} className="p-4 bg-zinc-800/50 hover:bg-blue-600 text-zinc-400 hover:text-white rounded-xl transition-all cursor-pointer"><Edit3 size={18} /></button>
+                    <button onClick={() => handleDelete(item.id)} className="p-4 bg-zinc-800/50 hover:bg-red-600 text-zinc-400 hover:text-white rounded-xl transition-all cursor-pointer"><Trash2 size={18} /></button>
+                  </div>
+                )}
               </div>
             ))
           )}
@@ -644,12 +657,14 @@ export default function AdminBerita() {
                       </div>
                       <p className={`text-sm font-medium leading-relaxed ${c.nama_user.includes("ADMIN") ? 'text-white' : 'text-zinc-400'}`}>{c.isi_komentar}</p>
                     </div>
-                    <button 
-                      onClick={() => handleDeleteComment(c.id)}
-                      className="p-3 bg-red-500/10 text-red-500 rounded-xl opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white"
-                    >
-                      <Trash size={16} />
-                    </button>
+                    {isAdmin && (
+                      <button 
+                        onClick={() => handleDeleteComment(c.id)}
+                        className="p-3 bg-red-500/10 text-red-500 rounded-xl opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white cursor-pointer"
+                      >
+                        <Trash size={16} />
+                      </button>
+                    )}
                   </div>
                 ))
               ) : (

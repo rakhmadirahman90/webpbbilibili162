@@ -235,10 +235,16 @@ const Rankings: React.FC = () => {
   
       // 4. Proses penggabungan data (Logic Sinkronisasi Lengkap)
       const syncedData = (rankingsData || []).map((rankItem) => {
-        // Cari data statistik berdasarkan pendaftaran_id
-        const stats = (statsData || []).find((s) => s.pendaftaran_id === rankItem.pendaftaran_id);
-        // Cari data profil untuk memastikan nama terbaru
-        const profile = (pendaftaranData || []).find((p) => p.id === rankItem.pendaftaran_id);
+        // Cari data statistik berdasarkan pendaftaran_id atau nama
+        const stats = (statsData || []).find((s) => 
+          (s.pendaftaran_id && s.pendaftaran_id === rankItem.pendaftaran_id) ||
+          (s.player_name && rankItem.player_name && s.player_name.trim().toLowerCase() === rankItem.player_name.trim().toLowerCase())
+        );
+        // Cari data profil untuk memastikan nama & foto terbaru
+        const profile = (pendaftaranData || []).find((p) => 
+          (p.id && p.id === rankItem.pendaftaran_id) ||
+          (p.nama && rankItem.player_name && p.nama.trim().toLowerCase() === rankItem.player_name.trim().toLowerCase())
+        );
   
         // Logika Kalkulasi sesuai AdminRanking.tsx baris 90-91
         const basePoints = stats ? (Number(stats.points) || 0) : (Number(rankItem.poin) || 0);
@@ -293,6 +299,13 @@ const Rankings: React.FC = () => {
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'audit_poin' },
+        () => {
+          fetchRankings();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'pendaftaran' },
         () => {
           fetchRankings();
         }

@@ -51,7 +51,16 @@ const parseNumber = (str: string) => {
   return clean ? parseInt(clean) : 0;
 };
 
-export default function AdminRanking() {
+export default function AdminRanking({ session }: { session?: any }) {
+  const userRole = session?.user?.user_metadata?.role || (() => {
+    const raw = localStorage.getItem('local_admin_session');
+    if (raw) {
+      try { return JSON.parse(raw)?.user?.user_metadata?.role || 'admin'; } catch (e) {}
+    }
+    return 'admin';
+  })();
+  const isAdmin = userRole === 'admin';
+
   const [rankings, setRankings] = useState<Ranking[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -94,30 +103,31 @@ export default function AdminRanking() {
 
       if (pendaftaranError) throw pendaftaranError;
 
-      const finalDataArray = (statsData || []).map((stat) => {
-        const profile = (pendaftaranData || []).find((p) => p.id === stat.pendaftaran_id);
-        if (profile) {
-          const basePoints = Number(stat.points) || 0;
-          const addedPointsFromStats = Number(stat.total_points) || 0;
+      const finalDataArray = (pendaftaranData || []).map((profile) => {
+        const stat = (statsData || []).find((s) => 
+          s.pendaftaran_id === profile.id ||
+          (s.player_name && profile.nama && s.player_name.trim().toLowerCase() === profile.nama.trim().toLowerCase())
+        );
 
-          let normalizedSeed = stat.seed || 'Non-Seed';
-          if (!normalizedSeed.includes('Seed') && normalizedSeed !== 'Non-Seed') {
-            normalizedSeed = `Seed ${normalizedSeed}`;
-          }
+        const basePoints = Number(stat?.points) || 0;
+        const addedPointsFromStats = Number(stat?.total_points) || 0;
 
-          return {
-            pendaftaran_id: profile.id,
-            player_name: (profile.nama || '').trim().toUpperCase(),
-            category: profile.kategori_atlet || 'SENIOR',
-            seed: normalizedSeed,
-            photo_url: profile.foto_url || null,
-            poin: basePoints,
-            bonus: addedPointsFromStats, 
-            total_points: basePoints + addedPointsFromStats,
-            updated_at: new Date().toISOString(),
-          };
+        let normalizedSeed = stat?.seed || 'Non-Seed';
+        if (!normalizedSeed.includes('Seed') && normalizedSeed !== 'Non-Seed') {
+          normalizedSeed = `Seed ${normalizedSeed}`;
         }
-        return null;
+
+        return {
+          pendaftaran_id: profile.id,
+          player_name: (profile.nama || '').trim().toUpperCase(),
+          category: profile.kategori_atlet || 'SENIOR',
+          seed: normalizedSeed,
+          photo_url: profile.foto_url || null,
+          poin: basePoints,
+          bonus: addedPointsFromStats, 
+          total_points: basePoints + addedPointsFromStats,
+          updated_at: new Date().toISOString(),
+        };
       }).filter(Boolean);
 
       if (finalDataArray.length > 0) {
@@ -392,13 +402,15 @@ const paginatedRankings = filteredRankings.slice(startIndex, startIndex + itemsP
             <button onClick={fetchRankings} disabled={loading} className="flex-1 bg-zinc-900 border border-white/10 px-4 py-3 rounded-xl font-bold uppercase text-[10px] flex items-center justify-center gap-2 hover:bg-zinc-800 transition-all">
               <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Sync
             </button>
-            <button onClick={() => { 
-                setEditingId(null); 
-                setFormData({ player_name: '', category: 'SENIOR', seed: 'Seed A', poin: 0, bonus: 0, photo_url: '' }); 
-                setIsModalOpen(true); 
-            }} className="flex-1 bg-blue-600 hover:bg-blue-500 px-6 py-3 rounded-xl font-bold uppercase text-[10px] flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-600/20">
-              <Plus size={14} /> Tambah
-            </button>
+            {isAdmin && (
+              <button onClick={() => { 
+                  setEditingId(null); 
+                  setFormData({ player_name: '', category: 'SENIOR', seed: 'Seed A', poin: 0, bonus: 0, photo_url: '' }); 
+                  setIsModalOpen(true); 
+              }} className="flex-1 bg-blue-600 hover:bg-blue-500 px-6 py-3 rounded-xl font-bold uppercase text-[10px] flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-600/20 cursor-pointer">
+                <Plus size={14} /> Tambah
+              </button>
+            )}
           </div>
         </div>
 
@@ -442,12 +454,12 @@ const paginatedRankings = filteredRankings.slice(startIndex, startIndex + itemsP
                   <th className="p-5 text-[10px] font-black uppercase">Base Points</th>
                   <th className="p-5 text-[10px] font-black uppercase text-emerald-500">Added Points (Stats)</th>
                   <th className="p-5 text-[10px] font-black uppercase text-center">Total Ranking</th>
-                  <th className="p-5 text-[10px] font-black uppercase text-right">Aksi</th>
+                  {isAdmin && <th className="p-5 text-[10px] font-black uppercase text-right">Aksi</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
                 {loading ? (
-                  <tr><td colSpan={8} className="p-32 text-center text-xs font-bold uppercase text-zinc-500 animate-pulse">
+                  <tr><td colSpan={isAdmin ? 8 : 7} className="p-32 text-center text-xs font-bold uppercase text-zinc-500 animate-pulse">
                     <div className="flex flex-col items-center gap-4">
                         <Loader2 className="animate-spin text-blue-600" size={32} />
                         Syncing Database...
@@ -485,16 +497,18 @@ const paginatedRankings = filteredRankings.slice(startIndex, startIndex + itemsP
                           {(item.poin + item.bonus).toLocaleString()}
                         </span>
                       </td>
-                      <td className="p-5 text-right">
-                        <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
-                            <button onClick={() => { setEditingId(item.id); setFormData(item); setIsModalOpen(true); }} className="p-2.5 bg-zinc-900 hover:bg-blue-600 rounded-xl transition-colors"><Edit3 size={16} /></button>
-                            <button onClick={() => handleDelete(item.id)} className="p-2.5 bg-zinc-900 hover:bg-red-600 rounded-xl transition-colors"><Trash2 size={16} /></button>
-                        </div>
-                      </td>
+                      {isAdmin && (
+                        <td className="p-5 text-right">
+                          <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
+                              <button onClick={() => { setEditingId(item.id); setFormData(item); setIsModalOpen(true); }} className="p-2.5 bg-zinc-900 hover:bg-blue-600 rounded-xl transition-colors"><Edit3 size={16} /></button>
+                              <button onClick={() => handleDelete(item.id)} className="p-2.5 bg-zinc-900 hover:bg-red-600 rounded-xl transition-colors"><Trash2 size={16} /></button>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   ))
                 ) : (
-                  <tr><td colSpan={8} className="p-20 text-center text-zinc-500 uppercase font-bold text-xs italic">
+                  <tr><td colSpan={isAdmin ? 8 : 7} className="p-20 text-center text-zinc-500 uppercase font-bold text-xs italic">
                     <div className="flex flex-col items-center gap-2 opacity-20">
                         <AlertCircle size={48} />
                         Data tidak ditemukan dalam database ranking.

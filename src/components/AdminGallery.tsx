@@ -20,7 +20,16 @@ interface GalleryItem {
   is_local?: boolean;
 }
 
-export default function AdminGallery() {
+export default function AdminGallery({ session }: { session?: any }) {
+  const userRole = session?.user?.user_metadata?.role || (() => {
+    const raw = localStorage.getItem('local_admin_session');
+    if (raw) {
+      try { return JSON.parse(raw)?.user?.user_metadata?.role || 'admin'; } catch (e) {}
+    }
+    return 'admin';
+  })();
+  const isAdmin = userRole === 'admin';
+
   const [items, setItems] = useState<GalleryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -290,15 +299,17 @@ export default function AdminGallery() {
             </div>
           </div>
           
-          <button 
-            onClick={() => {
-                setFormData({...formData, type: activeTab});
-                setIsModalOpen(true);
-            }}
-            className="group relative flex items-center gap-3 bg-white text-black hover:bg-blue-600 hover:text-white px-10 py-5 rounded-2xl font-black uppercase text-[10px] transition-all active:scale-95 overflow-hidden"
-          >
-            <Plus size={18} className="transition-transform group-hover:rotate-90" /> Tambah {activeTab === 'image' ? 'Foto' : 'Video'}
-          </button>
+          {isAdmin && (
+            <button 
+              onClick={() => {
+                  setFormData({...formData, type: activeTab});
+                  setIsModalOpen(true);
+              }}
+              className="group relative flex items-center gap-3 bg-white text-black hover:bg-blue-600 hover:text-white px-10 py-5 rounded-2xl font-black uppercase text-[10px] transition-all active:scale-95 overflow-hidden cursor-pointer"
+            >
+              <Plus size={18} className="transition-transform group-hover:rotate-90" /> Tambah {activeTab === 'image' ? 'Foto' : 'Video'}
+            </button>
+          )}
         </div>
 
         <div className="flex gap-2 mb-10 bg-zinc-900/50 p-2 rounded-2xl w-fit border border-white/5">
@@ -365,14 +376,16 @@ export default function AdminGallery() {
                     <h3 className="font-black text-xl uppercase italic leading-none truncate mb-2">{item.title}</h3>
                     <p className="text-[9px] text-zinc-400 font-bold uppercase tracking-wider line-clamp-2 leading-relaxed">{item.description}</p>
                   </div>
-                  <div className="flex gap-3 pt-2">
-                    <button onClick={() => handleEdit(item)} className="flex-1 bg-white/10 backdrop-blur-md hover:bg-blue-600 py-4 rounded-2xl transition-all flex items-center justify-center">
-                      <Edit3 size={18} />
-                    </button>
-                    <button onClick={() => handleDelete(item.id, item.url)} className="flex-1 bg-red-600/20 backdrop-blur-md hover:bg-red-600 py-4 rounded-2xl transition-all flex items-center justify-center text-red-500 hover:text-white">
-                      <Trash2 size={18} />
-                    </button>
-                  </div>
+                  {isAdmin && (
+                    <div className="flex gap-3 pt-2">
+                      <button onClick={() => handleEdit(item)} className="flex-1 bg-white/10 backdrop-blur-md hover:bg-blue-600 py-4 rounded-2xl transition-all flex items-center justify-center cursor-pointer">
+                        <Edit3 size={18} />
+                      </button>
+                      <button onClick={() => handleDelete(item.id, item.url)} className="flex-1 bg-red-600/20 backdrop-blur-md hover:bg-red-600 py-4 rounded-2xl transition-all flex items-center justify-center text-red-500 hover:text-white cursor-pointer">
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

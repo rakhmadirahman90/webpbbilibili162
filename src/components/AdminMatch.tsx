@@ -7,7 +7,20 @@ import {
   ShieldCheck, ArrowRightLeft, ChevronDown, Database
 } from 'lucide-react';
 
-const AdminMatch: React.FC = () => {
+interface AdminMatchProps {
+  session?: any;
+}
+
+const AdminMatch: React.FC<AdminMatchProps> = ({ session }) => {
+  const userRole = session?.user?.user_metadata?.role || (() => {
+    const raw = localStorage.getItem('local_admin_session');
+    if (raw) {
+      try { return JSON.parse(raw)?.user?.user_metadata?.role || 'admin'; } catch (e) {}
+    }
+    return 'admin';
+  })();
+  const isAdmin = userRole === 'admin';
+
   const [players, setPlayers] = useState<any[]>([]);
   const [recentMatches, setRecentMatches] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -46,6 +59,7 @@ const AdminMatch: React.FC = () => {
           id,
           nama,
           kategori,
+          foto_url,
           atlet_stats (
             points,
             total_points,
@@ -67,6 +81,7 @@ const AdminMatch: React.FC = () => {
           return {
             id: item.id,
             nama: item.nama || 'Tanpa Nama',
+            foto_url: item.foto_url || null,
             total_points: basePoints + additionalPoints,
             kategori: item.kategori || stats?.seed || 'Umum'
           };
@@ -366,13 +381,15 @@ const AdminMatch: React.FC = () => {
                 <span className="text-[9px] text-zinc-500 font-black uppercase tracking-widest">Total Database</span>
                 <span className="text-xl font-black italic text-white">{players.length} <span className="text-[10px] text-blue-500">ATLET</span></span>
              </div>
-             <button onClick={recalculateAllPoints} disabled={isRecalculating}
-                className="flex items-center gap-2 px-4 py-2 bg-emerald-900/30 border border-emerald-500/30 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-800/50 transition-all text-emerald-400">
-                {isRecalculating ? <Loader2 size={14} className="animate-spin" /> : <Database size={14} />} 
-                Recalculate
-             </button>
+             {isAdmin && (
+               <button onClick={recalculateAllPoints} disabled={isRecalculating}
+                  className="flex items-center gap-2 px-4 py-2 bg-emerald-900/30 border border-emerald-500/30 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-800/50 transition-all text-emerald-400 cursor-pointer">
+                  {isRecalculating ? <Loader2 size={14} className="animate-spin" /> : <Database size={14} />} 
+                  Recalculate
+               </button>
+             )}
              <button onClick={() => { fetchPlayers(); fetchRecentMatches(); }} 
-                className="flex items-center gap-2 px-4 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-zinc-800 transition-all active:scale-95 disabled:opacity-50"
+                className="flex items-center gap-2 px-4 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-zinc-800 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
                 disabled={isLoading}>
                 <RefreshCcw size={14} className={isLoading ? 'animate-spin' : ''} /> Sync
              </button>
@@ -455,11 +472,18 @@ const AdminMatch: React.FC = () => {
                     </span>
                 </div>
 
-                <button type="submit" disabled={isSubmitting || !selectedPlayer}
-                  className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-800 text-white font-black uppercase tracking-[0.2em] py-5 rounded-2xl flex items-center justify-center gap-3 transition-all active:scale-[0.98]">
-                  {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
-                  SINKRONISASI POIN
-                </button>
+                {isAdmin ? (
+                  <button type="submit" disabled={isSubmitting || !selectedPlayer}
+                    className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-800 text-white font-black uppercase tracking-[0.2em] py-5 rounded-2xl flex items-center justify-center gap-3 transition-all active:scale-[0.98] cursor-pointer">
+                    {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
+                    SINKRONISASI POIN
+                  </button>
+                ) : (
+                  <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl text-center">
+                    <p className="text-xs font-bold text-amber-400 uppercase tracking-wider">Mode Lihat Skor & Jadwal (Anggota)</p>
+                    <p className="text-[10px] text-zinc-400 mt-0.5">Penambahan & pengeditan skor hanya dapat dilakukan oleh Master Admin.</p>
+                  </div>
+                )}
               </form>
             </div>
 
@@ -481,9 +505,11 @@ const AdminMatch: React.FC = () => {
                     </div>
                     <div className="flex items-center gap-4">
                       <span className="text-blue-500 font-black italic text-xs">+{POINT_MAP[match.kategori_kegiatan]?.[match.hasil]} PTS</span>
-                      <button onClick={() => deleteMatch(match.id)} className="p-2 text-zinc-700 hover:text-red-500 transition-colors">
-                        <Trash2 size={16} />
-                      </button>
+                      {isAdmin && (
+                        <button onClick={() => deleteMatch(match.id)} className="p-2 text-zinc-700 hover:text-red-500 transition-colors cursor-pointer">
+                          <Trash2 size={16} />
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}

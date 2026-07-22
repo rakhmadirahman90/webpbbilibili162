@@ -68,24 +68,41 @@ export default function Sidebar({ email, role = 'admin', isOpen, onClose }: Side
   }, []);
 
   const handleLogout = async () => {
-    const result = await Swal.fire({
-      title: 'Keluar Sistem?',
-      text: "Anda harus login kembali untuk mengelola dashboard admin.",
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonColor: '#EF4444',
-      cancelButtonColor: '#374151',
-      confirmButtonText: 'Ya, Keluar!',
-      cancelButtonText: 'Batal',
-      background: '#0F172A',
-      color: '#fff'
-    });
+    try {
+      const result = await Swal.fire({
+        title: 'Keluar Sistem?',
+        text: "Anda yakin ingin keluar dari sesi akun Anda?",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#EF4444',
+        cancelButtonColor: '#374151',
+        confirmButtonText: 'Ya, Keluar!',
+        cancelButtonText: 'Batal',
+        background: '#0F172A',
+        color: '#fff',
+        customClass: {
+          container: 'z-[99999]'
+        }
+      });
 
-    if (result.isConfirmed) {
+      if (result.isConfirmed) {
+        localStorage.removeItem('local_admin_session');
+        window.dispatchEvent(new Event('local-session-changed'));
+        try {
+          await supabase.auth.signOut();
+        } catch (e) {
+          console.error('SignOut error:', e);
+        }
+        if (onClose) onClose();
+        navigate('/login', { replace: true });
+      }
+    } catch (err) {
+      console.error('Logout error:', err);
+      // Fallback direct cleanup if Swal fails
       localStorage.removeItem('local_admin_session');
       window.dispatchEvent(new Event('local-session-changed'));
-      await supabase.auth.signOut();
-      navigate('/login');
+      if (onClose) onClose();
+      navigate('/login', { replace: true });
     }
   };
 
@@ -361,8 +378,9 @@ export default function Sidebar({ email, role = 'admin', isOpen, onClose }: Side
           </div>
 
           <button 
+            type="button"
             onClick={handleLogout}
-            className="w-full group flex items-center justify-center gap-2 py-1.5 bg-red-950/20 text-red-400 border border-red-900/30 rounded-xl font-bold text-[10px] uppercase tracking-wider hover:bg-red-600 hover:text-white hover:border-red-600 transition-all active:scale-95 shadow-sm hover:shadow-red-900/20"
+            className="w-full group flex items-center justify-center gap-2 py-1.5 bg-red-950/20 text-red-400 border border-red-900/30 rounded-xl font-bold text-[10px] uppercase tracking-wider hover:bg-red-600 hover:text-white hover:border-red-600 transition-all active:scale-95 shadow-sm hover:shadow-red-900/20 cursor-pointer"
           >
             <LogOut size={11} className="group-hover:-translate-x-0.5 transition-transform" /> 
             Keluar Sesi

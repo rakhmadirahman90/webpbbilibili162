@@ -52,35 +52,54 @@ const Players: React.FC<{ initialFilter?: string }> = ({
   const fetchPlayersFromDB = useCallback(async () => {
     try {
       setIsLoading(true);
-      const { data, error } = await supabase.from('atlet_stats').select(
-        `
-          *, 
-          pendaftaran ( 
-            id,
-            nama, 
-            foto_url, 
-            kategori,
-            kategori_atlet 
-          )
-        `
-      );
+      const [pendaftaranRes, statsRes] = await Promise.all([
+        supabase.from('pendaftaran').select('*').order('nama', { ascending: true }),
+        supabase.from('atlet_stats').select('*')
+      ]);
 
-      if (error) throw error;
-      setDbPlayers(data || []);
+      const pendaftaranList = pendaftaranRes.data || [];
+      const statsList = statsRes.data || [];
+
+      const statsMap = new Map();
+      statsList.forEach((s) => {
+        if (s.pendaftaran_id) statsMap.set(s.pendaftaran_id, s);
+        if (s.player_name) statsMap.set(s.player_name.trim().toLowerCase(), s);
+      });
+
+      const combined = pendaftaranList.map((p) => {
+        const stat = statsMap.get(p.id) || statsMap.get((p.nama || '').trim().toLowerCase());
+        return {
+          id: p.id,
+          pendaftaran_id: p.id,
+          pendaftaran: p,
+          points: Number(stat?.points) || 0,
+          total_points: Number(stat?.total_points) || 0,
+          seed: stat?.seed || 'UNSEEDED',
+          bio: stat?.bio || p.pengalaman || 'Dedikasi dan semangat tinggi untuk membawa nama baik PB Bilibili 162 di kancah nasional.',
+          status: p.status || 'Active'
+        };
+      });
+
+      setDbPlayers(combined);
     } catch (err) {
       console.error('Database Error:', err);
     } finally {
-      setTimeout(() => setIsLoading(false), 500);
+      setTimeout(() => setIsLoading(false), 300);
     }
   }, []);
 
   useEffect(() => {
     fetchPlayersFromDB();
     const channel = supabase
-      .channel('atlet_changes')
+      .channel('atlet_changes_v2')
       .on(
         'postgres_changes',
         { event: '*', table: 'atlet_stats', schema: 'public' },
+        () => fetchPlayersFromDB()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', table: 'pendaftaran', schema: 'public' },
         () => fetchPlayersFromDB()
       )
       .subscribe();

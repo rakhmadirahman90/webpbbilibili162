@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Globe, ChevronDown, Menu, X, MapPin, UserPlus, Wallet, FileText, Trophy, BrainCircuit, ArrowLeft, Youtube, Instagram, Facebook, Twitter, Radio, LogIn, LayoutDashboard, UserCheck, LogOut } from 'lucide-react';
 import { supabase } from '../supabase'; 
 import { useNavigate } from 'react-router-dom';
+import Swal from 'sweetalert2';
 
 interface NavbarProps {
   onNavigate: (sectionId: string, tabId?: string) => void;
@@ -14,13 +15,73 @@ export default function Navbar({ onNavigate }: NavbarProps) {
   const [currentLang, setCurrentLang] = useState('ID');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  const syncSession = async () => {
+    const { data: { session: supaSession } } = await supabase.auth.getSession();
+    if (supaSession) {
+      setSession(supaSession);
+    } else {
+      const local = localStorage.getItem('local_admin_session');
+      setSession(local ? JSON.parse(local) : null);
+    }
+  };
+
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => setSession(session));
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
+    syncSession();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, supaSession) => {
+      if (supaSession) {
+        setSession(supaSession);
+      } else {
+        const local = localStorage.getItem('local_admin_session');
+        setSession(local ? JSON.parse(local) : null);
+      }
     });
-    return () => subscription.unsubscribe();
+
+    const handleLocalAuth = () => syncSession();
+    window.addEventListener('local-session-changed', handleLocalAuth);
+
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener('local-session-changed', handleLocalAuth);
+    };
   }, []);
+
+  const handleLogout = async () => {
+    try {
+      const result = await Swal.fire({
+        title: 'Keluar Sistem?',
+        text: 'Anda yakin ingin keluar dari sesi akun Anda?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#EF4444',
+        cancelButtonColor: '#374151',
+        confirmButtonText: 'Ya, Keluar!',
+        cancelButtonText: 'Batal',
+        background: '#0F172A',
+        color: '#fff',
+        customClass: {
+          container: 'z-[99999]'
+        }
+      });
+
+      if (result.isConfirmed) {
+        localStorage.removeItem('local_admin_session');
+        window.dispatchEvent(new Event('local-session-changed'));
+        try {
+          await supabase.auth.signOut();
+        } catch (e) {
+          console.error('SignOut error:', e);
+        }
+        setIsMobileMenuOpen(false);
+        navigate('/login', { replace: true });
+      }
+    } catch (err) {
+      console.error('Logout error:', err);
+      localStorage.removeItem('local_admin_session');
+      window.dispatchEvent(new Event('local-session-changed'));
+      setIsMobileMenuOpen(false);
+      navigate('/login', { replace: true });
+    }
+  };
   
   const [navData, setNavData] = useState<any[]>([]);
   const [branding, setBranding] = useState({
@@ -410,18 +471,31 @@ export default function Navbar({ onNavigate }: NavbarProps) {
               )}
             </div>
 
-            {/* LOGIN / DASHBOARD DEDICATED BUTTON */}
+            {/* LOGIN / DASHBOARD & LOGOUT DEDICATED BUTTONS */}
             {session ? (
-              <button 
-                onClick={() => navigate('/admin/dashboard')}
-                className="px-3 py-1.5 lg:px-3.5 lg:py-2 bg-emerald-600 hover:bg-emerald-500 rounded-full text-[9.5px] lg:text-[10px] xl:text-[11.5px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-lg shadow-emerald-600/20 hover:-translate-y-0.5 active:scale-95 cursor-pointer text-white shrink-0"
-                title="Masuk ke Panel Dashboard"
-              >
-                <LayoutDashboard size={13} />
-                <span className="whitespace-nowrap">Dashboard</span>
-              </button>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button 
+                  type="button"
+                  onClick={() => navigate('/admin/dashboard')}
+                  className="px-3 py-1.5 lg:px-3.5 lg:py-2 bg-emerald-600 hover:bg-emerald-500 rounded-full text-[9.5px] lg:text-[10px] xl:text-[11.5px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-lg shadow-emerald-600/20 hover:-translate-y-0.5 active:scale-95 cursor-pointer text-white shrink-0"
+                  title="Masuk ke Panel Dashboard"
+                >
+                  <LayoutDashboard size={13} />
+                  <span className="whitespace-nowrap">Dashboard</span>
+                </button>
+                <button 
+                  type="button"
+                  onClick={handleLogout}
+                  className="px-2.5 py-1.5 lg:px-3 lg:py-2 bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/30 hover:border-red-600 rounded-full text-[9.5px] lg:text-[10px] xl:text-[11.5px] font-bold uppercase tracking-wider transition-all flex items-center gap-1 shadow-md hover:-translate-y-0.5 active:scale-95 cursor-pointer shrink-0"
+                  title="Keluar Sesi"
+                >
+                  <LogOut size={13} />
+                  <span className="whitespace-nowrap hidden xl:inline">Keluar</span>
+                </button>
+              </div>
             ) : (
               <button 
+                type="button"
                 onClick={() => navigate('/login')}
                 className="px-3 py-1.5 lg:px-3.5 lg:py-2 bg-slate-800 hover:bg-slate-700 border border-white/10 hover:border-blue-500/50 rounded-full text-[9.5px] lg:text-[10px] xl:text-[11.5px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-lg shadow-black/40 hover:-translate-y-0.5 active:scale-95 cursor-pointer text-slate-200 hover:text-white shrink-0"
                 title="Login Anggota & Admin"
@@ -569,17 +643,29 @@ export default function Navbar({ onNavigate }: NavbarProps) {
               {/* Portal Login / Dashboard Item for Mobile */}
               <div>
                 {session ? (
-                  <button 
-                    onClick={() => { setIsMobileMenuOpen(false); navigate('/admin/dashboard'); }}
-                    className="flex items-center gap-2 w-full px-3 py-2 text-[11px] font-bold tracking-wider uppercase text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-lg transition-all duration-200 text-left border border-emerald-500/20"
-                  >
-                    <LayoutDashboard size={14} className="text-emerald-400 shrink-0" />
-                    <span>Dashboard Admin</span>
-                  </button>
+                  <div className="space-y-1.5">
+                    <button 
+                      type="button"
+                      onClick={() => { setIsMobileMenuOpen(false); navigate('/admin/dashboard'); }}
+                      className="flex items-center gap-2 w-full px-3 py-2 text-[11px] font-bold tracking-wider uppercase text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-lg transition-all duration-200 text-left border border-emerald-500/20 cursor-pointer"
+                    >
+                      <LayoutDashboard size={14} className="text-emerald-400 shrink-0" />
+                      <span>Dashboard Admin</span>
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={handleLogout}
+                      className="flex items-center gap-2 w-full px-3 py-2 text-[11px] font-bold tracking-wider uppercase text-red-400 bg-red-500/10 hover:bg-red-500/20 rounded-lg transition-all duration-200 text-left border border-red-500/20 cursor-pointer"
+                    >
+                      <LogOut size={14} className="text-red-400 shrink-0" />
+                      <span>Keluar Sesi</span>
+                    </button>
+                  </div>
                 ) : (
                   <button 
+                    type="button"
                     onClick={() => { setIsMobileMenuOpen(false); navigate('/login'); }}
-                    className="flex items-center gap-2 w-full px-3 py-2 text-[11px] font-bold tracking-wider uppercase text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg transition-all duration-200 text-left border border-blue-500/20"
+                    className="flex items-center gap-2 w-full px-3 py-2 text-[11px] font-bold tracking-wider uppercase text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg transition-all duration-200 text-left border border-blue-500/20 cursor-pointer"
                   >
                     <LogIn size={14} className="text-blue-400 shrink-0" />
                     <span>Portal Login</span>

@@ -126,11 +126,14 @@ export default function Login() {
           nama: member.nama,
           whatsapp: member.whatsapp || '',
           kategori: member.kategori || member.kategori_atlet || 'SENIOR',
-          kategori_atlet: member.kategori_atlet || 'SENIOR',
+          kategori_atlet: member.kategori_atlet || member.kategori || 'SENIOR',
           jenis_kelamin: member.jenis_kelamin || 'Putra',
-          domisili: member.domisili || 'Makassar',
-          pengalaman: member.pengalaman || 'Aktif Bermain',
+          domisili: member.domisili || 'PAREPARE',
+          pengalaman: member.pengalaman || '',
           foto_url: member.foto_url || '',
+          tanggal_lahir: member.tanggal_lahir || '',
+          sektor_bermain: member.sektor_bermain || 'Tunggal & Ganda',
+          ukuran_jersey: member.ukuran_jersey || 'L',
           created_at: member.created_at || new Date().toISOString()
         }
       }
@@ -187,17 +190,36 @@ export default function Login() {
     let targetMember: MemberRecord | null = null;
 
     if (dbMembers.length > 0) {
-      targetMember = dbMembers.find((m) => {
-        const mName = m.nama.toLowerCase().trim();
-        const mWa = (m.whatsapp || '').replace(/[^0-9]/g, '');
-        const cleanUserWa = rawUsername.replace(/[^0-9]/g, '');
+      const cleanUserWa = rawUsername.replace(/[^0-9]/g, '');
 
-        if (mName === lowerUsername || mName.includes(lowerUsername) || lowerUsername.includes(mName)) return true;
-        if (cleanUserWa && mWa && (mWa === cleanUserWa || mWa.endsWith(cleanUserWa))) return true;
-        if (m.email && m.email.toLowerCase() === lowerUsername) return true;
-        if (m.id && m.id === rawUsername) return true;
-        return false;
-      }) || null;
+      // Priority 1: Exact ID Match
+      targetMember = dbMembers.find((m) => m.id && m.id === rawUsername) || null;
+
+      // Priority 2: Exact Name Match
+      if (!targetMember) {
+        targetMember = dbMembers.find((m) => (m.nama || '').trim().toLowerCase() === lowerUsername) || null;
+      }
+
+      // Priority 3: Exact Email Match
+      if (!targetMember) {
+        targetMember = dbMembers.find((m) => m.email && m.email.toLowerCase() === lowerUsername) || null;
+      }
+
+      // Priority 4: WhatsApp Match (ONLY if cleanUserWa length >= 6)
+      if (!targetMember && cleanUserWa.length >= 6) {
+        targetMember = dbMembers.find((m) => {
+          const mWa = (m.whatsapp || '').replace(/[^0-9]/g, '');
+          return mWa && mWa.length >= 6 && (mWa === cleanUserWa || mWa.endsWith(cleanUserWa));
+        }) || null;
+      }
+
+      // Priority 5: Partial Name Match (ONLY if lowerUsername length >= 3)
+      if (!targetMember && lowerUsername.length >= 3) {
+        targetMember = dbMembers.find((m) => {
+          const mName = (m.nama || '').trim().toLowerCase();
+          return mName && (mName.includes(lowerUsername) || lowerUsername.includes(mName));
+        }) || null;
+      }
     }
 
     // If member not found in initial dbMembers array, do direct query on supabase
@@ -206,10 +228,10 @@ export default function Login() {
         const { data: queryData } = await supabase
           .from('pendaftaran')
           .select('*')
-          .or(`nama.ilike.%${rawUsername}%,whatsapp.ilike.%${rawUsername}%,email.ilike.%${rawUsername}%`);
+          .ilike('nama', `%${rawUsername}%`);
 
         if (queryData && queryData.length > 0) {
-          targetMember = queryData[0];
+          targetMember = queryData.find((m: any) => (m.nama || '').trim().toLowerCase() === lowerUsername) || queryData[0];
         }
       } catch (err) {
         console.error(err);

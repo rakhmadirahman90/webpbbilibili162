@@ -5,7 +5,16 @@ import { FileText, Plus, Trash2, Download, Search, Loader2, UploadCloud, Eye, X,
 import { motion, AnimatePresence } from 'framer-motion';
 import imageCompression from 'browser-image-compression'; // Library untuk kompresi
 
-export default function ManajemenDokumen() {
+export default function ManajemenDokumen({ session }: { session?: any }) {
+  const userRole = session?.user?.user_metadata?.role || (() => {
+    const raw = localStorage.getItem('local_admin_session');
+    if (raw) {
+      try { return JSON.parse(raw)?.user?.user_metadata?.role || 'admin'; } catch (e) {}
+    }
+    return 'admin';
+  })();
+  const isAdmin = userRole === 'admin';
+
   const [docs, setDocs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -254,42 +263,56 @@ export default function ManajemenDokumen() {
         {/* Kolom Kiri: Form Upload/Edit */}
         <div className="lg:col-span-1">
           <div className="sticky top-24 bg-zinc-900/50 p-6 rounded-[2rem] border border-zinc-800 backdrop-blur-md shadow-xl">
-            <h2 className="text-lg font-black uppercase italic mb-6 flex items-center gap-2">
-              {editingId ? <Edit3 size={18} className="text-yellow-500" /> : <Plus size={18} className="text-blue-500" />}
-              {editingId ? 'Edit Dokumen' : 'Tambah Arsip'}
-            </h2>
-            
-            <div className="space-y-4">
-              <input 
-                type="text" placeholder="Judul Dokumen" 
-                className="w-full bg-black border border-zinc-800 p-4 rounded-xl outline-none focus:border-blue-600 transition-all text-sm"
-                value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})}
-              />
-              <textarea 
-                placeholder="Keterangan..." 
-                className="w-full bg-black border border-zinc-800 p-4 rounded-xl outline-none focus:border-blue-600 transition-all text-sm h-24 resize-none"
-                value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})}
-              />
+            {isAdmin ? (
+              <>
+                <h2 className="text-lg font-black uppercase italic mb-6 flex items-center gap-2">
+                  {editingId ? <Edit3 size={18} className="text-yellow-500" /> : <Plus size={18} className="text-blue-500" />}
+                  {editingId ? 'Edit Dokumen' : 'Tambah Arsip'}
+                </h2>
+                
+                <div className="space-y-4">
+                  <input 
+                    type="text" placeholder="Judul Dokumen" 
+                    className="w-full bg-black border border-zinc-800 p-4 rounded-xl outline-none focus:border-blue-600 transition-all text-sm"
+                    value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})}
+                  />
+                  <textarea 
+                    placeholder="Keterangan..." 
+                    className="w-full bg-black border border-zinc-800 p-4 rounded-xl outline-none focus:border-blue-600 transition-all text-sm h-24 resize-none"
+                    value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})}
+                  />
 
-              {editingId ? (
-                <div className="flex gap-2">
-                  <button onClick={handleUpdate} className="flex-1 bg-blue-600 hover:bg-blue-700 p-4 rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all">
-                    <Save size={16} /> Simpan Perubahan
-                  </button>
-                  <button onClick={() => { setEditingId(null); setFormData({title:'', description:''}); }} className="bg-zinc-800 p-4 rounded-xl hover:bg-zinc-700 transition-all">
-                    <X size={16} />
-                  </button>
+                  {editingId ? (
+                    <div className="flex gap-2">
+                      <button onClick={handleUpdate} className="flex-1 bg-blue-600 hover:bg-blue-700 p-4 rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all cursor-pointer">
+                        <Save size={16} /> Simpan Perubahan
+                      </button>
+                      <button onClick={() => { setEditingId(null); setFormData({title:'', description:''}); }} className="bg-zinc-800 p-4 rounded-xl hover:bg-zinc-700 transition-all cursor-pointer">
+                        <X size={16} />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className={`flex flex-col items-center justify-center gap-3 p-8 border-2 border-dashed rounded-[1.5rem] transition-all cursor-pointer ${uploading ? 'border-zinc-700 bg-zinc-800/20' : 'border-zinc-800 hover:border-blue-600/50 hover:bg-blue-600/5'}`}>
+                      {uploading ? <Loader2 className="animate-spin text-blue-500" size={32} /> : <UploadCloud size={32} className="text-zinc-600" />}
+                      <div className="text-center">
+                        <p className="text-[10px] font-black uppercase tracking-widest">{uploading ? 'Proses Kompresi...' : 'Klik untuk Upload'}</p>
+                        <input type="file" hidden onChange={handleUpload} disabled={uploading} accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" />
+                      </div>
+                    </label>
+                  )}
                 </div>
-              ) : (
-                <label className={`flex flex-col items-center justify-center gap-3 p-8 border-2 border-dashed rounded-[1.5rem] transition-all cursor-pointer ${uploading ? 'border-zinc-700 bg-zinc-800/20' : 'border-zinc-800 hover:border-blue-600/50 hover:bg-blue-600/5'}`}>
-                  {uploading ? <Loader2 className="animate-spin text-blue-500" size={32} /> : <UploadCloud size={32} className="text-zinc-600" />}
-                  <div className="text-center">
-                    <p className="text-[10px] font-black uppercase tracking-widest">{uploading ? 'Proses Kompresi...' : 'Klik untuk Upload'}</p>
-                    <input type="file" hidden onChange={handleUpload} disabled={uploading} accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" />
-                  </div>
-                </label>
-              )}
-            </div>
+              </>
+            ) : (
+              <div className="space-y-4 text-center py-6">
+                <div className="w-16 h-16 bg-blue-600/10 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-2">
+                  <FileText size={32} />
+                </div>
+                <h3 className="font-black uppercase text-sm italic tracking-wider">Arsip Dokumen Resmi</h3>
+                <p className="text-xs text-zinc-400 leading-relaxed">
+                  Anggota PB BILIBILI 162 dapat melihat, mengunduh, dan meninjau seluruh dokumen & peraturan klub yang diunggah oleh pengurus.
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -324,15 +347,19 @@ export default function ManajemenDokumen() {
                 </div>
 
                 <div className="flex items-center gap-2 mt-4 md:mt-0 pt-4 md:pt-0 border-t md:border-t-0 border-zinc-800 w-full md:w-auto">
-                  <button onClick={() => setPreviewUrl(doc.file_url)} className="flex-1 md:flex-none bg-zinc-800 hover:bg-blue-600/20 hover:text-blue-400 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2">
+                  <button onClick={() => setPreviewUrl(doc.file_url)} className="flex-1 md:flex-none bg-zinc-800 hover:bg-blue-600/20 hover:text-blue-400 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 cursor-pointer">
                     <Eye size={14} /> View
                   </button>
-                  <button onClick={() => startEdit(doc)} className="bg-zinc-800 hover:bg-yellow-600/20 hover:text-yellow-500 p-2.5 rounded-xl transition-all">
-                    <Edit3 size={16} />
-                  </button>
-                  <button onClick={() => deleteDoc(doc.id, doc.file_url)} className="bg-red-600/10 text-red-500 hover:bg-red-600 hover:text-white p-2.5 rounded-xl transition-all">
-                    <Trash2 size={16} />
-                  </button>
+                  {isAdmin && (
+                    <>
+                      <button onClick={() => startEdit(doc)} className="bg-zinc-800 hover:bg-yellow-600/20 hover:text-yellow-500 p-2.5 rounded-xl transition-all cursor-pointer">
+                        <Edit3 size={16} />
+                      </button>
+                      <button onClick={() => deleteDoc(doc.id, doc.file_url)} className="bg-red-600/10 text-red-500 hover:bg-red-600 hover:text-white p-2.5 rounded-xl transition-all cursor-pointer">
+                        <Trash2 size={16} />
+                      </button>
+                    </>
+                  )}
                 </div>
               </motion.div>
             ))}

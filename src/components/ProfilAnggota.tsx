@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
+import { useNavigate } from 'react-router-dom';
 import { 
   UserCheck, 
   KeyRound, 
@@ -23,7 +24,11 @@ import {
   Check,
   RefreshCcw,
   Sparkles,
-  Printer
+  Printer,
+  LogOut,
+  Upload,
+  Trash2,
+  Image as ImageIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Swal from 'sweetalert2';
@@ -33,6 +38,7 @@ interface ProfilAnggotaProps {
 }
 
 export default function ProfilAnggota({ session: propSession }: ProfilAnggotaProps) {
+  const navigate = useNavigate();
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -40,6 +46,42 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
   const [showKtaModal, setShowKtaModal] = useState(false);
   const [showPinModal, setShowPinModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+
+  const handleLogout = async () => {
+    try {
+      const result = await Swal.fire({
+        title: 'Keluar Sistem?',
+        text: "Anda yakin ingin keluar dari akun Anda?",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#EF4444',
+        cancelButtonColor: '#374151',
+        confirmButtonText: 'Ya, Keluar!',
+        cancelButtonText: 'Batal',
+        background: '#0F172A',
+        color: '#fff',
+        customClass: {
+          container: 'z-[99999]'
+        }
+      });
+
+      if (result.isConfirmed) {
+        localStorage.removeItem('local_admin_session');
+        window.dispatchEvent(new Event('local-session-changed'));
+        try {
+          await supabase.auth.signOut();
+        } catch (e) {
+          console.error('SignOut error:', e);
+        }
+        navigate('/login', { replace: true });
+      }
+    } catch (err) {
+      console.error('Logout error:', err);
+      localStorage.removeItem('local_admin_session');
+      window.dispatchEvent(new Event('local-session-changed'));
+      navigate('/login', { replace: true });
+    }
+  };
 
   // Data Member State
   const [memberData, setMemberData] = useState<{
@@ -52,6 +94,9 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
     jenis_kelamin: string;
     pengalaman: string;
     foto_url: string;
+    tanggal_lahir?: string;
+    sektor_bermain?: string;
+    ukuran_jersey?: string;
     role: string;
     created_at?: string;
   }>({
@@ -63,6 +108,9 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
     jenis_kelamin: 'Putra',
     pengalaman: '2 Tahun',
     foto_url: '',
+    tanggal_lahir: '',
+    sektor_bermain: 'Tunggal & Ganda',
+    ukuran_jersey: 'L',
     role: 'anggota'
   });
 
@@ -81,8 +129,105 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
     confirmPin: ''
   });
 
+  // Photo Upload State & Ref
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+
+  const handlePhotoFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingPhoto(true);
+
+    try {
+      const fileExt = file.name.split('.').pop() || 'jpg';
+      const fileName = `avatar_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `identitas/${fileName}`;
+
+      let publicUrl = '';
+
+      // 1. Try uploading to 'identitas-atlet' bucket
+      const { error: uploadError } = await supabase.storage
+        .from('identitas-atlet')
+        .upload(filePath, file, { contentType: file.type, upsert: true });
+
+      if (!uploadError) {
+        const { data } = supabase.storage.from('identitas-atlet').getPublicUrl(filePath);
+        publicUrl = data.publicUrl;
+      } else {
+        // 2. Fallback to 'images' bucket
+        const { error: imgError } = await supabase.storage
+          .from('images')
+          .upload(`profiles/${fileName}`, file, { contentType: file.type, upsert: true });
+
+        if (!imgError) {
+          const { data } = supabase.storage.from('images').getPublicUrl(`profiles/${fileName}`);
+          publicUrl = data.publicUrl;
+        } else {
+          // 3. Fallback to Base64 Data URL if storage bucket fails
+          publicUrl = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
+        }
+      }
+
+      if (publicUrl) {
+        setMemberData((prev) => ({ ...prev, foto_url: publicUrl }));
+        Swal.fire({
+          toast: true,
+          position: 'top-end',
+          icon: 'success',
+          title: 'Foto Profil Berhasil Dimuat!',
+          showConfirmButton: false,
+          timer: 2000,
+          background: '#0F172A',
+          color: '#fff'
+        });
+      }
+    } catch (err: any) {
+      console.error('Error uploading photo:', err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Gagal Mengunggah Foto',
+        text: err.message || 'Terjadi kesalahan saat membaca file foto.',
+        background: '#0F172A',
+        color: '#fff'
+      });
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
   useEffect(() => {
     loadUserData();
+
+    const handleSessionChanged = () => {
+      loadUserData();
+    };
+
+    window.addEventListener('local-session-changed', handleSessionChanged);
+
+    const channel = supabase
+      .channel('profil_anggota_realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'pendaftaran' },
+        () => loadUserData()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'rankings' },
+        () => loadUserData()
+      )
+      .subscribe();
+
+    return () => {
+      window.removeEventListener('local-session-changed', handleSessionChanged);
+      supabase.removeChannel(channel);
+    };
   }, [propSession]);
 
   const loadUserData = async () => {
@@ -105,31 +250,54 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
     if (activeSession?.user) {
       const userMeta = activeSession.user.user_metadata || {};
       const userEmail = activeSession.user.email || '';
-      const fullName = userMeta.full_name || userEmail.split('@')[0] || 'Anggota PB Bilibili 162';
+      const fullName = userMeta.nama || userMeta.full_name || userEmail.split('@')[0] || 'Anggota PB Bilibili 162';
       const userRole = userMeta.role || 'anggota';
 
-      // Load matching member from pendaftaran table
+      // Load matching member from pendaftaran table with prioritized cascade
       let dbMember: any = null;
       try {
         const { data: pendaftaranList } = await supabase.from('pendaftaran').select('*');
         if (pendaftaranList && pendaftaranList.length > 0) {
-          dbMember = pendaftaranList.find((m: any) => {
-            const mNama = (m.nama || '').trim().toLowerCase();
-            const userLower = fullName.trim().toLowerCase();
-            const emailLower = userEmail.trim().toLowerCase();
-            const metaId = userMeta.id || activeSession.user.id;
-            const cleanWa = (m.whatsapp || '').replace(/[^0-9]/g, '');
-            const metaWa = (userMeta.whatsapp || '').replace(/[^0-9]/g, '');
+          const metaId = userMeta.id || activeSession.user.id;
+          const userLower = fullName.trim().toLowerCase();
+          const emailLower = userEmail.trim().toLowerCase();
+          const metaWa = (userMeta.whatsapp || '').replace(/[^0-9]/g, '');
 
-            return (
-              (m.id && metaId && (m.id === metaId || `member-${m.id}` === metaId)) ||
-              mNama === userLower ||
-              (m.email && m.email.toLowerCase() === emailLower) ||
-              (cleanWa && metaWa && cleanWa === metaWa) ||
-              mNama.includes(userLower) ||
-              userLower.includes(mNama)
+          // Priority 1: Exact ID match
+          dbMember = pendaftaranList.find((m: any) => 
+            m.id && metaId && (m.id === metaId || `member-${m.id}` === metaId || metaId === `member-${m.id}`)
+          );
+
+          // Priority 2: Exact Name match
+          if (!dbMember && userLower) {
+            dbMember = pendaftaranList.find((m: any) => {
+              const mNama = (m.nama || '').trim().toLowerCase();
+              return mNama === userLower;
+            });
+          }
+
+          // Priority 3: Exact Email match
+          if (!dbMember && emailLower && !emailLower.endsWith('@pbbilibili162.com')) {
+            dbMember = pendaftaranList.find((m: any) => 
+              m.email && m.email.toLowerCase() === emailLower
             );
-          });
+          }
+
+          // Priority 4: WhatsApp match ONLY if clean length >= 6
+          if (!dbMember && metaWa && metaWa.length >= 6) {
+            dbMember = pendaftaranList.find((m: any) => {
+              const cleanWa = (m.whatsapp || '').replace(/[^0-9]/g, '');
+              return cleanWa && cleanWa.length >= 6 && cleanWa === metaWa;
+            });
+          }
+
+          // Priority 5: Partial Name match (ONLY if userLower length >= 3)
+          if (!dbMember && userLower && userLower.length >= 3) {
+            dbMember = pendaftaranList.find((m: any) => {
+              const mNama = (m.nama || '').trim().toLowerCase();
+              return mNama && (mNama.includes(userLower) || userLower.includes(mNama));
+            });
+          }
         }
       } catch (err) {
         console.error('Error fetching member profile:', err);
@@ -140,37 +308,94 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
         nama: dbMember?.nama || userMeta.nama || fullName,
         email: dbMember?.email || userEmail,
         whatsapp: dbMember?.whatsapp || userMeta.whatsapp || '-',
-        domisili: dbMember?.domisili || userMeta.domisili || 'Makassar',
-        kategori: dbMember?.kategori || dbMember?.kategori_atlet || userMeta.kategori || userMeta.kategori_atlet || 'Senior',
+        domisili: dbMember?.domisili || userMeta.domisili || 'PAREPARE',
+        kategori: dbMember?.kategori || dbMember?.kategori_atlet || userMeta.kategori || userMeta.kategori_atlet || 'Dewasa / Umum',
         jenis_kelamin: dbMember?.jenis_kelamin || userMeta.jenis_kelamin || 'Putra',
-        pengalaman: dbMember?.pengalaman || userMeta.pengalaman || 'Aktif Bermain',
+        pengalaman: dbMember?.pengalaman || userMeta.pengalaman || '',
         foto_url: dbMember?.foto_url || userMeta.foto_url || userMeta.avatar_url || '',
+        tanggal_lahir: dbMember?.tanggal_lahir || userMeta.tanggal_lahir || '',
+        sektor_bermain: dbMember?.sektor_bermain || userMeta.sektor_bermain || 'Tunggal & Ganda',
+        ukuran_jersey: dbMember?.ukuran_jersey || userMeta.ukuran_jersey || 'L',
         role: userRole,
         created_at: dbMember?.created_at || userMeta.created_at || activeSession.user.created_at || new Date().toISOString()
       };
 
       setMemberData(initialMember);
 
-      // Fetch stats from atlet_stats
-      if (dbMember?.id) {
-        try {
-          const { data: statData } = await supabase
-            .from('atlet_stats')
+      // Auto-heal session in localStorage if dbMember was resolved
+      if (dbMember && activeSession) {
+        const syncedSession = {
+          ...activeSession,
+          user: {
+            ...activeSession.user,
+            id: dbMember.id,
+            user_metadata: {
+              ...activeSession.user?.user_metadata,
+              id: dbMember.id,
+              full_name: dbMember.nama,
+              nama: dbMember.nama,
+              whatsapp: dbMember.whatsapp || '',
+              kategori: dbMember.kategori || dbMember.kategori_atlet || 'Dewasa / Umum',
+              jenis_kelamin: dbMember.jenis_kelamin || 'Putra',
+              domisili: dbMember.domisili || 'PAREPARE',
+              pengalaman: dbMember.pengalaman || '',
+              foto_url: dbMember.foto_url || '',
+              tanggal_lahir: dbMember.tanggal_lahir || '',
+              sektor_bermain: dbMember.sektor_bermain || 'Tunggal & Ganda',
+              ukuran_jersey: dbMember.ukuran_jersey || 'L',
+            }
+          }
+        };
+        localStorage.setItem('local_admin_session', JSON.stringify(syncedSession));
+      }
+
+      // Fetch stats from rankings / atlet_stats
+      const targetId = dbMember?.id || initialMember.id;
+      const targetName = dbMember?.nama || initialMember.nama;
+
+      try {
+        let statData: any = null;
+
+        if (targetId) {
+          const { data: rankById } = await supabase
+            .from('rankings')
             .select('*')
-            .eq('pendaftaran_id', dbMember.id)
+            .eq('pendaftaran_id', targetId)
             .maybeSingle();
 
-          if (statData) {
-            setStats({
-              points: statData.points || 0,
-              totalPoints: statData.total_points || statData.points || 0,
-              rank: statData.seed ? `#${statData.seed}` : 'Provisio',
-              seed: statData.seed || 0
-            });
-          }
-        } catch (e) {
-          console.error(e);
+          if (rankById) statData = rankById;
         }
+
+        if (!statData && targetName) {
+          const { data: rankByName } = await supabase
+            .from('rankings')
+            .select('*')
+            .ilike('player_name', targetName.trim())
+            .maybeSingle();
+
+          if (rankByName) statData = rankByName;
+        }
+
+        if (!statData && targetId) {
+          const { data: atletStat } = await supabase
+            .from('atlet_stats')
+            .select('*')
+            .eq('pendaftaran_id', targetId)
+            .maybeSingle();
+
+          if (atletStat) statData = atletStat;
+        }
+
+        if (statData) {
+          setStats({
+            points: statData.poin || statData.points || 0,
+            totalPoints: statData.total_points || ((statData.poin || 0) + (statData.bonus || 0)),
+            rank: statData.seed ? `${statData.seed}` : 'Provisio',
+            seed: statData.seed || 0
+          });
+        }
+      } catch (e) {
+        console.error(e);
       }
     }
 
@@ -182,34 +407,127 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
     setSaving(true);
 
     try {
-      if (memberData.id) {
-        // Update to Supabase pendaftaran if record exists
-        await supabase
+      const cleanName = memberData.nama.trim();
+      const cleanPendaftaranPayload = {
+        nama: cleanName,
+        whatsapp: memberData.whatsapp || '',
+        domisili: memberData.domisili || 'PAREPARE',
+        kategori: memberData.kategori || 'Dewasa / Umum',
+        kategori_atlet: memberData.kategori || 'SENIOR',
+        jenis_kelamin: memberData.jenis_kelamin || 'Putra',
+        pengalaman: memberData.pengalaman || '',
+        foto_url: memberData.foto_url || ''
+      };
+
+      let resolvedId = memberData.id ? memberData.id.replace(/^member-/, '') : null;
+
+      if (resolvedId && resolvedId.length > 20) {
+        // Update pendaftaran by ID
+        const { error: errUpdate } = await supabase
           .from('pendaftaran')
-          .upsert({
-            id: memberData.id,
-            nama: memberData.nama,
-            whatsapp: memberData.whatsapp,
-            domisili: memberData.domisili,
-            kategori: memberData.kategori,
-            jenis_kelamin: memberData.jenis_kelamin,
-            pengalaman: memberData.pengalaman,
-            foto_url: memberData.foto_url
-          });
+          .update(cleanPendaftaranPayload)
+          .eq('id', resolvedId);
+
+        if (errUpdate) {
+          console.error('Error updating pendaftaran by ID:', errUpdate);
+        }
+      } else if (cleanName) {
+        // Fallback search or insert by name
+        const { data: existing } = await supabase
+          .from('pendaftaran')
+          .select('id')
+          .ilike('nama', cleanName)
+          .maybeSingle();
+
+        if (existing) {
+          resolvedId = existing.id;
+          await supabase.from('pendaftaran').update(cleanPendaftaranPayload).eq('id', resolvedId);
+        } else {
+          const { data: inserted } = await supabase
+            .from('pendaftaran')
+            .insert([{ ...cleanPendaftaranPayload, status: 'verified' }])
+            .select('id')
+            .maybeSingle();
+
+          if (inserted) resolvedId = inserted.id;
+        }
       }
 
-      // Update local session
-      if (session) {
+      // Sync Rankings and Atlet Stats in Supabase
+      if (cleanName) {
+        const upperName = cleanName.toUpperCase();
+
+        if (resolvedId) {
+          await supabase
+            .from('rankings')
+            .update({
+              player_name: upperName,
+              photo_url: memberData.foto_url,
+              category: memberData.kategori,
+              bio: memberData.pengalaman,
+              updated_at: new Date().toISOString()
+            })
+            .eq('pendaftaran_id', resolvedId);
+
+          await supabase
+            .from('atlet_stats')
+            .update({
+              player_name: upperName,
+              bio: memberData.pengalaman
+            })
+            .eq('pendaftaran_id', resolvedId);
+        }
+
+        // Also update by name in rankings and atlet_stats to ensure consistency
+        await supabase
+          .from('rankings')
+          .update({
+            player_name: upperName,
+            photo_url: memberData.foto_url,
+            category: memberData.kategori,
+            bio: memberData.pengalaman,
+            updated_at: new Date().toISOString()
+          })
+          .ilike('player_name', cleanName);
+
+        await supabase
+          .from('atlet_stats')
+          .update({
+            player_name: upperName,
+            bio: memberData.pengalaman
+          })
+          .ilike('player_name', cleanName);
+      }
+
+      const updatedMemberData = {
+        ...memberData,
+        id: resolvedId || memberData.id
+      };
+
+      setMemberData(updatedMemberData);
+
+      // Sync active session in localStorage
+      const activeSession = session || JSON.parse(localStorage.getItem('local_admin_session') || '{}');
+      if (activeSession?.user) {
         const updatedSession = {
-          ...session,
+          ...activeSession,
           user: {
-            ...session.user,
+            ...activeSession.user,
+            id: resolvedId || activeSession.user.id,
             user_metadata: {
-              ...session.user?.user_metadata,
-              full_name: memberData.nama,
+              ...activeSession.user?.user_metadata,
+              id: resolvedId || activeSession.user.id,
+              full_name: cleanName,
+              nama: cleanName,
               kategori: memberData.kategori,
               whatsapp: memberData.whatsapp,
-              avatar_url: memberData.foto_url
+              domisili: memberData.domisili,
+              avatar_url: memberData.foto_url,
+              foto_url: memberData.foto_url,
+              pengalaman: memberData.pengalaman,
+              tanggal_lahir: memberData.tanggal_lahir,
+              sektor_bermain: memberData.sektor_bermain,
+              ukuran_jersey: memberData.ukuran_jersey
             }
           }
         };
@@ -221,12 +539,13 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
       Swal.fire({
         icon: 'success',
         title: 'Profil Diperbarui!',
-        text: 'Data profil Anda telah berhasil disimpan.',
+        text: 'Data profil Anda telah berhasil disimpan dan tersinkronisasi di database real-time.',
         background: '#0F172A',
         color: '#fff',
         confirmButtonColor: '#2563EB'
       });
     } catch (err: any) {
+      console.error('Error saving profile:', err);
       Swal.fire({
         icon: 'error',
         title: 'Gagal Menyimpan',
@@ -327,6 +646,7 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
 
         <div className="flex flex-wrap items-center gap-3">
           <button
+            type="button"
             onClick={() => setShowKtaModal(true)}
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-blue-600/20 active:scale-95 transition-all cursor-pointer"
           >
@@ -335,11 +655,21 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
           </button>
 
           <button
+            type="button"
             onClick={() => setShowPinModal(true)}
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-white/10 font-bold text-xs uppercase tracking-wider active:scale-95 transition-all cursor-pointer"
           >
             <KeyRound size={16} className="text-blue-400" />
             <span>Atur PIN Akses</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/30 hover:border-red-600 font-bold text-xs uppercase tracking-wider active:scale-95 transition-all cursor-pointer shadow-md"
+          >
+            <LogOut size={16} />
+            <span>Keluar Sesi</span>
           </button>
         </div>
       </div>
@@ -354,7 +684,7 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
 
             <div className="flex flex-col items-center text-center">
               <div className="relative mb-4 group">
-                <div className="w-28 h-28 rounded-3xl overflow-hidden border-2 border-blue-500/40 p-1 bg-slate-900 shadow-[0_0_25px_rgba(59,130,246,0.25)] flex items-center justify-center">
+                <div className="w-28 h-28 rounded-3xl overflow-hidden border-2 border-blue-500/40 p-1 bg-slate-900 shadow-[0_0_25px_rgba(59,130,246,0.25)] flex items-center justify-center relative">
                   {memberData.foto_url ? (
                     <img 
                       src={memberData.foto_url} 
@@ -369,11 +699,21 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
                       {memberData.nama.charAt(0).toUpperCase()}
                     </div>
                   )}
+
+                  {uploadingPhoto && (
+                    <div className="absolute inset-0 bg-black/70 rounded-2xl flex items-center justify-center text-blue-400 z-10">
+                      <Loader2 className="animate-spin" size={24} />
+                    </div>
+                  )}
                 </div>
 
-                <div className="absolute -bottom-1 -right-1 bg-emerald-500 text-white p-2 rounded-full border-2 border-[#0b1224] shadow-md" title="Akun Terverifikasi">
-                  <ShieldCheck size={14} />
-                </div>
+                <label 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="absolute -bottom-1 -right-1 bg-blue-600 hover:bg-blue-500 text-white p-2 rounded-full border-2 border-[#0b1224] shadow-md cursor-pointer active:scale-95 transition-all" 
+                  title="Upload / Ubah Foto Profil"
+                >
+                  <Camera size={14} />
+                </label>
               </div>
 
               <h2 className="text-xl font-black text-white tracking-wide uppercase italic">
@@ -546,22 +886,130 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
                     <option value="Putri">Putri</option>
                   </select>
                 </div>
-              </div>
 
-              {/* URL Foto Profil */}
-              {isEditing && (
-                <div className="space-y-1.5 pt-2">
-                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1">
-                    <Camera size={12} className="text-blue-400" />
-                    <span>Link Foto Profil (URL Image)</span>
+                {/* Tanggal Lahir */}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                    Tanggal Lahir
                   </label>
                   <input
-                    type="url"
-                    value={memberData.foto_url}
-                    onChange={(e) => setMemberData({ ...memberData, foto_url: e.target.value })}
-                    className="w-full px-4 py-3 rounded-2xl bg-[#070d1a] border border-white/10 text-white font-semibold text-sm outline-none focus:border-blue-500 placeholder:text-slate-600"
-                    placeholder="https://example.com/foto.jpg"
+                    type="date"
+                    disabled={!isEditing}
+                    value={memberData.tanggal_lahir || ''}
+                    onChange={(e) => setMemberData({ ...memberData, tanggal_lahir: e.target.value })}
+                    className="w-full px-4 py-3 rounded-2xl bg-[#070d1a] border border-white/10 text-white font-semibold text-sm outline-none focus:border-blue-500 disabled:opacity-75 disabled:cursor-not-allowed"
                   />
+                </div>
+
+                {/* Sektor Bermain */}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                    Spesialisasi Sektor
+                  </label>
+                  <select
+                    disabled={!isEditing}
+                    value={memberData.sektor_bermain || 'Tunggal & Ganda'}
+                    onChange={(e) => setMemberData({ ...memberData, sektor_bermain: e.target.value })}
+                    className="w-full px-4 py-3 rounded-2xl bg-[#070d1a] border border-white/10 text-white font-semibold text-sm outline-none focus:border-blue-500 disabled:opacity-75 disabled:cursor-not-allowed"
+                  >
+                    <option value="Tunggal">Tunggal</option>
+                    <option value="Ganda Putra / Putri">Ganda Putra / Putri</option>
+                    <option value="Ganda Campuran">Ganda Campuran</option>
+                    <option value="Tunggal & Ganda">Tunggal & Ganda (All Round)</option>
+                  </select>
+                </div>
+
+                {/* Ukuran Jersey */}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                    Ukuran Jersey Resmi
+                  </label>
+                  <select
+                    disabled={!isEditing}
+                    value={memberData.ukuran_jersey || 'L'}
+                    onChange={(e) => setMemberData({ ...memberData, ukuran_jersey: e.target.value })}
+                    className="w-full px-4 py-3 rounded-2xl bg-[#070d1a] border border-white/10 text-white font-semibold text-sm outline-none focus:border-blue-500 disabled:opacity-75 disabled:cursor-not-allowed"
+                  >
+                    <option value="XS">XS</option>
+                    <option value="S">S</option>
+                    <option value="M">M</option>
+                    <option value="L">L</option>
+                    <option value="XL">XL</option>
+                    <option value="XXL">XXL</option>
+                    <option value="3XL">3XL</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Direct Photo File Upload */}
+              {isEditing && (
+                <div className="space-y-2 pt-2">
+                  <label className="text-xs font-black uppercase tracking-wider text-slate-300 flex items-center justify-between">
+                    <span className="flex items-center gap-2 text-blue-400">
+                      <Camera size={14} />
+                      Upload Foto Profil (File Dari Laptop / HP)
+                    </span>
+                    {uploadingPhoto && (
+                      <span className="text-[10px] text-amber-400 flex items-center gap-1 font-bold">
+                        <Loader2 size={12} className="animate-spin" /> Mengunggah foto...
+                      </span>
+                    )}
+                  </label>
+
+                  <div className="p-4 rounded-2xl bg-[#070d1a] border border-white/10 flex flex-col sm:flex-row items-center gap-4">
+                    {/* Preview Thumbnail */}
+                    <div className="w-16 h-16 rounded-2xl overflow-hidden border border-white/20 bg-slate-900 shrink-0 relative group shadow-inner">
+                      {memberData.foto_url ? (
+                        <img src={memberData.foto_url} alt="Preview Foto" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 font-bold text-[9px] uppercase">
+                          <ImageIcon size={18} className="mb-0.5 opacity-50" />
+                          No Photo
+                        </div>
+                      )}
+                      {uploadingPhoto && (
+                        <div className="absolute inset-0 bg-black/70 flex items-center justify-center">
+                          <Loader2 className="animate-spin text-blue-400" size={18} />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* File Upload Trigger & Controls */}
+                    <div className="flex-1 w-full space-y-2">
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handlePhotoFileUpload}
+                        accept="image/*"
+                        className="hidden"
+                      />
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          disabled={uploadingPhoto}
+                          onClick={() => fileInputRef.current?.click()}
+                          className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer shadow-lg shadow-blue-600/20 active:scale-95 disabled:opacity-50"
+                        >
+                          <Upload size={14} />
+                          <span>{memberData.foto_url ? 'Pilih / Ganti File Foto' : 'Pilih File Foto Profil'}</span>
+                        </button>
+
+                        {memberData.foto_url && (
+                          <button
+                            type="button"
+                            onClick={() => setMemberData({ ...memberData, foto_url: '' })}
+                            className="px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-rose-600/80 text-slate-300 hover:text-white font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1 cursor-pointer"
+                          >
+                            <Trash2 size={13} />
+                            <span>Hapus Foto</span>
+                          </button>
+                        )}
+                      </div>
+                      <p className="text-[10px] text-slate-400 font-medium leading-relaxed">
+                        Pilih berkas foto dari galeri HP atau komputer Anda (Format: JPG, PNG, WEBP, GIF max 5MB). Foto akan tersimpan secara otomatis di database real-time.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               )}
 

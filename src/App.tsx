@@ -797,11 +797,11 @@ function AdminLayout({ session }: { session: any }) {
             {/* Accessible to both Anggota & Admin */}
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="profil" element={<ProfilAnggota session={session} />} />
-            <Route path="ranking" element={<AdminRanking />} />
-            <Route path="skor" element={<AdminMatch />} />
-            <Route path="berita" element={<AdminBerita />} />
-            <Route path="galeri" element={<AdminGallery />} />
-            <Route path="dokumen" element={<ManajemenDokumen />} /> 
+            <Route path="ranking" element={isAdmin ? <AdminRanking session={session} /> : <div className="p-4 md:p-8 max-w-7xl mx-auto"><Ranking /></div>} />
+            <Route path="skor" element={<AdminMatch session={session} />} />
+            <Route path="berita" element={isAdmin ? <AdminBerita session={session} /> : <div className="p-4 md:p-8 max-w-7xl mx-auto"><News /></div>} />
+            <Route path="galeri" element={isAdmin ? <AdminGallery session={session} /> : <div className="p-4 md:p-8 max-w-7xl mx-auto"><Gallery /></div>} />
+            <Route path="dokumen" element={isAdmin ? <ManajemenDokumen session={session} /> : <div className="p-4 md:p-8 max-w-7xl mx-auto"><DokumenPenting /></div>} /> 
 
             {/* Admin Only Routes - Redirect Anggota to Dashboard */}
             <Route path="pendaftaran" element={isAdmin ? <ManajemenPendaftaran /> : <Navigate to="/admin/dashboard" replace />} />
