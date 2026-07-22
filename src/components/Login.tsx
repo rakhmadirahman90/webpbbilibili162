@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
 import { 
   Loader2, ShieldCheck, AlertCircle, KeyRound, Eye, EyeOff, Delete, Home, 
-  User, Lock
+  User, Lock, Flame
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 
 interface PinUserData {
@@ -56,7 +56,7 @@ export default function Login() {
   const [showPin, setShowPin] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  
+
   // Database Member List (fetched securely for backend verification)
   const [dbMembers, setDbMembers] = useState<MemberRecord[]>([]);
   const [logoUrl, setLogoUrl] = useState<string>('/logo_pb_bilibili_162.svg');

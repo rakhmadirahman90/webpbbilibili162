@@ -4,8 +4,9 @@ import Swal from 'sweetalert2';
 import { 
   Trophy, User, Activity, CheckCircle2, 
   Plus, Loader2, Trash2, Send, Clock, AlertCircle, Sparkles, RefreshCcw, Search, X, RotateCcw,
-  ShieldCheck, ArrowRightLeft, ChevronDown, Database, Calendar, MapPin, Flame, Dumbbell, Award, Users
+  ShieldCheck, ArrowRightLeft, ChevronDown, Database, Calendar, MapPin, Flame, Dumbbell, Award, Users, Timer, Radio
 } from 'lucide-react';
+import { computeScheduleInfo } from '../utils/schedule';
 
 interface AdminMatchProps {
   session?: any;
@@ -22,6 +23,15 @@ const AdminMatch: React.FC<AdminMatchProps> = ({ session }) => {
   const isAdmin = userRole === 'admin';
 
   const [activeTab, setActiveTab] = useState<'jadwal' | 'skor' | 'input'>('jadwal');
+
+  const [scheduleInfo, setScheduleInfo] = useState(() => computeScheduleInfo());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setScheduleInfo(computeScheduleInfo());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const [players, setPlayers] = useState<any[]>([]);
   const [recentMatches, setRecentMatches] = useState<any[]>([]);
@@ -465,51 +475,95 @@ const AdminMatch: React.FC<AdminMatchProps> = ({ session }) => {
           {/* TAB 1: JADWAL LATIHAN RESMI */}
           {activeTab === 'jadwal' && (
             <div className="space-y-4 animate-fadeIn">
-              {/* Info Header Banner */}
-              <div className="bg-gradient-to-r from-slate-900 via-zinc-900 to-[#0c162d] border border-blue-500/30 rounded-3xl p-4 sm:p-6 shadow-2xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-bl-full pointer-events-none" />
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative z-10">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2 mb-1">
-                      <span className="px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30 text-[9px] font-black uppercase tracking-widest flex items-center gap-1">
-                        <Calendar size={10} className="animate-pulse" /> Agenda Resmi
-                      </span>
-                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[9px] font-black uppercase tracking-widest flex items-center gap-1">
-                        <Flame size={10} /> 3 Sesi Mingguan
-                      </span>
+              {/* COUNTDOWN WIDGET CARD */}
+              <div className="bg-gradient-to-r from-slate-900 via-zinc-900 to-[#0c162d] border border-amber-500/30 rounded-3xl p-4 sm:p-5 shadow-2xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-bl-full pointer-events-none" />
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-3 rounded-2xl border shrink-0 ${
+                      scheduleInfo.isOngoing 
+                        ? 'bg-red-500/20 border-red-500/40 text-red-400 animate-pulse' 
+                        : 'bg-amber-500/20 border-amber-500/40 text-amber-400'
+                    }`}>
+                      <Timer size={22} />
                     </div>
-                    <h2 className="text-xl sm:text-2xl font-black italic tracking-tight uppercase text-white">
-                      Jadwal Latihan <span className="text-blue-400">PB BILIBILI 162</span>
-                    </h2>
-                    <p className="text-xs text-slate-400 mt-0.5">
-                      Aktivitas rutin bulutangkis club diselenggarakan di dua lokasi GOR utama.
-                    </p>
+                    <div>
+                      <div className="flex items-center gap-2 mb-0.5">
+                        {scheduleInfo.isOngoing ? (
+                          <span className="px-2.5 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/40 text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 animate-pulse">
+                            <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+                            SESI SEDANG BERLANGSUNG
+                          </span>
+                        ) : (
+                          <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[9px] font-black uppercase tracking-widest flex items-center gap-1">
+                            <Radio size={10} className="text-amber-400 animate-pulse" />
+                            HITUNG MUNDUR MINGGU INI
+                          </span>
+                        )}
+                      </div>
+                      <h3 className="text-sm sm:text-base font-black text-white italic uppercase tracking-tight">
+                        {scheduleInfo.isOngoing ? scheduleInfo.activeSessionName : scheduleInfo.nextSessionName}
+                      </h3>
+                      <p className="text-[10px] text-slate-400">
+                        {scheduleInfo.isOngoing ? 'Sesi berlangsung 08.00 - 12.00 WITA. Hitung mundur hingga akhir sesi:' : `Berikutnya hari ${scheduleInfo.nextSessionDay} di ${scheduleInfo.nextSessionLocation}`}
+                      </p>
+                    </div>
                   </div>
 
-                  <div className="flex items-center gap-2.5 bg-slate-950/80 p-3 rounded-2xl border border-amber-500/30 shrink-0 shadow-md">
-                    <Clock className="text-amber-400 shrink-0 animate-pulse" size={20} />
-                    <div>
-                      <p className="text-[8px] text-slate-400 font-bold uppercase tracking-wider">Jam Operasional</p>
-                      <p className="text-xs font-black text-amber-300 tracking-wide">08.00 - 12.00 WITA</p>
+                  {/* Timer Digits */}
+                  <div className="flex items-center gap-1.5 self-start md:self-auto bg-slate-950/80 p-2 rounded-2xl border border-white/10 shrink-0">
+                    <div className="bg-slate-900 border border-white/10 px-2.5 py-1.5 rounded-xl text-center min-w-[48px]">
+                      <span className="text-base sm:text-lg font-black text-amber-400 font-mono leading-none block">{String(scheduleInfo.days).padStart(2, '0')}</span>
+                      <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest block mt-0.5">HARI</span>
+                    </div>
+                    <span className="text-slate-500 font-black text-xs">:</span>
+                    <div className="bg-slate-900 border border-white/10 px-2.5 py-1.5 rounded-xl text-center min-w-[48px]">
+                      <span className="text-base sm:text-lg font-black text-amber-400 font-mono leading-none block">{String(scheduleInfo.hours).padStart(2, '0')}</span>
+                      <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest block mt-0.5">JAM</span>
+                    </div>
+                    <span className="text-slate-500 font-black text-xs">:</span>
+                    <div className="bg-slate-900 border border-white/10 px-2.5 py-1.5 rounded-xl text-center min-w-[48px]">
+                      <span className="text-base sm:text-lg font-black text-amber-400 font-mono leading-none block">{String(scheduleInfo.minutes).padStart(2, '0')}</span>
+                      <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest block mt-0.5">MENIT</span>
+                    </div>
+                    <span className="text-slate-500 font-black text-xs">:</span>
+                    <div className="bg-slate-900 border border-white/10 px-2.5 py-1.5 rounded-xl text-center min-w-[48px]">
+                      <span className="text-base sm:text-lg font-black text-amber-400 font-mono leading-none block">{String(scheduleInfo.seconds).padStart(2, '0')}</span>
+                      <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest block mt-0.5">DETIK</span>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Grid 2 Kartu Jadwal Utama */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Latihan 1: Rabu & Jumat */}
-                <div className="bg-slate-900/90 border border-blue-500/30 p-4 sm:p-5 rounded-3xl relative overflow-hidden shadow-lg hover:border-blue-500/60 transition-all">
-                  <div className="flex items-center justify-between mb-3 border-b border-white/10 pb-3">
+              {/* Grid 3 Kartu Jadwal Utama */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Latihan 1: Hari Rabu */}
+                <div className={`bg-slate-900/90 border p-4 sm:p-5 rounded-3xl relative overflow-hidden shadow-lg transition-all ${
+                  scheduleInfo.isRabuActive ? 'border-red-500/60 ring-1 ring-red-500/30' : 'border-blue-500/30 hover:border-blue-500/60'
+                }`}>
+                  <div className="flex items-center justify-between mb-3 border-b border-white/10 pb-3 gap-2">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-2xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 shrink-0">
                         <Calendar size={18} />
                       </div>
                       <div>
-                        <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">Hari Kerja</span>
-                        <h3 className="text-base font-black text-white italic uppercase tracking-wide mt-0.5">Rabu & Jumat</h3>
+                        <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">Hari Rabu</span>
+                        <h3 className="text-base font-black text-white italic uppercase tracking-wide mt-0.5">Sesi Rabu</h3>
                       </div>
                     </div>
+
+                    {/* Badge Status Aktif / Akan Datang */}
+                    {scheduleInfo.isRabuActive ? (
+                      <span className="px-2.5 py-1 rounded-full bg-red-500/20 text-red-400 border border-red-500/40 text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 animate-pulse shadow-lg shadow-red-500/20 shrink-0">
+                        <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+                        Aktif
+                      </span>
+                    ) : (
+                      <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 shrink-0">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                        Akan Datang
+                      </span>
+                    )}
                   </div>
 
                   <div className="space-y-2.5 text-xs">
@@ -531,23 +585,91 @@ const AdminMatch: React.FC<AdminMatchProps> = ({ session }) => {
 
                     <div className="flex items-center gap-2 text-slate-400 text-[10px] pt-0.5">
                       <Dumbbell size={14} className="text-emerald-400 shrink-0" />
-                      <span>Sesi Latihan Fisik, Teknik & Sparing Anggota</span>
+                      <span>Latihan Fisik, Teknik &amp; Sparing</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Latihan 2: Hari Ahad */}
-                <div className="bg-slate-900/90 border border-emerald-500/30 p-4 sm:p-5 rounded-3xl relative overflow-hidden shadow-lg hover:border-emerald-500/60 transition-all">
-                  <div className="flex items-center justify-between mb-3 border-b border-white/10 pb-3">
+                {/* Latihan 2: Hari Jumat */}
+                <div className={`bg-slate-900/90 border p-4 sm:p-5 rounded-3xl relative overflow-hidden shadow-lg transition-all ${
+                  scheduleInfo.isJumatActive ? 'border-red-500/60 ring-1 ring-red-500/30' : 'border-indigo-500/30 hover:border-indigo-500/60'
+                }`}>
+                  <div className="flex items-center justify-between mb-3 border-b border-white/10 pb-3 gap-2">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shrink-0">
+                        <Calendar size={18} />
+                      </div>
+                      <div>
+                        <span className="text-[9px] font-black text-indigo-400 uppercase tracking-widest bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">Hari Jumat</span>
+                        <h3 className="text-base font-black text-white italic uppercase tracking-wide mt-0.5">Sesi Jumat</h3>
+                      </div>
+                    </div>
+
+                    {/* Badge Status Aktif / Akan Datang */}
+                    {scheduleInfo.isJumatActive ? (
+                      <span className="px-2.5 py-1 rounded-full bg-red-500/20 text-red-400 border border-red-500/40 text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 animate-pulse shadow-lg shadow-red-500/20 shrink-0">
+                        <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+                        Aktif
+                      </span>
+                    ) : (
+                      <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 shrink-0">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                        Akan Datang
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="space-y-2.5 text-xs">
+                    <div className="flex items-center gap-2.5 bg-black/40 p-2.5 rounded-2xl border border-white/5">
+                      <MapPin size={16} className="text-indigo-400 shrink-0" />
+                      <div>
+                        <p className="text-[8px] text-slate-400 font-bold uppercase">Lokasi GOR</p>
+                        <p className="font-bold text-white text-xs sm:text-sm">GOR SMAN 4 Parepare</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2.5 bg-black/40 p-2.5 rounded-2xl border border-white/5">
+                      <Clock size={16} className="text-amber-400 shrink-0" />
+                      <div>
+                        <p className="text-[8px] text-slate-400 font-bold uppercase">Waktu Sesi</p>
+                        <p className="font-bold text-amber-300 text-xs">08.00 - 12.00 WITA (4 Jam)</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-slate-400 text-[10px] pt-0.5">
+                      <Dumbbell size={14} className="text-indigo-400 shrink-0" />
+                      <span>Sparing &amp; Pembentukan Poin Clasement</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Latihan 3: Hari Ahad */}
+                <div className={`bg-slate-900/90 border p-4 sm:p-5 rounded-3xl relative overflow-hidden shadow-lg transition-all ${
+                  scheduleInfo.isAhadActive ? 'border-red-500/60 ring-1 ring-red-500/30' : 'border-emerald-500/30 hover:border-emerald-500/60'
+                }`}>
+                  <div className="flex items-center justify-between mb-3 border-b border-white/10 pb-3 gap-2">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-2xl bg-emerald-600/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
                         <Calendar size={18} />
                       </div>
                       <div>
-                        <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Akhir Pekan</span>
-                        <h3 className="text-base font-black text-white italic uppercase tracking-wide mt-0.5">Hari Ahad (Minggu)</h3>
+                        <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Hari Ahad</span>
+                        <h3 className="text-base font-black text-white italic uppercase tracking-wide mt-0.5">Sesi Ahad</h3>
                       </div>
                     </div>
+
+                    {/* Badge Status Aktif / Akan Datang */}
+                    {scheduleInfo.isAhadActive ? (
+                      <span className="px-2.5 py-1 rounded-full bg-red-500/20 text-red-400 border border-red-500/40 text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 animate-pulse shadow-lg shadow-red-500/20 shrink-0">
+                        <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+                        Aktif
+                      </span>
+                    ) : (
+                      <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 shrink-0">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                        Akan Datang
+                      </span>
+                    )}
                   </div>
 
                   <div className="space-y-2.5 text-xs">
@@ -569,7 +691,7 @@ const AdminMatch: React.FC<AdminMatchProps> = ({ session }) => {
 
                     <div className="flex items-center gap-2 text-slate-400 text-[10px] pt-0.5">
                       <Dumbbell size={14} className="text-cyan-400 shrink-0" />
-                      <span>Sesi Internal Game Match & Silaturahmi Club</span>
+                      <span>Sesi Internal Game Match &amp; Silaturahmi Club</span>
                     </div>
                   </div>
                 </div>

@@ -55,6 +55,7 @@ import ManajemenDokumen from './components/ManajemenDokumen';
 import { KelolaSurat } from './components/KelolaSurat'; 
 import KasManager from './components/KasManager'; 
 import ProfilAnggota from './components/ProfilAnggota'; 
+import ScheduleWidget from './components/ScheduleWidget'; 
 
 import { X, ChevronLeft, ChevronRight, Menu, Zap, Download, ExternalLink, Volume2, VolumeX, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -791,8 +792,9 @@ function AdminLayout({ session }: { session: any }) {
   const isAdmin = userRole === 'admin';
 
   return (
-    <div className="flex h-screen w-full bg-[#070d1a] overflow-hidden">
+    <div className="flex h-screen w-full bg-[#070d1a] overflow-hidden relative">
       <Sidebar email={session?.user?.email || ''} role={userRole} isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+      <ScheduleWidget />
       <main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         <div className="md:hidden flex items-center justify-between bg-[#0F172A] px-4 py-3.5 border-b border-white/5">
           <button onClick={() => setIsSidebarOpen(true)} className="text-white p-2 hover:bg-white/10 rounded-xl transition-colors"><Menu size={20} /></button>
