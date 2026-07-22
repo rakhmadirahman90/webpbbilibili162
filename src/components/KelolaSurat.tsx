@@ -100,7 +100,7 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     tema: 'Ramadan sebagai Madrasah Integritas dan Spiritual',
     nama_ketua: 'H. Wawan',
     nama_sekretaris: 'H. Barhaman Muin S.Ag',
-    logo_url: '', 
+    logo_url: '/logo_pb_bilibili_162.svg', 
     ttd_ketua_url: '', 
     ttd_sekretaris_url: '',
     cap_stempel_url: '',
@@ -662,7 +662,7 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                     {formData.logo_url ? (
                         <img src={formData.logo_url} alt="Logo" className="w-full h-full object-contain" />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center font-bold text-3xl border-4 border-black rounded-full italic">PB</div>
+                        <img src="/logo_pb_bilibili_162.svg" alt="Logo PB Bilibili 162" className="w-full h-full object-contain" />
                     )}
                   </div>
                   <div className="text-center flex-1">

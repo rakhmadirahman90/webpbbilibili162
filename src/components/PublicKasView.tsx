@@ -8,7 +8,7 @@ import {
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-const PB_LOGO_URL = "https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/assets/logo1.png";
+const PB_LOGO_URL = "/logo_pb_bilibili_162.svg";
 const DAFTAR_PEMASUKAN = [
   'Iuran Bulanan Tetap (10k)',
   'Pembayaran Iuran Binaan',
