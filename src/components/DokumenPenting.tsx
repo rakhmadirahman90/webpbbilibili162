@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
-import { FileDown, Search, Eye, FileText, Clock, DownloadCloud, X, Loader2, AlertCircle } from 'lucide-react';
+import { Search, Eye, FileText, Clock, DownloadCloud, X, Loader2, AlertCircle, FileCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function DokumenPenting() {
@@ -14,13 +14,18 @@ export default function DokumenPenting() {
   useEffect(() => {
     const getDocs = async () => {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('documents')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (!error) setDocs(data || []);
-      setLoading(false);
+      try {
+        const { data, error } = await supabase
+          .from('documents')
+          .select('*')
+          .order('created_at', { ascending: false });
+        
+        if (!error) setDocs(data || []);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
     };
     getDocs();
   }, []);
@@ -40,12 +45,15 @@ export default function DokumenPenting() {
   );
 
   return (
-    <div id="dokumen-section" className="max-w-7xl mx-auto px-6 py-24 min-h-screen text-slate-100 relative bg-[#070d1a]">
-      
+    <section className="w-full h-full flex flex-col justify-between py-1 sm:py-3 md:py-6 bg-[#070d1a] text-white relative overflow-hidden select-none">
+      {/* Background Decor */}
+      <div className="absolute top-0 right-0 w-[280px] sm:w-[500px] h-[280px] sm:h-[500px] bg-blue-600/10 blur-[90px] rounded-full pointer-events-none -mr-20 -mt-20" />
+      <div className="absolute bottom-0 left-0 w-[280px] sm:w-[400px] h-[280px] sm:h-[400px] bg-indigo-600/10 blur-[90px] rounded-full pointer-events-none -ml-20 -mb-20" />
+
       {/* --- MODAL PRATINJAU INTEGRASI --- */}
       <AnimatePresence>
         {selectedDocUrl && (
-          <div className="fixed inset-0 z-[110000] flex items-center justify-center p-4 md:p-12">
+          <div className="fixed inset-0 z-[110000] flex items-center justify-center p-3 sm:p-6 md:p-12">
             {/* Overlay Backdrop */}
             <motion.div 
               initial={{ opacity: 0 }}
@@ -60,24 +68,24 @@ export default function DokumenPenting() {
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="relative w-full max-w-6xl h-[90vh] bg-[#0c1426] border border-slate-800 rounded-[2.5rem] overflow-hidden flex flex-col shadow-[0_0_50px_rgba(0,0,0,0.5)]"
+              className="relative w-full max-w-5xl h-[85vh] bg-[#0c1426] border border-slate-800 rounded-2xl sm:rounded-3xl overflow-hidden flex flex-col shadow-2xl z-10"
             >
               {/* Header Modal */}
-              <div className="flex items-center justify-between p-6 border-b border-slate-800 bg-[#0c1426]/80 backdrop-blur-xl">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/20">
-                    <FileText size={20} className="text-white" />
+              <div className="flex items-center justify-between p-3 sm:p-4 border-b border-white/10 bg-[#0c1426]/90 backdrop-blur-xl">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/20 shrink-0">
+                    <FileText size={18} className="text-white" />
                   </div>
                   <div>
-                    <h3 className="text-xs font-black uppercase italic tracking-[0.2em] text-blue-500 leading-none mb-1">Pratinjau Arsip</h3>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">Dokumen Resmi PB Bilibili 162</p>
+                    <h3 className="text-xs sm:text-sm font-black uppercase italic tracking-wider text-blue-400 leading-none mb-0.5">Pratinjau Arsip</h3>
+                    <p className="text-[9px] sm:text-[10px] text-slate-400 font-bold uppercase tracking-tight">Dokumen Resmi PB Bilibili 162</p>
                   </div>
                 </div>
                 <button 
                   onClick={() => setSelectedDocUrl(null)}
-                  className="p-3 hover:bg-white/5 text-slate-400 hover:text-white rounded-full transition-all active:scale-90"
+                  className="p-2 hover:bg-white/10 text-slate-400 hover:text-white rounded-full transition-all active:scale-90"
                 >
-                  <X size={24} />
+                  <X size={20} />
                 </button>
               </div>
 
@@ -94,137 +102,131 @@ export default function DokumenPenting() {
         )}
       </AnimatePresence>
 
-      {/* --- HEADER SECTION --- */}
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        className="text-center mb-24"
-      >
-        <h2 className="text-5xl md:text-7xl font-black italic uppercase tracking-tighter mb-6 text-slate-100">
-          DOKUMEN <span className="text-blue-500">PENTING</span>
-        </h2>
-        <div className="flex items-center justify-center gap-4">
-          <div className="h-[2px] w-16 bg-gradient-to-r from-transparent to-blue-500"></div>
-          <p className="text-slate-400 uppercase text-[11px] font-black tracking-[0.4em]">Arsip Digital Authority Panel</p>
-          <div className="h-[2px] w-16 bg-gradient-to-l from-transparent to-blue-500"></div>
+      <div className="w-full max-w-7xl mx-auto px-2.5 sm:px-4 md:px-6 relative z-10 flex flex-col h-full justify-between min-h-0">
+        
+        {/* Header Section Compact */}
+        <div className="text-center mb-2 sm:mb-3 shrink-0">
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="inline-flex items-center gap-1.5 bg-blue-600/10 border border-blue-500/20 px-3 py-0.5 sm:py-1 rounded-full mb-1"
+          >
+            <FileCheck size={12} className="text-blue-400" />
+            <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] text-blue-400">Arsip Digital Resmi</span>
+          </motion.div>
+
+          <motion.h2 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="text-lg sm:text-2xl md:text-4xl lg:text-5xl font-black tracking-tighter italic uppercase text-white"
+          >
+            DOKUMEN <span className="text-blue-500">PENTING</span>
+          </motion.h2>
+
+          <p className="text-slate-400 max-w-xl mx-auto uppercase tracking-widest text-[8px] sm:text-[10px] md:text-xs font-bold mt-0.5">
+            Unduh Berkas Administrasi, Surat & Panduan PB Bilibili 162
+          </p>
         </div>
-      </motion.div>
 
-      {/* --- SEARCH BAR --- */}
-      <div className="relative max-w-3xl mx-auto mb-20 group">
-        <div className="absolute inset-0 bg-blue-500/20 blur-[60px] rounded-full group-hover:bg-blue-500/30 transition-all -z-10"></div>
-        <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-blue-400" size={24} />
-        <input 
-          type="text" 
-          placeholder="Cari judul dokumen atau deskripsi..." 
-          className="w-full bg-slate-900/60 border border-slate-700 rounded-[2rem] py-6 pl-16 pr-8 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all backdrop-blur-3xl text-slate-100 placeholder:text-slate-500 font-medium shadow-lg"
-          onChange={e => setSearch(e.target.value)}
-        />
-      </div>
-
-      {/* --- GRID LIST --- */}
-      {loading ? (
-        <div className="grid md:grid-cols-2 gap-8">
-          {[1, 2, 3, 4].map(i => (
-            <div key={i} className="h-60 bg-[#0c1426]/40 rounded-[3rem] border border-slate-800/50 animate-pulse"></div>
-          ))}
-        </div>
-      ) : (
-        <>
-          <div className="flex flex-col gap-4">
-            <AnimatePresence mode='popLayout'>
-              {filteredDocs.map((doc, index) => (
-                <motion.div
-                  key={doc.id}
-                  layout
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ delay: index * 0.03 }}
-                  className="group flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 bg-[#0c1426]/30 border border-slate-800/80 p-6 rounded-2xl hover:border-blue-600/50 hover:bg-[#0c1426]/60 transition-all duration-300 shadow-sm"
-                >
-                  {/* File Icon */}
-                  <div className="w-12 h-12 bg-slate-800/50 rounded-xl flex items-center justify-center text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-colors shrink-0">
-                    <FileText size={20} />
-                  </div>
-
-                  {/* Document Details */}
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-sm md:text-base font-bold text-slate-100 truncate mb-1">
-                      {doc.title}
-                    </h3>
-                    <div className="flex flex-wrap gap-3 items-center text-[10px] md:text-xs text-slate-500 font-bold uppercase tracking-wider">
-                      <span className="bg-slate-800/50 px-2 py-0.5 rounded text-slate-300">
-                        {doc.file_type || 'PDF'}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock size={10} className="text-blue-500" /> 
-                        {new Date(doc.created_at).toLocaleDateString('id-ID')}
-                      </span>
-                      <span>{formatFileSize(doc.file_size)}</span>
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex items-center gap-2 w-full sm:w-auto">
-                    <button 
-                      onClick={() => setSelectedDocUrl(doc.file_url)}
-                      className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-[11px] font-black uppercase tracking-widest bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white px-6 py-3 rounded-xl transition-all"
-                    >
-                      <Eye size={14} /> View
-                    </button>
-                    <a 
-                      href={doc.file_url} 
-                      download 
-                      className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-[11px] font-black uppercase tracking-widest bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-xl transition-all shadow-lg shadow-blue-600/20"
-                    >
-                      <DownloadCloud size={14} /> Download
-                    </a>
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
-
-          {/* --- EMPTY STATE --- */}
-          {filteredDocs.length === 0 && (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-center py-40 bg-[#0c1426]/10 rounded-[4rem] border border-dashed border-slate-800"
+        {/* --- SEARCH BAR --- */}
+        <div className="relative w-full max-w-xl mx-auto mb-2 sm:mb-3 shrink-0">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-blue-400" size={16} />
+          <input 
+            type="text" 
+            value={search}
+            placeholder="Cari dokumen atau berkas..." 
+            className="w-full bg-[#0b1224]/90 border border-white/10 rounded-xl py-2 sm:py-2.5 pl-10 pr-8 outline-none focus:border-blue-500 text-xs sm:text-sm text-slate-100 placeholder:text-slate-500 font-medium shadow-md transition-all"
+            onChange={e => setSearch(e.target.value)}
+          />
+          {search && (
+            <button 
+              onClick={() => setSearch('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
             >
-              <div className="w-24 h-24 bg-slate-800/30 rounded-full flex items-center justify-center mx-auto mb-8 text-slate-700">
-                <AlertCircle size={48} />
-              </div>
-              <h3 className="text-2xl font-black text-slate-500 uppercase italic">Hasil Tidak Ditemukan</h3>
-              <p className="text-slate-600 text-xs mt-3 font-bold uppercase tracking-widest">Coba gunakan kata kunci arsip yang lain</p>
-            </motion.div>
+              <X size={14} />
+            </button>
           )}
-        </>)}
+        </div>
 
+        {/* --- DOCUMENT LIST CONTAINER --- */}
+        <div className="flex-1 bg-[#0b1224]/90 p-2.5 sm:p-4 rounded-2xl md:rounded-3xl border border-white/10 backdrop-blur-xl shadow-xl flex flex-col min-h-0 overflow-hidden relative">
+          
+          {loading ? (
+            <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-slate-400">
+              <Loader2 className="animate-spin text-blue-500" size={28} />
+              <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Memuat Arsip Dokumen...</span>
+            </div>
+          ) : filteredDocs.length === 0 ? (
+            <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-center p-4">
+              <AlertCircle size={36} className="text-slate-500" />
+              <h3 className="text-sm font-bold text-slate-400 uppercase italic">Dokumen Tidak Ditemukan</h3>
+              <p className="text-slate-500 text-[10px] sm:text-xs">Gunakan kata kunci lain atau bersihkan pencarian</p>
+            </div>
+          ) : (
+            <div className="flex-1 overflow-y-auto pr-1 sm:pr-2 space-y-2 custom-scrollbar">
+              <AnimatePresence mode="popLayout">
+                {filteredDocs.map((doc, index) => (
+                  <motion.div
+                    key={doc.id || index}
+                    layout
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ delay: index * 0.02 }}
+                    className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 bg-white/5 border border-white/5 p-2.5 sm:p-3.5 rounded-xl hover:border-blue-500/30 transition-all duration-200 shadow-sm group"
+                  >
+                    {/* Left Details */}
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="w-9 h-9 sm:w-10 sm:h-10 bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-400 border border-blue-500/20 group-hover:bg-blue-600 group-hover:text-white transition-colors shrink-0">
+                        <FileText size={18} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="text-xs sm:text-sm font-bold text-slate-100 truncate leading-snug">
+                          {doc.title}
+                        </h3>
+                        <div className="flex flex-wrap items-center gap-2 text-[9px] sm:text-[10px] text-slate-400 font-medium mt-0.5">
+                          <span className="bg-blue-500/20 text-blue-300 px-1.5 py-0.5 rounded text-[8px] font-black uppercase">
+                            {doc.file_type || 'PDF'}
+                          </span>
+                          <span className="flex items-center gap-1 text-slate-400">
+                            <Clock size={10} className="text-blue-400" /> 
+                            {new Date(doc.created_at).toLocaleDateString('id-ID')}
+                          </span>
+                          <span className="text-slate-500">{formatFileSize(doc.file_size)}</span>
+                        </div>
+                      </div>
+                    </div>
 
-      {/* --- FOOTER INFO --- */}
-      <div className="mt-32 p-12 rounded-[4rem] bg-gradient-to-br from-[#0c1426] to-black border border-slate-800/50 flex flex-col md:flex-row items-center justify-between gap-10 shadow-2xl relative overflow-hidden group">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 blur-[100px] -z-10 group-hover:bg-blue-600/10 transition-colors"></div>
-        <div className="flex items-center gap-6">
-          <div className="w-16 h-16 rounded-2xl bg-blue-600 flex items-center justify-center shadow-[0_10px_20px_rgba(37,99,235,0.3)]">
-            <DownloadCloud size={28} className="text-white" />
-          </div>
-          <div>
-            <h4 className="font-black italic uppercase text-lg leading-none mb-2 text-slate-100">Pusat Informasi Dokumen</h4>
-            <p className="text-sm text-slate-500 max-w-sm font-medium leading-relaxed text-justify">
-              Arsip ini dikelola oleh tim administrasi **Authority Panel PB Bilibili 162**. Hubungi sekretariat jika membutuhkan akses dokumen fisik.
-            </p>
+                    {/* Right Actions */}
+                    <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-white/5">
+                      <button 
+                        onClick={() => setSelectedDocUrl(doc.file_url)}
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-1 text-[10px] sm:text-xs font-bold uppercase tracking-wider bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg transition-all"
+                      >
+                        <Eye size={13} /> View
+                      </button>
+                      <a 
+                        href={doc.file_url} 
+                        download 
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-1 text-[10px] sm:text-xs font-bold uppercase tracking-wider bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg transition-all shadow-md shadow-blue-600/20"
+                      >
+                        <DownloadCloud size={13} /> Download
+                      </a>
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          )}
+
+          {/* Bottom Bar */}
+          <div className="mt-2 pt-2 border-t border-white/10 shrink-0 flex items-center justify-between text-[8px] sm:text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+            <span className="text-blue-400">Total {filteredDocs.length} Dokumen Tersedia</span>
+            <span>PB Bilibili 162 Parepare</span>
           </div>
         </div>
-        <button 
-          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          className="px-10 py-5 bg-white text-black rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-blue-600 hover:text-white transition-all duration-500 shadow-xl"
-        >
-          Kembali Ke Atas
-        </button>
+
       </div>
-    </div>
+    </section>
   );
 }

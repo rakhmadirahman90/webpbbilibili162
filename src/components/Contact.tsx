@@ -32,132 +32,142 @@ export default function Contact() {
   }
 
   return (
-    <section id="contact" className="py-24 bg-[#0b0e14] text-white relative overflow-hidden scroll-mt-20">
-      {/* Background Decor - Konsisten dengan komponen lain */}
-      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-blue-600/5 blur-[120px] rounded-full pointer-events-none -mr-64 -mt-64" />
-      <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-indigo-600/5 blur-[120px] rounded-full pointer-events-none -ml-32 -mb-32" />
-      
-      <div className="max-w-7xl mx-auto px-6 relative z-10">
-        {/* Header Section */}
-        <div className="text-center mb-20">
+    <section id="contact" className="w-full h-full flex flex-col justify-between py-1 sm:py-3 md:py-6 bg-[#070d1a] text-white relative overflow-hidden select-none">
+      {/* Background Decor */}
+      <div className="absolute top-0 right-0 w-[280px] sm:w-[500px] h-[280px] sm:h-[500px] bg-blue-600/10 blur-[90px] rounded-full pointer-events-none -mr-20 -mt-20" />
+      <div className="absolute bottom-0 left-0 w-[280px] sm:w-[400px] h-[280px] sm:h-[400px] bg-indigo-600/10 blur-[90px] rounded-full pointer-events-none -ml-20 -mb-20" />
+
+      <div className="w-full max-w-7xl mx-auto px-2.5 sm:px-4 md:px-6 relative z-10 flex flex-col h-full justify-between">
+        {/* Header Section Compact */}
+        <div className="text-center mb-2 sm:mb-3 lg:mb-6 shrink-0">
           <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            className="inline-flex items-center gap-2 bg-blue-600/10 border border-blue-500/20 px-4 py-2 rounded-full mb-6"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="inline-flex items-center gap-1.5 bg-blue-600/10 border border-blue-500/20 px-3 py-0.5 sm:py-1 rounded-full mb-1"
           >
-            <MessageSquare size={16} className="text-blue-500" />
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400">Hubungi Kami</span>
+            <MessageSquare size={12} className="text-blue-400" />
+            <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] text-blue-400">Hubungi Kami</span>
           </motion.div>
           <motion.h2 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="text-4xl md:text-6xl font-black mb-6 tracking-tighter italic uppercase"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="text-lg sm:text-2xl md:text-4xl lg:text-5xl font-black tracking-tighter italic uppercase text-white"
           >
-            MARKAS <span className="text-blue-600">BESAR</span>
+            MARKAS <span className="text-blue-500">BESAR</span>
           </motion.h2>
-          <motion.p 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="text-zinc-500 max-w-2xl mx-auto uppercase tracking-widest text-[10px] md:text-xs font-bold leading-relaxed"
-          >
-            Kunjungi pusat pelatihan dan administrasi PB Bilibili 162 di Kota Parepare
-          </motion.p>
+          <p className="text-slate-400 max-w-xl mx-auto uppercase tracking-widest text-[8px] sm:text-[10px] md:text-xs font-bold mt-0.5">
+            Pusat Pelatihan & Administrasi PB Bilibili 162 Parepare
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-stretch">
+        {/* Content Layout Grid */}
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-2 sm:gap-4 md:gap-6 min-h-0 items-stretch">
           
-          {/* --- INFO CARD --- */}
+          {/* --- INFO CARD (5 COLS ON LG, COMPACT ON MOBILE) --- */}
           <motion.div 
-            initial={{ opacity: 0, x: -30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            className="flex flex-col gap-6"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="lg:col-span-5 flex flex-col justify-between gap-2 sm:gap-3 bg-[#0b1224]/90 p-3 sm:p-5 md:p-6 rounded-2xl md:rounded-3xl border border-white/10 backdrop-blur-xl shadow-xl overflow-hidden relative shrink-0"
           >
-            <div className="flex-1 bg-[#1a1d26] p-8 md:p-12 rounded-[2.5rem] border border-white/5 backdrop-blur-md shadow-2xl relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/5 blur-3xl group-hover:bg-blue-600/10 transition-colors" />
-              
-              <h3 className="text-2xl font-black mb-10 flex items-center gap-4 italic uppercase tracking-tight">
-                <span className="w-2 h-10 bg-blue-600 rounded-full shadow-[0_0_15px_rgba(37,99,235,0.5)]"></span>
+            <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 blur-2xl pointer-events-none" />
+
+            <div className="flex items-center gap-2 pb-1.5 sm:pb-2 border-b border-white/10">
+              <span className="w-1.5 h-5 sm:h-6 bg-blue-500 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.6)]"></span>
+              <h3 className="text-xs sm:text-base md:text-lg font-black uppercase tracking-tight italic text-white">
                 Informasi Kontak
               </h3>
-              
-              <div className="space-y-10">
-                <div className="flex gap-6">
-                  <div className="w-14 h-14 bg-blue-600/10 rounded-2xl flex items-center justify-center shrink-0 border border-blue-500/20 shadow-lg group-hover:scale-110 transition-transform">
-                    <MapPin className="text-blue-500" size={26} />
-                  </div>
-                  <div>
-                    <h4 className="font-black text-zinc-500 text-[10px] uppercase tracking-[0.2em] mb-2">Alamat Utama</h4>
-                    <p className="text-zinc-200 leading-relaxed font-medium text-lg">
-                      {contactData?.address || (
-                        <>
-                          Jl. Andi Makkasau No.171, Ujung Lare, <br />
-                          Kec. Soreang, Kota Parepare, Sulawesi Selatan 91131
-                        </>
-                      )}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex gap-6">
-                  <div className="w-14 h-14 bg-emerald-600/10 rounded-2xl flex items-center justify-center shrink-0 border border-emerald-500/20 shadow-lg group-hover:scale-110 transition-transform">
-                    <Clock className="text-emerald-500" size={26} />
-                  </div>
-                  <div>
-                    <h4 className="font-black text-zinc-500 text-[10px] uppercase tracking-[0.2em] mb-2">Jam Operasional</h4>
-                    <p className="text-zinc-200 font-black text-lg italic uppercase">
-                      {contactData?.operating_hours || "Senin - Sabtu: 08.00 - 22.00 WITA"}
-                    </p>
-                  </div>
-                </div>
-
-                {contactData?.email && (
-                  <div className="flex gap-6">
-                    <div className="w-14 h-14 bg-purple-600/10 rounded-2xl flex items-center justify-center shrink-0 border border-purple-500/20 shadow-lg group-hover:scale-110 transition-transform">
-                      <Mail className="text-purple-500" size={26} />
-                    </div>
-                    <div>
-                      <h4 className="font-black text-zinc-500 text-[10px] uppercase tracking-[0.2em] mb-2">Official Email</h4>
-                      <p className="text-zinc-200 font-bold text-lg">{contactData.email}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
             </div>
 
-            <motion.a 
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+            {/* Info List Items */}
+            <div className="space-y-2 sm:space-y-3.5 my-auto">
+              {/* Alamat */}
+              <div className="flex items-start gap-2 sm:gap-3">
+                <div className="w-7 h-7 sm:w-9 sm:h-9 bg-blue-500/10 rounded-xl flex items-center justify-center shrink-0 border border-blue-500/20 text-blue-400 shadow-sm">
+                  <MapPin size={14} className="sm:w-4 sm:h-4" />
+                </div>
+                <div className="min-w-0">
+                  <h4 className="font-black text-slate-400 text-[8px] sm:text-[9px] uppercase tracking-[0.15em]">Alamat Utama</h4>
+                  <p className="text-slate-200 font-medium text-[10px] sm:text-xs md:text-sm leading-tight sm:leading-snug line-clamp-2 sm:line-clamp-none">
+                    {contactData?.address || "Jl. Andi Makkasau No.171, Ujung Lare, Kec. Soreang, Kota Parepare, Sulsel 91131"}
+                  </p>
+                </div>
+              </div>
+
+              {/* Jam Operasional */}
+              <div className="flex items-start gap-2 sm:gap-3">
+                <div className="w-7 h-7 sm:w-9 sm:h-9 bg-emerald-500/10 rounded-xl flex items-center justify-center shrink-0 border border-emerald-500/20 text-emerald-400 shadow-sm">
+                  <Clock size={14} className="sm:w-4 sm:h-4" />
+                </div>
+                <div className="min-w-0">
+                  <h4 className="font-black text-slate-400 text-[8px] sm:text-[9px] uppercase tracking-[0.15em]">Jam Operasional</h4>
+                  <p className="text-emerald-400 font-black text-[10px] sm:text-xs md:text-sm italic uppercase leading-tight sm:leading-snug">
+                    {contactData?.operating_hours || "Senin - Sabtu: 08.00 - 22.00 WITA"}
+                  </p>
+                </div>
+              </div>
+
+              {/* Telepon / WA */}
+              {contactData?.phone && (
+                <div className="flex items-start gap-2 sm:gap-3">
+                  <div className="w-7 h-7 sm:w-9 sm:h-9 bg-amber-500/10 rounded-xl flex items-center justify-center shrink-0 border border-amber-500/20 text-amber-400 shadow-sm">
+                    <Phone size={14} className="sm:w-4 sm:h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <h4 className="font-black text-slate-400 text-[8px] sm:text-[9px] uppercase tracking-[0.15em]">Telepon / WhatsApp</h4>
+                    <a href={`tel:${contactData.phone}`} className="text-slate-200 hover:text-amber-400 font-bold text-[10px] sm:text-xs md:text-sm transition-colors">
+                      {contactData.phone}
+                    </a>
+                  </div>
+                </div>
+              )}
+
+              {/* Email */}
+              {contactData?.email && (
+                <div className="flex items-start gap-2 sm:gap-3">
+                  <div className="w-7 h-7 sm:w-9 sm:h-9 bg-purple-500/10 rounded-xl flex items-center justify-center shrink-0 border border-purple-500/20 text-purple-400 shadow-sm">
+                    <Mail size={14} className="sm:w-4 sm:h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <h4 className="font-black text-slate-400 text-[8px] sm:text-[9px] uppercase tracking-[0.15em]">Official Email</h4>
+                    <a href={`mailto:${contactData.email}`} className="text-slate-200 hover:text-purple-400 font-bold text-[10px] sm:text-xs md:text-sm transition-colors truncate block">
+                      {contactData.email}
+                    </a>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Action Button Google Maps */}
+            <a 
               href={contactData?.maps_url || defaultMapsUrl} 
               target="_blank" 
               rel="noopener noreferrer"
-              className="w-full py-5 bg-white text-black hover:bg-blue-600 hover:text-white rounded-[1.5rem] font-black uppercase text-xs tracking-[0.3em] shadow-2xl transition-all flex items-center justify-center gap-3 group"
+              className="w-full py-2 sm:py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-black uppercase text-[10px] sm:text-xs tracking-wider shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center gap-2 group active:scale-98 cursor-pointer mt-1"
             >
-              NAVIGASI GOOGLE MAPS <ExternalLink size={18} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-            </motion.a>
+              <span>Navigasi Google Maps</span>
+              <ExternalLink size={13} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+            </a>
           </motion.div>
 
-          {/* --- GOOGLE MAPS EMBED --- */}
+          {/* --- GOOGLE MAPS EMBED (7 COLS ON LG, FLEX-1 ON MOBILE) --- */}
           <motion.div 
-            initial={{ opacity: 0, x: 30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            className="w-full h-[500px] lg:h-full min-h-[500px] rounded-[3rem] overflow-hidden border border-white/5 shadow-[0_30px_100px_rgba(0,0,0,0.5)] bg-[#1a1d26] relative"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="lg:col-span-7 flex-1 w-full min-h-[140px] sm:min-h-[200px] md:min-h-[320px] rounded-2xl md:rounded-3xl overflow-hidden border border-white/10 shadow-2xl bg-[#0b1224] relative flex flex-col"
           >
             {loading ? (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-                <Loader2 className="animate-spin text-blue-600" size={40} />
-                <span className="text-[10px] font-black uppercase tracking-widest text-zinc-600">Memuat Peta...</span>
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+                <Loader2 className="animate-spin text-blue-500" size={28} />
+                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Memuat Peta...</span>
               </div>
             ) : (
               <iframe 
                 src={contactData?.maps_iframe || defaultMapEmbedUrl}
                 width="100%" 
                 height="100%" 
+                className="w-full h-full flex-1 border-0 min-h-[140px]"
                 style={{ 
-                  border: 0, 
-                  filter: 'grayscale(0.5) contrast(1.2) brightness(0.8)',
-                  mixBlendMode: 'normal'
+                  filter: 'grayscale(0.3) contrast(1.15) brightness(0.85)',
                 }} 
                 allowFullScreen
                 loading="lazy" 
@@ -166,8 +176,11 @@ export default function Contact() {
               ></iframe>
             )}
             
-            {/* Map Overlay Frame */}
-            <div className="absolute inset-0 pointer-events-none border-[12px] border-[#1a1d26] rounded-[3rem]"></div>
+            {/* Map Badge Overlay */}
+            <div className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-slate-900/90 backdrop-blur-md px-2 py-0.5 sm:py-1 rounded-lg border border-white/10 text-[8px] sm:text-[10px] font-bold text-slate-300 flex items-center gap-1.5 shadow-md pointer-events-none">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+              <span>Lokasi Presisi Parepare</span>
+            </div>
           </motion.div>
 
         </div>

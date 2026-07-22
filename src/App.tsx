@@ -731,7 +731,11 @@ export default function App() {
                 </motion.div>
               ) : (
                 /* DEDICATED FULL-PAGE VIEW DENGAN DARK MODE KONSISTEN & BOTTOM SPACING UNTUK FLOATING DOCK */
-                <div className="flex flex-col min-h-screen w-full bg-[#070d1a] pt-14 lg:pt-16 pb-28 sm:pb-36">
+                <div className={`flex flex-col min-h-screen w-full bg-[#070d1a] ${
+                  ['contact', 'kontak', 'sejarah', 'visi-misi', 'dokumen-penting', 'fasilitas'].includes(activeView)
+                    ? 'pt-12 sm:pt-14 pb-14 sm:pb-16 h-screen h-dvh overflow-hidden' 
+                    : 'pt-14 lg:pt-16 pb-28 sm:pb-36'
+                }`}>
                   <AnimatePresence mode="wait">
                     <motion.div 
                       key={`dedicated-view-${activeView}`}
@@ -739,9 +743,9 @@ export default function App() {
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: -20 }}
                       transition={{ duration: 0.3 }}
-                      className="flex-grow w-full flex flex-col"
+                      className="flex-grow w-full flex flex-col min-h-0"
                     >
-                      <div className="w-full flex flex-col flex-grow max-w-7xl px-4 md:px-8 mx-auto">
+                      <div className="w-full flex flex-col flex-grow max-w-7xl px-2.5 sm:px-4 md:px-8 mx-auto min-h-0">
                         {/* Render Komponen dengan Props masing-masing */}
                         {(activeView === 'jadwal' || activeView === 'jadwal-latihan' || activeView === 'schedule') && <JadwalLatihanView />}
                         {activeView === 'kas' && <PublicKasView />}
@@ -761,7 +765,7 @@ export default function App() {
                     </motion.div>
                   </AnimatePresence>
                   
-                  {activeView !== 'register' && activeView !== 'pendaftaran' && <Footer onNavigate={handleNavigate} />}
+                  {!['register', 'pendaftaran', 'contact', 'kontak', 'sejarah', 'visi-misi', 'dokumen-penting', 'fasilitas'].includes(activeView) && <Footer onNavigate={handleNavigate} />}
                 </div>
               )}
             </AnimatePresence>
