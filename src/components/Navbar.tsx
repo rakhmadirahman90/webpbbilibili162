@@ -1,15 +1,26 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Globe, ChevronDown, Menu, X, MapPin, UserPlus, Wallet, FileText, Trophy, BrainCircuit, ArrowLeft, Youtube, Instagram, Facebook, Twitter, Radio } from 'lucide-react';
+import { Globe, ChevronDown, Menu, X, MapPin, UserPlus, Wallet, FileText, Trophy, BrainCircuit, ArrowLeft, Youtube, Instagram, Facebook, Twitter, Radio, LogIn, LayoutDashboard, UserCheck, LogOut } from 'lucide-react';
 import { supabase } from '../supabase'; 
+import { useNavigate } from 'react-router-dom';
 
 interface NavbarProps {
   onNavigate: (sectionId: string, tabId?: string) => void;
 }
 
 export default function Navbar({ onNavigate }: NavbarProps) {
+  const navigate = useNavigate();
+  const [session, setSession] = useState<any>(null);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [currentLang, setCurrentLang] = useState('ID');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => setSession(session));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
   
   const [navData, setNavData] = useState<any[]>([]);
   const [branding, setBranding] = useState({
@@ -394,10 +405,34 @@ export default function Navbar({ onNavigate }: NavbarProps) {
                       <UserPlus size={14} className="text-blue-600 group-hover:text-white" /> 
                       <span className="text-blue-500 group-hover:text-white">Pendaftaran</span>
                     </button>
+                    <button onClick={() => navigate(session ? '/admin/dashboard' : '/login')} className="dropdown-item flex items-center gap-3 border-t border-white/5">
+                      <LogIn size={14} className="text-blue-400" /> {session ? 'Dashboard Admin' : 'Portal Login'}
+                    </button>
                   </div>
                 </div>
               )}
             </div>
+
+            {/* LOGIN / DASHBOARD DEDICATED BUTTON */}
+            {session ? (
+              <button 
+                onClick={() => navigate('/admin/dashboard')}
+                className="px-3 py-1.5 lg:px-3.5 lg:py-2 bg-emerald-600 hover:bg-emerald-500 rounded-full text-[9.5px] lg:text-[10px] xl:text-[11.5px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-lg shadow-emerald-600/20 hover:-translate-y-0.5 active:scale-95 cursor-pointer text-white shrink-0"
+                title="Masuk ke Panel Dashboard"
+              >
+                <LayoutDashboard size={13} />
+                <span className="whitespace-nowrap">Dashboard</span>
+              </button>
+            ) : (
+              <button 
+                onClick={() => navigate('/login')}
+                className="px-3 py-1.5 lg:px-3.5 lg:py-2 bg-slate-800 hover:bg-slate-700 border border-white/10 hover:border-blue-500/50 rounded-full text-[9.5px] lg:text-[10px] xl:text-[11.5px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-lg shadow-black/40 hover:-translate-y-0.5 active:scale-95 cursor-pointer text-slate-200 hover:text-white shrink-0"
+                title="Login Anggota & Admin"
+              >
+                <LogIn size={13} className="text-blue-400" />
+                <span className="whitespace-nowrap">Login</span>
+              </button>
+            )}
           </div>
 
           {/* MOBILE MENU TRIGGER */}
@@ -525,6 +560,27 @@ export default function Navbar({ onNavigate }: NavbarProps) {
                   <MapPin size={14} className="text-blue-500 shrink-0" />
                   <span>Hubungi Kami</span>
                 </button>
+              </div>
+
+              {/* Portal Login / Dashboard Item for Mobile */}
+              <div className="border-b border-white/5">
+                {session ? (
+                  <button 
+                    onClick={() => { setIsMobileMenuOpen(false); navigate('/admin/dashboard'); }}
+                    className="flex items-center gap-2.5 w-full px-6 py-4 text-[12px] font-bold tracking-wider uppercase text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 transition-all duration-200 text-left"
+                  >
+                    <LayoutDashboard size={15} className="text-emerald-400 shrink-0" />
+                    <span>Dashboard Admin</span>
+                  </button>
+                ) : (
+                  <button 
+                    onClick={() => { setIsMobileMenuOpen(false); navigate('/login'); }}
+                    className="flex items-center gap-2.5 w-full px-6 py-4 text-[12px] font-bold tracking-wider uppercase text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 transition-all duration-200 text-left"
+                  >
+                    <LogIn size={15} className="text-blue-400 shrink-0" />
+                    <span>Portal Login</span>
+                  </button>
+                )}
               </div>
             </div>
 

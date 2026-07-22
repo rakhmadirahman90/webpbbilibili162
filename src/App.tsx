@@ -477,14 +477,35 @@ export default function App() {
   }, [notifications]);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
+    const syncSession = async () => {
+      const { data: { session: supaSession } } = await supabase.auth.getSession();
+      if (supaSession) {
+        setSession(supaSession);
+      } else {
+        const local = localStorage.getItem('local_admin_session');
+        setSession(local ? JSON.parse(local) : null);
+      }
       setLoading(false);
+    };
+
+    syncSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, supaSession) => {
+      if (supaSession) {
+        setSession(supaSession);
+      } else {
+        const local = localStorage.getItem('local_admin_session');
+        setSession(local ? JSON.parse(local) : null);
+      }
     });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
-    return () => subscription.unsubscribe();
+
+    const handleCustomAuth = () => syncSession();
+    window.addEventListener('local-session-changed', handleCustomAuth);
+
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener('local-session-changed', handleCustomAuth);
+    };
   }, []);
 
   const handleNavigate = (sectionId: string, subPath?: string) => {

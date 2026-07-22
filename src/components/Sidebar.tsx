@@ -39,11 +39,12 @@ import { supabase } from '../supabase';
 // Prop untuk kontrol dari parent (AdminLayout)
 interface SidebarProps {
   email: string;
+  role?: string;
   isOpen?: boolean;
   onClose?: () => void;
 }
 
-export default function Sidebar({ email, isOpen, onClose }: SidebarProps) {
+export default function Sidebar({ email, role = 'admin', isOpen, onClose }: SidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const [dbStatus, setDbStatus] = useState<'online' | 'offline'>('online');
@@ -78,8 +79,10 @@ export default function Sidebar({ email, isOpen, onClose }: SidebarProps) {
     });
 
     if (result.isConfirmed) {
-      const { error } = await supabase.auth.signOut();
-      if (!error) navigate('/login');
+      localStorage.removeItem('local_admin_session');
+      window.dispatchEvent(new Event('local-session-changed'));
+      await supabase.auth.signOut();
+      navigate('/login');
     }
   };
 
