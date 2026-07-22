@@ -405,9 +405,6 @@ export default function Navbar({ onNavigate }: NavbarProps) {
                       <UserPlus size={14} className="text-blue-600 group-hover:text-white" /> 
                       <span className="text-blue-500 group-hover:text-white">Pendaftaran</span>
                     </button>
-                    <button onClick={() => navigate(session ? '/admin/dashboard' : '/login')} className="dropdown-item flex items-center gap-3 border-t border-white/5">
-                      <LogIn size={14} className="text-blue-400" /> {session ? 'Dashboard Admin' : 'Portal Login'}
-                    </button>
                   </div>
                 </div>
               )}
