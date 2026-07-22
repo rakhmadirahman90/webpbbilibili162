@@ -59,11 +59,29 @@ export default function Login() {
   
   // Database Member List (fetched securely for backend verification)
   const [dbMembers, setDbMembers] = useState<MemberRecord[]>([]);
+  const [logoUrl, setLogoUrl] = useState<string>('/logo_pb_bilibili_162.svg');
 
-  // Fetch Database Members on Mount
+  // Fetch Database Members & Branding Logo on Mount
   useEffect(() => {
     fetchMembersFromDb();
+    fetchBrandingLogo();
   }, []);
+
+  const fetchBrandingLogo = async () => {
+    try {
+      const { data } = await supabase
+        .from('site_settings')
+        .select('value')
+        .eq('key', 'navbar_branding')
+        .maybeSingle();
+      if (data && data.value) {
+        const val = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
+        if (val.logo_url) setLogoUrl(val.logo_url);
+      }
+    } catch (e) {
+      console.error('Failed to load branding logo:', e);
+    }
+  };
 
   const fetchMembersFromDb = async () => {
     try {
@@ -154,21 +172,23 @@ export default function Login() {
     setLoading(true);
     setErrorMsg(null);
 
-    // 1. Check Master Admin Login
-    const adminPinData = getStoredPinData('admin');
-    if (
+    // 1. Check Master Admin Login STRICTLY
+    const isAdminUsername = 
       lowerUsername === 'admin' ||
       lowerUsername === 'administrator' ||
-      cleanPin === '160390' ||
-      lowerPin === 'admin162'
-    ) {
-      if (
+      lowerUsername === 'admin162' ||
+      lowerUsername === 'admin@pbbilibili162.com';
+
+    if (isAdminUsername) {
+      const adminPinData = getStoredPinData('admin');
+      const isAdminPinValid =
         cleanPin === '160390' ||
         lowerPin === 'admin162' || 
         cleanPin === '162162' || 
         cleanPin === '162000' || 
-        (adminPinData && adminPinData.pin === cleanPin)
-      ) {
+        (adminPinData && adminPinData.pin === cleanPin);
+
+      if (isAdminPinValid) {
         saveStoredPinData('admin', { pin: cleanPin || '160390', hasChosenPin: true, method: 'pin' });
         const session = {
           user: {
@@ -183,46 +203,61 @@ export default function Login() {
         finalizeSession(session);
         setLoading(false);
         return;
+      } else {
+        setErrorMsg('PIN / Passcode Administrator salah. Silakan periksa PIN Anda.');
+        setLoading(false);
+        return;
       }
     }
 
-    // 2. Identify Target Member from database
+    // 2. Identify Target Member from database (pendaftaran table)
+    let memberList = dbMembers;
+    if (memberList.length === 0) {
+      try {
+        const { data } = await supabase.from('pendaftaran').select('*');
+        if (data && data.length > 0) {
+          memberList = data;
+          setDbMembers(data);
+        }
+      } catch (e) {
+        console.error('Failed to load members from Supabase:', e);
+      }
+    }
+
+    const cleanUserWa = rawUsername.replace(/[^0-9]/g, '');
     let targetMember: MemberRecord | null = null;
 
-    if (dbMembers.length > 0) {
-      const cleanUserWa = rawUsername.replace(/[^0-9]/g, '');
+    // Search Priority Cascade:
+    // Priority 1: Exact ID Match
+    targetMember = memberList.find((m) => m.id && m.id === rawUsername) || null;
 
-      // Priority 1: Exact ID Match
-      targetMember = dbMembers.find((m) => m.id && m.id === rawUsername) || null;
-
-      // Priority 2: Exact Name Match
-      if (!targetMember) {
-        targetMember = dbMembers.find((m) => (m.nama || '').trim().toLowerCase() === lowerUsername) || null;
-      }
-
-      // Priority 3: Exact Email Match
-      if (!targetMember) {
-        targetMember = dbMembers.find((m) => m.email && m.email.toLowerCase() === lowerUsername) || null;
-      }
-
-      // Priority 4: WhatsApp Match (ONLY if cleanUserWa length >= 6)
-      if (!targetMember && cleanUserWa.length >= 6) {
-        targetMember = dbMembers.find((m) => {
-          const mWa = (m.whatsapp || '').replace(/[^0-9]/g, '');
-          return mWa && mWa.length >= 6 && (mWa === cleanUserWa || mWa.endsWith(cleanUserWa));
-        }) || null;
-      }
-
-      // Priority 5: Partial Name Match (ONLY if lowerUsername length >= 3)
-      if (!targetMember && lowerUsername.length >= 3) {
-        targetMember = dbMembers.find((m) => {
-          const mName = (m.nama || '').trim().toLowerCase();
-          return mName && (mName.includes(lowerUsername) || lowerUsername.includes(mName));
-        }) || null;
-      }
+    // Priority 2: Exact Name Match
+    if (!targetMember) {
+      targetMember = memberList.find((m) => (m.nama || '').trim().toLowerCase() === lowerUsername) || null;
     }
 
-    // If member not found in initial dbMembers array, do direct query on supabase
+    // Priority 3: Exact Email Match
+    if (!targetMember) {
+      targetMember = memberList.find((m) => m.email && m.email.toLowerCase() === lowerUsername) || null;
+    }
+
+    // Priority 4: WhatsApp Match (ONLY if cleanUserWa length >= 6)
+    if (!targetMember && cleanUserWa.length >= 6) {
+      targetMember = memberList.find((m) => {
+        const mWa = (m.whatsapp || '').replace(/[^0-9]/g, '');
+        return mWa && mWa.length >= 6 && (mWa === cleanUserWa || mWa.endsWith(cleanUserWa));
+      }) || null;
+    }
+
+    // Priority 5: Partial Name Match (ONLY if lowerUsername length >= 3)
+    if (!targetMember && lowerUsername.length >= 3) {
+      targetMember = memberList.find((m) => {
+        const mName = (m.nama || '').trim().toLowerCase();
+        return mName && (mName.includes(lowerUsername) || lowerUsername.includes(mName));
+      }) || null;
+    }
+
+    // Direct database query fallback if still not found in local list
     if (!targetMember) {
       try {
         const { data: queryData } = await supabase
@@ -231,42 +266,55 @@ export default function Login() {
           .ilike('nama', `%${rawUsername}%`);
 
         if (queryData && queryData.length > 0) {
-          targetMember = queryData.find((m: any) => (m.nama || '').trim().toLowerCase() === lowerUsername) || queryData[0];
+          const exact = queryData.find((m: any) => (m.nama || '').trim().toLowerCase() === lowerUsername);
+          if (exact) {
+            targetMember = exact;
+          } else {
+            const partial = queryData.find((m: any) => {
+              const nameLower = (m.nama || '').trim().toLowerCase();
+              return nameLower.includes(lowerUsername) || lowerUsername.includes(nameLower);
+            });
+            if (partial) targetMember = partial;
+          }
         }
       } catch (err) {
-        console.error(err);
+        console.error('Database query error:', err);
       }
     }
 
+    // If target member is NOT found anywhere in database:
     if (!targetMember) {
-      setErrorMsg(`Nama / Username "${rawUsername}" tidak ditemukan di database.`);
+      setErrorMsg(`Nama / Username "${rawUsername}" tidak terdaftar di database PB Bilibili 162. Silakan melakukan pendaftaran atlet terlebih dahulu.`);
       setLoading(false);
       return;
     }
 
     // 3. Verify PIN / Passcode for the identified member
+    if (!cleanPin) {
+      setErrorMsg(`Masukkan PIN / Passcode 6-digit untuk akun "${targetMember.nama}".`);
+      setLoading(false);
+      return;
+    }
+
     const userKey = targetMember.nama.toLowerCase().trim();
     const savedPin = getStoredPinData(userKey);
     const cleanWa = (targetMember.whatsapp || '').replace(/[^0-9]/g, '');
 
     const isPinValid = 
-      !cleanPin ||
+      (savedPin && savedPin.pin === cleanPin) ||
       cleanPin === '123456' || 
       cleanPin === '162162' || 
       lowerPin === 'anggota162' ||
-      (savedPin && savedPin.pin === cleanPin) ||
-      (cleanWa && (cleanWa === cleanPin || (cleanWa.length >= 4 && cleanWa.endsWith(cleanPin))));
+      (cleanWa && cleanWa.length >= 4 && (cleanWa === cleanPin || cleanWa.endsWith(cleanPin)));
 
     if (isPinValid) {
-      if (cleanPin) {
-        saveStoredPinData(userKey, { pin: cleanPin, hasChosenPin: true, method: 'pin' });
-      }
+      saveStoredPinData(userKey, { pin: cleanPin, hasChosenPin: true, method: 'pin' });
       const session = createMemberSession(targetMember);
       finalizeSession(session);
       setLoading(false);
       return;
     } else {
-      setErrorMsg(`PIN / Passcode tidak sesuai untuk "${targetMember.nama}". Silakan periksa kembali.`);
+      setErrorMsg(`PIN / Passcode salah untuk atlet "${targetMember.nama}". Silakan periksa kembali.`);
       setLoading(false);
       return;
     }
@@ -306,11 +354,11 @@ export default function Login() {
           <div className="relative inline-flex mb-3">
             <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-blue-500/30 p-1 bg-slate-900/50 shadow-[0_0_20px_rgba(59,130,246,0.2)]">
               <img 
-                src="/logo_pb_bilibili_162.svg" 
+                src={logoUrl || "/logo_pb_bilibili_162.svg"} 
                 alt="Logo PB Bilibili 162" 
                 className="w-full h-full object-contain"
                 onError={(e) => {
-                  e.currentTarget.src = "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=150&auto=format&fit=crop&q=80";
+                  e.currentTarget.src = "/logo_pb_bilibili_162.svg";
                 }}
               />
             </div>

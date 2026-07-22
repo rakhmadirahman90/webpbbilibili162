@@ -24,6 +24,7 @@ import Footer from './components/Footer';
 import PublicKasView from './components/PublicKasView';
 import DokumenPenting from './components/DokumenPenting'; 
 import StrukturOrganisasiPublic from './components/StrukturOrganisasiPublic';
+import LandingFeatures from './components/LandingFeatures';
 
 // Import Komponen Admin
 import Login from './components/Login';
@@ -503,9 +504,16 @@ export default function App() {
     const handleCustomAuth = () => syncSession();
     window.addEventListener('local-session-changed', handleCustomAuth);
 
+    const handleNavigateHome = () => {
+      setActiveView(null);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+    window.addEventListener('pb-navigate-home', handleNavigateHome);
+
     return () => {
       subscription.unsubscribe();
       window.removeEventListener('local-session-changed', handleCustomAuth);
+      window.removeEventListener('pb-navigate-home', handleNavigateHome);
     };
   }, []);
 
@@ -637,36 +645,36 @@ export default function App() {
                   exit={{ opacity: 0, y: 30, x: "-50%" }}
                   transition={{ type: 'spring', damping: 25, stiffness: 220 }}
                   style={{ x: "-50%" }}
-                  className="fixed bottom-6 left-1/2 z-[99999]"
+                  className="fixed bottom-3 sm:bottom-6 left-1/2 z-[99999] max-w-[calc(100vw-5rem)]"
                 >
                   <button 
                     onClick={() => { setActiveView(null); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-full font-black text-[10px] uppercase tracking-[0.15em] transition-all duration-200 active:scale-95 cursor-pointer border border-white/10 shadow-[0_12px_30px_rgba(37,99,235,0.35)] hover:shadow-blue-600/40"
+                    className="flex items-center gap-2 px-4 py-2 sm:px-5 sm:py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-full font-black text-[9px] sm:text-[10px] uppercase tracking-[0.12em] sm:tracking-[0.15em] transition-all duration-200 active:scale-95 cursor-pointer border border-white/20 shadow-[0_12px_30px_rgba(37,99,235,0.45)] hover:shadow-blue-600/50 backdrop-blur-xl shrink-0"
                   >
-                    <ArrowLeft size={13} />
-                    <span>Kembali ke Beranda</span>
+                    <ArrowLeft size={12} className="shrink-0" />
+                    <span className="truncate">Kembali ke Beranda</span>
                   </button>
                 </motion.div>
               )}
             </AnimatePresence>
 
-            {/* AUDIO CONTROLLER (Floating bottom right, smaller size, neat & professional) */}
+            {/* AUDIO CONTROLLER (Floating bottom right, compact & non-colliding) */}
             <AnimatePresence>
               {!isOverlayActive && (
                 <motion.div 
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.8 }}
-                  className="fixed bottom-6 right-6 z-[99999] flex items-center gap-2 pointer-events-none"
+                  className="fixed bottom-3 sm:bottom-6 right-3 sm:right-6 z-[99999] flex items-center gap-2 pointer-events-none"
                 >
-                  {/* Subtle playing text / visualizer, elegant & professional */}
+                  {/* Subtle playing text / visualizer - visible on sm+ screens */}
                   <AnimatePresence>
                     {isMarsPlaying && (
                       <motion.div 
                         initial={{ opacity: 0, x: 10, filter: "blur(4px)" }} 
                         animate={{ opacity: 1, x: 0, filter: "blur(0px)" }} 
                         exit={{ opacity: 0, x: 10, filter: "blur(4px)" }} 
-                        className="bg-slate-900/95 backdrop-blur-md border border-white/10 px-2.5 py-1.5 rounded-xl shadow-lg flex items-center gap-1.5 pointer-events-auto"
+                        className="hidden sm:flex bg-slate-900/95 backdrop-blur-md border border-white/10 px-2.5 py-1.5 rounded-xl shadow-lg items-center gap-1.5 pointer-events-auto"
                       >
                         <div className="flex gap-0.5 items-end h-2.5">
                            {[1,2,3].map(i => (
@@ -683,7 +691,7 @@ export default function App() {
                     )}
                   </AnimatePresence>
 
-                  {/* Play / Mute Circle Icon - smaller & neat */}
+                  {/* Play / Mute Circle Icon */}
                   <button 
                     onClick={() => {
                       if (audioRef.current) {
@@ -691,10 +699,10 @@ export default function App() {
                         setIsMarsPlaying(!isMarsPlaying);
                       }
                     }}
-                    className={`pointer-events-auto w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 cursor-pointer border shadow-[0_4px_12px_rgba(0,0,0,0.3)] ${
+                    className={`pointer-events-auto w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center transition-all duration-300 cursor-pointer border shadow-[0_4px_12px_rgba(0,0,0,0.3)] ${
                       isMarsPlaying 
                         ? 'bg-blue-600 text-white border-blue-500/50 hover:bg-blue-500' 
-                        : 'bg-slate-800 text-slate-400 border-white/5 hover:bg-slate-700 hover:text-slate-200'
+                        : 'bg-slate-800 text-slate-400 border-white/10 hover:bg-slate-700 hover:text-slate-200'
                     }`}
                     title={isMarsPlaying ? "Pause Mars PB Bilibili 162" : "Play Mars PB Bilibili 162"}
                   >
@@ -710,6 +718,7 @@ export default function App() {
                   <div className="flex-grow">
                     <Hero />
                     <SambutanKetua />
+                    <LandingFeatures onNavigate={handleNavigate} />
                     {/* Jadwal Sholat Khusus Seluler - Tampil Tepat di Bawah Slider Hero */}
                     <div className="block lg:hidden max-w-xl mx-auto px-4 sm:px-6 md:px-8 mt-6 mb-2">
                       <PrayerTimes />
@@ -719,8 +728,8 @@ export default function App() {
                   <Footer onNavigate={handleNavigate} />
                 </motion.div>
               ) : (
-                /* DEDICATED FULL-PAGE VIEW DENGAN DARK MODE KONSISTEN */
-                <div className="flex flex-col min-h-screen w-full bg-[#070d1a] pt-14 lg:pt-16">
+                /* DEDICATED FULL-PAGE VIEW DENGAN DARK MODE KONSISTEN & BOTTOM SPACING UNTUK FLOATING DOCK */
+                <div className="flex flex-col min-h-screen w-full bg-[#070d1a] pt-14 lg:pt-16 pb-28 sm:pb-36">
                   <AnimatePresence mode="wait">
                     <motion.div 
                       key={`dedicated-view-${activeView}`}
@@ -749,7 +758,7 @@ export default function App() {
                     </motion.div>
                   </AnimatePresence>
                   
-                  <Footer onNavigate={handleNavigate} />
+                  {activeView !== 'register' && activeView !== 'pendaftaran' && <Footer onNavigate={handleNavigate} />}
                 </div>
               )}
             </AnimatePresence>

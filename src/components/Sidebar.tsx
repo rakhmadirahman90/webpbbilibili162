@@ -51,6 +51,31 @@ export default function Sidebar({ email, role = 'admin', isOpen, onClose }: Side
   const location = useLocation();
   const [dbStatus, setDbStatus] = useState<'online' | 'offline'>('online');
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
+  const [userProfile, setUserProfile] = useState<{ nama: string; foto_url: string }>({
+    nama: '',
+    foto_url: ''
+  });
+  const [imgError, setImgError] = useState(false);
+  const [logoUrl, setLogoUrl] = useState<string>('/logo_pb_bilibili_162.svg');
+
+  useEffect(() => {
+    const fetchLogo = async () => {
+      try {
+        const { data } = await supabase
+          .from('site_settings')
+          .select('value')
+          .eq('key', 'navbar_branding')
+          .maybeSingle();
+        if (data && data.value) {
+          const val = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
+          if (val.logo_url) setLogoUrl(val.logo_url);
+        }
+      } catch (e) {
+        console.error('Failed to load branding logo in Sidebar:', e);
+      }
+    };
+    fetchLogo();
+  }, []);
 
   useEffect(() => {
     const checkConnection = async () => {
@@ -67,7 +92,97 @@ export default function Sidebar({ email, role = 'admin', isOpen, onClose }: Side
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    const loadProfile = async () => {
+      let foundFoto = '';
+      let foundNama = '';
+
+      // 1. Try local session
+      try {
+        const raw = localStorage.getItem('local_admin_session');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          const meta = parsed?.user?.user_metadata || {};
+          if (meta.foto_url || meta.avatar_url) foundFoto = meta.foto_url || meta.avatar_url;
+          if (meta.full_name || meta.nama) foundNama = meta.full_name || meta.nama;
+        }
+      } catch (e) {
+        console.error(e);
+      }
+
+      // 2. Try Supabase Auth user
+      if (!foundFoto || !foundNama) {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user?.user_metadata) {
+            const meta = user.user_metadata;
+            if (!foundFoto) foundFoto = meta.foto_url || meta.avatar_url || '';
+            if (!foundNama) foundNama = meta.full_name || meta.nama || '';
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      // 3. Try DB lookup in pendaftaran / rankings / atlet_stats if email or nama present
+      const activeEmail = email || (() => {
+        try {
+          const raw = localStorage.getItem('local_admin_session');
+          return raw ? JSON.parse(raw)?.user?.email : '';
+        } catch { return ''; }
+      })();
+
+      if ((activeEmail || foundNama) && !foundFoto) {
+        try {
+          if (activeEmail) {
+            const { data } = await supabase
+              .from('pendaftaran')
+              .select('nama, foto_url')
+              .or(`whatsapp.eq.${activeEmail},email.eq.${activeEmail}`)
+              .limit(1)
+              .maybeSingle();
+
+            if (data?.foto_url) foundFoto = data.foto_url;
+            if (data?.nama && !foundNama) foundNama = data.nama;
+          }
+
+          if (!foundFoto && foundNama) {
+            const { data: rData } = await supabase
+              .from('rankings')
+              .select('nama, foto_url')
+              .ilike('nama', `%${foundNama.trim()}%`)
+              .limit(1)
+              .maybeSingle();
+            if (rData?.foto_url) foundFoto = rData.foto_url;
+          }
+        } catch (err) {
+          console.error("Error fetching profile photo for sidebar:", err);
+        }
+      }
+
+      setUserProfile({
+        nama: foundNama || (role === 'admin' ? 'Master Admin' : 'Anggota'),
+        foto_url: foundFoto
+      });
+      setImgError(false);
+    };
+
+    loadProfile();
+
+    const handleSessionChange = () => {
+      loadProfile();
+    };
+
+    window.addEventListener('local-session-changed', handleSessionChange);
+    window.addEventListener('storage', handleSessionChange);
+    return () => {
+      window.removeEventListener('local-session-changed', handleSessionChange);
+      window.removeEventListener('storage', handleSessionChange);
+    };
+  }, [email, role]);
+
   const handleLogout = async () => {
+    if (onClose) onClose();
     try {
       const result = await Swal.fire({
         title: 'Keluar Sistem?',
@@ -81,7 +196,7 @@ export default function Sidebar({ email, role = 'admin', isOpen, onClose }: Side
         background: '#0F172A',
         color: '#fff',
         customClass: {
-          container: 'z-[99999]'
+          container: 'z-[9999999]'
         }
       });
 
@@ -93,7 +208,6 @@ export default function Sidebar({ email, role = 'admin', isOpen, onClose }: Side
         } catch (e) {
           console.error('SignOut error:', e);
         }
-        if (onClose) onClose();
         navigate('/login', { replace: true });
       }
     } catch (err) {
@@ -110,7 +224,7 @@ export default function Sidebar({ email, role = 'admin', isOpen, onClose }: Side
     { 
       section: 'Portal Utama', 
       items: [
-        { name: 'Dashboard', path: 'dashboard', icon: LayoutDashboard, adminOnly: false },
+        { name: role === 'admin' ? 'Dashboard Admin' : 'Dashboard Anggota', path: 'dashboard', icon: LayoutDashboard, adminOnly: false },
         { name: 'Profil Saya', path: 'profil', icon: UserCheck, adminOnly: false },
       ]
     },
@@ -239,17 +353,21 @@ export default function Sidebar({ email, role = 'admin', isOpen, onClose }: Side
           <div className="flex items-center justify-between">
             <div className="px-1 group cursor-pointer" onClick={() => navigate('/')}>
               <div className="flex items-center gap-2.5">
-                <div className="relative">
-                  <div className="w-1 h-7 bg-blue-600 rounded-full group-hover:h-8 transition-all duration-300" />
-                  <div className="absolute -right-0.5 top-0 w-0.5 h-3 bg-blue-400/50 rounded-full" />
-                </div>
+                <img 
+                  src={logoUrl || "/logo_pb_bilibili_162.svg"} 
+                  alt="Logo PB Bilibili 162" 
+                  className="w-8 h-8 object-contain drop-shadow group-hover:scale-105 transition-transform shrink-0"
+                  onError={(e) => {
+                    e.currentTarget.src = "/logo_pb_bilibili_162.svg";
+                  }}
+                />
                 <div>
                   <h1 className="text-base sm:text-lg font-bold tracking-tight leading-none group-hover:text-blue-400 transition-colors">
                     PB Bilibili 162
                   </h1>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-[8px] sm:text-[9px] font-semibold text-slate-400 uppercase tracking-[0.15em]">
-                      {role === 'admin' ? 'Authority Panel' : 'Portal Anggota'}
+                    <span className="text-[8px] sm:text-[9px] font-semibold text-blue-400 uppercase tracking-[0.15em]">
+                      {role === 'admin' ? 'Dashboard Admin' : 'Dashboard Anggota'}
                     </span>
                   </div>
                 </div>
@@ -358,20 +476,35 @@ export default function Sidebar({ email, role = 'admin', isOpen, onClose }: Side
 
         {/* BOTTOM SECTION: User Info & Logout Button */}
         <div className="flex-shrink-0 pt-2 border-t border-slate-800/60 space-y-1.5">
-          <div className="bg-gradient-to-br from-slate-900 to-[#0F172A] p-2 rounded-xl border border-slate-800 group transition-all duration-300 hover:border-blue-900/50">
+          <div 
+            onClick={() => { if (onClose) onClose(); navigate('/admin/profil'); }}
+            className="bg-gradient-to-br from-slate-900 to-[#0F172A] p-2 rounded-xl border border-slate-800 hover:border-blue-500/40 group transition-all duration-300 cursor-pointer relative"
+            title="Klik untuk membuka Profil Saya"
+          >
             <div className="flex items-center gap-2.5">
               <div className="relative shrink-0">
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold text-xs sm:text-sm shadow-lg shadow-blue-900/40 group-hover:rotate-3 transition-transform">
-                  {email ? email.charAt(0).toUpperCase() : 'A'}
-                </div>
-                <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-[#0F172A] rounded-full flex items-center justify-center">
-                  <ShieldCheck size={6} className="text-white" />
+                {userProfile.foto_url && !imgError ? (
+                  <img 
+                    src={userProfile.foto_url} 
+                    alt={userProfile.nama || email} 
+                    onError={() => setImgError(true)}
+                    className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl object-cover object-top border border-blue-500/40 shadow-lg shadow-blue-900/30 group-hover:scale-105 transition-transform"
+                  />
+                ) : (
+                  <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-black text-xs sm:text-sm shadow-lg shadow-blue-900/40 group-hover:rotate-3 transition-transform border border-blue-400/30">
+                    {(userProfile.nama || email) ? (userProfile.nama || email).charAt(0).toUpperCase() : (role === 'admin' ? 'A' : 'M')}
+                  </div>
+                )}
+                <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 border-2 border-[#0F172A] rounded-full flex items-center justify-center">
+                  <ShieldCheck size={7} className="text-white" />
                 </div>
               </div>
               <div className="overflow-hidden min-w-0">
-                <p className="text-[10px] sm:text-[11px] font-semibold text-blue-100 truncate">{email ? email.split('@')[0] : (role === 'admin' ? 'Admin' : 'Anggota')}</p>
-                <p className="text-[7.5px] font-medium text-slate-400 uppercase tracking-wider truncate">
-                  {role === 'admin' ? 'Master Admin' : 'Anggota Resmi PB Bilibili 162'}
+                <p className="text-[10px] sm:text-[11px] font-bold text-blue-100 truncate flex items-center gap-1">
+                  <span className="truncate">{userProfile.nama || (email ? email.split('@')[0] : (role === 'admin' ? 'Master Admin' : 'Anggota'))}</span>
+                </p>
+                <p className="text-[7.5px] font-semibold text-slate-400 uppercase tracking-wider truncate">
+                  {role === 'admin' ? 'Administrator Admin' : 'Dashboard Anggota'}
                 </p>
               </div>
             </div>

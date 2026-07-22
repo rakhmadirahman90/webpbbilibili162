@@ -173,7 +173,7 @@ const Players: React.FC<{ initialFilter?: string }> = ({
   }, [searchTerm, currentAgeGroup, processedPlayers]);
 
   return (
-    <section id="atlet" className="w-full flex-grow pt-2 bg-[#0b0e14] text-white flex flex-col overflow-hidden font-sans">
+    <section id="atlet" className="w-full flex-grow pt-2 pb-28 sm:pb-36 bg-[#0b0e14] text-white flex flex-col overflow-hidden font-sans">
       {/* Background Ornaments */}
       <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-blue-600/5 blur-[120px] rounded-full pointer-events-none" />
       <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-indigo-600/5 blur-[120px] rounded-full pointer-events-none" />
@@ -187,39 +187,41 @@ const Players: React.FC<{ initialFilter?: string }> = ({
         />
       )}
 
-      <div className="flex flex-col flex-grow max-w-7xl mx-auto px-4 mt-0 relative z-10 w-full gap-2">
-        <div className="flex flex-col md:flex-row justify-between items-end gap-1">
+      <div className="flex flex-col flex-grow max-w-7xl mx-auto px-4 mt-0 relative z-10 w-full gap-3">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-3">
           <div>
-            <motion.h2 initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="text-lg md:text-5xl font-black italic uppercase tracking-tighter">PROFIL <span className="text-blue-600">PEMAIN</span></motion.h2>
-            <p className="text-zinc-500 text-[9px] font-bold tracking-[0.2em] uppercase">Data Sinkron</p>
+            <motion.h2 initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="text-2xl sm:text-4xl md:text-5xl font-black italic uppercase tracking-tighter">
+              PROFIL <span className="text-blue-600">PEMAIN</span>
+            </motion.h2>
+            <p className="text-zinc-500 text-[9px] sm:text-[10px] font-bold tracking-[0.2em] uppercase">Data Atlet Resmi PB Bilibili 162</p>
           </div>
-          <div className="relative w-full md:w-60 group mt-2 md:mt-0">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-blue-600 transition-colors" size={14} />
+          <div className="relative w-full sm:w-64 group">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-blue-500 transition-colors" size={14} />
             <input 
               type="text" 
               value={searchTerm}
-              placeholder="Cari..." 
-              className="w-full bg-[#1a1d26] border border-white/5 rounded-2xl py-2 pl-10 pr-10 text-[10px] outline-none focus:border-blue-600/50 transition-all text-white placeholder:text-zinc-600" 
+              placeholder="Cari nama atlet..." 
+              className="w-full bg-[#1a1d26] border border-white/10 rounded-2xl py-2.5 pl-9 pr-9 text-xs outline-none focus:border-blue-500 transition-all text-white placeholder:text-zinc-500" 
               onChange={(e) => setSearchTerm(e.target.value)} 
             />
             {searchTerm && (
               <button 
                 onClick={() => setSearchTerm('')}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors p-1"
               >
-                <X size={16} />
+                <X size={14} />
               </button>
             )}
             {searchTerm && (
-              <div className="absolute -bottom-6 left-0 text-[10px] font-bold text-blue-500 uppercase tracking-widest animate-pulse">
+              <div className="absolute -bottom-5 left-1 text-[9px] font-bold text-blue-400 uppercase tracking-widest animate-pulse">
                 Ditemukan {filteredPlayers.length} Atlet
               </div>
             )}
           </div>
         </div>
 
-        {/* TABS DENGAN DARK THEME */}
-        <div className="flex bg-[#1a1d26] p-1 rounded-full border border-white/5 w-fit backdrop-blur-md shadow-2xl">
+        {/* TABS DENGAN HORIZONTAL SCROLL UNTUK SELULER */}
+        <div className="flex bg-[#1a1d26] p-1 rounded-2xl border border-white/10 w-full sm:w-fit overflow-x-auto no-scrollbar backdrop-blur-md shadow-2xl gap-1 shrink-0">
           {[
             { id: 'Semua', label: 'SEMUA', count: counts.all },
             { id: 'Senior', label: 'SENIOR', count: counts.senior },
@@ -228,9 +230,10 @@ const Players: React.FC<{ initialFilter?: string }> = ({
             <button 
               key={tab.id} 
               onClick={() => setCurrentAgeGroup(tab.id)} 
-              className={`px-5 py-2 rounded-full text-[10px] font-black transition-all flex items-center gap-2 ${currentAgeGroup === tab.id ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-zinc-500 hover:text-white'}`}
+              className={`px-4 py-2 rounded-xl text-[10px] font-black transition-all flex items-center justify-center gap-1.5 whitespace-nowrap shrink-0 ${currentAgeGroup === tab.id ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}
             >
-              {tab.label} <span className={`text-[9px] px-1.5 py-0.5 rounded-lg ${currentAgeGroup === tab.id ? 'bg-white/20 text-white' : 'bg-zinc-800 text-zinc-600'}`}>{tab.count}</span>
+              <span>{tab.label}</span>
+              <span className={`text-[9px] px-1.5 py-0.5 rounded-md font-bold ${currentAgeGroup === tab.id ? 'bg-white/20 text-white' : 'bg-zinc-800 text-zinc-400'}`}>{tab.count}</span>
             </button>
           ))}
         </div>

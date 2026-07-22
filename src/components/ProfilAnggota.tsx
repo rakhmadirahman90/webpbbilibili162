@@ -39,10 +39,16 @@ import {
   Scan,
   RefreshCw,
   Sliders,
-  Move
+  Move,
+  Wallet,
+  BrainCircuit,
+  ArrowLeft,
+  X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Swal from 'sweetalert2';
+import PublicKasView from './PublicKasView';
+import BadmintonQuiz from './BadmintonQuiz';
 
 const createImage = (url: string): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {
@@ -141,7 +147,30 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
   const [copied, setCopied] = useState(false);
   const [showKtaModal, setShowKtaModal] = useState(false);
   const [showPinModal, setShowPinModal] = useState(false);
+  const [showKasModal, setShowKasModal] = useState(false);
+  const [showQuizModal, setShowQuizModal] = useState(false);
+  const [activeMemberTab, setActiveMemberTab] = useState<'profil' | 'kas' | 'quiz'>('profil');
   const [isEditing, setIsEditing] = useState(false);
+  const [logoUrl, setLogoUrl] = useState<string>('/logo_pb_bilibili_162.svg');
+
+  useEffect(() => {
+    const fetchLogo = async () => {
+      try {
+        const { data } = await supabase
+          .from('site_settings')
+          .select('value')
+          .eq('key', 'navbar_branding')
+          .maybeSingle();
+        if (data && data.value) {
+          const val = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
+          if (val.logo_url) setLogoUrl(val.logo_url);
+        }
+      } catch (e) {
+        console.error('Failed to load branding logo in ProfilAnggota:', e);
+      }
+    };
+    fetchLogo();
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -157,7 +186,7 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
         background: '#0F172A',
         color: '#fff',
         customClass: {
-          container: 'z-[99999]'
+          container: 'z-[9999999]'
         }
       });
 
@@ -842,14 +871,32 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:flex sm:flex-wrap items-center gap-2 sm:gap-3 w-full md:w-auto">
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 sm:gap-3 w-full md:w-auto">
+          <button
+            type="button"
+            onClick={() => setActiveMemberTab('kas')}
+            className="inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-emerald-600/20 active:scale-95 transition-all cursor-pointer w-full sm:w-auto"
+          >
+            <Wallet size={16} className="shrink-0" />
+            <span>Laporan Kas</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveMemberTab('quiz')}
+            className="inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-indigo-600/20 active:scale-95 transition-all cursor-pointer w-full sm:w-auto"
+          >
+            <BrainCircuit size={16} className="shrink-0" />
+            <span>Quiz Badminton</span>
+          </button>
+
           <button
             type="button"
             onClick={() => setShowKtaModal(true)}
             className="inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-blue-600/20 active:scale-95 transition-all cursor-pointer w-full sm:w-auto"
           >
             <QrCode size={16} className="shrink-0" />
-            <span>Kartu Anggota (KTA)</span>
+            <span>Kartu Anggota</span>
           </button>
 
           <button
@@ -858,113 +905,263 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
             className="inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-white/10 font-bold text-xs uppercase tracking-wider active:scale-95 transition-all cursor-pointer w-full sm:w-auto"
           >
             <KeyRound size={16} className="text-blue-400 shrink-0" />
-            <span>Atur PIN Akses</span>
+            <span>Atur PIN</span>
           </button>
 
           <button
             type="button"
             onClick={handleLogout}
-            className="inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-2xl bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/30 hover:border-red-600 font-bold text-xs uppercase tracking-wider active:scale-95 transition-all cursor-pointer shadow-md w-full sm:w-auto"
+            className="inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-2xl bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/30 hover:border-red-600 font-bold text-xs uppercase tracking-wider active:scale-95 transition-all cursor-pointer shadow-md col-span-2 sm:col-span-1 sm:w-auto"
           >
             <LogOut size={16} className="shrink-0" />
-            <span>Keluar Sesi</span>
+            <span>Keluar</span>
           </button>
         </div>
       </div>
 
-      {/* Main Profile Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6">
-        {/* Left Column: Avatar Card & Stats */}
-        <div className="lg:col-span-1 space-y-5 sm:space-y-6">
-          {/* Profile Card */}
-          <div className="bg-[#0b1224]/90 border border-white/10 rounded-3xl p-4 sm:p-6 relative overflow-hidden shadow-2xl backdrop-blur-xl">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/10 blur-2xl rounded-full pointer-events-none" />
+      {/* TABS SELECTOR ANGGOTA */}
+      <div className="flex items-center justify-start gap-2 p-1.5 bg-[#070d1a] border border-white/10 rounded-2xl overflow-x-auto no-scrollbar">
+        <button
+          type="button"
+          onClick={() => setActiveMemberTab('profil')}
+          className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer whitespace-nowrap ${
+            activeMemberTab === 'profil'
+              ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+              : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
+          }`}
+        >
+          <UserCheck size={15} />
+          <span>Profil & Data Anggota</span>
+        </button>
 
-            <div className="flex flex-col items-center text-center">
-              <div className="relative mb-4 group">
-                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl overflow-hidden border-2 border-blue-500/40 p-1 bg-slate-900 shadow-[0_0_25px_rgba(59,130,246,0.25)] flex items-center justify-center relative">
-                  {memberData.foto_url ? (
-                    <img 
-                      src={memberData.foto_url} 
-                      alt={memberData.nama} 
-                      className="w-full h-full object-cover rounded-2xl"
-                      onError={(e) => {
-                        e.currentTarget.src = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80";
-                      }}
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-slate-800 rounded-2xl flex items-center justify-center text-blue-400 font-black text-2xl sm:text-3xl">
-                      {memberData.nama.charAt(0).toUpperCase()}
-                    </div>
-                  )}
+        <button
+          type="button"
+          onClick={() => setActiveMemberTab('kas')}
+          className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer whitespace-nowrap ${
+            activeMemberTab === 'kas'
+              ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/30'
+              : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
+          }`}
+        >
+          <Wallet size={15} className={activeMemberTab === 'kas' ? 'text-white' : 'text-emerald-400'} />
+          <span>Laporan Kas Klub</span>
+        </button>
 
-                  {uploadingPhoto && (
-                    <div className="absolute inset-0 bg-black/70 rounded-2xl flex items-center justify-center text-blue-400 z-10">
-                      <Loader2 className="animate-spin" size={24} />
-                    </div>
-                  )}
+        <button
+          type="button"
+          onClick={() => setActiveMemberTab('quiz')}
+          className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer whitespace-nowrap ${
+            activeMemberTab === 'quiz'
+              ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+              : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
+          }`}
+        >
+          <BrainCircuit size={15} className={activeMemberTab === 'quiz' ? 'text-white' : 'text-amber-400'} />
+          <span>Quiz Badminton Interaktif</span>
+        </button>
+      </div>
+
+      {/* CONDITIONAL TAB CONTENT */}
+      {activeMemberTab === 'kas' && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-[#0b1224] border border-white/10 p-4 rounded-2xl gap-3">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-emerald-500/20 text-emerald-400 shrink-0">
+                <Wallet size={22} />
+              </div>
+              <div>
+                <h3 className="text-sm font-black uppercase italic tracking-wider text-white">
+                  Laporan Kas & Transparansi Keuangan PB Bilibili 162
+                </h3>
+                <p className="text-[11px] text-slate-400 font-medium">
+                  Informasi saldo, iuran bulanan anggota, dan pengeluaran shuttlecock real-time.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setActiveMemberTab('profil')}
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs uppercase tracking-wider transition-all cursor-pointer shrink-0"
+            >
+              <ArrowLeft size={14} />
+              <span>Kembali ke Profil</span>
+            </button>
+          </div>
+          <PublicKasView />
+        </motion.div>
+      )}
+
+      {activeMemberTab === 'quiz' && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-[#0b1224] border border-white/10 p-4 rounded-2xl gap-3">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-indigo-500/20 text-indigo-400 shrink-0">
+                <BrainCircuit size={22} />
+              </div>
+              <div>
+                <h3 className="text-sm font-black uppercase italic tracking-wider text-white">
+                  Quiz & Teka-Teki Badminton Interaktif
+                </h3>
+                <p className="text-[11px] text-slate-400 font-medium">
+                  Uji wawasan bulutangkis Anda dari 10 level tantangan dan aturan resmi BWF.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setActiveMemberTab('profil')}
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs uppercase tracking-wider transition-all cursor-pointer shrink-0"
+            >
+              <ArrowLeft size={14} />
+              <span>Kembali ke Profil</span>
+            </button>
+          </div>
+          <BadmintonQuiz />
+        </motion.div>
+      )}
+
+      {activeMemberTab === 'profil' && (
+        /* Main Profile Grid */
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6">
+          {/* Left Column: Avatar Card & Stats */}
+          <div className="lg:col-span-1 space-y-5 sm:space-y-6">
+            {/* Profile Card */}
+            <div className="bg-[#0b1224]/90 border border-white/10 rounded-3xl p-4 sm:p-6 relative overflow-hidden shadow-2xl backdrop-blur-xl">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/10 blur-2xl rounded-full pointer-events-none" />
+
+              <div className="flex flex-col items-center text-center">
+                <div className="relative mb-4 group">
+                  <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl overflow-hidden border-2 border-blue-500/40 p-1 bg-slate-900 shadow-[0_0_25px_rgba(59,130,246,0.25)] flex items-center justify-center relative">
+                    {memberData.foto_url ? (
+                      <img 
+                        src={memberData.foto_url} 
+                        alt={memberData.nama} 
+                        className="w-full h-full object-cover rounded-2xl"
+                        onError={(e) => {
+                          e.currentTarget.src = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80";
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-slate-800 rounded-2xl flex items-center justify-center text-blue-400 font-black text-2xl sm:text-3xl">
+                        {memberData.nama.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+
+                    {uploadingPhoto && (
+                      <div className="absolute inset-0 bg-black/70 rounded-2xl flex items-center justify-center text-blue-400 z-10">
+                        <Loader2 className="animate-spin" size={24} />
+                      </div>
+                    )}
+                  </div>
+
+                  <label 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="absolute -bottom-1 -right-1 bg-blue-600 hover:bg-blue-500 text-white p-2 rounded-full border-2 border-[#0b1224] shadow-md cursor-pointer active:scale-95 transition-all" 
+                    title="Upload / Ubah Foto Profil"
+                  >
+                    <Camera size={14} />
+                  </label>
                 </div>
 
-                <label 
-                  onClick={() => fileInputRef.current?.click()}
-                  className="absolute -bottom-1 -right-1 bg-blue-600 hover:bg-blue-500 text-white p-2 rounded-full border-2 border-[#0b1224] shadow-md cursor-pointer active:scale-95 transition-all" 
-                  title="Upload / Ubah Foto Profil"
+                <h2 className="text-lg sm:text-xl font-black text-white tracking-wide uppercase italic break-words max-w-full">
+                  {memberData.nama}
+                </h2>
+
+                <div className="mt-2 flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">
+                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${
+                    memberData.role === 'admin' 
+                      ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' 
+                      : 'bg-blue-500/10 text-blue-400 border-blue-500/30'
+                  }`}>
+                    {memberData.role === 'admin' ? 'Master Admin' : 'Anggota Resmi PB Bilibili 162'}
+                  </span>
+
+                  <span className="px-2.5 py-1 rounded-full text-[10px] font-bold text-slate-300 bg-slate-800 border border-white/5 uppercase">
+                    {memberData.kategori}
+                  </span>
+                </div>
+
+                {/* ID Badge */}
+                <div className="mt-4 sm:mt-5 w-full bg-[#070d1a] border border-white/5 rounded-2xl p-3 flex flex-wrap sm:flex-nowrap items-center justify-between text-xs font-mono text-slate-400 gap-2">
+                  <span className="text-[10px] uppercase font-sans font-bold text-slate-500 shrink-0">ID Anggota:</span>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-white font-bold truncate text-[11px] sm:text-xs">{memberIdCode}</span>
+                    <button onClick={copyMemberId} className="text-slate-500 hover:text-blue-400 transition-colors p-1 shrink-0" title="Salin ID">
+                      {copied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Performance Stats */}
+            <div className="bg-[#0b1224]/90 border border-white/10 rounded-3xl p-4 sm:p-6 space-y-4 shadow-xl">
+              <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                <Activity size={15} className="text-blue-400 shrink-0" />
+                <span>Statistik Atlet PB Bilibili 162</span>
+              </h3>
+
+              <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+                <div className="bg-[#070d1a] border border-white/5 p-3 sm:p-4 rounded-2xl text-center">
+                  <p className="text-[9px] font-bold uppercase tracking-wider text-slate-500">Peringkat Klub</p>
+                  <p className="text-lg sm:text-xl font-black italic text-amber-400 mt-1 truncate">{stats.rank}</p>
+                </div>
+
+                <div className="bg-[#070d1a] border border-white/5 p-3 sm:p-4 rounded-2xl text-center">
+                  <p className="text-[9px] font-bold uppercase tracking-wider text-slate-500">Total Poin</p>
+                  <p className="text-lg sm:text-xl font-black italic text-blue-400 mt-1 truncate">{stats.totalPoints} PTS</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Feature Cards Widget for Kas and Quiz */}
+            <div className="bg-[#0b1224]/90 border border-white/10 rounded-3xl p-4 sm:p-5 space-y-3 shadow-xl">
+              <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-200">
+                <Sparkles size={16} className="text-amber-400" />
+                <span>Fitur Interaktif Anggota</span>
+              </div>
+
+              <div className="space-y-2.5">
+                <button
+                  type="button"
+                  onClick={() => setActiveMemberTab('kas')}
+                  className="w-full p-3 rounded-2xl bg-gradient-to-r from-emerald-950/40 to-teal-950/40 border border-emerald-500/30 hover:border-emerald-500 text-left transition-all group flex items-center justify-between cursor-pointer"
                 >
-                  <Camera size={14} />
-                </label>
-              </div>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-400 group-hover:scale-110 transition-transform shrink-0">
+                      <Wallet size={18} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-black uppercase italic text-white group-hover:text-emerald-400 transition-colors truncate">
+                        Laporan Kas Klub
+                      </p>
+                      <p className="text-[10px] text-slate-400 truncate">Transparansi keuangan real-time</p>
+                    </div>
+                  </div>
+                  <ArrowLeft size={14} className="rotate-180 text-emerald-400 shrink-0 ml-1" />
+                </button>
 
-              <h2 className="text-lg sm:text-xl font-black text-white tracking-wide uppercase italic break-words max-w-full">
-                {memberData.nama}
-              </h2>
-
-              <div className="mt-2 flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">
-                <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${
-                  memberData.role === 'admin' 
-                    ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' 
-                    : 'bg-blue-500/10 text-blue-400 border-blue-500/30'
-                }`}>
-                  {memberData.role === 'admin' ? 'Master Admin' : 'Anggota Resmi PB Bilibili 162'}
-                </span>
-
-                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold text-slate-300 bg-slate-800 border border-white/5 uppercase">
-                  {memberData.kategori}
-                </span>
-              </div>
-
-              {/* ID Badge */}
-              <div className="mt-4 sm:mt-5 w-full bg-[#070d1a] border border-white/5 rounded-2xl p-3 flex flex-wrap sm:flex-nowrap items-center justify-between text-xs font-mono text-slate-400 gap-2">
-                <span className="text-[10px] uppercase font-sans font-bold text-slate-500 shrink-0">ID Anggota:</span>
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="text-white font-bold truncate text-[11px] sm:text-xs">{memberIdCode}</span>
-                  <button onClick={copyMemberId} className="text-slate-500 hover:text-blue-400 transition-colors p-1 shrink-0" title="Salin ID">
-                    {copied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Performance Stats */}
-          <div className="bg-[#0b1224]/90 border border-white/10 rounded-3xl p-4 sm:p-6 space-y-4 shadow-xl">
-            <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
-              <Activity size={15} className="text-blue-400 shrink-0" />
-              <span>Statistik Atlet PB Bilibili 162</span>
-            </h3>
-
-            <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
-              <div className="bg-[#070d1a] border border-white/5 p-3 sm:p-4 rounded-2xl text-center">
-                <p className="text-[9px] font-bold uppercase tracking-wider text-slate-500">Peringkat Klub</p>
-                <p className="text-lg sm:text-xl font-black italic text-amber-400 mt-1 truncate">{stats.rank}</p>
-              </div>
-
-              <div className="bg-[#070d1a] border border-white/5 p-3 sm:p-4 rounded-2xl text-center">
-                <p className="text-[9px] font-bold uppercase tracking-wider text-slate-500">Total Poin</p>
-                <p className="text-lg sm:text-xl font-black italic text-blue-400 mt-1 truncate">{stats.totalPoints} PTS</p>
+                <button
+                  type="button"
+                  onClick={() => setActiveMemberTab('quiz')}
+                  className="w-full p-3 rounded-2xl bg-gradient-to-r from-indigo-950/40 to-purple-950/40 border border-indigo-500/30 hover:border-indigo-500 text-left transition-all group flex items-center justify-between cursor-pointer"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="p-2 rounded-xl bg-indigo-500/20 text-indigo-400 group-hover:scale-110 transition-transform shrink-0">
+                      <BrainCircuit size={18} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-black uppercase italic text-white group-hover:text-indigo-400 transition-colors truncate">
+                        Quiz Badminton
+                      </p>
+                      <p className="text-[10px] text-slate-400 truncate">10 level teka-teki & trivia</p>
+                    </div>
+                  </div>
+                  <ArrowLeft size={14} className="rotate-180 text-indigo-400 shrink-0 ml-1" />
+                </button>
               </div>
             </div>
           </div>
-        </div>
 
         {/* Right Column: Detailed Info Form & Actions */}
         <div className="lg:col-span-2 space-y-6">
@@ -1222,6 +1419,7 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
           </div>
         </div>
       </div>
+      )}
 
       {/* MODAL KTA (Kartu Tanda Anggota Digital) */}
       <AnimatePresence>
@@ -1257,11 +1455,11 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
                 <div className="flex items-start justify-between relative z-10 gap-2">
                   <div className="flex items-center gap-2 sm:gap-3">
                     <img
-                      src="/logo_pb_bilibili_162.svg"
+                      src={logoUrl || "/logo_pb_bilibili_162.svg"}
                       alt="Logo PB Bilibili 162"
                       className="w-8 h-8 sm:w-10 sm:h-10 object-contain drop-shadow shrink-0"
                       onError={(e) => {
-                        e.currentTarget.src = "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=100&auto=format&fit=crop&q=80";
+                        e.currentTarget.src = "/logo_pb_bilibili_162.svg";
                       }}
                     />
                     <div>
@@ -1627,6 +1825,64 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
                   )}
                 </button>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL KAS ANGGOTA */}
+      <AnimatePresence>
+        {showKasModal && (
+          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="w-full max-w-6xl bg-[#0b1224] border border-white/10 rounded-3xl p-4 sm:p-6 space-y-4 shadow-2xl relative max-h-[95vh] overflow-y-auto my-auto"
+            >
+              <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                <div className="flex items-center gap-2 text-emerald-400 font-black text-xs sm:text-sm uppercase tracking-wider italic">
+                  <Wallet size={18} />
+                  <span>Transparansi Laporan Kas PB Bilibili 162</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowKasModal(false)}
+                  className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              <PublicKasView />
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL QUIZ ANGGOTA */}
+      <AnimatePresence>
+        {showQuizModal && (
+          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="w-full max-w-6xl bg-[#0b1224] border border-white/10 rounded-3xl p-4 sm:p-6 space-y-4 shadow-2xl relative max-h-[95vh] overflow-y-auto my-auto"
+            >
+              <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                <div className="flex items-center gap-2 text-indigo-400 font-black text-xs sm:text-sm uppercase tracking-wider italic">
+                  <BrainCircuit size={18} />
+                  <span>Quiz Badminton Interaktif</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowQuizModal(false)}
+                  className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              <BadmintonQuiz />
             </motion.div>
           </div>
         )}

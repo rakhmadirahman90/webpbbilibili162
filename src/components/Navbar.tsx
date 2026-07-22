@@ -46,6 +46,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
   }, []);
 
   const handleLogout = async () => {
+    setIsMobileMenuOpen(false);
     try {
       const result = await Swal.fire({
         title: 'Keluar Sistem?',
@@ -59,7 +60,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
         background: '#0F172A',
         color: '#fff',
         customClass: {
-          container: 'z-[99999]'
+          container: 'z-[9999999]'
         }
       });
 
@@ -71,7 +72,6 @@ export default function Navbar({ onNavigate }: NavbarProps) {
         } catch (e) {
           console.error('SignOut error:', e);
         }
-        setIsMobileMenuOpen(false);
         navigate('/login', { replace: true });
       }
     } catch (err) {
@@ -83,6 +83,15 @@ export default function Navbar({ onNavigate }: NavbarProps) {
     }
   };
   
+  const userRole = session?.user?.user_metadata?.role || (() => {
+    try {
+      const raw = localStorage.getItem('local_admin_session');
+      if (raw) return JSON.parse(raw)?.user?.user_metadata?.role || 'admin';
+    } catch (e) {}
+    return 'admin';
+  })();
+  const isAdmin = userRole === 'admin';
+
   const [navData, setNavData] = useState<any[]>([]);
   const [branding, setBranding] = useState({
     logo_url: '/logo_pb_bilibili_162.svg', 
@@ -377,8 +386,17 @@ export default function Navbar({ onNavigate }: NavbarProps) {
             <div className="flex items-center gap-1.5 sm:gap-2 cursor-pointer group shrink-0" onClick={() => handleNavClick('home')}>
               <div className="relative w-8 h-8 lg:w-9 lg:h-9 flex items-center justify-center shrink-0">
                 <div className="absolute inset-0 border border-white/30 rounded-full group-hover:border-blue-500/50 transition-colors duration-300"></div>
-                <div className="w-7 h-7 lg:w-8 lg:h-8 rounded-full overflow-hidden bg-white flex items-center justify-center transition-transform duration-500 group-hover:scale-105 shadow-inner">
-                  <img src={branding.logo_url} alt="Logo" className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                <div className="w-7 h-7 lg:w-8 lg:h-8 rounded-full overflow-hidden bg-slate-900/60 flex items-center justify-center transition-transform duration-500 group-hover:scale-105 shadow-inner p-0.5 border border-blue-500/30">
+                  <img 
+                    src={branding.logo_url || "/logo_pb_bilibili_162.svg"} 
+                    alt="Logo" 
+                    className="w-full h-full object-contain" 
+                    loading="lazy" 
+                    decoding="async" 
+                    onError={(e) => {
+                      e.currentTarget.src = "/logo_pb_bilibili_162.svg";
+                    }}
+                  />
                 </div>
               </div>
               <div className="flex flex-col justify-center shrink-0">
@@ -481,7 +499,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
                   title="Masuk ke Panel Dashboard"
                 >
                   <LayoutDashboard size={13} />
-                  <span className="whitespace-nowrap">Dashboard</span>
+                  <span className="whitespace-nowrap">{isAdmin ? 'Dashboard Admin' : 'Dashboard Anggota'}</span>
                 </button>
                 <button 
                   type="button"
@@ -557,8 +575,17 @@ export default function Navbar({ onNavigate }: NavbarProps) {
                 {/* Logo Container */}
                 <div className="relative w-10 h-10 flex items-center justify-center shrink-0">
                   <div className="absolute inset-0 bg-blue-500/10 rounded-full blur-md animate-pulse"></div>
-                  <div className="relative w-9 h-9 rounded-full overflow-hidden border border-white/10 shadow-lg flex items-center justify-center bg-white">
-                    <img src={branding.logo_url} alt="Logo" className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                  <div className="relative w-9 h-9 rounded-full overflow-hidden border border-blue-500/30 shadow-lg flex items-center justify-center bg-slate-900/60 p-0.5">
+                    <img 
+                      src={branding.logo_url || "/logo_pb_bilibili_162.svg"} 
+                      alt="Logo" 
+                      className="w-full h-full object-contain" 
+                      loading="lazy" 
+                      decoding="async" 
+                      onError={(e) => {
+                        e.currentTarget.src = "/logo_pb_bilibili_162.svg";
+                      }}
+                    />
                   </div>
                 </div>
                 <div className="min-w-0 flex flex-col">
@@ -650,7 +677,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
                       className="flex items-center gap-2 w-full px-3 py-2 text-[11px] font-bold tracking-wider uppercase text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-lg transition-all duration-200 text-left border border-emerald-500/20 cursor-pointer"
                     >
                       <LayoutDashboard size={14} className="text-emerald-400 shrink-0" />
-                      <span>Dashboard Admin</span>
+                      <span>{isAdmin ? 'Dashboard Admin' : 'Dashboard Anggota'}</span>
                     </button>
                     <button 
                       type="button"

@@ -3,8 +3,9 @@ import { supabase } from '../supabase';
 import Swal from 'sweetalert2';
 import { 
   Loader2, Send, CheckCircle2, User, Phone, 
-  MapPin, Award, Image as ImageIcon, ChevronDown, 
-  Users, Trophy, ArrowLeft, ArrowRight, UploadCloud, X
+  MapPin, Award, ChevronDown, 
+  Users, Trophy, ArrowLeft, ArrowRight, UploadCloud, X,
+  Mail, Lock, Eye, EyeOff, UserPlus, ShieldCheck, Sparkles
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -14,6 +15,7 @@ export default function RegistrationForm() {
   const [submitted, setSubmitted] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
   
   const kategoriUmur = [
     "Pra Dini (U-9)", "Usia Dini (U-11)", "Anak-anak (U-13)", 
@@ -49,36 +51,35 @@ export default function RegistrationForm() {
   const handleNextStep = (currentStep: number) => {
     if (currentStep === 1) {
       if (!formData.nama.trim()) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Nama Lengkap Wajib Diisi',
-        text: 'Silakan isi nama lengkap atlet terlebih dahulu.',
-        confirmButtonColor: '#2563EB',
-        background: '#1e293b',
-        color: '#fff'
-      });
-      return;
-    }
-    if (!formData.whatsapp.trim()) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Nomor WhatsApp Wajib Diisi',
-        text: 'Silakan isi nomor WhatsApp aktif untuk koordinasi.',
-        confirmButtonColor: '#2563EB',
-        background: '#1e293b',
-        color: '#fff'
-      });
-      return;
-    }
+        Swal.fire({
+          icon: 'warning',
+          title: 'Nama Lengkap Wajib Diisi',
+          text: 'Silakan isi nama lengkap atlet terlebih dahulu.',
+          confirmButtonColor: '#2563EB',
+          background: '#0b1224',
+          color: '#fff'
+        });
+        return;
+      }
+      if (!formData.whatsapp.trim()) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Nomor WhatsApp Wajib Diisi',
+          text: 'Silakan isi nomor WhatsApp aktif untuk koordinasi.',
+          confirmButtonColor: '#2563EB',
+          background: '#0b1224',
+          color: '#fff'
+        });
+        return;
+      }
       setStep(2);
     } else if (currentStep === 2) {
       if (!formData.domisili.trim()) {
-        Swal.fire({ icon: 'warning', title: 'Domisili Wajib Diisi', background: '#1e293b', color: '#fff' });
+        Swal.fire({ icon: 'warning', title: 'Domisili Wajib Diisi', background: '#0b1224', color: '#fff', confirmButtonColor: '#2563EB' });
         return;
       }
-      // file check already done in step 2
-    if (!file) {
-        Swal.fire({ icon: 'warning', title: 'Foto Identitas Wajib Diunggah', background: '#1e293b', color: '#fff' });
+      if (!file) {
+        Swal.fire({ icon: 'warning', title: 'Foto Identitas Wajib Diunggah', text: 'Silakan unggah foto KK / AKTE / KIA resmi.', background: '#0b1224', color: '#fff', confirmButtonColor: '#2563EB' });
         return;
       }
       setStep(3);
@@ -88,29 +89,21 @@ export default function RegistrationForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (step === 1) {
-      handleNextStep();
+      handleNextStep(1);
+      return;
+    }
+    if (step === 2) {
+      handleNextStep(2);
       return;
     }
 
-    if (!formData.domisili.trim()) {
+    if (!formData.email.trim() || !formData.password.trim()) {
       Swal.fire({
         icon: 'warning',
-        title: 'Domisili Wajib Diisi',
-        text: 'Silakan lengkapi kota/kabupaten domisili saat ini.',
+        title: 'Kredensial Akun Belum Lengkap',
+        text: 'Silakan isi Email dan Password untuk login akun anggota.',
         confirmButtonColor: '#2563EB',
-        background: '#1e293b',
-        color: '#fff'
-      });
-      return;
-    }
-
-    if (!file) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Foto Identitas Wajib Diunggah',
-        text: 'Silakan unggah berkas identitas resmi (KK/AKTE/KIA).',
-        confirmButtonColor: '#2563EB',
-        background: '#1e293b',
+        background: '#0b1224',
         color: '#fff'
       });
       return;
@@ -192,24 +185,19 @@ export default function RegistrationForm() {
       window.open(`https://wa.me/${adminPhoneNumber}?text=${waMessage}`, '_blank');
       setSubmitted(true);
 
-      // Elegant Modern Toast Notification
       const Toast = Swal.mixin({
         toast: true,
         position: 'top-end',
         showConfirmButton: false,
         timer: 5000,
         timerProgressBar: true,
-        background: '#0f172a',
+        background: '#0b1224',
         color: '#ffffff',
         iconColor: '#10b981',
         customClass: {
-          popup: 'rounded-2xl border border-emerald-500/20 shadow-2xl backdrop-blur-xl font-sans',
+          popup: 'rounded-2xl border border-emerald-500/30 shadow-2xl backdrop-blur-xl font-sans',
           title: 'font-bold text-sm text-emerald-400',
           htmlContainer: 'text-xs text-slate-300'
-        },
-        didOpen: (toast) => {
-          toast.addEventListener('mouseenter', Swal.stopTimer);
-          toast.addEventListener('mouseleave', Swal.resumeTimer);
         }
       });
 
@@ -226,7 +214,7 @@ export default function RegistrationForm() {
         title: 'Gagal Mendaftar',
         text: "Kesalahan: " + err.message,
         confirmButtonColor: '#EF4444',
-        background: '#1A1D26',
+        background: '#0b1224',
         color: '#fff'
       });
     } finally {
@@ -236,209 +224,283 @@ export default function RegistrationForm() {
 
   if (submitted) {
     return (
-      <div className="h-[calc(100vh-140px)] flex items-center justify-center p-4">
+      <div className="min-h-[calc(100dvh-4rem)] flex items-center justify-center p-3 sm:p-6 my-auto">
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="max-w-md w-full p-8 md:p-10 bg-slate-900/80 backdrop-blur-xl rounded-3xl border border-emerald-500/30 text-center shadow-[0_0_50px_rgba(16,185,129,0.1)]"
+          className="max-w-md w-full p-6 sm:p-8 bg-[#0b1224]/90 backdrop-blur-2xl rounded-3xl border border-emerald-500/30 text-center shadow-2xl relative overflow-hidden"
         >
-          <div className="w-20 h-20 bg-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-emerald-600/20">
-              <CheckCircle2 size={40} className="text-white" />
+          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl flex items-center justify-center mx-auto mb-4 sm:mb-6 shadow-xl shadow-emerald-500/20 text-white">
+            <CheckCircle2 size={36} />
           </div>
-          <h2 className="text-2xl font-black text-white mb-3 uppercase tracking-tighter italic">PENDAFTARAN BERHASIL!</h2>
-          <p className="text-slate-400 mb-8 text-xs font-medium leading-relaxed">Data Anda telah tersimpan secara aman. Admin <span className="text-blue-500 font-bold">PB Bilibili 162</span> akan segera memproses berkas Anda.</p>
+          <h2 className="text-xl sm:text-2xl font-black text-white mb-2 uppercase tracking-tight italic">
+            PENDAFTARAN BERHASIL!
+          </h2>
+          <p className="text-slate-300 mb-6 text-xs sm:text-sm font-medium leading-relaxed">
+            Data Anda telah tersimpan secara aman di database <span className="text-blue-400 font-bold">PB Bilibili 162</span>. Admin akan melakukan diverifikasi berkas resmi Anda.
+          </p>
           <button 
-              onClick={() => { setSubmitted(false); setStep(1); setFile(null); setFilePreview(null); setFormData({ nama: '', whatsapp: '', jenis_kelamin: 'Putra', kategori: kategoriUmur[0], domisili: '', pengalaman: '' }); }} 
-              className="w-full bg-white hover:bg-blue-600 text-black hover:text-white py-4 rounded-xl font-bold uppercase text-xs tracking-wider transition-all shadow-xl active:scale-95"
+            onClick={() => { 
+              setSubmitted(false); 
+              setStep(1); 
+              setFile(null); 
+              setFilePreview(null); 
+              setFormData({ nama: '', whatsapp: '', jenis_kelamin: 'Putra', kategori: kategoriUmur[0], domisili: '', pengalaman: '', email: '', password: '' }); 
+            }} 
+            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white py-3.5 rounded-2xl font-black uppercase text-xs tracking-wider transition-all shadow-lg shadow-blue-600/30 active:scale-95 cursor-pointer"
           >
-              Daftar Atlet Lain
+            Daftar Atlet Lainnya
           </button>
         </motion.div>
       </div>
     );
   }
 
-  const inputClass = "w-full pl-11 pr-4 py-3 rounded-xl bg-slate-950/60 border border-slate-800 text-white font-semibold text-xs outline-none focus:border-blue-500/80 focus:ring-4 focus:ring-blue-500/5 transition-all placeholder:text-slate-600 placeholder:font-normal";
+  const inputClass = "w-full pl-10 pr-3.5 py-2.5 sm:py-3 rounded-xl bg-[#070d1a] border border-white/10 text-white font-bold text-xs sm:text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-slate-600 placeholder:font-normal";
 
   return (
-    <section className="h-[calc(100vh-150px)] flex flex-col items-center justify-center relative overflow-hidden px-4">
-      {/* Dynamic Background Accents */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-blue-600/5 blur-[120px] rounded-full pointer-events-none" />
+    <section className="w-full flex flex-col items-center justify-center py-4 sm:py-8 pb-28 sm:pb-36 px-3 sm:px-4 relative">
+      {/* Glow Backdrop */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 sm:w-96 h-72 sm:h-96 bg-blue-600/10 blur-3xl rounded-full pointer-events-none" />
 
-      <div className="w-full max-w-md bg-slate-900/60 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/5 relative z-10 flex flex-col overflow-hidden max-h-full">
-        {/* Glow Header Accent */}
-        <div className="w-full h-1 bg-gradient-to-r from-blue-600 to-indigo-600"></div>
+      <div className="w-full max-w-md sm:max-w-lg bg-[#0b1224]/90 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/10 relative z-10 flex flex-col overflow-hidden">
+        {/* Glow Header Accent Bar */}
+        <div className="w-full h-1 sm:h-1.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500"></div>
 
-        <form onSubmit={handleSubmit} className="p-5 md:p-6 flex flex-col justify-between flex-grow overflow-hidden">
-          {/* Header */}
-          <div className="text-center mb-5 shrink-0">
-            <h2 className="text-xl font-black text-white uppercase italic tracking-tight">Registrasi <span className="text-blue-500">Atlet</span></h2>
-            <p className="text-slate-500 font-bold text-[8px] uppercase tracking-widest mt-1">PB Bilibili 162 Official Form</p>
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 flex flex-col justify-between">
+          {/* Form Header with Top Navigation Bar */}
+          <div className="relative mb-3 sm:mb-4 shrink-0 text-center space-y-1">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-black uppercase tracking-widest">
+                <UserPlus size={12} />
+                <span>Pendaftaran Atlet Resmi</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => window.dispatchEvent(new CustomEvent('pb-navigate-home'))}
+                className="p-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white border border-white/10 transition-all cursor-pointer"
+                title="Kembali ke Beranda"
+              >
+                <X size={15} />
+              </button>
+            </div>
+            
+            <h2 className="text-lg sm:text-2xl font-black text-white uppercase italic tracking-tight">
+              Registrasi <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">Atlet PB Bilibili 162</span>
+            </h2>
+            <p className="text-slate-400 text-[10px] sm:text-xs font-medium">
+              Isi data diri dengan akurat sesuai berkas identitas resmi.
+            </p>
           </div>
 
-          {/* Stepper Dots & Labels */}
-          <div className="flex items-center justify-between mb-5 max-w-[220px] mx-auto w-full shrink-0">
-            <div className="flex items-center flex-col">
-              <button 
-                type="button"
-                onClick={() => step >= 2 && setStep(1)}
-                className={`w-7 h-7 rounded-full flex items-center justify-center font-black text-xs transition-all duration-300 ${step === 1 ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 ring-4 ring-blue-600/10' : 'bg-blue-600/20 text-blue-400 cursor-pointer'}`}
+          {/* Stepper Dots & Bar */}
+          <div className="bg-[#070d1a] border border-white/5 p-2 rounded-2xl mb-4 shrink-0">
+            <div className="flex items-center justify-between max-w-xs mx-auto w-full px-2">
+              {/* Step 1 */}
+              <div 
+                onClick={() => step >= 2 && setStep(1)} 
+                className={`flex items-center gap-1.5 cursor-pointer ${step >= 1 ? 'opacity-100' : 'opacity-40'}`}
               >
-                1
-              </button>
-              <span className="text-[8px] font-bold uppercase tracking-wider text-slate-500 mt-1">Biodata</span>
-            </div>
-            <div className="flex-1 h-[2px] bg-slate-800 mx-2 -mt-4">
-              <div className="h-full bg-blue-500 transition-all duration-300" style={{ width: step >= 2 ? '100%' : '0%' }}></div>
-            </div>
-            <div className="flex items-center flex-col">
-              <button 
-                type="button"
-                onClick={() => step === 1 ? handleNextStep(1) : setStep(2)}
-                className={`w-7 h-7 rounded-full flex items-center justify-center font-black text-xs transition-all duration-300 ${step === 2 ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 ring-4 ring-blue-600/10' : step === 3 ? 'bg-blue-600/20 text-blue-400 cursor-pointer' : 'bg-slate-800 text-slate-500'}`}
+                <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-xl flex items-center justify-center font-black text-xs transition-all ${step === 1 ? 'bg-blue-600 text-white shadow-md shadow-blue-600/40 ring-2 ring-blue-400' : 'bg-slate-800 text-slate-300'}`}>
+                  1
+                </div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-slate-300 hidden sm:inline">Biodata</span>
+              </div>
+
+              <div className="flex-1 h-0.5 bg-slate-800 mx-2">
+                <div className="h-full bg-blue-500 transition-all duration-300" style={{ width: step >= 2 ? '100%' : '0%' }} />
+              </div>
+
+              {/* Step 2 */}
+              <div 
+                onClick={() => step === 1 ? handleNextStep(1) : setStep(2)} 
+                className={`flex items-center gap-1.5 cursor-pointer ${step >= 2 ? 'opacity-100' : 'opacity-40'}`}
               >
-                2
-              </button>
-              <span className="text-[8px] font-bold uppercase tracking-wider text-slate-500 mt-1">Berkas</span>
-            </div>
-            <div className="flex-1 h-[2px] bg-slate-800 mx-2 -mt-4">
-              <div className="h-full bg-blue-500 transition-all duration-300" style={{ width: step === 3 ? '100%' : '0%' }}></div>
-            </div>
-            <div className="flex items-center flex-col">
-              <button 
-                type="button"
-                onClick={() => step === 2 && handleNextStep(2)}
-                className={`w-7 h-7 rounded-full flex items-center justify-center font-black text-xs transition-all duration-300 ${step === 3 ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 ring-4 ring-blue-600/10' : 'bg-slate-800 text-slate-500'}`}
+                <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-xl flex items-center justify-center font-black text-xs transition-all ${step === 2 ? 'bg-blue-600 text-white shadow-md shadow-blue-600/40 ring-2 ring-blue-400' : 'bg-slate-800 text-slate-300'}`}>
+                  2
+                </div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-slate-300 hidden sm:inline">Berkas</span>
+              </div>
+
+              <div className="flex-1 h-0.5 bg-slate-800 mx-2">
+                <div className="h-full bg-blue-500 transition-all duration-300" style={{ width: step === 3 ? '100%' : '0%' }} />
+              </div>
+
+              {/* Step 3 */}
+              <div 
+                onClick={() => step === 2 && handleNextStep(2)} 
+                className={`flex items-center gap-1.5 cursor-pointer ${step === 3 ? 'opacity-100' : 'opacity-40'}`}
               >
-                3
-              </button>
-              <span className="text-[8px] font-bold uppercase tracking-wider text-slate-500 mt-1">Akun</span>
+                <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-xl flex items-center justify-center font-black text-xs transition-all ${step === 3 ? 'bg-blue-600 text-white shadow-md shadow-blue-600/40 ring-2 ring-blue-400' : 'bg-slate-800 text-slate-300'}`}>
+                  3
+                </div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-slate-300 hidden sm:inline">Akun</span>
+              </div>
             </div>
           </div>
 
-          {/* Form Content Steps with Transition */}
-          <div className="flex-grow overflow-y-auto pr-1 -mr-1 py-1 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent">
+          {/* Form Fields Container */}
+          <div className="py-1">
             <AnimatePresence mode="wait">
               {step === 1 ? (
                 <motion.div
                   key="step-biodata"
-                  initial={{ opacity: 0, x: -15 }}
+                  initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 15 }}
+                  exit={{ opacity: 0, x: 10 }}
                   transition={{ duration: 0.15 }}
-                  className="space-y-4"
+                  className="space-y-3"
                 >
-                  {/* Nama */}
-                  <div className="space-y-1.5">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider ml-1">Nama Lengkap Atlet *</label>
-                    <div className="relative group">
-                      <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors" size={16} />
-                      <input required value={formData.nama} className={inputClass} placeholder="NAMA LENGKAP ATLET" onChange={e => setFormData({...formData, nama: e.target.value})} />
+                  {/* Nama Lengkap */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] sm:text-xs font-black text-slate-300 uppercase tracking-wider">Nama Lengkap Atlet *</label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+                      <input 
+                        required 
+                        type="text"
+                        value={formData.nama} 
+                        className={inputClass} 
+                        placeholder="NAMA SESUAI IDENTITAS" 
+                        onChange={e => setFormData({...formData, nama: e.target.value})} 
+                      />
                     </div>
                   </div>
 
-                  {/* Gender Selection */}
-                  <div className="space-y-1.5">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider ml-1">Jenis Kelamin</label>
-                    <div className="grid grid-cols-2 gap-3">
+                  {/* Gender Toggle */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] sm:text-xs font-black text-slate-300 uppercase tracking-wider">Jenis Kelamin *</label>
+                    <div className="grid grid-cols-2 gap-2">
                       {['Putra', 'Putri'].map((gender) => (
-                        <label key={gender} className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border cursor-pointer font-black text-xs transition-all active:scale-95 ${formData.jenis_kelamin === gender ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-600/10' : 'bg-slate-950/40 border-slate-800 text-slate-500 hover:border-slate-700'}`}>
-                          <input type="radio" className="hidden" name="jenis_kelamin" value={gender} checked={formData.jenis_kelamin === gender} onChange={e => setFormData({...formData, jenis_kelamin: e.target.value})} />
-                          <Users size={14} /> {gender.toUpperCase()}
-                        </label>
+                        <button
+                          key={gender}
+                          type="button"
+                          onClick={() => setFormData({...formData, jenis_kelamin: gender})}
+                          className={`py-2 sm:py-2.5 rounded-xl border flex items-center justify-center gap-2 font-black text-xs transition-all cursor-pointer ${
+                            formData.jenis_kelamin === gender 
+                              ? 'bg-blue-600 border-blue-500 text-white shadow-md shadow-blue-600/30' 
+                              : 'bg-[#070d1a] border-white/10 text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          <Users size={14} />
+                          <span>{gender.toUpperCase()}</span>
+                        </button>
                       ))}
                     </div>
                   </div>
 
                   {/* WhatsApp */}
-                  <div className="space-y-1.5">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider ml-1">Nomor WhatsApp *</label>
-                    <div className="relative group">
-                      <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors" size={16} />
-                      <input required type="tel" value={formData.whatsapp} className={inputClass} placeholder="CONTOH: 628121902..." onChange={e => setFormData({...formData, whatsapp: e.target.value})} />
+                  <div className="space-y-1">
+                    <label className="text-[10px] sm:text-xs font-black text-slate-300 uppercase tracking-wider">Nomor WhatsApp *</label>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+                      <input 
+                        required 
+                        type="tel" 
+                        value={formData.whatsapp} 
+                        className={inputClass} 
+                        placeholder="CONTOH: 081219027234" 
+                        onChange={e => setFormData({...formData, whatsapp: e.target.value})} 
+                      />
                     </div>
                   </div>
                 </motion.div>
               ) : step === 2 ? (
                 <motion.div
                   key="step-kategori"
-                  initial={{ opacity: 0, x: 15 }}
+                  initial={{ opacity: 0, x: 10 }}
                   animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -15 }}
+                  exit={{ opacity: 0, x: -10 }}
                   transition={{ duration: 0.15 }}
-                  className="space-y-4"
+                  className="space-y-3"
                 >
-                  {/* Domisili & Kategori (Side by side on small layouts to save space) */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                      <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider ml-1">Kota Domisili *</label>
-                      <div className="relative group">
-                        <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors" size={15} />
-                        <input required value={formData.domisili} className={`${inputClass} pl-10`} placeholder="KOTA DOMISILI" onChange={e => setFormData({...formData, domisili: e.target.value})} />
+                  {/* Domisili & Kategori (Grid 2 kolom) */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div className="space-y-1">
+                      <label className="text-[10px] sm:text-xs font-black text-slate-300 uppercase tracking-wider">Kota Domisili *</label>
+                      <div className="relative">
+                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+                        <input 
+                          required 
+                          value={formData.domisili} 
+                          className={inputClass} 
+                          placeholder="KOTA DOMISILI" 
+                          onChange={e => setFormData({...formData, domisili: e.target.value})} 
+                        />
                       </div>
                     </div>
 
-                    <div className="space-y-1.5">
-                      <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider ml-1">Kategori Tanding</label>
-                      <div className="relative group">
-                        <Award className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors" size={15} />
-                        <select value={formData.kategori} className={`${inputClass} pl-10 pr-8 appearance-none cursor-pointer`} onChange={e => setFormData({...formData, kategori: e.target.value})}>
-                          {kategoriUmur.map((kat) => <option key={kat} value={kat} className="bg-slate-900">{kat}</option>)}
+                    <div className="space-y-1">
+                      <label className="text-[10px] sm:text-xs font-black text-slate-300 uppercase tracking-wider">Kategori Tanding</label>
+                      <div className="relative">
+                        <Award className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
+                        <select 
+                          value={formData.kategori} 
+                          className={`${inputClass} pr-8 appearance-none cursor-pointer`} 
+                          onChange={e => setFormData({...formData, kategori: e.target.value})}
+                        >
+                          {kategoriUmur.map((kat) => (
+                            <option key={kat} value={kat} className="bg-[#0b1224] text-white">{kat}</option>
+                          ))}
                         </select>
-                        <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={14} />
+                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={14} />
                       </div>
                     </div>
                   </div>
 
                   {/* Pengalaman */}
-                  <div className="space-y-1.5">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider ml-1">Pengalaman Bertanding / Prestasi (Opsional)</label>
-                    <div className="relative group">
-                      <Trophy className="absolute left-4 top-3 text-slate-500 group-focus-within:text-blue-500 transition-colors" size={15} />
+                  <div className="space-y-1">
+                    <label className="text-[10px] sm:text-xs font-black text-slate-300 uppercase tracking-wider">Pengalaman / Prestasi (Opsional)</label>
+                    <div className="relative">
+                      <Trophy className="absolute left-3 top-3 text-slate-500" size={16} />
                       <textarea 
                         value={formData.pengalaman} 
                         rows={2}
-                        className={`${inputClass} pt-2.5 pl-11 h-14 resize-none`} 
-                        placeholder="Tulis prestasi atau klub asal jika ada..." 
+                        className={`${inputClass} pt-2.5 resize-none h-14`} 
+                        placeholder="Tulis klub asal atau prestasi yang pernah dicapai..." 
                         onChange={e => setFormData({...formData, pengalaman: e.target.value})}
                       />
                     </div>
                   </div>
 
-                  {/* Upload File Sleek Layout */}
-                  <div className="space-y-1.5">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider ml-1">Berkas Identitas (KK/AKTE/KIA) *</label>
-                    <div className="relative group">
-                      <input required type="file" accept="image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onChange={handleFileChange} />
+                  {/* Upload Berkas Dropzone */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] sm:text-xs font-black text-slate-300 uppercase tracking-wider">Foto Berkas Identitas (KK/AKTE/KIA) *</label>
+                    <div className="relative">
+                      <input 
+                        required 
+                        type="file" 
+                        accept="image/*" 
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
+                        onChange={handleFileChange} 
+                      />
                       
                       {filePreview ? (
-                        <div className="w-full px-4 py-3 rounded-xl border border-emerald-500/30 bg-emerald-500/5 flex items-center justify-between">
-                          <div className="flex items-center gap-3 overflow-hidden">
-                            <div className="w-10 h-10 shrink-0 rounded-lg overflow-hidden border border-emerald-500/20 bg-slate-950">
-                              <img src={filePreview} alt="Preview" className="w-full h-full object-cover" />
-                            </div>
+                        <div className="w-full p-2.5 rounded-xl border border-emerald-500/40 bg-emerald-950/20 flex items-center justify-between">
+                          <div className="flex items-center gap-2.5 overflow-hidden">
+                            <img src={filePreview} alt="Preview" className="w-9 h-9 object-cover rounded-lg border border-emerald-500/30 shrink-0" />
                             <div className="overflow-hidden">
-                              <p className="text-[10px] font-bold text-emerald-400 truncate">{file?.name}</p>
-                              <p className="text-[8px] text-slate-500 uppercase tracking-widest mt-0.5">Selesai Terunggah</p>
+                              <p className="text-[11px] font-bold text-emerald-400 truncate">{file?.name}</p>
+                              <p className="text-[9px] text-slate-400 uppercase font-mono">Berkas Siap Diunggah</p>
                             </div>
                           </div>
                           <button 
                             type="button" 
                             onClick={(e) => { e.preventDefault(); e.stopPropagation(); setFile(null); setFilePreview(null); }}
-                            className="text-slate-400 hover:text-rose-500 transition-colors z-20"
+                            className="p-1 rounded-lg bg-rose-500/10 text-rose-400 hover:text-white z-20 cursor-pointer"
                           >
                             <X size={14} />
                           </button>
                         </div>
                       ) : (
-                        <div className="w-full px-4 py-3 rounded-xl border-2 border-dashed bg-slate-950/40 border-slate-800 group-hover:border-blue-500/40 flex items-center justify-between transition-all">
-                          <div className="flex items-center gap-3">
-                            <UploadCloud size={18} className="text-slate-500 group-hover:text-blue-500 transition-colors" />
-                            <span className="text-slate-400 text-[10px] font-bold">UNGGAH FOTO IDENTITAS ATLET</span>
+                        <div className="w-full p-3 rounded-xl border-2 border-dashed border-white/10 bg-[#070d1a] hover:border-blue-500/50 flex items-center justify-between transition-all">
+                          <div className="flex items-center gap-2.5">
+                            <UploadCloud size={18} className="text-blue-400" />
+                            <span className="text-slate-300 text-[11px] font-bold">UNGGAH FOTO IDENTITAS ATLET</span>
                           </div>
-                          <div className="px-2.5 py-1 bg-slate-800 text-slate-300 font-extrabold text-[8px] uppercase tracking-wider rounded-md">
-                            Pilih
-                          </div>
+                          <span className="px-2.5 py-1 bg-blue-600/20 text-blue-400 font-black text-[9px] uppercase tracking-wider rounded-lg border border-blue-500/30">
+                            Pilih Foto
+                          </span>
                         </div>
                       )}
                     </div>
@@ -447,60 +509,93 @@ export default function RegistrationForm() {
               ) : step === 3 ? (
                 <motion.div
                   key="step-akun"
-                  initial={{ opacity: 0, x: -15 }}
+                  initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 15 }}
+                  exit={{ opacity: 0, x: 10 }}
                   transition={{ duration: 0.15 }}
-                  className="space-y-4"
+                  className="space-y-3"
                 >
-                  <div className="space-y-1.5">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider ml-1">Alamat Email *</label>
-                    <input required type="email" className="w-full px-4 py-3 rounded-xl bg-slate-950/40 border border-slate-800 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-white font-medium text-xs transition-all outline-none" placeholder="email@domain.com" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
+                  <div className="space-y-1">
+                    <label className="text-[10px] sm:text-xs font-black text-slate-300 uppercase tracking-wider">Alamat Email Login *</label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+                      <input 
+                        required 
+                        type="email" 
+                        value={formData.email} 
+                        className={inputClass} 
+                        placeholder="email@domain.com" 
+                        onChange={(e) => setFormData({...formData, email: e.target.value})} 
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider ml-1">Kata Sandi *</label>
-                    <input required type="password" className="w-full px-4 py-3 rounded-xl bg-slate-950/40 border border-slate-800 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-white font-medium text-xs transition-all outline-none" placeholder="Minimal 6 karakter" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} />
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] sm:text-xs font-black text-slate-300 uppercase tracking-wider">Kata Sandi Akun *</label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+                      <input 
+                        required 
+                        type={showPassword ? "text" : "password"} 
+                        value={formData.password} 
+                        className={`${inputClass} pr-10`} 
+                        placeholder="Minimal 6 Karakter" 
+                        onChange={(e) => setFormData({...formData, password: e.target.value})} 
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white cursor-pointer"
+                      >
+                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
                   </div>
                 </motion.div>
               ) : null}
             </AnimatePresence>
           </div>
 
-          {/* Actions / Buttons Footer */}
-          <div className="mt-5 pt-4 border-t border-slate-800/60 shrink-0">
+          {/* Action Footer Buttons */}
+          <div className="mt-4 pt-3 border-t border-white/10 shrink-0 space-y-2">
             {step < 3 ? (
               <button 
                 type="button" 
                 onClick={() => handleNextStep(step)}
-                className="w-full bg-blue-600 hover:bg-white hover:text-black text-white py-3.5 rounded-xl font-bold uppercase text-xs tracking-wider shadow-lg shadow-blue-600/10 transition-all flex items-center justify-center gap-2 active:scale-95"
+                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white py-3 rounded-xl font-black uppercase text-xs tracking-wider shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
               >
-                Lanjutkan <ArrowRight size={14} />
+                <span>Lanjutkan ke Step {step + 1}</span>
+                <ArrowRight size={14} />
               </button>
             ) : (
-              <div className="flex gap-3">
+              <div className="flex gap-2">
                 <button 
                   type="button" 
                   onClick={() => setStep(step - 1)}
-                  className="px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 py-3.5 rounded-xl font-bold uppercase text-xs transition-all flex items-center justify-center gap-1.5"
+                  className="px-3.5 bg-slate-800 hover:bg-slate-700 text-slate-300 py-3 rounded-xl font-bold uppercase text-xs transition-all flex items-center justify-center gap-1 cursor-pointer"
                 >
                   <ArrowLeft size={14} />
+                  <span>Kembali</span>
                 </button>
+
                 <button 
                   type="submit" 
                   disabled={loading} 
-                  className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-white hover:to-white hover:text-black text-white py-3.5 rounded-xl font-bold uppercase text-xs tracking-wider shadow-lg shadow-blue-600/10 transition-all flex items-center justify-center gap-2 active:scale-95 disabled:from-slate-800 disabled:to-slate-800 disabled:text-slate-500"
+                  className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white py-3 rounded-xl font-black uppercase text-xs tracking-wider shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 cursor-pointer"
                 >
                   {loading ? (
-                    <><Loader2 className="animate-spin" size={14} /> Mengirim...</>
+                    <><Loader2 className="animate-spin" size={14} /> Memproses...</>
                   ) : (
-                    <><Send size={13} /> Kirim & WhatsApp</>
+                    <><Send size={14} /> Kirim & WhatsApp 🔥</>
                   )}
                 </button>
               </div>
             )}
-            <p className="text-[7px] text-center text-slate-600 mt-3 font-bold uppercase tracking-widest">
-              Data pendaftaran akan diverifikasi langsung oleh Admin PB Bilibili 162
-            </p>
+
+            <div className="flex items-center justify-center gap-1.5 text-[9px] text-slate-400 font-medium">
+              <ShieldCheck size={12} className="text-emerald-400 shrink-0" />
+              <span>Diverifikasi langsung oleh Pengurus Resmi PB Bilibili 162</span>
+            </div>
           </div>
         </form>
       </div>
