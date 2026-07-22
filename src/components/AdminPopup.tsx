@@ -327,23 +327,25 @@ export default function AdminPopup() {
   };
 
   return (
-    <div className="p-4 md:p-8 max-w-6xl mx-auto min-h-screen bg-[#070d1a]">
-      <header className="mb-10 flex justify-between items-end">
-        <div>
-            <h1 className="text-3xl md:text-4xl font-black text-white uppercase italic tracking-tighter">
-            Kelola <span className="text-blue-500">Pop-up Promo</span>
-            </h1>
-            <p className="text-white/40 font-bold text-xs uppercase tracking-[0.3em] mt-2">Atur tampilan & lampiran landing page</p>
-        </div>
-        {editingId && (
-            <button onClick={cancelEdit} className="px-6 py-2 bg-rose-600/10 text-rose-500 rounded-full text-[10px] font-black uppercase tracking-widest border border-rose-500/20 hover:bg-rose-600 hover:text-white transition-all">
-                Batal Edit
-            </button>
-        )}
-      </header>
+    <div className="h-screen bg-[#070d1a] text-white flex flex-col overflow-hidden p-4 md:p-8 font-sans">
+      <div className="max-w-7xl mx-auto w-full flex flex-col h-full overflow-hidden">
+        <header className="mb-6 flex justify-between items-center shrink-0">
+          <div>
+              <h1 className="text-2xl md:text-3xl font-black text-white uppercase italic tracking-tighter">
+              Kelola <span className="text-blue-500">Pop-up Promo</span>
+              </h1>
+              <p className="text-white/40 font-bold text-[10px] uppercase tracking-[0.3em] mt-1">Atur tampilan & lampiran landing page</p>
+          </div>
+          {editingId && (
+              <button onClick={cancelEdit} className="px-5 py-2 bg-rose-600/10 text-rose-500 rounded-xl text-[10px] font-black uppercase tracking-widest border border-rose-500/20 hover:bg-rose-600 hover:text-white transition-all">
+                  Batal Edit
+              </button>
+          )}
+        </header>
 
-      {/* FORM INPUT */}
-      <div className={`bg-[#0F172A] rounded-[2.5rem] border transition-all duration-500 ${editingId ? 'border-blue-500/50 shadow-blue-500/10' : 'border-white/5 shadow-2xl'} mb-12 overflow-hidden`}>
+        <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-8 pr-1 custom-scrollbar pb-10">
+          {/* FORM INPUT */}
+          <div className={`bg-[#0F172A] rounded-[2.5rem] border transition-all duration-500 ${editingId ? 'border-blue-500/50 shadow-blue-500/10' : 'border-white/5 shadow-2xl'} overflow-hidden`}>
         <div className="grid grid-cols-1 lg:grid-cols-5">
           <div className="lg:col-span-2 bg-black/40 flex items-center justify-center relative overflow-hidden">
             <div className="w-full h-full min-h-[400px] lg:min-h-full relative flex items-center justify-center">
@@ -452,6 +454,8 @@ export default function AdminPopup() {
           </SortableContext>
         </DndContext>
       )}
+        </div>
+      </div>
     </div>
   );
 }

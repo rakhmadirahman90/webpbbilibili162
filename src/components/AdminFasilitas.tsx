@@ -94,18 +94,32 @@ export default function AdminFasilitas() {
   if (loading) return <div className="flex h-screen items-center justify-center bg-[#070d1a]"><Loader2 className="animate-spin text-amber-500" size={40} /></div>;
 
   return (
-    <div className="p-8 bg-[#070d1a] min-h-screen text-white">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-black uppercase tracking-tighter">Kelola <span className="text-amber-500">Fasilitas</span></h1>
-        <button onClick={handleSave} disabled={saving} className="px-6 py-3 bg-amber-600 rounded-xl font-bold hover:bg-amber-700">{saving ? '...' : 'SIMPAN'}</button>
+    <div className="h-screen bg-[#070d1a] text-white flex flex-col overflow-hidden p-4 md:p-8">
+      <div className="flex justify-between items-center mb-6 shrink-0">
+        <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tighter">Kelola <span className="text-amber-500">Fasilitas</span></h1>
+        <button onClick={handleSave} disabled={saving} className="px-5 py-2.5 bg-amber-600 rounded-xl font-bold text-xs uppercase hover:bg-amber-700 transition-all">{saving ? '...' : 'SIMPAN'}</button>
       </div>
       
-      <div className="bg-[#0F172A] border border-white/5 rounded-3xl p-8 space-y-6">
-        <input value={content.fasilitas_title} onChange={e => setContent({...content, fasilitas_title: e.target.value})} className="w-full bg-black/40 p-4 rounded-xl"/>
+      <div className="flex-1 overflow-y-auto overflow-x-hidden bg-[#0F172A] border border-white/5 rounded-3xl p-4 md:p-8 space-y-6">
+        <input value={content.fasilitas_title} onChange={e => setContent({...content, fasilitas_title: e.target.value})} className="w-full bg-black/40 p-4 rounded-xl text-xs font-bold text-white border border-white/5 focus:border-amber-500 outline-none" placeholder="Judul Fasilitas"/>
         <div className="grid md:grid-cols-3 gap-6">
             {['fasilitas_img1', 'fasilitas_img2', 'fasilitas_img3'].map((field) => (
-                <div key={field} className="relative aspect-square bg-black/40 rounded-2xl border-2 border-dashed border-white/10 flex items-center justify-center">
-                    {(content as any)[field] ? <img src={(content as any)[field]} className="w-full h-full object-cover rounded-2xl" /> : <label className="cursor-pointer"><ImageIcon size={40} /><input type="file" className="hidden" onChange={e => handleImageUpload(e, field)} /></label>}
+                <div key={field} className="relative aspect-video md:aspect-square bg-black/40 rounded-2xl border-2 border-dashed border-white/10 flex items-center justify-center overflow-hidden group">
+                    {(content as any)[field] ? (
+                      <>
+                        <img src={(content as any)[field]} className="w-full h-full object-cover rounded-2xl" />
+                        <label className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer text-xs font-bold gap-2">
+                          <ImageIcon size={18}/> Ganti Foto
+                          <input type="file" className="hidden" onChange={e => handleImageUpload(e, field)} />
+                        </label>
+                      </>
+                    ) : (
+                      <label className="cursor-pointer flex flex-col items-center gap-2 text-slate-500 hover:text-white transition-colors">
+                        <ImageIcon size={36} />
+                        <span className="text-[10px] font-bold uppercase">Upload Foto</span>
+                        <input type="file" className="hidden" onChange={e => handleImageUpload(e, field)} />
+                      </label>
+                    )}
                     {uploading === field && <Loader2 className="animate-spin text-amber-500 absolute"/>}
                 </div>
             ))}

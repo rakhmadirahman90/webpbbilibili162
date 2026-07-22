@@ -285,7 +285,7 @@ const KelolaHero: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#070d1a] text-white p-6 md:p-12 font-sans selection:bg-blue-500/30">
+    <div className="h-screen bg-[#070d1a] text-white flex flex-col overflow-hidden p-4 md:p-8 font-sans selection:bg-blue-500/30">
       
       {/* MODAL CROPPER */}
       {showCropModal && imageToCrop && (
@@ -346,13 +346,13 @@ const KelolaHero: React.FC = () => {
         </div>
       )}
 
-      <div className="max-w-6xl mx-auto">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+      <div className="max-w-7xl mx-auto w-full flex flex-col h-full overflow-hidden">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 shrink-0">
           <div>
-            <h1 className="text-5xl font-black italic tracking-tighter uppercase text-white leading-none">
+            <h1 className="text-2xl md:text-3xl font-black italic tracking-tighter uppercase text-white leading-none">
               HERO <span className="text-blue-600">ENGINE</span>
             </h1>
-            <p className="text-zinc-500 text-[10px] font-black uppercase tracking-[0.3em] mt-3">
+            <p className="text-zinc-500 text-[10px] font-black uppercase tracking-[0.3em] mt-1">
               Manajemen Visual PB Bilibili 162
             </p>
           </div>
@@ -366,7 +366,7 @@ const KelolaHero: React.FC = () => {
           </button>
         </div>
 
-        <div className="grid lg:grid-cols-12 gap-10">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden grid lg:grid-cols-12 gap-6 pr-1 custom-scrollbar pb-10">
           {/* SISI KIRI: CONFIG */}
           <div className="lg:col-span-4 space-y-6">
             <div className="bg-blue-600 p-8 rounded-[2.5rem] shadow-[0_20px_50px_rgba(37,99,235,0.3)] relative overflow-hidden group">

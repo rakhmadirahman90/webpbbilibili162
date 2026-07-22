@@ -303,14 +303,14 @@ export default function AdminTampilan() {
   };
 
   return (
-    <div className="p-8 bg-[#070d1a] min-h-screen text-white font-sans">
+    <div className="h-screen bg-[#070d1a] text-white font-sans flex flex-col overflow-hidden p-4 md:p-8">
       {/* HEADER */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 shrink-0">
         <div>
-          <h1 className="text-4xl font-black italic uppercase tracking-tighter text-white">
+          <h1 className="text-2xl md:text-3xl font-black italic uppercase tracking-tighter text-white">
             DESIGN <span className="text-blue-600">CENTER</span>
           </h1>
-          <div className="flex items-center gap-3 mt-2">
+          <div className="flex items-center gap-3 mt-1">
             <p className="text-zinc-500 text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-2">
               <Layout size={12} className="text-blue-500" /> Web Configuration System v2.3
             </p>
@@ -318,36 +318,37 @@ export default function AdminTampilan() {
           </div>
         </div>
 
-        <div className="flex gap-4">
+        <div className="flex gap-3">
           <button 
             onClick={handleResetToDefault}
-            className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl hover:bg-red-500/20 text-red-500 transition-all active:scale-95 flex items-center gap-2 text-[9px] font-black uppercase tracking-widest"
+            className="px-4 py-2.5 bg-red-500/10 border border-red-500/20 rounded-xl hover:bg-red-500/20 text-red-500 transition-all active:scale-95 flex items-center gap-2 text-[9px] font-black uppercase tracking-widest"
             title="Reset to Default"
           >
-            <RotateCcw size={16} /> Reset
+            <RotateCcw size={14} /> Reset
           </button>
-          <button onClick={fetchData} className="p-4 bg-zinc-900 rounded-2xl border border-white/5 hover:bg-zinc-800 transition-all active:scale-95 shadow-xl">
-            <RefreshCw size={18} className={loading ? "animate-spin text-blue-500" : ""} />
+          <button onClick={fetchData} className="p-2.5 bg-zinc-900 rounded-xl border border-white/5 hover:bg-zinc-800 transition-all active:scale-95 shadow-xl">
+            <RefreshCw size={16} className={loading ? "animate-spin text-blue-500" : ""} />
           </button>
           <button 
             onClick={handleSave} 
             disabled={loading}
-            className="bg-blue-600 hover:bg-blue-500 text-white px-10 py-4 rounded-2xl transition-all flex items-center gap-3 text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-600/20 active:scale-95 disabled:opacity-50"
+            className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl transition-all flex items-center gap-2 text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-600/20 active:scale-95 disabled:opacity-50"
           >
-            {loading ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
-            Publish Changes
+            {loading ? <Loader2 className="animate-spin" size={14} /> : <Save size={14} />}
+            Publish
           </button>
         </div>
       </div>
 
       {message && (
-        <div className={`mb-6 p-4 rounded-2xl flex items-center gap-3 text-[10px] font-black uppercase tracking-widest animate-in fade-in slide-in-from-top-4 duration-300 ${message.includes('BERHASIL') ? 'bg-emerald-500/10 border border-emerald-500/50 text-emerald-500' : 'bg-blue-500/10 border border-blue-500/50 text-blue-500'}`}>
-          {message.includes('BERHASIL') ? <CheckCircle2 size={16} /> : <Loader2 size={16} className="animate-spin" />}
+        <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/50 text-blue-500 rounded-xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest shrink-0">
+          <Loader2 size={14} className="animate-spin" />
           {message}
         </div>
       )}
 
-      {/* TABS */}
+      {/* SCROLLABLE CONTENT */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-6 pr-1 custom-scrollbar">
       <div className="flex gap-2 mb-10 bg-zinc-900/50 p-1.5 rounded-full w-fit border border-white/5">
         {(['hero', 'footer'] as const).map((tab) => (
           <button 
@@ -554,6 +555,7 @@ export default function AdminTampilan() {
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

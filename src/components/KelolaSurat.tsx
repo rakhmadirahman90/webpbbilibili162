@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabase';
-import { Mail, Plus, Search, Eye, Edit, Trash2, Printer, X, Upload, Sparkles, Send, ImageIcon, MessageCircle, Move, Loader2 } from 'lucide-react';
+import { Mail, Plus, Search, Eye, Edit, Trash2, Printer, X, Upload, Sparkles, Send, ImageIcon, MessageCircle, Move, Loader2, FileText, CheckCircle2, Clock, AlertCircle, Filter, Building, UserCheck, ShieldAlert } from 'lucide-react';
 import Swal from 'sweetalert2';
 
 const JENIS_SURAT_TEMPLATES = [
@@ -65,6 +65,30 @@ export function KelolaSurat() {
 
   const [stempelPos, setStempelPos] = useState({ x: -40, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
+
+  // Surat Masuk States
+  const [activeTab, setActiveTab] = useState<'keluar' | 'masuk'>('keluar');
+  const [suratMasukList, setSuratMasukList] = useState<any[]>([]);
+  const [isMasukModalOpen, setIsMasukModalOpen] = useState(false);
+  const [editMasukId, setEditMasukId] = useState<string | null>(null);
+  const [searchMasuk, setSearchMasuk] = useState('');
+  const [masukFilterStatus, setMasukFilterStatus] = useState('semua');
+  const [viewFileModalUrl, setViewFileModalUrl] = useState<string | null>(null);
+
+  const defaultSuratMasuk = {
+    nomor_surat: '',
+    tanggal_diterima: new Date().toISOString().split('T')[0],
+    tanggal_surat: new Date().toISOString().split('T')[0],
+    pengirim: '',
+    perihal: '',
+    sifat_surat: 'Biasa',
+    disposisi_kepada: 'Ketua PB Bilibili 162',
+    status_disposisi: 'Belum Disposisi',
+    catatan_disposisi: '',
+    file_url: ''
+  };
+
+  const [suratMasukForm, setSuratMasukForm] = useState(defaultSuratMasuk);
 
   const defaultForm = {
     nomor_surat: '',
@@ -350,7 +374,104 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     } finally { setLoading(false); }
   };
 
-  useEffect(() => { fetchSurat(); }, []);
+  const fetchSuratMasuk = async () => {
+    try {
+      const { data } = await supabase.from('arsip_surat_masuk').select('*').order('created_at', { ascending: false });
+      const localData = JSON.parse(localStorage.getItem('arsip_surat_masuk_local') || '[]');
+      const combined = [...(data || []), ...localData];
+      const unique = Array.from(new Map(combined.map(item => [item.id || item.nomor_surat, item])).values());
+      setSuratMasukList(unique);
+    } catch (err) {
+      const localData = JSON.parse(localStorage.getItem('arsip_surat_masuk_local') || '[]');
+      setSuratMasukList(localData);
+    }
+  };
+
+  useEffect(() => { 
+    fetchSurat(); 
+    fetchSuratMasuk();
+  }, []);
+
+  const prepareNewSuratMasuk = () => {
+    setEditMasukId(null);
+    setSuratMasukForm(defaultSuratMasuk);
+    setIsMasukModalOpen(true);
+  };
+
+  const handleEditSuratMasuk = (surat: any) => {
+    setEditMasukId(surat.id);
+    setSuratMasukForm(surat);
+    setIsMasukModalOpen(true);
+  };
+
+  const handleSaveSuratMasuk = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!suratMasukForm.nomor_surat || !suratMasukForm.pengirim || !suratMasukForm.perihal) {
+      Swal.fire('Peringatan', 'Mohon lengkapi Nomor Surat, Pengirim, dan Perihal.', 'warning');
+      return;
+    }
+
+    setIsSubmitting(true);
+    const { id, created_at, ...payload } = suratMasukForm as any;
+
+    try {
+      const localData = JSON.parse(localStorage.getItem('arsip_surat_masuk_local') || '[]');
+      if (editMasukId) {
+        const updated = localData.map((item: any) => item.id === editMasukId ? { ...item, ...payload } : item);
+        localStorage.setItem('arsip_surat_masuk_local', JSON.stringify(updated));
+        try {
+          await supabase.from('arsip_surat_masuk').update(payload).eq('id', editMasukId);
+        } catch (e) {}
+        Swal.fire('Berhasil', 'Surat masuk berhasil diperbarui!', 'success');
+      } else {
+        const newItem = { ...payload, id: 'local_' + Date.now(), created_at: new Date().toISOString() };
+        localStorage.setItem('arsip_surat_masuk_local', JSON.stringify([newItem, ...localData]));
+        try {
+          await supabase.from('arsip_surat_masuk').insert([payload]);
+        } catch (e) {}
+        Swal.fire('Berhasil', 'Surat masuk berhasil dicatat!', 'success');
+      }
+      setIsMasukModalOpen(false);
+      fetchSuratMasuk();
+    } catch (err: any) {
+      Swal.fire('Error', 'Gagal menyimpan surat masuk: ' + err.message, 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteSuratMasuk = async (id: string) => {
+    const res = await Swal.fire({
+      title: 'Hapus Surat Masuk?',
+      text: 'Data arsip surat masuk akan dihapus permanen.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#e11d48',
+      confirmButtonText: 'Ya, Hapus'
+    });
+    if (res.isConfirmed) {
+      try {
+        await supabase.from('arsip_surat_masuk').delete().eq('id', id);
+        const localData = JSON.parse(localStorage.getItem('arsip_surat_masuk_local') || '[]');
+        localStorage.setItem('arsip_surat_masuk_local', JSON.stringify(localData.filter((i: any) => i.id !== id)));
+        fetchSuratMasuk();
+        Swal.fire('Terhapus', 'Surat masuk berhasil dihapus.', 'success');
+      } catch (err: any) {
+        Swal.fire('Error', 'Gagal menghapus: ' + err.message, 'error');
+      }
+    }
+  };
+
+  const handleMasukFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSuratMasukForm(prev => ({ ...prev, file_url: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const prepareNewSurat = () => {
     setEditId(null);
@@ -621,6 +742,15 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     s.perihal.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const filteredSuratMasuk = suratMasukList.filter(s => {
+    const matchesSearch = 
+      (s.nomor_surat || '').toLowerCase().includes(searchMasuk.toLowerCase()) ||
+      (s.pengirim || '').toLowerCase().includes(searchMasuk.toLowerCase()) ||
+      (s.perihal || '').toLowerCase().includes(searchMasuk.toLowerCase());
+    const matchesStatus = masukFilterStatus === 'semua' || s.status_disposisi === masukFilterStatus;
+    return matchesSearch && matchesStatus;
+  });
+
   return (
     <div className="w-full h-full flex flex-col justify-between p-2.5 sm:p-5 md:p-8 space-y-2.5 sm:space-y-4 md:space-y-6 overflow-hidden md:overflow-visible min-h-0 select-none">
       <div className="flex flex-row items-center justify-between gap-3 bg-gradient-to-r from-slate-900 via-[#0b1224] to-slate-900 p-3 sm:p-5 md:p-6 rounded-2xl md:rounded-3xl border border-white/10 shadow-2xl relative overflow-hidden shrink-0">
@@ -639,41 +769,211 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
         </div>
 
         <div className="relative z-10 flex items-center gap-2 shrink-0">
-          <div className="hidden sm:flex items-center gap-2 bg-slate-950/80 border border-white/10 px-3 py-1.5 rounded-xl focus-within:border-blue-500/50 transition-all w-48">
+          {activeTab === 'keluar' && (
+            <div className="hidden sm:flex items-center gap-2 bg-slate-950/80 border border-white/10 px-3 py-1.5 rounded-xl focus-within:border-blue-500/50 transition-all w-48">
+              <Search size={14} className="text-blue-400 shrink-0" />
+              <input 
+                type="text" 
+                placeholder="Cari surat..." 
+                className="bg-transparent text-[10px] sm:text-xs font-bold outline-none text-white w-full placeholder:text-zinc-600"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              {searchTerm && <X size={12} className="text-zinc-500 cursor-pointer hover:text-white" onClick={() => setSearchTerm('')} />}
+            </div>
+          )}
+          <button 
+            onClick={activeTab === 'keluar' ? prepareNewSurat : prepareNewSuratMasuk} 
+            className={`flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl transition-all text-[10px] sm:text-xs font-black uppercase tracking-widest active:scale-95 shrink-0 shadow-lg cursor-pointer text-white ${
+              activeTab === 'keluar' ? 'bg-blue-600 hover:bg-blue-500 shadow-blue-600/20' : 'bg-purple-600 hover:bg-purple-500 shadow-purple-600/20'
+            }`}
+          >
+            <Plus size={14} /> 
+            <span>{activeTab === 'keluar' ? 'Buat Surat Baru' : 'Catat Surat Masuk'}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Tab Switcher */}
+      <div className="flex items-center gap-2 border-b border-white/10 pb-3 shrink-0">
+        <button
+          onClick={() => setActiveTab('keluar')}
+          className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
+            activeTab === 'keluar'
+              ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+              : 'bg-slate-900/80 text-slate-400 hover:text-white hover:bg-slate-800'
+          }`}
+        >
+          <Send size={14} /> Surat Keluar & Generator ({suratList.length})
+        </button>
+        <button
+          onClick={() => setActiveTab('masuk')}
+          className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
+            activeTab === 'masuk'
+              ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30'
+              : 'bg-slate-900/80 text-slate-400 hover:text-white hover:bg-slate-800'
+          }`}
+        >
+          <Mail size={14} /> Surat Masuk ({suratMasukList.length})
+        </button>
+      </div>
+
+      {activeTab === 'masuk' ? (
+        <div className="flex flex-col flex-1 min-h-0 space-y-4">
+          {/* Stats Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 shrink-0">
+            <div className="bg-slate-900/90 border border-white/10 p-4 rounded-2xl flex items-center justify-between">
+              <div>
+                <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Total Surat Masuk</p>
+                <p className="text-2xl font-black text-white mt-1">{suratMasukList.length}</p>
+              </div>
+              <div className="p-3 bg-purple-600/10 rounded-xl text-purple-400">
+                <Mail size={20} />
+              </div>
+            </div>
+            <div className="bg-slate-900/90 border border-white/10 p-4 rounded-2xl flex items-center justify-between">
+              <div>
+                <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Belum Disposisi</p>
+                <p className="text-2xl font-black text-amber-400 mt-1">{suratMasukList.filter(s => s.status_disposisi === 'Belum Disposisi').length}</p>
+              </div>
+              <div className="p-3 bg-amber-600/10 rounded-xl text-amber-400">
+                <Clock size={20} />
+              </div>
+            </div>
+            <div className="bg-slate-900/90 border border-white/10 p-4 rounded-2xl flex items-center justify-between">
+              <div>
+                <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Sedang Diproses</p>
+                <p className="text-2xl font-black text-blue-400 mt-1">{suratMasukList.filter(s => s.status_disposisi === 'Diproses').length}</p>
+              </div>
+              <div className="p-3 bg-blue-600/10 rounded-xl text-blue-400">
+                <AlertCircle size={20} />
+              </div>
+            </div>
+            <div className="bg-slate-900/90 border border-white/10 p-4 rounded-2xl flex items-center justify-between">
+              <div>
+                <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Selesai</p>
+                <p className="text-2xl font-black text-emerald-400 mt-1">{suratMasukList.filter(s => s.status_disposisi === 'Selesai').length}</p>
+              </div>
+              <div className="p-3 bg-emerald-600/10 rounded-xl text-emerald-400">
+                <CheckCircle2 size={20} />
+              </div>
+            </div>
+          </div>
+
+          {/* Filter & Search Bar */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-900/80 p-3 rounded-2xl border border-white/10 shrink-0">
+            <div className="flex items-center gap-2 w-full sm:w-72 bg-black/40 border border-white/10 px-3 py-2 rounded-xl">
+              <Search size={14} className="text-purple-400 shrink-0" />
+              <input
+                type="text"
+                placeholder="Cari nomor, pengirim, perihal..."
+                className="bg-transparent text-xs font-bold outline-none text-white w-full placeholder:text-zinc-600"
+                value={searchMasuk}
+                onChange={(e) => setSearchMasuk(e.target.value)}
+              />
+              {searchMasuk && <X size={12} className="text-zinc-500 cursor-pointer hover:text-white" onClick={() => setSearchMasuk('')} />}
+            </div>
+
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <span className="text-[10px] font-bold text-slate-400 uppercase">Status:</span>
+              <select
+                value={masukFilterStatus}
+                onChange={(e) => setMasukFilterStatus(e.target.value)}
+                className="bg-black/50 border border-white/10 text-xs text-white font-bold p-2 rounded-xl outline-none"
+              >
+                <option value="semua">Semua Status</option>
+                <option value="Belum Disposisi">Belum Disposisi</option>
+                <option value="Diproses">Diproses</option>
+                <option value="Selesai">Selesai</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Surat Masuk List */}
+          <div className="bg-[#0b1224]/90 border border-white/10 rounded-2xl md:rounded-[2.5rem] overflow-hidden flex flex-col flex-1 min-h-0 shadow-xl">
+            <div className="p-3 sm:p-5 border-b border-white/5 flex items-center justify-between shrink-0 bg-black/20">
+              <h3 className="text-[10px] sm:text-xs font-black uppercase tracking-[0.3em] text-slate-400">Arsip_Surat_Masuk.log ({filteredSuratMasuk.length})</h3>
+            </div>
+
+            <div className="overflow-y-auto flex-1 min-h-0 divide-y divide-white/5 custom-scrollbar">
+              {filteredSuratMasuk.length === 0 ? (
+                <div className="p-10 text-center flex flex-col items-center gap-2">
+                  <FileText size={30} className="text-zinc-800" />
+                  <p className="text-slate-500 text-[10px] sm:text-xs uppercase tracking-widest font-bold">
+                    {searchMasuk || masukFilterStatus !== 'semua' ? 'Tidak ada surat masuk yang sesuai filter' : 'Belum Ada Surat Masuk Tercatat'}
+                  </p>
+                </div>
+              ) : (
+                filteredSuratMasuk.map((s) => (
+                  <div key={s.id} className="p-4 hover:bg-white/[0.02] transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4 group">
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-mono text-xs sm:text-sm font-bold text-purple-400">{s.nomor_surat}</span>
+                        <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase border ${
+                          s.sifat_surat === 'Penting' || s.sifat_surat === 'Segera' 
+                            ? 'bg-rose-500/10 text-rose-400 border-rose-500/30' 
+                            : 'bg-slate-500/10 text-slate-300 border-slate-500/20'
+                        }`}>
+                          {s.sifat_surat || 'Biasa'}
+                        </span>
+                        <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase border ${
+                          s.status_disposisi === 'Selesai' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' :
+                          s.status_disposisi === 'Diproses' ? 'bg-blue-500/10 text-blue-400 border-blue-500/30' :
+                          'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                        }`}>
+                          {s.status_disposisi || 'Belum Disposisi'}
+                        </span>
+                      </div>
+                      <p className="text-white text-xs sm:text-sm font-bold uppercase tracking-tight flex items-center gap-2">
+                        <Building size={14} className="text-purple-400 shrink-0" />
+                        Pengirim: {s.pengirim}
+                      </p>
+                      <p className="text-slate-300 text-xs font-medium">{s.perihal}</p>
+                      <div className="flex items-center gap-4 text-[10px] text-slate-400 pt-1">
+                        <span>Diterima: {s.tanggal_diterima}</span>
+                        <span>Disposisi ke: <strong className="text-purple-300">{s.disposisi_kepada}</strong></span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-white/5">
+                      {s.file_url && (
+                        <button onClick={() => setViewFileModalUrl(s.file_url)} className="px-3 py-1.5 bg-blue-600/10 hover:bg-blue-600 text-blue-400 hover:text-white rounded-xl text-[10px] font-black uppercase transition-all flex items-center gap-1.5 border border-blue-500/20 cursor-pointer">
+                          <Eye size={14} /> Lihat File
+                        </button>
+                      )}
+                      <button onClick={() => handleEditSuratMasuk(s)} className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition-all cursor-pointer" title="Edit Surat Masuk">
+                        <Edit size={14} />
+                      </button>
+                      <button onClick={() => handleDeleteSuratMasuk(s.id)} className="p-2 bg-rose-600/10 hover:bg-rose-600 text-rose-400 hover:text-white rounded-xl transition-all cursor-pointer" title="Hapus">
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col flex-1 min-h-0 space-y-4">
+          <div className="flex sm:hidden items-center gap-2 bg-slate-900 border border-white/10 px-3 py-2 rounded-xl shrink-0">
             <Search size={14} className="text-blue-400 shrink-0" />
             <input 
               type="text" 
-              placeholder="Cari surat..." 
-              className="bg-transparent text-[10px] sm:text-xs font-bold outline-none text-white w-full placeholder:text-zinc-600"
+              placeholder="Cari nomor atau perihal surat..." 
+              className="bg-transparent text-xs font-bold outline-none text-white w-full placeholder:text-zinc-600"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
             {searchTerm && <X size={12} className="text-zinc-500 cursor-pointer hover:text-white" onClick={() => setSearchTerm('')} />}
           </div>
-          <button onClick={prepareNewSurat} className="flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 bg-blue-600 hover:bg-blue-500 rounded-xl transition-all text-[10px] sm:text-xs font-black uppercase tracking-widest active:scale-95 shrink-0 shadow-lg shadow-blue-600/20 cursor-pointer">
-            <Plus size={14} /> <span className="hidden xs:inline">Buat Surat Baru</span><span className="xs:hidden">Buat</span>
-          </button>
-        </div>
-      </div>
 
-      <div className="flex sm:hidden items-center gap-2 bg-slate-900 border border-white/10 px-3 py-2 rounded-xl shrink-0">
-        <Search size={14} className="text-blue-400 shrink-0" />
-        <input 
-          type="text" 
-          placeholder="Cari nomor atau perihal surat..." 
-          className="bg-transparent text-xs font-bold outline-none text-white w-full placeholder:text-zinc-600"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-        {searchTerm && <X size={12} className="text-zinc-500 cursor-pointer hover:text-white" onClick={() => setSearchTerm('')} />}
-      </div>
+          <div className="bg-[#0b1224]/90 border border-white/10 rounded-2xl md:rounded-[2.5rem] overflow-hidden flex flex-col flex-1 min-h-0 shadow-xl">
+            <div className="p-3 sm:p-5 border-b border-white/5 flex items-center justify-between shrink-0 bg-black/20">
+              <h3 className="text-[10px] sm:text-xs font-black uppercase tracking-[0.3em] text-slate-400">Arsip_Surat.log ({filteredSurat.length})</h3>
+            </div>
 
-      <div className="bg-[#0b1224]/90 border border-white/10 rounded-2xl md:rounded-[2.5rem] overflow-hidden flex flex-col flex-1 min-h-0 shadow-xl">
-        <div className="p-3 sm:p-5 border-b border-white/5 flex items-center justify-between shrink-0 bg-black/20">
-          <h3 className="text-[10px] sm:text-xs font-black uppercase tracking-[0.3em] text-slate-400">Arsip_Surat.log ({filteredSurat.length})</h3>
-        </div>
-
-        <div className="overflow-y-auto flex-1 min-h-0 divide-y divide-white/5">
+            <div className="overflow-y-auto flex-1 min-h-0 divide-y divide-white/5">
           {loading ? (
             <div className="p-10 text-center"><Loader2 className="animate-spin mx-auto text-blue-500" size={24} /></div>
           ) : filteredSurat.length === 0 ? (
@@ -713,6 +1013,8 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
           ))}
         </div>
       </div>
+      </div>
+      )}
 
       {isModalOpen && (
         <div className="fixed inset-0 z-[999] flex items-center justify-center p-2 sm:p-4 bg-black/95 backdrop-blur-md overflow-y-auto">
@@ -1008,6 +1310,188 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                   )}
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL SURAT MASUK */}
+      {isMasukModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="bg-[#0f172a] border border-white/10 rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+            <div className="p-5 border-b border-white/10 flex items-center justify-between bg-black/30">
+              <h3 className="text-base font-black text-white uppercase italic tracking-wider flex items-center gap-2">
+                <Mail className="text-purple-500" size={18} />
+                {editMasukId ? 'Edit Surat Masuk' : 'Catat Surat Masuk Baru'}
+              </h3>
+              <button onClick={() => setIsMasukModalOpen(false)} className="p-2 hover:bg-white/10 rounded-xl text-zinc-400 hover:text-white transition-all cursor-pointer">
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveSuratMasuk} className="p-6 overflow-y-auto space-y-4 custom-scrollbar flex-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">Nomor Surat Masuk *</label>
+                  <input
+                    type="text"
+                    required
+                    className="w-full mt-1 p-3 bg-black/40 border border-white/10 rounded-xl text-xs text-white font-mono focus:border-purple-500 outline-none"
+                    placeholder="Contoh: 042/SM/II/2026"
+                    value={suratMasukForm.nomor_surat}
+                    onChange={e => setSuratMasukForm({...suratMasukForm, nomor_surat: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">Pengirim / Instansi Asal *</label>
+                  <input
+                    type="text"
+                    required
+                    className="w-full mt-1 p-3 bg-black/40 border border-white/10 rounded-xl text-xs text-white focus:border-purple-500 outline-none"
+                    placeholder="Contoh: Dispora Parepare"
+                    value={suratMasukForm.pengirim}
+                    onChange={e => setSuratMasukForm({...suratMasukForm, pengirim: e.target.value})}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">Tanggal Surat</label>
+                  <input
+                    type="date"
+                    className="w-full mt-1 p-3 bg-black/40 border border-white/10 rounded-xl text-xs text-white focus:border-purple-500 outline-none"
+                    value={suratMasukForm.tanggal_surat}
+                    onChange={e => setSuratMasukForm({...suratMasukForm, tanggal_surat: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">Tanggal Diterima</label>
+                  <input
+                    type="date"
+                    className="w-full mt-1 p-3 bg-black/40 border border-white/10 rounded-xl text-xs text-white focus:border-purple-500 outline-none"
+                    value={suratMasukForm.tanggal_diterima}
+                    onChange={e => setSuratMasukForm({...suratMasukForm, tanggal_diterima: e.target.value})}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase">Perihal Surat *</label>
+                <textarea
+                  required
+                  className="w-full mt-1 p-3 bg-black/40 border border-white/10 rounded-xl text-xs text-white h-20 focus:border-purple-500 outline-none"
+                  placeholder="Ringkasan atau perihal isi surat masuk..."
+                  value={suratMasukForm.perihal}
+                  onChange={e => setSuratMasukForm({...suratMasukForm, perihal: e.target.value})}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">Sifat Surat</label>
+                  <select
+                    className="w-full mt-1 p-3 bg-black/40 border border-white/10 rounded-xl text-xs text-white focus:border-purple-500 outline-none"
+                    value={suratMasukForm.sifat_surat}
+                    onChange={e => setSuratMasukForm({...suratMasukForm, sifat_surat: e.target.value})}
+                  >
+                    <option value="Biasa">Biasa</option>
+                    <option value="Penting">Penting</option>
+                    <option value="Segera">Segera</option>
+                    <option value="Rahasia">Rahasia</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">Disposisi Kepada</label>
+                  <select
+                    className="w-full mt-1 p-3 bg-black/40 border border-white/10 rounded-xl text-xs text-white focus:border-purple-500 outline-none"
+                    value={suratMasukForm.disposisi_kepada}
+                    onChange={e => setSuratMasukForm({...suratMasukForm, disposisi_kepada: e.target.value})}
+                  >
+                    <option value="Ketua PB Bilibili 162">Ketua PB Bilibili 162</option>
+                    <option value="Sekretaris Klub">Sekretaris Klub</option>
+                    <option value="Pelatih Kepala">Pelatih Kepala</option>
+                    <option value="Bendahara">Bendahara</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">Status Disposisi</label>
+                  <select
+                    className="w-full mt-1 p-3 bg-black/40 border border-white/10 rounded-xl text-xs text-white focus:border-purple-500 outline-none"
+                    value={suratMasukForm.status_disposisi}
+                    onChange={e => setSuratMasukForm({...suratMasukForm, status_disposisi: e.target.value})}
+                  >
+                    <option value="Belum Disposisi">Belum Disposisi</option>
+                    <option value="Diproses">Diproses</option>
+                    <option value="Selesai">Selesai</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase">Catatan Disposisi / Tindak Lanjut</label>
+                <input
+                  type="text"
+                  className="w-full mt-1 p-3 bg-black/40 border border-white/10 rounded-xl text-xs text-white focus:border-purple-500 outline-none"
+                  placeholder="Instruksi atau catatan tindak lanjut..."
+                  value={suratMasukForm.catatan_disposisi}
+                  onChange={e => setSuratMasukForm({...suratMasukForm, catatan_disposisi: e.target.value})}
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Lampiran File / Scan Surat (Opsional)</label>
+                <div className="flex items-center gap-3">
+                  <label className="px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-all border border-white/10 flex items-center gap-2">
+                    <Upload size={14} /> Pilih File / Gambar
+                    <input type="file" accept="image/*,application/pdf" className="hidden" onChange={handleMasukFileUpload} />
+                  </label>
+                  {suratMasukForm.file_url && (
+                    <span className="text-xs text-emerald-400 font-bold flex items-center gap-1">
+                      <CheckCircle2 size={14} /> File Terlampir
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="pt-4 flex gap-3">
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="flex-1 py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-bold text-xs uppercase tracking-wider transition-all shadow-lg shadow-purple-600/30 flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                  {editMasukId ? 'Perbarui Surat Masuk' : 'Simpan Surat Masuk'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsMasukModalOpen(false)}
+                  className="px-5 py-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-xl font-bold text-xs uppercase tracking-wider transition-all cursor-pointer"
+                >
+                  Batal
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* VIEW FILE MODAL */}
+      {viewFileModalUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="bg-[#0f172a] border border-white/10 rounded-3xl w-full max-w-4xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+            <div className="p-4 border-b border-white/10 flex items-center justify-between bg-black/30">
+              <h3 className="text-sm font-black text-white uppercase italic tracking-wider">Pratinjau Lampiran Surat Masuk</h3>
+              <button onClick={() => setViewFileModalUrl(null)} className="p-2 hover:bg-white/10 rounded-xl text-zinc-400 hover:text-white transition-all cursor-pointer">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="p-6 flex-1 overflow-auto flex items-center justify-center bg-black/60">
+              {viewFileModalUrl.startsWith('data:image/') || viewFileModalUrl.startsWith('http') ? (
+                <img src={viewFileModalUrl} alt="Lampiran Surat Masuk" className="max-w-full max-h-[70vh] object-contain rounded-xl shadow-2xl" />
+              ) : (
+                <iframe src={viewFileModalUrl} className="w-full h-[70vh] rounded-xl border border-white/10 bg-white" title="PDF Viewer" />
+              )}
             </div>
           </div>
         </div>

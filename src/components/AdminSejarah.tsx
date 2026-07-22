@@ -112,14 +112,14 @@ export default function AdminSejarah() {
   if (loading) return <div className="flex h-screen items-center justify-center bg-[#070d1a]"><Loader2 className="animate-spin text-blue-500" size={40} /></div>;
 
   return (
-    <div className="p-8 bg-[#070d1a] min-h-screen text-white">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-black uppercase tracking-tighter">Kelola <span className="text-blue-500">Sejarah</span></h1>
-        <button onClick={handleSave} disabled={saving} className="px-6 py-3 bg-blue-600 rounded-xl font-bold hover:bg-blue-700">{saving ? '...' : 'SIMPAN'}</button>
+    <div className="h-screen bg-[#070d1a] text-white flex flex-col overflow-hidden p-4 md:p-8">
+      <div className="flex justify-between items-center mb-6 shrink-0">
+        <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tighter">Kelola <span className="text-blue-500">Sejarah</span></h1>
+        <button onClick={handleSave} disabled={saving} className="px-5 py-2.5 bg-blue-600 rounded-xl font-bold text-xs uppercase hover:bg-blue-700 transition-all">{saving ? '...' : 'SIMPAN'}</button>
       </div>
       
-      <div className="bg-[#0F172A] border border-white/5 rounded-3xl p-8 space-y-6">
-        <div className="grid md:grid-cols-2 gap-6">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden bg-[#0F172A] border border-white/5 rounded-3xl p-4 md:p-8 space-y-6">
+        <div className="grid lg:grid-cols-2 gap-6">
            <div className="space-y-4">
                <label className="text-xs font-bold text-slate-500 uppercase">Visual Sejarah</label>
                <div className="relative aspect-video bg-black/40 rounded-2xl overflow-hidden border-2 border-dashed border-white/10 flex items-center justify-center">
@@ -128,9 +128,9 @@ export default function AdminSejarah() {
                </div>
            </div>
            <div className="space-y-4">
-               <input value={content.sejarah_title} onChange={e => setContent({...content, sejarah_title: e.target.value})} className="w-full bg-black/40 p-4 rounded-xl"/>
-               <input value={content.sejarah_accent} onChange={e => setContent({...content, sejarah_accent: e.target.value})} className="w-full bg-black/40 p-4 rounded-xl text-blue-500"/>
-               <textarea value={content.sejarah_desc} onChange={e => setContent({...content, sejarah_desc: e.target.value})} className="w-full h-32 bg-black/40 p-4 rounded-xl"/>
+               <input value={content.sejarah_title} onChange={e => setContent({...content, sejarah_title: e.target.value})} className="w-full bg-black/40 p-4 rounded-xl text-xs font-bold text-white border border-white/5 focus:border-blue-500 outline-none" placeholder="Judul Sejarah"/>
+               <input value={content.sejarah_accent} onChange={e => setContent({...content, sejarah_accent: e.target.value})} className="w-full bg-black/40 p-4 rounded-xl text-blue-500 text-xs font-bold border border-white/5 focus:border-blue-500 outline-none" placeholder="Sub Judul / Aksen"/>
+               <textarea value={content.sejarah_desc} onChange={e => setContent({...content, sejarah_desc: e.target.value})} className="w-full h-36 bg-black/40 p-4 rounded-xl text-xs text-white border border-white/5 focus:border-blue-500 outline-none" placeholder="Deskripsi Sejarah"/>
            </div>
         </div>
       </div>

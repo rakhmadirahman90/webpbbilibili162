@@ -88,36 +88,35 @@ export default function AdminContact() {
   );
 
   return (
-    <div className="max-w-7xl mx-auto p-4 lg:p-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      {successMsg && (
-        <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[200] bg-emerald-500 text-white px-8 py-3 rounded-2xl font-black text-xs uppercase flex items-center gap-3 shadow-[0_20px_50px_rgba(16,185,129,0.3)] border border-white/20">
-          <CheckCircle2 size={18} /> {successMsg}
-        </div>
-      )}
-
-      {/* Header Section */}
-      <div className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-white/5 pb-8">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-blue-600/10 rounded-lg">
-              <Zap className="text-blue-500" size={20} />
-            </div>
-            <span className="text-[10px] font-black text-blue-500 uppercase tracking-[0.3em]">System Configuration</span>
+    <div className="h-screen bg-[#070d1a] text-white flex flex-col overflow-hidden p-4 md:p-8 font-sans">
+      <div className="max-w-7xl mx-auto w-full flex flex-col h-full overflow-hidden">
+        {successMsg && (
+          <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[200] bg-emerald-500 text-white px-8 py-3 rounded-2xl font-black text-xs uppercase flex items-center gap-3 shadow-[0_20px_50px_rgba(16,185,129,0.3)] border border-white/20">
+            <CheckCircle2 size={18} /> {successMsg}
           </div>
-          <h1 className="text-4xl md:text-5xl font-black italic tracking-tighter uppercase leading-none text-white">
-            CONTACT <span className="text-blue-600 underline decoration-blue-900/50">MANAGEMENT</span>
-          </h1>
-          <p className="text-zinc-500 text-xs font-medium mt-3 max-w-md uppercase tracking-wider">
-            Sinkronisasi data alamat, kontak person, dan lokasi peta secara real-time ke landing page.
-          </p>
-        </div>
-        <div className="bg-zinc-900/80 backdrop-blur-md border border-white/5 p-4 rounded-3xl flex items-center gap-4">
-          <div className="h-3 w-3 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_15px_rgba(16,185,129,0.5)]"></div>
-          <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Database: Connected</span>
-        </div>
-      </div>
+        )}
 
-      <form onSubmit={handleSave} className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Header Section */}
+        <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5 pb-4 shrink-0">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="p-1.5 bg-blue-600/10 rounded-lg">
+                <Zap className="text-blue-500" size={16} />
+              </div>
+              <span className="text-[10px] font-black text-blue-500 uppercase tracking-[0.3em]">System Configuration</span>
+            </div>
+            <h1 className="text-2xl md:text-3xl font-black italic tracking-tighter uppercase leading-none text-white">
+              CONTACT <span className="text-blue-600 underline decoration-blue-900/50">MANAGEMENT</span>
+            </h1>
+          </div>
+          <div className="bg-zinc-900/80 backdrop-blur-md border border-white/5 px-4 py-2.5 rounded-2xl flex items-center gap-3">
+            <div className="h-2.5 w-2.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_15px_rgba(16,185,129,0.5)]"></div>
+            <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Database: Connected</span>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-6 pr-1 custom-scrollbar pb-10">
+        <form onSubmit={handleSave} className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         {/* KOLOM KIRI: Informasi Utama */}
         <div className="lg:col-span-7 space-y-6">
@@ -256,6 +255,8 @@ export default function AdminContact() {
           </button>
         </div>
       </form>
+        </div>
+      </div>
     </div>
   );
 }

@@ -182,11 +182,22 @@ export default function AdminFooter() {
   };
 
   return (
-    <div className="p-6 bg-[#0f111a] min-h-screen text-white space-y-10 font-sans">
-      <div className="max-w-5xl mx-auto bg-[#161925] rounded-[2.5rem] border border-white/5 p-8 shadow-2xl">
+    <div className="h-screen bg-[#070d1a] text-white flex flex-col overflow-hidden p-4 md:p-8 font-sans">
+      <div className="max-w-7xl mx-auto w-full flex flex-col h-full overflow-hidden">
+        <div className="flex justify-between items-center mb-6 shrink-0">
+          <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-3 italic uppercase tracking-tighter">
+            <div className="w-1.5 h-6 bg-blue-600 rounded-full"></div>
+            Pengaturan Footer & Identitas
+          </h1>
+          <button onClick={handleUpdate} disabled={loading} className="px-5 py-2.5 bg-blue-600 rounded-xl font-bold text-xs uppercase hover:bg-blue-700 transition-all">
+            {loading ? '...' : 'SIMPAN'}
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-6 pr-1 custom-scrollbar pb-10 bg-[#161925] rounded-3xl border border-white/5 p-6 md:p-8 shadow-2xl">
         <div className="flex justify-between items-center mb-8">
-          <h2 className="text-2xl font-bold flex items-center gap-3 italic">
-            <div className="w-1.5 h-8 bg-blue-600 rounded-full"></div>
+          <h2 className="text-xl font-bold flex items-center gap-3 italic">
+            <div className="w-1.5 h-6 bg-blue-600 rounded-full"></div>
             PENGATURAN IDENTITAS & FOOTER
           </h2>
           <div className="px-4 py-1.5 bg-blue-600/10 border border-blue-600/20 rounded-full text-[10px] text-blue-500 font-black tracking-widest uppercase">
@@ -411,6 +422,7 @@ export default function AdminFooter() {
             {footerConfig.copyright}
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

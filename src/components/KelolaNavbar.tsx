@@ -273,31 +273,31 @@ const KelolaNavbar: React.FC = () => {
   const getSubMenus = (id: string) => navItems.filter(item => item.parent_id === id);
 
   return (
-    <div className="min-h-screen bg-[#070d1a] text-white p-6 md:p-12 font-sans selection:bg-blue-500/30">
-      <div className="max-w-6xl mx-auto">
+    <div className="h-screen bg-[#070d1a] text-white flex flex-col overflow-hidden p-4 md:p-8 font-sans selection:bg-blue-500/30">
+      <div className="max-w-7xl mx-auto w-full flex flex-col h-full overflow-hidden">
         
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 shrink-0">
           <div>
-            <h1 className="text-5xl font-black italic tracking-tighter uppercase text-white leading-none">
+            <h1 className="text-2xl md:text-3xl font-black italic tracking-tighter uppercase text-white leading-none">
               KELOLA <span className="text-blue-600">NAVBAR</span>
             </h1>
-            <p className="text-zinc-500 text-[10px] font-black uppercase tracking-[0.3em] mt-3">
+            <p className="text-zinc-500 text-[10px] font-black uppercase tracking-[0.3em] mt-1">
               Visual Branding & Navigation Engine
             </p>
           </div>
           <div className="flex items-center gap-3">
             <button 
               onClick={fetchNavbar} 
-              className="group flex items-center gap-2 px-6 py-4 bg-zinc-900 rounded-2xl hover:bg-zinc-800 transition-all border border-white/5 active:scale-95 shadow-2xl"
+              className="group flex items-center gap-2 px-5 py-2.5 bg-zinc-900 rounded-xl hover:bg-zinc-800 transition-all border border-white/5 active:scale-95 shadow-xl"
             >
-              <RefreshCcw size={18} className={`${isLoading ? 'animate-spin text-blue-500' : 'text-zinc-400 group-hover:text-white'}`} />
-              <span className="text-[10px] font-black uppercase tracking-widest">Resync System</span>
+              <RefreshCcw size={16} className={`${isLoading ? 'animate-spin text-blue-500' : 'text-zinc-400 group-hover:text-white'}`} />
+              <span className="text-[10px] font-black uppercase tracking-widest">Resync</span>
             </button>
           </div>
         </div>
 
-        <div className="grid md:grid-cols-12 gap-8">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden grid md:grid-cols-12 gap-6 pr-1 custom-scrollbar pb-10">
           
           <div className="md:col-span-4 space-y-6">
             
