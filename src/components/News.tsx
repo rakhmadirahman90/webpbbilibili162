@@ -1,4 +1,4 @@
-import { Calendar, ArrowRight, X, ChevronDown, ChevronUp, Loader2, User, Eye, Heart, MessageCircle, Send, Share2, Link2, ArrowLeft, ChevronLeft, ChevronRight, Plus, Filter, Search } from 'lucide-react';
+import { Calendar, ArrowRight, X, ChevronDown, ChevronUp, Loader2, User, Eye, Heart, MessageCircle, Send, Share2, Link2, ArrowLeft, ChevronLeft, ChevronRight, Plus, Filter, Search, Sparkles } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from "../supabase";
@@ -7,6 +7,15 @@ import Swal from 'sweetalert2';
 import LazyImage from './LazyImage';
 import PrayerTimes from './PrayerTimes';
 import { getOptimizedImageUrl } from '../utils/imageOptimizer';
+
+// Daftar Reaksi Apresiasi Berita
+const REACTIONS = [
+  { id: 'love', label: 'Suka', icon: '❤️', color: 'text-rose-500' },
+  { id: 'fire', label: 'Semangat', icon: '🔥', color: 'text-amber-500' },
+  { id: 'clap', label: 'Apresiasi', icon: '👏', color: 'text-blue-500' },
+  { id: 'smash', label: 'Smash!', icon: '🏸', color: 'text-emerald-500' },
+  { id: 'praise', label: 'Keren', icon: '🙌', color: 'text-purple-500' },
+];
 
 // Interface untuk Komentar
 interface Komentar {
@@ -41,6 +50,8 @@ export default function News() {
   const [loading, setLoading] = useState(true);
   
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
+  const [userReactions, setUserReactions] = useState<Record<string, string>>({});
+  const [activeReactionPicker, setActiveReactionPicker] = useState<string | null>(null);
 
   // State Baru untuk Komentar
   const [comments, setComments] = useState<Komentar[]>([]);
@@ -163,13 +174,49 @@ export default function News() {
     fetchNews();
     const savedLikes = localStorage.getItem('pb_us_liked_posts');
     if (savedLikes) {
-      setLikedPosts(new Set(JSON.parse(savedLikes)));
+      try { setLikedPosts(new Set(JSON.parse(savedLikes))); } catch (e) {}
     }
+
+    const savedReactions = localStorage.getItem('pb_us_news_reactions');
+    if (savedReactions) {
+      try { setUserReactions(JSON.parse(savedReactions)); } catch (e) {}
+    }
+
+    // Subscribe to realtime database changes for live likes & reactions sync
+    const channel = supabase
+      .channel('public:berita-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'berita' }, (payload) => {
+        if (payload.eventType === 'UPDATE' && payload.new) {
+          const updated = payload.new;
+          setBeritaList(prev => prev.map(item => 
+            item.id === updated.id 
+              ? { 
+                  ...item, 
+                  likes: Number(updated.likes) || 0, 
+                  views: Number(updated.views) || 0
+                } 
+              : item
+          ));
+          
+          setSelectedNews(prev => prev?.id === updated.id ? { ...prev, likes: Number(updated.likes) || 0, views: Number(updated.views) || 0 } : prev);
+        } else if (payload.eventType === 'INSERT') {
+          fetchNews();
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   useEffect(() => {
     localStorage.setItem('pb_us_liked_posts', JSON.stringify(Array.from(likedPosts)));
   }, [likedPosts]);
+
+  useEffect(() => {
+    localStorage.setItem('pb_us_news_reactions', JSON.stringify(userReactions));
+  }, [userReactions]);
 
   // Dispatch overlay events to control App.tsx's unified control dock visibility
   useEffect(() => {
@@ -363,19 +410,39 @@ export default function News() {
     }
   };
 
-  const handleLike = async (e: React.MouseEvent, newsId: string) => {
+  const handleReact = async (e: React.MouseEvent, newsId: string, reactionId: string = 'love') => {
     e.stopPropagation(); 
-    const isLiked = likedPosts.has(newsId);
-    
+    setActiveReactionPicker(null);
+
+    const currentReaction = userReactions[newsId];
+    const isAlreadyReacted = !!currentReaction;
+    const isSameReaction = currentReaction === reactionId;
+
     const newLikedPosts = new Set(likedPosts);
-    if (isLiked) newLikedPosts.delete(newsId);
-    else newLikedPosts.add(newsId);
-    setLikedPosts(newLikedPosts);
+    const newUserReactions = { ...userReactions };
 
     const newsItem = beritaList.find(n => n.id === newsId);
     const currentLikes = Number(newsItem?.likes) || 0;
-    const finalLikeCount = isLiked ? Math.max(0, currentLikes - 1) : currentLikes + 1;
+    let finalLikeCount = currentLikes;
 
+    if (isSameReaction) {
+      // Batal reaksi
+      newLikedPosts.delete(newsId);
+      delete newUserReactions[newsId];
+      finalLikeCount = Math.max(0, currentLikes - 1);
+    } else {
+      // Beri atau ubah reaksi
+      newLikedPosts.add(newsId);
+      newUserReactions[newsId] = reactionId;
+      if (!isAlreadyReacted) {
+        finalLikeCount = currentLikes + 1;
+      }
+    }
+
+    setLikedPosts(newLikedPosts);
+    setUserReactions(newUserReactions);
+
+    // Optimistic Update
     setBeritaList(prev => prev.map(item => 
       item.id === newsId ? { ...item, likes: finalLikeCount } : item
     ));
@@ -384,6 +451,7 @@ export default function News() {
       setSelectedNews(prev => prev ? { ...prev, likes: finalLikeCount } : null);
     }
 
+    // Simpan permanen ke Supabase database secara realtime
     try {
       const { error } = await supabase
         .from('berita')
@@ -395,6 +463,11 @@ export default function News() {
       console.error("Gagal update likes di database:", err);
       fetchNews();
     }
+  };
+
+  const handleLike = (e: React.MouseEvent, newsId: string) => {
+    const currentRx = userReactions[newsId];
+    handleReact(e, newsId, currentRx || 'love');
   };
 
   const handleShare = async (news: Berita, platform: 'wa' | 'fb' | 'x' | 'copy') => {
@@ -625,13 +698,51 @@ export default function News() {
                        </button>
                     </div>
 
-                    {/* Like button absolute */}
-                    <button 
-                      onClick={(e) => handleLike(e, news.id)}
-                      className={`absolute top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center shadow-md transition-all active:scale-90 z-10 ${likedPosts.has(news.id) ? 'bg-rose-500 text-white' : 'bg-white/95 text-slate-500 hover:text-rose-500 hover:bg-white'}`}
-                    >
-                      <Heart size={16} fill={likedPosts.has(news.id) ? "currentColor" : "none"} />
-                    </button>
+                    {/* Reaction Button & Popup Trigger */}
+                    <div className="absolute top-4 right-4 z-20">
+                      <div className="relative">
+                        <button 
+                          onClick={(e) => handleReact(e, news.id, userReactions[news.id] || 'love')}
+                          onMouseEnter={() => setActiveReactionPicker(news.id)}
+                          className={`w-9 h-9 rounded-full flex items-center justify-center shadow-md transition-all active:scale-90 ${
+                            userReactions[news.id] 
+                              ? 'bg-rose-500 text-white font-bold' 
+                              : 'bg-white/95 text-slate-500 hover:text-rose-500 hover:bg-white'
+                          }`}
+                          title={userReactions[news.id] ? `Apresiasi Anda: ${REACTIONS.find(r => r.id === userReactions[news.id])?.label}` : 'Beri Apresiasi / Like'}
+                        >
+                          {userReactions[news.id] ? (
+                            <span className="text-sm">{REACTIONS.find(r => r.id === userReactions[news.id])?.icon || '❤️'}</span>
+                          ) : (
+                            <Heart size={16} fill={likedPosts.has(news.id) ? "currentColor" : "none"} />
+                          )}
+                        </button>
+
+                        {/* Reaction Floating Bar */}
+                        <AnimatePresence>
+                          {activeReactionPicker === news.id && (
+                            <motion.div 
+                              initial={{ opacity: 0, scale: 0.8, y: 10 }}
+                              animate={{ opacity: 1, scale: 1, y: 0 }}
+                              exit={{ opacity: 0, scale: 0.8, y: 10 }}
+                              onMouseLeave={() => setActiveReactionPicker(null)}
+                              className="absolute right-0 top-11 bg-slate-900/95 backdrop-blur-md border border-white/10 rounded-full p-1.5 flex items-center gap-1 shadow-2xl z-30"
+                            >
+                              {REACTIONS.map(r => (
+                                <button
+                                  key={r.id}
+                                  onClick={(e) => handleReact(e, news.id, r.id)}
+                                  className={`w-8 h-8 rounded-full flex items-center justify-center text-base hover:scale-125 transition-transform active:scale-90 ${userReactions[news.id] === r.id ? 'bg-white/20 ring-2 ring-blue-400' : 'hover:bg-white/10'}`}
+                                  title={r.label}
+                                >
+                                  {r.icon}
+                                </button>
+                              ))}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    </div>
 
                     {/* PBSI style Green Action Button "+" Overlapping the image bottom edge */}
                     <button 
@@ -677,9 +788,17 @@ export default function News() {
                           <Eye size={13} />
                           <span className="text-[10px] font-bold text-slate-500">{news.views || 0}</span>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <Heart size={13} className={likedPosts.has(news.id) ? 'text-rose-500' : ''} fill={likedPosts.has(news.id) ? "currentColor" : "none"} />
-                          <span className="text-[10px] font-bold text-slate-500">{news.likes || 0}</span>
+                        <div 
+                          className="flex items-center gap-1 cursor-pointer hover:scale-105 transition-transform" 
+                          onClick={(e) => handleReact(e, news.id, userReactions[news.id] || 'love')}
+                          title="Beri Apresiasi"
+                        >
+                          {userReactions[news.id] ? (
+                            <span className="text-xs">{REACTIONS.find(r => r.id === userReactions[news.id])?.icon || '❤️'}</span>
+                          ) : (
+                            <Heart size={13} className={likedPosts.has(news.id) ? 'text-rose-500' : ''} fill={likedPosts.has(news.id) ? "currentColor" : "none"} />
+                          )}
+                          <span className={`text-[10px] font-bold ${userReactions[news.id] ? 'text-rose-600 font-extrabold' : 'text-slate-500'}`}>{news.likes || 0}</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <MessageCircle size={13} />
@@ -889,11 +1008,16 @@ export default function News() {
                     </span>
                     <span className="text-slate-200">|</span>
                     <button 
-                      onClick={(e) => handleLike(e, selectedNews.id)}
-                      className="flex items-center gap-1.5 hover:text-rose-500 transition-colors"
+                      onClick={(e) => handleReact(e, selectedNews.id, userReactions[selectedNews.id] || 'love')}
+                      className="flex items-center gap-1.5 hover:text-rose-500 transition-colors cursor-pointer"
+                      title="Beri Apresiasi"
                     >
-                      <Heart size={14} className={likedPosts.has(selectedNews.id) ? "text-rose-500 fill-rose-500" : "text-slate-400"} /> 
-                      {selectedNews.likes || 0} LIKES
+                      {userReactions[selectedNews.id] ? (
+                        <span className="text-sm">{REACTIONS.find(r => r.id === userReactions[selectedNews.id])?.icon}</span>
+                      ) : (
+                        <Heart size={14} className={likedPosts.has(selectedNews.id) ? "text-rose-500 fill-rose-500" : "text-slate-400"} /> 
+                      )}
+                      <span className={userReactions[selectedNews.id] ? "text-rose-600 font-black" : ""}>{selectedNews.likes || 0} LIKES</span>
                     </button>
                     <span className="text-slate-200">|</span>
                     <span className="flex items-center gap-1.5">
@@ -949,6 +1073,59 @@ export default function News() {
                       </div>
                     </div>
                   )}
+
+                  {/* 3.5. Dedicated Interactive Reaction / Apresiasi Box */}
+                  <div className="mt-10 p-5 sm:p-6 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 rounded-2xl border border-slate-700/80 shadow-xl text-white">
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <Sparkles size={16} className="text-amber-400 animate-pulse" />
+                          <h4 className="text-xs sm:text-sm font-black uppercase tracking-wider text-white">
+                            Beri Apresiasi Berita Ini
+                          </h4>
+                        </div>
+                        <p className="text-xs text-slate-300 font-medium">
+                          Pilih salah satu ekspresi di bawah untuk mendukung berita & apresiasi klub
+                        </p>
+                      </div>
+
+                      <div className="flex flex-wrap items-center justify-center gap-2 bg-white/10 p-1.5 rounded-2xl backdrop-blur-md border border-white/10">
+                        {REACTIONS.map(r => {
+                          const isSelected = userReactions[selectedNews.id] === r.id;
+                          return (
+                            <button
+                              key={r.id}
+                              onClick={(e) => handleReact(e, selectedNews.id, r.id)}
+                              className={`px-3 py-2 rounded-xl flex items-center gap-1.5 text-xs font-bold transition-all active:scale-95 cursor-pointer ${
+                                isSelected 
+                                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30 scale-105 border border-blue-400' 
+                                  : 'hover:bg-white/10 text-slate-200'
+                              }`}
+                              title={r.label}
+                            >
+                              <span className="text-base">{r.icon}</span>
+                              <span className="text-[11px] font-extrabold uppercase tracking-wide">{r.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {userReactions[selectedNews.id] && (
+                      <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs text-blue-300 font-medium">
+                        <span className="flex items-center gap-1.5">
+                          <span>Apresiasi Anda:</span>
+                          <span className="font-extrabold text-white bg-blue-500/30 px-2.5 py-0.5 rounded-full border border-blue-400/30 flex items-center gap-1">
+                            {REACTIONS.find(r => r.id === userReactions[selectedNews.id])?.icon} {REACTIONS.find(r => r.id === userReactions[selectedNews.id])?.label}
+                          </span>
+                        </span>
+                        <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-1">
+                          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                          Tersimpan Realtime
+                        </span>
+                      </div>
+                    )}
+                  </div>
 
                   {/* 4. Elegant Share Buttons Panel */}
                   <div className="mt-12 p-6 bg-slate-50 rounded-2xl border border-slate-100/80 flex flex-col sm:flex-row justify-between items-center gap-4">

@@ -52,13 +52,15 @@ const Players: React.FC<{ initialFilter?: string }> = ({
   const fetchPlayersFromDB = useCallback(async () => {
     try {
       setIsLoading(true);
-      const [pendaftaranRes, statsRes] = await Promise.all([
+      const [pendaftaranRes, statsRes, rankingsRes] = await Promise.all([
         supabase.from('pendaftaran').select('*').order('nama', { ascending: true }),
-        supabase.from('atlet_stats').select('*')
+        supabase.from('atlet_stats').select('*'),
+        supabase.from('rankings').select('*')
       ]);
 
       const pendaftaranList = pendaftaranRes.data || [];
       const statsList = statsRes.data || [];
+      const rankingsList = rankingsRes.data || [];
 
       const statsMap = new Map();
       statsList.forEach((s) => {
@@ -66,15 +68,31 @@ const Players: React.FC<{ initialFilter?: string }> = ({
         if (s.player_name) statsMap.set(s.player_name.trim().toLowerCase(), s);
       });
 
+      const rankingsMap = new Map();
+      rankingsList.forEach((r) => {
+        if (r.pendaftaran_id) rankingsMap.set(r.pendaftaran_id, r);
+        if (r.player_name) rankingsMap.set(r.player_name.trim().toLowerCase(), r);
+      });
+
       const combined = pendaftaranList.map((p) => {
-        const stat = statsMap.get(p.id) || statsMap.get((p.nama || '').trim().toLowerCase());
+        const nameKey = (p.nama || '').trim().toLowerCase();
+        const stat = statsMap.get(p.id) || statsMap.get(nameKey);
+        const rankItem = rankingsMap.get(p.id) || rankingsMap.get(nameKey);
+
+        const baseP = Number(stat?.points) || Number(rankItem?.poin) || 0;
+        const bonusP = Number(stat?.total_points) || Number(rankItem?.bonus) || 0;
+        const finalP = rankItem?.total_points && Number(rankItem.total_points) > (baseP + bonusP)
+          ? Number(rankItem.total_points)
+          : (baseP + bonusP);
+
         return {
           id: p.id,
           pendaftaran_id: p.id,
           pendaftaran: p,
-          points: Number(stat?.points) || 0,
-          total_points: Number(stat?.total_points) || 0,
-          seed: stat?.seed || 'UNSEEDED',
+          points: baseP,
+          total_points: bonusP,
+          display_points: finalP,
+          seed: stat?.seed || rankItem?.seed || 'UNSEEDED',
           bio: stat?.bio || p.pengalaman || 'Dedikasi dan semangat tinggi untuk membawa nama baik PB Bilibili 162 di kancah nasional.',
           status: p.status || 'Active'
         };

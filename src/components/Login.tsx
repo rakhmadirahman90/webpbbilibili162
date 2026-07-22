@@ -326,33 +326,34 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-[#070d1a] flex items-center justify-center p-4 md:p-6 relative overflow-hidden font-sans">
+    <div className="h-screen h-dvh w-full bg-[#070d1a] flex flex-col items-center justify-center p-3 sm:p-4 md:p-6 relative overflow-hidden font-sans select-none">
       {/* Tombol Navigasi ke Beranda Utama */}
-      <div className="absolute top-4 left-4 md:top-6 md:left-6 z-20">
+      <div className="absolute top-3 left-3 sm:top-5 sm:left-5 z-20">
         <button
           onClick={() => navigate('/')}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-[#0b1224]/80 hover:bg-blue-600/20 text-slate-300 hover:text-white border border-white/10 hover:border-blue-500/40 text-xs font-bold tracking-wide transition-all shadow-lg backdrop-blur-xl cursor-pointer active:scale-95 group"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-[#0b1224]/80 hover:bg-blue-600/20 text-slate-300 hover:text-white border border-white/10 hover:border-blue-500/40 text-[11px] sm:text-xs font-bold tracking-wide transition-all shadow-lg backdrop-blur-xl cursor-pointer active:scale-95 group"
           title="Kembali ke Beranda Utama"
         >
-          <Home size={15} className="text-blue-400 group-hover:scale-110 transition-transform" />
-          <span>Beranda Utama</span>
+          <Home size={14} className="text-blue-400 group-hover:scale-110 transition-transform" />
+          <span className="hidden xs:inline">Beranda Utama</span>
+          <span className="xs:hidden">Beranda</span>
         </button>
       </div>
 
       {/* Decorative Glow Blobs */}
-      <div className="absolute top-1/4 left-1/4 w-[350px] h-[350px] bg-blue-600/15 blur-[100px] rounded-full pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-emerald-500/10 blur-[120px] rounded-full pointer-events-none" />
+      <div className="absolute top-1/4 left-1/4 w-[280px] sm:w-[350px] h-[280px] sm:h-[350px] bg-blue-600/15 blur-[90px] rounded-full pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 w-[300px] sm:w-[400px] h-[300px] sm:h-[400px] bg-emerald-500/10 blur-[100px] rounded-full pointer-events-none" />
 
       <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
-        className="w-full max-w-md bg-[#0b1224]/90 backdrop-blur-2xl p-6 md:p-8 rounded-[2.5rem] border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] relative z-10 my-auto"
+        initial={{ opacity: 0, scale: 0.96 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+        className="w-full max-w-[360px] sm:max-w-[420px] bg-[#0b1224]/90 backdrop-blur-2xl p-4 sm:p-6 md:p-7 rounded-3xl border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.6)] relative z-10 my-auto max-h-[calc(100vh-1.5rem)] flex flex-col justify-between overflow-y-auto hide-scrollbar"
       >
         {/* Header Section */}
-        <div className="text-center mb-6">
-          <div className="relative inline-flex mb-3">
-            <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-blue-500/30 p-1 bg-slate-900/50 shadow-[0_0_20px_rgba(59,130,246,0.2)]">
+        <div className="text-center mb-3 sm:mb-4 shrink-0">
+          <div className="relative inline-flex mb-2 sm:mb-2.5">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden border-2 border-blue-500/30 p-1 bg-slate-900/50 shadow-[0_0_20px_rgba(59,130,246,0.2)]">
               <img 
                 src={logoUrl || "/logo_pb_bilibili_162.svg"} 
                 alt="Logo PB Bilibili 162" 
@@ -362,15 +363,15 @@ export default function Login() {
                 }}
               />
             </div>
-            <div className="absolute -bottom-1 -right-1 bg-blue-600 text-white p-1.5 rounded-full border-2 border-[#0b1224] shadow-md">
-              <ShieldCheck size={14} className="text-white" />
+            <div className="absolute -bottom-0.5 -right-0.5 bg-blue-600 text-white p-1 rounded-full border-2 border-[#0b1224] shadow-md">
+              <ShieldCheck size={12} className="text-white" />
             </div>
           </div>
 
-          <h2 className="text-xl md:text-2xl font-black text-white tracking-tight italic uppercase">
+          <h2 className="text-lg sm:text-xl font-black text-white tracking-tight italic uppercase">
             Portal System
           </h2>
-          <p className="text-slate-400 font-bold text-[10px] uppercase tracking-[0.2em] mt-1">
+          <p className="text-slate-400 font-bold text-[9px] sm:text-[10px] uppercase tracking-[0.2em] mt-0.5">
             PB BILIBILI 162
           </p>
         </div>
@@ -378,25 +379,25 @@ export default function Login() {
         {/* Error Alert */}
         {errorMsg && (
           <motion.div 
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            className="mb-4 bg-red-500/10 border border-red-500/30 rounded-2xl p-3 flex gap-2.5 text-red-400 text-xs font-semibold items-start leading-relaxed"
+            initial={{ opacity: 0, y: -5 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-3 bg-red-500/10 border border-red-500/30 rounded-xl p-2.5 flex gap-2 text-red-400 text-[11px] font-semibold items-start leading-snug shrink-0"
           >
-            <AlertCircle size={16} className="shrink-0 mt-0.5 text-red-400" />
+            <AlertCircle size={15} className="shrink-0 mt-0.5 text-red-400" />
             <div>
               <p className="font-bold text-red-300">Akses Ditolak</p>
-              <p className="opacity-90 mt-0.5 text-[11px]">{errorMsg}</p>
+              <p className="opacity-90 text-[10px] sm:text-[11px]">{errorMsg}</p>
             </div>
           </motion.div>
         )}
 
         {/* LOGIN FORM */}
-        <form onSubmit={handleFormSubmit} className="space-y-4">
+        <form onSubmit={handleFormSubmit} className="space-y-2.5 sm:space-y-3 shrink-0">
           
           {/* USERNAME / NAMA ANGGOTA INPUT */}
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5 ml-1">
-              <User size={13} className="text-blue-400" />
+          <div className="space-y-1">
+            <label className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5 ml-1">
+              <User size={12} className="text-blue-400" />
               <span>Username / Nama Anggota</span>
             </label>
 
@@ -409,21 +410,21 @@ export default function Login() {
                   setErrorMsg(null);
                   setUsernameInput(e.target.value);
                 }}
-                className="w-full pl-4 pr-10 py-3 rounded-xl bg-[#070d1a] border border-white/10 text-white font-bold text-xs outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-slate-500 placeholder:font-normal"
-                placeholder="Masukkan Nama Anggota / WhatsApp / admin..."
+                className="w-full pl-3.5 pr-9 py-2 sm:py-2.5 rounded-xl bg-[#070d1a] border border-white/10 text-white font-bold text-xs outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-slate-500 placeholder:font-normal"
+                placeholder="Nama Anggota / WA / admin..."
               />
-              <User size={15} className="absolute right-3.5 top-3.5 text-slate-500" />
+              <User size={14} className="absolute right-3 top-2.5 sm:top-3 text-slate-500" />
             </div>
           </div>
 
           {/* PIN / PASSCODE INPUT */}
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             <div className="flex items-center justify-between ml-1 pr-1">
-              <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                <KeyRound size={13} className="text-blue-400" />
+              <label className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                <KeyRound size={12} className="text-blue-400" />
                 <span>PIN / Passcode Akses</span>
               </label>
-              <span className="text-[9px] text-slate-500 font-mono">Default: 123456</span>
+              <span className="text-[8px] sm:text-[9px] text-slate-500 font-mono">Default: 123456</span>
             </div>
 
             <div className="relative group">
@@ -434,29 +435,29 @@ export default function Login() {
                   setErrorMsg(null);
                   setPinInput(e.target.value);
                 }}
-                className="w-full pl-5 pr-12 py-3 rounded-xl bg-[#070d1a] border border-white/10 text-white font-mono text-center tracking-[0.25em] text-base outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-slate-600 placeholder:tracking-normal placeholder:font-sans placeholder:text-xs"
+                className="w-full pl-4 pr-10 py-2 sm:py-2.5 rounded-xl bg-[#070d1a] border border-white/10 text-white font-mono text-center tracking-[0.2em] sm:tracking-[0.25em] text-sm sm:text-base outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-slate-600 placeholder:tracking-normal placeholder:font-sans placeholder:text-xs"
                 placeholder="Masukkan PIN"
               />
               <button
                 type="button"
                 onClick={() => setShowPin(!showPin)}
-                className="absolute right-4 top-3 text-slate-500 hover:text-white transition-colors cursor-pointer p-1"
+                className="absolute right-3 top-2 sm:top-2.5 text-slate-500 hover:text-white transition-colors cursor-pointer p-1"
                 title={showPin ? "Sembunyikan" : "Tampilkan"}
               >
-                {showPin ? <EyeOff size={16} /> : <Eye size={16} />}
+                {showPin ? <EyeOff size={15} /> : <Eye size={15} />}
               </button>
             </div>
           </div>
 
           {/* Virtual Numpad */}
-          <div className="pt-1">
-            <div className="grid grid-cols-3 gap-2.5 max-w-[260px] mx-auto">
+          <div className="pt-0.5">
+            <div className="grid grid-cols-3 gap-1.5 sm:gap-2 max-w-[220px] sm:max-w-[250px] mx-auto">
               {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((num) => (
                 <button
                   key={num}
                   type="button"
                   onClick={() => handleNumpadClick(num)}
-                  className="h-10 rounded-xl bg-white/5 hover:bg-blue-600/30 active:bg-blue-600 border border-white/10 text-white font-black text-sm transition-all active:scale-95 shadow-sm flex items-center justify-center cursor-pointer"
+                  className="h-8 sm:h-9 rounded-xl bg-white/5 hover:bg-blue-600/30 active:bg-blue-600 border border-white/10 text-white font-black text-xs sm:text-sm transition-all active:scale-95 shadow-sm flex items-center justify-center cursor-pointer"
                 >
                   {num}
                 </button>
@@ -464,24 +465,24 @@ export default function Login() {
               <button
                 type="button"
                 onClick={handleNumpadClear}
-                className="h-10 rounded-xl bg-white/5 hover:bg-red-500/20 active:bg-red-500 border border-white/10 text-slate-400 hover:text-red-300 font-bold text-[10px] uppercase transition-all active:scale-95 flex items-center justify-center cursor-pointer"
+                className="h-8 sm:h-9 rounded-xl bg-white/5 hover:bg-red-500/20 active:bg-red-500 border border-white/10 text-slate-400 hover:text-red-300 font-bold text-[9px] uppercase transition-all active:scale-95 flex items-center justify-center cursor-pointer"
               >
                 Reset
               </button>
               <button
                 type="button"
                 onClick={() => handleNumpadClick('0')}
-                className="h-10 rounded-xl bg-white/5 hover:bg-blue-600/30 active:bg-blue-600 border border-white/10 text-white font-black text-sm transition-all active:scale-95 shadow-sm flex items-center justify-center cursor-pointer"
+                className="h-8 sm:h-9 rounded-xl bg-white/5 hover:bg-blue-600/30 active:bg-blue-600 border border-white/10 text-white font-black text-xs sm:text-sm transition-all active:scale-95 shadow-sm flex items-center justify-center cursor-pointer"
               >
                 0
               </button>
               <button
                 type="button"
                 onClick={handleNumpadDelete}
-                className="h-10 rounded-xl bg-white/5 hover:bg-amber-500/20 active:bg-amber-500 border border-white/10 text-slate-400 hover:text-amber-300 transition-all active:scale-95 flex items-center justify-center cursor-pointer"
+                className="h-8 sm:h-9 rounded-xl bg-white/5 hover:bg-amber-500/20 active:bg-amber-500 border border-white/10 text-slate-400 hover:text-amber-300 transition-all active:scale-95 flex items-center justify-center cursor-pointer"
                 title="Hapus"
               >
-                <Delete size={15} />
+                <Delete size={14} />
               </button>
             </div>
           </div>
@@ -490,10 +491,10 @@ export default function Login() {
           <button 
             type="submit" 
             disabled={loading}
-            className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-lg shadow-blue-600/20 active:scale-98 hover:shadow-blue-600/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50 mt-4 cursor-pointer"
+            className="w-full py-2.5 sm:py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl sm:rounded-2xl font-black uppercase text-xs tracking-widest shadow-lg shadow-blue-600/20 active:scale-98 hover:shadow-blue-600/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50 mt-2 sm:mt-3 cursor-pointer"
           >
             {loading ? (
-              <Loader2 className="animate-spin" size={16} />
+              <Loader2 className="animate-spin" size={15} />
             ) : (
               <span>Masuk Portal System</span>
             )}
@@ -501,11 +502,11 @@ export default function Login() {
         </form>
 
         {/* Kembali ke Beranda Link */}
-        <div className="mt-5 pt-4 border-t border-white/5 text-center">
+        <div className="mt-3 sm:mt-4 pt-2.5 border-t border-white/5 text-center shrink-0">
           <button
             type="button"
             onClick={() => navigate('/')}
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-blue-400 transition-colors cursor-pointer py-1 px-3 group"
+            className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-bold text-slate-400 hover:text-blue-400 transition-colors cursor-pointer py-0.5 px-2 group"
           >
             <Home size={13} className="text-blue-400 group-hover:scale-110 transition-transform" />
             <span>Kembali ke Beranda Utama</span>

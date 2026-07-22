@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Globe, ChevronDown, Menu, X, MapPin, UserPlus, Wallet, FileText, Trophy, BrainCircuit, ArrowLeft, Youtube, Instagram, Facebook, Twitter, Radio, LogIn, LayoutDashboard, UserCheck, LogOut } from 'lucide-react';
+import { Globe, ChevronDown, Menu, X, MapPin, UserPlus, Wallet, FileText, Trophy, BrainCircuit, ArrowLeft, Youtube, Instagram, Facebook, Twitter, Radio, LogIn, LayoutDashboard, UserCheck, LogOut, Timer } from 'lucide-react';
 import { supabase } from '../supabase'; 
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
@@ -154,7 +154,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
           { id: '2', label: 'Tentang Kami', path: 'tentang-kami', type: 'dropdown', order_index: 1 },
           { id: '3-1', label: 'Berita', path: 'berita', type: 'link', order_index: 2.1 },
           { id: '4', label: 'Peringkat', path: 'peringkat', type: 'dropdown', order_index: 3 },
-          { id: '5', label: 'Kas', path: 'kas', type: 'link', order_index: 4 },
+          { id: '5', label: 'Jadwal Latihan', path: 'jadwal', type: 'link', order_index: 4 },
           { id: '2-1', parent_id: '2', label: 'Sejarah', path: 'sejarah', order_index: 1 },
           { id: '2-2', parent_id: '2', label: 'Visi & Misi', path: 'visi-misi', order_index: 2 },
           { id: '2-3', parent_id: '2', label: 'Fasilitas', path: 'fasilitas', order_index: 3 },
@@ -164,10 +164,12 @@ export default function Navbar({ onNavigate }: NavbarProps) {
           { id: '4-2', parent_id: '4', label: 'Quiz Badminton', path: 'quiz' }
         ];
       } else {
-        // Logika penyisipan menu dinamis agar tetap muncul meski di DB belum ada
-        const hasKas = finalNav.some((item: any) => item.path === 'kas');
-        if (!hasKas) {
-          finalNav.push({ id: 'kas-dynamic', label: 'Kas', path: 'kas', type: 'link', order_index: 98 });
+        // Filter out 'kas' from public navbar
+        finalNav = finalNav.filter((item: any) => item.path !== 'kas' && item.label?.toLowerCase() !== 'kas' && item.label?.toLowerCase() !== 'kelola kas');
+
+        const hasJadwal = finalNav.some((item: any) => item.path === 'jadwal' || item.path === 'jadwal-latihan' || item.label?.toLowerCase()?.includes('jadwal'));
+        if (!hasJadwal) {
+          finalNav.push({ id: 'jadwal-dynamic', label: 'Jadwal Latihan', path: 'jadwal', type: 'link', order_index: 4 });
         }
 
         const hasBerita = finalNav.some((item: any) => item.path === 'berita' || item.path === 'news');
@@ -302,10 +304,11 @@ export default function Navbar({ onNavigate }: NavbarProps) {
       return;
     }
 
-    // 2. Kas
-    if (path === 'kas') {
-      onNavigate('kas');
-      scrollToSection('kas-section');
+    // 2. Jadwal Latihan
+    if (path === 'jadwal' || path === 'jadwal-latihan' || path === 'schedule' || path.toLowerCase().includes('jadwal')) {
+      onNavigate('jadwal');
+      window.dispatchEvent(new Event('pb-open-schedule'));
+      setIsMobileMenuOpen(false);
       return;
     }
 
@@ -438,9 +441,9 @@ export default function Navbar({ onNavigate }: NavbarProps) {
                 >
                   <button 
                     onClick={() => !isDropdown && handleNavClick(menu.path)}
-                    className={`nav-link flex items-center gap-1 ${activeDropdown === menu.id ? 'text-blue-400' : ''} ${menu.path === 'kas' ? 'text-blue-400 font-semibold' : ''}`}
+                    className={`nav-link flex items-center gap-1 ${activeDropdown === menu.id ? 'text-blue-400' : ''} ${(menu.path === 'jadwal' || menu.path === 'jadwal-latihan') ? 'text-amber-400 hover:text-amber-300 font-semibold' : ''}`}
                   >
-                    {menu.path === 'kas' && <Wallet size={11} className="mr-0.5" />}
+                    {(menu.path === 'jadwal' || menu.path === 'jadwal-latihan') && <Timer size={11} className="mr-0.5 text-amber-400" />}
                     {menu.label} 
                     {isDropdown && <ChevronDown size={10} className={`transition-transform duration-300 ${activeDropdown === menu.id ? 'rotate-180' : ''}`} />}
                   </button>
@@ -593,7 +596,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
                     {branding.brand_name_main} <span className="text-blue-500">{branding.brand_name_accent}</span>
                   </h3>
                   <span className="text-[6.5px] text-slate-400 font-bold tracking-[0.15em] uppercase leading-none mt-0.5 block truncate">
-                    Club Bulutangkis Terpadu
+                    Professional Club
                   </span>
                 </div>
               </div>

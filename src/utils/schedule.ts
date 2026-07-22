@@ -2,6 +2,10 @@ export interface ScheduleInfo {
   isRabuActive: boolean;
   isJumatActive: boolean;
   isAhadActive: boolean;
+  isRabuFinished: boolean;
+  isJumatFinished: boolean;
+  isAhadFinished: boolean;
+  isTodayFinished: boolean;
   isOngoing: boolean;
   activeSessionName: string;
   nextSessionName: string;
@@ -26,10 +30,17 @@ export function computeScheduleInfo(): ScheduleInfo {
 
   // Active session check (08:00 - 12:00 WITA)
   const isTimeInSession = (hour > 8 || (hour === 8 && minute >= 0)) && hour < 12;
+  const isTimeAfterSession = hour >= 12;
 
   const isRabuActive = day === 3 && isTimeInSession;
   const isJumatActive = day === 5 && isTimeInSession;
   const isAhadActive = day === 0 && isTimeInSession;
+
+  const isRabuFinished = day === 3 && isTimeAfterSession;
+  const isJumatFinished = day === 5 && isTimeAfterSession;
+  const isAhadFinished = day === 0 && isTimeAfterSession;
+
+  const isTodayFinished = isRabuFinished || isJumatFinished || isAhadFinished;
 
   const isOngoing = isRabuActive || isJumatActive || isAhadActive;
 
@@ -94,6 +105,10 @@ export function computeScheduleInfo(): ScheduleInfo {
     isRabuActive,
     isJumatActive,
     isAhadActive,
+    isRabuFinished,
+    isJumatFinished,
+    isAhadFinished,
+    isTodayFinished,
     isOngoing,
     activeSessionName,
     nextSessionName: nextSession.name,

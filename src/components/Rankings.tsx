@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { supabase } from '../supabase';
 import {
   TrendingUp,
@@ -8,6 +8,8 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
   Loader2,
   AlertCircle,
   RefreshCw,
@@ -22,19 +24,23 @@ import {
   ArrowDownRight,
   User,
   Clock,
-  Hash,
   Filter,
+  X,
+  Eye,
+  SlidersHorizontal,
 } from 'lucide-react';
 
 // --- Interfaces ---
 interface PlayerRanking {
   id: string;
+  pendaftaran_id?: string;
   player_name: string;
   category: string;
   seed: string;
+  poin?: number;
   total_points: number;
   bonus?: number;
-  photo_url?: string; // Tambahkan photo_url agar sinkron dengan Admin
+  photo_url?: string;
   updated_at?: string;
 }
 
@@ -54,138 +60,203 @@ interface WeeklyTop {
   total_aktivitas: number;
 }
 
-// --- Komponen: Weekly Spotlight ---
-const WeeklySpotlight: React.FC = () => {
-  const [topGainer, setTopGainer] = useState<WeeklyTop | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchDynamicWeeklyTop = async () => {
-      try {
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-        
-        const { data, error } = await supabase
-          .from('audit_poin')
-          .select('atlet_nama, perubahan')
-          .gte('created_at', sevenDaysAgo.toISOString());
-
-        if (error) throw error;
-
-        if (data && data.length > 0) {
-          const statsMap: Record<string, { total_gain: number; total_aktivitas: number }> = {};
-          
-          data.forEach(item => {
-            const name = item.atlet_nama;
-            if (!name) return;
-            
-            const gain = item.perubahan > 0 ? item.perubahan : 0;
-            
-            if (!statsMap[name]) {
-              statsMap[name] = { total_gain: 0, total_aktivitas: 0 };
-            }
-            statsMap[name].total_gain += gain;
-            statsMap[name].total_aktivitas += 1;
-          });
-
-          let topPlayerName = '';
-          let maxGain = 0;
-          let topStats = { total_gain: 0, total_aktivitas: 0 };
-
-          Object.entries(statsMap).forEach(([name, stats]) => {
-            if (stats.total_gain > maxGain) {
-              maxGain = stats.total_gain;
-              topPlayerName = name;
-              topStats = stats;
-            }
-          });
-
-          if (topPlayerName && maxGain > 0) {
-            setTopGainer({
-              atlet_nama: topPlayerName,
-              total_gain: topStats.total_gain,
-              total_aktivitas: topStats.total_aktivitas
-            });
-          } else {
-            setTopGainer(null);
-          }
-        } else {
-          setTopGainer(null);
-        }
-      } catch (err) {
-        console.error('Dynamic Weekly Spotlight calculation error:', err);
-        setTopGainer(null);
-      }
-    };
-
-    const fetchWeeklyTop = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('weekly_top_performers')
-          .select('*')
-          .limit(1)
-          .maybeSingle();
-
-        if (error) throw error;
-        if (data) {
-          setTopGainer(data);
-        } else {
-          await fetchDynamicWeeklyTop();
-        }
-      } catch (err) {
-        // Fallback gracefully without throwing a console.error
-        console.warn('weekly_top_performers view not available, calculating dynamically...');
-        await fetchDynamicWeeklyTop();
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchWeeklyTop();
-  }, []);
-
-  if (loading || !topGainer) return null;
+// --- Komponen Modal Matrix Poin ---
+const MatrixModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
+  if (!isOpen) return null;
 
   return (
-    <div className="relative group overflow-hidden bg-gradient-to-br from-orange-600/20 via-slate-900 to-slate-900 border border-orange-500/30 p-5 sm:p-6 rounded-[2.5rem] mb-10 shadow-[0_0_50px_-12px_rgba(249,115,22,0.15)] animate-in fade-in zoom-in duration-700">
-      <Flame className="absolute -right-4 -bottom-4 w-32 h-32 text-orange-600/10 -rotate-12 group-hover:scale-110 transition-transform duration-700" />
-      <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
-        <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-5 text-center sm:text-left">
-          <div className="relative">
-            <div className="absolute inset-0 bg-orange-500 blur-xl opacity-20 animate-pulse" />
-            <div className="w-14 h-14 sm:w-16 sm:h-16 bg-orange-500 rounded-2xl flex items-center justify-center rotate-3 border-2 border-orange-400 shadow-lg shadow-orange-500/20">
-              <Award className="text-white w-7 h-7 sm:w-8 sm:h-8" />
-            </div>
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="relative w-full max-w-lg bg-[#0b1224] border border-blue-500/30 rounded-3xl p-6 shadow-2xl text-white">
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-full transition-all border border-slate-700 cursor-pointer"
+        >
+          <X size={18} />
+        </button>
+
+        <div className="flex items-center gap-3 mb-5 border-b border-slate-800 pb-3">
+          <div className="p-2.5 bg-blue-500/10 rounded-2xl border border-blue-500/20 text-blue-400">
+            <Activity size={20} />
           </div>
           <div>
-            <div className="flex items-center justify-center sm:justify-start gap-2 mb-1">
-              <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.3em] text-orange-500">
-                Weekly Performance Hero
-              </span>
-              <div className="h-[1px] w-8 bg-orange-500/30 rounded-full hidden sm:block" />
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-black italic uppercase tracking-tighter text-white">
-              {topGainer.atlet_nama}
-            </h2>
+            <h3 className="text-base font-black uppercase italic tracking-tight text-white">Matrix Perolehan Poin</h3>
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Standar Penghitungan Poin PB Bilibili 162</p>
           </div>
         </div>
-        <div className="flex w-full md:w-auto gap-3 sm:gap-4 justify-center">
-          <div className="flex-1 md:flex-none bg-white/5 backdrop-blur-md border border-white/10 p-3 sm:p-4 rounded-2xl min-w-[100px] sm:min-w-[120px] text-center transition-transform hover:scale-105">
-            <p className="text-[8px] sm:text-[9px] font-bold text-slate-500 uppercase mb-1 tracking-widest">
-              Poin Didapat
-            </p>
-            <div className="flex items-center justify-center gap-1.5 sm:gap-2 text-emerald-400 font-black text-lg sm:text-xl">
-              <TrendingUp size={14} className="shrink-0" />+{topGainer.total_gain}
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+          {[
+            { title: 'Latihan Harian', val: '20 / 10 / 5 PTS', desc: 'Sesuai tingkat kehadiran & evaluasi coach' },
+            { title: 'Sparing Partner', val: '100 / 50 / 25 PTS', desc: 'Menang / Seri / Ikut Sparing' },
+            { title: 'Turnamen Internal', val: '300 / -- / 50 PTS', desc: 'Juara / Runner Up / Partisipasi' },
+            { title: 'Turnamen Eksternal', val: '500 / -- / 100 PTS', desc: 'Juara Resmi / Podia / Peserta' },
+          ].map((item, idx) => (
+            <div key={idx} className="bg-slate-900/80 border border-slate-800 p-3.5 rounded-2xl">
+              <span className="text-[9px] text-blue-400 font-black uppercase tracking-wider block mb-1">{item.title}</span>
+              <span className="text-sm font-mono font-black text-white block mb-1">{item.val}</span>
+              <span className="text-[9px] text-slate-500 font-bold">{item.desc}</span>
+            </div>
+          ))}
+        </div>
+
+        <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex items-center gap-2.5 text-blue-300 text-xs">
+          <Info size={16} className="shrink-0 text-blue-400" />
+          <p className="text-[10px] leading-relaxed">
+            Sistem poin diperbarui secara otomatis dan diverifikasi oleh Admin.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- Komponen Modal Detail & History Player ---
+const PlayerDetailModal: React.FC<{
+  player: PlayerRanking | null;
+  globalRank: number;
+  onClose: () => void;
+}> = ({ player, globalRank, onClose }) => {
+  const [history, setHistory] = useState<PointHistory[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
+  useEffect(() => {
+    if (!player) return;
+
+    const fetchHistory = async () => {
+      setLoadingHistory(true);
+      try {
+        const { data, error } = await supabase
+          .from('audit_poin')
+          .select('id, created_at, perubahan, poin_sebelum, poin_sesudah, admin_email, tipe_kegiatan')
+          .ilike('atlet_nama', player.player_name.trim())
+          .order('created_at', { ascending: false })
+          .limit(10);
+
+        if (error) throw error;
+        setHistory(data || []);
+      } catch (err) {
+        console.error('Fetch player history error:', err);
+      } finally {
+        setLoadingHistory(false);
+      }
+    };
+
+    fetchHistory();
+  }, [player]);
+
+  if (!player) return null;
+
+  return (
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="relative w-full max-w-xl bg-[#0b1224] border border-blue-500/30 rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[88vh] text-white">
+        {/* Header Modal */}
+        <div className="p-4 sm:p-5 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between shrink-0 relative">
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-full bg-slate-800 border-2 border-blue-500/40 overflow-hidden shrink-0 shadow-lg">
+              {player.photo_url ? (
+                <img src={player.photo_url} className="w-full h-full object-cover" alt="" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-slate-500"><User size={24} /></div>
+              )}
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base sm:text-lg font-black uppercase italic tracking-tight text-white">{player.player_name}</h3>
+                {globalRank === 1 && <Trophy size={16} className="text-amber-400" />}
+              </div>
+              <p className="text-[10px] font-black uppercase text-blue-400 tracking-widest mt-0.5">
+                Peringkat #{globalRank} • {player.seed || 'UNSEEDED'} • {player.category}
+              </p>
             </div>
           </div>
-          <div className="flex-1 md:flex-none bg-white/5 backdrop-blur-md border border-white/10 p-3 sm:p-4 rounded-2xl min-w-[100px] sm:min-w-[120px] text-center transition-transform hover:scale-105">
-            <p className="text-[8px] sm:text-[9px] font-bold text-slate-500 uppercase mb-1 tracking-widest">
-              Aktivitas
-            </p>
-            <div className="text-orange-400 font-black text-lg sm:text-xl flex items-center justify-center gap-1.5 sm:gap-2">
-              <Flame size={14} className="shrink-0" />
-              {topGainer.total_aktivitas}x
+          <button
+            onClick={onClose}
+            className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-full transition-all border border-slate-700 cursor-pointer"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Scrollable Body */}
+        <div className="p-4 sm:p-5 overflow-y-auto space-y-4 custom-scrollbar flex-1">
+          {/* Grid Stat Poin */}
+          <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
+            <div className="bg-slate-900/80 p-3 rounded-2xl border border-slate-800 text-center">
+              <span className="text-[8px] font-black uppercase text-slate-500 tracking-wider block">Poin Dasar</span>
+              <span className="text-sm sm:text-base font-black font-mono text-blue-400 mt-0.5 block">{Number(player.poin || 0).toLocaleString()}</span>
             </div>
+            <div className="bg-slate-900/80 p-3 rounded-2xl border border-slate-800 text-center">
+              <span className="text-[8px] font-black uppercase text-slate-500 tracking-wider block">Bonus / Mutasi</span>
+              <span className={`text-sm sm:text-base font-black font-mono mt-0.5 block ${Number(player.bonus || 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                {Number(player.bonus || 0) >= 0 ? `+${Number(player.bonus || 0).toLocaleString()}` : Number(player.bonus || 0).toLocaleString()}
+              </span>
+            </div>
+            <div className="bg-blue-600/10 p-3 rounded-2xl border border-blue-500/30 text-center">
+              <span className="text-[8px] font-black uppercase text-blue-400 tracking-wider block">Total Akhir</span>
+              <span className="text-sm sm:text-base font-black font-mono text-white mt-0.5 block">{Number(player.total_points || 0).toLocaleString()}</span>
+            </div>
+          </div>
+
+          {/* Section Audit History */}
+          <div className="border-t border-slate-800 pt-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <History size={14} className="text-blue-500" />
+                <span className="text-xs font-black uppercase tracking-wider text-slate-200">Riwayat Perubahan Poin</span>
+              </div>
+              <div className="flex items-center gap-1 text-[9px] font-black uppercase text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                <ShieldCheck size={11} /> Terverifikasi
+              </div>
+            </div>
+
+            {loadingHistory ? (
+              <div className="py-10 text-center flex flex-col items-center gap-2">
+                <Loader2 className="animate-spin text-blue-500" size={24} />
+                <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Memuat Riwayat...</span>
+              </div>
+            ) : history.length > 0 ? (
+              <div className="space-y-2">
+                {history.map((log) => {
+                  const isGain = log.perubahan > 0;
+                  return (
+                    <div
+                      key={log.id}
+                      className={`p-2.5 sm:p-3 rounded-2xl border flex items-center justify-between gap-3 ${
+                        isGain ? 'bg-emerald-500/[0.03] border-emerald-500/20' : 'bg-red-500/[0.03] border-red-500/20'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={`p-2 rounded-xl shrink-0 ${isGain ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
+                          {isGain ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 text-[9px] font-mono text-slate-500">
+                            <Calendar size={10} />
+                            {new Date(log.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                          <p className="text-xs font-bold text-slate-200 uppercase truncate mt-0.5">
+                            {log.tipe_kegiatan || 'Aktivitas Rutin'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className={`text-xs sm:text-sm font-black font-mono ${isGain ? 'text-emerald-400' : 'text-red-400'}`}>
+                          {isGain ? '+' : ''}{log.perubahan}
+                        </span>
+                        <p className="text-[8px] font-mono text-slate-500 mt-0.5">
+                          {log.poin_sebelum} &rarr; {log.poin_sesudah}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="py-8 text-center border-2 border-dashed border-slate-800 rounded-2xl bg-slate-900/30">
+                <Clock className="mx-auto text-slate-600 mb-1" size={24} />
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Belum ada catatan mutasi poin</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -200,80 +271,203 @@ const Rankings: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const [itemsPerPage, setItemsPerPage] = useState<number | 'All'>(10);
   const [fetchError, setFetchError] = useState<string | null>(null);
-  const [expandedPlayer, setExpandedPlayer] = useState<string | null>(null);
-  const [playerHistory, setPlayerHistory] = useState<PointHistory[]>([]);
-  const [loadingHistory, setLoadingHistory] = useState(false);
 
-  // --- FUNGSI FETCH UTAMA: Diperbaiki untuk Sinkronisasi Penuh ---
+  const listTopRef = useRef<HTMLDivElement>(null);
+
+  // Modal states
+  const [isMatrixOpen, setIsMatrixOpen] = useState(false);
+  const [selectedPlayer, setSelectedPlayer] = useState<PlayerRanking | null>(null);
+
+  // Weekly Hero state
+  const [topGainer, setTopGainer] = useState<WeeklyTop | null>(null);
+
+  // Fetch Weekly Spotlight
+  useEffect(() => {
+    const fetchWeeklyTop = async () => {
+      try {
+        const { data } = await supabase.from('weekly_top_performers').select('*').limit(1).maybeSingle();
+        if (data) {
+          setTopGainer(data);
+        } else {
+          const sevenDaysAgo = new Date();
+          sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+          const { data: auditData } = await supabase
+            .from('audit_poin')
+            .select('atlet_nama, perubahan')
+            .gte('created_at', sevenDaysAgo.toISOString());
+
+          if (auditData && auditData.length > 0) {
+            const statsMap: Record<string, { total_gain: number; total_aktivitas: number }> = {};
+            auditData.forEach((item) => {
+              if (!item.atlet_nama) return;
+              const gain = item.perubahan > 0 ? item.perubahan : 0;
+              if (!statsMap[item.atlet_nama]) {
+                statsMap[item.atlet_nama] = { total_gain: 0, total_aktivitas: 0 };
+              }
+              statsMap[item.atlet_nama].total_gain += gain;
+              statsMap[item.atlet_nama].total_aktivitas += 1;
+            });
+
+            let topName = '';
+            let maxGain = 0;
+            let topStat = { total_gain: 0, total_aktivitas: 0 };
+
+            Object.entries(statsMap).forEach(([name, st]) => {
+              if (st.total_gain > maxGain) {
+                maxGain = st.total_gain;
+                topName = name;
+                topStat = st;
+              }
+            });
+
+            if (topName && maxGain > 0) {
+              setTopGainer({
+                atlet_nama: topName,
+                total_gain: topStat.total_gain,
+                total_aktivitas: topStat.total_aktivitas,
+              });
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Weekly top fetch fallback...');
+      }
+    };
+
+    fetchWeeklyTop();
+  }, []);
+
+  // Fetch Rankings Data with robust fallbacks
   const fetchRankings = useCallback(async () => {
     setLoading(true);
     setFetchError(null);
     try {
-      // 1. Ambil data mentah dari tabel rankings (untuk mendapatkan struktur dasar)
-      const { data: rankingsData, error: rankingsError } = await supabase
-        .from('rankings')
-        .select('*');
-  
-      if (rankingsError) throw rankingsError;
-  
-      // 2. Ambil data sumber kebenaran (atlet_stats) seperti pada kode Admin
-      // Admin menggunakan atlet_stats sebagai sumber poin dasar dan bonus
-      const { data: statsData, error: statsError } = await supabase
-        .from('atlet_stats')
-        .select('pendaftaran_id, points, total_points, seed');
-  
-      if (statsError) throw statsError;
-  
-      // 3. Ambil data pendaftaran untuk memastikan nama & foto sinkron
-      const { data: pendaftaranData, error: pendaftaranError } = await supabase
-        .from('pendaftaran')
-        .select('id, nama, foto_url, kategori_atlet');
-  
-      if (pendaftaranError) throw pendaftaranError;
-  
-      // 4. Proses penggabungan data (Logic Sinkronisasi Lengkap)
-      const syncedData = (rankingsData || []).map((rankItem) => {
-        // Cari data statistik berdasarkan pendaftaran_id atau nama
-        const stats = (statsData || []).find((s) => 
-          (s.pendaftaran_id && s.pendaftaran_id === rankItem.pendaftaran_id) ||
-          (s.player_name && rankItem.player_name && s.player_name.trim().toLowerCase() === rankItem.player_name.trim().toLowerCase())
+      const [rankingsRes, statsRes, pendaftaranRes] = await Promise.allSettled([
+        supabase.from('rankings').select('*'),
+        supabase.from('atlet_stats').select('pendaftaran_id, player_name, points, total_points, seed'),
+        supabase.from('pendaftaran').select('id, nama, foto_url, kategori_atlet'),
+      ]);
+
+      const rankingsData = rankingsRes.status === 'fulfilled' && rankingsRes.value.data ? rankingsRes.value.data : [];
+      const statsData = statsRes.status === 'fulfilled' && statsRes.value.data ? statsRes.value.data : [];
+      const pendaftaranData = pendaftaranRes.status === 'fulfilled' && pendaftaranRes.value.data ? pendaftaranRes.value.data : [];
+
+      const playerMap = new Map<string, PlayerRanking>();
+
+      // Master Pendaftaran
+      pendaftaranData.forEach((profile) => {
+        const rawName = profile.nama || '';
+        const nameKey = rawName.trim().toLowerCase();
+        if (!nameKey) return;
+
+        const stat = statsData.find(
+          (s) => (s.pendaftaran_id && s.pendaftaran_id === profile.id) || (s.player_name && s.player_name.trim().toLowerCase() === nameKey)
         );
-        // Cari data profil untuk memastikan nama & foto terbaru
-        const profile = (pendaftaranData || []).find((p) => 
-          (p.id && p.id === rankItem.pendaftaran_id) ||
-          (p.nama && rankItem.player_name && p.nama.trim().toLowerCase() === rankItem.player_name.trim().toLowerCase())
+
+        const rankItem = rankingsData.find(
+          (r) => (r.pendaftaran_id && r.pendaftaran_id === profile.id) || (r.player_name && r.player_name.trim().toLowerCase() === nameKey)
         );
-  
-        // Logika Kalkulasi sesuai AdminRanking.tsx baris 90-91
-        const basePoints = stats ? (Number(stats.points) || 0) : (Number(rankItem.poin) || 0);
-        const addedPoints = stats ? (Number(stats.total_points) || 0) : (Number(rankItem.bonus) || 0);
-        
-        // Total akhir yang tampil di kolom "Total Ranking" di Admin
-        const finalTotal = basePoints + addedPoints;
-  
-        // Normalisasi Seed sesuai logic Admin baris 93-96
-        let currentSeed = stats?.seed || rankItem.seed || 'Non-Seed';
-        if (!currentSeed.includes('Seed') && currentSeed !== 'Non-Seed') {
+
+        const basePoints = stat ? Number(stat.points) || 0 : Number(rankItem?.poin) || 0;
+        const addedPoints = stat ? Number(stat.total_points) || 0 : Number(rankItem?.bonus) || 0;
+        const calculatedTotal = basePoints + addedPoints;
+        const finalTotal = rankItem?.total_points && Number(rankItem.total_points) > calculatedTotal
+          ? Number(rankItem.total_points)
+          : calculatedTotal;
+
+        let currentSeed = stat?.seed || rankItem?.seed || 'Non-Seed';
+        if (currentSeed && !currentSeed.includes('Seed') && currentSeed !== 'Non-Seed' && currentSeed !== 'UNSEEDED') {
           currentSeed = `Seed ${currentSeed}`;
+        } else if (currentSeed === 'UNSEEDED') {
+          currentSeed = 'Non-Seed';
         }
-  
-        return {
-          ...rankItem,
-          player_name: profile?.nama || rankItem.player_name,
-          photo_url: profile?.foto_url || rankItem.photo_url,
-          poin: basePoints,       // Base Points
-          bonus: addedPoints,     // Added Points (Stats)
-          total_points: finalTotal, // Hasil Akhir
+
+        playerMap.set(nameKey, {
+          id: profile.id || rankItem?.id || `p-${nameKey}`,
+          pendaftaran_id: profile.id,
+          player_name: rawName.trim().toUpperCase(),
+          photo_url: profile.foto_url || rankItem?.photo_url || undefined,
+          poin: basePoints,
+          bonus: addedPoints,
+          total_points: finalTotal,
           seed: currentSeed,
-          category: profile?.kategori_atlet || rankItem.category
-        };
+          category: profile.kategori_atlet || rankItem?.category || 'SENIOR',
+          updated_at: rankItem?.updated_at || new Date().toISOString(),
+        });
       });
-  
-      // 5. Urutkan berdasarkan total poin tertinggi (Rank #01)
+
+      // Master Rankings
+      rankingsData.forEach((rankItem) => {
+        const rawName = rankItem.player_name || '';
+        const nameKey = rawName.trim().toLowerCase();
+        if (!nameKey || playerMap.has(nameKey)) return;
+
+        const stat = statsData.find(
+          (s) => (s.pendaftaran_id && s.pendaftaran_id === rankItem.pendaftaran_id) || (s.player_name && s.player_name.trim().toLowerCase() === nameKey)
+        );
+
+        const basePoints = stat ? Number(stat.points) || 0 : Number(rankItem.poin) || 0;
+        const addedPoints = stat ? Number(stat.total_points) || 0 : Number(rankItem.bonus) || 0;
+        const calculatedTotal = basePoints + addedPoints;
+        const finalTotal = Number(rankItem.total_points) || calculatedTotal;
+
+        let currentSeed = stat?.seed || rankItem.seed || 'Non-Seed';
+        if (currentSeed && !currentSeed.includes('Seed') && currentSeed !== 'Non-Seed' && currentSeed !== 'UNSEEDED') {
+          currentSeed = `Seed ${currentSeed}`;
+        } else if (currentSeed === 'UNSEEDED') {
+          currentSeed = 'Non-Seed';
+        }
+
+        playerMap.set(nameKey, {
+          id: rankItem.id || `r-${nameKey}`,
+          pendaftaran_id: rankItem.pendaftaran_id,
+          player_name: rawName.trim().toUpperCase(),
+          photo_url: rankItem.photo_url || undefined,
+          poin: basePoints,
+          bonus: addedPoints,
+          total_points: finalTotal,
+          seed: currentSeed,
+          category: rankItem.category || 'SENIOR',
+          updated_at: rankItem.updated_at,
+        });
+      });
+
+      // Master Stats
+      statsData.forEach((stat) => {
+        const rawName = stat.player_name || '';
+        const nameKey = rawName.trim().toLowerCase();
+        if (!nameKey || playerMap.has(nameKey)) return;
+
+        const basePoints = Number(stat.points) || 0;
+        const addedPoints = Number(stat.total_points) || 0;
+        const finalTotal = basePoints + addedPoints;
+
+        let currentSeed = stat.seed || 'Non-Seed';
+        if (currentSeed && !currentSeed.includes('Seed') && currentSeed !== 'Non-Seed' && currentSeed !== 'UNSEEDED') {
+          currentSeed = `Seed ${currentSeed}`;
+        } else if (currentSeed === 'UNSEEDED') {
+          currentSeed = 'Non-Seed';
+        }
+
+        playerMap.set(nameKey, {
+          id: stat.pendaftaran_id || `s-${nameKey}`,
+          pendaftaran_id: stat.pendaftaran_id,
+          player_name: rawName.trim().toUpperCase(),
+          photo_url: undefined,
+          poin: basePoints,
+          bonus: addedPoints,
+          total_points: finalTotal,
+          seed: currentSeed,
+          category: 'SENIOR',
+          updated_at: new Date().toISOString(),
+        });
+      });
+
+      const syncedData = Array.from(playerMap.values());
       const sortedData = syncedData.sort((a, b) => b.total_points - a.total_points);
-  
+
       setDbRankings(sortedData);
     } catch (error: any) {
       console.error('Sync Error:', error);
@@ -286,30 +480,11 @@ const Rankings: React.FC = () => {
   useEffect(() => {
     fetchRankings();
 
-    // Perbaikan Real-time Channel untuk menangkap Update dari Admin secara instan
     const channel = supabase
-      .channel('rankings_realtime_sync_v2')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'rankings' },
-        () => {
-          fetchRankings();
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'audit_poin' },
-        () => {
-          fetchRankings();
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'pendaftaran' },
-        () => {
-          fetchRankings();
-        }
-      )
+      .channel('rankings_realtime_sync_v4')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'rankings' }, () => fetchRankings())
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'audit_poin' }, () => fetchRankings())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pendaftaran' }, () => fetchRankings())
       .subscribe();
 
     return () => {
@@ -317,42 +492,13 @@ const Rankings: React.FC = () => {
     };
   }, [fetchRankings]);
 
-  const fetchHistoryForPlayer = async (playerName: string) => {
-    setLoadingHistory(true);
-    setPlayerHistory([]);
-    try {
-      const { data, error } = await supabase
-        .from('audit_poin')
-        .select('id, created_at, perubahan, poin_sebelum, poin_sesudah, admin_email, tipe_kegiatan')
-        .ilike('atlet_nama', playerName.trim())
-        .order('created_at', { ascending: false })
-        .limit(10);
-
-      if (error) throw error;
-      setPlayerHistory(data || []);
-    } catch (err) {
-      console.error('History fetch error:', err);
-    } finally {
-      setLoadingHistory(false);
-    }
-  };
-
-  const toggleExpand = (player: PlayerRanking) => {
-    if (expandedPlayer === player.id) {
-      setExpandedPlayer(null);
-    } else {
-      setExpandedPlayer(player.id);
-      fetchHistoryForPlayer(player.player_name);
-    }
-  };
-
   const getCategoryStyles = (seed: string) => {
     const s = seed?.toUpperCase() || '';
-    if (s.includes('A')) return { bg: 'bg-amber-500/10', text: 'text-amber-500', border: 'border-amber-500/20' };
-    if (s.includes('B+')) return { bg: 'bg-blue-500/10', text: 'text-blue-500', border: 'border-blue-500/20' };
-    if (s.includes('B-') || s === 'B') return { bg: 'bg-indigo-500/10', text: 'text-indigo-500', border: 'border-indigo-500/20' };
-    if (s.includes('C')) return { bg: 'bg-emerald-500/10', text: 'text-emerald-500', border: 'border-emerald-500/20' };
-    return { bg: 'bg-slate-500/10', text: 'text-slate-500', border: 'border-slate-500/20' };
+    if (s.includes('A')) return { bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-500/30' };
+    if (s.includes('B+')) return { bg: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/30' };
+    if (s.includes('B-') || s === 'B') return { bg: 'bg-indigo-500/10', text: 'text-indigo-400', border: 'border-indigo-500/30' };
+    if (s.includes('C')) return { bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/30' };
+    return { bg: 'bg-slate-800', text: 'text-slate-400', border: 'border-slate-700' };
   };
 
   const filteredData = useMemo(() => {
@@ -365,441 +511,489 @@ const Rankings: React.FC = () => {
     });
   }, [searchTerm, activeCategory, dbRankings]);
 
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-  const currentPlayers = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  // Kalkulasi Pagination
+  const effectiveLimit = itemsPerPage === 'All' ? Math.max(filteredData.length, 1) : itemsPerPage;
+  const totalPages = Math.max(Math.ceil(filteredData.length / effectiveLimit), 1);
+  
+  const currentPlayers = useMemo(() => {
+    if (itemsPerPage === 'All') return filteredData;
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredData.slice(start, start + itemsPerPage);
+  }, [filteredData, currentPage, itemsPerPage]);
+
+  const startItemIndex = filteredData.length > 0 ? (itemsPerPage === 'All' ? 1 : (currentPage - 1) * (itemsPerPage as number) + 1) : 0;
+  const endItemIndex = filteredData.length > 0 ? (itemsPerPage === 'All' ? filteredData.length : Math.min(currentPage * (itemsPerPage as number), filteredData.length)) : 0;
+
+  const handlePageChange = (newPage: number) => {
+    const targetPage = Math.max(1, Math.min(newPage, totalPages));
+    setCurrentPage(targetPage);
+    if (listTopRef.current) {
+      listTopRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  // Logic Generate List Tombol Halaman (dengan Ellipsis jika banyak)
+  const renderPageNumbers = () => {
+    if (itemsPerPage === 'All' || totalPages <= 1) return null;
+
+    const pages: (number | string)[] = [];
+    if (totalPages <= 5) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      if (currentPage > 3) pages.push('...');
+      
+      const start = Math.max(2, currentPage - 1);
+      const end = Math.min(totalPages - 1, currentPage + 1);
+      for (let i = start; i <= end; i++) {
+        if (!pages.includes(i)) pages.push(i);
+      }
+
+      if (currentPage < totalPages - 2) pages.push('...');
+      if (!pages.includes(totalPages)) pages.push(totalPages);
+    }
+
+    return pages.map((p, idx) => {
+      if (typeof p === 'string') {
+        return (
+          <span key={`dots-${idx}`} className="px-1 text-slate-500 font-bold text-xs select-none">
+            ...
+          </span>
+        );
+      }
+      return (
+        <button
+          key={p}
+          onClick={() => handlePageChange(p)}
+          className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg text-[10px] sm:text-xs font-black transition-all cursor-pointer border ${
+            currentPage === p
+              ? 'bg-blue-600 border-blue-500 text-white shadow-md shadow-blue-600/30'
+              : 'bg-slate-900 text-slate-400 border-slate-800 hover:border-slate-700'
+          }`}
+        >
+          {p}
+        </button>
+      );
+    });
+  };
 
   return (
-    <section id="rankings" className="min-h-screen py-20 bg-[#070d1a] text-white font-sans relative overflow-hidden">
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(circle_at_50%_-20%,#1e3a8a33,transparent_50%)] pointer-events-none" />
-      <div className="max-w-5xl mx-auto px-4 relative z-10">
-        <div className="mb-12 grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-          <div className="animate-in slide-in-from-left duration-700">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full mb-4">
-              <Trophy className="text-blue-400" size={14} />
-              <span className="text-blue-400 text-[10px] font-black uppercase tracking-widest">Official Points System</span>
+    <section id="rankings" className="w-full bg-[#070d1a] text-white font-sans relative py-2 sm:py-3 h-[calc(100vh-4.5rem)] flex flex-col justify-between overflow-hidden">
+      {/* Background glow */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(circle_at_50%_0%,#1e3a8a22,transparent_60%)] pointer-events-none" />
+
+      <div className="max-w-6xl mx-auto px-2.5 sm:px-4 w-full flex flex-col flex-1 min-h-0 gap-2.5 relative z-10 overflow-hidden">
+        
+        {/* COMPACT TOP HEADER BAR */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-slate-900/60 border border-slate-800/80 p-3.5 sm:p-4 rounded-2xl backdrop-blur-xl shadow-xl shrink-0">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="px-2.5 py-0.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[8px] sm:text-[9px] font-black uppercase tracking-widest rounded-full flex items-center gap-1">
+                <Trophy size={11} className="text-blue-400" /> Standar Resmi PB Bilibili 162
+              </span>
+              <span className="text-[8px] font-black uppercase text-emerald-400 flex items-center gap-1 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Live Sync
+              </span>
             </div>
-            <h1 className="text-4xl md:text-5xl font-black mb-3 italic tracking-tighter uppercase">
-              PB BILIBILI 162 <span className="text-blue-500">RANKINGS</span>
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-black italic uppercase tracking-tighter text-white">
+              PERINGKAT &amp; <span className="text-blue-500">POIN ATLET</span>
             </h1>
-            <p className="text-slate-500 text-xs font-bold uppercase tracking-widest italic">Transparansi Perolehan Poin Atlet</p>
           </div>
-          <div className="bg-slate-900/50 border border-slate-800 p-6 rounded-[2rem] backdrop-blur-sm animate-in slide-in-from-right duration-700">
-            <div className="flex items-center gap-2 mb-4 border-b border-slate-800 pb-2">
-              <Activity size={16} className="text-blue-500" />
-              <span className="text-xs font-black uppercase tracking-widest text-slate-300">Matrix Poin</span>
+
+          <div className="flex items-center gap-2.5 w-full sm:w-auto justify-between sm:justify-end">
+            {/* Weekly Hero Mini Chip */}
+            {topGainer && (
+              <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-orange-500/10 border border-orange-500/30 rounded-xl text-orange-400 text-xs">
+                <Flame size={14} className="text-orange-500 animate-pulse" />
+                <span className="text-[9px] font-bold uppercase tracking-wider">
+                  Hero: <strong className="text-white font-black">{topGainer.atlet_nama}</strong> (+{topGainer.total_gain} PTS)
+                </span>
+              </div>
+            )}
+
+            {/* Matrix Button */}
+            <button
+              onClick={() => setIsMatrixOpen(true)}
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-blue-400 border border-slate-700 hover:border-blue-500 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer shadow-md"
+            >
+              <Activity size={14} />
+              <span>Matrix Poin</span>
+            </button>
+          </div>
+        </div>
+
+        {/* SEARCH & FILTER CONTROLS BAR */}
+        <div className="flex flex-col md:flex-row items-center gap-2.5 bg-slate-900/40 border border-slate-800/80 p-2.5 rounded-2xl backdrop-blur-md shrink-0">
+          {/* Search Box */}
+          <div className="relative flex-1 w-full">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" size={15} />
+            <input
+              type="text"
+              placeholder="Cari nama atlet..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full bg-slate-950/70 border border-slate-800 rounded-xl py-2 pl-9 pr-8 text-xs font-bold text-white placeholder:text-slate-600 focus:border-blue-500 focus:outline-none transition-all"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white cursor-pointer"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
+
+          {/* Seed Category Filters */}
+          <div className="flex items-center justify-between w-full md:w-auto gap-2">
+            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
+              <div className="text-slate-500 px-1 hidden lg:block">
+                <Filter size={13} />
+              </div>
+              {['All', 'A', 'B+', 'B-', 'C'].map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => {
+                    setActiveCategory(cat);
+                    setCurrentPage(1);
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-[9px] sm:text-[10px] font-black border uppercase whitespace-nowrap transition-all cursor-pointer ${
+                    activeCategory === cat
+                      ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-600/30'
+                      : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:border-slate-700'
+                  }`}
+                >
+                  {cat === 'All' ? 'SEMUA' : `SEED ${cat}`}
+                </button>
+              ))}
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              {[
-                { label: 'Latihan Harian', val: '20/10/5' },
-                { label: 'Sparing Partner', val: '100/50/25' },
-                { label: 'Turnamen Internal', val: '300/--/50' },
-                { label: 'Turnamen Eksternal', val: '500/--/100' },
-              ].map((item, idx) => (
-                <div key={idx} className="flex flex-col">
-                  <span className="text-[9px] text-slate-500 font-bold uppercase">{item.label}</span>
-                  <span className="text-xs font-mono font-black text-blue-400">{item.val}</span>
-                </div>
+
+            {/* Items Per Page Selector (Mobile & Desktop) */}
+            <div className="flex items-center gap-1 pl-2 border-l border-slate-800 shrink-0">
+              <SlidersHorizontal size={12} className="text-slate-500 hidden sm:block" />
+              <span className="text-[9px] font-bold text-slate-500 uppercase hidden sm:inline">Tampil:</span>
+              {[5, 10, 20, 'All'].map((num) => (
+                <button
+                  key={String(num)}
+                  onClick={() => {
+                    setItemsPerPage(num as number | 'All');
+                    setCurrentPage(1);
+                  }}
+                  className={`px-2 py-1 text-[9px] font-black rounded border transition-all cursor-pointer ${
+                    itemsPerPage === num
+                      ? 'bg-blue-500/20 text-blue-400 border-blue-500/40'
+                      : 'bg-slate-950 text-slate-500 border-slate-800 hover:text-slate-300'
+                  }`}
+                >
+                  {num === 'All' ? 'Semua' : num}
+                </button>
               ))}
             </div>
           </div>
         </div>
 
-        <WeeklySpotlight />
-
-        {/* Filter Bar */}
-        <div className="flex flex-col md:flex-row gap-3 md:gap-4 mb-8 sticky top-[60px] md:top-20 z-40 bg-[#070d1a]/90 backdrop-blur-md p-2.5 sm:p-3 rounded-2xl border border-slate-800/80 shadow-2xl transition-all">
-          <div className="relative flex-1 group">
-            <div className="absolute inset-0 bg-blue-500/10 blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity" />
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
-            <input
-              type="text"
-              placeholder="Cari nama atlet..."
-              className="w-full bg-slate-900/60 backdrop-blur-xl border border-slate-800/80 rounded-xl py-3 pl-11 pr-4 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none font-bold text-xs sm:text-sm transition-all placeholder:text-slate-600"
-              value={searchTerm}
-              onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-            />
-          </div>
-          <div className="flex gap-1.5 overflow-x-auto pb-1 sm:pb-0 no-scrollbar bg-[#0b1224]/60 p-1.5 rounded-xl border border-slate-800/50">
-            <div className="flex items-center px-1.5 text-slate-500 border-r border-slate-800/80 mr-1 shrink-0">
-                <Filter size={13} />
-            </div>
-            {['All', 'A', 'B+', 'B-', 'C'].map((cat) => (
-              <button
-                key={cat}
-                onClick={() => { setActiveCategory(cat); setCurrentPage(1); }}
-                className={`px-4 py-2 rounded-lg text-[9px] sm:text-[10px] font-black border whitespace-nowrap transition-all ${activeCategory === cat ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-600/20' : 'bg-slate-900 text-slate-500 border-slate-800 hover:border-slate-600'}`}
-              >
-                {cat === 'All' ? 'SEMUA' : `SEED ${cat}`}
-              </button>
-            ))}
-          </div>
-        </div>
-
+        {/* ERROR DISPLAY */}
         {fetchError && (
-          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center gap-3 text-red-500 animate-bounce">
-            <AlertCircle size={18} />
-            <span className="text-xs font-bold uppercase">{fetchError}</span>
+          <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl flex items-center gap-2 text-red-400 text-xs shrink-0">
+            <AlertCircle size={15} />
+            <span className="font-bold uppercase text-[10px]">{fetchError}</span>
           </div>
         )}
 
-        <div className="bg-slate-900 border border-slate-800 rounded-[2rem] overflow-hidden shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-1000">
+        {/* MAIN DATA SECTION (DESKTOP TABLE & MOBILE CARDS WITH FULL SCROLLING) */}
+        <div ref={listTopRef} className="bg-slate-900/80 border border-slate-800/80 rounded-2xl shadow-2xl flex-1 flex flex-col justify-between overflow-hidden">
           {loading ? (
-            <div className="py-24 text-center">
-              <Loader2 className="animate-spin mx-auto text-blue-500 mb-4" size={40} />
-              <p className="text-slate-500 font-black text-[10px] uppercase tracking-widest">Sinkronisasi Database...</p>
+            <div className="flex-1 flex flex-col items-center justify-center py-16 gap-3">
+              <Loader2 className="animate-spin text-blue-500" size={32} />
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Sinkronisasi Poin Server...</p>
             </div>
           ) : currentPlayers.length === 0 ? (
-            <div className="py-24 text-center">
-              <div className="flex flex-col items-center gap-2 opacity-20">
-                <Search size={40} />
-                <p className="font-black text-xs uppercase tracking-widest">Atlet tidak ditemukan</p>
-              </div>
+            <div className="flex-1 flex flex-col items-center justify-center py-16 text-slate-600 gap-2">
+              <Search size={32} className="opacity-30" />
+              <p className="text-xs font-black uppercase tracking-widest">Atlet tidak ditemukan</p>
             </div>
           ) : (
             <>
-              {/* DESKTOP TABLE VIEW */}
-              <div className="hidden md:block overflow-x-auto">
-                <table className="w-full text-left border-collapse min-w-[700px]">
-                  <thead>
-                    <tr className="bg-slate-800/30 text-slate-500 text-[10px] font-black uppercase tracking-widest border-b border-slate-800">
-                      <th className="px-8 py-6 text-center w-24">Rank</th>
-                      <th className="px-6 py-6">Atlet</th>
-                      <th className="px-6 py-6 w-40 text-center">Kategori / Seed</th>
-                      <th className="px-6 py-6 text-right w-40">Total Poin</th>
-                      <th className="px-8 py-6 text-center w-32">Status</th>
+              {/* DESKTOP TABLE VIEW - FULL SCROLLABLE */}
+              <div className="hidden md:block overflow-x-auto overflow-y-auto flex-1 min-h-0 custom-scrollbar">
+                <table className="w-full text-left border-collapse min-w-[680px]">
+                  <thead className="sticky top-0 z-20 bg-[#091122] shadow-md">
+                    <tr className="text-slate-400 text-[9px] font-black uppercase tracking-widest border-b border-slate-800">
+                      <th className="px-4 py-3 text-center w-16">Rank</th>
+                      <th className="px-4 py-3">Atlet</th>
+                      <th className="px-4 py-3 text-center w-36">Kategori &amp; Seed</th>
+                      <th className="px-4 py-3 text-right w-28">Poin Dasar</th>
+                      <th className="px-4 py-3 text-center w-28">Mutasi</th>
+                      <th className="px-4 py-3 text-right w-32">Total Poin</th>
+                      <th className="px-4 py-3 text-center w-20">Aksi</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800/50">
                     {currentPlayers.map((player) => {
-                    const globalRank = dbRankings.findIndex((p) => p.id === player.id) + 1;
-                    const style = getCategoryStyles(player.seed);
-                    const isExpanded = expandedPlayer === player.id;
+                      const globalRank = dbRankings.findIndex((p) => p.id === player.id) + 1;
+                      const style = getCategoryStyles(player.seed);
 
-                    return (
-                      <React.Fragment key={player.id}>
-                        <tr 
-                          onClick={() => toggleExpand(player)} 
-                          className={`cursor-pointer transition-all group ${isExpanded ? 'bg-blue-600/10' : 'hover:bg-white/[0.02]'}`}
+                      // Rank badge styling
+                      let rankBadge = 'text-slate-400 font-bold';
+                      if (globalRank === 1) rankBadge = 'text-amber-400 font-black scale-110';
+                      else if (globalRank === 2) rankBadge = 'text-slate-300 font-black';
+                      else if (globalRank === 3) rankBadge = 'text-orange-400 font-black';
+
+                      return (
+                        <tr
+                          key={player.id}
+                          onClick={() => setSelectedPlayer(player)}
+                          className="hover:bg-blue-600/10 cursor-pointer transition-all group"
                         >
-                          <td className="px-8 py-6 text-center">
-                            <span className={`text-xl font-black italic ${globalRank <= 3 ? 'text-blue-400 underline decoration-blue-500/30' : 'text-slate-700'}`}>
+                          {/* Rank */}
+                          <td className="px-4 py-3 text-center">
+                            <span className={`text-sm sm:text-base italic font-mono ${rankBadge}`}>
                               #{String(globalRank).padStart(2, '0')}
                             </span>
                           </td>
-                          <td className="px-6 py-6">
-                            <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 overflow-hidden ring-2 ring-blue-500/0 group-hover:ring-blue-500/30 transition-all">
-                                    {player.photo_url ? (
-                                        <img src={player.photo_url} className="w-full h-full object-cover" alt="" />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-slate-600"><User size={20} /></div>
-                                    )}
-                                </div>
-                                <div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="font-black italic uppercase text-base group-hover:text-blue-400 transition-colors">{player.player_name}</span>
-                                        {globalRank === 1 && <Trophy size={16} className="text-amber-400 animate-bounce" />}
-                                    </div>
-                                    <div className="flex items-center gap-1 mt-1 opacity-60 group-hover:opacity-100 transition-opacity">
-                                        <Clock size={10} className="text-blue-500" />
-                                        <span className="text-[8px] text-blue-500 font-black uppercase tracking-widest">Klik untuk Detail History</span>
-                                    </div>
-                                </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-6">
-                            <div className="flex flex-col gap-1 items-center">
-                              <span className={`text-[9px] font-black px-3 py-1 rounded-full border text-center uppercase ${style.bg} ${style.text} ${style.border}`}>
-                                {player.seed || 'UNSEEDED'}
-                              </span>
-                              <span className="text-[8px] text-slate-600 font-bold text-center uppercase tracking-tighter">
-                                {player.category}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-6 text-right font-mono font-black text-white text-xl">
-                            {Number(player.total_points || 0).toLocaleString()}
-                          </td>
-                          <td className="px-8 py-6 text-center">
-                            {player.bonus !== undefined && player.bonus !== 0 ? (
-                              <div className={`inline-flex items-center px-2 py-1 rounded-md text-[10px] font-bold shadow-lg ${player.bonus > 0 ? 'text-emerald-500 bg-emerald-500/10 shadow-emerald-500/5' : 'text-red-500 bg-red-500/10 shadow-red-500/5'}`}>
-                                {player.bonus > 0 ? <TrendingUp size={12} className="mr-1" /> : <TrendingDown size={12} className="mr-1" />}
-                                {player.bonus > 0 ? `+${player.bonus}` : player.bonus}
-                              </div>
-                            ) : <Minus size={14} className="mx-auto text-slate-800" />}
-                          </td>
-                        </tr>
-                        {isExpanded && (
-                          <tr>
-                            <td colSpan={5} className="px-8 py-0 border-none bg-blue-500/[0.02]">
-                              <div className="border-x border-b border-blue-500/20 rounded-b-[2.5rem] p-6 mb-6 animate-in slide-in-from-top-4 duration-500 bg-slate-900/50 backdrop-blur-sm">
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                                  <div className="bg-[#0b1224]/80 p-5 rounded-2xl border border-slate-800 flex items-center gap-4 shadow-xl">
-                                    <div className="p-3 bg-blue-500/10 rounded-xl text-blue-400"><User size={22} /></div>
-                                    <div>
-                                      <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Atlet Profile</p>
-                                      <p className="text-sm font-black italic text-white uppercase">{player.player_name}</p>
-                                    </div>
-                                  </div>
-                                  <div className="bg-[#0b1224]/80 p-5 rounded-2xl border border-slate-800 flex items-center gap-4 shadow-xl">
-                                    <div className="p-3 bg-amber-500/10 rounded-xl text-amber-500"><Hash size={22} /></div>
-                                    <div>
-                                      <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Global Rank</p>
-                                      <p className="text-sm font-black italic text-white uppercase">Peringkat #{globalRank}</p>
-                                    </div>
-                                  </div>
-                                  <div className="bg-[#0b1224]/80 p-5 rounded-2xl border border-slate-800 flex items-center gap-4 shadow-xl">
-                                    <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-500"><Clock size={22} /></div>
-                                    <div>
-                                      <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Status Data</p>
-                                      <p className="text-sm font-black italic text-emerald-500 uppercase flex items-center gap-1"><ShieldCheck size={14} /> Live Sync</p>
-                                    </div>
-                                  </div>
-                                </div>
-                                
-                                <div className="flex items-center justify-between mb-6">
-                                  <div className="flex items-center gap-2">
-                                    <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                                        <History size={16} className="text-blue-500" />
-                                    </div>
-                                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-300">Log Aktivitas Terbaru</span>
-                                  </div>
-                                  <div className="h-[1px] flex-1 mx-6 bg-gradient-to-r from-slate-800 to-transparent" />
-                                  <div className="flex items-center gap-1 px-3 py-1.5 bg-blue-500/10 border border-blue-500/30 rounded-xl">
-                                    <ShieldCheck size={12} className="text-blue-500" />
-                                    <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">Verified Update</span>
-                                  </div>
-                                </div>
 
-                                {loadingHistory ? (
-                                  <div className="flex flex-col items-center justify-center py-16 gap-4">
-                                    <div className="relative">
-                                        <Loader2 className="animate-spin text-blue-500" size={32} />
-                                        <div className="absolute inset-0 bg-blue-500 blur-2xl opacity-20" />
-                                    </div>
-                                    <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.4em] animate-pulse">Synchronizing Logs...</p>
-                                  </div>
-                                ) : playerHistory.length > 0 ? (
-                                  <div className="space-y-4">
-                                    {playerHistory.map((log) => {
-                                      const isGain = log.perubahan > 0;
-                                      return (
-                                        <div key={log.id} className={`group/item flex items-center justify-between p-5 rounded-2xl border transition-all duration-300 ${isGain ? 'bg-emerald-500/[0.03] border-emerald-500/10 hover:border-emerald-500/40' : 'bg-red-500/[0.03] border-red-500/10 hover:border-red-500/40'}`}>
-                                          <div className="flex items-center gap-5">
-                                            <div className={`p-3 rounded-2xl shadow-inner transition-transform group-hover/item:scale-110 ${isGain ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
-                                              {isGain ? <ArrowUpRight size={16} strokeWidth={3} /> : <ArrowDownRight size={16} strokeWidth={3} />}
-                                            </div>
-                                            <div>
-                                              <div className="flex items-center gap-2 text-[10px] font-mono text-slate-500 mb-1">
-                                                <Calendar size={10} />
-                                                {new Date(log.created_at).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                                              </div>
-                                              <div className="flex items-center gap-2">
-                                                <span className={`text-[12px] font-black uppercase tracking-tight ${isGain ? 'text-emerald-400' : 'text-red-400'}`}>{isGain ? 'PENAMBAHAN POIN' : 'PENGURANGAN POIN'}</span>
-                                                <span className="text-slate-800 text-[10px]">|</span>
-                                                <span className="text-[11px] font-bold text-slate-400 uppercase italic group-hover/item:text-slate-200 transition-colors">{log.tipe_kegiatan || 'Aktivitas Rutin'}</span>
-                                              </div>
-                                            </div>
-                                          </div>
-                                          <div className="text-right">
-                                            <div className={`text-2xl font-black font-mono transition-transform group-hover/item:translate-x-[-4px] ${isGain ? 'text-emerald-400' : 'text-red-400'}`}>{isGain ? '+' : ''}{log.perubahan}</div>
-                                            <div className="text-[9px] text-slate-500 font-bold uppercase tracking-tighter flex items-center justify-end gap-2 bg-[#0b1224]/50 px-2 py-1 rounded-lg mt-1">
-                                              <span>Prev: {log.poin_sebelum}</span>
-                                              <ChevronRight size={8} className="text-blue-500" />
-                                              <span className="text-blue-400">New: {log.poin_sesudah}</span>
-                                            </div>
-                                          </div>
-                                        </div>
-                                      );
-                                    })}
-                                    <div className="text-center pt-6"><p className="text-[9px] font-black text-slate-700 uppercase tracking-widest italic flex items-center justify-center gap-2"><Clock size={10} /> Menampilkan 10 riwayat aktivitas terbaru atlet</p></div>
-                                  </div>
+                          {/* Player Photo & Name */}
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 overflow-hidden shrink-0 group-hover:border-blue-400 transition-colors">
+                                {player.photo_url ? (
+                                  <img src={player.photo_url} className="w-full h-full object-cover" alt="" />
                                 ) : (
-                                  <div className="text-center py-20 border-2 border-dashed border-slate-800 rounded-[2rem] bg-slate-900/30">
-                                    <div className="relative inline-block mb-4">
-                                        <Calendar className="mx-auto opacity-10" size={60} />
-                                        <div className="absolute inset-0 bg-slate-500 blur-3xl opacity-5" />
-                                    </div>
-                                    <p className="text-slate-600 font-black text-sm uppercase tracking-widest">Riwayat Belum Tersedia di Server</p>
-                                  </div>
+                                  <div className="w-full h-full flex items-center justify-center text-slate-600"><User size={16} /></div>
                                 )}
                               </div>
-                            </td>
-                          </tr>
-                        )}
-                      </React.Fragment>
-                    );
-                  })
-                }
-              </tbody>
-            </table>
-          </div>
-
-          {/* MOBILE CARD VIEW */}
-          <div className="md:hidden divide-y divide-slate-800/30 bg-[#070d1a]/50">
-            {currentPlayers.map((player) => {
-              const globalRank = dbRankings.findIndex((p) => p.id === player.id) + 1;
-              const style = getCategoryStyles(player.seed);
-              const isExpanded = expandedPlayer === player.id;
-
-              // Premium rank badge styles based on actual stand
-              let rankBadgeStyle = 'bg-slate-800 text-slate-400 border border-slate-700/50';
-              if (globalRank === 1) {
-                rankBadgeStyle = 'bg-gradient-to-br from-amber-400 to-yellow-600 text-slate-950 font-black shadow-lg shadow-yellow-500/10 border border-yellow-400/30';
-              } else if (globalRank === 2) {
-                rankBadgeStyle = 'bg-gradient-to-br from-slate-200 to-slate-400 text-slate-950 font-black shadow-lg shadow-slate-400/10 border border-slate-300/30';
-              } else if (globalRank === 3) {
-                rankBadgeStyle = 'bg-gradient-to-br from-orange-400 to-amber-700 text-white font-black shadow-lg shadow-orange-500/10 border border-orange-500/30';
-              }
-
-              return (
-                <div key={player.id} className="p-3.5 transition-all">
-                  <div 
-                    onClick={() => toggleExpand(player)}
-                    className={`flex items-center justify-between gap-3 p-3 rounded-2xl cursor-pointer transition-all ${isExpanded ? 'bg-blue-500/10 border border-blue-500/30' : 'bg-slate-900/40 hover:bg-slate-900/80 border border-slate-800/40'}`}
-                  >
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      {/* Rank Indicator */}
-                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 font-mono font-black italic text-xs ${rankBadgeStyle}`}>
-                        #{String(globalRank).padStart(2, '0')}
-                      </div>
-                      
-                      {/* Photo/Avatar */}
-                      <div className="w-10 h-10 rounded-full bg-slate-850 border border-slate-700/80 overflow-hidden shrink-0 shadow-md">
-                        {player.photo_url ? (
-                          <img src={player.photo_url} className="w-full h-full object-cover" alt="" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-slate-500 bg-slate-900"><User size={16} /></div>
-                        )}
-                      </div>
-                      
-                      {/* Name & Seed Category */}
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-black italic uppercase text-xs sm:text-sm text-white truncate max-w-[150px] sm:max-w-none">{player.player_name}</span>
-                          {globalRank === 1 && <Trophy size={13} className="text-amber-400 shrink-0" />}
-                        </div>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider">{player.category}</span>
-                          <span className="text-slate-800 text-[8px]">•</span>
-                          <span className={`text-[7px] font-black px-1.5 py-0.5 rounded border uppercase tracking-widest ${style.bg} ${style.text} ${style.border}`}>
-                            {player.seed || 'UNSEEDED'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Points Box */}
-                    <div className="text-right shrink-0 flex flex-col items-end justify-center pl-2 border-l border-slate-800/40 min-w-[75px]">
-                      <div className="font-mono font-black text-white text-sm sm:text-base tracking-tighter">
-                        {Number(player.total_points || 0).toLocaleString()}
-                      </div>
-                      <div className="flex items-center justify-end gap-1 mt-0.5">
-                        <span className="text-[7px] font-black text-slate-600 uppercase tracking-widest">Poin</span>
-                        {player.bonus !== undefined && player.bonus !== 0 && (
-                          <span className={`text-[7px] font-black px-1 py-0.5 rounded ${player.bonus > 0 ? 'text-emerald-400 bg-emerald-500/10' : 'text-red-400 bg-red-500/10'}`}>
-                            {player.bonus > 0 ? `+${player.bonus}` : player.bonus}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Expandable Panel for Mobile */}
-                  {isExpanded && (
-                    <div className="mt-2.5 p-4 bg-[#0a101f]/95 rounded-2xl border border-blue-500/20 animate-in slide-in-from-top-3 duration-350 space-y-3.5 shadow-xl">
-                      <div className="grid grid-cols-2 gap-2.5">
-                        <div className="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/80">
-                          <p className="text-[7px] font-black text-slate-500 uppercase tracking-widest">Global Rank</p>
-                          <p className="text-xs font-black italic text-white uppercase mt-0.5">Peringkat #{globalRank}</p>
-                        </div>
-                        <div className="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/80">
-                          <p className="text-[7px] font-black text-slate-500 uppercase tracking-widest">Status Data</p>
-                          <p className="text-xs font-black italic text-emerald-400 uppercase flex items-center gap-1 mt-0.5"><ShieldCheck size={11} /> Live Sync</p>
-                        </div>
-                      </div>
-
-                      <div className="border-t border-slate-800/60 pt-2.5">
-                        <p className="text-[8px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2.5 flex items-center gap-1">
-                          <History size={11} className="text-blue-500" /> Log Aktivitas Terbaru
-                        </p>
-
-                        {loadingHistory ? (
-                          <div className="flex items-center justify-center py-5 gap-2">
-                            <Loader2 className="animate-spin text-blue-500" size={14} />
-                            <span className="text-[8px] font-black text-slate-600 uppercase tracking-wider animate-pulse">Syncing logs...</span>
-                          </div>
-                        ) : playerHistory.length > 0 ? (
-                          <div className="space-y-2">
-                            {playerHistory.map((log) => {
-                              const isGain = log.perubahan > 0;
-                              return (
-                                <div key={log.id} className={`p-2.5 rounded-xl border flex items-center justify-between gap-3 ${isGain ? 'bg-emerald-500/[0.02] border-emerald-500/10' : 'bg-red-500/[0.02] border-red-500/10'}`}>
-                                  <div className="min-w-0 flex-1">
-                                    <div className="text-[7px] font-mono text-slate-500">
-                                      {new Date(log.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                                    </div>
-                                    <p className="text-[9px] font-bold text-slate-300 uppercase truncate mt-0.5">{log.tipe_kegiatan || 'Aktivitas Rutin'}</p>
-                                  </div>
-                                  <div className="text-right shrink-0">
-                                    <div className={`text-xs font-black font-mono ${isGain ? 'text-emerald-400' : 'text-red-400'}`}>{isGain ? '+' : ''}{log.perubahan}</div>
-                                  </div>
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="font-black italic uppercase text-xs sm:text-sm text-white group-hover:text-blue-400 transition-colors truncate">
+                                    {player.player_name}
+                                  </span>
+                                  {globalRank === 1 && <Trophy size={14} className="text-amber-400 shrink-0" />}
                                 </div>
-                              );
-                            })}
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Category & Seed */}
+                          <td className="px-4 py-3 text-center">
+                            <div className="flex items-center justify-center gap-1.5">
+                              <span className={`text-[8px] font-black px-2 py-0.5 rounded border uppercase tracking-wider ${style.bg} ${style.text} ${style.border}`}>
+                                {player.seed || 'UNSEEDED'}
+                              </span>
+                              <span className="text-[8px] text-slate-500 font-bold uppercase">{player.category}</span>
+                            </div>
+                          </td>
+
+                          {/* Base Points */}
+                          <td className="px-4 py-3 text-right font-mono font-bold text-slate-300 text-xs">
+                            {Number(player.poin || 0).toLocaleString()}
+                          </td>
+
+                          {/* Bonus / Mutation */}
+                          <td className="px-4 py-3 text-center">
+                            {player.bonus !== undefined && player.bonus !== 0 ? (
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded text-[9px] font-mono font-bold ${
+                                player.bonus > 0 ? 'text-emerald-400 bg-emerald-500/10' : 'text-red-400 bg-red-500/10'
+                              }`}>
+                                {player.bonus > 0 ? <TrendingUp size={10} className="mr-1" /> : <TrendingDown size={10} className="mr-1" />}
+                                {player.bonus > 0 ? `+${player.bonus}` : player.bonus}
+                              </span>
+                            ) : (
+                              <Minus size={12} className="mx-auto text-slate-700" />
+                            )}
+                          </td>
+
+                          {/* Total Points */}
+                          <td className="px-4 py-3 text-right font-mono font-black text-white text-sm">
+                            {Number(player.total_points || 0).toLocaleString()}
+                          </td>
+
+                          {/* Action Icon */}
+                          <td className="px-4 py-3 text-center">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedPlayer(player);
+                              }}
+                              className="p-1.5 bg-slate-800 hover:bg-blue-600 text-slate-400 hover:text-white rounded-lg transition-all border border-slate-700 hover:border-blue-500 cursor-pointer"
+                              title="Lihat Detail & Riwayat Poin"
+                            >
+                              <Eye size={14} />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* MOBILE CARD LIST VIEW - FULL SCROLLABLE */}
+              <div className="md:hidden divide-y divide-slate-800/40 overflow-y-auto flex-1 min-h-0 custom-scrollbar touch-pan-y">
+                {currentPlayers.map((player) => {
+                  const globalRank = dbRankings.findIndex((p) => p.id === player.id) + 1;
+                  const style = getCategoryStyles(player.seed);
+
+                  return (
+                    <div
+                      key={player.id}
+                      onClick={() => setSelectedPlayer(player)}
+                      className="p-3 flex items-center justify-between gap-3 hover:bg-slate-800/50 transition-all cursor-pointer active:bg-slate-800/80"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                        {/* Rank Badge */}
+                        <div className="w-8 h-8 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0 font-mono font-black italic text-xs text-blue-400 shadow-sm">
+                          #{String(globalRank).padStart(2, '0')}
+                        </div>
+
+                        {/* Photo */}
+                        <div className="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 overflow-hidden shrink-0">
+                          {player.photo_url ? (
+                            <img src={player.photo_url} className="w-full h-full object-cover" alt="" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-slate-600"><User size={16} /></div>
+                          )}
+                        </div>
+
+                        {/* Name & Seed */}
+                        <div className="min-w-0 flex-1">
+                          <p className="font-black italic uppercase text-xs sm:text-sm text-white truncate">{player.player_name}</p>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className={`text-[7px] font-black px-1.5 py-0.2 rounded border uppercase ${style.bg} ${style.text} ${style.border}`}>
+                              {player.seed || 'UNSEEDED'}
+                            </span>
+                            <span className="text-[8px] text-slate-500 font-bold uppercase">{player.category}</span>
                           </div>
-                        ) : (
-                          <div className="text-center py-5 border-2 border-dashed border-slate-800/40 rounded-xl bg-slate-900/10 text-slate-600 font-bold uppercase text-[8px] tracking-widest">Belum ada riwayat aktivitas poin</div>
-                        )}
+                        </div>
+                      </div>
+
+                      {/* Total Points & Action */}
+                      <div className="text-right shrink-0 flex items-center gap-2.5">
+                        <div>
+                          <p className="font-mono font-black text-white text-xs sm:text-sm">
+                            {Number(player.total_points || 0).toLocaleString()}
+                          </p>
+                          <p className="text-[7px] text-slate-500 font-bold uppercase tracking-wider">PTS</p>
+                        </div>
+                        <div className="p-1.5 bg-slate-800 rounded-lg text-blue-400 border border-slate-700">
+                          <Eye size={13} />
+                        </div>
                       </div>
                     </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </>
-      )}
-          
-          {/* Footer Controls */}
-          <div className="p-4 sm:p-6 flex flex-col md:flex-row items-center justify-between border-t border-slate-800 bg-slate-900/80 backdrop-blur-xl gap-4">
-            <button 
-                onClick={() => { fetchRankings(); }} 
-                disabled={loading} 
-                className="w-full md:w-auto flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-400 hover:text-white transition-all text-[9px] sm:text-[10px] font-black uppercase tracking-widest border border-slate-700/80 shrink-0"
-            >
-              <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
-              {loading ? 'Syncing...' : 'Refresh Database'}
-            </button>
-            <div className="w-full md:w-auto flex flex-col sm:flex-row items-center gap-3 sm:gap-6 justify-between md:justify-end">
-              <span className="text-[9px] sm:text-[10px] font-black text-slate-500 uppercase tracking-widest text-center sm:text-left">
-                {currentPlayers.length} of {filteredData.length} Atlet <span className="mx-1 opacity-20">|</span> Hal {currentPage} / {totalPages || 1}
-              </span>
-              <div className="flex gap-2 w-full sm:w-auto justify-center">
-                <button 
-                    disabled={currentPage === 1 || loading} 
-                    onClick={() => { setCurrentPage((c) => c - 1); window.scrollTo({ top: document.getElementById('rankings')?.offsetTop, behavior: 'smooth' }); }} 
-                    className="p-2.5 sm:p-3 bg-slate-800 hover:bg-blue-600 rounded-xl disabled:opacity-10 disabled:hover:bg-slate-800 transition-all border border-slate-700 hover:border-blue-500 text-white"
-                >
-                    <ChevronLeft size={16} />
-                </button>
-                <button 
-                    disabled={currentPage === totalPages || totalPages === 0 || loading} 
-                    onClick={() => { setCurrentPage((c) => c + 1); window.scrollTo({ top: document.getElementById('rankings')?.offsetTop, behavior: 'smooth' }); }} 
-                    className="p-2.5 sm:p-3 bg-slate-800 hover:bg-blue-600 rounded-xl disabled:opacity-10 disabled:hover:bg-slate-800 transition-all border border-slate-700 hover:border-blue-500 text-white"
-                >
-                    <ChevronRight size={16} />
-                </button>
+                  );
+                })}
               </div>
+            </>
+          )}
+
+          {/* FOOTER CONTROLS & COMPLETE PAGINATION */}
+          <div className="p-3 border-t border-slate-800 bg-slate-950/95 backdrop-blur-md flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
+            {/* Info Range & Page Count */}
+            <div className="flex items-center gap-2 text-[10px] sm:text-xs font-bold text-slate-400">
+              <span>
+                Menampilkan <strong className="text-white font-mono">{startItemIndex}-{endItemIndex}</strong> dari <strong className="text-white font-mono">{filteredData.length}</strong> Atlet
+              </span>
+              {itemsPerPage !== 'All' && totalPages > 1 && (
+                <span className="hidden sm:inline text-slate-600">
+                  • Hal <strong className="text-blue-400 font-mono">{currentPage}</strong> / <strong className="text-white font-mono">{totalPages}</strong>
+                </span>
+              )}
+            </div>
+
+            {/* Complete Pagination Buttons */}
+            <div className="flex items-center gap-1 sm:gap-1.5">
+              {/* First Page */}
+              <button
+                disabled={currentPage === 1 || itemsPerPage === 'All' || loading}
+                onClick={() => handlePageChange(1)}
+                className="p-1.5 sm:p-2 bg-slate-800 hover:bg-blue-600 disabled:opacity-20 text-white rounded-lg transition-all border border-slate-700 hover:border-blue-500 cursor-pointer"
+                title="Halaman Pertama"
+              >
+                <ChevronsLeft size={14} />
+              </button>
+
+              {/* Prev Page */}
+              <button
+                disabled={currentPage === 1 || itemsPerPage === 'All' || loading}
+                onClick={() => handlePageChange(currentPage - 1)}
+                className="p-1.5 sm:p-2 bg-slate-800 hover:bg-blue-600 disabled:opacity-20 text-white rounded-lg transition-all border border-slate-700 hover:border-blue-500 cursor-pointer"
+                title="Halaman Sebelumnya"
+              >
+                <ChevronLeft size={14} />
+              </button>
+
+              {/* Page Numbers */}
+              <div className="flex items-center gap-1 px-1">
+                {renderPageNumbers()}
+              </div>
+
+              {/* Next Page */}
+              <button
+                disabled={currentPage === totalPages || itemsPerPage === 'All' || totalPages === 0 || loading}
+                onClick={() => handlePageChange(currentPage + 1)}
+                className="p-1.5 sm:p-2 bg-slate-800 hover:bg-blue-600 disabled:opacity-20 text-white rounded-lg transition-all border border-slate-700 hover:border-blue-500 cursor-pointer"
+                title="Halaman Berikutnya"
+              >
+                <ChevronRight size={14} />
+              </button>
+
+              {/* Last Page */}
+              <button
+                disabled={currentPage === totalPages || itemsPerPage === 'All' || totalPages === 0 || loading}
+                onClick={() => handlePageChange(totalPages)}
+                className="p-1.5 sm:p-2 bg-slate-800 hover:bg-blue-600 disabled:opacity-20 text-white rounded-lg transition-all border border-slate-700 hover:border-blue-500 cursor-pointer"
+                title="Halaman Terakhir"
+              >
+                <ChevronsRight size={14} />
+              </button>
+
+              {/* Refresh Button */}
+              <button
+                onClick={fetchRankings}
+                disabled={loading}
+                className="ml-1 sm:ml-2 p-1.5 sm:p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-all border border-slate-700 hover:border-blue-500 cursor-pointer"
+                title="Segarkan Data"
+              >
+                <RefreshCw size={13} className={loading ? 'animate-spin text-blue-400' : ''} />
+              </button>
             </div>
           </div>
         </div>
       </div>
-      <style>{` 
-        .no-scrollbar::-webkit-scrollbar { display: none; } 
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; } 
+
+      {/* MODAL MATRIX */}
+      <MatrixModal isOpen={isMatrixOpen} onClose={() => setIsMatrixOpen(false)} />
+
+      {/* MODAL PLAYER DETAIL */}
+      {selectedPlayer && (
+        <PlayerDetailModal
+          player={selectedPlayer}
+          globalRank={dbRankings.findIndex((p) => p.id === selectedPlayer.id) + 1}
+          onClose={() => setSelectedPlayer(null)}
+        />
+      )}
+
+      {/* Custom Scrollbar Styles */}
+      <style>{`
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+          height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: rgba(15, 23, 42, 0.6);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(59, 130, 246, 0.3);
+          border-radius: 9999px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgba(59, 130, 246, 0.6);
+        }
         table { border-spacing: 0; }
-        @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
       `}</style>
     </section>
   );

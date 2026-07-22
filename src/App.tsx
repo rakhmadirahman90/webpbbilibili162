@@ -25,6 +25,7 @@ import PublicKasView from './components/PublicKasView';
 import DokumenPenting from './components/DokumenPenting'; 
 import StrukturOrganisasiPublic from './components/StrukturOrganisasiPublic';
 import LandingFeatures from './components/LandingFeatures';
+import JadwalLatihanView from './components/JadwalLatihanView';
 
 // Import Komponen Admin
 import Login from './components/Login';
@@ -535,7 +536,7 @@ export default function App() {
       return;
     }
 
-    const fullPageMenus = ['kas', 'quiz', 'contact', 'kontak', 'struktur', 'struktur-organisasi', 'dokumen-penting', 'register', 'pendaftaran', 'peringkat', 'rankings', 'atlet', 'players', 'tentang-kami', 'about', 'galeri', 'gallery', 'sejarah', 'visi-misi', 'fasilitas', 'berita', 'news'];
+    const fullPageMenus = ['jadwal', 'jadwal-latihan', 'schedule', 'kas', 'quiz', 'contact', 'kontak', 'struktur', 'struktur-organisasi', 'dokumen-penting', 'register', 'pendaftaran', 'peringkat', 'rankings', 'atlet', 'players', 'tentang-kami', 'about', 'galeri', 'gallery', 'sejarah', 'visi-misi', 'fasilitas', 'berita', 'news'];
 
     // Prioritaskan subPath jika ada, karena itu adalah target navigasi sebenarnya
     const target = (subPath || sectionId).toLowerCase();
@@ -742,6 +743,7 @@ export default function App() {
                     >
                       <div className="w-full flex flex-col flex-grow max-w-7xl px-4 md:px-8 mx-auto">
                         {/* Render Komponen dengan Props masing-masing */}
+                        {(activeView === 'jadwal' || activeView === 'jadwal-latihan' || activeView === 'schedule') && <JadwalLatihanView />}
                         {activeView === 'kas' && <PublicKasView />}
                         {(activeView === 'quiz') && <BadmintonQuiz />}
                         {(activeView === 'contact' || activeView === 'kontak') && <Contact />}
@@ -808,6 +810,9 @@ function AdminLayout({ session }: { session: any }) {
             {/* Accessible to both Anggota & Admin */}
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="profil" element={<ProfilAnggota session={session} />} />
+            <Route path="jadwal" element={<div className="p-4 md:p-8 max-w-7xl mx-auto"><JadwalLatihanView /></div>} />
+            <Route path="jadwal-latihan" element={<div className="p-4 md:p-8 max-w-7xl mx-auto"><JadwalLatihanView /></div>} />
+            <Route path="kas" element={isAdmin ? <KasManager /> : <div className="p-4 md:p-8 max-w-7xl mx-auto"><PublicKasView /></div>} />
             <Route path="ranking" element={isAdmin ? <AdminRanking session={session} /> : <div className="p-4 md:p-8 max-w-7xl mx-auto"><Ranking /></div>} />
             <Route path="skor" element={<AdminMatch session={session} />} />
             <Route path="berita" element={isAdmin ? <AdminBerita session={session} /> : <div className="p-4 md:p-8 max-w-7xl mx-auto"><News /></div>} />
@@ -818,7 +823,6 @@ function AdminLayout({ session }: { session: any }) {
             <Route path="pendaftaran" element={isAdmin ? <ManajemenPendaftaran /> : <Navigate to="/admin/dashboard" replace />} />
             <Route path="atlet" element={isAdmin ? <ManajemenAtlet /> : <Navigate to="/admin/dashboard" replace />} />
             <Route path="surat" element={isAdmin ? <KelolaSurat /> : <Navigate to="/admin/dashboard" replace />} />
-            <Route path="kas" element={isAdmin ? <KasManager /> : <Navigate to="/admin/dashboard" replace />} />
             <Route path="poin" element={isAdmin ? <ManajemenPoin /> : <Navigate to="/admin/dashboard" replace />} />
             <Route path="audit-poin" element={isAdmin ? <AuditLogPoin /> : <Navigate to="/admin/dashboard" replace />} />
             <Route path="kontak" element={isAdmin ? <AdminContact /> : <Navigate to="/admin/dashboard" replace />} />

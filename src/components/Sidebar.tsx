@@ -231,8 +231,10 @@ export default function Sidebar({ email, role = 'admin', isOpen, onClose }: Side
     { 
       section: 'Informasi & Kegiatan', 
       items: [
+        { name: 'Jadwal Latihan', path: 'jadwal', icon: Calendar, adminOnly: false },
         { name: 'Peringkat & Poin', path: 'ranking', icon: Trophy, adminOnly: false },
         { name: 'Jadwal & Hasil Skor', path: 'skor', icon: Zap, adminOnly: false }, 
+        { name: 'Kas Club', path: 'kas', icon: Wallet, adminOnly: false },
         { name: 'Berita & Pengumuman', path: 'berita', icon: Newspaper, adminOnly: false },
         { name: 'Galeri Media', path: 'galeri', icon: Image, adminOnly: false },
         { name: 'Dokumen Club', path: 'dokumen', icon: BookOpen, adminOnly: false },
@@ -365,6 +367,9 @@ export default function Sidebar({ email, role = 'admin', isOpen, onClose }: Side
                   <h1 className="text-base sm:text-lg font-bold tracking-tight leading-none group-hover:text-blue-400 transition-colors">
                     PB Bilibili 162
                   </h1>
+                  <span className="text-[7px] sm:text-[8px] font-bold text-slate-400 uppercase tracking-[0.15em] block mt-0.5">
+                    Professional Club
+                  </span>
                   <div className="flex items-center gap-2 mt-0.5">
                     <span className="text-[8px] sm:text-[9px] font-semibold text-blue-400 uppercase tracking-[0.15em]">
                       {role === 'admin' ? 'Dashboard Admin' : 'Dashboard Anggota'}

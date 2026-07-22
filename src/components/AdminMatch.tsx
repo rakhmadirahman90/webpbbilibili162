@@ -552,11 +552,16 @@ const AdminMatch: React.FC<AdminMatchProps> = ({ session }) => {
                       </div>
                     </div>
 
-                    {/* Badge Status Aktif / Akan Datang */}
+                    {/* Badge Status Aktif / Selesai / Akan Datang */}
                     {scheduleInfo.isRabuActive ? (
                       <span className="px-2.5 py-1 rounded-full bg-red-500/20 text-red-400 border border-red-500/40 text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 animate-pulse shadow-lg shadow-red-500/20 shrink-0">
                         <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
                         Aktif
+                      </span>
+                    ) : scheduleInfo.isRabuFinished ? (
+                      <span className="px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700 text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 shrink-0">
+                        <span className="w-2 h-2 rounded-full bg-slate-500" />
+                        Selesai
                       </span>
                     ) : (
                       <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 shrink-0">
@@ -605,11 +610,16 @@ const AdminMatch: React.FC<AdminMatchProps> = ({ session }) => {
                       </div>
                     </div>
 
-                    {/* Badge Status Aktif / Akan Datang */}
+                    {/* Badge Status Aktif / Selesai / Akan Datang */}
                     {scheduleInfo.isJumatActive ? (
                       <span className="px-2.5 py-1 rounded-full bg-red-500/20 text-red-400 border border-red-500/40 text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 animate-pulse shadow-lg shadow-red-500/20 shrink-0">
                         <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
                         Aktif
+                      </span>
+                    ) : scheduleInfo.isJumatFinished ? (
+                      <span className="px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700 text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 shrink-0">
+                        <span className="w-2 h-2 rounded-full bg-slate-500" />
+                        Selesai
                       </span>
                     ) : (
                       <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 shrink-0">
@@ -658,11 +668,16 @@ const AdminMatch: React.FC<AdminMatchProps> = ({ session }) => {
                       </div>
                     </div>
 
-                    {/* Badge Status Aktif / Akan Datang */}
+                    {/* Badge Status Aktif / Selesai / Akan Datang */}
                     {scheduleInfo.isAhadActive ? (
                       <span className="px-2.5 py-1 rounded-full bg-red-500/20 text-red-400 border border-red-500/40 text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 animate-pulse shadow-lg shadow-red-500/20 shrink-0">
                         <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
                         Aktif
+                      </span>
+                    ) : scheduleInfo.isAhadFinished ? (
+                      <span className="px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700 text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 shrink-0">
+                        <span className="w-2 h-2 rounded-full bg-slate-500" />
+                        Selesai
                       </span>
                     ) : (
                       <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 shrink-0">

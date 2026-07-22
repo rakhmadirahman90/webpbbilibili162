@@ -30,7 +30,17 @@ export default function ScheduleWidget() {
     const timer = setInterval(() => {
       setScheduleInfo(computeScheduleInfo());
     }, 1000);
-    return () => clearInterval(timer);
+
+    const handleOpenSchedule = () => {
+      setShowSchedulePopup(true);
+    };
+
+    window.addEventListener('pb-open-schedule', handleOpenSchedule);
+
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener('pb-open-schedule', handleOpenSchedule);
+    };
   }, []);
 
   return (
@@ -63,6 +73,10 @@ export default function ScheduleWidget() {
                     <span className="px-1.5 py-0.2 rounded bg-red-500/20 text-red-400 border border-red-500/40 text-[8px] font-black uppercase animate-pulse">
                       LIVE
                     </span>
+                  ) : scheduleInfo.isTodayFinished ? (
+                    <span className="px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[8px] font-black uppercase">
+                      SELESAI HARI INI
+                    </span>
                   ) : (
                     <span className="px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-300 border border-blue-500/40 text-[8px] font-black uppercase">
                       COUNTDOWN
@@ -70,7 +84,11 @@ export default function ScheduleWidget() {
                   )}
                 </h4>
                 <p className="text-[9px] text-slate-400">
-                  {scheduleInfo.isOngoing ? 'Sesi sedang berlangsung!' : `Berikutnya: Hari ${scheduleInfo.nextSessionDay}`}
+                  {scheduleInfo.isOngoing
+                    ? 'Sesi sedang berlangsung!'
+                    : scheduleInfo.isTodayFinished
+                    ? `Sesi hari ini selesai. Menuju: Hari ${scheduleInfo.nextSessionDay}`
+                    : `Berikutnya: Hari ${scheduleInfo.nextSessionDay}`}
                 </p>
               </div>
             </div>
@@ -90,7 +108,13 @@ export default function ScheduleWidget() {
           <div className="bg-slate-950/80 p-2.5 rounded-2xl border border-amber-500/20 mb-3 text-center relative z-10">
             <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center justify-center gap-1">
               <Radio size={10} className="text-amber-400 animate-pulse" />
-              <span>{scheduleInfo.isOngoing ? scheduleInfo.activeSessionName : scheduleInfo.nextSessionName}</span>
+              <span>
+                {scheduleInfo.isOngoing
+                  ? scheduleInfo.activeSessionName
+                  : scheduleInfo.isTodayFinished
+                  ? `Sesi Hari Ini Selesai • Next: ${scheduleInfo.nextSessionName}`
+                  : scheduleInfo.nextSessionName}
+              </span>
             </div>
 
             <div className="flex items-center justify-center gap-1.5">
@@ -134,6 +158,11 @@ export default function ScheduleWidget() {
                   <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" />
                   Aktif
                 </span>
+              ) : scheduleInfo.isRabuFinished ? (
+                <span className="px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700 text-[8px] font-black uppercase tracking-wide flex items-center gap-1 shrink-0">
+                  <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                  Selesai
+                </span>
               ) : (
                 <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[8px] font-black uppercase tracking-wide flex items-center gap-1 shrink-0">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
@@ -158,6 +187,11 @@ export default function ScheduleWidget() {
                   <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" />
                   Aktif
                 </span>
+              ) : scheduleInfo.isJumatFinished ? (
+                <span className="px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700 text-[8px] font-black uppercase tracking-wide flex items-center gap-1 shrink-0">
+                  <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                  Selesai
+                </span>
               ) : (
                 <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[8px] font-black uppercase tracking-wide flex items-center gap-1 shrink-0">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
@@ -181,6 +215,11 @@ export default function ScheduleWidget() {
                 <span className="px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/40 text-[8px] font-black uppercase tracking-wide flex items-center gap-1 shrink-0 animate-pulse">
                   <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" />
                   Aktif
+                </span>
+              ) : scheduleInfo.isAhadFinished ? (
+                <span className="px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700 text-[8px] font-black uppercase tracking-wide flex items-center gap-1 shrink-0">
+                  <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                  Selesai
                 </span>
               ) : (
                 <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[8px] font-black uppercase tracking-wide flex items-center gap-1 shrink-0">
