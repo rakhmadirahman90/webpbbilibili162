@@ -500,18 +500,6 @@ export default function Login() {
             )}
           </button>
         </form>
-
-        {/* Kembali ke Beranda Link */}
-        <div className="mt-3 sm:mt-4 pt-2.5 border-t border-white/5 text-center shrink-0">
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-bold text-slate-400 hover:text-blue-400 transition-colors cursor-pointer py-0.5 px-2 group"
-          >
-            <Home size={13} className="text-blue-400 group-hover:scale-110 transition-transform" />
-            <span>Kembali ke Beranda Utama</span>
-          </button>
-        </div>
       </motion.div>
     </div>
   );
