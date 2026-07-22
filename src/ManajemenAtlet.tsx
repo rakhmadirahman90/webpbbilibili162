@@ -4,6 +4,7 @@ import { supabase } from './supabase';
 import Swal from 'sweetalert2';
 import { Registrant } from './types';
 import AthleteProfileModal from './components/AthleteProfileModal';
+import { motion } from 'framer-motion';
 import {
   Search,
   User,
@@ -414,30 +415,30 @@ export default function ManajemenAtlet() {
   const totalPages = Math.ceil(filteredAtlets.length / itemsPerPage);
 
   return (
-    <div className="min-h-screen lg:h-screen flex flex-col bg-[#f8fafc] font-sans relative overflow-y-auto lg:overflow-hidden pb-16 lg:pb-0">
+    <div className="min-h-full flex flex-col bg-[#f8fafc] font-sans pb-24 lg:pb-6">
       {/* HEADER SECTION */}
-      <div className="flex-shrink-0 p-4 md:p-8 pb-4">
+      <div className="flex-shrink-0 p-3 md:p-8 pb-3 bg-white border-b border-slate-100">
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-8">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-3 mb-4">
             <div>
-              <div className="flex items-center gap-2 mb-2">
-                <Sparkles size={18} className="text-blue-600 animate-pulse" />
+              <div className="flex items-center gap-2 mb-1">
+                <Sparkles size={16} className="text-blue-600 animate-pulse" />
                 <p className="text-slate-400 text-[10px] font-black tracking-[0.3em] uppercase">
                   Pro Database System
                 </p>
               </div>
-              <h1 className="text-4xl font-black text-slate-900 italic uppercase tracking-tighter">
+              <h1 className="text-3xl font-black text-slate-900 italic uppercase tracking-tighter">
                 Manajemen <span className="text-blue-600">Atlet</span>
               </h1>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full md:w-auto">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
               <button
                 onClick={() => setIsAddModalOpen(true)}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-[1.5rem] shadow-xl shadow-blue-200 flex items-center justify-center gap-3 transition-all active:scale-95 group w-full sm:w-auto"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl shadow-xl shadow-blue-200 flex items-center justify-center gap-2 transition-all active:scale-95 group w-full sm:w-auto"
               >
                 <Plus
-                  size={20}
+                  size={18}
                   className="group-hover:rotate-90 transition-transform"
                 />
                 <span className="font-black uppercase text-xs tracking-widest">
@@ -445,21 +446,21 @@ export default function ManajemenAtlet() {
                 </span>
               </button>
 
-              <div className="bg-white px-8 py-4 rounded-[2rem] shadow-xl shadow-blue-900/5 border border-slate-100 flex items-center justify-around sm:justify-center gap-6">
+              <div className="bg-slate-50 px-6 py-3 rounded-2xl border border-slate-100 flex items-center justify-around sm:justify-center gap-4">
                 <div className="text-center">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
                     Total
                   </p>
-                  <p className="text-2xl font-black text-slate-900 leading-none">
+                  <p className="text-xl font-black text-slate-900 leading-none">
                     {atlets.length}
                   </p>
                 </div>
-                <div className="w-[1px] h-10 bg-slate-100"></div>
+                <div className="w-[1px] h-8 bg-slate-200"></div>
                 <div className="text-center">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
                     Top Tier
                   </p>
-                  <p className="text-2xl font-black text-blue-600 leading-none">
+                  <p className="text-xl font-black text-blue-600 leading-none">
                     {atlets.filter((a) => a.rank <= 10 && a.rank > 0).length}
                   </p>
                 </div>
@@ -469,13 +470,13 @@ export default function ManajemenAtlet() {
 
           <div className="relative group">
             <Search
-              className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-600 transition-colors"
-              size={22}
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-600 transition-colors"
+              size={18}
             />
             <input
               type="text"
               placeholder="CARI NAMA ATLET..."
-              className="w-full pl-14 pr-8 py-5 bg-white rounded-[2rem] border-none shadow-sm focus:ring-4 focus:ring-blue-100 transition-all font-black uppercase text-sm tracking-widest placeholder:text-slate-300"
+              className="w-full pl-12 pr-6 py-3.5 bg-slate-50 rounded-2xl border border-slate-200 shadow-sm focus:ring-4 focus:ring-blue-100 transition-all font-black uppercase text-xs tracking-widest placeholder:text-slate-300 outline-none"
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
@@ -483,9 +484,9 @@ export default function ManajemenAtlet() {
       </div>
 
       {/* MAIN LIST SECTION */}
-      <div className="flex-1 lg:overflow-y-auto px-4 md:px-8 pb-32">
-        <div className="max-w-7xl mx-auto pt-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="flex-1 px-3 md:px-8 py-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {loading ? (
               <div className="col-span-full py-32 text-center">
                 <Loader2
@@ -497,13 +498,16 @@ export default function ManajemenAtlet() {
                 </p>
               </div>
             ) : currentItems.length > 0 ? (
-              currentItems.map((atlet) => (
-                <div
+              currentItems.map((atlet, index) => (
+                <motion.div
                   key={atlet.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.35, delay: index * 0.04 }}
                   onClick={() => setSelectedAtlet(atlet)}
-                  className="bg-white p-4 rounded-[2.5rem] shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all cursor-pointer group border border-slate-100 relative overflow-hidden"
+                  className="bg-white p-4 rounded-[2rem] shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all cursor-pointer group border border-slate-100 relative overflow-hidden"
                 >
-                  <div className="relative aspect-[4/5] rounded-[2rem] overflow-hidden mb-5 bg-slate-100 shadow-inner">
+                  <div className="relative aspect-[4/5] rounded-[1.5rem] overflow-hidden mb-4 bg-slate-100 shadow-inner">
                     {atlet.foto_url ? (
                       <img
                         src={atlet.foto_url}
@@ -512,26 +516,26 @@ export default function ManajemenAtlet() {
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-slate-200">
-                        <User className="text-slate-400" size={60} />
+                        <User className="text-slate-400" size={50} />
                       </div>
                     )}
-                    <div className="absolute top-4 left-4 bg-black/70 backdrop-blur-xl text-white text-[9px] font-black px-4 py-1.5 rounded-full border border-white/20 uppercase">
+                    <div className="absolute top-3 left-3 bg-black/70 backdrop-blur-xl text-white text-[8px] font-black px-3 py-1 rounded-full border border-white/20 uppercase">
                       #{atlet.rank > 0 ? atlet.rank : '??'} GLOBAL
                     </div>
                   </div>
-                  <div className="px-2">
-                    <p className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] mb-1">
+                  <div className="px-1">
+                    <p className="text-[9px] font-black text-blue-600 uppercase tracking-[0.2em] mb-0.5">
                       {atlet.kategori}
                     </p>
-                    <h3 className="text-lg font-black text-slate-900 uppercase italic truncate mb-4">
+                    <h3 className="text-base font-black text-slate-900 uppercase italic truncate mb-3">
                       {atlet.nama}
                     </h3>
-                    <div className="flex justify-between items-center bg-slate-50 p-3 rounded-2xl">
+                    <div className="flex justify-between items-center bg-slate-50 p-2.5 rounded-xl">
                       <div>
                         <p className="text-[8px] font-black text-slate-400 uppercase">
                           Points
                         </p>
-                        <p className="text-sm font-black text-slate-900">
+                        <p className="text-xs font-black text-slate-900">
                           {atlet.points.toLocaleString()}
                         </p>
                       </div>
@@ -539,13 +543,13 @@ export default function ManajemenAtlet() {
                         <p className="text-[8px] font-black text-slate-400 uppercase">
                           Seed
                         </p>
-                        <p className="text-[10px] font-black text-emerald-600 italic uppercase">
+                        <p className="text-[9px] font-black text-emerald-600 italic uppercase">
                           {atlet.seed}
                         </p>
                       </div>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               ))
             ) : (
               <div className="col-span-full py-32 text-center text-slate-400 font-bold uppercase tracking-widest">
@@ -557,7 +561,7 @@ export default function ManajemenAtlet() {
       </div>
 
       {/* FOOTER PAGINATION */}
-      <div className="fixed lg:absolute bottom-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-t border-slate-100 p-4 z-50">
+      <div className="fixed lg:relative bottom-16 lg:bottom-0 left-0 right-0 bg-white border-t border-slate-100 p-3 md:p-4 z-20">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest hidden md:block">
             Halaman {currentPage} dari {totalPages}

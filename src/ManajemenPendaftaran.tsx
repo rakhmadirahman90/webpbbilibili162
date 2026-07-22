@@ -393,8 +393,8 @@ const totalSeniorPutri = registrants.filter(r =>
   }
 };
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans pb-20">
-      <div className="max-w-[1400px] mx-auto px-4 py-4 md:px-8">
+    <div className="min-h-full flex flex-col bg-slate-50 text-slate-900 font-sans pb-24 lg:pb-6">
+      <div className="flex-1 flex flex-col max-w-[1400px] w-full mx-auto px-3 py-3 md:px-8 md:py-6">
         
         {/* HEADER */}
         <header className="flex flex-col lg:flex-row justify-between items-center gap-4 mb-6">
@@ -513,12 +513,12 @@ const totalSeniorPutri = registrants.filter(r =>
         </section>
 
         {/* TABLE SECTION (RESPONSIVE NO SCROLL ON DESKTOP) */}
-        <section className="bg-white rounded-[2rem] border border-slate-100 shadow-xl overflow-hidden mb-6">
+        <section className="bg-white rounded-[1.5rem] md:rounded-[2rem] border border-slate-100 shadow-xl overflow-hidden mb-4">
           {/* DESKTOP TABLE VIEW */}
-          <div className="hidden lg:block overflow-x-auto">
+          <div className="hidden lg:block overflow-x-auto flex-1">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="bg-slate-900 text-white whitespace-nowrap">
+                <tr className="bg-slate-900 text-white whitespace-nowrap sticky top-0 z-10">
                   <th className="px-3 py-4 font-bold uppercase text-[9px] tracking-widest text-center w-10">No</th>
                   <th className="px-3 py-4 font-bold uppercase text-[9px] tracking-widest">Profil Atlet</th>
                   <th className="px-2 py-4 font-bold uppercase text-[9px] tracking-widest">Gender</th>
@@ -635,7 +635,7 @@ const totalSeniorPutri = registrants.filter(r =>
               </div>
             ) : (
               currentItems.map((item, index) => (
-                <div key={item.id} className="p-5 flex flex-col gap-4 hover:bg-blue-50/20 transition-all duration-200">
+                <div key={item.id} className="p-4 flex flex-col gap-3 hover:bg-blue-50/20 transition-all duration-200">
                   <div className="flex justify-between items-center">
                     <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-1 rounded-md">
                       #{String((currentPage - 1) * itemsPerPage + index + 1).padStart(2, '0')}
@@ -650,52 +650,52 @@ const totalSeniorPutri = registrants.filter(r =>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3">
                     <div 
                       onClick={() => item.foto_url && setPreviewImage(item.foto_url)}
-                      className="w-14 h-14 rounded-xl bg-slate-200 border border-slate-100 shadow-sm overflow-hidden flex-shrink-0 cursor-zoom-in"
+                      className="w-12 h-12 rounded-xl bg-slate-200 border border-slate-100 shadow-sm overflow-hidden flex-shrink-0 cursor-zoom-in"
                     >
                       {item.foto_url ? (
                         <img src={item.foto_url} className="w-full h-full object-cover object-top" alt={item.nama} />
                       ) : (
-                        <User className="m-auto mt-2 text-slate-400" size={28} />
+                        <User className="m-auto mt-2 text-slate-400" size={24} />
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-black text-slate-800 text-sm uppercase leading-tight truncate">{item.nama || 'No Name'}</h4>
-                      <p className="text-[10px] font-bold text-slate-500 mt-0.5 uppercase tracking-wider">{item.kategori || '-'}</p>
-                      <div className="inline-flex items-center gap-1 mt-1 text-slate-400 uppercase text-[9px] font-bold">
-                        <MapPin size={10} className="text-rose-500 shrink-0" /> {item.domisili || '-'}
+                      <h4 className="font-black text-slate-800 text-xs uppercase leading-tight truncate">{item.nama || 'No Name'}</h4>
+                      <p className="text-[9px] font-bold text-slate-500 mt-0.5 uppercase tracking-wider">{item.kategori || '-'}</p>
+                      <div className="inline-flex items-center gap-1 mt-0.5 text-slate-400 uppercase text-[8px] font-bold">
+                        <MapPin size={9} className="text-rose-500 shrink-0" /> {item.domisili || '-'}
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-1.5 pt-2 border-t border-slate-100 text-[10px]">
+                  <div className="flex flex-col gap-1 pt-1.5 border-t border-slate-100 text-[10px]">
                     <div className="flex justify-between items-center">
-                      <span className="text-slate-400 font-bold uppercase tracking-wider">Kontak WhatsApp</span>
+                      <span className="text-slate-400 font-bold uppercase tracking-wider text-[9px]">WhatsApp</span>
                       <a href={`https://wa.me/${(item.whatsapp || '').replace(/\D/g, '')}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-bold text-slate-600 hover:text-green-600 transition-colors">
                         <Phone size={10} className="text-green-500" /> {item.whatsapp || '-'}
                       </a>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-slate-400 font-bold uppercase tracking-wider">Tanggal Daftar</span>
+                      <span className="text-slate-400 font-bold uppercase tracking-wider text-[9px]">Tanggal</span>
                       <span className="text-slate-600 font-bold">{new Date(item.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
                     </div>
                   </div>
 
-                  {/* ACTION BUTTONS selalu accessible di mobile */}
-                  <div className="flex justify-end gap-2 pt-3 border-t border-dashed border-slate-100">
+                  {/* ACTION BUTTONS */}
+                  <div className="flex justify-end gap-2 pt-2 border-t border-dashed border-slate-100">
                     <button 
                       onClick={() => { setEditingItem(item); setIsEditModalOpen(true); }} 
-                      className="flex-1 max-w-[120px] py-2 bg-blue-50 hover:bg-blue-600 text-blue-600 hover:text-white rounded-xl transition-all font-bold text-[10px] uppercase tracking-widest border border-blue-100 flex items-center justify-center gap-1.5"
+                      className="flex-1 py-1.5 bg-blue-50 hover:bg-blue-600 text-blue-600 hover:text-white rounded-lg transition-all font-bold text-[9px] uppercase tracking-widest border border-blue-100 flex items-center justify-center gap-1"
                     >
-                      <Edit3 size={12} /> Edit
+                      <Edit3 size={11} /> Edit
                     </button>
                     <button 
                       onClick={() => handleDelete(item.id, item.nama, item.foto_url)} 
-                      className="flex-1 max-w-[120px] py-2 bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white rounded-xl transition-all font-bold text-[10px] uppercase tracking-widest border border-rose-100 flex items-center justify-center gap-1.5"
+                      className="flex-1 py-1.5 bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white rounded-lg transition-all font-bold text-[9px] uppercase tracking-widest border border-rose-100 flex items-center justify-center gap-1"
                     >
-                      <Trash2 size={12} /> Hapus
+                      <Trash2 size={11} /> Hapus
                     </button>
                   </div>
                 </div>

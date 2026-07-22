@@ -310,12 +310,9 @@ export default function ManajemenPoin() {
   );
 
   return (
-    <div className="p-8 bg-[#070d1a] min-h-screen text-white font-sans relative overflow-hidden">
-      {/* Visual Background */}
-      <div className="absolute top-0 left-0 w-96 h-96 bg-blue-600/5 blur-[120px] rounded-full -z-10" />
-
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row justify-between items-start gap-6 mb-12">
+    <div className="h-full flex flex-col bg-[#070d1a] text-white font-sans relative overflow-hidden">
+      <div className="flex-1 overflow-y-auto p-3 md:p-8 custom-scrollbar">
+        <div className="max-w-6xl mx-auto">
         <div>
           <div className="flex items-center gap-2 mb-2">
             <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse" />
@@ -564,5 +561,6 @@ export default function ManajemenPoin() {
         </div>
       </div>
     </div>
+  </div>
   );
 }

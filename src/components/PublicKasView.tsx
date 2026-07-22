@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
+import Swal from 'sweetalert2';
 import { 
   Wallet, FileText, Loader2, ArrowUpCircle, ArrowDownCircle, Calendar,
   ChevronLeft, ChevronRight, Search, Info, TrendingUp, TrendingDown,
@@ -91,6 +92,22 @@ export default function PublicKasView() {
     return acc;
   }, { masuk: 0, keluar: 0 });
 
+  const normalizedAll = kasData.map(item => ({
+    ...item,
+    jenis_transaksi: (DAFTAR_PEMASUKAN.includes(item.kategori) ? 'Masuk' : item.jenis_transaksi) as 'Masuk' | 'Keluar'
+  }));
+
+  const saldoSebelumnya = normalizedAll
+    .filter(item => item.tanggal_transaksi < startDate)
+    .reduce((acc, curr) => curr.jenis_transaksi === 'Masuk' ? acc + curr.jumlah_bayar : acc - curr.jumlah_bayar, 0);
+
+  const saldoAkhirPeriode = normalizedAll
+    .filter(item => item.tanggal_transaksi <= endDate)
+    .reduce((acc, curr) => curr.jenis_transaksi === 'Masuk' ? acc + curr.jumlah_bayar : acc - curr.jumlah_bayar, 0);
+
+  const modalTetap = 600000;
+  const saldoBendahara = saldoAkhirPeriode - modalTetap;
+
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
   const currentItems = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
@@ -100,12 +117,37 @@ export default function PublicKasView() {
       img.crossOrigin = "anonymous"; 
       img.src = url;
       img.onload = () => {
+        const MAX_SIZE = 150;
+        let w = img.width;
+        let h = img.height;
+        if (w > MAX_SIZE || h > MAX_SIZE) {
+          if (w > h) {
+            h = Math.round((h * MAX_SIZE) / w);
+            w = MAX_SIZE;
+          } else {
+            w = Math.round((w * MAX_SIZE) / h);
+            h = MAX_SIZE;
+          }
+        }
         const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
+        canvas.width = w;
+        canvas.height = h;
         const ctx = canvas.getContext('2d');
         if (ctx) {
-          ctx.drawImage(img, 0, 0);
+          ctx.drawImage(img, 0, 0, w, h);
+          if (!url.toLowerCase().endsWith('.svg')) {
+            const imgData = ctx.getImageData(0, 0, w, h);
+            const data = imgData.data;
+            for (let i = 0; i < data.length; i += 4) {
+              const r = data[i];
+              const g = data[i + 1];
+              const b = data[i + 2];
+              if (r > 240 && g > 240 && b > 240) {
+                data[i + 3] = 0;
+              }
+            }
+            ctx.putImageData(imgData, 0, 0);
+          }
           resolve(canvas.toDataURL('image/png'));
         } else reject(new Error("Gagal"));
       };
@@ -116,11 +158,22 @@ export default function PublicKasView() {
   // --- PERBAIKAN EXPORT PDF AGAR SAMA DENGAN ADMIN ---
   const exportToPDF = async () => {
     try {
-      const doc = new jsPDF('p', 'mm', 'a4');
-      
-      // 1. Header & Logo
+      const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4', compress: true });
+      const locationDate = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+      const fullDateStr = new Date().toLocaleString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+      // 1. Header & Logo (Ambil logo resmi dari database site_settings jika ada)
+      let logoUrl = PB_LOGO_URL;
       try {
-        const logo = await getTransparentImageData(PB_LOGO_URL);
+        const { data: brandingData } = await supabase.from('site_settings').select('value').eq('key', 'navbar_branding').maybeSingle();
+        if (brandingData && brandingData.value) {
+          const val = typeof brandingData.value === 'string' ? JSON.parse(brandingData.value) : brandingData.value;
+          if (val.logo_url) logoUrl = val.logo_url;
+        }
+      } catch (err) {}
+
+      try {
+        const logo = await getTransparentImageData(logoUrl);
         doc.addImage(logo, 'PNG', 15, 12, 22, 22);
       } catch (e) {}
 
@@ -159,49 +212,207 @@ export default function PublicKasView() {
           5: { halign: 'right', fontStyle: 'bold' } 
         },
         styles: { fontSize: 8, cellPadding: 3, valign: 'middle' },
-        alternateRowStyles: { fillColor: [248, 250, 252] }
+        alternateRowStyles: { fillColor: [248, 250, 252] },
+        margin: { bottom: 65 }
       });
 
-      // 4. Ringkasan Keuangan (Kanan Bawah)
-      const finalY = (doc as any).lastAutoTable.finalY + 10;
+      // Hitung Saldo Kas Sebelumnya & Saldo Akhir
+      const normalizedAll = kasData.map(item => ({
+        ...item,
+        jenis_transaksi: (DAFTAR_PEMASUKAN.includes(item.kategori) ? 'Masuk' : item.jenis_transaksi) as 'Masuk' | 'Keluar'
+      }));
+
+      const saldoSebelumnya = normalizedAll
+        .filter(item => item.tanggal_transaksi < startDate)
+        .reduce((acc, curr) => curr.jenis_transaksi === 'Masuk' ? acc + curr.jumlah_bayar : acc - curr.jumlah_bayar, 0);
+
+      const saldoAkhirPeriode = normalizedAll
+        .filter(item => item.tanggal_transaksi <= endDate)
+        .reduce((acc, curr) => curr.jenis_transaksi === 'Masuk' ? acc + curr.jumlah_bayar : acc - curr.jumlah_bayar, 0);
+
+      // 4. Ringkasan Keuangan
+      let finalY = (doc as any).lastAutoTable.finalY + 10;
+      const pageHeight = doc.internal.pageSize.height;
+      if (finalY > pageHeight - 75) {
+        doc.addPage();
+        finalY = 20;
+      }
+
+      const modalTetap = 600000;
+      const saldoBendahara = saldoAkhirPeriode - modalTetap;
+
+      doc.setDrawColor(230).setFillColor(248, 250, 252).roundedRect(100, finalY, 95, 48, 2, 2, 'FD');
       
-      // Kotak Ringkasan
-      doc.setDrawColor(240).setFillColor(248, 250, 252).roundedRect(120, finalY, 75, 28, 3, 3, 'FD');
-      
-      doc.setFontSize(9).setFont("helvetica", "bold").setTextColor(100);
-      doc.text('Total Pemasukan:', 125, finalY + 8);
+      doc.setFontSize(8.5).setFont("helvetica", "bold").setTextColor(100);
+      doc.text('Saldo Kas Sebelumnya:', 105, finalY + 6);
+      doc.setTextColor(100).text(`Rp ${saldoSebelumnya.toLocaleString()}`, 190, finalY + 6, { align: 'right' });
+
+      doc.text('Total Pemasukan:', 105, finalY + 12);
       doc.setTextColor(16, 185, 129);
-      doc.text(`Rp ${stats.masuk.toLocaleString()}`, 190, finalY + 8, { align: 'right' });
+      doc.text(`Rp ${stats.masuk.toLocaleString()}`, 190, finalY + 12, { align: 'right' });
 
       doc.setTextColor(100);
-      doc.text('Total Pengeluaran:', 125, finalY + 15);
+      doc.text('Total Pengeluaran:', 105, finalY + 18);
       doc.setTextColor(225, 29, 72);
-      doc.text(`Rp ${stats.keluar.toLocaleString()}`, 190, finalY + 15, { align: 'right' });
+      doc.text(`Rp ${stats.keluar.toLocaleString()}`, 190, finalY + 18, { align: 'right' });
 
-      doc.setDrawColor(230).line(125, finalY + 19, 190, finalY + 19);
+      doc.setDrawColor(230).line(105, finalY + 21, 190, finalY + 21);
 
       doc.setTextColor(30, 64, 175);
-      doc.text('Saldo Akhir Kas:', 125, finalY + 24);
-      doc.text(`Rp ${saldoGlobalTerkini.toLocaleString()}`, 190, finalY + 24, { align: 'right' });
+      doc.text('Saldo Akhir Kas:', 105, finalY + 27);
+      doc.text(`Rp ${saldoAkhirPeriode.toLocaleString()}`, 190, finalY + 27, { align: 'right' });
+
+      doc.setFontSize(8).setFont("helvetica", "normal").setTextColor(100);
+      doc.text(`• Modal Kas Tetap Pemegang Bola:`, 105, finalY + 34);
+      doc.text(`Rp 600.000`, 190, finalY + 34, { align: 'right' });
+
+      doc.text(`• Saldo Kas Bendahara:`, 105, finalY + 41);
+      doc.setFont("helvetica", "bold").setTextColor(30, 64, 175);
+      doc.text(`Rp ${saldoBendahara.toLocaleString()}`, 190, finalY + 41, { align: 'right' });
 
       // 5. Tanda Tangan
-      const signY = finalY + 45;
+      const signY = finalY + 56;
       doc.setTextColor(40).setFontSize(9);
-      doc.text(`Parepare, ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`, 195, signY - 10, { align: 'right' });
+      doc.text(`Parepare, ${locationDate}`, 155, signY - 5); 
       
       doc.setFont("helvetica", "bold");
       doc.text('Mengetahui,', 15, signY);
-      doc.text('Ketua PB. Bili Bili 162', 15, signY + 5);
+      doc.text('Ketua PB. Bili Bili 162', 15, signY + 6);
+      doc.text('H. WAWAN', 15, signY + 30);
+      doc.line(15, signY + 31, 60, signY + 31);
       
-      doc.text('Bendahara Umum,', 195, signY + 5, { align: 'right' });
+      doc.text('Bendahara Umum,', 155, signY + 6);
+      doc.text('MUH. NUR', 155, signY + 30);
+      doc.line(155, signY + 31, 195, signY + 31);
 
-      doc.text('H. WAWAN', 15, signY + 35);
-      doc.line(15, signY + 36, 60, signY + 36);
-      
-      doc.text('MUH. NUR', 195, signY + 35, { align: 'right' });
-      doc.line(150, signY + 36, 195, signY + 36);
+      doc.setFontSize(8).setFont("helvetica", "italic").setTextColor(180);
+      doc.text(`* Dokumen ini digenerate secara otomatis melalui Treasury Master System pada ${fullDateStr}`, 15, 285);
 
-      doc.save(`LPJ_KAS_PB162_${startDate}_TO_${endDate}.pdf`);
+      const pdfBlob = doc.output('blob');
+      const fileName = `LPJ_KAS_PB162_${startDate}_TO_${endDate}.pdf`;
+      const localPdfUrl = URL.createObjectURL(pdfBlob);
+
+      const defaultMessage = `*LAPORAN PERTANGGUNGJAWABAN KAS - PB BILIBILI 162*\n\n` +
+        `Periode: *${startDate} s/d ${endDate}*\n\n` +
+        `• Saldo Sebelumnya: Rp ${saldoSebelumnya.toLocaleString()}\n` +
+        `• Total Pemasukan: Rp ${stats.masuk.toLocaleString()}\n` +
+        `• Total Pengeluaran: Rp ${stats.keluar.toLocaleString()}\n` +
+        `• *Saldo Akhir Kas: Rp ${saldoAkhirPeriode.toLocaleString()}*\n` +
+        `  - Modal Kas Tetap Pemegang Bola: Rp 600.000\n` +
+        `  - Saldo Kas Bendahara: Rp ${saldoBendahara.toLocaleString()}\n\n` +
+        `Laporan keuangan lengkap terlampir dalam file PDF.\n\n` +
+        `*Admin PB Bilibili 162*`;
+
+      const { value: actionType } = await Swal.fire({
+        title: '📱 Preview & Kirim PDF Kas ke WhatsApp',
+        html: `
+          <div class="text-left text-xs space-y-3 font-sans">
+            <div class="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl space-y-2">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="font-bold text-emerald-600 dark:text-emerald-400">PDF Terkompresi & Teks Siap Dikirim!</p>
+                  <p class="text-[10px] text-slate-500 dark:text-slate-400">Gunakan tombol <b>"Bagikan File PDF + Teks"</b> atau unduh dokumen.</p>
+                </div>
+                <div class="flex gap-1.5">
+                  <a href="${localPdfUrl}" target="_blank" class="px-2.5 py-1.5 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-bold text-[10px] flex items-center gap-1 transition-all cursor-pointer">
+                    👁️ Lihat
+                  </a>
+                  <a href="${localPdfUrl}" download="${fileName}" class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold text-[10px] flex items-center gap-1 transition-all cursor-pointer">
+                    📥 Unduh
+                  </a>
+                </div>
+              </div>
+            </div>
+            <div>
+              <label class="font-black text-slate-400 uppercase tracking-wider block mb-1">Nomor WhatsApp Tujuan (Opsional)</label>
+              <input id="swal-wa-number" class="swal2-input !m-0 !w-full !text-xs !rounded-xl !bg-slate-100 !text-slate-900 !font-bold" placeholder="Contoh: 08123456789 atau 62812...">
+            </div>
+            <div>
+              <label class="font-black text-slate-400 uppercase tracking-wider block mb-1">Pesan Teks Pengantar</label>
+              <textarea id="swal-wa-message" class="swal2-textarea !m-0 !w-full !text-xs !h-32 !rounded-xl !bg-slate-100 !text-slate-900">${defaultMessage}</textarea>
+            </div>
+          </div>
+        `,
+        focusConfirm: false,
+        showDenyButton: true,
+        showCancelButton: true,
+        confirmButtonText: '📤 Bagikan File PDF + Teks',
+        denyButtonText: '💬 Buka WhatsApp (Teks Saja)',
+        cancelButtonText: 'Batal',
+        confirmButtonColor: '#25D366',
+        denyButtonColor: '#3B82F6',
+        preConfirm: () => {
+          return {
+            type: 'share',
+            phone: (document.getElementById('swal-wa-number') as HTMLInputElement)?.value || '',
+            message: (document.getElementById('swal-wa-message') as HTMLTextAreaElement)?.value || defaultMessage
+          };
+        },
+        preDeny: () => {
+          return {
+            type: 'wa',
+            phone: (document.getElementById('swal-wa-number') as HTMLInputElement)?.value || '',
+            message: (document.getElementById('swal-wa-message') as HTMLTextAreaElement)?.value || defaultMessage
+          };
+        }
+      });
+
+      if (actionType) {
+        const phoneInput = (actionType as any).phone || '';
+        const msgInput = (actionType as any).message || defaultMessage;
+
+        if ((actionType as any).type === 'share') {
+          try {
+            await navigator.clipboard.writeText(msgInput);
+          } catch (clipErr) {
+            console.warn("Clipboard copy warning:", clipErr);
+          }
+
+          if (navigator.share && navigator.canShare) {
+            try {
+              const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
+              if (navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                  title: 'Laporan Kas PB Bilibili 162',
+                  text: msgInput,
+                  files: [file]
+                });
+                Swal.fire({
+                  icon: 'success',
+                  title: 'File PDF Dibagikan!',
+                  html: '<p class="text-xs">Teks pesan telah disalin otomatis ke Clipboard. Silakan Paste di WhatsApp.</p>',
+                  confirmButtonColor: '#25D366'
+                });
+                return;
+              }
+            } catch (shareErr: any) {
+              if (shareErr.name !== 'AbortError') {
+                console.warn("Native share error:", shareErr);
+              } else {
+                return;
+              }
+            }
+          }
+
+          const a = document.createElement('a');
+          a.href = localPdfUrl;
+          a.download = fileName;
+          a.click();
+
+          const cleanPhone = phoneInput.replace(/\D/g, '');
+          const waUrl = cleanPhone
+            ? `https://wa.me/${cleanPhone.startsWith('0') ? '62' + cleanPhone.slice(1) : cleanPhone}?text=${encodeURIComponent(msgInput)}`
+            : `https://api.whatsapp.com/send?text=${encodeURIComponent(msgInput)}`;
+          window.open(waUrl, '_blank');
+
+        } else if ((actionType as any).type === 'wa') {
+          const cleanPhone = phoneInput.replace(/\D/g, '');
+          const waUrl = cleanPhone
+            ? `https://wa.me/${cleanPhone.startsWith('0') ? '62' + cleanPhone.slice(1) : cleanPhone}?text=${encodeURIComponent(msgInput)}`
+            : `https://api.whatsapp.com/send?text=${encodeURIComponent(msgInput)}`;
+          window.open(waUrl, '_blank');
+        }
+      }
     } catch (e) { alert("Gagal export PDF"); }
   };
 
@@ -270,13 +481,21 @@ export default function PublicKasView() {
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        <div className="bg-slate-50 border border-slate-200 p-8 rounded-[2rem] relative overflow-hidden group">
+          <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform">
+            <Calendar size={120} className="text-slate-600" />
+          </div>
+          <div className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-2">Saldo Sebelumnya</div>
+          <div className="text-2xl font-black text-slate-800 tracking-tighter">Rp {saldoSebelumnya.toLocaleString()}</div>
+        </div>
+
         <div className="bg-emerald-50 border border-emerald-100 p-8 rounded-[2rem] relative overflow-hidden group">
           <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform">
             <TrendingUp size={120} className="text-emerald-600" />
           </div>
           <div className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.3em] mb-2">Pemasukan Periode</div>
-          <div className="text-3xl font-black text-emerald-700 tracking-tighter">Rp {stats.masuk.toLocaleString()}</div>
+          <div className="text-2xl font-black text-emerald-700 tracking-tighter">Rp {stats.masuk.toLocaleString()}</div>
         </div>
         
         <div className="bg-rose-50 border border-rose-100 p-8 rounded-[2rem] relative overflow-hidden group">
@@ -284,15 +503,19 @@ export default function PublicKasView() {
             <TrendingDown size={120} className="text-rose-600" />
           </div>
           <div className="text-[10px] font-black text-rose-600 uppercase tracking-[0.3em] mb-2">Pengeluaran Periode</div>
-          <div className="text-3xl font-black text-rose-700 tracking-tighter">Rp {stats.keluar.toLocaleString()}</div>
+          <div className="text-2xl font-black text-rose-700 tracking-tighter">Rp {stats.keluar.toLocaleString()}</div>
         </div>
         
         <div className="bg-blue-600 p-8 rounded-[2rem] shadow-[0_20px_50px_rgba(37,99,235,0.2)] relative overflow-hidden group">
           <div className="absolute -right-4 -bottom-4 opacity-20 group-hover:scale-110 transition-transform">
             <Wallet size={120} className="text-white" />
           </div>
-          <div className="text-[10px] font-black text-blue-100 uppercase tracking-[0.3em] mb-2">Total Saldo Kas Global</div>
-          <div className="text-3xl font-black text-white tracking-tighter">Rp {saldoGlobalTerkini.toLocaleString()}</div>
+          <div className="text-[10px] font-black text-blue-100 uppercase tracking-[0.3em] mb-2">Saldo Akhir Kas</div>
+          <div className="text-2xl font-black text-white tracking-tighter">Rp {saldoAkhirPeriode.toLocaleString()}</div>
+          <div className="mt-2 text-[10px] text-blue-100 font-semibold space-y-0.5 border-t border-white/10 pt-2">
+            <div>• Modal Tetap Bola: Rp 600.000</div>
+            <div>• Saldo Bendahara: Rp {saldoBendahara.toLocaleString()}</div>
+          </div>
         </div>
       </div>
 

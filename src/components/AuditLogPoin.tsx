@@ -66,10 +66,11 @@ export default function AuditLogPoin() {
   }, [searchTerm, logs]);
 
   return (
-    <div className="p-4 md:p-8 bg-[#070d1a] min-h-screen text-white font-sans relative overflow-hidden">
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/5 blur-[120px] pointer-events-none" />
-      
-      <div className="max-w-6xl mx-auto relative z-10">
+    <div className="h-full flex flex-col bg-[#070d1a] text-white font-sans relative overflow-hidden">
+      <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/5 blur-[120px] pointer-events-none" />
+        
+        <div className="max-w-6xl mx-auto relative z-10">
         
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
@@ -217,5 +218,6 @@ export default function AuditLogPoin() {
         </div>
       </div>
     </div>
+  </div>
   );
 }
