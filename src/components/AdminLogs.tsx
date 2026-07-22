@@ -85,18 +85,18 @@ export default function AdminLogs() {
   const currentItems = filteredLogs.slice(indexOfFirstItem, indexOfLastItem);
 
   return (
-    <div className="p-8 bg-[#070d1a] min-h-screen text-white font-sans relative overflow-hidden">
+    <div className="p-4 md:p-8 bg-[#070d1a] h-screen text-white font-sans relative overflow-hidden flex flex-col">
       {/* Background Glow */}
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/5 blur-[150px] rounded-full -z-10" />
 
       {/* Header Area */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 shrink-0">
         <div>
-          <div className="flex items-center gap-3 mb-2">
+          <div className="flex items-center gap-3 mb-1">
             <div className="p-2 bg-blue-600 rounded-lg shadow-[0_0_20px_rgba(37,99,235,0.4)]">
-              <Shield size={20} className="text-white" />
+              <Shield size={18} className="text-white" />
             </div>
-            <h1 className="text-4xl font-black italic uppercase tracking-tighter">
+            <h1 className="text-2xl md:text-3xl font-black italic uppercase tracking-tighter">
               SYSTEM <span className="text-blue-600">LOGS</span>
             </h1>
           </div>
@@ -110,14 +110,14 @@ export default function AdminLogs() {
           </div>
         </div>
 
-        <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+        <div className="flex flex-col md:flex-row items-center gap-3 w-full md:w-auto">
           {/* Dropdown Limit Data - Perbaikan Visual Dropdown */}
           <div className="relative group w-full md:w-auto">
             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-500 pointer-events-none">
               <Database size={14} />
             </div>
             <select 
-              className="w-full md:w-44 bg-zinc-900 border border-zinc-800 rounded-2xl py-4 pl-10 pr-10 focus:border-blue-600 outline-none transition-all text-[10px] font-black uppercase appearance-none cursor-pointer shadow-2xl text-white"
+              className="w-full md:w-44 bg-zinc-900 border border-zinc-800 rounded-2xl py-3 pl-10 pr-10 focus:border-blue-600 outline-none transition-all text-[10px] font-black uppercase appearance-none cursor-pointer shadow-2xl text-white"
               value={itemsPerPage}
               onChange={(e) => {
                 const val = e.target.value;
@@ -135,12 +135,12 @@ export default function AdminLogs() {
             </div>
           </div>
 
-          <div className="relative w-full md:w-80">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" size={18} />
+          <div className="relative w-full md:w-72">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" size={16} />
             <input 
               type="text" 
               placeholder="Cari Admin, Atlet, atau Tipe..."
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl py-4 pl-12 pr-4 focus:border-blue-600 outline-none transition-all text-xs font-bold shadow-2xl"
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl py-3 pl-11 pr-4 focus:border-blue-600 outline-none transition-all text-xs font-bold shadow-2xl"
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
@@ -152,8 +152,8 @@ export default function AdminLogs() {
       </div>
 
       {/* Terminal Style Container */}
-      <div className="bg-zinc-900/40 border border-white/5 rounded-[2.5rem] overflow-hidden backdrop-blur-md shadow-2xl">
-        <div className="bg-black/40 px-8 py-4 border-b border-white/5 flex items-center justify-between">
+      <div className="flex-1 flex flex-col min-h-0 bg-zinc-900/40 border border-white/5 rounded-3xl overflow-hidden backdrop-blur-md shadow-2xl">
+        <div className="bg-black/40 px-6 py-3 border-b border-white/5 flex items-center justify-between shrink-0">
           <div className="flex gap-2">
             <div className="w-2.5 h-2.5 rounded-full bg-[#FF5F56] shadow-[0_0_8px_rgba(255,95,86,0.4)]" />
             <div className="w-2.5 h-2.5 rounded-full bg-[#FFBD2E] shadow-[0_0_8px_rgba(255,189,46,0.4)]" />
@@ -163,20 +163,20 @@ export default function AdminLogs() {
             <Terminal size={14} className="text-blue-500" />
             <span className="text-[10px] font-black uppercase text-zinc-500 tracking-widest">Audit_Vault_v2.0.sh</span>
           </div>
-          <div className="hidden md:flex items-center gap-2 text-[10px] text-zinc-600 font-bold uppercase">
-            <Clock size={12} /> {filteredLogs.length} Records Detected
+          <div className="flex items-center gap-2 text-[10px] text-zinc-600 font-bold uppercase">
+            <Clock size={12} /> {filteredLogs.length} Records
           </div>
         </div>
 
-        <div className="overflow-x-auto text-nowrap">
+        <div className="flex-1 overflow-y-auto overflow-x-auto">
           <table className="w-full text-left">
-            <thead>
-              <tr className="text-zinc-600 text-[9px] font-black uppercase tracking-[0.2em] border-b border-white/5">
-                <th className="px-8 py-5">Date & Time</th>
-                <th className="px-8 py-5">Authorized Admin</th>
-                <th className="px-8 py-5">Operation</th>
-                <th className="px-8 py-5">Target Athlete</th>
-                <th className="px-8 py-5 text-right">Point Delta</th>
+            <thead className="sticky top-0 bg-[#0c1322] z-10">
+              <tr className="text-zinc-500 text-[9px] font-black uppercase tracking-[0.2em] border-b border-white/5">
+                <th className="px-6 py-4">Date & Time</th>
+                <th className="px-6 py-4">Authorized Admin</th>
+                <th className="px-6 py-4">Operation</th>
+                <th className="px-6 py-4">Target Athlete</th>
+                <th className="px-6 py-4 text-right">Point Delta</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5 font-mono">
@@ -190,7 +190,7 @@ export default function AdminLogs() {
               ) : currentItems.length > 0 ? (
                 currentItems.map((log) => (
                   <tr key={log.id} className="group hover:bg-blue-600/[0.03] transition-all">
-                    <td className="px-8 py-6">
+                    <td className="px-6 py-4">
                       <div className="flex flex-col gap-0.5">
                         <span className="text-white text-[11px] font-bold">
                           {log.created_at ? new Date(log.created_at).toLocaleTimeString('id-ID') : '--:--'}
@@ -200,10 +200,10 @@ export default function AdminLogs() {
                         </span>
                       </div>
                     </td>
-                    <td className="px-8 py-6">
+                    <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-zinc-800 flex items-center justify-center text-blue-500 group-hover:bg-blue-600 group-hover:text-white transition-all border border-white/5">
-                          <User size={16} />
+                        <div className="w-8 h-8 rounded-xl bg-zinc-800 flex items-center justify-center text-blue-500 group-hover:bg-blue-600 group-hover:text-white transition-all border border-white/5 shrink-0">
+                          <User size={14} />
                         </div>
                         <div>
                           <p className="text-[11px] font-black text-white uppercase tracking-tighter">
@@ -213,7 +213,7 @@ export default function AdminLogs() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-8 py-6">
+                    <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <span className={`text-[9px] font-black px-2 py-1 rounded uppercase tracking-tighter border ${
                           (log.perubahan || 0) > 0 
@@ -224,13 +224,13 @@ export default function AdminLogs() {
                         </span>
                       </div>
                     </td>
-                    <td className="px-8 py-6">
+                    <td className="px-6 py-4">
                        <p className="text-[11px] font-bold text-white uppercase italic">
                          {log.atlet_nama || log.player_name || "Unknown Athlete"}
                        </p>
                        <p className="text-[9px] text-zinc-600 font-black uppercase">ID: {log.atlet_id?.slice(0, 8) || 'N/A'}...</p>
                     </td>
-                    <td className="px-8 py-6 text-right">
+                    <td className="px-6 py-4 text-right">
                       <div className="inline-flex flex-col items-end">
                         <div className="flex items-center gap-2">
                           <span className={`text-[12px] font-black ${(log.perubahan || 0) > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
@@ -263,9 +263,9 @@ export default function AdminLogs() {
 
         {/* Pagination Footer Controls */}
         {!isAll && totalPages > 1 && (
-          <div className="px-8 py-6 bg-black/20 border-t border-white/5 flex items-center justify-between">
+          <div className="px-6 py-4 bg-black/20 border-t border-white/5 flex items-center justify-between shrink-0">
             <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">
-              Showing <span className="text-white">{indexOfFirstItem + 1}-{Math.min(indexOfLastItem, totalItems)}</span> of <span className="text-white">{totalItems}</span> Nodes
+              Showing <span className="text-white">{indexOfFirstItem + 1}-{Math.min(indexOfLastItem, totalItems)}</span> of <span className="text-white">{totalItems}</span>
             </p>
             <div className="flex items-center gap-2">
               <button 
@@ -280,7 +280,7 @@ export default function AdminLogs() {
                   <button
                     key={i}
                     onClick={() => setCurrentPage(i + 1)}
-                    className={`w-8 h-8 rounded-lg text-[10px] font-black transition-all ${
+                    className={`w-7 h-7 rounded-lg text-[10px] font-black transition-all ${
                       currentPage === i + 1 ? 'bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]' : 'bg-zinc-900 text-zinc-500 hover:text-white'
                     }`}
                   >
@@ -301,7 +301,7 @@ export default function AdminLogs() {
       </div>
 
       {/* Footer Info */}
-      <div className="mt-8 flex flex-col md:flex-row items-center justify-between gap-4 px-4">
+      <div className="mt-4 hidden md:flex items-center justify-between gap-4 px-2 shrink-0">
         <div className="flex items-center gap-6 text-zinc-600">
           <div className="flex items-center gap-2 group cursor-help">
              <Database size={12} className="group-hover:text-blue-500" />
