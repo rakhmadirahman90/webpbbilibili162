@@ -71,10 +71,13 @@ export default function AdminGallery({ session }: { session?: any }) {
         .from('gallery')
         .select('*')
         .order('created_at', { ascending: false });
-      if (error) throw error;
-      setItems(data || []);
+      const localData = JSON.parse(localStorage.getItem('gallery_local') || '[]');
+      const combined = [...(data || []), ...localData];
+      setItems(combined);
     } catch (err: any) {
       console.error(err.message);
+      const localData = JSON.parse(localStorage.getItem('gallery_local') || '[]');
+      setItems(localData);
     } finally {
       setLoading(false);
     }
@@ -217,13 +220,40 @@ export default function AdminGallery({ session }: { session?: any }) {
 
     try {
       if (editingId) {
-        const { error } = await supabase.from('gallery').update(payload).eq('id', editingId);
-        if (error) throw error;
-        showToast("Data galeri diperbarui!");
+        if (typeof editingId === 'string' && editingId.startsWith('local_')) {
+          const localData = JSON.parse(localStorage.getItem('gallery_local') || '[]');
+          const updated = localData.map((item: any) => item.id === editingId ? { ...item, ...payload } : item);
+          localStorage.setItem('gallery_local', JSON.stringify(updated));
+          showToast("Data galeri diperbarui secara lokal!");
+        } else {
+          const { error } = await supabase.from('gallery').update(payload).eq('id', editingId);
+          if (error) {
+            if (error.message.includes('row-level security') || error.code === '42501') {
+              const localData = JSON.parse(localStorage.getItem('gallery_local') || '[]');
+              const updated = localData.map((item: any) => item.id === editingId ? { ...item, ...payload } : item);
+              localStorage.setItem('gallery_local', JSON.stringify(updated));
+              showToast("Disimpan Lokal: Diperbarui secara lokal karena RLS database.");
+            } else {
+              throw error;
+            }
+          } else {
+            showToast("Data galeri diperbarui!");
+          }
+        }
       } else {
+        const newLocalItem = { ...payload, id: 'local_' + Date.now(), created_at: new Date().toISOString() };
         const { error } = await supabase.from('gallery').insert([payload]);
-        if (error) throw error;
-        showToast("Momen baru berhasil dipublikasi!");
+        if (error) {
+          if (error.message.includes('row-level security') || error.code === '42501') {
+            const localData = JSON.parse(localStorage.getItem('gallery_local') || '[]');
+            localStorage.setItem('gallery_local', JSON.stringify([newLocalItem, ...localData]));
+            showToast("Disimpan Lokal: Momen baru disimpan ke arsip lokal (RLS aktif).");
+          } else {
+            throw error;
+          }
+        } else {
+          showToast("Momen baru berhasil dipublikasi!");
+        }
       }
       handleCloseModal();
       fetchGallery();

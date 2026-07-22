@@ -56,9 +56,10 @@ export default function KasManager() {
   const [atlets, setAtlets] = useState<Atlet[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState(''); 
+  const [activeMobileTab, setActiveMobileTab] = useState<'list' | 'form'>('list');
   
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 8;
 
   const today = new Date().toISOString().split('T')[0];
   const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
@@ -368,71 +369,102 @@ export default function KasManager() {
   };
 
   return (
-    <div className="p-6 lg:p-10 bg-[#070d1a] min-h-screen text-white font-sans">
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-10">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-blue-500/20 rounded-lg"><Wallet className="text-blue-400" size={28} /></div>
-            <h1 className="text-4xl font-black italic tracking-tighter uppercase text-blue-400">Treasury <span className="text-white">Master</span></h1>
+    <div className="w-full h-full flex flex-col justify-between p-2.5 sm:p-5 md:p-8 space-y-2.5 sm:space-y-4 md:space-y-6 overflow-hidden md:overflow-visible min-h-0 select-none">
+      {/* Header Banner */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gradient-to-r from-slate-900 via-[#0b1224] to-slate-900 p-3 sm:p-5 md:p-6 rounded-2xl md:rounded-3xl border border-white/10 shadow-2xl relative overflow-hidden shrink-0">
+        <div className="absolute top-0 right-0 w-48 h-48 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="relative z-10 min-w-0 flex-1">
+          <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[8px] sm:text-[10px] font-black uppercase tracking-widest mb-0.5 sm:mb-1">
+            <Wallet size={10} />
+            <span>Treasury Master Hub</span>
           </div>
-          <p className="text-slate-500 text-[10px] font-bold tracking-[0.3em] uppercase ml-1">PB. BILI BILI 162 FINANCIAL HUB</p>
+          <h1 className="text-base sm:text-2xl md:text-3xl font-black text-white italic uppercase tracking-tighter truncate leading-tight">
+            Kelola <span className="text-blue-500">Kas Klub</span>
+          </h1>
+          <p className="text-slate-400 text-[9px] sm:text-xs md:text-sm font-medium mt-0.5 truncate">
+            PB. BILI BILI 162 FINANCIAL HUB
+          </p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-3 bg-white/5 border border-white/10 px-4 py-2 rounded-xl focus-within:border-blue-500/50 transition-all w-full lg:w-64">
-             <Search size={16} className="text-blue-400" />
+
+        {/* Search, Filter & Export */}
+        <div className="relative z-10 flex flex-wrap items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 bg-slate-950/80 border border-white/10 px-3 py-1.5 rounded-xl focus-within:border-blue-500/50 transition-all w-full sm:w-52">
+             <Search size={14} className="text-blue-400 shrink-0" />
              <input 
                type="text" 
-               placeholder="Cari Atlet / Kategori..." 
-               className="bg-transparent text-[11px] font-bold outline-none text-white w-full placeholder:text-zinc-600"
+               placeholder="Cari Atlet..." 
+               className="bg-transparent text-[10px] sm:text-xs font-bold outline-none text-white w-full placeholder:text-zinc-600"
                value={searchTerm}
                onChange={(e) => setSearchTerm(e.target.value)}
              />
-             {searchTerm && <X size={14} className="text-zinc-500 cursor-pointer hover:text-white" onClick={() => setSearchTerm('')} />}
+             {searchTerm && <X size={12} className="text-zinc-500 cursor-pointer hover:text-white" onClick={() => setSearchTerm('')} />}
           </div>
 
-          <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2 rounded-xl">
-             <Calendar size={14} className="text-blue-400" />
-             <input type="date" className="bg-transparent text-[10px] font-bold outline-none text-white w-[100px]" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-             <span className="text-slate-500">-</span>
-             <input type="date" className="bg-transparent text-[10px] font-bold outline-none text-white w-[100px]" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-          </div>
-          <button onClick={exportToPDF} className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl transition-all text-xs font-black uppercase tracking-widest hover:scale-105 active:scale-95">
-            <FileText size={16} /> Export PDF
+          <button onClick={exportToPDF} className="flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 bg-blue-600 hover:bg-blue-500 rounded-xl transition-all text-[10px] sm:text-xs font-black uppercase tracking-widest active:scale-95 shrink-0">
+            <FileText size={14} /> <span className="hidden xs:inline">Export PDF</span><span className="xs:hidden">PDF</span>
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
-        <div className="bg-emerald-500/10 border border-emerald-500/20 p-6 rounded-[2rem]">
-          <p className="text-[10px] font-black uppercase tracking-widest text-emerald-500 mb-2 flex items-center gap-2"><ArrowUpCircle size={14}/> Total Masuk (Filtered)</p>
-          <h2 className="text-2xl font-black italic text-emerald-400">Rp {stats.masuk.toLocaleString()}</h2>
+      {/* Mobile Tab Switcher */}
+      <div className="flex md:hidden bg-slate-900/90 p-1 rounded-xl border border-white/10 shrink-0 gap-1">
+        <button
+          type="button"
+          onClick={() => setActiveMobileTab('list')}
+          className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+            activeMobileTab === 'list'
+              ? 'bg-blue-600 text-white shadow-md'
+              : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          Daftar Transaksi ({kasData.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveMobileTab('form')}
+          className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+            activeMobileTab === 'form'
+              ? 'bg-blue-600 text-white shadow-md'
+              : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          {editingId ? 'Edit Record' : '+ Tambah Kas'}
+        </button>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-3 gap-2 sm:gap-4 shrink-0">
+        <div className="bg-emerald-500/10 border border-emerald-500/20 p-2.5 sm:p-5 rounded-2xl md:rounded-[2rem]">
+          <p className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-emerald-400 mb-1 flex items-center gap-1 truncate"><ArrowUpCircle size={12}/> Masuk</p>
+          <h2 className="text-xs sm:text-xl md:text-2xl font-black italic text-emerald-300 truncate">Rp {stats.masuk.toLocaleString()}</h2>
         </div>
-        <div className="bg-red-500/10 border border-red-500/20 p-6 rounded-[2rem]">
-          <p className="text-[10px] font-black uppercase tracking-widest text-red-500 mb-2 flex items-center gap-2"><ArrowDownCircle size={14}/> Total Keluar (Filtered)</p>
-          <h2 className="text-2xl font-black italic text-red-400">Rp {stats.keluar.toLocaleString()}</h2>
+        <div className="bg-red-500/10 border border-red-500/20 p-2.5 sm:p-5 rounded-2xl md:rounded-[2rem]">
+          <p className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-red-400 mb-1 flex items-center gap-1 truncate"><ArrowDownCircle size={12}/> Keluar</p>
+          <h2 className="text-xs sm:text-xl md:text-2xl font-black italic text-red-300 truncate">Rp {stats.keluar.toLocaleString()}</h2>
         </div>
-        <div className="bg-blue-500/10 border border-blue-500/20 p-6 rounded-[2rem]">
-          <p className="text-[10px] font-black uppercase tracking-widest text-blue-500 mb-2 flex items-center gap-2"><Wallet size={14}/> Saldo Kas Global</p>
-          <h2 className="text-2xl font-black italic text-white">Rp {totalSaldoGlobal.toLocaleString()}</h2>
+        <div className="bg-blue-500/10 border border-blue-500/20 p-2.5 sm:p-5 rounded-2xl md:rounded-[2rem]">
+          <p className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-blue-400 mb-1 flex items-center gap-1 truncate"><Wallet size={12}/> Saldo</p>
+          <h2 className="text-xs sm:text-xl md:text-2xl font-black italic text-white truncate">Rp {totalSaldoGlobal.toLocaleString()}</h2>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <div className="lg:col-span-4">
-          <div className="bg-white/[0.03] border border-white/5 p-8 rounded-[2.5rem] sticky top-10">
-            <h3 className="text-blue-400 font-black italic uppercase tracking-tighter text-xl mb-6 flex items-center gap-2">
-              {editingId ? <Edit3 size={20} /> : <Plus size={20} />} {editingId ? 'Edit Record' : 'Add Entry'}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6 flex-1 min-h-0 items-stretch">
+        {/* Form Column */}
+        <div className={`lg:col-span-4 flex flex-col min-h-0 ${activeMobileTab === 'form' ? 'flex' : 'hidden md:flex'}`}>
+          <div className="bg-[#0b1224]/90 border border-white/10 p-3 sm:p-6 rounded-2xl md:rounded-[2.5rem] flex flex-col h-full overflow-y-auto no-scrollbar shadow-xl">
+            <h3 className="text-blue-400 font-black italic uppercase tracking-tighter text-sm sm:text-lg mb-3 flex items-center gap-2">
+              {editingId ? <Edit3 size={16} /> : <Plus size={16} />} {editingId ? 'Edit Record' : 'Add Entry'}
             </h3>
-            <form onSubmit={handleSave} className="space-y-4">
+            <form onSubmit={handleSave} className="space-y-3">
               <div className="flex bg-black p-1 rounded-xl border border-white/10">
-                <button type="button" onClick={() => setFormData({...formData, jenis_transaksi: 'Masuk'})} className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${formData.jenis_transaksi === 'Masuk' ? 'bg-emerald-600 text-white' : 'text-slate-500'}`}>Pemasukan</button>
-                <button type="button" onClick={() => setFormData({...formData, jenis_transaksi: 'Keluar', kategori: 'Biaya Operasional'})} className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${formData.jenis_transaksi === 'Keluar' ? 'bg-red-600 text-white' : 'text-slate-500'}`}>Pengeluaran</button>
+                <button type="button" onClick={() => setFormData({...formData, jenis_transaksi: 'Masuk'})} className={`flex-1 py-1.5 rounded-lg text-[9px] sm:text-[10px] font-black uppercase transition-all ${formData.jenis_transaksi === 'Masuk' ? 'bg-emerald-600 text-white' : 'text-slate-500'}`}>Pemasukan</button>
+                <button type="button" onClick={() => setFormData({...formData, jenis_transaksi: 'Keluar', kategori: 'Biaya Operasional'})} className={`flex-1 py-1.5 rounded-lg text-[9px] sm:text-[10px] font-black uppercase transition-all ${formData.jenis_transaksi === 'Keluar' ? 'bg-red-600 text-white' : 'text-slate-500'}`}>Pengeluaran</button>
               </div>
               
               <div>
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Kategori</label>
+                <label className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1 block">Kategori</label>
                 {formData.jenis_transaksi === 'Masuk' ? (
-                  <select className="w-full bg-black border border-white/10 rounded-xl p-4 text-sm outline-none" value={formData.kategori} 
+                  <select className="w-full bg-black border border-white/10 rounded-xl p-2.5 sm:p-3 text-xs sm:text-sm outline-none text-white" value={formData.kategori} 
                     onChange={(e) => {
                       let nominal = 10000;
                       if (e.target.value === 'Pendaftaran Atlet Baru') nominal = 50000;
@@ -442,11 +474,12 @@ export default function KasManager() {
                     {DAFTAR_PEMASUKAN.map(kat => <option key={kat} value={kat}>{kat}</option>)}
                   </select>
                 ) : (
-                  <input type="text" className="w-full bg-black border border-white/10 rounded-xl p-4 text-sm outline-none" placeholder="Detail Pengeluaran" value={formData.kategori} onChange={(e) => setFormData({...formData, kategori: e.target.value})} />
+                  <input type="text" className="w-full bg-black border border-white/10 rounded-xl p-2.5 sm:p-3 text-xs sm:text-sm outline-none text-white" placeholder="Detail Pengeluaran" value={formData.kategori} onChange={(e) => setFormData({...formData, kategori: e.target.value})} />
                 )}
               </div>
 
               {formData.kategori === 'Pembayaran Shuttlecock' && formData.jenis_transaksi === 'Masuk' && (
+
                 <div className="grid grid-cols-2 gap-4 animate-in fade-in duration-300">
                   <div>
                     <label className="text-[9px] font-bold text-slate-500 uppercase mb-1 block">Tipe Member</label>
@@ -500,83 +533,72 @@ export default function KasManager() {
           </div>
         </div>
 
-        <div className="lg:col-span-8">
-          <div className="bg-white/[0.02] border border-white/5 rounded-[2.5rem] overflow-hidden flex flex-col h-full">
-            <div className="p-6 border-b border-white/5 flex items-center justify-between">
-              <h3 className="text-xs font-black uppercase tracking-[0.3em] text-slate-500">Transaction_Ledger.log</h3>
+        <div className={`lg:col-span-8 flex flex-col min-h-0 ${activeMobileTab === 'list' ? 'flex' : 'hidden md:flex'}`}>
+          <div className="bg-[#0b1224]/90 border border-white/10 rounded-2xl md:rounded-[2.5rem] overflow-hidden flex flex-col h-full shadow-xl">
+            <div className="p-3 sm:p-5 border-b border-white/5 flex items-center justify-between shrink-0 bg-black/20">
+              <h3 className="text-[10px] sm:text-xs font-black uppercase tracking-[0.3em] text-slate-400">Transaction_Ledger.log</h3>
               <div className="flex items-center gap-2">
-                 <span className="text-[10px] text-zinc-600 font-bold uppercase italic">Page {currentPage} of {totalPages || 1}</span>
+                 <span className="text-[9px] sm:text-[10px] text-blue-400 font-bold uppercase italic">Page {currentPage} of {totalPages || 1}</span>
               </div>
             </div>
             
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="text-[10px] font-black uppercase tracking-widest text-slate-500 border-b border-white/5">
-                    <th className="p-6">Date & Name</th>
-                    <th className="p-6">Category</th>
-                    <th className="p-6 text-right">Amount</th>
-                    <th className="p-6 text-center">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {loading ? (
-                    <tr><td colSpan={4} className="p-20 text-center"><Loader2 className="animate-spin mx-auto text-blue-500" /></td></tr>
-                  ) : currentItems.length === 0 ? (
-                    <tr>
-                      <td colSpan={4} className="p-20 text-center">
-                        <div className="flex flex-col items-center gap-3">
-                          <Search size={40} className="text-zinc-800" />
-                          <p className="text-slate-500 text-xs uppercase tracking-widest font-bold">
-                            {searchTerm ? `Tidak ditemukan hasil untuk "${searchTerm}"` : 'Belum Ada Data'}
-                          </p>
-                        </div>
-                      </td>
-                    </tr>
-                  ) : currentItems.map((item) => {
-                    const isMasuk = item.jenis_transaksi === 'Masuk';
-                    return (
-                      <tr key={item.id} className="hover:bg-white/[0.02] transition-colors group">
-                        <td className="p-6">
-                          <p className="font-bold text-sm text-white group-hover:text-blue-400 uppercase truncate max-w-[120px] md:max-w-none">{item.nama_pembayar}</p>
-                          <p className="text-[9px] text-slate-500 uppercase flex items-center gap-1"><Calendar size={10}/> {item.tanggal_transaksi}</p>
-                        </td>
-                        <td className="p-6">
-                          <span className={`px-2 py-1 rounded-full text-[8px] md:text-[9px] font-black uppercase border ${isMasuk ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20'}`}>
-                            {item.kategori}
-                          </span>
-                        </td>
-                        <td className={`p-6 text-right font-black italic text-base md:text-lg ${isMasuk ? 'text-emerald-400' : 'text-red-400'}`}>
+            <div className="overflow-y-auto flex-1 min-h-0 divide-y divide-white/5">
+              {loading ? (
+                <div className="p-10 text-center"><Loader2 className="animate-spin mx-auto text-blue-500" size={24} /></div>
+              ) : currentItems.length === 0 ? (
+                <div className="p-10 text-center flex flex-col items-center gap-2">
+                  <Search size={30} className="text-zinc-800" />
+                  <p className="text-slate-500 text-[10px] sm:text-xs uppercase tracking-widest font-bold">
+                    {searchTerm ? `Tidak ditemukan hasil untuk "${searchTerm}"` : 'Belum Ada Data'}
+                  </p>
+                </div>
+              ) : currentItems.map((item) => {
+                const isMasuk = item.jenis_transaksi === 'Masuk';
+                return (
+                  <div key={item.id} className="p-3 sm:p-4 hover:bg-white/[0.02] transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                        <p className="font-bold text-xs sm:text-sm text-white group-hover:text-blue-400 uppercase leading-snug break-words">{item.nama_pembayar}</p>
+                        <span className={`px-2 py-0.5 rounded-full text-[8px] sm:text-[9px] font-black uppercase border inline-block shrink-0 ${isMasuk ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
+                          {item.kategori}
+                        </span>
+                      </div>
+                      <p className="text-[8px] sm:text-[9px] text-slate-500 uppercase flex items-center gap-1 mt-1">
+                        <Calendar size={9}/> {item.tanggal_transaksi}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-white/5">
+                      <div className="text-left sm:text-right">
+                        <p className={`font-black italic text-xs sm:text-base md:text-lg ${isMasuk ? 'text-emerald-400' : 'text-red-400'}`}>
                           {isMasuk ? '+' : '-'} Rp {item.jumlah_bayar.toLocaleString()}
-                        </td>
-                        <td className="p-6">
-                          <div className="flex justify-center gap-1 md:gap-2">
-                            <button onClick={() => handleEdit(item)} className="p-2 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500 hover:text-white transition-all"><Edit3 size={14}/></button>
-                            <button onClick={() => handleDelete(item.id)} className="p-2 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500 hover:text-white transition-all"><Trash2 size={14}/></button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => handleEdit(item)} className="p-1.5 sm:p-2 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500 hover:text-white transition-all cursor-pointer" title="Edit"><Edit3 size={12} className="sm:w-3.5 sm:h-3.5"/></button>
+                        <button onClick={() => handleDelete(item.id)} className="p-1.5 sm:p-2 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500 hover:text-white transition-all cursor-pointer" title="Hapus"><Trash2 size={12} className="sm:w-3.5 sm:h-3.5"/></button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             {totalPages > 1 && (
-              <div className="p-6 border-t border-white/5 flex items-center justify-between bg-black/20">
+              <div className="p-3 sm:p-4 border-t border-white/5 flex items-center justify-between bg-black/30 shrink-0">
                 <button 
                   disabled={currentPage === 1}
                   onClick={() => setCurrentPage(prev => prev - 1)}
-                  className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-xl text-[10px] font-black uppercase tracking-widest disabled:opacity-20 hover:bg-white/10 transition-all"
+                  className="flex items-center gap-1 px-3 py-1.5 bg-white/5 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest disabled:opacity-20 hover:bg-white/10 transition-all cursor-pointer text-white"
                 >
-                  <ChevronLeft size={14} /> Prev
+                  <ChevronLeft size={12} /> Prev
                 </button>
-                <div className="flex gap-1 overflow-x-auto max-w-[150px] md:max-w-none no-scrollbar">
+                <div className="flex items-center gap-1 overflow-x-auto max-w-[150px] sm:max-w-none no-scrollbar">
                    {Array.from({ length: totalPages }, (_, i) => (
                      <button 
                         key={i + 1}
                         onClick={() => setCurrentPage(i + 1)}
-                        className={`min-w-[32px] h-8 rounded-lg text-[10px] font-bold transition-all ${currentPage === i + 1 ? 'bg-blue-600 text-white' : 'bg-white/5 text-slate-500 hover:bg-white/10'}`}
+                        className={`min-w-[28px] h-7 sm:h-8 rounded-lg text-[9px] sm:text-[10px] font-black transition-all cursor-pointer flex items-center justify-center ${currentPage === i + 1 ? 'bg-blue-600 text-white shadow-md' : 'bg-white/5 text-slate-400 hover:bg-white/10'}`}
                      >
                        {i + 1}
                      </button>
@@ -585,9 +607,9 @@ export default function KasManager() {
                 <button 
                   disabled={currentPage === totalPages}
                   onClick={() => setCurrentPage(prev => prev + 1)}
-                  className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-xl text-[10px] font-black uppercase tracking-widest disabled:opacity-20 hover:bg-white/10 transition-all"
+                  className="flex items-center gap-1 px-3 py-1.5 bg-white/5 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest disabled:opacity-20 hover:bg-white/10 transition-all cursor-pointer text-white"
                 >
-                  Next <ChevronRight size={14} />
+                  Next <ChevronRight size={12} />
                 </button>
               </div>
             )}

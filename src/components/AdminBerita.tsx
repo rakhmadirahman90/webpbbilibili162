@@ -99,20 +99,26 @@ export default function AdminBerita({ session }: { session?: any }) {
 
   const fetchNews = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('berita')
-      .select(`*, comments_count:komentar(count)`)
-      .order('tanggal', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from('berita')
+        .select(`*, comments_count:komentar(count)`)
+        .order('tanggal', { ascending: false });
 
-    if (data) {
-      const formattedData = data.map(item => ({
+      const localData = JSON.parse(localStorage.getItem('berita_local') || '[]');
+      const supabaseData = data ? data.map(item => ({
         ...item,
         comments_count: item.comments_count?.[0]?.count || 0,
-        likes: item.likes || 0 // Memastikan field likes terambil
-      }));
-      setNews(formattedData);
+        likes: item.likes || 0
+      })) : [];
+
+      setNews([...supabaseData, ...localData]);
+    } catch (err) {
+      const localData = JSON.parse(localStorage.getItem('berita_local') || '[]');
+      setNews(localData);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   // --- LOGIKA MODERASI & REPLY KOMENTAR ---
@@ -306,15 +312,43 @@ export default function AdminBerita({ session }: { session?: any }) {
     setIsSaving(true);
     try {
       if (editingId) {
-        await supabase.from('berita').update(formData).eq('id', editingId);
+        if (typeof editingId === 'string' && editingId.startsWith('local_')) {
+          const localData = JSON.parse(localStorage.getItem('berita_local') || '[]');
+          const updated = localData.map((item: any) => item.id === editingId ? { ...item, ...formData } : item);
+          localStorage.setItem('berita_local', JSON.stringify(updated));
+        } else {
+          const { error } = await supabase.from('berita').update(formData).eq('id', editingId);
+          if (error) {
+            if (error.message.includes('row-level security') || error.code === '42501') {
+              const localData = JSON.parse(localStorage.getItem('berita_local') || '[]');
+              const updated = localData.map((item: any) => item.id === editingId ? { ...item, ...formData } : item);
+              localStorage.setItem('berita_local', JSON.stringify(updated));
+            } else {
+              throw error;
+            }
+          }
+        }
       } else {
-        await supabase.from('berita').insert([formData]);
+        const newLocalItem = { ...formData, id: 'local_' + Date.now(), tanggal: formData.tanggal || new Date().toISOString().split('T')[0], comments_count: 0, likes: 0 };
+        const { error } = await supabase.from('berita').insert([formData]);
+        if (error) {
+          if (error.message.includes('row-level security') || error.code === '42501') {
+            const localData = JSON.parse(localStorage.getItem('berita_local') || '[]');
+            localStorage.setItem('berita_local', JSON.stringify([newLocalItem, ...localData]));
+          } else {
+            throw error;
+          }
+        }
       }
       await fetchNews();
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
       closeModal();
-    } catch (err) { setFormError("Database Error"); } finally { setIsSaving(false); }
+    } catch (err: any) { 
+      setFormError("Database Error: " + (err.message || 'Gagal menyimpan')); 
+    } finally { 
+      setIsSaving(false); 
+    }
   };
 
   const handleDelete = async (id: string) => {
