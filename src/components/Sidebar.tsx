@@ -34,7 +34,8 @@ import {
   Wallet,
   FileText,
   FileSpreadsheet,
-  BookOpen
+  BookOpen,
+  Calendar
 } from 'lucide-react';
 import { supabase } from '../supabase';
 
@@ -233,7 +234,7 @@ export default function Sidebar({ email, role = 'admin', isOpen, onClose }: Side
       items: [
         { name: 'Jadwal Latihan', path: 'jadwal', icon: Calendar, adminOnly: false },
         { name: 'Peringkat & Poin', path: 'ranking', icon: Trophy, adminOnly: false },
-        { name: 'Jadwal & Hasil Skor', path: 'skor', icon: Zap, adminOnly: false }, 
+        { name: 'Hasil Skor', path: 'skor', icon: Zap, adminOnly: false }, 
         { name: 'Kas Club', path: 'kas', icon: Wallet, adminOnly: false },
         { name: 'Berita & Pengumuman', path: 'berita', icon: Newspaper, adminOnly: false },
         { name: 'Galeri Media', path: 'galeri', icon: Image, adminOnly: false },
