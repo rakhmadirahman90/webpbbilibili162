@@ -801,7 +801,8 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
     }
 
     try {
-      const userKey = memberData.nama.toLowerCase().trim();
+      const userRole = memberData.role || (memberData.nama?.toLowerCase().includes('admin') ? 'admin' : 'anggota');
+      const userKey = userRole === 'admin' ? 'admin' : (memberData.nama || 'user').toLowerCase().trim();
       const raw = localStorage.getItem('pb162_user_pins');
       const dict = raw ? JSON.parse(raw) : {};
       dict[userKey] = {
@@ -816,8 +817,8 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
 
       Swal.fire({
         icon: 'success',
-        title: 'PIN Berhasil Diperbarui!',
-        text: 'Gunakan 6-digit PIN baru ini untuk login berikutnya.',
+        title: 'Password / PIN Berhasil Diperbarui!',
+        text: 'Gunakan 6-digit Password / PIN baru ini untuk login berikutnya.',
         background: '#0F172A',
         color: '#fff',
         confirmButtonColor: '#2563EB'
@@ -902,10 +903,10 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
           <button
             type="button"
             onClick={() => setShowPinModal(true)}
-            className="inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-white/10 font-bold text-xs uppercase tracking-wider active:scale-95 transition-all cursor-pointer w-full sm:w-auto"
+            className="inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-2xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold text-xs uppercase tracking-wider active:scale-95 transition-all cursor-pointer w-full sm:w-auto"
           >
-            <KeyRound size={16} className="text-blue-400 shrink-0" />
-            <span>Atur PIN</span>
+            <KeyRound size={16} className="text-amber-400 shrink-0" />
+            <span>Ubah Password / PIN</span>
           </button>
 
           <button
@@ -1541,8 +1542,8 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
             >
               <div className="flex items-center justify-between border-b border-white/10 pb-3">
                 <div className="flex items-center gap-2 text-white font-black text-xs sm:text-sm uppercase tracking-wider italic">
-                  <KeyRound size={18} className="text-blue-400 shrink-0" />
-                  <span>Pengaturan PIN Access 6-Digit</span>
+                  <KeyRound size={18} className="text-amber-400 shrink-0" />
+                  <span>Ubah Password / PIN Login 6-Digit</span>
                 </div>
 
                 <button
@@ -1554,13 +1555,13 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
               </div>
 
               <p className="text-xs text-slate-400 leading-relaxed">
-                Buat atau ganti 6-digit PIN rahasia Anda untuk akses cepat tanpa perlu memasukkan kata sandi panjang.
+                Atur atau perbarui 6-digit Password / PIN rahasia Anda untuk akses masuk portal anggota PB Bilibili 162.
               </p>
 
               <form onSubmit={handleSavePin} className="space-y-4">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">
-                    PIN Baru (6 Angka)
+                    Password / PIN Baru (6 Angka)
                   </label>
                   <input
                     type="password"
@@ -1568,14 +1569,14 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
                     required
                     value={pinForm.newPin}
                     onChange={(e) => setPinForm({ ...pinForm, newPin: e.target.value })}
-                    className="w-full px-4 py-3 rounded-2xl bg-[#070d1a] border border-white/10 text-white font-mono text-center tracking-[0.4em] text-lg outline-none focus:border-blue-500"
+                    className="w-full px-4 py-3 rounded-2xl bg-[#070d1a] border border-white/10 text-white font-mono text-center tracking-[0.4em] text-lg outline-none focus:border-amber-500"
                     placeholder="123456"
                   />
                 </div>
 
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">
-                    Konfirmasi PIN Baru
+                    Konfirmasi Password / PIN Baru
                   </label>
                   <input
                     type="password"
@@ -1583,7 +1584,7 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
                     required
                     value={pinForm.confirmPin}
                     onChange={(e) => setPinForm({ ...pinForm, confirmPin: e.target.value })}
-                    className="w-full px-4 py-3 rounded-2xl bg-[#070d1a] border border-white/10 text-white font-mono text-center tracking-[0.4em] text-lg outline-none focus:border-blue-500"
+                    className="w-full px-4 py-3 rounded-2xl bg-[#070d1a] border border-white/10 text-white font-mono text-center tracking-[0.4em] text-lg outline-none focus:border-amber-500"
                     placeholder="123456"
                   />
                 </div>
@@ -1591,9 +1592,9 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
                 <div className="pt-2">
                   <button
                     type="submit"
-                    className="w-full py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-blue-600/30 active:scale-95 transition-all cursor-pointer"
+                    className="w-full py-3.5 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs uppercase tracking-widest shadow-lg shadow-amber-500/20 active:scale-95 transition-all cursor-pointer"
                   >
-                    Simpan PIN Rahasia Baru
+                    Simpan Password / PIN Baru
                   </button>
                 </div>
               </form>
