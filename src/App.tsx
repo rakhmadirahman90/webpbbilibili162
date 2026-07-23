@@ -753,7 +753,7 @@ export default function App() {
               ) : (
                 /* DEDICATED FULL-PAGE VIEW DENGAN DARK MODE KONSISTEN & BOTTOM SPACING UNTUK FLOATING DOCK */
                 <div className={`flex flex-col min-h-screen w-full bg-[#070d1a] ${
-                  ['contact', 'kontak', 'sejarah', 'visi-misi', 'dokumen-penting', 'fasilitas', 'inventaris'].includes(activeView)
+                  ['contact', 'kontak', 'sejarah', 'visi-misi', 'dokumen-penting', 'fasilitas', 'inventaris', 'faq'].includes(activeView)
                     ? 'pt-12 sm:pt-14 pb-14 sm:pb-16 h-screen h-dvh overflow-hidden' 
                     : 'pt-14 lg:pt-16 pb-28 sm:pb-36'
                 }`}>
