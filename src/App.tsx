@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from './supabase'; 
 
 // --- IMPORT FALLBACK DATA ---
@@ -46,7 +46,17 @@ import AdminLogs from './components/AdminLogs';
 import AdminTampilan from './components/AdminTampilan'; 
 import KelolaHero from './components/KelolaHero'; 
 import AdminPopup from './components/AdminPopup'; 
-import AdminFooter from './components/AdminFooter'; 
+import AdminFooter from './components/AdminFooter';
+import AdminAbsensi from './components/AdminAbsensi';
+import PublicInventaris from './components/PublicInventaris';
+import AdminInventaris from './components/AdminInventaris';
+import AdminPrestasi from './components/AdminPrestasi';
+import AdminFAQ from './components/AdminFAQ';
+import AdminProgram from './components/AdminProgram';
+import PublicPrestasi from './components/PublicPrestasi';
+import PublicFAQ from './components/PublicFAQ';
+import PublicProgram from './components/PublicProgram';
+ 
 import AdminAbout from './components/AdminAbout';
 import AdminStructure from './components/AdminStructure'; 
 import AdminSejarah from './components/AdminSejarah';
@@ -56,7 +66,9 @@ import ManajemenDokumen from './components/ManajemenDokumen';
 import { KelolaSurat } from './components/KelolaSurat'; 
 import KasManager from './components/KasManager'; 
 import ProfilAnggota from './components/ProfilAnggota'; 
+import AdminUsers from './components/AdminUsers';
 import ScheduleWidget from './components/ScheduleWidget'; 
+import PresenceManager from './components/PresenceManager';
 
 import { X, ChevronLeft, ChevronRight, Menu, Zap, Download, ExternalLink, Volume2, VolumeX, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -536,7 +548,7 @@ export default function App() {
       return;
     }
 
-    const fullPageMenus = ['jadwal', 'jadwal-latihan', 'schedule', 'kas', 'quiz', 'contact', 'kontak', 'struktur', 'struktur-organisasi', 'dokumen-penting', 'register', 'pendaftaran', 'peringkat', 'rankings', 'atlet', 'players', 'tentang-kami', 'about', 'galeri', 'gallery', 'sejarah', 'visi-misi', 'fasilitas', 'berita', 'news'];
+    const fullPageMenus = ['jadwal', 'jadwal-latihan', 'schedule', 'kas', 'quiz', 'contact', 'kontak', 'struktur', 'struktur-organisasi', 'dokumen-penting', 'register', 'pendaftaran', 'peringkat', 'rankings', 'atlet', 'players', 'tentang-kami', 'about', 'galeri', 'gallery', 'sejarah', 'visi-misi', 'fasilitas', 'inventaris', 'berita', 'news'];
 
     // Prioritaskan subPath jika ada, karena itu adalah target navigasi sebenarnya
     const target = (subPath || sectionId).toLowerCase();
@@ -720,7 +732,11 @@ export default function App() {
                   <div className="flex-grow">
                     <Hero />
                     <SambutanKetua />
+                    
                     <LandingFeatures onNavigate={handleNavigate} />
+                    <PublicPrestasi />
+                    <PublicFAQ />
+
                     {/* Jadwal Sholat Khusus Seluler - Tampil Tepat di Bawah Slider Hero */}
                     <div className="block lg:hidden max-w-xl mx-auto px-4 sm:px-6 md:px-8 mt-6 mb-2">
                       <PrayerTimes />
@@ -732,7 +748,7 @@ export default function App() {
               ) : (
                 /* DEDICATED FULL-PAGE VIEW DENGAN DARK MODE KONSISTEN & BOTTOM SPACING UNTUK FLOATING DOCK */
                 <div className={`flex flex-col min-h-screen w-full bg-[#070d1a] ${
-                  ['contact', 'kontak', 'sejarah', 'visi-misi', 'dokumen-penting', 'fasilitas'].includes(activeView)
+                  ['contact', 'kontak', 'sejarah', 'visi-misi', 'dokumen-penting', 'fasilitas', 'inventaris'].includes(activeView)
                     ? 'pt-12 sm:pt-14 pb-14 sm:pb-16 h-screen h-dvh overflow-hidden' 
                     : 'pt-14 lg:pt-16 pb-28 sm:pb-36'
                 }`}>
@@ -759,13 +775,14 @@ export default function App() {
                         {(activeView === 'sejarah') && <Sejarah />}
                         {(activeView === 'visi-misi') && <VisiMisi />}
                         {(activeView === 'fasilitas') && <Fasilitas />}
+                        {(activeView === 'inventaris') && <PublicInventaris />}
                         {(activeView === 'berita' || activeView === 'news') && <News />}
                         {(activeView === 'galeri' || activeView === 'gallery') && <Gallery />}
                       </div>
                     </motion.div>
                   </AnimatePresence>
                   
-                  {!['register', 'pendaftaran', 'contact', 'kontak', 'sejarah', 'visi-misi', 'dokumen-penting', 'fasilitas'].includes(activeView) && <Footer onNavigate={handleNavigate} />}
+                  {!['register', 'pendaftaran', 'contact', 'kontak', 'sejarah', 'visi-misi', 'dokumen-penting', 'fasilitas', 'inventaris'].includes(activeView) && <Footer onNavigate={handleNavigate} />}
                 </div>
               )}
             </AnimatePresence>
@@ -793,21 +810,60 @@ export default function App() {
 }
 
 function AdminLayout({ session }: { session: any }) {
+  const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const userRole = session?.user?.user_metadata?.role || 'admin';
   const isAdmin = userRole === 'admin';
 
   return (
     <div className="flex h-screen w-full bg-[#070d1a] overflow-hidden relative">
+      <PresenceManager session={session} />
       <Sidebar email={session?.user?.email || ''} role={userRole} isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
       <ScheduleWidget />
       <main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
-        <div className="md:hidden flex items-center justify-between bg-[#0F172A] px-4 py-3.5 border-b border-white/5">
-          <button onClick={() => setIsSidebarOpen(true)} className="text-white p-2 hover:bg-white/10 rounded-xl transition-colors"><Menu size={20} /></button>
-          <div className="text-white font-bold tracking-tight text-[13.5px] uppercase">
-            {isAdmin ? 'Admin Console' : 'Portal Anggota'}
+        <div className="md:hidden flex items-center justify-between bg-[#0F172A] px-4 py-2.5 border-b border-slate-800/80 sticky top-0 z-50 shadow-md">
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setIsSidebarOpen(true)} 
+              className="text-slate-300 hover:text-white p-2 hover:bg-slate-800 rounded-xl transition-colors active:scale-95"
+              aria-label="Buka Menu"
+            >
+              <Menu size={22} />
+            </button>
+            <div className="flex items-center gap-2">
+              <img 
+                src="/logo_pb_bilibili_162.svg" 
+                alt="Logo" 
+                className="w-7 h-7 object-contain"
+                onError={(e) => {
+                  e.currentTarget.src = "/logo_pb_bilibili_162.svg";
+                }}
+              />
+              <div className="flex flex-col">
+                <span className="text-xs font-black tracking-tight text-white leading-none">PB BILIBILI 162</span>
+                <span className="text-[7.5px] font-bold text-blue-400 uppercase tracking-widest mt-0.5 leading-none">
+                  {isAdmin ? 'Admin Console' : 'Portal Anggota'}
+                </span>
+              </div>
+            </div>
           </div>
-          <div className="w-9"></div>
+          
+          <div className="flex items-center gap-2">
+            <a 
+              href="/" 
+              className="text-slate-400 hover:text-white p-2 hover:bg-slate-800 rounded-xl transition-all active:scale-95 flex items-center justify-center"
+              title="Ke Website Utama"
+            >
+              <ExternalLink size={16} />
+            </a>
+            <button 
+              onClick={() => navigate('/admin/profil')}
+              className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white text-[10px] font-black border border-blue-400/30 shadow-md shadow-blue-900/30 active:scale-95 transition-transform"
+              title="Profil Saya"
+            >
+              {session?.user?.email?.charAt(0).toUpperCase() || (isAdmin ? 'A' : 'M')}
+            </button>
+          </div>
         </div>
         <div className="flex-1 overflow-y-auto bg-[#070d1a] custom-scrollbar">
           <Routes>
@@ -824,6 +880,7 @@ function AdminLayout({ session }: { session: any }) {
             <Route path="dokumen" element={isAdmin ? <ManajemenDokumen session={session} /> : <div className="p-4 md:p-8 max-w-7xl mx-auto"><DokumenPenting /></div>} /> 
 
             {/* Admin Only Routes - Redirect Anggota to Dashboard */}
+            <Route path="users" element={isAdmin ? <AdminUsers session={session} /> : <Navigate to="/admin/dashboard" replace />} />
             <Route path="pendaftaran" element={isAdmin ? <ManajemenPendaftaran /> : <Navigate to="/admin/dashboard" replace />} />
             <Route path="atlet" element={isAdmin ? <ManajemenAtlet /> : <Navigate to="/admin/dashboard" replace />} />
             <Route path="surat" element={isAdmin ? <KelolaSurat /> : <Navigate to="/admin/dashboard" replace />} />
@@ -837,10 +894,17 @@ function AdminLayout({ session }: { session: any }) {
             <Route path="hero" element={isAdmin ? <KelolaHero /> : <Navigate to="/admin/dashboard" replace />} />
             <Route path="popup" element={isAdmin ? <AdminPopup /> : <Navigate to="/admin/dashboard" replace />} /> 
             <Route path="footer" element={isAdmin ? <AdminFooter /> : <Navigate to="/admin/dashboard" replace />} />
-            <Route path="sejarah" element={isAdmin ? <AdminSejarah /> : <Navigate to="/admin/dashboard" replace />} />
-            <Route path="visi-misi" element={isAdmin ? <AdminVisiMisi /> : <Navigate to="/admin/dashboard" replace />} />
-            <Route path="fasilitas" element={isAdmin ? <AdminFasilitas /> : <Navigate to="/admin/dashboard" replace />} />
-            <Route path="struktur" element={isAdmin ? <AdminStructure /> : <Navigate to="/admin/dashboard" replace />} /> 
+            
+            <Route path="sejarah" element={isAdmin ? <AdminSejarah /> : <div className="p-4 sm:p-6"><Sejarah /></div>} />
+            <Route path="absensi" element={isAdmin ? <AdminAbsensi session={session} /> : <Navigate to="/admin/dashboard" replace />} />
+            <Route path="inventaris" element={isAdmin ? <AdminInventaris /> : <PublicInventaris />} />
+            <Route path="prestasi" element={isAdmin ? <AdminPrestasi /> : <div className="p-4 sm:p-6"><PublicPrestasi /></div>} />
+            <Route path="faq" element={isAdmin ? <AdminFAQ /> : <div className="p-4 sm:p-6"><PublicFAQ /></div>} />
+            <Route path="program" element={isAdmin ? <AdminProgram /> : <div className="p-4 sm:p-6"><PublicProgram onNavigate={()=>{}} /></div>} />
+
+            <Route path="visi-misi" element={isAdmin ? <AdminVisiMisi /> : <div className="p-4 sm:p-6"><VisiMisi /></div>} />
+            <Route path="fasilitas" element={isAdmin ? <AdminFasilitas /> : <div className="p-4 sm:p-6"><Fasilitas /></div>} />
+            <Route path="struktur" element={isAdmin ? <AdminStructure /> : <div className="p-4 sm:p-6"><StrukturOrganisasiPublic /></div>} /> 
             <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
           </Routes>
         </div>

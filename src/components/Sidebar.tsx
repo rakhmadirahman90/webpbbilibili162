@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { 
+  PackageOpen,
+  MessageCircleQuestion,
+  Target,
   Users, 
   UserCheck,
   Newspaper, 
@@ -221,7 +224,7 @@ export default function Sidebar({ email, role = 'admin', isOpen, onClose }: Side
     }
   };
 
-  const allMenuItems = [
+    const allMenuItems = [
     { 
       section: 'Portal Utama', 
       items: [
@@ -239,14 +242,31 @@ export default function Sidebar({ email, role = 'admin', isOpen, onClose }: Side
         { name: 'Berita & Pengumuman', path: 'berita', icon: Newspaper, adminOnly: false },
         { name: 'Galeri Media', path: 'galeri', icon: Image, adminOnly: false },
         { name: 'Dokumen Club', path: 'dokumen', icon: BookOpen, adminOnly: false },
+        ...(role !== 'admin' ? [
+          { name: 'Program Klub', path: 'program', icon: Target, adminOnly: false },
+          { name: 'Prestasi', path: 'prestasi', icon: Trophy, adminOnly: false },
+          { name: 'FAQ', path: 'faq', icon: MessageCircleQuestion, adminOnly: false }
+        ] : [])
       ]
     },
+    ...(role !== 'admin' ? [{
+      section: 'Profil Klub & Fasilitas',
+      items: [
+        { name: 'Sejarah Klub', path: 'sejarah', icon: Info, adminOnly: false },
+        { name: 'Visi & Misi', path: 'visi-misi', icon: Info, adminOnly: false },
+        { name: 'Fasilitas', path: 'fasilitas', icon: Info, adminOnly: false },
+        { name: 'Struktur Organisasi', path: 'struktur', icon: Network, adminOnly: false },
+        { name: 'Inventaris', path: 'inventaris', icon: PackageOpen, adminOnly: false }
+      ]
+    }] : []),
     { 
       section: 'Kelola Data & Atlet', 
       adminOnly: true,
       items: [
+        { name: 'Kelola User', path: 'users', icon: ShieldCheck, adminOnly: true },
         { name: 'Pendaftaran Anggota', path: 'pendaftaran', icon: FileSpreadsheet, adminOnly: true },
         { name: 'Manajemen Atlet', path: 'atlet', icon: Users, adminOnly: true },
+        { name: 'Absensi Latihan', path: 'absensi', icon: UserCheck, adminOnly: true },
         { name: 'Manajemen Poin', path: 'poin', icon: Star, adminOnly: true },
         { name: 'Audit Log Poin', path: 'audit-poin', icon: History, adminOnly: true },
       ]
@@ -258,6 +278,7 @@ export default function Sidebar({ email, role = 'admin', isOpen, onClose }: Side
         { name: 'Laporan & Rekap', path: 'laporan', icon: BarChart3, adminOnly: true },
         { name: 'Kelola Kas', path: 'kas', icon: Wallet, adminOnly: true }, 
         { name: 'Kelola Surat', path: 'surat', icon: Mail, adminOnly: true },
+        { name: 'Kelola Inventaris', path: 'inventaris', icon: PackageOpen, adminOnly: true },
         { name: 'Log Aktivitas', path: 'logs', icon: FileSearch, adminOnly: true },
       ]
     },
@@ -265,7 +286,10 @@ export default function Sidebar({ email, role = 'admin', isOpen, onClose }: Side
       section: 'Pengaturan Website',
       adminOnly: true, 
       items: [
-        { name: 'Kelola Sejarah', path: 'sejarah', icon: Info, adminOnly: true }, 
+        { name: 'Kelola Sejarah', path: 'sejarah', icon: Info, adminOnly: true },
+        { name: 'Kelola Program', path: 'program', icon: Target, adminOnly: true },
+        { name: 'Kelola Prestasi', path: 'prestasi', icon: Trophy, adminOnly: true },
+        { name: 'Kelola FAQ', path: 'faq', icon: MessageCircleQuestion, adminOnly: true }, 
         { name: 'Kelola Visi Misi', path: 'visi-misi', icon: Info, adminOnly: true }, 
         { name: 'Kelola Fasilitas', path: 'fasilitas', icon: Info, adminOnly: true }, 
         { name: 'Kelola Struktur', path: 'struktur', icon: Network, adminOnly: true },
@@ -342,7 +366,7 @@ export default function Sidebar({ email, role = 'admin', isOpen, onClose }: Side
 
       {/* SIDEBAR CONTAINER */}
       <div className={`
-        fixed md:relative flex flex-col justify-between
+        fixed top-0 left-0 md:relative flex flex-col justify-between
         w-[280px] sm:w-72 md:w-60 bg-[#0F172A] h-[100dvh] p-2.5 sm:p-3 text-white shadow-2xl z-[101]
         border-r border-slate-800 transition-all duration-300 overflow-hidden
         ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}

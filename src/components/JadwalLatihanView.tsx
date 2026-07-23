@@ -53,14 +53,14 @@ export default function JadwalLatihanView() {
       day: 'Ahad',
       time: '08.00 - 12.00 WITA',
       location: 'GOR A4 Soreang',
-      address: 'Kec. Soreang, Kota Parepare',
+      address: 'Soreang, Kota Parepare',
       badgeColor: 'emerald',
-      program: 'Match Day & Turnamen Internal',
+      program: 'Latihan Bebas & Game Kompetitif',
       activities: [
-        'Pemanasan & Stretching Bebas (30 Menit)',
-        'Pertandingan Beregu & Point System (150 Menit)',
-        'Pencatatan Poin Ranking Atlet (30 Menit)',
-        'Evaluasi & Foto Bersama Anggota (30 Menit)'
+        'Pemanasan Mandiri (30 Menit)',
+        'Game Mabar / Sparring (180 Menit)',
+        'Analisa Strategi Bermain (20 Menit)',
+        'Pengumuman Klub & Penutup (10 Menit)'
       ],
       isActive: scheduleInfo.isAhadActive,
       isFinished: scheduleInfo.isAhadFinished
@@ -68,66 +68,70 @@ export default function JadwalLatihanView() {
   ];
 
   return (
-    <div className="space-y-6 sm:space-y-8 font-sans text-white pb-12">
-      {/* HEADER TITLE CARD */}
-      <div className="bg-gradient-to-r from-[#0b1224] via-[#101a35] to-[#0b1224] border border-white/10 rounded-3xl p-5 sm:p-8 relative overflow-hidden shadow-2xl">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 blur-3xl rounded-full pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500/10 blur-3xl rounded-full pointer-events-none" />
-
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-black uppercase tracking-widest">
-              <Calendar size={14} />
-              <span>Agenda Resmi Klub</span>
+    <div className="space-y-6 sm:space-y-8 animate-in fade-in zoom-in-95 duration-500">
+      {/* HEADER SECTION */}
+      <div className="bg-gradient-to-br from-slate-900 to-black border border-white/10 rounded-3xl p-5 sm:p-8 relative overflow-hidden shadow-2xl">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 blur-[100px] rounded-full pointer-events-none" />
+        
+        <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 justify-between relative z-10">
+          <div className="space-y-3 lg:max-w-2xl">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 w-fit">
+              <span className="relative flex h-2.5 w-2.5">
+                {scheduleInfo.isOngoing ? (
+                  <>
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+                  </>
+                ) : (
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
+                )}
+              </span>
+              <span className="text-[11px] font-bold tracking-wider text-slate-300 uppercase">
+                {scheduleInfo.isOngoing ? 'SESI SEDANG BERLANGSUNG' : 'SISTEM JADWAL AKTIF'}
+              </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black italic tracking-tight uppercase text-white">
-              Jadwal Latihan <span className="text-amber-400">PB Bilibili 162</span>
+            
+            <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight uppercase italic leading-none">
+              Jadwal <span className="text-amber-500">Latihan</span>
             </h1>
-            <p className="text-slate-300 text-xs sm:text-sm font-medium max-w-2xl leading-relaxed">
-              Jadwal rutin latihan bulutangkis terpadu setiap pekan. Dilengkapi sistem countdown real-time, lokasi GOR resmi, serta panduan porsi latihan seluruh anggota.
+            <p className="text-sm text-slate-400 font-medium leading-relaxed max-w-xl">
+              Berikut adalah jadwal resmi latihan rutin PB Bilibili 162. Pastikan hadir tepat waktu dan menggunakan perlengkapan yang sesuai.
             </p>
           </div>
 
-          {/* REALTIME STATUS CARD */}
-          <div className="bg-slate-950/80 border border-amber-500/30 p-4 sm:p-5 rounded-2xl shadow-xl min-w-[280px] shrink-0">
-            <div className="flex items-center justify-between pb-2.5 border-b border-white/10 mb-3">
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
-                <Radio size={12} className="text-amber-400 animate-pulse" /> Status Latihan
+          <div className="bg-white/5 border border-white/10 p-4 sm:p-5 rounded-2xl flex-shrink-0 backdrop-blur-sm relative overflow-hidden lg:min-w-[320px]">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 blur-[50px] rounded-full pointer-events-none" />
+            
+            <div className="flex items-center gap-2.5 mb-4 relative z-10">
+              <Timer className="text-amber-400" size={18} />
+              <span className="text-xs font-bold text-slate-300 uppercase tracking-widest">
+                {scheduleInfo.isOngoing ? 'Sisa Waktu Sesi Ini' : 'Menuju Sesi Berikutnya'}
               </span>
-              {scheduleInfo.isOngoing ? (
-                <span className="px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/40 text-[9px] font-black uppercase tracking-wider animate-pulse">
-                  SESI LIVE
-                </span>
-              ) : (
-                <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[9px] font-black uppercase tracking-wider">
-                  COUNTDOWN
-                </span>
-              )}
             </div>
 
-            <div className="text-center space-y-1">
-              <p className="text-xs font-bold text-slate-300">
-                {scheduleInfo.isOngoing
-                  ? scheduleInfo.activeSessionName
-                  : scheduleInfo.isAllFinished
-                  ? `Semua Sesi Pekan Ini Selesai • Next: ${scheduleInfo.nextSessionName}`
-                  : scheduleInfo.isTodayFinished
-                  ? `Sesi Hari Ini Selesai • Next: ${scheduleInfo.nextSessionName}`
-                  : scheduleInfo.nextSessionName}
-              </p>
-              <div className="flex items-center justify-center gap-1.5 pt-1">
+            <div className="space-y-3 relative z-10">
+              <div className="bg-slate-950/50 rounded-xl p-3 border border-white/5">
+                <p className="text-[11px] text-slate-400 font-medium mb-1 truncate">
+                  {scheduleInfo.isOngoing ? scheduleInfo.activeSessionName : `${scheduleInfo.nextSessionDay} - ${scheduleInfo.nextSessionName}`}
+                </p>
+                <p className="text-sm font-bold text-white truncate">
+                  {scheduleInfo.nextSessionLocation}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 sm:gap-3">
                 <div className="bg-slate-900 border border-white/10 px-2 py-1 rounded-xl min-w-[40px]">
-                  <span className="text-sm font-black text-amber-400 font-mono block">{String(scheduleInfo.days).padStart(2, '0')}</span>
+                  <span className="text-sm font-black text-white font-mono block">{String(scheduleInfo.days).padStart(2, '0')}</span>
                   <span className="text-[7px] text-slate-500 font-bold block">HARI</span>
                 </div>
                 <span className="text-slate-600 font-black text-xs">:</span>
                 <div className="bg-slate-900 border border-white/10 px-2 py-1 rounded-xl min-w-[40px]">
-                  <span className="text-sm font-black text-amber-400 font-mono block">{String(scheduleInfo.hours).padStart(2, '0')}</span>
+                  <span className="text-sm font-black text-white font-mono block">{String(scheduleInfo.hours).padStart(2, '0')}</span>
                   <span className="text-[7px] text-slate-500 font-bold block">JAM</span>
                 </div>
                 <span className="text-slate-600 font-black text-xs">:</span>
                 <div className="bg-slate-900 border border-white/10 px-2 py-1 rounded-xl min-w-[40px]">
-                  <span className="text-sm font-black text-amber-400 font-mono block">{String(scheduleInfo.minutes).padStart(2, '0')}</span>
+                  <span className="text-sm font-black text-white font-mono block">{String(scheduleInfo.minutes).padStart(2, '0')}</span>
                   <span className="text-[7px] text-slate-500 font-bold block">MENIT</span>
                 </div>
                 <span className="text-slate-600 font-black text-xs">:</span>
@@ -159,7 +163,7 @@ export default function JadwalLatihanView() {
             <div className={`absolute top-0 right-0 w-32 h-32 blur-2xl rounded-full pointer-events-none ${
               item.id === 'rabu' ? 'bg-blue-600/10' : item.id === 'jumat' ? 'bg-indigo-600/10' : 'bg-emerald-600/10'
             }`} />
-
+            
             <div>
               {/* Header Badge */}
               <div className="flex items-center justify-between gap-2 pb-3 border-b border-white/10 mb-4">
@@ -180,7 +184,6 @@ export default function JadwalLatihanView() {
                     <p className="text-[10px] text-slate-400 font-semibold">{item.program}</p>
                   </div>
                 </div>
-
                 {item.isActive ? (
                   <span className="px-2.5 py-1 rounded-full bg-red-500/20 text-red-400 border border-red-500/40 text-[9px] font-black uppercase tracking-wider animate-pulse flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" />
@@ -264,7 +267,6 @@ export default function JadwalLatihanView() {
               Tiba di GOR 15 menit sebelum pukul 08.00 WITA untuk pemanasan bersama.
             </p>
           </div>
-
           <div className="bg-slate-950/60 p-3.5 rounded-2xl border border-white/5 space-y-1">
             <p className="text-xs font-bold text-blue-400 flex items-center gap-1.5">
               <CheckCircle2 size={14} /> Atribut Jersey Resmi
@@ -273,7 +275,6 @@ export default function JadwalLatihanView() {
               Wajib mengenakan Jersey Resmi PB Bilibili 162 saat mengikuti sesi game internal.
             </p>
           </div>
-
           <div className="bg-slate-950/60 p-3.5 rounded-2xl border border-white/5 space-y-1">
             <p className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
               <CheckCircle2 size={14} /> Kebersihan GOR
@@ -282,7 +283,6 @@ export default function JadwalLatihanView() {
               Menjaga kebersihan lapangan dan buang sampah shuttlecock/botol pada tempatnya.
             </p>
           </div>
-
           <div className="bg-slate-950/60 p-3.5 rounded-2xl border border-white/5 space-y-1">
             <p className="text-xs font-bold text-indigo-400 flex items-center gap-1.5">
               <CheckCircle2 size={14} /> Sportivitas Tinggi
