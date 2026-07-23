@@ -28,7 +28,11 @@ interface KasEntry {
   jenis_transaksi: 'Masuk' | 'Keluar';
 }
 
-export default function PublicKasView() {
+interface PublicKasViewProps {
+  memberOnlyName?: string;
+}
+
+export default function PublicKasView({ memberOnlyName }: PublicKasViewProps = {}) {
   const [loading, setLoading] = useState(true);
   const [kasData, setKasData] = useState<KasEntry[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -46,10 +50,15 @@ export default function PublicKasView() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('kas_pb')
-        .select('*')
-        .order('tanggal_transaksi', { ascending: false });
+        .select('*');
+      
+      if (memberOnlyName) {
+        query = query.ilike('nama_pembayar', memberOnlyName.trim());
+      }
+      
+      const { data, error } = await query.order('tanggal_transaksi', { ascending: false });
       
       if (error) throw error;
       setKasData(data || []);
@@ -60,7 +69,7 @@ export default function PublicKasView() {
     }
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { fetchData(); }, [memberOnlyName]);
 
   // --- LOGIKA SALDO GLOBAL ---
   const globalStats = kasData.reduce((acc, curr) => {
@@ -104,6 +113,18 @@ export default function PublicKasView() {
   const saldoAkhirPeriode = normalizedAll
     .filter(item => item.tanggal_transaksi <= endDate)
     .reduce((acc, curr) => curr.jenis_transaksi === 'Masuk' ? acc + curr.jumlah_bayar : acc - curr.jumlah_bayar, 0);
+
+  const memberStats = filteredData.reduce((acc, curr) => {
+    if (curr.kategori === 'Iuran Bulanan Tetap (10k)' || curr.kategori === 'Pembayaran Iuran Binaan') {
+      acc.iuran += curr.jumlah_bayar;
+    } else if (curr.kategori === 'Pembayaran Shuttlecock') {
+      acc.shuttlecock += curr.jumlah_bayar;
+    } else {
+      acc.lainnya += curr.jumlah_bayar;
+    }
+    acc.total += curr.jumlah_bayar;
+    return acc;
+  }, { iuran: 0, shuttlecock: 0, lainnya: 0, total: 0 });
 
   const modalTetap = 600000;
   const saldoBendahara = saldoAkhirPeriode - modalTetap;
@@ -188,7 +209,10 @@ export default function PublicKasView() {
 
       // 2. Judul Laporan
       doc.setFontSize(14).setFont("helvetica", "bold").setTextColor(40);
-      doc.text('LAPORAN PERTANGGUNGJAWABAN KEUANGAN KAS', 105, 50, { align: 'center' });
+      const titleText = memberOnlyName 
+        ? `LAPORAN SETORAN KAS ANGGOTA - ${memberOnlyName.toUpperCase()}`
+        : 'LAPORAN PERTANGGUNGJAWABAN KEUANGAN KAS';
+      doc.text(titleText, 105, 50, { align: 'center' });
       doc.setFontSize(10).setFont("helvetica", "normal").setTextColor(120);
       doc.text(`Periode: ${startDate} s/d ${endDate}`, 105, 56, { align: 'center' });
 
@@ -241,34 +265,52 @@ export default function PublicKasView() {
       const modalTetap = 600000;
       const saldoBendahara = saldoAkhirPeriode - modalTetap;
 
-      doc.setDrawColor(230).setFillColor(248, 250, 252).roundedRect(100, finalY, 95, 48, 2, 2, 'FD');
-      
-      doc.setFontSize(8.5).setFont("helvetica", "bold").setTextColor(100);
-      doc.text('Saldo Kas Sebelumnya:', 105, finalY + 6);
-      doc.setTextColor(100).text(`Rp ${saldoSebelumnya.toLocaleString()}`, 190, finalY + 6, { align: 'right' });
+      if (memberOnlyName) {
+        doc.setDrawColor(230).setFillColor(248, 250, 252).roundedRect(100, finalY, 95, 30, 2, 2, 'FD');
+        doc.setFontSize(8.5).setFont("helvetica", "bold").setTextColor(100);
+        doc.text('Total Iuran Bulanan:', 105, finalY + 6);
+        doc.text(`Rp ${memberStats.iuran.toLocaleString()}`, 190, finalY + 6, { align: 'right' });
 
-      doc.text('Total Pemasukan:', 105, finalY + 12);
-      doc.setTextColor(16, 185, 129);
-      doc.text(`Rp ${stats.masuk.toLocaleString()}`, 190, finalY + 12, { align: 'right' });
+        doc.text('Total Pembelian Shuttlecock:', 105, finalY + 12);
+        doc.text(`Rp ${memberStats.shuttlecock.toLocaleString()}`, 190, finalY + 12, { align: 'right' });
 
-      doc.setTextColor(100);
-      doc.text('Total Pengeluaran:', 105, finalY + 18);
-      doc.setTextColor(225, 29, 72);
-      doc.text(`Rp ${stats.keluar.toLocaleString()}`, 190, finalY + 18, { align: 'right' });
+        doc.text('Kontribusi Lainnya:', 105, finalY + 18);
+        doc.text(`Rp ${memberStats.lainnya.toLocaleString()}`, 190, finalY + 18, { align: 'right' });
 
-      doc.setDrawColor(230).line(105, finalY + 21, 190, finalY + 21);
+        doc.setDrawColor(230).line(105, finalY + 21, 190, finalY + 21);
+        doc.setTextColor(30, 64, 175);
+        doc.text('Total Kontribusi Periode:', 105, finalY + 26);
+        doc.text(`Rp ${memberStats.total.toLocaleString()}`, 190, finalY + 26, { align: 'right' });
+      } else {
+        doc.setDrawColor(230).setFillColor(248, 250, 252).roundedRect(100, finalY, 95, 48, 2, 2, 'FD');
+        
+        doc.setFontSize(8.5).setFont("helvetica", "bold").setTextColor(100);
+        doc.text('Saldo Kas Sebelumnya:', 105, finalY + 6);
+        doc.setTextColor(100).text(`Rp ${saldoSebelumnya.toLocaleString()}`, 190, finalY + 6, { align: 'right' });
 
-      doc.setTextColor(30, 64, 175);
-      doc.text('Saldo Akhir Kas:', 105, finalY + 27);
-      doc.text(`Rp ${saldoAkhirPeriode.toLocaleString()}`, 190, finalY + 27, { align: 'right' });
+        doc.text('Total Pemasukan:', 105, finalY + 12);
+        doc.setTextColor(16, 185, 129);
+        doc.text(`Rp ${stats.masuk.toLocaleString()}`, 190, finalY + 12, { align: 'right' });
 
-      doc.setFontSize(8).setFont("helvetica", "normal").setTextColor(100);
-      doc.text(`• Modal Kas Tetap Pemegang Bola:`, 105, finalY + 34);
-      doc.text(`Rp 600.000`, 190, finalY + 34, { align: 'right' });
+        doc.setTextColor(100);
+        doc.text('Total Pengeluaran:', 105, finalY + 18);
+        doc.setTextColor(225, 29, 72);
+        doc.text(`Rp ${stats.keluar.toLocaleString()}`, 190, finalY + 18, { align: 'right' });
 
-      doc.text(`• Saldo Kas Bendahara:`, 105, finalY + 41);
-      doc.setFont("helvetica", "bold").setTextColor(30, 64, 175);
-      doc.text(`Rp ${saldoBendahara.toLocaleString()}`, 190, finalY + 41, { align: 'right' });
+        doc.setDrawColor(230).line(105, finalY + 21, 190, finalY + 21);
+
+        doc.setTextColor(30, 64, 175);
+        doc.text('Saldo Akhir Kas:', 105, finalY + 27);
+        doc.text(`Rp ${saldoAkhirPeriode.toLocaleString()}`, 190, finalY + 27, { align: 'right' });
+
+        doc.setFontSize(8).setFont("helvetica", "normal").setTextColor(100);
+        doc.text(`• Modal Kas Tetap Pemegang Bola:`, 105, finalY + 34);
+        doc.text(`Rp 600.000`, 190, finalY + 34, { align: 'right' });
+
+        doc.text(`• Saldo Kas Bendahara:`, 105, finalY + 41);
+        doc.setFont("helvetica", "bold").setTextColor(30, 64, 175);
+        doc.text(`Rp ${saldoBendahara.toLocaleString()}`, 190, finalY + 41, { align: 'right' });
+      }
 
       // 5. Tanda Tangan
       const signY = finalY + 56;
@@ -289,22 +331,33 @@ export default function PublicKasView() {
       doc.text(`* Dokumen ini digenerate secara otomatis melalui Treasury Master System pada ${fullDateStr}`, 15, 285);
 
       const pdfBlob = doc.output('blob');
-      const fileName = `LPJ_KAS_PB162_${startDate}_TO_${endDate}.pdf`;
+      const fileName = memberOnlyName 
+        ? `LAPORAN_SETORAN_KAS_${memberOnlyName.toUpperCase().replace(/\s+/g, '_')}_${startDate}_TO_${endDate}.pdf`
+        : `LPJ_KAS_PB162_${startDate}_TO_${endDate}.pdf`;
       const localPdfUrl = URL.createObjectURL(pdfBlob);
 
-      const defaultMessage = `*LAPORAN PERTANGGUNGJAWABAN KAS - PB BILIBILI 162*\n\n` +
-        `Periode: *${startDate} s/d ${endDate}*\n\n` +
-        `• Saldo Sebelumnya: Rp ${saldoSebelumnya.toLocaleString()}\n` +
-        `• Total Pemasukan: Rp ${stats.masuk.toLocaleString()}\n` +
-        `• Total Pengeluaran: Rp ${stats.keluar.toLocaleString()}\n` +
-        `• *Saldo Akhir Kas: Rp ${saldoAkhirPeriode.toLocaleString()}*\n` +
-        `  - Modal Kas Tetap Pemegang Bola: Rp 600.000\n` +
-        `  - Saldo Kas Bendahara: Rp ${saldoBendahara.toLocaleString()}\n\n` +
-        `Laporan keuangan lengkap terlampir dalam file PDF.\n\n` +
-        `*Admin PB Bilibili 162*`;
+      const defaultMessage = memberOnlyName
+        ? `*LAPORAN SETORAN KAS ANGGOTA - ${memberOnlyName.toUpperCase()}*\n\n` +
+          `Periode: *${startDate} s/d ${endDate}*\n\n` +
+          `• Total Iuran Bulanan: Rp ${memberStats.iuran.toLocaleString()}\n` +
+          `• Total Pembelian Shuttlecock: Rp ${memberStats.shuttlecock.toLocaleString()}\n` +
+          `• Total Lain-lain: Rp ${memberStats.lainnya.toLocaleString()}\n` +
+          `• *Total Kontribusi Periode: Rp ${memberStats.total.toLocaleString()}*\n\n` +
+          `Riwayat detail terlampir dalam file PDF.\n\n` +
+          `*PB Bilibili 162*`
+        : `*LAPORAN PERTANGGUNGJAWABAN KAS - PB BILIBILI 162*\n\n` +
+          `Periode: *${startDate} s/d ${endDate}*\n\n` +
+          `• Saldo Sebelumnya: Rp ${saldoSebelumnya.toLocaleString()}\n` +
+          `• Total Pemasukan: Rp ${stats.masuk.toLocaleString()}\n` +
+          `• Total Pengeluaran: Rp ${stats.keluar.toLocaleString()}\n` +
+          `• *Saldo Akhir Kas: Rp ${saldoAkhirPeriode.toLocaleString()}*\n` +
+          `  - Modal Kas Tetap Pemegang Bola: Rp 600.000\n` +
+          `  - Saldo Kas Bendahara: Rp ${saldoBendahara.toLocaleString()}\n\n` +
+          `Laporan keuangan lengkap terlampir dalam file PDF.\n\n` +
+          `*Admin PB Bilibili 162*`;
 
       const { value: actionType } = await Swal.fire({
-        title: '📱 Preview & Kirim PDF Kas ke WhatsApp',
+        title: memberOnlyName ? '📱 Preview & Bagikan PDF Kas Anda' : '📱 Preview & Kirim PDF Kas ke WhatsApp',
         html: `
           <div class="text-left text-xs space-y-3 font-sans">
             <div class="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl space-y-2">
@@ -422,15 +475,18 @@ export default function PublicKasView() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-blue-100 mb-3">
-            <Zap size={12} fill="currentColor" /> Live Financial Report
+            <Zap size={12} fill="currentColor" /> {memberOnlyName ? 'Riwayat Kas Anda' : 'Live Financial Report'}
           </div>
           <h2 className="text-4xl font-black text-slate-800 tracking-tighter flex items-center gap-3 italic">
             <div className="p-2 bg-blue-600 rounded-2xl text-white shadow-xl shadow-blue-200"><Wallet size={28}/></div>
-            TRANSPARANSI KAS
+            {memberOnlyName ? 'REKAP KAS ANDA' : 'TRANSPARANSI KAS'}
           </h2>
           <div className="text-slate-500 mt-2 font-medium flex items-center gap-2">
             <Info size={16} className="text-blue-500" />
-            Pemantauan saldo dan mutasi dana PB. Bili Bili 162 secara terbuka.
+            {memberOnlyName 
+              ? `Pemantauan riwayat penyetoran iuran dan pembelian shuttlecock untuk ${memberOnlyName}.`
+              : 'Pemantauan saldo dan mutasi dana PB. Bili Bili 162 secara terbuka.'
+            }
           </div>
         </div>
         
@@ -443,23 +499,25 @@ export default function PublicKasView() {
       </div>
 
       {/* Filter Section */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10 bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100 shadow-inner">
-        <div className="space-y-2">
-          <label className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-1">Cari Atlet / Kategori</label>
-          <div className="relative">
-            <Search className="absolute left-4 top-3.5 text-slate-400" size={20}/>
-            <input 
-              type="text" 
-              placeholder="Ketik nama atlet atau jenis kategori..."
-              className="w-full pl-12 pr-4 py-3.5 rounded-2xl border border-slate-200 focus:ring-4 focus:ring-blue-100 outline-none transition-all font-bold text-sm bg-white"
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(1);
-              }}
-            />
+      <div className={`grid grid-cols-1 ${memberOnlyName ? 'md:grid-cols-2' : 'md:grid-cols-3'} gap-6 mb-10 bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100 shadow-inner`}>
+        {!memberOnlyName && (
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-1">Cari Atlet / Kategori</label>
+            <div className="relative">
+              <Search className="absolute left-4 top-3.5 text-slate-400" size={20}/>
+              <input 
+                type="text" 
+                placeholder="Ketik nama atlet atau jenis kategori..."
+                className="w-full pl-12 pr-4 py-3.5 rounded-2xl border border-slate-200 focus:ring-4 focus:ring-blue-100 outline-none transition-all font-bold text-sm bg-white"
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setCurrentPage(1);
+                }}
+              />
+            </div>
           </div>
-        </div>
+        )}
         <div className="space-y-2">
           <label className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-1">Periode Awal</label>
           <input 
@@ -481,7 +539,45 @@ export default function PublicKasView() {
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+      {memberOnlyName ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+          <div className="bg-slate-50 border border-slate-200 p-8 rounded-[2rem] relative overflow-hidden group">
+            <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform">
+              <Calendar size={120} className="text-slate-600" />
+            </div>
+            <div className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-2">Total Iuran Bulanan Anda</div>
+            <div className="text-2xl font-black text-slate-800 tracking-tighter">Rp {memberStats.iuran.toLocaleString()}</div>
+          </div>
+
+          <div className="bg-amber-50 border border-amber-100 p-8 rounded-[2rem] relative overflow-hidden group">
+            <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform">
+              <Package size={120} className="text-amber-600" />
+            </div>
+            <div className="text-[10px] font-black text-amber-600 uppercase tracking-[0.3em] mb-2">Pembelian Shuttlecock</div>
+            <div className="text-2xl font-black text-amber-700 tracking-tighter">Rp {memberStats.shuttlecock.toLocaleString()}</div>
+          </div>
+          
+          <div className="bg-rose-50 border border-rose-100 p-8 rounded-[2rem] relative overflow-hidden group">
+            <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform">
+              <TrendingUp size={120} className="text-rose-600" />
+            </div>
+            <div className="text-[10px] font-black text-rose-600 uppercase tracking-[0.3em] mb-2">Kontribusi Lainnya</div>
+            <div className="text-2xl font-black text-rose-700 tracking-tighter">Rp {memberStats.lainnya.toLocaleString()}</div>
+          </div>
+          
+          <div className="bg-blue-600 p-8 rounded-[2rem] shadow-[0_20px_50px_rgba(37,99,235,0.2)] relative overflow-hidden group">
+            <div className="absolute -right-4 -bottom-4 opacity-20 group-hover:scale-110 transition-transform">
+              <Wallet size={120} className="text-white" />
+            </div>
+            <div className="text-[10px] font-black text-blue-100 uppercase tracking-[0.3em] mb-2">Total Kontribusi Anda</div>
+            <div className="text-2xl font-black text-white tracking-tighter">Rp {memberStats.total.toLocaleString()}</div>
+            <div className="mt-2 text-[10px] text-blue-100 font-semibold space-y-0.5 border-t border-white/10 pt-2">
+              <div>Penyetoran riwayat kas aktif</div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
         <div className="bg-slate-50 border border-slate-200 p-8 rounded-[2rem] relative overflow-hidden group">
           <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform">
             <Calendar size={120} className="text-slate-600" />
@@ -518,6 +614,7 @@ export default function PublicKasView() {
           </div>
         </div>
       </div>
+    )}
 
       {/* Main Table Area */}
       <div className="bg-white border border-slate-100 rounded-[2.5rem] overflow-hidden shadow-sm">

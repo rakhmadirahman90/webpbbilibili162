@@ -247,6 +247,27 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
     seed: 0
   });
 
+  const [memberTransactions, setMemberTransactions] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (memberData.nama) {
+      const fetchTransactions = async () => {
+        try {
+          const { data, error } = await supabase
+            .from('kas_pb')
+            .select('*')
+            .ilike('nama_pembayar', memberData.nama.trim());
+          if (!error && data) {
+            setMemberTransactions(data);
+          }
+        } catch (err) {
+          console.error("Error loading member transactions in profile:", err);
+        }
+      };
+      fetchTransactions();
+    }
+  }, [memberData.nama]);
+
   // PIN Change State
   const [pinForm, setPinForm] = useState({
     oldPin: '',
@@ -988,7 +1009,100 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
               <span>Kembali ke Profil</span>
             </button>
           </div>
-          <PublicKasView />
+
+          {/* 12-Month Payment Status Board for Member */}
+          {(() => {
+            const MONTHS_ID_LOCAL = [
+              'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+              'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+            ];
+            const currentMonthIdx = new Date().getMonth(); // 0-11
+            const isBinaan = (memberData.kategori || '').toLowerCase().includes('binaan') || 
+                              (memberData.kategori || '').toLowerCase().includes('prestasi') ||
+                              (memberTransactions.some(t => t.kategori === 'Pembayaran Iuran Binaan'));
+            const rate = isBinaan ? 250000 : 10000;
+            
+            // Get all paid months for this member for the year 2026
+            const paidMonths = memberTransactions
+              .filter(t => t.kategori === 'Iuran Bulanan Tetap (10k)' || t.kategori === 'Pembayaran Iuran Binaan')
+              .reduce((acc: string[], t) => {
+                const ket = t.keterangan || '';
+                const match = ket.match(/\[Bulan:\s*([^\]]+)\]/);
+                if (match) {
+                  const months = match[1].split(',').map((m: string) => m.trim());
+                  months.forEach((m: string) => {
+                    if (!acc.includes(m)) acc.push(m);
+                  });
+                } else if (t.tanggal_transaksi) {
+                  const mIdx = new Date(t.tanggal_transaksi).getMonth();
+                  const mName = MONTHS_ID_LOCAL[mIdx];
+                  if (!acc.includes(mName)) acc.push(mName);
+                }
+                return acc;
+              }, []);
+
+            const unpaidMonthsUpToNow = MONTHS_ID_LOCAL.slice(0, currentMonthIdx + 1).filter(m => !paidMonths.includes(m));
+            const totalUnpaidSetahun = MONTHS_ID_LOCAL.filter(m => !paidMonths.includes(m));
+            const sisaTunggakanUpToNow = unpaidMonthsUpToNow.length * rate;
+            const sisaTunggakanSetahun = totalUnpaidSetahun.length * rate;
+
+            return (
+              <div className="bg-[#0b1224] border border-white/10 rounded-2xl p-4 sm:p-5 space-y-4 shadow-xl">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-white/5 pb-3">
+                  <div>
+                    <h4 className="text-sm font-black text-white uppercase italic tracking-tight flex items-center gap-2">
+                      <Calendar size={16} className="text-blue-400" /> Status Setoran Iuran Bulanan Anda (Tahun 2026)
+                    </h4>
+                    <p className="text-slate-400 text-xs mt-0.5 font-semibold">
+                      Kategori iuran: <span className="text-blue-400 font-extrabold">{isBinaan ? 'Iuran Binaan (Rp 250.000 / Bulan)' : 'Iuran Bulanan Reguler (Rp 10.000 / Bulan)'}</span>
+                    </p>
+                  </div>
+                  <div className="flex gap-2 text-right">
+                    <div className="bg-red-500/10 border border-red-500/20 px-3 py-1.5 rounded-xl text-left">
+                      <span className="text-[7.5px] font-black uppercase text-red-400 tracking-wider">Tunggakan s.d. Bulan Ini</span>
+                      <p className="text-xs sm:text-sm font-black text-white mt-0.5">Rp {sisaTunggakanUpToNow.toLocaleString()}</p>
+                    </div>
+                    <div className="bg-slate-900/60 border border-white/5 px-3 py-1.5 rounded-xl text-left">
+                      <span className="text-[7.5px] font-black uppercase text-slate-400 tracking-wider">Sisa Belum Bayar Setahun</span>
+                      <p className="text-xs sm:text-sm font-black text-white mt-0.5">Rp {sisaTunggakanSetahun.toLocaleString()}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 sm:gap-3">
+                  {MONTHS_ID_LOCAL.map((month, idx) => {
+                    const isPaid = paidMonths.includes(month);
+                    const isUpcoming = idx > currentMonthIdx;
+                    
+                    let statusColor = 'bg-slate-950/40 text-slate-500 border-white/5';
+                    let statusLabel = 'Mendatang';
+                    
+                    if (isPaid) {
+                      statusColor = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+                      statusLabel = 'Lunas';
+                    } else if (!isUpcoming) {
+                      statusColor = 'bg-red-500/10 text-red-400 border-red-500/20';
+                      statusLabel = 'Belum Lunas';
+                    }
+
+                    return (
+                      <div key={month} className={`border p-2.5 rounded-xl flex flex-col justify-between text-center transition-all ${statusColor}`}>
+                        <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider">{month}</span>
+                        <div className="mt-1">
+                          <span className="text-[8px] font-black uppercase tracking-widest">{statusLabel}</span>
+                          {isPaid && (
+                            <p className="text-[7.5px] sm:text-[9px] font-semibold mt-0.5 opacity-85">Rp {rate.toLocaleString()}</p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
+
+          <PublicKasView memberOnlyName={memberData?.nama} />
         </motion.div>
       )}
 

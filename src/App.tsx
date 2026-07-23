@@ -69,6 +69,7 @@ import ProfilAnggota from './components/ProfilAnggota';
 import AdminUsers from './components/AdminUsers';
 import ScheduleWidget from './components/ScheduleWidget'; 
 import PresenceManager from './components/PresenceManager';
+import AdminRekapKeuangan from './components/AdminRekapKeuangan';
 
 import { X, ChevronLeft, ChevronRight, Menu, Zap, Download, ExternalLink, Volume2, VolumeX, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -872,6 +873,7 @@ function AdminLayout({ session }: { session: any }) {
             <Route path="jadwal" element={<div className="p-4 md:p-8 max-w-7xl mx-auto"><JadwalLatihanView /></div>} />
             <Route path="jadwal-latihan" element={<div className="p-4 md:p-8 max-w-7xl mx-auto"><JadwalLatihanView /></div>} />
             <Route path="kas" element={isAdmin ? <KasManager /> : <div className="p-4 md:p-8 max-w-7xl mx-auto"><PublicKasView /></div>} />
+            <Route path="rekap-keuangan" element={<AdminRekapKeuangan isAdmin={isAdmin} session={session} />} />
             <Route path="ranking" element={isAdmin ? <AdminRanking session={session} /> : <div className="p-4 md:p-8 max-w-7xl mx-auto"><Ranking /></div>} />
             <Route path="skor" element={<AdminMatch session={session} />} />
             <Route path="berita" element={isAdmin ? <AdminBerita session={session} /> : <div className="p-4 md:p-8 max-w-7xl mx-auto"><News /></div>} />

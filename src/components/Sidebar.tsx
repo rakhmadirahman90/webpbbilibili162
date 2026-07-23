@@ -239,6 +239,7 @@ export default function Sidebar({ email, role = 'admin', isOpen, onClose }: Side
         { name: 'Peringkat & Poin', path: 'ranking', icon: Trophy, adminOnly: false },
         { name: 'Hasil Skor', path: 'skor', icon: Zap, adminOnly: false }, 
         { name: 'Kas Club', path: 'kas', icon: Wallet, adminOnly: false },
+        { name: 'Rekap Kas Anggota', path: 'rekap-keuangan', icon: FileSpreadsheet, adminOnly: false },
         { name: 'Berita & Pengumuman', path: 'berita', icon: Newspaper, adminOnly: false },
         { name: 'Galeri Media', path: 'galeri', icon: Image, adminOnly: false },
         { name: 'Dokumen Club', path: 'dokumen', icon: BookOpen, adminOnly: false },
