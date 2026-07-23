@@ -638,7 +638,7 @@ export default function KasManager() {
           <p className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-blue-400 mb-1 flex items-center gap-1 truncate"><Wallet size={12}/> Saldo Akhir Kas</p>
           <h2 className="text-xs sm:text-lg md:text-xl font-black italic text-white truncate">Rp {saldoAkhirKumulatif.toLocaleString()}</h2>
           <div className="mt-1 text-[9px] text-blue-300 font-medium space-y-0.5">
-            <div>• Modal Tetap: Rp 600K</div>
+            <div>• Modal Tetap: Rp {modalTetap.toLocaleString()}</div>
             <div>• Bendahara: Rp {saldoBendahara.toLocaleString()}</div>
           </div>
         </div>
