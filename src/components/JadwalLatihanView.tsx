@@ -109,6 +109,8 @@ export default function JadwalLatihanView() {
               <p className="text-xs font-bold text-slate-300">
                 {scheduleInfo.isOngoing
                   ? scheduleInfo.activeSessionName
+                  : scheduleInfo.isAllFinished
+                  ? `Semua Sesi Pekan Ini Selesai • Next: ${scheduleInfo.nextSessionName}`
                   : scheduleInfo.isTodayFinished
                   ? `Sesi Hari Ini Selesai • Next: ${scheduleInfo.nextSessionName}`
                   : scheduleInfo.nextSessionName}

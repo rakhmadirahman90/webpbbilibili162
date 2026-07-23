@@ -6,6 +6,7 @@ export interface ScheduleInfo {
   isJumatFinished: boolean;
   isAhadFinished: boolean;
   isTodayFinished: boolean;
+  isAllFinished: boolean;
   isOngoing: boolean;
   activeSessionName: string;
   nextSessionName: string;
@@ -28,64 +29,73 @@ export function computeScheduleInfo(): ScheduleInfo {
   const hour = witaDate.getUTCHours();
   const minute = witaDate.getUTCMinutes();
 
-  // Active session check (08:00 - 12:00 WITA)
-  const isTimeInSession = (hour > 8 || (hour === 8 && minute >= 0)) && hour < 12;
-  const isTimeAfterSession = hour >= 12;
+  // Days since Wednesday (Wed = 0, Thu = 1, Fri = 2, Sat = 3, Sun = 4, Mon = 5, Tue = 6)
+  const dWed = (day + 4) % 7;
+  const currentMin = dWed * 1440 + hour * 60 + minute;
 
-  const isRabuActive = day === 3 && isTimeInSession;
-  const isJumatActive = day === 5 && isTimeInSession;
-  const isAhadActive = day === 0 && isTimeInSession;
+  // Session time windows in minutes from Wednesday 00:00:
+  // Rabu (Wed): start 480 (08:00), end 720 (12:00)
+  // Jumat (Fri): start 3360 (08:00), end 3600 (12:00)
+  // Ahad (Sun): start 6240 (08:00), end 6480 (12:00)
+  // Next Wednesday 08:00: 10560 minutes
 
-  const isRabuFinished = day === 3 && isTimeAfterSession;
-  const isJumatFinished = day === 5 && isTimeAfterSession;
-  const isAhadFinished = day === 0 && isTimeAfterSession;
-
-  const isTodayFinished = isRabuFinished || isJumatFinished || isAhadFinished;
+  const isRabuActive = currentMin >= 480 && currentMin < 720;
+  const isJumatActive = currentMin >= 3360 && currentMin < 3600;
+  const isAhadActive = currentMin >= 6240 && currentMin < 6480;
 
   const isOngoing = isRabuActive || isJumatActive || isAhadActive;
 
+  const isRabuFinished = currentMin >= 720;
+  const isJumatFinished = currentMin >= 3600;
+  const isAhadFinished = currentMin >= 6480;
+
+  const isAllFinished = isAhadFinished;
+
+  const isTodayFinished = (day === 3 && isRabuFinished) || (day === 5 && isJumatFinished) || (day === 0 && isAhadFinished);
+
   const sessions = [
-    { day: 0, name: 'Sesi Ahad (GOR A4 Soreang)', location: 'GOR A4 Soreang', dayName: 'Ahad' },
-    { day: 3, name: 'Sesi Rabu (GOR SMAN 4 Parepare)', location: 'GOR SMAN 4 Parepare', dayName: 'Rabu' },
-    { day: 5, name: 'Sesi Jumat (GOR SMAN 4 Parepare)', location: 'GOR SMAN 4 Parepare', dayName: 'Jumat' },
+    { dayIndex: 3, name: 'Sesi Rabu (GOR SMAN 4 Parepare)', location: 'GOR SMAN 4 Parepare', dayName: 'Rabu', startMin: 480, endMin: 720 },
+    { dayIndex: 5, name: 'Sesi Jumat (GOR SMAN 4 Parepare)', location: 'GOR SMAN 4 Parepare', dayName: 'Jumat', startMin: 3360, endMin: 3600 },
+    { dayIndex: 0, name: 'Sesi Ahad (GOR A4 Soreang)', location: 'GOR A4 Soreang', dayName: 'Ahad', startMin: 6240, endMin: 6480 },
   ];
 
   let nextTargetMs = Infinity;
   let nextSession = sessions[0];
 
   if (isOngoing) {
-    // When a session is ongoing, countdown to the END of today's session (12:00 WITA)
     const endTodayWita = new Date(witaMs);
     endTodayWita.setUTCHours(12, 0, 0, 0);
     nextTargetMs = endTodayWita.getTime();
-    if (isRabuActive) nextSession = sessions[1];
-    else if (isJumatActive) nextSession = sessions[2];
-    else nextSession = sessions[0];
+    if (isRabuActive) nextSession = sessions[0];
+    else if (isJumatActive) nextSession = sessions[1];
+    else nextSession = sessions[2];
   } else {
-    // Find the next upcoming 08:00 WITA session
-    for (const s of sessions) {
-      let daysAhead = s.day - day;
-      if (daysAhead < 0) {
-        daysAhead += 7;
-      } else if (daysAhead === 0) {
-        // If today is the session day:
-        // - Before 08:00 WITA: the session is later today (daysAhead = 0)
-        // - After 12:00 WITA: today's session ended, next one is next week (daysAhead = 7)
-        if (hour >= 12) {
-          daysAhead = 7;
-        }
-      }
-      
-      const targetDate = new Date(witaMs);
-      targetDate.setUTCDate(witaDate.getUTCDate() + daysAhead);
-      targetDate.setUTCHours(8, 0, 0, 0);
+    let targetMin = -1;
+    let targetSessionObj = sessions[0];
 
-      const diff = targetDate.getTime() - witaMs;
-      if (diff > 0 && diff < nextTargetMs) {
-        nextTargetMs = targetDate.getTime();
-        nextSession = s;
-      }
+    if (currentMin < 480) {
+      targetMin = 480;
+      targetSessionObj = sessions[0];
+    } else if (currentMin >= 720 && currentMin < 3360) {
+      targetMin = 3360;
+      targetSessionObj = sessions[1];
+    } else if (currentMin >= 3600 && currentMin < 6240) {
+      targetMin = 6240;
+      targetSessionObj = sessions[2];
+    } else {
+      targetMin = 10560;
+      targetSessionObj = sessions[0];
     }
+
+    const wedDate = new Date(witaMs);
+    let diffToWed = day - 3;
+    if (diffToWed < 0) diffToWed += 7;
+    wedDate.setUTCDate(wedDate.getUTCDate() - diffToWed);
+    wedDate.setUTCHours(0, 0, 0, 0);
+
+    const targetDateMs = wedDate.getTime() + targetMin * 60 * 1000;
+    nextTargetMs = targetDateMs;
+    nextSession = targetSessionObj;
   }
 
   const diffMs = Math.max(0, nextTargetMs - witaMs);
@@ -109,6 +119,7 @@ export function computeScheduleInfo(): ScheduleInfo {
     isJumatFinished,
     isAhadFinished,
     isTodayFinished,
+    isAllFinished,
     isOngoing,
     activeSessionName,
     nextSessionName: nextSession.name,
