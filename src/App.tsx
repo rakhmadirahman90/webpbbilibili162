@@ -814,6 +814,85 @@ function AdminLayout({ session }: { session: any }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const userRole = session?.user?.user_metadata?.role || 'admin';
   const isAdmin = userRole === 'admin';
+  const [userFotoUrl, setUserFotoUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchProfilePhoto = async () => {
+      if (session?.user) {
+        const userMeta = session.user.user_metadata || {};
+        const userEmail = session.user.email || '';
+        const fullName = userMeta.nama || userMeta.full_name || userEmail.split('@')[0] || '';
+        
+        if (userMeta.foto_url) {
+          setUserFotoUrl(userMeta.foto_url);
+          return;
+        }
+        if (userMeta.avatar_url) {
+          setUserFotoUrl(userMeta.avatar_url);
+          return;
+        }
+
+        try {
+          const { data: pendaftaranList } = await supabase
+            .from('pendaftaran')
+            .select('id, nama, email, whatsapp, foto_url');
+          
+          if (pendaftaranList && pendaftaranList.length > 0) {
+            const metaId = userMeta.id || session.user.id;
+            const userLower = fullName.trim().toLowerCase();
+            const emailLower = userEmail.trim().toLowerCase();
+            const metaWa = (userMeta.whatsapp || '').replace(/[^0-9]/g, '');
+
+            let dbMember = pendaftaranList.find((m: any) => 
+              m.id && metaId && (m.id === metaId || `member-${m.id}` === metaId || metaId === `member-${m.id}`)
+            );
+
+            if (!dbMember && userLower) {
+              dbMember = pendaftaranList.find((m: any) => 
+                (m.nama || '').trim().toLowerCase() === userLower
+              );
+            }
+
+            if (!dbMember && emailLower && !emailLower.endsWith('@pbbilibili162.com')) {
+              dbMember = pendaftaranList.find((m: any) => 
+                m.email && m.email.toLowerCase() === emailLower
+              );
+            }
+
+            if (!dbMember && metaWa && metaWa.length >= 6) {
+              dbMember = pendaftaranList.find((m: any) => {
+                const cleanWa = (m.whatsapp || '').replace(/[^0-9]/g, '');
+                return cleanWa && cleanWa.length >= 6 && cleanWa === metaWa;
+              });
+            }
+
+            if (!dbMember && userLower && userLower.length >= 3) {
+              dbMember = pendaftaranList.find((m: any) => {
+                const mNama = (m.nama || '').trim().toLowerCase();
+                return mNama && (mNama.includes(userLower) || userLower.includes(mNama));
+              });
+            }
+
+            if (dbMember?.foto_url) {
+              setUserFotoUrl(dbMember.foto_url);
+            }
+          }
+        } catch (err) {
+          console.error('Error fetching profile photo in AdminLayout:', err);
+        }
+      }
+    };
+
+    fetchProfilePhoto();
+
+    const handleProfileUpdate = () => {
+      fetchProfilePhoto();
+    };
+    window.addEventListener('local-session-changed', handleProfileUpdate);
+    return () => {
+      window.removeEventListener('local-session-changed', handleProfileUpdate);
+    };
+  }, [session]);
 
   return (
     <div className="flex h-screen w-full bg-[#070d1a] overflow-hidden relative">
@@ -858,10 +937,20 @@ function AdminLayout({ session }: { session: any }) {
             </a>
             <button 
               onClick={() => navigate('/admin/profil')}
-              className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white text-[10px] font-black border border-blue-400/30 shadow-md shadow-blue-900/30 active:scale-95 transition-transform"
+              className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white text-[10px] font-black border border-blue-400/30 shadow-md shadow-blue-900/30 active:scale-95 transition-transform overflow-hidden"
               title="Profil Saya"
             >
-              {session?.user?.email?.charAt(0).toUpperCase() || (isAdmin ? 'A' : 'M')}
+              {userFotoUrl ? (
+                <img 
+                  src={userFotoUrl} 
+                  alt="Profil" 
+                  className="w-full h-full object-cover"
+                  referrerPolicy="no-referrer"
+                  onError={() => setUserFotoUrl(null)}
+                />
+              ) : (
+                session?.user?.email?.charAt(0).toUpperCase() || (isAdmin ? 'A' : 'M')
+              )}
             </button>
           </div>
         </div>
