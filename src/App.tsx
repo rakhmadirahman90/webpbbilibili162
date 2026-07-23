@@ -548,7 +548,7 @@ export default function App() {
       return;
     }
 
-    const fullPageMenus = ['jadwal', 'jadwal-latihan', 'schedule', 'kas', 'quiz', 'contact', 'kontak', 'struktur', 'struktur-organisasi', 'dokumen-penting', 'register', 'pendaftaran', 'peringkat', 'rankings', 'atlet', 'players', 'tentang-kami', 'about', 'galeri', 'gallery', 'sejarah', 'visi-misi', 'fasilitas', 'inventaris', 'berita', 'news'];
+    const fullPageMenus = ['jadwal', 'jadwal-latihan', 'schedule', 'kas', 'quiz', 'contact', 'kontak', 'struktur', 'struktur-organisasi', 'dokumen-penting', 'register', 'pendaftaran', 'peringkat', 'rankings', 'atlet', 'players', 'tentang-kami', 'about', 'galeri', 'gallery', 'sejarah', 'visi-misi', 'fasilitas', 'inventaris', 'berita', 'news', 'faq'];
 
     // Prioritaskan subPath jika ada, karena itu adalah target navigasi sebenarnya
     const target = (subPath || sectionId).toLowerCase();
@@ -734,8 +734,6 @@ export default function App() {
                     <SambutanKetua />
                     
                     <LandingFeatures onNavigate={handleNavigate} />
-                    <PublicPrestasi />
-                    <PublicFAQ />
 
                     {/* Jadwal Sholat Khusus Seluler - Tampil Tepat di Bawah Slider Hero */}
                     <div className="block lg:hidden max-w-xl mx-auto px-4 sm:px-6 md:px-8 mt-6 mb-2">
@@ -778,6 +776,7 @@ export default function App() {
                         {(activeView === 'inventaris') && <PublicInventaris />}
                         {(activeView === 'berita' || activeView === 'news') && <News />}
                         {(activeView === 'galeri' || activeView === 'gallery') && <Gallery />}
+                        {activeView === 'faq' && <PublicFAQ />}
                       </div>
                     </motion.div>
                   </AnimatePresence>

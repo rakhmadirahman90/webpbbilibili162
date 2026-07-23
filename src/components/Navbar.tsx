@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Globe, ChevronDown, Menu, X, MapPin, UserPlus, Wallet, FileText, Trophy, BrainCircuit, ArrowLeft, Youtube, Instagram, Facebook, Twitter, Radio, LogIn, LayoutDashboard, UserCheck, LogOut, Timer } from 'lucide-react';
+import { Globe, ChevronDown, Menu, X, MapPin, UserPlus, Wallet, FileText, Trophy, BrainCircuit, ArrowLeft, Youtube, Instagram, Facebook, Twitter, Radio, LogIn, LayoutDashboard, UserCheck, LogOut, Timer, HelpCircle } from 'lucide-react';
 import { supabase } from '../supabase'; 
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
@@ -161,17 +161,17 @@ export default function Navbar({ onNavigate }: NavbarProps) {
           { id: '3', label: 'Informasi', path: 'informasi', type: 'dropdown', order_index: 2 },
           { id: '3-1', parent_id: '3', label: 'Berita', path: 'berita', order_index: 1 },
           { id: '3-3', parent_id: '3', label: 'Prestasi', path: 'prestasi', order_index: 3 },
-          { id: '3-4', parent_id: '3', label: 'FAQ', path: 'faq', order_index: 4 },
           { id: '4', label: 'Peringkat', path: 'peringkat', type: 'dropdown', order_index: 3 },
           { id: '4-1', parent_id: '4', label: 'Ranking Atlet', path: 'peringkat' },
           { id: '4-2', parent_id: '4', label: 'Quiz Badminton', path: 'quiz' },
           { id: '5', label: 'Jadwal Latihan', path: 'jadwal', type: 'link', order_index: 4 }
         ];
       } else {
-        // Filter out 'kas' and 'program' from public navbar
+        // Filter out 'kas', 'program', and 'faq' from public navbar
         finalNav = finalNav.filter((item: any) => 
           item.path !== 'kas' && item.label?.toLowerCase() !== 'kas' && item.label?.toLowerCase() !== 'kelola kas' &&
-          item.path !== 'program' && item.label?.toLowerCase() !== 'program' && item.label?.toLowerCase() !== 'program kelas'
+          item.path !== 'program' && item.label?.toLowerCase() !== 'program' && item.label?.toLowerCase() !== 'program kelas' &&
+          item.path !== 'faq' && item.label?.toLowerCase() !== 'faq'
         );
 
         const hasJadwal = finalNav.some((item: any) => item.path === 'jadwal' || item.path === 'jadwal-latihan' || item.label?.toLowerCase()?.includes('jadwal'));
@@ -324,7 +324,12 @@ export default function Navbar({ onNavigate }: NavbarProps) {
 
     const targetPath = subPath || path;
 
-    if (['program', 'prestasi', 'faq'].includes(targetPath)) {
+    if (targetPath === 'faq') {
+      onNavigate('faq');
+      return;
+    }
+
+    if (['program', 'prestasi'].includes(targetPath)) {
       onNavigate('home', targetPath);
       scrollToSection(targetPath);
       return;
@@ -512,6 +517,9 @@ export default function Navbar({ onNavigate }: NavbarProps) {
                     <button onClick={() => handleNavClick('contact')} className="dropdown-item flex items-center gap-3">
                       <MapPin size={14} className="text-blue-400" /> Hubungi Kami
                     </button>
+                    <button onClick={() => handleNavClick('faq')} className="dropdown-item flex items-center gap-3">
+                      <HelpCircle size={14} className="text-blue-400" /> FAQ
+                    </button>
                     <button onClick={() => handleNavClick('register')} className="dropdown-item flex items-center gap-3 bg-blue-600/5 group">
                       <UserPlus size={14} className="text-blue-600 group-hover:text-white" /> 
                       <span className="text-blue-500 group-hover:text-white">Pendaftaran</span>
@@ -696,6 +704,17 @@ export default function Navbar({ onNavigate }: NavbarProps) {
                 >
                   <MapPin size={13} className="text-blue-500 shrink-0" />
                   <span>Hubungi Kami</span>
+                </button>
+              </div>
+
+              {/* FAQ Item */}
+              <div>
+                <button 
+                  onClick={() => handleNavClick('faq')}
+                  className="flex items-center gap-2 w-full px-3 py-2 text-[11px] font-bold tracking-wider uppercase text-slate-200 hover:bg-blue-600/15 hover:text-blue-400 rounded-lg transition-all duration-200 text-left"
+                >
+                  <HelpCircle size={13} className="text-blue-500 shrink-0" />
+                  <span>FAQ</span>
                 </button>
               </div>
 
