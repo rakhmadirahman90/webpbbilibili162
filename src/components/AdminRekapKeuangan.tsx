@@ -35,6 +35,38 @@ const DAFTAR_PEMASUKAN = [
   'Sumbangan Sukarela'
 ];
 
+const formatRupiah = (val: number | string | undefined | null) => {
+  if (val === undefined || val === null || val === '') return '';
+  if (val === 0) return '0';
+  const numberString = val.toString().replace(/[^0-9]/g, '');
+  return numberString.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+};
+
+const parseRupiah = (str: string) => {
+  const clean = str.replace(/[^0-9]/g, '');
+  return clean ? parseInt(clean) : 0;
+};
+
+const terbilang = (nominal: number): string => {
+  if (!nominal || nominal <= 0) return '';
+  const angka = ["", "Satu", "Dua", "Tiga", "Empat", "Lima", "Enam", "Tujuh", "Delapan", "Sembilan", "Sepuluh", "Sebelas"];
+  
+  const hitung = (n: number): string => {
+    if (n < 12) return angka[n];
+    if (n < 20) return hitung(n - 10) + " Belas";
+    if (n < 100) return hitung(Math.floor(n / 10)) + " Puluh " + hitung(n % 10);
+    if (n < 200) return "Seratus " + hitung(n - 100);
+    if (n < 1000) return hitung(Math.floor(n / 100)) + " Ratus " + hitung(n % 100);
+    if (n < 2000) return "Seribu " + hitung(n - 1000);
+    if (n < 1000000) return hitung(Math.floor(n / 1000)) + " Ribu " + hitung(n % 1000);
+    if (n < 1000000000) return hitung(Math.floor(n / 1000000)) + " Juta " + hitung(n % 1000000);
+    return "";
+  };
+  
+  const hasil = hitung(nominal).replace(/\s+/g, ' ').trim();
+  return hasil ? `Terbilang: ${hasil} Rupiah` : '';
+};
+
 interface Member {
   id: string;
   nama: string;
@@ -1389,17 +1421,67 @@ export default function AdminRekapKeuangan({ isAdmin = true, session }: AdminRek
 
                         <div>
                           <label className="text-[9px] font-bold text-slate-400 mb-1 block uppercase tracking-wider">Nominal Pembayaran (Rp)</label>
-                          <input 
-                            required 
-                            type="number" 
-                            min="0"
-                            disabled={txForm.kategori === 'Pembayaran Shuttlecock'} // Auto-calculated!
-                            value={txForm.jumlah_bayar} 
-                            onChange={e => setTxForm({ ...txForm, jumlah_bayar: parseInt(e.target.value) || 0 })} 
-                            className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-white outline-none focus:border-blue-500 text-xs font-semibold disabled:opacity-50" 
-                          />
-                          {txForm.kategori === 'Pembayaran Shuttlecock' && (
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">Rp</span>
+                            <input 
+                              required 
+                              type="text" 
+                              inputMode="numeric"
+                              disabled={txForm.kategori === 'Pembayaran Shuttlecock'} // Auto-calculated!
+                              value={formatRupiah(txForm.jumlah_bayar)} 
+                              onChange={e => setTxForm({ ...txForm, jumlah_bayar: parseRupiah(e.target.value) })} 
+                              className="w-full bg-black/40 border border-white/10 rounded-xl pl-8 pr-3 py-2 text-white outline-none focus:border-blue-500 text-xs font-semibold disabled:opacity-50" 
+                            />
+                          </div>
+                          {txForm.kategori === 'Pembayaran Shuttlecock' ? (
                             <span className="text-[8px] text-slate-500 italic mt-0.5 block font-medium">Nominal dihitung otomatis dari jumlah bola</span>
+                          ) : (
+                            txForm.jumlah_bayar > 0 && (
+                              <div className="mt-1.5 text-[8px] text-blue-400 font-bold bg-blue-950/20 border border-blue-900/20 px-2.5 py-1 rounded italic leading-tight">
+                                {terbilang(txForm.jumlah_bayar)}
+                              </div>
+                            )
+                          )}
+                          {txForm.kategori !== 'Pembayaran Shuttlecock' && (
+                            <div className="flex flex-wrap gap-1 mt-1.5">
+                              <button 
+                                type="button"
+                                onClick={() => setTxForm({ ...txForm, jumlah_bayar: 10000 })}
+                                className="px-2 py-0.5 bg-white/5 hover:bg-blue-600/20 text-[8px] font-black uppercase tracking-wider text-slate-300 hover:text-blue-400 rounded border border-white/5 transition-all"
+                              >
+                                Set 10k
+                              </button>
+                              <button 
+                                type="button"
+                                onClick={() => setTxForm({ ...txForm, jumlah_bayar: (txForm.jumlah_bayar || 0) + 10000 })}
+                                className="px-2 py-0.5 bg-white/5 hover:bg-emerald-600/20 text-[8px] font-black uppercase tracking-wider text-slate-300 hover:text-emerald-400 rounded border border-white/5 transition-all"
+                              >
+                                +10k
+                              </button>
+                              <button 
+                                type="button"
+                                onClick={() => setTxForm({ ...txForm, jumlah_bayar: (txForm.jumlah_bayar || 0) + 50000 })}
+                                className="px-2 py-0.5 bg-white/5 hover:bg-emerald-600/20 text-[8px] font-black uppercase tracking-wider text-slate-300 hover:text-emerald-400 rounded border border-white/5 transition-all"
+                              >
+                                +50k
+                              </button>
+                              <button 
+                                type="button"
+                                onClick={() => setTxForm({ ...txForm, jumlah_bayar: (txForm.jumlah_bayar || 0) + 100000 })}
+                                className="px-2 py-0.5 bg-white/5 hover:bg-emerald-600/20 text-[8px] font-black uppercase tracking-wider text-slate-300 hover:text-emerald-400 rounded border border-white/5 transition-all"
+                              >
+                                +100k
+                              </button>
+                              {txForm.jumlah_bayar > 0 && (
+                                <button 
+                                  type="button"
+                                  onClick={() => setTxForm({ ...txForm, jumlah_bayar: 0 })}
+                                  className="px-2 py-0.5 bg-red-950/40 hover:bg-red-900/60 text-[8px] font-black uppercase tracking-wider text-red-400 rounded border border-red-900/40 transition-all ml-auto"
+                                >
+                                  Clear
+                                </button>
+                              )}
+                            </div>
                           )}
                         </div>
 

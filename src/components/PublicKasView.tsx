@@ -611,7 +611,7 @@ export default function PublicKasView({ memberOnlyName }: PublicKasViewProps = {
             <div className="text-[8px] md:text-[10px] font-black text-blue-100 uppercase tracking-[0.15em] md:tracking-[0.3em] mb-1">Saldo Akhir Kas</div>
             <div className="text-sm xs:text-base md:text-2xl font-black text-white tracking-tighter">Rp {saldoAkhirPeriode.toLocaleString()}</div>
             <div className="mt-1 text-[7px] xs:text-[9px] text-blue-100 font-bold space-y-0.5 border-t border-white/10 pt-1 md:mt-2 md:text-[10px] md:pt-2">
-              <div>• Modal: Rp 600k</div>
+              <div>• Modal: Rp 600.000</div>
               <div>• Bendahara: Rp {saldoBendahara.toLocaleString()}</div>
             </div>
           </div>

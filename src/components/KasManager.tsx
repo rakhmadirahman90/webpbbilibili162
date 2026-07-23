@@ -31,6 +31,26 @@ const parseRupiah = (str: string) => {
   return clean ? parseInt(clean) : 0;
 };
 
+const terbilang = (nominal: number): string => {
+  if (!nominal || nominal <= 0) return '';
+  const angka = ["", "Satu", "Dua", "Tiga", "Empat", "Lima", "Enam", "Tujuh", "Delapan", "Sembilan", "Sepuluh", "Sebelas"];
+  
+  const hitung = (n: number): string => {
+    if (n < 12) return angka[n];
+    if (n < 20) return hitung(n - 10) + " Belas";
+    if (n < 100) return hitung(Math.floor(n / 10)) + " Puluh " + hitung(n % 10);
+    if (n < 200) return "Seratus " + hitung(n - 100);
+    if (n < 1000) return hitung(Math.floor(n / 100)) + " Ratus " + hitung(n % 100);
+    if (n < 2000) return "Seribu " + hitung(n - 1000);
+    if (n < 1000000) return hitung(Math.floor(n / 1000)) + " Ribu " + hitung(n % 1000);
+    if (n < 1000000000) return hitung(Math.floor(n / 1000000)) + " Juta " + hitung(n % 1000000);
+    return "";
+  };
+  
+  const hasil = hitung(nominal).replace(/\s+/g, ' ').trim();
+  return hasil ? `Terbilang: ${hasil} Rupiah` : '';
+};
+
 interface Atlet {
   id: string;
   player_name: string;
@@ -748,13 +768,61 @@ export default function KasManager() {
 
               <div>
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Nominal (Rp)</label>
-                <input 
-                  type="text" 
-                  inputMode="numeric"
-                  className="w-full bg-black border border-white/10 rounded-xl p-4 text-sm outline-none font-bold text-blue-400" 
-                  value={formatRupiah(formData.jumlah_bayar)} 
-                  onChange={(e) => setFormData({...formData, jumlah_bayar: parseRupiah(e.target.value)})} 
-                />
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">Rp</span>
+                  <input 
+                    type="text" 
+                    inputMode="numeric"
+                    className="w-full bg-black border border-white/10 rounded-xl pl-11 pr-4 py-4 text-sm outline-none font-bold text-blue-400 focus:border-blue-500 transition-all shadow-inner" 
+                    value={formatRupiah(formData.jumlah_bayar)} 
+                    onChange={(e) => setFormData({...formData, jumlah_bayar: parseRupiah(e.target.value)})} 
+                  />
+                </div>
+                {formData.jumlah_bayar > 0 && (
+                  <div className="mt-2 text-[10px] text-blue-400 font-bold bg-blue-950/40 border border-blue-900/30 px-3 py-1.5 rounded-lg italic leading-tight">
+                    {terbilang(formData.jumlah_bayar)}
+                  </div>
+                )}
+                {/* Preset nominal buttons */}
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  <button 
+                    type="button"
+                    onClick={() => setFormData({...formData, jumlah_bayar: 10000})}
+                    className="px-2.5 py-1 bg-white/5 hover:bg-blue-600/20 text-[9px] font-black uppercase tracking-wider text-slate-300 hover:text-blue-400 rounded-md border border-white/5 transition-all"
+                  >
+                    Set 10k
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => setFormData({...formData, jumlah_bayar: (formData.jumlah_bayar || 0) + 10000})}
+                    className="px-2.5 py-1 bg-white/5 hover:bg-emerald-600/20 text-[9px] font-black uppercase tracking-wider text-slate-300 hover:text-emerald-400 rounded-md border border-white/5 transition-all"
+                  >
+                    +10k
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => setFormData({...formData, jumlah_bayar: (formData.jumlah_bayar || 0) + 50000})}
+                    className="px-2.5 py-1 bg-white/5 hover:bg-emerald-600/20 text-[9px] font-black uppercase tracking-wider text-slate-300 hover:text-emerald-400 rounded-md border border-white/5 transition-all"
+                  >
+                    +50k
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => setFormData({...formData, jumlah_bayar: (formData.jumlah_bayar || 0) + 100000})}
+                    className="px-2.5 py-1 bg-white/5 hover:bg-emerald-600/20 text-[9px] font-black uppercase tracking-wider text-slate-300 hover:text-emerald-400 rounded-md border border-white/5 transition-all"
+                  >
+                    +100k
+                  </button>
+                  {formData.jumlah_bayar > 0 && (
+                    <button 
+                      type="button"
+                      onClick={() => setFormData({...formData, jumlah_bayar: 0})}
+                      className="px-2.5 py-1 bg-red-950/40 hover:bg-red-900/60 text-[9px] font-black uppercase tracking-wider text-red-400 rounded-md border border-red-900/40 transition-all ml-auto"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div className="flex gap-2">
