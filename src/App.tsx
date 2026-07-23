@@ -961,7 +961,7 @@ function AdminLayout({ session }: { session: any }) {
             <Route path="profil" element={<ProfilAnggota session={session} />} />
             <Route path="jadwal" element={<div className="p-4 md:p-8 max-w-7xl mx-auto"><JadwalLatihanView /></div>} />
             <Route path="jadwal-latihan" element={<div className="p-4 md:p-8 max-w-7xl mx-auto"><JadwalLatihanView /></div>} />
-            <Route path="kas" element={isAdmin ? <KasManager /> : <div className="p-4 md:p-8 max-w-7xl mx-auto"><PublicKasView /></div>} />
+            <Route path="kas" element={isAdmin ? <KasManager /> : <div className="p-1 xs:p-2 sm:p-4 md:p-8 max-w-7xl mx-auto"><PublicKasView /></div>} />
             <Route path="rekap-keuangan" element={<AdminRekapKeuangan isAdmin={isAdmin} session={session} />} />
             <Route path="ranking" element={isAdmin ? <AdminRanking session={session} /> : <div className="p-4 md:p-8 max-w-7xl mx-auto"><Ranking /></div>} />
             <Route path="skor" element={<AdminMatch session={session} />} />

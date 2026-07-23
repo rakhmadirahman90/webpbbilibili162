@@ -470,45 +470,47 @@ export default function PublicKasView({ memberOnlyName }: PublicKasViewProps = {
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-4 md:p-8 bg-white text-slate-900 rounded-[2.5rem] shadow-2xl border border-slate-100">
+    <div className="max-w-7xl mx-auto p-3 xs:p-4 md:p-8 bg-white text-slate-900 rounded-2xl md:rounded-[2.5rem] shadow-2xl border border-slate-100">
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-6 mb-6 md:mb-10">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-blue-100 mb-3">
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-blue-100 mb-2">
             <Zap size={12} fill="currentColor" /> {memberOnlyName ? 'Riwayat Kas Anda' : 'Live Financial Report'}
           </div>
-          <h2 className="text-4xl font-black text-slate-800 tracking-tighter flex items-center gap-3 italic">
-            <div className="p-2 bg-blue-600 rounded-2xl text-white shadow-xl shadow-blue-200"><Wallet size={28}/></div>
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-800 tracking-tighter flex items-center gap-2.5 italic">
+            <div className="p-1.5 md:p-2 bg-blue-600 rounded-xl md:rounded-2xl text-white shadow-xl shadow-blue-200"><Wallet size={20} className="md:w-[28px] md:h-[28px]" /></div>
             {memberOnlyName ? 'REKAP KAS ANDA' : 'TRANSPARANSI KAS'}
           </h2>
-          <div className="text-slate-500 mt-2 font-medium flex items-center gap-2">
-            <Info size={16} className="text-blue-500" />
-            {memberOnlyName 
-              ? `Pemantauan riwayat penyetoran iuran dan pembelian shuttlecock untuk ${memberOnlyName}.`
-              : 'Pemantauan saldo dan mutasi dana PB. Bili Bili 162 secara terbuka.'
-            }
+          <div className="text-xs sm:text-sm text-slate-500 mt-2 font-medium flex items-center gap-2">
+            <Info size={14} className="text-blue-500 shrink-0" />
+            <span className="leading-tight">
+              {memberOnlyName 
+                ? `Pemantauan riwayat penyetoran iuran dan pembelian shuttlecock untuk ${memberOnlyName}.`
+                : 'Pemantauan saldo dan mutasi dana PB. Bili Bili 162 secara terbuka.'
+              }
+            </span>
           </div>
         </div>
         
         <button 
           onClick={exportToPDF}
-          className="group flex items-center gap-3 px-8 py-4 bg-slate-900 text-white rounded-2xl font-black uppercase text-[11px] tracking-[0.2em] hover:bg-blue-600 transition-all shadow-2xl active:scale-95"
+          className="group flex w-full sm:w-auto justify-center items-center gap-2 px-5 py-3 md:px-8 md:py-4 bg-slate-900 text-white rounded-xl md:rounded-2xl font-black uppercase text-[10px] md:text-[11px] tracking-[0.15em] md:tracking-[0.2em] hover:bg-blue-600 transition-all shadow-2xl active:scale-95"
         >
-          <FileText size={18} className="group-hover:rotate-12 transition-transform" /> UNDUH LAPORAN PDF
+          <FileText size={16} className="group-hover:rotate-12 transition-transform" /> UNDUH LAPORAN PDF
         </button>
       </div>
 
       {/* Filter Section */}
-      <div className={`grid grid-cols-1 ${memberOnlyName ? 'md:grid-cols-2' : 'md:grid-cols-3'} gap-6 mb-10 bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100 shadow-inner`}>
+      <div className={`grid grid-cols-1 ${memberOnlyName ? 'sm:grid-cols-2' : 'sm:grid-cols-2 lg:grid-cols-3'} gap-4 md:gap-6 mb-6 md:mb-10 bg-slate-50 p-4 xs:p-6 md:p-8 rounded-2xl md:rounded-[2.5rem] border border-slate-100 shadow-inner`}>
         {!memberOnlyName && (
-          <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-1">Cari Atlet / Kategori</label>
+          <div className="space-y-1.5">
+            <label className="text-[9px] md:text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-1">Cari Atlet / Kategori</label>
             <div className="relative">
-              <Search className="absolute left-4 top-3.5 text-slate-400" size={20}/>
+              <Search className="absolute left-3.5 top-3 text-slate-400 w-4 h-4 md:w-5 md:h-5" />
               <input 
                 type="text" 
-                placeholder="Ketik nama atlet atau jenis kategori..."
-                className="w-full pl-12 pr-4 py-3.5 rounded-2xl border border-slate-200 focus:ring-4 focus:ring-blue-100 outline-none transition-all font-bold text-sm bg-white"
+                placeholder="Ketik nama atlet atau jenis..."
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl md:rounded-2xl border border-slate-200 focus:ring-4 focus:ring-blue-100 outline-none transition-all font-bold text-xs md:text-sm bg-white"
                 value={searchTerm}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);
@@ -518,20 +520,20 @@ export default function PublicKasView({ memberOnlyName }: PublicKasViewProps = {
             </div>
           </div>
         )}
-        <div className="space-y-2">
-          <label className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-1">Periode Awal</label>
+        <div className="space-y-1.5">
+          <label className="text-[9px] md:text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-1">Periode Awal</label>
           <input 
             type="date" 
-            className="w-full px-5 py-3.5 rounded-2xl border border-slate-200 outline-none font-bold text-sm bg-white focus:ring-4 focus:ring-blue-100 transition-all"
+            className="w-full px-4 py-2.5 rounded-xl md:rounded-2xl border border-slate-200 outline-none font-bold text-xs md:text-sm bg-white focus:ring-4 focus:ring-blue-100 transition-all"
             value={startDate}
             onChange={(e) => { setStartDate(e.target.value); setCurrentPage(1); }}
           />
         </div>
-        <div className="space-y-2">
-          <label className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-1">Periode Akhir</label>
+        <div className="space-y-1.5">
+          <label className="text-[9px] md:text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-1">Periode Akhir</label>
           <input 
             type="date" 
-            className="w-full px-5 py-3.5 rounded-2xl border border-slate-200 outline-none font-bold text-sm bg-white focus:ring-4 focus:ring-blue-100 transition-all"
+            className="w-full px-4 py-2.5 rounded-xl md:rounded-2xl border border-slate-200 outline-none font-bold text-xs md:text-sm bg-white focus:ring-4 focus:ring-blue-100 transition-all"
             value={endDate}
             onChange={(e) => { setEndDate(e.target.value); setCurrentPage(1); }}
           />
@@ -540,84 +542,84 @@ export default function PublicKasView({ memberOnlyName }: PublicKasViewProps = {
 
       {/* Statistics Cards */}
       {memberOnlyName ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          <div className="bg-slate-50 border border-slate-200 p-8 rounded-[2rem] relative overflow-hidden group">
-            <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform">
-              <Calendar size={120} className="text-slate-600" />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-12">
+          <div className="bg-slate-50 border border-slate-200 p-3 xs:p-4 md:p-8 rounded-xl md:rounded-[2rem] relative overflow-hidden group">
+            <div className="absolute -right-3 -bottom-3 opacity-5 group-hover:scale-110 transition-transform">
+              <Calendar className="text-slate-600 w-16 h-16 md:w-28 md:h-28" />
             </div>
-            <div className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-2">Total Iuran Bulanan Anda</div>
-            <div className="text-2xl font-black text-slate-800 tracking-tighter">Rp {memberStats.iuran.toLocaleString()}</div>
+            <div className="text-[8px] md:text-[10px] font-black text-slate-500 uppercase tracking-[0.15em] md:tracking-[0.3em] mb-1">Total Iuran Bulanan Anda</div>
+            <div className="text-sm xs:text-base md:text-2xl font-black text-slate-800 tracking-tighter">Rp {memberStats.iuran.toLocaleString()}</div>
           </div>
 
-          <div className="bg-amber-50 border border-amber-100 p-8 rounded-[2rem] relative overflow-hidden group">
-            <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform">
-              <Package size={120} className="text-amber-600" />
+          <div className="bg-amber-50 border border-amber-100 p-3 xs:p-4 md:p-8 rounded-xl md:rounded-[2rem] relative overflow-hidden group">
+            <div className="absolute -right-3 -bottom-3 opacity-5 group-hover:scale-110 transition-transform">
+              <Package className="text-amber-600 w-16 h-16 md:w-28 md:h-28" />
             </div>
-            <div className="text-[10px] font-black text-amber-600 uppercase tracking-[0.3em] mb-2">Pembelian Shuttlecock</div>
-            <div className="text-2xl font-black text-amber-700 tracking-tighter">Rp {memberStats.shuttlecock.toLocaleString()}</div>
+            <div className="text-[8px] md:text-[10px] font-black text-amber-600 uppercase tracking-[0.15em] md:tracking-[0.3em] mb-1">Pembelian Shuttlecock</div>
+            <div className="text-sm xs:text-base md:text-2xl font-black text-amber-700 tracking-tighter">Rp {memberStats.shuttlecock.toLocaleString()}</div>
           </div>
           
-          <div className="bg-rose-50 border border-rose-100 p-8 rounded-[2rem] relative overflow-hidden group">
-            <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform">
-              <TrendingUp size={120} className="text-rose-600" />
+          <div className="bg-rose-50 border border-rose-100 p-3 xs:p-4 md:p-8 rounded-xl md:rounded-[2rem] relative overflow-hidden group">
+            <div className="absolute -right-3 -bottom-3 opacity-5 group-hover:scale-110 transition-transform">
+              <TrendingUp className="text-rose-600 w-16 h-16 md:w-28 md:h-28" />
             </div>
-            <div className="text-[10px] font-black text-rose-600 uppercase tracking-[0.3em] mb-2">Kontribusi Lainnya</div>
-            <div className="text-2xl font-black text-rose-700 tracking-tighter">Rp {memberStats.lainnya.toLocaleString()}</div>
+            <div className="text-[8px] md:text-[10px] font-black text-rose-600 uppercase tracking-[0.15em] md:tracking-[0.3em] mb-1">Kontribusi Lainnya</div>
+            <div className="text-sm xs:text-base md:text-2xl font-black text-rose-700 tracking-tighter">Rp {memberStats.lainnya.toLocaleString()}</div>
           </div>
           
-          <div className="bg-blue-600 p-8 rounded-[2rem] shadow-[0_20px_50px_rgba(37,99,235,0.2)] relative overflow-hidden group">
-            <div className="absolute -right-4 -bottom-4 opacity-20 group-hover:scale-110 transition-transform">
-              <Wallet size={120} className="text-white" />
+          <div className="bg-blue-600 p-3 xs:p-4 md:p-8 rounded-xl md:rounded-[2rem] shadow-[0_20px_50px_rgba(37,99,235,0.15)] relative overflow-hidden group">
+            <div className="absolute -right-3 -bottom-3 opacity-15 group-hover:scale-110 transition-transform">
+              <Wallet className="text-white w-16 h-16 md:w-28 md:h-28" />
             </div>
-            <div className="text-[10px] font-black text-blue-100 uppercase tracking-[0.3em] mb-2">Total Kontribusi Anda</div>
-            <div className="text-2xl font-black text-white tracking-tighter">Rp {memberStats.total.toLocaleString()}</div>
-            <div className="mt-2 text-[10px] text-blue-100 font-semibold space-y-0.5 border-t border-white/10 pt-2">
-              <div>Penyetoran riwayat kas aktif</div>
+            <div className="text-[8px] md:text-[10px] font-black text-blue-100 uppercase tracking-[0.15em] md:tracking-[0.3em] mb-1">Total Kontribusi Anda</div>
+            <div className="text-sm xs:text-base md:text-2xl font-black text-white tracking-tighter">Rp {memberStats.total.toLocaleString()}</div>
+            <div className="hidden xs:block mt-1.5 text-[8px] md:text-[10px] text-blue-100 font-semibold border-t border-white/10 pt-1.5">
+              Penyetoran riwayat kas aktif
             </div>
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-        <div className="bg-slate-50 border border-slate-200 p-8 rounded-[2rem] relative overflow-hidden group">
-          <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform">
-            <Calendar size={120} className="text-slate-600" />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-12">
+          <div className="bg-slate-50 border border-slate-200 p-3 xs:p-4 md:p-8 rounded-xl md:rounded-[2rem] relative overflow-hidden group">
+            <div className="absolute -right-3 -bottom-3 opacity-5 group-hover:scale-110 transition-transform">
+              <Calendar className="text-slate-600 w-16 h-16 md:w-28 md:h-28" />
+            </div>
+            <div className="text-[8px] md:text-[10px] font-black text-slate-500 uppercase tracking-[0.15em] md:tracking-[0.3em] mb-1">Saldo Sebelumnya</div>
+            <div className="text-sm xs:text-base md:text-2xl font-black text-slate-800 tracking-tighter">Rp {saldoSebelumnya.toLocaleString()}</div>
           </div>
-          <div className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-2">Saldo Sebelumnya</div>
-          <div className="text-2xl font-black text-slate-800 tracking-tighter">Rp {saldoSebelumnya.toLocaleString()}</div>
-        </div>
 
-        <div className="bg-emerald-50 border border-emerald-100 p-8 rounded-[2rem] relative overflow-hidden group">
-          <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform">
-            <TrendingUp size={120} className="text-emerald-600" />
+          <div className="bg-emerald-50 border border-emerald-100 p-3 xs:p-4 md:p-8 rounded-xl md:rounded-[2rem] relative overflow-hidden group">
+            <div className="absolute -right-3 -bottom-3 opacity-5 group-hover:scale-110 transition-transform">
+              <TrendingUp className="text-emerald-600 w-16 h-16 md:w-28 md:h-28" />
+            </div>
+            <div className="text-[8px] md:text-[10px] font-black text-emerald-600 uppercase tracking-[0.15em] md:tracking-[0.3em] mb-1">Pemasukan Periode</div>
+            <div className="text-sm xs:text-base md:text-2xl font-black text-emerald-700 tracking-tighter">Rp {stats.masuk.toLocaleString()}</div>
           </div>
-          <div className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.3em] mb-2">Pemasukan Periode</div>
-          <div className="text-2xl font-black text-emerald-700 tracking-tighter">Rp {stats.masuk.toLocaleString()}</div>
+          
+          <div className="bg-rose-50 border border-rose-100 p-3 xs:p-4 md:p-8 rounded-xl md:rounded-[2rem] relative overflow-hidden group">
+            <div className="absolute -right-3 -bottom-3 opacity-5 group-hover:scale-110 transition-transform">
+              <TrendingDown className="text-rose-600 w-16 h-16 md:w-28 md:h-28" />
+            </div>
+            <div className="text-[8px] md:text-[10px] font-black text-rose-600 uppercase tracking-[0.15em] md:tracking-[0.3em] mb-1">Pengeluaran Periode</div>
+            <div className="text-sm xs:text-base md:text-2xl font-black text-rose-700 tracking-tighter">Rp {stats.keluar.toLocaleString()}</div>
+          </div>
+          
+          <div className="bg-blue-600 p-3 xs:p-4 md:p-8 rounded-xl md:rounded-[2rem] shadow-[0_20px_50px_rgba(37,99,235,0.15)] relative overflow-hidden group">
+            <div className="absolute -right-3 -bottom-3 opacity-15 group-hover:scale-110 transition-transform">
+              <Wallet className="text-white w-16 h-16 md:w-28 md:h-28" />
+            </div>
+            <div className="text-[8px] md:text-[10px] font-black text-blue-100 uppercase tracking-[0.15em] md:tracking-[0.3em] mb-1">Saldo Akhir Kas</div>
+            <div className="text-sm xs:text-base md:text-2xl font-black text-white tracking-tighter">Rp {saldoAkhirPeriode.toLocaleString()}</div>
+            <div className="mt-1 text-[7px] xs:text-[9px] text-blue-100 font-bold space-y-0.5 border-t border-white/10 pt-1 md:mt-2 md:text-[10px] md:pt-2">
+              <div>• Modal: Rp 600k</div>
+              <div>• Bendahara: Rp {saldoBendahara.toLocaleString()}</div>
+            </div>
+          </div>
         </div>
-        
-        <div className="bg-rose-50 border border-rose-100 p-8 rounded-[2rem] relative overflow-hidden group">
-          <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform">
-            <TrendingDown size={120} className="text-rose-600" />
-          </div>
-          <div className="text-[10px] font-black text-rose-600 uppercase tracking-[0.3em] mb-2">Pengeluaran Periode</div>
-          <div className="text-2xl font-black text-rose-700 tracking-tighter">Rp {stats.keluar.toLocaleString()}</div>
-        </div>
-        
-        <div className="bg-blue-600 p-8 rounded-[2rem] shadow-[0_20px_50px_rgba(37,99,235,0.2)] relative overflow-hidden group">
-          <div className="absolute -right-4 -bottom-4 opacity-20 group-hover:scale-110 transition-transform">
-            <Wallet size={120} className="text-white" />
-          </div>
-          <div className="text-[10px] font-black text-blue-100 uppercase tracking-[0.3em] mb-2">Saldo Akhir Kas</div>
-          <div className="text-2xl font-black text-white tracking-tighter">Rp {saldoAkhirPeriode.toLocaleString()}</div>
-          <div className="mt-2 text-[10px] text-blue-100 font-semibold space-y-0.5 border-t border-white/10 pt-2">
-            <div>• Modal Tetap Bola: Rp 600.000</div>
-            <div>• Saldo Bendahara: Rp {saldoBendahara.toLocaleString()}</div>
-          </div>
-        </div>
-      </div>
-    )}
+      )}
 
       {/* Main Table Area */}
-      <div className="bg-white border border-slate-100 rounded-[2.5rem] overflow-hidden shadow-sm">
+      <div className="bg-white border border-slate-100 rounded-2xl md:rounded-[2.5rem] overflow-hidden shadow-sm">
         {/* DESKTOP TABLE VIEW */}
         <div className="hidden lg:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -702,49 +704,49 @@ export default function PublicKasView({ memberOnlyName }: PublicKasViewProps = {
         {/* MOBILE CARD VIEW */}
         <div className="lg:hidden divide-y divide-slate-100">
           {loading ? (
-            <div className="p-16 text-center">
-              <Loader2 className="animate-spin text-blue-600 mx-auto" size={36} />
-              <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mt-2">Menyinkronkan Database...</p>
+            <div className="p-8 text-center">
+              <Loader2 className="animate-spin text-blue-600 mx-auto" size={28} />
+              <p className="text-[9px] font-black uppercase tracking-wider text-slate-400 mt-2">Menyinkronkan Database...</p>
             </div>
           ) : currentItems.length === 0 ? (
-            <div className="p-16 text-center">
-              <Search className="text-slate-300 mx-auto mb-4" size={32} />
-              <div className="text-slate-950 font-black uppercase text-xs tracking-widest">Data Kosong / Tidak Ditemukan</div>
-              <div className="text-xs text-slate-400 mt-2">Coba periksa filter nama atau tanggal.</div>
+            <div className="p-8 text-center">
+              <Search className="text-slate-300 mx-auto mb-3" size={24} />
+              <div className="text-slate-950 font-black uppercase text-[10px] tracking-widest">Data Kosong / Tidak Ditemukan</div>
+              <div className="text-[10px] text-slate-400 mt-1">Coba periksa filter nama atau tanggal.</div>
             </div>
           ) : (
             currentItems.map((item) => {
               const isIncome = item.jenis_transaksi === 'Masuk';
               return (
-                <div key={item.id} className="p-6 hover:bg-slate-50 transition-all flex flex-col gap-4">
+                <div key={item.id} className="p-3 xs:p-4 hover:bg-slate-50 transition-all flex flex-col gap-2.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                      <Calendar size={12} className="text-blue-500" />
+                    <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                      <Calendar size={10} className="text-blue-500" />
                       {new Date(item.tanggal_transaksi).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </span>
-                    <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest ${isIncome ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' : 'bg-rose-100 text-rose-700 border border-rose-200'}`}>
+                    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[7.5px] font-black uppercase tracking-widest ${isIncome ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' : 'bg-rose-100 text-rose-700 border border-rose-200'}`}>
                       {isIncome ? <ArrowUpCircle size={8}/> : <ArrowDownCircle size={8}/>}
                       {item.jenis_transaksi}
                     </span>
                   </div>
                   
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <div className="font-black text-slate-800 uppercase text-sm tracking-tight">{item.nama_pembayar}</div>
-                      <div className="flex gap-2 mt-2 items-center flex-wrap">
-                        <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-lg text-[9px] font-black uppercase tracking-wider border border-slate-200">
+                  <div className="flex justify-between items-start gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="font-black text-slate-800 uppercase text-xs tracking-tight truncate">{item.nama_pembayar}</div>
+                      <div className="flex gap-1.5 mt-1 items-center flex-wrap">
+                        <span className="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-[8px] font-black uppercase tracking-wider border border-slate-200 truncate max-w-[140px]">
                           {item.kategori}
                         </span>
                         {item.jumlah_bola > 0 && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-700 rounded-lg border border-amber-100 text-[9px] font-black">
-                            <Package size={10} className="text-amber-500" />
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-amber-50 text-amber-700 rounded border border-amber-100 text-[8px] font-black">
+                            <Package size={8} className="text-amber-500" />
                             {item.jumlah_bola} Pcs
                           </span>
                         )}
                       </div>
                     </div>
                     
-                    <div className={`text-right font-black text-base tracking-tighter shrink-0 ${isIncome ? 'text-emerald-600' : 'text-rose-600'}`}>
+                    <div className={`text-right font-black text-xs xs:text-sm tracking-tighter shrink-0 ${isIncome ? 'text-emerald-600' : 'text-rose-600'}`}>
                       {isIncome ? '+' : '-'} Rp {item.jumlah_bayar.toLocaleString()}
                     </div>
                   </div>
@@ -755,24 +757,24 @@ export default function PublicKasView({ memberOnlyName }: PublicKasViewProps = {
         </div>
 
         {/* Pagination Section */}
-        <div className="p-8 bg-slate-50 flex flex-col md:flex-row items-center justify-between gap-6 border-t border-slate-100">
-           <div className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">
+        <div className="p-4 xs:p-6 md:p-8 bg-slate-50 flex flex-col sm:flex-row items-center justify-between gap-4 md:gap-6 border-t border-slate-100">
+           <div className="text-[9px] md:text-[10px] font-black uppercase text-slate-400 tracking-[0.15em] md:tracking-[0.2em] text-center sm:text-left">
               Data Ke <span className="text-slate-900">{(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, filteredData.length)}</span> Dari <span className="text-slate-900">{filteredData.length}</span> Transaksi
            </div>
-           <div className="flex items-center gap-3">
+           <div className="flex items-center gap-2 xs:gap-3">
               <button 
                 disabled={currentPage === 1}
                 onClick={() => { setCurrentPage(prev => prev - 1); window.scrollTo({top: 0, behavior: 'smooth'}); }}
-                className="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-2xl font-black text-[10px] uppercase tracking-widest text-slate-600 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-100 transition-all shadow-sm"
+                className="flex items-center gap-1 px-3 py-2 bg-white border border-slate-200 rounded-xl font-black text-[9px] md:text-[10px] uppercase tracking-widest text-slate-600 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-100 transition-all shadow-sm"
               >
-                <ChevronLeft size={16}/> Prev
+                <ChevronLeft size={12} /> Prev
               </button>
-              <div className="flex gap-2">
+              <div className="flex gap-1">
                 {[...Array(totalPages)].map((_, i) => (
                   <button 
                     key={i}
                     onClick={() => { setCurrentPage(i + 1); window.scrollTo({top: 0, behavior: 'smooth'}); }}
-                    className={`w-10 h-10 rounded-xl font-black text-[11px] transition-all ${currentPage === i + 1 ? 'bg-blue-600 text-white shadow-xl shadow-blue-200' : 'bg-white text-slate-400 border border-slate-100 hover:bg-slate-200'}`}
+                    className={`w-7 h-7 md:w-10 md:h-10 rounded-lg md:rounded-xl font-black text-[10px] md:text-[11px] transition-all ${currentPage === i + 1 ? 'bg-blue-600 text-white shadow-xl shadow-blue-200' : 'bg-white text-slate-400 border border-slate-100 hover:bg-slate-200'}`}
                   >
                     {i + 1}
                   </button>
@@ -781,19 +783,19 @@ export default function PublicKasView({ memberOnlyName }: PublicKasViewProps = {
               <button 
                 disabled={currentPage === totalPages}
                 onClick={() => { setCurrentPage(prev => prev + 1); window.scrollTo({top: 0, behavior: 'smooth'}); }}
-                className="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-2xl font-black text-[10px] uppercase tracking-widest text-slate-600 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-100 transition-all shadow-sm"
+                className="flex items-center gap-1 px-3 py-2 bg-white border border-slate-200 rounded-xl font-black text-[9px] md:text-[10px] uppercase tracking-widest text-slate-600 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-100 transition-all shadow-sm"
               >
-                Next <ChevronRight size={16}/>
+                Next <ChevronRight size={12} />
               </button>
            </div>
         </div>
       </div>
 
       {/* Footer Info */}
-      <div className="mt-12 flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">
+      <div className="mt-8 md:mt-12 flex flex-col md:flex-row justify-between items-center gap-3 text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em] md:tracking-[0.4em] text-slate-400 text-center">
         <div>© 2026 PB. BILI BILI 162</div>
-        <div className="flex items-center gap-2 italic">
-          <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" /> 
+        <div className="flex items-center gap-2 italic justify-center">
+          <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" /> 
           Verified by Admin
         </div>
       </div>
