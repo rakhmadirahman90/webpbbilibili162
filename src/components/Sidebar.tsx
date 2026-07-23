@@ -38,7 +38,10 @@ import {
   FileText,
   FileSpreadsheet,
   BookOpen,
-  Calendar
+  Calendar,
+  HeartPulse,
+  Tv,
+  MessageSquare
 } from 'lucide-react';
 import { supabase } from '../supabase';
 
@@ -230,6 +233,16 @@ export default function Sidebar({ email, role = 'admin', isOpen, onClose }: Side
       items: [
         { name: role === 'admin' ? 'Dashboard Admin' : 'Dashboard Anggota', path: 'dashboard', icon: LayoutDashboard, adminOnly: false },
         { name: 'Profil Saya', path: 'profil', icon: UserCheck, adminOnly: false },
+      ]
+    },
+    {
+      section: 'Interaktif & Kompetisi',
+      items: [
+        { name: 'Analisis Performa', path: 'analisis-performa', icon: BarChart3, adminOnly: false },
+        { name: 'Rapor Atlet', path: 'rapor-atlet', icon: HeartPulse, adminOnly: false },
+        { name: 'Live Score Lapangan', path: 'live-score', icon: Tv, adminOnly: false },
+        { name: 'Testimoni & Ulasan', path: 'testimoni', icon: MessageSquare, adminOnly: false },
+        { name: 'Turnamen & Liga', path: 'turnamen-liga', icon: Trophy, adminOnly: false },
       ]
     },
     { 

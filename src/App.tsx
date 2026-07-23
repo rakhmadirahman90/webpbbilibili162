@@ -70,6 +70,12 @@ import AdminUsers from './components/AdminUsers';
 import ScheduleWidget from './components/ScheduleWidget'; 
 import PresenceManager from './components/PresenceManager';
 import AdminRekapKeuangan from './components/AdminRekapKeuangan';
+import BookingLatihan from './components/BookingLatihan';
+import AnalisisPerforma from './components/AnalisisPerforma';
+import TournamentLeague from './components/TournamentLeague';
+import RaporAtlet from './components/RaporAtlet';
+import LiveScoreWidget from './components/LiveScoreWidget';
+import TestimonialUlasan from './components/TestimonialUlasan';
 
 import { X, ChevronLeft, ChevronRight, Menu, Zap, Download, ExternalLink, Volume2, VolumeX, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -959,6 +965,11 @@ function AdminLayout({ session }: { session: any }) {
             {/* Accessible to both Anggota & Admin */}
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="profil" element={<ProfilAnggota session={session} />} />
+            <Route path="analisis-performa" element={<div className="p-4 md:p-8 max-w-7xl mx-auto"><AnalisisPerforma /></div>} />
+            <Route path="rapor-atlet" element={<div className="p-4 md:p-8 max-w-7xl mx-auto"><RaporAtlet isAdmin={isAdmin} /></div>} />
+            <Route path="live-score" element={<div className="p-4 md:p-8 max-w-7xl mx-auto"><LiveScoreWidget isAdmin={isAdmin} /></div>} />
+            <Route path="testimoni" element={<div className="p-4 md:p-8 max-w-7xl mx-auto"><TestimonialUlasan isAdmin={isAdmin} /></div>} />
+            <Route path="turnamen-liga" element={<div className="p-4 md:p-8 max-w-7xl mx-auto"><TournamentLeague isAdmin={isAdmin} /></div>} />
             <Route path="jadwal" element={<div className="p-4 md:p-8 max-w-7xl mx-auto"><JadwalLatihanView /></div>} />
             <Route path="jadwal-latihan" element={<div className="p-4 md:p-8 max-w-7xl mx-auto"><JadwalLatihanView /></div>} />
             <Route path="kas" element={isAdmin ? <KasManager /> : <div className="p-1 xs:p-2 sm:p-4 md:p-8 max-w-7xl mx-auto"><PublicKasView /></div>} />
