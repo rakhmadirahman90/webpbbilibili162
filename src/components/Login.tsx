@@ -128,6 +128,7 @@ export default function Login() {
 
   const finalizeSession = (sessionData: any) => {
     localStorage.setItem('local_admin_session', JSON.stringify(sessionData));
+    sessionStorage.setItem('just_logged_in', 'true');
     window.dispatchEvent(new Event('local-session-changed'));
   };
 

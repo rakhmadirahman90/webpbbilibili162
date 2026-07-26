@@ -82,10 +82,18 @@ export default function KasManager() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
 
-  const today = new Date().toISOString().split('T')[0];
-  const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
+  const getLocalDateString = (date: Date = new Date()) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const today = getLocalDateString();
+  const firstDayOfMonth = today.substring(0, 8) + '01';
   const [startDate, setStartDate] = useState(firstDayOfMonth);
   const [endDate, setEndDate] = useState(today);
+  const [hasSetInitialDates, setHasSetInitialDates] = useState(false);
 
   const initialForm = {
     nama_pembayar: '',
@@ -146,6 +154,26 @@ export default function KasManager() {
 
   const modalTetap = 600000;
   const saldoBendahara = saldoAkhirKumulatif - modalTetap;
+
+  // --- LOGIKA KAS SEBENARNYA UNTUK CARD DASHBOARD (Menampilkan info kas terupdate sesuai tanggal transaksi terakhir) ---
+  const latestTxDate = normalizedData.length > 0 
+    ? [...normalizedData].sort((a, b) => a.tanggal_transaksi.localeCompare(b.tanggal_transaksi))[normalizedData.length - 1].tanggal_transaksi
+    : today;
+
+  const cardSaldoSebelumnya = normalizedData
+    .filter(item => item.tanggal_transaksi < latestTxDate)
+    .reduce((acc, curr) => curr.jenis_transaksi === 'Masuk' ? acc + curr.jumlah_bayar : acc - curr.jumlah_bayar, 0);
+
+  const cardPemasukanTerbaru = normalizedData
+    .filter(item => item.tanggal_transaksi === latestTxDate && item.jenis_transaksi === 'Masuk')
+    .reduce((acc, curr) => acc + curr.jumlah_bayar, 0);
+
+  const cardPengeluaranTerbaru = normalizedData
+    .filter(item => item.tanggal_transaksi === latestTxDate && item.jenis_transaksi === 'Keluar')
+    .reduce((acc, curr) => acc + curr.jumlah_bayar, 0);
+
+  const cardSaldoAkhir = cardSaldoSebelumnya + cardPemasukanTerbaru - cardPengeluaranTerbaru;
+  const cardSaldoBendahara = cardSaldoAkhir - modalTetap;
 
   const getTransparentImageData = (url: string): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -231,21 +259,25 @@ export default function KasManager() {
         item.jenis_transaksi,
         item.kategori,
         item.jumlah_bola > 0 ? `${item.jumlah_bola} Pcs` : '-',
-        `Rp ${item.jumlah_bayar.toLocaleString()}`
+        `Rp ${item.jumlah_bayar.toLocaleString()}`,
+        item.keterangan || '-'
       ]);
 
       autoTable(doc, {
-        head: [["Tanggal", "Nama", "Jenis", "Kategori", "Ket/Bola", "Nominal"]],
+        head: [["Tanggal", "Nama", "Jenis", "Kategori", "Ket/Bola", "Nominal", "Catatan"]],
         body: tableRows,
         startY: 65,
         theme: 'striped',
         headStyles: { fillColor: [30, 64, 175], textColor: 255, fontSize: 9, fontStyle: 'bold', halign: 'center' },
         bodyStyles: { fontSize: 8, textColor: 50 },
         columnStyles: { 
-            0: { halign: 'center', cellWidth: 22 }, 
-            2: { halign: 'center', cellWidth: 18 }, 
-            4: { halign: 'center', cellWidth: 20 }, 
-            5: { halign: 'right', fontStyle: 'bold', cellWidth: 35 } 
+            0: { halign: 'center', cellWidth: 20 }, 
+            1: { cellWidth: 32 },
+            2: { halign: 'center', cellWidth: 15 }, 
+            3: { cellWidth: 32 },
+            4: { halign: 'center', cellWidth: 15 }, 
+            5: { halign: 'right', fontStyle: 'bold', cellWidth: 22 },
+            6: { halign: 'left' }
         },
         didParseCell: (data) => {
             if (data.section === 'body' && data.column.index === 2) {
@@ -461,14 +493,24 @@ export default function KasManager() {
     }
   }, [formData.jumlah_bola, formData.tipe_anggota, formData.kategori, formData.jenis_transaksi]);
 
-  const fetchData = async () => {
+  const fetchData = async (forceResetDates = false) => {
     setLoading(true);
     try {
       const [kasRes, pendaftaranRes] = await Promise.all([
         supabase.from('kas_pb').select('*').order('tanggal_transaksi', { ascending: false }),
         supabase.from('pendaftaran').select(`id, nama, atlet_stats (player_name)`).order('nama', { ascending: true })
       ]);
-      setKasData(kasRes.data || []);
+      const fetchedKas = kasRes.data || [];
+      setKasData(fetchedKas);
+      
+      if (fetchedKas.length > 0 && (!hasSetInitialDates || forceResetDates)) {
+        const sorted = [...fetchedKas].sort((a, b) => a.tanggal_transaksi.localeCompare(b.tanggal_transaksi));
+        const latestDate = sorted[sorted.length - 1].tanggal_transaksi;
+        setStartDate(latestDate);
+        setEndDate(today > latestDate ? today : latestDate);
+        setHasSetInitialDates(true);
+      }
+
       if (pendaftaranRes.data) {
         const formattedAtlets = pendaftaranRes.data.map(item => ({
           id: item.id,
@@ -479,7 +521,18 @@ export default function KasManager() {
     } catch (error) { console.error(error); } finally { setLoading(false); }
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { 
+    fetchData(true); 
+
+    const handleKasUpdate = () => {
+      fetchData(true);
+    };
+
+    window.addEventListener('kas-updated', handleKasUpdate);
+    return () => {
+      window.removeEventListener('kas-updated', handleKasUpdate);
+    };
+  }, []);
 
   const handleTestNotification = async () => {
     try {
@@ -487,9 +540,10 @@ export default function KasManager() {
         id: 'test_' + Date.now(),
         nama_pembayar: 'Budi Santoso (Test)',
         kategori: 'Sumbangan Sukarela',
+        shadow: false,
         jumlah_bayar: 150000,
         jenis_transaksi: 'Masuk' as const,
-        tanggal_transaksi: new Date().toISOString().split('T')[0],
+        tanggal_transaksi: today,
         keterangan: 'Simulasi notifikasi kas real-time'
       };
       
@@ -534,7 +588,7 @@ export default function KasManager() {
       setEditingId(null); 
       setFormData(initialForm); 
       setActiveMobileTab('list');
-      fetchData(); 
+      fetchData(true); 
       Swal.fire({
         toast: true,
         position: 'top-end',
@@ -602,7 +656,7 @@ export default function KasManager() {
           showConfirmButton: false,
           timer: 3000
         });
-        fetchData();
+        fetchData(true);
       } catch (err: any) {
         Swal.fire({
           icon: 'error',
@@ -736,8 +790,8 @@ export default function KasManager() {
           <button 
             type="button" 
             onClick={() => {
-              setStartDate(firstDayOfMonth);
-              setEndDate(today);
+              setStartDate(latestTxDate);
+              setEndDate(today > latestTxDate ? today : latestTxDate);
             }}
             className="px-3 py-1.5 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 border border-blue-500/30 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer w-full sm:w-auto"
           >
@@ -869,6 +923,16 @@ export default function KasManager() {
                 </div>
               </div>
 
+              <div>
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Catatan</label>
+                <textarea 
+                  className="w-full bg-black border border-white/10 rounded-xl p-4 text-xs outline-none text-white focus:border-blue-500 transition-all min-h-[60px]" 
+                  placeholder="Catatan tambahan (opsional)..." 
+                  value={formData.keterangan} 
+                  onChange={(e) => setFormData({...formData, keterangan: e.target.value})} 
+                />
+              </div>
+
               <div className="flex gap-2">
                 {editingId && <button type="button" onClick={() => { setEditingId(null); setFormData(initialForm); setActiveMobileTab('list'); }} className="flex-1 bg-white/10 text-white font-black uppercase text-xs py-5 rounded-2xl cursor-pointer">Cancel</button>}
                 <button type="submit" disabled={saving} className={`flex-[2] ${formData.jenis_transaksi === 'Masuk' ? 'bg-blue-600' : 'bg-red-600'} text-white font-black uppercase text-xs py-5 rounded-2xl flex items-center justify-center gap-2`}>
@@ -912,6 +976,12 @@ export default function KasManager() {
                       <p className="text-[8px] sm:text-[9px] text-slate-500 uppercase flex items-center gap-1 mt-1">
                         <Calendar size={9}/> {item.tanggal_transaksi}
                       </p>
+                      {item.keterangan && (
+                        <p className="text-[10px] text-slate-400 italic mt-1 bg-black/25 px-2 py-1 rounded border border-white/5 inline-block leading-tight max-w-full break-words">
+                          <span className="text-[8px] font-bold text-slate-500 block not-italic uppercase tracking-wider mb-0.5">Catatan:</span>
+                          {item.keterangan}
+                        </p>
+                      )}
                     </div>
 
                     <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-white/5">

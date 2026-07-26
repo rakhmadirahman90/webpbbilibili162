@@ -116,8 +116,15 @@ export default function AdminRekapKeuangan({ isAdmin = true, session }: AdminRek
   const [loggedInMemberName, setLoggedInMemberName] = useState<string | null>(null);
 
   // Filter Dates
-  const today = new Date().toISOString().split('T')[0];
-  const firstDayOfYear = new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0];
+  const getLocalDateString = (date: Date = new Date()) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const today = getLocalDateString();
+  const firstDayOfYear = today.substring(0, 4) + '-01-01';
   const [startDate, setStartDate] = useState(firstDayOfYear);
   const [endDate, setEndDate] = useState(today);
 
@@ -235,6 +242,15 @@ export default function AdminRekapKeuangan({ isAdmin = true, session }: AdminRek
 
   useEffect(() => {
     fetchData();
+
+    const handleKasUpdate = () => {
+      fetchData();
+    };
+
+    window.addEventListener('kas-updated', handleKasUpdate);
+    return () => {
+      window.removeEventListener('kas-updated', handleKasUpdate);
+    };
   }, []);
 
   const fetchData = async () => {
@@ -590,6 +606,32 @@ export default function AdminRekapKeuangan({ isAdmin = true, session }: AdminRek
   const totalPengeluaranGabungan = totalPengeluaranSemua + totalGeneralExpenses;
   const totalSaldoKlub = totalPemasukanSemua - totalPengeluaranGabungan;
 
+  // --- LOGIKA KAS SEBENARNYA (Menyamakan dengan KasManager dan PublicKasView) ---
+  const normalizedAllTransactions = transactions.map(t => ({
+    ...t,
+    jenis_transaksi: DAFTAR_PEMASUKAN.includes(t.kategori) ? ('Masuk' as const) : t.jenis_transaksi
+  }));
+
+  const latestTxDate = normalizedAllTransactions.length > 0
+    ? [...normalizedAllTransactions].sort((a, b) => a.tanggal_transaksi.localeCompare(b.tanggal_transaksi))[normalizedAllTransactions.length - 1].tanggal_transaksi
+    : today;
+
+  const actualSaldoSebelumnya = normalizedAllTransactions
+    .filter(t => t.tanggal_transaksi < latestTxDate)
+    .reduce((acc, curr) => curr.jenis_transaksi === 'Masuk' ? acc + (curr.jumlah_bayar || 0) : acc - (curr.jumlah_bayar || 0), 0);
+
+  const actualPemasukan = normalizedAllTransactions
+    .filter(t => t.tanggal_transaksi === latestTxDate && t.jenis_transaksi === 'Masuk')
+    .reduce((acc, curr) => acc + (curr.jumlah_bayar || 0), 0);
+
+  const actualPengeluaran = normalizedAllTransactions
+    .filter(t => t.tanggal_transaksi === latestTxDate && t.jenis_transaksi === 'Keluar')
+    .reduce((acc, curr) => acc + (curr.jumlah_bayar || 0), 0);
+
+  const actualSaldoAkhirKumulatif = actualSaldoSebelumnya + actualPemasukan - actualPengeluaran;
+
+  const actualSaldoBendahara = actualSaldoAkhirKumulatif - 600000;
+
   // Category totals
   const totalBulanan = memberRecaps.reduce((acc, curr) => acc + curr.iuranBulanan, 0);
   const totalBinaan = memberRecaps.reduce((acc, curr) => acc + curr.iuranBinaan, 0);
@@ -844,50 +886,121 @@ export default function AdminRekapKeuangan({ isAdmin = true, session }: AdminRek
 
       {/* Summary Stat Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 shrink-0">
-        <div className="bg-slate-900/60 border border-white/10 p-3 sm:p-5 rounded-2xl">
-          <p className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1 flex items-center gap-1 truncate">
-            <Users size={12} className="text-slate-400" /> {isAdmin ? 'Total Anggota' : 'Kategori Anggota'}
-          </p>
-          <h2 className="text-sm sm:text-xl md:text-2xl font-black italic text-slate-100 truncate">
-            {isAdmin ? `${members.length} Orang` : (myRecap?.kategoriAtlet || '-')}
-          </h2>
-          <p className="text-[8px] sm:text-[9px] text-slate-500 mt-1 uppercase tracking-wider font-bold">
-            {isAdmin ? 'Terdaftar Aktif' : 'Sektor & Klasifikasi'}
-          </p>
-        </div>
-        <div className="bg-emerald-500/10 border border-emerald-500/20 p-3 sm:p-5 rounded-2xl">
-          <p className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-emerald-400 mb-1 flex items-center gap-1 truncate">
-            <ArrowUpCircle size={12} className="text-emerald-400" /> {isAdmin ? 'Pemasukan Anggota' : 'Iuran Bulanan Anda'}
-          </p>
-          <h2 className="text-sm sm:text-xl md:text-2xl font-black italic text-emerald-300 truncate">
-            Rp {isAdmin ? totalPemasukanSemua.toLocaleString() : (myRecap?.iuranBulanan || 0).toLocaleString()}
-          </h2>
-          <p className="text-[8px] sm:text-[9px] text-emerald-500/70 mt-1 uppercase tracking-wider font-bold">
-            {isAdmin ? 'Total Iuran & Sumbangan' : 'Penyetoran Iuran Terdata'}
-          </p>
-        </div>
-        <div className="bg-red-500/10 border border-red-500/20 p-3 sm:p-5 rounded-2xl">
-          <p className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-red-400 mb-1 flex items-center gap-1 truncate">
-            <ArrowDownCircle size={12} className="text-red-400" /> {isAdmin ? 'Pengeluaran Anggota' : 'Pembelian Shuttlecock'}
-          </p>
-          <h2 className="text-sm sm:text-xl md:text-2xl font-black italic text-red-300 truncate">
-            Rp {isAdmin ? totalPengeluaranGabungan.toLocaleString() : (myRecap?.shuttlecock || 0).toLocaleString()}
-          </h2>
-          <p className="text-[8px] sm:text-[9px] text-red-500/70 mt-1 uppercase tracking-wider font-bold">
-            {isAdmin ? 'Individu + Operasional' : 'Total Transaksi Shuttlecock'}
-          </p>
-        </div>
-        <div className="bg-blue-500/10 border border-blue-500/20 p-3 sm:p-5 rounded-2xl">
-          <p className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-blue-400 mb-1 flex items-center gap-1 truncate">
-            <Wallet size={12} className="text-blue-400" /> {isAdmin ? 'Saldo Bersih Kas' : 'Total Kontribusi Anda'}
-          </p>
-          <h2 className="text-sm sm:text-xl md:text-2xl font-black italic text-white truncate">
-            Rp {isAdmin ? totalSaldoKlub.toLocaleString() : (myRecap?.totalPemasukan || 0).toLocaleString()}
-          </h2>
-          <p className="text-[8px] sm:text-[9px] text-blue-300 mt-1 uppercase tracking-wider font-bold">
-            {isAdmin ? 'Net Balance Kas' : 'Akumulasi Semua Setoran'}
-          </p>
-        </div>
+        {isAdmin ? (
+          <>
+            {/* Card 1: Saldo Sebelumnya */}
+            <div className="bg-slate-900/60 border border-white/10 p-3 sm:p-5 rounded-2xl relative overflow-hidden group">
+              <div className="absolute -right-3 -bottom-3 opacity-5 group-hover:scale-110 transition-transform">
+                <Calendar className="text-slate-400 w-12 h-12 sm:w-16 sm:h-16" />
+              </div>
+              <p className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1 flex items-center gap-1 truncate">
+                <Calendar size={12} className="text-slate-400" /> Saldo Sebelumnya
+              </p>
+              <h2 className="text-sm sm:text-xl md:text-2xl font-black italic text-slate-100 truncate">
+                Rp {actualSaldoSebelumnya.toLocaleString()}
+              </h2>
+              <p className="text-[8px] sm:text-[9px] text-slate-500 mt-1 uppercase tracking-wider font-bold">
+                Saldo Sebelum Periode
+              </p>
+            </div>
+            
+            {/* Card 2: Pemasukan */}
+            <div className="bg-emerald-500/10 border border-emerald-500/20 p-3 sm:p-5 rounded-2xl relative overflow-hidden group">
+              <div className="absolute -right-3 -bottom-3 opacity-5 group-hover:scale-110 transition-transform">
+                <ArrowUpCircle className="text-emerald-400 w-12 h-12 sm:w-16 sm:h-16" />
+              </div>
+              <p className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-emerald-400 mb-1 flex items-center gap-1 truncate">
+                <ArrowUpCircle size={12} className="text-emerald-400" /> Pemasukan
+              </p>
+              <h2 className="text-sm sm:text-xl md:text-2xl font-black italic text-emerald-300 truncate">
+                Rp {actualPemasukan.toLocaleString()}
+              </h2>
+              <p className="text-[8px] sm:text-[9px] text-emerald-500/70 mt-1 uppercase tracking-wider font-bold">
+                Total Pemasukan Periode
+              </p>
+            </div>
+
+            {/* Card 3: Pengeluaran */}
+            <div className="bg-red-500/10 border border-red-500/20 p-3 sm:p-5 rounded-2xl relative overflow-hidden group">
+              <div className="absolute -right-3 -bottom-3 opacity-5 group-hover:scale-110 transition-transform">
+                <ArrowDownCircle className="text-red-400 w-12 h-12 sm:w-16 sm:h-16" />
+              </div>
+              <p className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-red-400 mb-1 flex items-center gap-1 truncate">
+                <ArrowDownCircle size={12} className="text-red-400" /> Pengeluaran
+              </p>
+              <h2 className="text-sm sm:text-xl md:text-2xl font-black italic text-red-300 truncate">
+                Rp {actualPengeluaran.toLocaleString()}
+              </h2>
+              <p className="text-[8px] sm:text-[9px] text-red-500/70 mt-1 uppercase tracking-wider font-bold">
+                Total Pengeluaran Periode
+              </p>
+            </div>
+
+            {/* Card 4: Saldo Akhir Kas */}
+            <div className="bg-blue-500/10 border border-blue-500/20 p-3 sm:p-5 rounded-2xl relative overflow-hidden group">
+              <div className="absolute -right-3 -bottom-3 opacity-5 group-hover:scale-110 transition-transform">
+                <Wallet className="text-blue-400 w-12 h-12 sm:w-16 sm:h-16" />
+              </div>
+              <p className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-blue-400 mb-1 flex items-center gap-1 truncate">
+                <Wallet size={12} className="text-blue-400" /> Saldo Akhir Kas
+              </p>
+              <h2 className="text-sm sm:text-xl md:text-2xl font-black italic text-white truncate">
+                Rp {actualSaldoAkhirKumulatif.toLocaleString()}
+              </h2>
+              <div className="mt-1 text-[8px] sm:text-[9px] text-blue-300 font-bold space-y-0.5 border-t border-white/10 pt-1">
+                <div>• Modal Tetap: Rp {(600000).toLocaleString()}</div>
+                <div>• Bendahara: Rp {actualSaldoBendahara.toLocaleString()}</div>
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="bg-slate-900/60 border border-white/10 p-3 sm:p-5 rounded-2xl">
+              <p className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1 flex items-center gap-1 truncate">
+                <Users size={12} className="text-slate-400" /> Kategori Anggota
+              </p>
+              <h2 className="text-sm sm:text-xl md:text-2xl font-black italic text-slate-100 truncate">
+                {myRecap?.kategoriAtlet || '-'}
+              </h2>
+              <p className="text-[8px] sm:text-[9px] text-slate-500 mt-1 uppercase tracking-wider font-bold">
+                Sektor & Klasifikasi
+              </p>
+            </div>
+            <div className="bg-emerald-500/10 border border-emerald-500/20 p-3 sm:p-5 rounded-2xl">
+              <p className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-emerald-400 mb-1 flex items-center gap-1 truncate">
+                <ArrowUpCircle size={12} className="text-emerald-400" /> Iuran Bulanan Anda
+              </p>
+              <h2 className="text-sm sm:text-xl md:text-2xl font-black italic text-emerald-300 truncate">
+                Rp {(myRecap?.iuranBulanan || 0).toLocaleString()}
+              </h2>
+              <p className="text-[8px] sm:text-[9px] text-emerald-500/70 mt-1 uppercase tracking-wider font-bold">
+                Penyetoran Iuran Terdata
+              </p>
+            </div>
+            <div className="bg-red-500/10 border border-red-500/20 p-3 sm:p-5 rounded-2xl">
+              <p className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-red-400 mb-1 flex items-center gap-1 truncate">
+                <ArrowDownCircle size={12} className="text-red-400" /> Pembelian Shuttlecock
+              </p>
+              <h2 className="text-sm sm:text-xl md:text-2xl font-black italic text-red-300 truncate">
+                Rp {(myRecap?.shuttlecock || 0).toLocaleString()}
+              </h2>
+              <p className="text-[8px] sm:text-[9px] text-red-500/70 mt-1 uppercase tracking-wider font-bold">
+                Total Transaksi Shuttlecock
+              </p>
+            </div>
+            <div className="bg-blue-500/10 border border-blue-500/20 p-3 sm:p-5 rounded-2xl">
+              <p className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-blue-400 mb-1 flex items-center gap-1 truncate">
+                <Wallet size={12} className="text-blue-400" /> Total Kontribusi Anda
+              </p>
+              <h2 className="text-sm sm:text-xl md:text-2xl font-black italic text-white truncate">
+                Rp {(myRecap?.totalPemasukan || 0).toLocaleString()}
+              </h2>
+              <p className="text-[8px] sm:text-[9px] text-blue-300 mt-1 uppercase tracking-wider font-bold">
+                Akumulasi Semua Setoran
+              </p>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Categories Recap Cards */}

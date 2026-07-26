@@ -9,7 +9,13 @@ import { Timer, Zap } from 'lucide-react';
 export default function AdminAbsensi({ session }: { session: any }) {
   const [users, setUsers] = useState<any[]>([]);
   const [absensi, setAbsensi] = useState<any[]>([]);
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState<string>(() => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  });
   const [search, setSearch] = useState('');
   const [scheduleInfo, setScheduleInfo] = useState<ScheduleInfo>(() => computeScheduleInfo());
 
@@ -44,7 +50,7 @@ export default function AdminAbsensi({ session }: { session: any }) {
   const fetchAbsensi = async () => {
     let localAbsensi = JSON.parse(localStorage.getItem('absensi_local_v2') || '[]');
     if (localAbsensi.length === 0) {
-      const today = new Date().toISOString().split('T')[0];
+      const today = selectedDate;
       const dummyAbsensi = [
         { id: 'abs_1', user_id: 'admin_1', tanggal: today, status: 'hadir', created_at: new Date().toISOString() },
         { id: 'abs_2', user_id: 'member_1', tanggal: today, status: 'hadir', created_at: new Date().toISOString() },

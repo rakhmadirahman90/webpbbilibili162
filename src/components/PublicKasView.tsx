@@ -26,6 +26,7 @@ interface KasEntry {
   jumlah_bayar: number;
   jumlah_bola: number;
   jenis_transaksi: 'Masuk' | 'Keluar';
+  keterangan?: string;
 }
 
 interface PublicKasViewProps {
@@ -42,17 +43,25 @@ export default function PublicKasView({ memberOnlyName }: PublicKasViewProps = {
   const itemsPerPage = 10;
 
   // Filter Tanggal
-  const today = new Date().toISOString().split('T')[0];
-  const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
+  const getLocalDateString = (date: Date = new Date()) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const today = getLocalDateString();
+  const firstDayOfMonth = today.substring(0, 8) + '01';
   const [startDate, setStartDate] = useState(firstDayOfMonth);
   const [endDate, setEndDate] = useState(today);
+  const [hasSetInitialDates, setHasSetInitialDates] = useState(false);
 
-  const fetchData = async () => {
+  const fetchData = async (forceResetDates = false) => {
     setLoading(true);
     try {
       let query = supabase
-        .from('kas_pb')
-        .select('*');
+          .from('kas_pb')
+          .select('*');
       
       if (memberOnlyName) {
         query = query.ilike('nama_pembayar', memberOnlyName.trim());
@@ -61,7 +70,16 @@ export default function PublicKasView({ memberOnlyName }: PublicKasViewProps = {
       const { data, error } = await query.order('tanggal_transaksi', { ascending: false });
       
       if (error) throw error;
-      setKasData(data || []);
+      const fetchedKas = data || [];
+      setKasData(fetchedKas);
+
+      if (fetchedKas.length > 0 && (!hasSetInitialDates || forceResetDates)) {
+        const sorted = [...fetchedKas].sort((a, b) => a.tanggal_transaksi.localeCompare(b.tanggal_transaksi));
+        const latestDate = sorted[sorted.length - 1].tanggal_transaksi;
+        setStartDate(latestDate);
+        setEndDate(today > latestDate ? today : latestDate);
+        setHasSetInitialDates(true);
+      }
     } catch (error) {
       console.error("Error fetching kas:", error);
     } finally {
@@ -70,10 +88,10 @@ export default function PublicKasView({ memberOnlyName }: PublicKasViewProps = {
   };
 
   useEffect(() => {
-    fetchData();
+    fetchData(true);
 
     const handleKasUpdate = () => {
-      fetchData();
+      fetchData(true);
     };
 
     window.addEventListener('kas-updated', handleKasUpdate);
@@ -124,6 +142,26 @@ export default function PublicKasView({ memberOnlyName }: PublicKasViewProps = {
   const saldoAkhirPeriode = normalizedAll
     .filter(item => item.tanggal_transaksi <= endDate)
     .reduce((acc, curr) => curr.jenis_transaksi === 'Masuk' ? acc + curr.jumlah_bayar : acc - curr.jumlah_bayar, 0);
+
+  // --- LOGIKA KAS SEBENARNYA UNTUK CARD DASHBOARD (Menampilkan info kas terupdate sesuai tanggal transaksi terakhir) ---
+  const latestTxDate = normalizedAll.length > 0 
+    ? [...normalizedAll].sort((a, b) => a.tanggal_transaksi.localeCompare(b.tanggal_transaksi))[normalizedAll.length - 1].tanggal_transaksi
+    : today;
+
+  const cardSaldoSebelumnya = normalizedAll
+    .filter(item => item.tanggal_transaksi < latestTxDate)
+    .reduce((acc, curr) => curr.jenis_transaksi === 'Masuk' ? acc + curr.jumlah_bayar : acc - curr.jumlah_bayar, 0);
+
+  const cardPemasukanTerbaru = normalizedAll
+    .filter(item => item.tanggal_transaksi === latestTxDate && item.jenis_transaksi === 'Masuk')
+    .reduce((acc, curr) => acc + curr.jumlah_bayar, 0);
+
+  const cardPengeluaranTerbaru = normalizedAll
+    .filter(item => item.tanggal_transaksi === latestTxDate && item.jenis_transaksi === 'Keluar')
+    .reduce((acc, curr) => acc + curr.jumlah_bayar, 0);
+
+  const cardSaldoAkhir = cardSaldoSebelumnya + cardPemasukanTerbaru - cardPengeluaranTerbaru;
+  const cardSaldoBendahara = cardSaldoAkhir - 600000;
 
   const memberStats = filteredData.reduce((acc, curr) => {
     if (curr.kategori === 'Iuran Bulanan Tetap (10k)' || curr.kategori === 'Pembayaran Iuran Binaan') {
@@ -230,21 +268,25 @@ export default function PublicKasView({ memberOnlyName }: PublicKasViewProps = {
       // 3. Tabel Transaksi
       autoTable(doc, {
         startY: 65,
-        head: [['Tanggal', 'Nama', 'Jenis', 'Kategori', 'Ket/Bola', 'Nominal']],
+        head: [['Tanggal', 'Nama', 'Jenis', 'Kategori', 'Ket/Bola', 'Nominal', 'Catatan']],
         body: filteredData.map(item => [
           item.tanggal_transaksi,
           item.nama_pembayar.toUpperCase(),
           { content: item.jenis_transaksi, styles: { textColor: item.jenis_transaksi === 'Masuk' ? [16, 185, 129] : [225, 29, 72] } },
           item.kategori,
           item.jumlah_bola > 0 ? `${item.jumlah_bola}` : '-',
-          `Rp ${item.jumlah_bayar.toLocaleString()}`
+          `Rp ${item.jumlah_bayar.toLocaleString()}`,
+          item.keterangan || '-'
         ]),
         headStyles: { fillColor: [30, 64, 175], fontSize: 9, halign: 'center', fontStyle: 'bold' },
         columnStyles: { 
-          0: { cellWidth: 25 },
-          2: { halign: 'center', fontStyle: 'bold' },
-          4: { halign: 'center' },
-          5: { halign: 'right', fontStyle: 'bold' } 
+          0: { cellWidth: 22 },
+          1: { cellWidth: 32 },
+          2: { halign: 'center', fontStyle: 'bold', cellWidth: 15 },
+          3: { cellWidth: 32 },
+          4: { halign: 'center', cellWidth: 15 },
+          5: { halign: 'right', fontStyle: 'bold', cellWidth: 22 },
+          6: { halign: 'left' }
         },
         styles: { fontSize: 8, cellPadding: 3, valign: 'middle' },
         alternateRowStyles: { fillColor: [248, 250, 252] },
@@ -603,7 +645,7 @@ export default function PublicKasView({ memberOnlyName }: PublicKasViewProps = {
             <div className="absolute -right-3 -bottom-3 opacity-5 group-hover:scale-110 transition-transform">
               <TrendingUp className="text-emerald-600 w-16 h-16 md:w-28 md:h-28" />
             </div>
-            <div className="text-[8px] md:text-[10px] font-black text-emerald-600 uppercase tracking-[0.15em] md:tracking-[0.3em] mb-1">Pemasukan Periode</div>
+            <div className="text-[8px] md:text-[10px] font-black text-emerald-600 uppercase tracking-[0.15em] md:tracking-[0.3em] mb-1">Pemasukan</div>
             <div className="text-sm xs:text-base md:text-2xl font-black text-emerald-700 tracking-tighter">Rp {stats.masuk.toLocaleString()}</div>
           </div>
           
@@ -611,7 +653,7 @@ export default function PublicKasView({ memberOnlyName }: PublicKasViewProps = {
             <div className="absolute -right-3 -bottom-3 opacity-5 group-hover:scale-110 transition-transform">
               <TrendingDown className="text-rose-600 w-16 h-16 md:w-28 md:h-28" />
             </div>
-            <div className="text-[8px] md:text-[10px] font-black text-rose-600 uppercase tracking-[0.15em] md:tracking-[0.3em] mb-1">Pengeluaran Periode</div>
+            <div className="text-[8px] md:text-[10px] font-black text-rose-600 uppercase tracking-[0.15em] md:tracking-[0.3em] mb-1">Pengeluaran</div>
             <div className="text-sm xs:text-base md:text-2xl font-black text-rose-700 tracking-tighter">Rp {stats.keluar.toLocaleString()}</div>
           </div>
           
@@ -641,13 +683,14 @@ export default function PublicKasView({ memberOnlyName }: PublicKasViewProps = {
                 <th className="p-6 text-[10px] font-black uppercase tracking-widest border-r border-white/5">Kategori Transaksi</th>
                 <th className="p-6 text-[10px] font-black uppercase tracking-widest text-center border-r border-white/5">Ket / Bola</th>
                 <th className="p-6 text-[10px] font-black uppercase tracking-widest text-center border-r border-white/5">Tipe</th>
-                <th className="p-6 text-[10px] font-black uppercase tracking-widest text-right">Nominal</th>
+                <th className="p-6 text-[10px] font-black uppercase tracking-widest text-right border-r border-white/5">Nominal</th>
+                <th className="p-6 text-[10px] font-black uppercase tracking-widest">Catatan</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="p-32 text-center">
+                  <td colSpan={7} className="p-32 text-center">
                     <div className="flex flex-col items-center gap-4">
                       <Loader2 className="animate-spin text-blue-600" size={48} />
                       <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">Menyinkronkan Database...</p>
@@ -656,7 +699,7 @@ export default function PublicKasView({ memberOnlyName }: PublicKasViewProps = {
                 </tr>
               ) : currentItems.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="p-32 text-center">
+                  <td colSpan={7} className="p-32 text-center">
                     <div className="max-w-xs mx-auto">
                       <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
                         <Search className="text-slate-300" size={32} />
@@ -702,8 +745,11 @@ export default function PublicKasView({ memberOnlyName }: PublicKasViewProps = {
                           {item.jenis_transaksi}
                        </div>
                     </td>
-                    <td className={`p-6 text-right font-black text-sm tracking-tighter ${isIncome ? 'text-emerald-600' : 'text-rose-600'}`}>
+                    <td className={`p-6 text-right font-black text-sm tracking-tighter border-r border-slate-100 ${isIncome ? 'text-emerald-600' : 'text-rose-600'}`}>
                       {isIncome ? '+' : '-'} Rp {item.jumlah_bayar.toLocaleString()}
+                    </td>
+                    <td className="p-6 text-xs text-slate-600 font-medium">
+                      {item.keterangan || <span className="text-slate-300 italic font-normal">-</span>}
                     </td>
                   </tr>
                 );
@@ -761,6 +807,13 @@ export default function PublicKasView({ memberOnlyName }: PublicKasViewProps = {
                       {isIncome ? '+' : '-'} Rp {item.jumlah_bayar.toLocaleString()}
                     </div>
                   </div>
+
+                  {item.keterangan && (
+                    <div className="text-[10px] text-slate-500 italic bg-slate-50 p-2 rounded-lg border border-slate-100 mt-1">
+                      <span className="font-semibold text-slate-400 not-italic uppercase text-[8px] tracking-wider block mb-0.5">Catatan:</span>
+                      {item.keterangan}
+                    </div>
+                  )}
                 </div>
               );
             })

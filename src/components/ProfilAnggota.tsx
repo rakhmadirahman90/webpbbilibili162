@@ -409,6 +409,14 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
   useEffect(() => {
     loadUserData();
 
+    const justLoggedIn = sessionStorage.getItem('just_logged_in');
+    if (justLoggedIn === 'true') {
+      sessionStorage.removeItem('just_logged_in');
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('show-kas-popup'));
+      }, 800);
+    }
+
     const handleSessionChanged = () => {
       loadUserData();
     };
