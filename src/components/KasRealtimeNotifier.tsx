@@ -168,8 +168,9 @@ export default function KasRealtimeNotifier() {
         titleText = 'Transaksi Kas Dihapus!';
       }
 
+      const isMasuk = newTx ? checkIsMasuk(newTx) : null;
+
       if (newTx) {
-        const isMasuk = checkIsMasuk(newTx);
         const badgeBg = isMasuk ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20';
         const badgeText = isMasuk ? 'Pemasukan' : 'Pengeluaran';
         
@@ -216,8 +217,37 @@ export default function KasRealtimeNotifier() {
         </div>
       `;
 
+      let titleHtml = '';
+      let borderClass = 'border-cyan-500/20';
+
+      if (isMasuk !== null) {
+        const colorName = isMasuk ? 'emerald' : 'rose';
+        const colorBg = isMasuk ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20';
+        const dotColor = isMasuk ? 'bg-emerald-500' : 'bg-rose-500';
+        borderClass = isMasuk ? 'border-emerald-500/40 shadow-emerald-950/20' : 'border-rose-500/40 shadow-rose-950/20';
+
+        titleHtml = `
+          <div class="flex items-center justify-between w-full pr-1.5 gap-2">
+            <div class="flex items-center gap-2 text-white font-black uppercase tracking-wider italic text-[11px] sm:text-xs">
+              <span class="w-2.5 h-2.5 rounded-full ${dotColor} animate-pulse shrink-0"></span>
+              ${titleText}
+            </div>
+            <span class="px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider ${colorBg} border shrink-0">
+              ${isMasuk ? '📥 Pemasukan' : '📤 Pengeluaran'}
+            </span>
+          </div>
+        `;
+      } else {
+        titleHtml = `
+          <div class="flex items-center gap-2 text-white font-black uppercase tracking-wider italic text-[11px] sm:text-xs">
+            <span class="w-2.5 h-2.5 rounded-full bg-cyan-500 animate-pulse shrink-0"></span>
+            ${titleText}
+          </div>
+        `;
+      }
+
       Swal.fire({
-        title: `<div class="flex items-center gap-2 text-white font-black uppercase tracking-wider italic text-[11px] sm:text-xs"><span class="w-2.5 h-2.5 rounded-full bg-cyan-500 animate-pulse shrink-0"></span>${titleText}</div>`,
+        title: titleHtml,
         html: initialHtml,
         position: 'top-end',
         showConfirmButton: false,
@@ -227,12 +257,23 @@ export default function KasRealtimeNotifier() {
         color: '#fff',
         toast: true,
         customClass: {
-          popup: 'border border-cyan-500/20 rounded-2xl shadow-2xl shadow-black/80 p-3.5 !max-w-[350px]',
+          popup: `border ${borderClass} rounded-2xl shadow-2xl shadow-black/80 p-3.5 !max-w-[350px]`,
           container: 'z-[9999999]'
         },
         didOpen: (toast) => {
           toast.addEventListener('mouseenter', Swal.stopTimer);
           toast.addEventListener('mouseleave', Swal.resumeTimer);
+          
+          const progressBar = toast.querySelector('.swal2-timer-progress-bar') as HTMLElement;
+          if (progressBar) {
+            if (isMasuk === true) {
+              progressBar.style.backgroundColor = '#10b981';
+            } else if (isMasuk === false) {
+              progressBar.style.backgroundColor = '#f43f5e';
+            } else {
+              progressBar.style.backgroundColor = '#06b6d4';
+            }
+          }
         }
       });
 
@@ -327,6 +368,7 @@ export default function KasRealtimeNotifier() {
               `*Detail Transaksi Terbaru:*\n` +
               `• Status: ${eventType === 'DELETE' ? '❌ DIHAPUS' : '✅ BERHASIL'}\n` +
               `• Jenis: ${isMasuk ? '📥 Pemasukan' : '📤 Pengeluaran'}\n` +
+              `• Tanggal & Waktu: *${formatDateTime(newTx.created_at || newTx.tanggal_transaksi)}*\n` +
               `• Nama/Keterangan: *${newTx.nama_pembayar || '-'}*\n` +
               `• Kategori: ${newTx.kategori || '-'}\n` +
               `• Jumlah: *${formatRupiah(newTx.jumlah_bayar || 0)}*\n` +
@@ -338,9 +380,11 @@ export default function KasRealtimeNotifier() {
               `• *Sisa Saldo Akhir: ${formatRupiah(sisaSaldoAkhir)}*\n` +
               `  - Modal Tetap: ${formatRupiah(modalTetap)}\n` +
               `  - Kas Bendahara: ${formatRupiah(saldoBendahara)}\n\n` +
-              `_Laporan real-time via Aplikasi PB Bilibili 162_`;
+              `🔗 *Akses Kas Klub:* ${window.location.origin}/kas\n\n` +
+              `Admin PB Bilibili 162`;
           } else {
             waText = `📢 *LAPORAN REAL-TIME KAS (PB BILIBILI 162)*\n\n` +
+              `• Tanggal & Waktu Laporan: *${formatDateTime()}*\n\n` +
               `*Status Keuangan Klub (Update Terbaru):*\n` +
               `• Saldo Sebelumnya: ${formatRupiah(saldoSebelumnya)}\n` +
               `• Pemasukan Terbaru: ${formatRupiah(pemasukanBulanIni)}\n` +
@@ -348,7 +392,8 @@ export default function KasRealtimeNotifier() {
               `• *Sisa Saldo Akhir: ${formatRupiah(sisaSaldoAkhir)}*\n` +
               `  - Modal Tetap: ${formatRupiah(modalTetap)}\n` +
               `  - Kas Bendahara: ${formatRupiah(saldoBendahara)}\n\n` +
-              `_Laporan real-time via Aplikasi PB Bilibili 162_`;
+              `🔗 *Akses Kas Klub:* ${window.location.origin}/kas\n\n` +
+              `Admin PB Bilibili 162`;
           }
           const waHref = `https://api.whatsapp.com/send?text=${encodeURIComponent(waText)}`;
 
@@ -458,12 +503,8 @@ export default function KasRealtimeNotifier() {
       );
 
     broadcastChannel.subscribe((status, err) => {
-      console.log(`[Realtime-Notifier] Broadcast Channel Subscription Status: ${status}`);
-      if (err) {
-        console.error('[Realtime-Notifier] Broadcast Channel Subscription Error:', err);
-      }
       if (status === 'SUBSCRIBED') {
-        console.log('%c[Realtime-Notifier] Real-time Broadcast Channel Subscribed Successfully!', 'color: #10b981; font-weight: bold;');
+        console.log('[Realtime] Broadcast channel active');
       }
     });
 
@@ -474,20 +515,16 @@ export default function KasRealtimeNotifier() {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'kas_pb' },
         (payload: any) => {
-          console.log('%c[Realtime-Notifier] Postgres Change Detected on table "kas_pb"!', 'color: #06b6d4; font-weight: bold;', payload);
+          console.log('[Realtime-Notifier] Postgres Change Detected on table "kas_pb"!', payload);
           handlePayload(payload);
         }
       );
 
     dbChannel.subscribe((status, err) => {
-      console.log(`[Realtime-Notifier] Database Channel Subscription Status: ${status}`);
-      if (err) {
-        console.error('[Realtime-Notifier] Database Channel Subscription Error:', err);
-      }
-      if (status === 'SUBSCRIBED') {
-        console.log('%c[Realtime-Notifier] Real-time Database Channel Subscribed Successfully!', 'color: #06b6d4; font-weight: bold;');
-      }
-    });
+       if (status === 'SUBSCRIBED') {
+         console.log('[Realtime] Database channel active');
+       }
+     });
 
     // Store globally active channel for broadcasting (uses the reliable broadcast channel)
     activeGlobalChannel = broadcastChannel;

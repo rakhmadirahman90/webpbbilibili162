@@ -362,6 +362,7 @@ export default function KasManager() {
         `  - Modal Kas Tetap Pemegang Bola: Rp 600.000\n` +
         `  - Saldo Kas Bendahara: Rp ${saldoBendahara.toLocaleString()}\n\n` +
         `Laporan keuangan lengkap terlampir dalam file PDF.\n\n` +
+        `🔗 *Akses Kas Klub:* ${window.location.origin}/kas\n\n` +
         `*Admin PB Bilibili 162*`;
 
       const { value: actionType } = await Swal.fire({
@@ -536,7 +537,28 @@ export default function KasManager() {
 
   const handleTestNotification = async () => {
     try {
-      const mockTx = {
+      let latestTx = null;
+      if (normalizedData && normalizedData.length > 0) {
+        // Find the latest transaction based on created_at or tanggal_transaksi
+        latestTx = [...normalizedData].sort((a, b) => {
+          const timeA = a.created_at ? new Date(a.created_at).getTime() : new Date(a.tanggal_transaksi).getTime();
+          const timeB = b.created_at ? new Date(b.created_at).getTime() : new Date(b.tanggal_transaksi).getTime();
+          if (timeB !== timeA) return timeB - timeA;
+          return b.id.localeCompare(a.id);
+        })[0];
+      }
+
+      const mockTx = latestTx ? {
+        id: 'test_' + Date.now() + '_' + latestTx.id,
+        nama_pembayar: latestTx.nama_pembayar,
+        kategori: latestTx.kategori,
+        shadow: false,
+        jumlah_bayar: latestTx.jumlah_bayar,
+        jenis_transaksi: latestTx.jenis_transaksi,
+        tanggal_transaksi: latestTx.tanggal_transaksi,
+        keterangan: latestTx.keterangan || 'Simulasi notifikasi kas real-time',
+        created_at: latestTx.created_at
+      } : {
         id: 'test_' + Date.now(),
         nama_pembayar: 'Budi Santoso (Test)',
         kategori: 'Sumbangan Sukarela',

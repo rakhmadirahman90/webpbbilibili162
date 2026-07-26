@@ -397,6 +397,7 @@ export default function PublicKasView({ memberOnlyName }: PublicKasViewProps = {
           `• Total Lain-lain: Rp ${memberStats.lainnya.toLocaleString()}\n` +
           `• *Total Kontribusi Periode: Rp ${memberStats.total.toLocaleString()}*\n\n` +
           `Riwayat detail terlampir dalam file PDF.\n\n` +
+          `🔗 *Akses Kas Klub:* ${window.location.origin}/kas\n\n` +
           `*PB Bilibili 162*`
         : `*LAPORAN PERTANGGUNGJAWABAN KAS - PB BILIBILI 162*\n\n` +
           `Periode: *${startDate} s/d ${endDate}*\n\n` +
@@ -407,6 +408,7 @@ export default function PublicKasView({ memberOnlyName }: PublicKasViewProps = {
           `  - Modal Kas Tetap Pemegang Bola: Rp 600.000\n` +
           `  - Saldo Kas Bendahara: Rp ${saldoBendahara.toLocaleString()}\n\n` +
           `Laporan keuangan lengkap terlampir dalam file PDF.\n\n` +
+          `🔗 *Akses Kas Klub:* ${window.location.origin}/kas\n\n` +
           `*Admin PB Bilibili 162*`;
 
       const { value: actionType } = await Swal.fire({
