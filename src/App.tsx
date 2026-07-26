@@ -94,18 +94,72 @@ function ScrollToTop() {
   return null;
 }
 
-// HELPER: Reactively synchronize URL query params with App activeView
-function UrlSynchronizer({ setActiveView }: { setActiveView: (view: string | null) => void }) {
+// HELPER: Reactively synchronize URL path/query params with App activeView
+function UrlSynchronizer({ 
+  activeView, 
+  setActiveView 
+}: { 
+  activeView: string | null;
+  setActiveView: (view: string | null) => void;
+}) {
   const location = useLocation();
+  const navigate = useNavigate();
+  const isInitialMount = useRef(true);
   
+  // Sync from URL to state on mount and location changes
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    if (params.has('newsId')) {
-      setActiveView('berita');
-    } else if (params.has('gallery') || params.has('galleryId') || params.has('photoId') || params.has('videoId')) {
-      setActiveView('galeri');
+    if (location.pathname.startsWith('/login') || location.pathname.startsWith('/admin')) {
+      return;
     }
-  }, [location.search, setActiveView]);
+    const path = location.pathname.substring(1).toLowerCase();
+    const params = new URLSearchParams(location.search);
+    
+    const fullPageMenus = ['jadwal', 'jadwal-latihan', 'schedule', 'kas', 'quiz', 'contact', 'kontak', 'struktur', 'struktur-organisasi', 'dokumen-penting', 'register', 'pendaftaran', 'peringkat', 'rankings', 'atlet', 'players', 'tentang-kami', 'about', 'galeri', 'gallery', 'sejarah', 'visi-misi', 'fasilitas', 'inventaris', 'berita', 'news', 'faq'];
+    
+    if (path) {
+      if (fullPageMenus.includes(path)) {
+        if (activeView !== path) {
+          setActiveView(path);
+        }
+      } else {
+        if (activeView !== null) {
+          setActiveView(null);
+        }
+      }
+    } else {
+      if (params.has('newsId')) {
+        if (activeView !== 'berita') setActiveView('berita');
+      } else if (params.has('gallery') || params.has('galleryId') || params.has('photoId') || params.has('videoId')) {
+        if (activeView !== 'galeri') setActiveView('galeri');
+      } else {
+        if (activeView !== null) {
+          setActiveView(null);
+        }
+      }
+    }
+  }, [location.pathname, location.search]); // Don't put activeView/setActiveView in dependencies to avoid cycle on initial load
+  
+  // Sync from state to URL when activeView changes
+  useEffect(() => {
+    if (location.pathname.startsWith('/login') || location.pathname.startsWith('/admin')) {
+      return;
+    }
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    
+    const currentPath = location.pathname.substring(1).toLowerCase();
+    if (activeView) {
+      if (currentPath !== activeView) {
+        navigate(`/${activeView}${location.search}`, { replace: false });
+      }
+    } else {
+      if (currentPath) {
+        navigate(`/${location.search}`, { replace: false });
+      }
+    }
+  }, [activeView, navigate]);
 
   return null;
 }
@@ -260,6 +314,13 @@ export default function App() {
 
   // STATE UNTUK DEDICATED FULL-PAGE VIEWS
   const [activeView, setActiveView] = useState<string | null>(() => {
+    const path = window.location.pathname.substring(1).toLowerCase();
+    const fullPageMenus = ['jadwal', 'jadwal-latihan', 'schedule', 'kas', 'quiz', 'contact', 'kontak', 'struktur', 'struktur-organisasi', 'dokumen-penting', 'register', 'pendaftaran', 'peringkat', 'rankings', 'atlet', 'players', 'tentang-kami', 'about', 'galeri', 'gallery', 'sejarah', 'visi-misi', 'fasilitas', 'inventaris', 'berita', 'news', 'faq'];
+    
+    if (path && fullPageMenus.includes(path)) {
+      return path;
+    }
+    
     const params = new URLSearchParams(window.location.search);
     if (params.has('gallery') || params.has('galleryId') || params.has('photoId') || params.has('videoId')) {
       return 'galeri';
@@ -580,6 +641,210 @@ export default function App() {
     }
   };
 
+  const renderPublicHome = () => (
+    <div className="min-h-screen bg-[#0b0e14] w-full overflow-x-hidden">
+      <ImagePopup />
+      <Navbar onNavigate={handleNavigate} />
+      
+      {/* REAL-TIME PRAYER NOTIFICATION PANEL */}
+      <div className="fixed top-16 md:top-20 right-4 z-[9999999] flex flex-col gap-3 w-full max-w-[360px] p-4 pointer-events-none">
+        <AnimatePresence>
+          {notifications.map((notif) => (
+            <motion.div
+              key={notif.id}
+              initial={{ opacity: 0, y: -20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.95 }}
+              className={`pointer-events-auto w-full p-4 rounded-xl shadow-2xl border flex flex-col gap-2 relative overflow-hidden backdrop-blur-md ${
+                notif.type === 'warning' 
+                  ? 'bg-amber-950/90 border-amber-500/30 text-amber-100' 
+                  : 'bg-emerald-950/90 border-emerald-500/30 text-emerald-100'
+              }`}
+            >
+              {/* Glow effect */}
+              <div className={`absolute top-0 left-0 w-1.5 h-full ${
+                notif.type === 'warning' ? 'bg-amber-500' : 'bg-emerald-500'
+              }`} />
+              
+              <div className="flex items-start justify-between pl-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-base">
+                    {notif.type === 'warning' ? '🔔' : '🕌'}
+                  </span>
+                  <span className="font-black tracking-wide text-xs uppercase">
+                    {notif.title}
+                  </span>
+                </div>
+                <button 
+                  onClick={() => dismissNotification(notif.id)}
+                  className="text-slate-400 hover:text-white transition-colors p-1"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+              
+              <p className="text-xs font-medium pl-2 leading-relaxed opacity-90">
+                {notif.message}
+              </p>
+              
+              <div className="flex items-center justify-between pl-2 pt-1">
+                <span className="text-[9px] font-bold uppercase tracking-widest opacity-60">
+                  {notif.time} • Realtime Alert
+                </span>
+                <button 
+                  onClick={() => dismissNotification(notif.id)}
+                  className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md border transition-all ${
+                    notif.type === 'warning'
+                      ? 'bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/20 text-amber-400'
+                      : 'bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/20 text-emerald-400'
+                  }`}
+                >
+                  Mengerti
+                </button>
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
+      
+      {/* BACK TO HOME BUTTON (Centered bottom) */}
+      <AnimatePresence>
+        {activeView && !isOverlayActive && (
+          <motion.div
+            initial={{ opacity: 0, y: 30, x: "-50%" }}
+            animate={{ opacity: 1, y: 0, x: "-50%" }}
+            exit={{ opacity: 0, y: 30, x: "-50%" }}
+            transition={{ type: 'spring', damping: 25, stiffness: 220 }}
+            style={{ x: "-50%" }}
+            className="fixed bottom-3 sm:bottom-6 left-1/2 z-[99999] max-w-[calc(100vw-5rem)]"
+          >
+            <button 
+              onClick={() => { setActiveView(null); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+              className="flex items-center gap-2 px-4 py-2 sm:px-5 sm:py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-full font-black text-[9px] sm:text-[10px] uppercase tracking-[0.12em] sm:tracking-[0.15em] transition-all duration-200 active:scale-95 cursor-pointer border border-white/20 shadow-[0_12px_30px_rgba(37,99,235,0.45)] hover:shadow-blue-600/50 backdrop-blur-xl shrink-0"
+            >
+              <ArrowLeft size={12} className="shrink-0" />
+              <span className="truncate">Kembali ke Beranda</span>
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* AUDIO CONTROLLER (Floating bottom right, compact & non-colliding) */}
+      <AnimatePresence>
+        {!isOverlayActive && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            className="fixed bottom-3 sm:bottom-6 right-3 sm:right-6 z-[99999] flex items-center gap-2 pointer-events-none"
+          >
+            {/* Subtle playing text / visualizer - visible on sm+ screens */}
+            <AnimatePresence>
+              {isMarsPlaying && (
+                <motion.div 
+                  initial={{ opacity: 0, x: 10, filter: "blur(4px)" }} 
+                  animate={{ opacity: 1, x: 0, filter: "blur(0px)" }} 
+                  exit={{ opacity: 0, x: 10, filter: "blur(4px)" }} 
+                  className="hidden sm:flex bg-slate-900/95 backdrop-blur-md border border-white/10 px-2.5 py-1.5 rounded-xl shadow-lg items-center gap-1.5 pointer-events-auto"
+                >
+                  <div className="flex gap-0.5 items-end h-2.5">
+                     {[1,2,3].map(i => (
+                       <motion.div 
+                         key={i} 
+                         animate={{ height: [2, 7, 2] }} 
+                         transition={{ repeat: Infinity, duration: 0.6, delay: i * 0.15 }} 
+                         className="w-0.5 bg-blue-400 rounded-full" 
+                       />
+                     ))}
+                  </div>
+                  <span className="text-[8px] font-extrabold uppercase tracking-widest text-slate-300 italic whitespace-nowrap">Mars PB Bilibili 162</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Play / Mute Circle Icon */}
+            <button 
+              onClick={() => {
+                if (audioRef.current) {
+                  isMarsPlaying ? audioRef.current.pause() : audioRef.current.play();
+                  setIsMarsPlaying(!isMarsPlaying);
+                }
+              }}
+              className={`pointer-events-auto w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center transition-all duration-300 cursor-pointer border shadow-[0_4px_12px_rgba(0,0,0,0.3)] ${
+                isMarsPlaying 
+                  ? 'bg-blue-600 text-white border-blue-500/50 hover:bg-blue-500' 
+                  : 'bg-slate-800 text-slate-400 border-white/10 hover:bg-slate-700 hover:text-slate-200'
+              }`}
+              title={isMarsPlaying ? "Pause Mars PB Bilibili 162" : "Play Mars PB Bilibili 162"}
+            >
+              {isMarsPlaying ? <Volume2 size={13} className="animate-pulse" /> : <VolumeX size={13} />}
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence mode="wait">
+        {!activeView ? (
+          <motion.div key="landing" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.3 }} className="w-full flex flex-col min-h-screen">
+            <div className="flex-grow">
+              <Hero />
+              <SambutanKetua />
+              
+              <LandingFeatures onNavigate={handleNavigate} />
+
+              {/* Jadwal Sholat Khusus Seluler - Tampil Tepat di Bawah Slider Hero */}
+              <div className="block lg:hidden max-w-xl mx-auto px-4 sm:px-6 md:px-8 mt-6 mb-2">
+                <PrayerTimes />
+              </div>
+            </div>
+            {/* Section berita dikembalikan ke halaman utama */}
+            <Footer onNavigate={handleNavigate} />
+          </motion.div>
+        ) : (
+          /* DEDICATED FULL-PAGE VIEW DENGAN DARK MODE KONSISTEN & BOTTOM SPACING UNTUK FLOATING DOCK */
+          <div className={`flex flex-col min-h-screen w-full bg-[#070d1a] ${
+            ['contact', 'kontak', 'sejarah', 'visi-misi', 'dokumen-penting', 'fasilitas', 'inventaris', 'faq'].includes(activeView)
+              ? 'pt-12 sm:pt-14 pb-14 sm:pb-16 h-screen h-dvh overflow-hidden' 
+              : 'pt-14 lg:pt-16 pb-28 sm:pb-36'
+          }`}>
+            <AnimatePresence mode="wait">
+              <motion.div 
+                key={`dedicated-view-${activeView}`}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.3 }}
+                className="flex-grow w-full flex flex-col min-h-0"
+              >
+                <div className="w-full flex flex-col flex-grow max-w-7xl px-2.5 sm:px-4 md:px-8 mx-auto min-h-0">
+                  {/* Render Komponen dengan Props masing-masing */}
+                  {(activeView === 'jadwal' || activeView === 'jadwal-latihan' || activeView === 'schedule') && <JadwalLatihanView />}
+                  {activeView === 'kas' && <PublicKasView />}
+                  {(activeView === 'quiz') && <BadmintonQuiz />}
+                  {(activeView === 'contact' || activeView === 'kontak') && <Contact />}
+                  {(activeView === 'struktur' || activeView === 'struktur-organisasi') && <StrukturOrganisasiPublic />}
+                  {activeView === 'dokumen-penting' && <DokumenPenting />}
+                  {(activeView === 'register' || activeView === 'pendaftaran') && <RegistrationForm />}
+                  {(activeView === 'peringkat' || activeView === 'rankings') && <Ranking />}
+                  {(activeView === 'atlet' || activeView === 'players') && <Athletes initialFilter={activeAthleteFilter} />}
+                  {(activeView === 'sejarah') && <Sejarah />}
+                  {(activeView === 'visi-misi') && <VisiMisi />}
+                  {(activeView === 'fasilitas') && <Fasilitas />}
+                  {(activeView === 'inventaris') && <PublicInventaris />}
+                  {(activeView === 'berita' || activeView === 'news') && <News />}
+                  {(activeView === 'galeri' || activeView === 'gallery') && <Gallery />}
+                  {activeView === 'faq' && <PublicFAQ />}
+                </div>
+              </motion.div>
+            </AnimatePresence>
+            
+            {!['register', 'pendaftaran', 'contact', 'kontak', 'sejarah', 'visi-misi', 'dokumen-penting', 'fasilitas', 'inventaris'].includes(activeView) && <Footer onNavigate={handleNavigate} />}
+          </div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-[#0b0e14]">
         <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
@@ -589,214 +854,13 @@ export default function App() {
   return (
     <Router>
       <ScrollToTop />
-      <UrlSynchronizer setActiveView={setActiveView} />
+      <UrlSynchronizer activeView={activeView} setActiveView={setActiveView} />
       <audio ref={audioRef} src={MARS_URL} loop />
       <KasRealtimeNotifier />
       
       <Routes>
-        <Route path="/" element={
-          <div className="min-h-screen bg-[#0b0e14] w-full overflow-x-hidden">
-            <ImagePopup />
-            <Navbar onNavigate={handleNavigate} />
-            
-            {/* REAL-TIME PRAYER NOTIFICATION PANEL */}
-            <div className="fixed top-16 md:top-20 right-4 z-[9999999] flex flex-col gap-3 w-full max-w-[360px] p-4 pointer-events-none">
-              <AnimatePresence>
-                {notifications.map((notif) => (
-                  <motion.div
-                    key={notif.id}
-                    initial={{ opacity: 0, y: -20, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 20, scale: 0.95 }}
-                    className={`pointer-events-auto w-full p-4 rounded-xl shadow-2xl border flex flex-col gap-2 relative overflow-hidden backdrop-blur-md ${
-                      notif.type === 'warning' 
-                        ? 'bg-amber-950/90 border-amber-500/30 text-amber-100' 
-                        : 'bg-emerald-950/90 border-emerald-500/30 text-emerald-100'
-                    }`}
-                  >
-                    {/* Glow effect */}
-                    <div className={`absolute top-0 left-0 w-1.5 h-full ${
-                      notif.type === 'warning' ? 'bg-amber-500' : 'bg-emerald-500'
-                    }`} />
-                    
-                    <div className="flex items-start justify-between pl-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-base">
-                          {notif.type === 'warning' ? '🔔' : '🕌'}
-                        </span>
-                        <span className="font-black tracking-wide text-xs uppercase">
-                          {notif.title}
-                        </span>
-                      </div>
-                      <button 
-                        onClick={() => dismissNotification(notif.id)}
-                        className="text-slate-400 hover:text-white transition-colors p-1"
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
-                    
-                    <p className="text-xs font-medium pl-2 leading-relaxed opacity-90">
-                      {notif.message}
-                    </p>
-                    
-                    <div className="flex items-center justify-between pl-2 pt-1">
-                      <span className="text-[9px] font-bold uppercase tracking-widest opacity-60">
-                        {notif.time} • Realtime Alert
-                      </span>
-                      <button 
-                        onClick={() => dismissNotification(notif.id)}
-                        className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md border transition-all ${
-                          notif.type === 'warning'
-                            ? 'bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/20 text-amber-400'
-                            : 'bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/20 text-emerald-400'
-                        }`}
-                      >
-                        Mengerti
-                      </button>
-                    </div>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </div>
-            
-            {/* BACK TO HOME BUTTON (Centered bottom) */}
-            <AnimatePresence>
-              {activeView && !isOverlayActive && (
-                <motion.div
-                  initial={{ opacity: 0, y: 30, x: "-50%" }}
-                  animate={{ opacity: 1, y: 0, x: "-50%" }}
-                  exit={{ opacity: 0, y: 30, x: "-50%" }}
-                  transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-                  style={{ x: "-50%" }}
-                  className="fixed bottom-3 sm:bottom-6 left-1/2 z-[99999] max-w-[calc(100vw-5rem)]"
-                >
-                  <button 
-                    onClick={() => { setActiveView(null); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                    className="flex items-center gap-2 px-4 py-2 sm:px-5 sm:py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-full font-black text-[9px] sm:text-[10px] uppercase tracking-[0.12em] sm:tracking-[0.15em] transition-all duration-200 active:scale-95 cursor-pointer border border-white/20 shadow-[0_12px_30px_rgba(37,99,235,0.45)] hover:shadow-blue-600/50 backdrop-blur-xl shrink-0"
-                  >
-                    <ArrowLeft size={12} className="shrink-0" />
-                    <span className="truncate">Kembali ke Beranda</span>
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* AUDIO CONTROLLER (Floating bottom right, compact & non-colliding) */}
-            <AnimatePresence>
-              {!isOverlayActive && (
-                <motion.div 
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  className="fixed bottom-3 sm:bottom-6 right-3 sm:right-6 z-[99999] flex items-center gap-2 pointer-events-none"
-                >
-                  {/* Subtle playing text / visualizer - visible on sm+ screens */}
-                  <AnimatePresence>
-                    {isMarsPlaying && (
-                      <motion.div 
-                        initial={{ opacity: 0, x: 10, filter: "blur(4px)" }} 
-                        animate={{ opacity: 1, x: 0, filter: "blur(0px)" }} 
-                        exit={{ opacity: 0, x: 10, filter: "blur(4px)" }} 
-                        className="hidden sm:flex bg-slate-900/95 backdrop-blur-md border border-white/10 px-2.5 py-1.5 rounded-xl shadow-lg items-center gap-1.5 pointer-events-auto"
-                      >
-                        <div className="flex gap-0.5 items-end h-2.5">
-                           {[1,2,3].map(i => (
-                             <motion.div 
-                               key={i} 
-                               animate={{ height: [2, 7, 2] }} 
-                               transition={{ repeat: Infinity, duration: 0.6, delay: i * 0.15 }} 
-                               className="w-0.5 bg-blue-400 rounded-full" 
-                             />
-                           ))}
-                        </div>
-                        <span className="text-[8px] font-extrabold uppercase tracking-widest text-slate-300 italic whitespace-nowrap">Mars PB Bilibili 162</span>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-
-                  {/* Play / Mute Circle Icon */}
-                  <button 
-                    onClick={() => {
-                      if (audioRef.current) {
-                        isMarsPlaying ? audioRef.current.pause() : audioRef.current.play();
-                        setIsMarsPlaying(!isMarsPlaying);
-                      }
-                    }}
-                    className={`pointer-events-auto w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center transition-all duration-300 cursor-pointer border shadow-[0_4px_12px_rgba(0,0,0,0.3)] ${
-                      isMarsPlaying 
-                        ? 'bg-blue-600 text-white border-blue-500/50 hover:bg-blue-500' 
-                        : 'bg-slate-800 text-slate-400 border-white/10 hover:bg-slate-700 hover:text-slate-200'
-                    }`}
-                    title={isMarsPlaying ? "Pause Mars PB Bilibili 162" : "Play Mars PB Bilibili 162"}
-                  >
-                    {isMarsPlaying ? <Volume2 size={13} className="animate-pulse" /> : <VolumeX size={13} />}
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            <AnimatePresence mode="wait">
-              {!activeView ? (
-                <motion.div key="landing" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.3 }} className="w-full flex flex-col min-h-screen">
-                  <div className="flex-grow">
-                    <Hero />
-                    <SambutanKetua />
-                    
-                    <LandingFeatures onNavigate={handleNavigate} />
-
-                    {/* Jadwal Sholat Khusus Seluler - Tampil Tepat di Bawah Slider Hero */}
-                    <div className="block lg:hidden max-w-xl mx-auto px-4 sm:px-6 md:px-8 mt-6 mb-2">
-                      <PrayerTimes />
-                    </div>
-                  </div>
-                  {/* Section berita dikembalikan ke halaman utama */}
-                  <Footer onNavigate={handleNavigate} />
-                </motion.div>
-              ) : (
-                /* DEDICATED FULL-PAGE VIEW DENGAN DARK MODE KONSISTEN & BOTTOM SPACING UNTUK FLOATING DOCK */
-                <div className={`flex flex-col min-h-screen w-full bg-[#070d1a] ${
-                  ['contact', 'kontak', 'sejarah', 'visi-misi', 'dokumen-penting', 'fasilitas', 'inventaris', 'faq'].includes(activeView)
-                    ? 'pt-12 sm:pt-14 pb-14 sm:pb-16 h-screen h-dvh overflow-hidden' 
-                    : 'pt-14 lg:pt-16 pb-28 sm:pb-36'
-                }`}>
-                  <AnimatePresence mode="wait">
-                    <motion.div 
-                      key={`dedicated-view-${activeView}`}
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
-                      transition={{ duration: 0.3 }}
-                      className="flex-grow w-full flex flex-col min-h-0"
-                    >
-                      <div className="w-full flex flex-col flex-grow max-w-7xl px-2.5 sm:px-4 md:px-8 mx-auto min-h-0">
-                        {/* Render Komponen dengan Props masing-masing */}
-                        {(activeView === 'jadwal' || activeView === 'jadwal-latihan' || activeView === 'schedule') && <JadwalLatihanView />}
-                        {activeView === 'kas' && <PublicKasView />}
-                        {(activeView === 'quiz') && <BadmintonQuiz />}
-                        {(activeView === 'contact' || activeView === 'kontak') && <Contact />}
-                        {(activeView === 'struktur' || activeView === 'struktur-organisasi') && <StrukturOrganisasiPublic />}
-                        {activeView === 'dokumen-penting' && <DokumenPenting />}
-                        {(activeView === 'register' || activeView === 'pendaftaran') && <RegistrationForm />}
-                        {(activeView === 'peringkat' || activeView === 'rankings') && <Ranking />}
-                        {(activeView === 'atlet' || activeView === 'players') && <Athletes initialFilter={activeAthleteFilter} />}
-                        {(activeView === 'sejarah') && <Sejarah />}
-                        {(activeView === 'visi-misi') && <VisiMisi />}
-                        {(activeView === 'fasilitas') && <Fasilitas />}
-                        {(activeView === 'inventaris') && <PublicInventaris />}
-                        {(activeView === 'berita' || activeView === 'news') && <News />}
-                        {(activeView === 'galeri' || activeView === 'gallery') && <Gallery />}
-                        {activeView === 'faq' && <PublicFAQ />}
-                      </div>
-                    </motion.div>
-                  </AnimatePresence>
-                  
-                  {!['register', 'pendaftaran', 'contact', 'kontak', 'sejarah', 'visi-misi', 'dokumen-penting', 'fasilitas', 'inventaris'].includes(activeView) && <Footer onNavigate={handleNavigate} />}
-                </div>
-              )}
-            </AnimatePresence>
-          </div>
-        } />
+        <Route path="/" element={renderPublicHome()} />
+        <Route path="/:viewParam" element={renderPublicHome()} />
 
         <Route path="/login" element={!session ? <Login /> : <Navigate to="/admin/dashboard" replace />} />
         <Route path="/admin/*" element={session ? <AdminLayout session={session} /> : <Navigate to="/login" replace />} />
