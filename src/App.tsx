@@ -69,6 +69,7 @@ import ProfilAnggota from './components/ProfilAnggota';
 import AdminUsers from './components/AdminUsers';
 import ScheduleWidget from './components/ScheduleWidget'; 
 import PresenceManager from './components/PresenceManager';
+import KasRealtimeNotifier from './components/KasRealtimeNotifier';
 import AdminRekapKeuangan from './components/AdminRekapKeuangan';
 import BookingLatihan from './components/BookingLatihan';
 import AnalisisPerforma from './components/AnalisisPerforma';
@@ -76,6 +77,7 @@ import TournamentLeague from './components/TournamentLeague';
 import RaporAtlet from './components/RaporAtlet';
 import LiveScoreWidget from './components/LiveScoreWidget';
 import TestimonialUlasan from './components/TestimonialUlasan';
+import FcmSettingsDashboard from './components/FcmSettingsDashboard';
 
 import { X, ChevronLeft, ChevronRight, Menu, Zap, Download, ExternalLink, Volume2, VolumeX, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -589,6 +591,7 @@ export default function App() {
       <ScrollToTop />
       <UrlSynchronizer setActiveView={setActiveView} />
       <audio ref={audioRef} src={MARS_URL} loop />
+      <KasRealtimeNotifier />
       
       <Routes>
         <Route path="/" element={
@@ -965,6 +968,7 @@ function AdminLayout({ session }: { session: any }) {
             {/* Accessible to both Anggota & Admin */}
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="profil" element={<ProfilAnggota session={session} />} />
+            <Route path="notifications" element={<FcmSettingsDashboard />} />
             <Route path="analisis-performa" element={<div className="p-4 md:p-8 max-w-7xl mx-auto"><AnalisisPerforma /></div>} />
             <Route path="rapor-atlet" element={<div className="p-4 md:p-8 max-w-7xl mx-auto"><RaporAtlet isAdmin={isAdmin} /></div>} />
             <Route path="live-score" element={<div className="p-4 md:p-8 max-w-7xl mx-auto"><LiveScoreWidget isAdmin={isAdmin} /></div>} />

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
 import Swal from 'sweetalert2';
-import { 
-  FileSpreadsheet, 
+import { broadcastKasChange } from './KasRealtimeNotifier';
+import {   FileSpreadsheet, 
   FileText, 
   Search, 
   Loader2, 
@@ -351,6 +351,8 @@ export default function AdminRekapKeuangan({ isAdmin = true, session }: AdminRek
           .eq('id', editingTxId);
         if (error) throw error;
         
+        broadcastKasChange('UPDATE', { id: editingTxId, ...finalTxData });
+        
         Swal.fire({
           toast: true,
           position: 'top-end',
@@ -360,10 +362,14 @@ export default function AdminRekapKeuangan({ isAdmin = true, session }: AdminRek
           timer: 1500
         });
       } else {
-        const { error } = await supabase
+        const { data: insertedData, error } = await supabase
           .from('kas_pb')
-          .insert([finalTxData]);
+          .insert([finalTxData])
+          .select();
         if (error) throw error;
+
+        const insertedRecord = insertedData && insertedData[0] ? insertedData[0] : { id: 'gen_' + Date.now(), ...finalTxData };
+        broadcastKasChange('INSERT', insertedRecord);
 
         Swal.fire({
           toast: true,
@@ -419,6 +425,8 @@ export default function AdminRekapKeuangan({ isAdmin = true, session }: AdminRek
           .delete()
           .eq('id', txId);
         if (error) throw error;
+
+        broadcastKasChange('DELETE', { id: txId });
 
         Swal.fire({
           toast: true,

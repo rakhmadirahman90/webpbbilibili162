@@ -233,6 +233,7 @@ export default function Sidebar({ email, role = 'admin', isOpen, onClose }: Side
       items: [
         { name: role === 'admin' ? 'Dashboard Admin' : 'Dashboard Anggota', path: 'dashboard', icon: LayoutDashboard, adminOnly: false },
         { name: 'Profil Saya', path: 'profil', icon: UserCheck, adminOnly: false },
+        { name: 'Notifikasi Push', path: 'notifications', icon: Megaphone, adminOnly: false },
       ]
     },
     {

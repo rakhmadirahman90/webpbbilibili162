@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from "../supabase";
 import Swal from 'sweetalert2';
+import { triggerPushNotification } from '../utils/firebaseMessaging';
 import { 
   Newspaper, Plus, Trash2, Edit3, Save, X, 
   Image as ImageIcon, Calendar, Tag, Loader2, Zap, Search, AlertCircle, 
@@ -339,6 +340,12 @@ export default function AdminBerita({ session }: { session?: any }) {
             throw error;
           }
         }
+        // Dispatch real-time push notification
+        triggerPushNotification(
+          "Pengumuman Berita Baru!",
+          formData.judul || "Ada berita terbaru di klub PB Bilibili 162!",
+          "berita"
+        );
       }
       await fetchNews();
       setShowSuccess(true);

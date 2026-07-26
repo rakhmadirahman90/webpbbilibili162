@@ -69,7 +69,18 @@ export default function PublicKasView({ memberOnlyName }: PublicKasViewProps = {
     }
   };
 
-  useEffect(() => { fetchData(); }, [memberOnlyName]);
+  useEffect(() => {
+    fetchData();
+
+    const handleKasUpdate = () => {
+      fetchData();
+    };
+
+    window.addEventListener('kas-updated', handleKasUpdate);
+    return () => {
+      window.removeEventListener('kas-updated', handleKasUpdate);
+    };
+  }, [memberOnlyName]);
 
   // --- LOGIKA SALDO GLOBAL ---
   const globalStats = kasData.reduce((acc, curr) => {

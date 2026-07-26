@@ -249,6 +249,11 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
 
   const [memberTransactions, setMemberTransactions] = useState<any[]>([]);
 
+  const memberNameRef = React.useRef(memberData.nama);
+  useEffect(() => {
+    memberNameRef.current = memberData.nama;
+  }, [memberData.nama]);
+
   useEffect(() => {
     if (memberData.nama) {
       const fetchTransactions = async () => {
@@ -410,6 +415,20 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
 
     window.addEventListener('local-session-changed', handleSessionChanged);
 
+    const handleKasUpdated = () => {
+      loadUserData();
+      if (memberNameRef.current) {
+        supabase
+          .from('kas_pb')
+          .select('*')
+          .ilike('nama_pembayar', memberNameRef.current.trim())
+          .then(({ data }) => {
+            if (data) setMemberTransactions(data);
+          });
+      }
+    };
+    window.addEventListener('kas-updated', handleKasUpdated);
+
     const channel = supabase
       .channel('profil_anggota_realtime')
       .on(
@@ -426,6 +445,7 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
 
     return () => {
       window.removeEventListener('local-session-changed', handleSessionChanged);
+      window.removeEventListener('kas-updated', handleKasUpdated);
       supabase.removeChannel(channel);
     };
   }, [propSession]);

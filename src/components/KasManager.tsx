@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabase';
 import Swal from 'sweetalert2';
+import { broadcastKasChange } from './KasRealtimeNotifier';
 import { 
   Wallet, Plus, Search, FileText, Loader2, CheckCircle2, Filter, 
   Trash2, Edit3, X, ArrowUpCircle, ArrowDownCircle, Calendar,
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, Bell
 } from 'lucide-react'; 
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -480,6 +481,40 @@ export default function KasManager() {
 
   useEffect(() => { fetchData(); }, []);
 
+  const handleTestNotification = async () => {
+    try {
+      const mockTx = {
+        id: 'test_' + Date.now(),
+        nama_pembayar: 'Budi Santoso (Test)',
+        kategori: 'Sumbangan Sukarela',
+        jumlah_bayar: 150000,
+        jenis_transaksi: 'Masuk' as const,
+        tanggal_transaksi: new Date().toISOString().split('T')[0],
+        keterangan: 'Simulasi notifikasi kas real-time'
+      };
+      
+      await broadcastKasChange('INSERT', mockTx);
+      
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: 'Event Notifikasi Test Dikirim!',
+        showConfirmButton: false,
+        timer: 3000
+      });
+    } catch (err: any) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Gagal Mengirim Test Notifikasi',
+        text: err.message,
+        confirmButtonColor: '#3B82F6',
+        background: '#0F172A',
+        color: '#fff'
+      });
+    }
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -490,8 +525,11 @@ export default function KasManager() {
     try {
       if (editingId) { 
         await supabase.from('kas_pb').update(finalData).eq('id', editingId); 
+        broadcastKasChange('UPDATE', { id: editingId, ...finalData });
       } else { 
-        await supabase.from('kas_pb').insert([finalData]); 
+        const { data: insertedData } = await supabase.from('kas_pb').insert([finalData]).select(); 
+        const insertedRecord = insertedData && insertedData[0] ? insertedData[0] : { id: 'gen_' + Date.now(), ...finalData };
+        broadcastKasChange('INSERT', insertedRecord);
       }
       setEditingId(null); 
       setFormData(initialForm); 
@@ -554,6 +592,8 @@ export default function KasManager() {
         const { error } = await supabase.from('kas_pb').delete().eq('id', id);
         if (error) throw error;
         
+        broadcastKasChange('DELETE', { id });
+
         Swal.fire({
           toast: true,
           position: 'top-end',
@@ -610,6 +650,10 @@ export default function KasManager() {
 
           <button onClick={exportToPDF} className="flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 bg-blue-600 hover:bg-blue-500 rounded-xl transition-all text-[10px] sm:text-xs font-black uppercase tracking-widest active:scale-95 shrink-0">
             <FileText size={14} /> <span className="hidden xs:inline">Export PDF</span><span className="xs:hidden">PDF</span>
+          </button>
+
+          <button onClick={handleTestNotification} className="flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 bg-amber-600 hover:bg-amber-500 rounded-xl transition-all text-[10px] sm:text-xs font-black uppercase tracking-widest active:scale-95 shrink-0 text-white border border-amber-500/20 shadow-lg">
+            <Bell size={14} className="animate-bounce" /> <span>Test Notifikasi</span>
           </button>
         </div>
       </div>

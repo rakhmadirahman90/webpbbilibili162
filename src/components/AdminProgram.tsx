@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Target, Plus, Edit, Trash2, X } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { supabase } from '../supabase';
+import { triggerPushNotification } from '../utils/firebaseMessaging';
 
 interface ProgramLatihan {
   id: string;
@@ -111,6 +112,14 @@ export default function AdminProgram() {
       localStorage.setItem('program_local_v3', JSON.stringify(updated));
       setPrograms(updated);
       
+      if (!editingItem) {
+        triggerPushNotification(
+          "Jadwal Latihan Baru!",
+          `Program Baru: ${formData.nama_program} (${formData.hari_latihan}, ${formData.jam_latihan})`,
+          "jadwal"
+        );
+      }
+
       fetchPrograms(); 
       setShowModal(false);
       Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Tersimpan', showConfirmButton: false, timer: 1500 });
@@ -123,6 +132,15 @@ export default function AdminProgram() {
       }
       localStorage.setItem('program_local_v3', JSON.stringify(updated));
       setPrograms(updated); 
+      
+      if (!editingItem) {
+        triggerPushNotification(
+          "Jadwal Latihan Baru!",
+          `Program Baru: ${formData.nama_program} (${formData.hari_latihan}, ${formData.jam_latihan})`,
+          "jadwal"
+        );
+      }
+
       setShowModal(false);
       Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Tersimpan', showConfirmButton: false, timer: 1500 });
     }

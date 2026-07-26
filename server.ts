@@ -89,6 +89,60 @@ async function startServer() {
       }
     });
 
+    app.post("/api/send-push-notification", async (req, res) => {
+      try {
+        const { title, body, topic, token } = req.body;
+        console.log(">>> [Push] Request received:", { title, body, topic, token });
+
+        const serverKey = process.env.FCM_SERVER_KEY;
+        if (!serverKey) {
+          console.warn(">>> [Push] FCM_SERVER_KEY is missing. Simulation only.");
+          return res.json({ 
+            success: false, 
+            simulated: true,
+            message: "FCM_SERVER_KEY is not configured in .env. Notifications will show up locally." 
+          });
+        }
+
+        // Send to specific device token, or fallback to topic registration if provided
+        const target = token || (topic ? `/topics/${topic}` : null);
+        if (!target) {
+          return res.status(400).json({ success: false, error: "Missing token or topic target." });
+        }
+
+        const payload = {
+          to: target,
+          notification: {
+            title,
+            body,
+            icon: "/favicon.ico",
+            click_action: "/"
+          },
+          data: {
+            topic: topic || "general",
+            click_action: "/"
+          }
+        };
+
+        const fcmResponse = await fetch("https://fcm.googleapis.com/fcm/send", {
+          method: "POST",
+          headers: {
+            "Authorization": `key=${serverKey}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const fcmData = await fcmResponse.json();
+        console.log(">>> [Push] FCM Response:", fcmData);
+        return res.json({ success: true, fcmData });
+
+      } catch (error: any) {
+        console.error(">>> [Push] Error sending FCM message:", error);
+        return res.status(500).json({ success: false, error: error.message });
+      }
+    });
+
     // Vite middleware for development
     if (process.env.NODE_ENV !== "production") {
       const vite = await createViteServer({
