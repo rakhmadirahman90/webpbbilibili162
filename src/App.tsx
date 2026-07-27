@@ -410,6 +410,46 @@ export default function App() {
     };
   }, []);
 
+  // Listen to Custom Notifications triggered from within the app
+  useEffect(() => {
+    const handleCustomNotification = (event: any) => {
+      const { title, message, type } = event.detail;
+      const notifType = type || 'now';
+      const newNotif = {
+        id: `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        title: title || 'Pemberitahuan PB Bilibili',
+        message: message || '',
+        type: notifType,
+        time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+        prayerName: ''
+      };
+      setNotifications(prev => [newNotif, ...prev]);
+
+      // Play chime
+      try {
+        const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+        if (AudioContext) {
+          const ctx = new AudioContext();
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+          gain.gain.setValueAtTime(0.1, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.4);
+        }
+      } catch (e) {}
+    };
+
+    window.addEventListener('app-notification-trigger', handleCustomNotification);
+    return () => {
+      window.removeEventListener('app-notification-trigger', handleCustomNotification);
+    };
+  }, []);
+
   // Interval checker for prayer times
   useEffect(() => {
     if (!prayerTimings) return;
