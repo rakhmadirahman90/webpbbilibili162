@@ -79,6 +79,7 @@ import LiveScoreWidget from './components/LiveScoreWidget';
 import TestimonialUlasan from './components/TestimonialUlasan';
 import FcmSettingsDashboard from './components/FcmSettingsDashboard';
 import PwaApkManager from './components/PwaApkManager';
+import PwaInstallNotification from './components/PwaInstallNotification';
 
 import { X, ChevronLeft, ChevronRight, Menu, Zap, Download, ExternalLink, Volume2, VolumeX, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -898,6 +899,7 @@ export default function App() {
       <UrlSynchronizer activeView={activeView} setActiveView={setActiveView} />
       <audio ref={audioRef} src={MARS_URL} loop />
       <KasRealtimeNotifier />
+      <PwaInstallNotification />
       
       <Routes>
         <Route path="/" element={renderPublicHome()} />
