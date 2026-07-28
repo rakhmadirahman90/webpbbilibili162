@@ -43,13 +43,17 @@ export function computeScheduleInfo(): ScheduleInfo {
   
   const isOngoing = isRabuActive || isJumatActive || isAhadActive;
   
-  const isRabuFinished = currentMin >= 720;
-  const isJumatFinished = currentMin >= 3600;
-  const isAhadFinished = currentMin >= 6480;
+  // Finished statuses inside current weekly cycle (Wed 00:00 to Sun 12:00).
+  // Once Sunday 12:00 passes (currentMin >= 6480), Sunday's session ends,
+  // and the cycle resets for next week. Thus on Sunday afternoon, Monday, and Tuesday (H-1 before Wednesday),
+  // ALL days (Rabu, Jumat, Ahad) reset to "Akan Datang" (isFinished = false).
+  const isRabuFinished = currentMin >= 720 && currentMin < 6480;
+  const isJumatFinished = currentMin >= 3600 && currentMin < 6480;
+  const isAhadFinished = false;
   
-  const isAllFinished = isAhadFinished;
+  const isAllFinished = false;
   
-  const isTodayFinished = (day === 3 && isRabuFinished) || (day === 5 && isJumatFinished) || (day === 0 && isAhadFinished);
+  const isTodayFinished = (day === 3 && currentMin >= 720) || (day === 5 && currentMin >= 3600) || (day === 0 && currentMin >= 6480);
   
   const sessions = [
     { dayIndex: 3, name: 'Sesi Rabu (GOR SMAN 4 Parepare)', location: 'GOR SMAN 4 Parepare', dayName: 'Rabu', startMin: 480, endMin: 720 },
