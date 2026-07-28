@@ -422,19 +422,16 @@ export default function Navbar({ onNavigate }: NavbarProps) {
             {/* LOGO */}
             <div className="flex items-center gap-1.5 sm:gap-2 cursor-pointer group shrink-0" onClick={() => handleNavClick('home')}>
               <div className="relative w-8 h-8 lg:w-9 lg:h-9 flex items-center justify-center shrink-0">
-                <div className="absolute inset-0 border border-white/30 rounded-full group-hover:border-blue-500/50 transition-colors duration-300"></div>
-                <div className="w-7 h-7 lg:w-8 lg:h-8 rounded-full overflow-hidden bg-slate-900/60 flex items-center justify-center transition-transform duration-500 group-hover:scale-105 shadow-inner p-0.5 border border-blue-500/30">
-                  <img 
-                    src={branding.logo_url || "/logo_pb_bilibili_162.svg"} 
-                    alt="Logo" 
-                    className="w-full h-full object-contain" 
-                    loading="lazy" 
-                    decoding="async" 
-                    onError={(e) => {
-                      e.currentTarget.src = "/logo_pb_bilibili_162.svg";
-                    }}
-                  />
-                </div>
+                <img 
+                  src={branding.logo_url || "/logo_pb_bilibili_162.svg"} 
+                  alt="Logo PB Bilibili 162" 
+                  className="w-full h-full object-contain filter drop-shadow-md group-hover:scale-110 transition-transform duration-300" 
+                  loading="lazy" 
+                  decoding="async" 
+                  onError={(e) => {
+                    e.currentTarget.src = "/logo_pb_bilibili_162.svg";
+                  }}
+                />
               </div>
               <div className="flex flex-col justify-center shrink-0">
                 <div className="flex items-center gap-1 leading-none mb-0.5 whitespace-nowrap">
@@ -624,20 +621,17 @@ export default function Navbar({ onNavigate }: NavbarProps) {
             <div className="flex items-center justify-between py-2.5 px-3.5 border-b border-white/10 shrink-0 bg-[#070d1a]/80 relative">
               <div className="flex items-center gap-2.5 min-w-0">
                 {/* Logo Container */}
-                <div className="relative w-10 h-10 flex items-center justify-center shrink-0">
-                  <div className="absolute inset-0 bg-blue-500/10 rounded-full blur-md animate-pulse"></div>
-                  <div className="relative w-9 h-9 rounded-full overflow-hidden border border-blue-500/30 shadow-lg flex items-center justify-center bg-slate-900/60 p-0.5">
-                    <img 
-                      src={branding.logo_url || "/logo_pb_bilibili_162.svg"} 
-                      alt="Logo" 
-                      className="w-full h-full object-contain" 
-                      loading="lazy" 
-                      decoding="async" 
-                      onError={(e) => {
-                        e.currentTarget.src = "/logo_pb_bilibili_162.svg";
-                      }}
-                    />
-                  </div>
+                <div className="relative w-9 h-9 flex items-center justify-center shrink-0">
+                  <img 
+                    src={branding.logo_url || "/logo_pb_bilibili_162.svg"} 
+                    alt="Logo PB Bilibili 162" 
+                    className="w-full h-full object-contain filter drop-shadow-md" 
+                    loading="lazy" 
+                    decoding="async" 
+                    onError={(e) => {
+                      e.currentTarget.src = "/logo_pb_bilibili_162.svg";
+                    }}
+                  />
                 </div>
                 <div className="min-w-0 flex flex-col">
                   <h3 className="font-black text-xs tracking-tighter uppercase italic text-white leading-tight truncate">

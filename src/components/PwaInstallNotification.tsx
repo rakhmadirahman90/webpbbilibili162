@@ -109,13 +109,13 @@ export default function PwaInstallNotification() {
         <div className="fixed bottom-4 left-3 right-3 sm:left-auto sm:right-6 sm:max-w-md z-[9999] bg-[#0c1427]/95 backdrop-blur-md text-white rounded-2xl p-4 shadow-2xl border border-indigo-500/30 animate-in slide-in-from-bottom-6 duration-300">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 p-0.5 shadow-lg shadow-blue-500/30 shrink-0 relative overflow-hidden">
+              <div className="w-12 h-12 rounded-2xl bg-slate-900/90 border border-blue-500/40 p-1 shadow-lg shadow-blue-500/20 shrink-0 relative overflow-hidden flex items-center justify-center">
                 <img 
-                  src="/pwa-192x192.png" 
+                  src="/logo_pb_bilibili_162.svg" 
                   alt="PB Bilibili 162 App" 
-                  className="w-full h-full object-cover rounded-[10px]"
+                  className="w-full h-full object-contain"
                   onError={(e) => {
-                    e.currentTarget.src = "/logo_pb_bilibili_162.svg";
+                    e.currentTarget.src = "/logo_pb_bilibili_162.png";
                   }}
                 />
               </div>
