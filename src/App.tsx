@@ -78,6 +78,7 @@ import RaporAtlet from './components/RaporAtlet';
 import LiveScoreWidget from './components/LiveScoreWidget';
 import TestimonialUlasan from './components/TestimonialUlasan';
 import FcmSettingsDashboard from './components/FcmSettingsDashboard';
+import PwaApkManager from './components/PwaApkManager';
 
 import { X, ChevronLeft, ChevronRight, Menu, Zap, Download, ExternalLink, Volume2, VolumeX, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -1073,6 +1074,7 @@ function AdminLayout({ session }: { session: any }) {
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="profil" element={<ProfilAnggota session={session} />} />
             <Route path="notifications" element={<FcmSettingsDashboard />} />
+            <Route path="pwa-apk" element={<PwaApkManager userRole={userRole} />} />
             <Route path="analisis-performa" element={<div className="p-4 md:p-8 max-w-7xl mx-auto"><AnalisisPerforma /></div>} />
             <Route path="rapor-atlet" element={<div className="p-4 md:p-8 max-w-7xl mx-auto"><RaporAtlet isAdmin={isAdmin} /></div>} />
             <Route path="live-score" element={<div className="p-4 md:p-8 max-w-7xl mx-auto"><LiveScoreWidget isAdmin={isAdmin} /></div>} />

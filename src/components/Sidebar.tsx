@@ -41,7 +41,8 @@ import {
   Calendar,
   HeartPulse,
   Tv,
-  MessageSquare
+  MessageSquare,
+  Smartphone
 } from 'lucide-react';
 import { supabase } from '../supabase';
 
@@ -234,6 +235,7 @@ export default function Sidebar({ email, role = 'admin', isOpen, onClose }: Side
         { name: role === 'admin' ? 'Dashboard Admin' : 'Dashboard Anggota', path: 'dashboard', icon: LayoutDashboard, adminOnly: false },
         { name: 'Profil Saya', path: 'profil', icon: UserCheck, adminOnly: false },
         { name: 'Notifikasi Push', path: 'notifications', icon: Megaphone, adminOnly: false },
+        { name: 'Aplikasi Mobile & APK', path: 'pwa-apk', icon: Smartphone, adminOnly: false },
       ]
     },
     {

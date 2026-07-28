@@ -1,16 +1,82 @@
 {
-  "name": "PB Bilibili 162",
+  "id": "https://pbilibili162.99apps.id/",
+  "name": "PB Bilibili 162 - Sistem Informasi Terpadu",
   "short_name": "PB Bilibili",
-  "description": "Sistem Informasi PB Bilibili 162",
+  "description": "Sistem Informasi Terpadu PB Bilibili 162. Kelola data atlet, pendaftaran, laporan kas, peringkat poin, dan jadwal sholat.",
+  "lang": "id-ID",
+  "dir": "ltr",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
+  "display_override": ["standalone", "minimal-ui", "browser"],
+  "orientation": "portrait",
+  "background_color": "#070d1a",
   "theme_color": "#070d1a",
+  "prefer_related_applications": false,
+  "related_applications": [],
+  "categories": ["sports", "utilities", "lifestyle"],
   "icons": [
+    {
+      "src": "/pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/pwa-1024x1024.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
+    },
     {
       "src": "/logo_pb_bilibili_162.svg",
       "sizes": "any",
-      "type": "image/svg+xml"
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-desktop.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Tampilan Utama PB Bilibili 162"
+    },
+    {
+      "src": "/screenshot-mobile.png",
+      "sizes": "750x1334",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Tampilan Mobile PB Bilibili 162"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Klasemen & Peringkat",
+      "short_name": "Peringkat",
+      "description": "Lihat klasemen poin atlet terbaru",
+      "url": "/admin/ranking",
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Laporan Kas Club",
+      "short_name": "Kas Club",
+      "description": "Lihat transparansi keuangan kas",
+      "url": "/admin/kas",
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
     }
   ]
 }

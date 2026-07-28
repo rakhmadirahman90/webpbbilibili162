@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Users, User, Zap, Activity, KeyRound, ShieldCheck, Check, Sparkles, 
-  UserCheck, Trophy, Newspaper, Image, BookOpen, ArrowRight, Award, Star
+  UserCheck, Trophy, Newspaper, Image, BookOpen, ArrowRight, Award, Star,
+  Smartphone, Download
 } from 'lucide-react';
 import { supabase } from '../supabase';
 import { useNavigate } from 'react-router-dom';
@@ -201,17 +202,18 @@ export default function AdminDashboard() {
                 Akses informasi terkini peringkat, skor tanding, pengumuman, dan dokumen resmi PB Bilibili 162.
               </p>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-3">
                 {[
                   { label: 'Profil Saya', path: '/admin/profil', icon: UserCheck, color: 'text-blue-400' },
                   { label: 'Peringkat & Poin', path: '/admin/ranking', icon: Trophy, color: 'text-yellow-400' },
                   { label: 'Hasil Skor', path: '/admin/skor', icon: Zap, color: 'text-indigo-400' },
                   { label: 'Dokumen Club', path: '/admin/dokumen', icon: BookOpen, color: 'text-emerald-400' },
+                  { label: 'Unduh File APK', path: '/admin/pwa-apk', icon: Smartphone, color: 'text-purple-400' },
                 ].map((item, idx) => (
                   <button
                     key={idx}
                     onClick={() => navigate(item.path)}
-                    className="p-2 sm:p-3 bg-[#070d1a] hover:bg-slate-800 border border-white/5 hover:border-blue-500/40 rounded-xl sm:rounded-2xl flex flex-col items-center text-center transition-all group cursor-pointer"
+                    className="p-2 sm:p-3 bg-[#070d1a] hover:bg-slate-800 border border-white/5 hover:border-purple-500/40 rounded-xl sm:rounded-2xl flex flex-col items-center text-center transition-all group cursor-pointer"
                   >
                     <item.icon size={18} className={`${item.color} mb-1 group-hover:scale-110 transition-transform`} />
                     <span className="text-[9px] sm:text-[10px] font-bold text-slate-300 group-hover:text-white uppercase tracking-wider">{item.label}</span>
