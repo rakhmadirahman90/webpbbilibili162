@@ -81,7 +81,7 @@ import FcmSettingsDashboard from './components/FcmSettingsDashboard';
 import PwaApkManager from './components/PwaApkManager';
 import PwaInstallNotification from './components/PwaInstallNotification';
 
-import { X, ChevronLeft, ChevronRight, Menu, Zap, Download, ExternalLink, Volume2, VolumeX, ArrowLeft } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Menu, Zap, Download, ExternalLink, Volume2, Volume1, VolumeX, ArrowLeft, Plus, Minus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // --- KONSTANTA AUDIO ---
@@ -350,11 +350,55 @@ export default function App() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const wasAutoPausedRef = useRef<boolean>(false);
   const [isMarsPlaying, setIsMarsPlaying] = useState(false);
+  const [marsVolume, setMarsVolume] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('mars_audio_volume');
+      return saved ? parseFloat(saved) : 0.8;
+    } catch {
+      return 0.8;
+    }
+  });
   const [audioToast, setAudioToast] = useState<{ show: boolean; message: string; type: 'play' | 'mute' }>({
     show: false,
     message: '',
     type: 'mute'
   });
+
+  // Sync volume to audio element
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = marsVolume;
+    }
+  }, [marsVolume]);
+
+  const handleVolumeChange = (newVol: number) => {
+    const clamped = Math.max(0, Math.min(1, parseFloat(newVol.toFixed(2))));
+    setMarsVolume(clamped);
+    try {
+      localStorage.setItem('mars_audio_volume', clamped.toString());
+    } catch {
+      // ignore
+    }
+    if (audioRef.current) {
+      audioRef.current.volume = clamped;
+    }
+    const pct = Math.round(clamped * 100);
+    setAudioToast({
+      show: true,
+      message: `Volume: ${pct}%`,
+      type: clamped > 0 ? 'play' : 'mute'
+    });
+  };
+
+  const increaseVolume = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    handleVolumeChange(marsVolume + 0.1);
+  };
+
+  const decreaseVolume = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    handleVolumeChange(marsVolume - 0.1);
+  };
 
   useEffect(() => {
     if (audioToast.show) {
@@ -845,10 +889,14 @@ export default function App() {
       <AnimatePresence>
         {!isOverlayActive && (
           <motion.div 
+            drag
+            dragMomentum={false}
+            dragElastic={0.1}
+            whileDrag={{ scale: 1.08 }}
             initial={{ opacity: 0, scale: 0.85, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.85, y: 10 }}
-            className="fixed bottom-3 left-3 sm:bottom-6 sm:left-6 z-[9999] flex items-center gap-2 pointer-events-none relative"
+            className="fixed bottom-3 left-3 sm:bottom-6 sm:left-6 z-[9999] flex items-center gap-2 pointer-events-auto cursor-grab active:cursor-grabbing touch-none select-none"
           >
             {/* Audio Action Toast Notification */}
             <AnimatePresence>
@@ -876,7 +924,9 @@ export default function App() {
 
             {/* Play / Mute Circle Icon */}
             <button 
+              type="button"
               onClick={toggleAudio}
+              onPointerDown={(e) => e.stopPropagation()}
               className={`pointer-events-auto w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center transition-all duration-300 cursor-pointer border shadow-[0_8px_25px_rgba(0,0,0,0.5)] ${
                 isMarsPlaying 
                   ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-blue-400/50 shadow-blue-600/40 hover:scale-105 active:scale-95 ring-2 ring-blue-500/30' 
@@ -887,6 +937,50 @@ export default function App() {
             >
               {isMarsPlaying ? <Volume2 size={18} className="animate-pulse text-white" /> : <VolumeX size={18} />}
             </button>
+
+            {/* Volume Control Pod (- / + & Slider) */}
+            <div 
+              onPointerDown={(e) => e.stopPropagation()}
+              className="flex items-center gap-1.5 bg-slate-900/95 backdrop-blur-xl border border-white/15 px-2.5 py-1.5 rounded-full shadow-2xl pointer-events-auto"
+            >
+              <button
+                type="button"
+                onClick={decreaseVolume}
+                disabled={marsVolume <= 0}
+                className="w-6 h-6 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition-all active:scale-90 disabled:opacity-40 cursor-pointer"
+                title="Kurangi Volume (-10%)"
+                aria-label="Kurangi Volume"
+              >
+                <Minus size={12} />
+              </button>
+
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.02"
+                value={marsVolume}
+                onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
+                className="w-12 sm:w-16 h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                title={`Volume: ${Math.round(marsVolume * 100)}%`}
+                aria-label="Slider Volume Audio"
+              />
+
+              <button
+                type="button"
+                onClick={increaseVolume}
+                disabled={marsVolume >= 1}
+                className="w-6 h-6 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition-all active:scale-90 disabled:opacity-40 cursor-pointer"
+                title="Tambah Volume (+10%)"
+                aria-label="Tambah Volume"
+              >
+                <Plus size={12} />
+              </button>
+
+              <span className="text-[10px] font-bold text-blue-300 min-w-[28px] text-right font-mono">
+                {Math.round(marsVolume * 100)}%
+              </span>
+            </div>
 
             {/* Subtle playing text / visualizer - visible on md+ screens */}
             <AnimatePresence>
