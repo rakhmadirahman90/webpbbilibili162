@@ -564,36 +564,91 @@ export default function News() {
     handleReact(e, newsId, currentRx || 'love');
   };
 
+  const resolveShareImageUrl = async (news: Berita, publicDomain: string): Promise<string> => {
+    const rawImages = (news.gambar_url || '').split(/[\s,]+/).filter(Boolean);
+    const primaryUrl = rawImages.length > 0 ? (rawImages[0].startsWith('http') ? rawImages[0] : `${publicDomain}${rawImages[0]}`) : null;
+    const proxyUrl = `${publicDomain}/api/news-image?id=${news.id}`;
+    const fallbackUrl = `${publicDomain}/logo_pb_bilibili_162.png`;
+
+    // Attempt 1: Check primary image URL
+    if (primaryUrl) {
+      try {
+        const res = await fetch(primaryUrl, { method: 'HEAD', cache: 'no-cache' });
+        if (res.ok) return primaryUrl;
+      } catch {
+        // Fallthrough to retry
+      }
+    }
+
+    // Attempt 2 (Retry): Check proxy image URL
+    try {
+      const proxyRes = await fetch(proxyUrl, { method: 'HEAD', cache: 'no-cache' });
+      if (proxyRes.ok) return proxyUrl;
+    } catch {
+      // Fallthrough to fallback
+    }
+
+    // Attempt 3: Default fallback placeholder
+    return fallbackUrl;
+  };
+
   const handleShare = async (news: Berita, platform: 'wa' | 'wa_link' | 'fb' | 'x' | 'copy' | 'native') => {
-    // Use official production domain to ensure WhatsApp web scrapers can fetch OG meta tags & preview image
+    // Official production domain to ensure web scrapers and external platforms load image metadata
     const publicDomain = 'https://pbilibili162.99apps.id';
     const shareUrl = `${publicDomain}/berita?newsId=${news.id}`;
     const titleClean = news.judul.trim();
-
     const dateInfo = formatJournalisticDate(news.tanggal);
+    const summaryText = news.ringkasan || (news.konten ? news.konten.substring(0, 160).replace(/\n/g, ' ').trim() + '...' : '');
+
+    // Resolve direct, public-accessible image URL with retry & fallback
+    const directImageUrl = await resolveShareImageUrl(news, publicDomain);
 
     const waText = 
-`*${titleClean} - PB BILIBILI 162*
+`*${titleClean.toUpperCase()}*
 
-_${dateInfo.publisher}, ${dateInfo.fullDateline} —_ ✨ *Baca Selengkapnya:*
+📰 _${dateInfo.publisher}, ${dateInfo.fullDateline}_
+
+"${summaryText}"
+
+✨ *Baca Berita Selengkapnya & Lihat Foto:*
 ${shareUrl}`;
 
-    if (platform === 'native' && navigator.share) {
+    if (platform === 'native' && typeof navigator !== 'undefined' && navigator.share) {
       try {
-        // Omitting 'text' parameter forces WhatsApp native share sheet to generate the Rich Link Image Card Preview
-        await navigator.share({
+        let imageFile: File | null = null;
+        try {
+          // Attempt to fetch image blob to attach directly in Web Share API if supported
+          const imgRes = await fetch(directImageUrl);
+          if (imgRes.ok) {
+            const blob = await imgRes.blob();
+            const ext = blob.type.includes('png') ? 'png' : 'jpg';
+            imageFile = new File([blob], `berita-${news.id}.${ext}`, { type: blob.type || 'image/jpeg' });
+          }
+        } catch {
+          // If image fetch fails, proceed with text & url share
+        }
+
+        const shareData: ShareData = {
           title: `${titleClean} - PB BILIBILI 162`,
+          text: `*${titleClean}*\n\n_${dateInfo.publisher}, ${dateInfo.fullDateline}_\n\n"${summaryText}"\n`,
           url: shareUrl,
-        });
+        };
+
+        if (imageFile && navigator.canShare && navigator.canShare({ files: [imageFile] })) {
+          shareData.files = [imageFile];
+        }
+
+        await navigator.share(shareData);
         return;
       } catch (err) {
-        // Fallback to direct WhatsApp share
+        // Fallback if user cancels or native share fails
+        console.warn("Native share canceled or unhandled:", err);
       }
     }
 
     switch (platform) {
       case 'wa_link':
-        // Sending URL alone triggers WhatsApp's OpenGraph link preview card with big image banner
+        // Sending URL alone triggers WhatsApp OpenGraph link preview card with large image banner
         window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareUrl)}`, '_blank');
         break;
       case 'wa':
@@ -1481,13 +1536,14 @@ ${shareUrl}`;
           const titleClean = sharePreviewNews.judul.trim();
           const dateInfo = formatJournalisticDate(sharePreviewNews.tanggal);
           const firstImg = sharePreviewNews.gambar_url ? sharePreviewNews.gambar_url.split(/[\s,]+/)[0] : '';
+          const summaryText = sharePreviewNews.ringkasan || (sharePreviewNews.konten ? sharePreviewNews.konten.substring(0, 160).replace(/\n/g, ' ').trim() + '...' : '');
 
           return (
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-xs overflow-y-auto"
+              className="fixed inset-0 z-[130000] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm overflow-y-auto"
               onClick={() => setSharePreviewNews(null)}
             >
               <motion.div 
@@ -1501,11 +1557,11 @@ ${shareUrl}`;
                 {/* Modal Header WhatsApp Theme */}
                 <div className="bg-[#075E54] text-white p-4 flex items-center justify-between shadow-md">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-[#25D366] flex items-center justify-center text-white shadow-inner font-bold">
-                      <MessageCircle size={20} />
+                    <div className="w-10 h-10 rounded-full bg-[#25D366] flex items-center justify-center text-white shadow-inner font-bold">
+                      <MessageCircle size={22} />
                     </div>
                     <div>
-                      <h3 className="font-extrabold text-sm sm:text-base leading-tight">Pratinjau Pesan WhatsApp</h3>
+                      <h3 className="font-extrabold text-sm sm:text-base leading-tight">Pratinjau Bagikan Berita</h3>
                       <p className="text-[11px] text-emerald-100/90 font-medium">Tampilan berita saat diterima di WhatsApp</p>
                     </div>
                   </div>
@@ -1519,21 +1575,21 @@ ${shareUrl}`;
                 </div>
 
                 {/* WhatsApp Chat Wallpaper Screen */}
-                <div className="p-4 sm:p-5 bg-[#efeae2] min-h-[320px] max-h-[62vh] overflow-y-auto space-y-3 font-sans">
+                <div className="p-4 sm:p-5 bg-[#efeae2] min-h-[320px] max-h-[60vh] overflow-y-auto space-y-3 font-sans">
                   
                   {/* WhatsApp Date pill */}
                   <div className="flex justify-center">
-                    <span className="bg-white/80 backdrop-blur-xs text-slate-500 text-[10px] font-bold px-3 py-1 rounded-md shadow-2xs border border-slate-200/60 uppercase tracking-wider">
-                      HARI INI
+                    <span className="bg-white/90 backdrop-blur-xs text-slate-600 text-[10px] font-bold px-3 py-1 rounded-md shadow-2xs border border-slate-200/60 uppercase tracking-wider">
+                      PRATINJAU PESAN WHATSAPP
                     </span>
                   </div>
 
                   {/* WhatsApp Chat Bubble (Right aligned light green bubble) */}
-                  <div className="bg-[#dcf8c6] text-slate-900 rounded-2xl rounded-tr-none p-3.5 shadow-md border border-emerald-200/80 max-w-[94%] ml-auto relative">
+                  <div className="bg-[#dcf8c6] text-slate-900 rounded-2xl rounded-tr-none p-3.5 shadow-md border border-emerald-200/80 max-w-[96%] ml-auto relative">
                     
                     {/* 1. Main Thumbnail Preview Image */}
                     {firstImg && (
-                      <div className="mb-2.5 rounded-xl overflow-hidden border border-emerald-300/40 bg-black/5 aspect-[16/9] relative shadow-2xs">
+                      <div className="mb-2.5 rounded-xl overflow-hidden border border-emerald-300/40 bg-black/5 aspect-[16/9] relative shadow-xs">
                         <LazyImage
                           src={getOptimizedImageUrl(firstImg, 800)}
                           alt={titleClean}
@@ -1548,7 +1604,7 @@ ${shareUrl}`;
                         {titleClean} - PB BILIBILI 162
                       </p>
                       <p className="text-[11px] text-slate-600 line-clamp-2 leading-relaxed">
-                        {dateInfo.publisher}, {dateInfo.fullDateline} — {sharePreviewNews.ringkasan || (sharePreviewNews.konten ? sharePreviewNews.konten.substring(0, 110) : '')}
+                        {dateInfo.publisher}, {dateInfo.fullDateline} — {summaryText}
                       </p>
                       <p className="text-[10px] text-emerald-700 font-bold mt-1.5 flex items-center gap-1">
                         <Link2 size={11} /> pbilibili162.99apps.id
@@ -1558,10 +1614,16 @@ ${shareUrl}`;
                     {/* 3. Text Message formatting with WhatsApp asterisk & italics */}
                     <div className="text-xs sm:text-[13px] text-slate-800 space-y-1.5 leading-relaxed font-sans text-left">
                       <p className="font-black text-slate-900">
-                        *{titleClean} - PB BILIBILI 162*
+                        *{titleClean.toUpperCase()}*
                       </p>
                       <p className="italic text-slate-700 text-[11.5px]">
-                        _{dateInfo.publisher}, {dateInfo.fullDateline} —_ ✨ *Baca Selengkapnya:*
+                        📰 _{dateInfo.publisher}, {dateInfo.fullDateline}_
+                      </p>
+                      <p className="text-slate-800 text-[11.5px] leading-relaxed">
+                        "{summaryText}"
+                      </p>
+                      <p className="text-slate-900 font-bold text-[11px] pt-1">
+                        ✨ *Baca Berita Selengkapnya & Lihat Foto:*
                       </p>
                       <p className="text-blue-700 font-bold underline break-all text-[11px]">
                         {shareUrl}
@@ -1570,7 +1632,7 @@ ${shareUrl}`;
 
                     {/* Timestamp & Double Checkmark Status */}
                     <div className="flex items-center justify-end gap-1 mt-2 text-[10px] text-slate-500 font-medium">
-                      <span>13:28</span>
+                      <span>SEKARANG</span>
                       <span className="text-[#34B7F1] font-extrabold text-xs leading-none">✓✓</span>
                     </div>
                   </div>
@@ -1582,26 +1644,26 @@ ${shareUrl}`;
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full">
                     <button
                       onClick={() => {
-                        handleShare(sharePreviewNews, 'wa_link');
+                        handleShare(sharePreviewNews, 'wa');
                         setSharePreviewNews(null);
                       }}
-                      className="flex items-center justify-center gap-2 px-4 py-2.5 bg-[#25D366] hover:bg-emerald-600 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md shadow-emerald-200 transition-all active:scale-95 cursor-pointer"
-                      title="Satu klik untuk memicu tampilan Card Banner Gambar Besar di WhatsApp"
+                      className="flex items-center justify-center gap-2 px-4 py-3 bg-[#25D366] hover:bg-emerald-600 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md shadow-emerald-200 transition-all active:scale-95 cursor-pointer"
+                      title="Kirim Berita dengan Pesan Teks Lengkap"
                     >
                       <Share2 size={16} />
-                      <span>Kirim Card Gambar WA</span>
+                      <span>Bagikan ke WhatsApp</span>
                     </button>
 
                     <button
                       onClick={() => {
-                        handleShare(sharePreviewNews, 'wa');
+                        handleShare(sharePreviewNews, 'wa_link');
                         setSharePreviewNews(null);
                       }}
-                      className="flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-800 hover:bg-emerald-900 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all active:scale-95 cursor-pointer"
-                      title="Kirim dengan pesan teks judul lengkap"
+                      className="flex items-center justify-center gap-2 px-4 py-3 bg-emerald-800 hover:bg-emerald-900 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all active:scale-95 cursor-pointer"
+                      title="Kirim Tautan Langsung untuk Menampilkan Card Banner Gambar di WhatsApp"
                     >
                       <MessageCircle size={16} />
-                      <span>Kirim Teks Lengkap</span>
+                      <span>Kirim Card Gambar WA</span>
                     </button>
                   </div>
                   

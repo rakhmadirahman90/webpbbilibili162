@@ -89,13 +89,13 @@ export default function Hero() {
                 <img
                   src={getOptimizedImageUrl(slide.image, 150, 40)}
                   alt=""
-                  className="w-full h-full object-cover blur-3xl opacity-60 scale-110 select-none pointer-events-none"
+                  className="w-full h-full object-cover blur-3xl opacity-75 scale-110 select-none pointer-events-none"
                   loading={index === 0 ? "eager" : "lazy"}
                   decoding="async"
                 />
               </div>
 
-              {/* Main Slide Image: object-cover with center alignment to fill full container area without letterboxing */}
+              {/* Main Slide Image: object-cover with center alignment to auto-fit flush against top navbar without empty gaps */}
               <img
                 src={getOptimizedImageUrl(slide.image, 1600)}
                 alt="Slide PB Bilibili 162"

@@ -26,28 +26,11 @@ async function injectNewsMetaTags(html: string, newsId: string, hostHeader?: str
 
     const ogTitle = `${title} - PB BILIBILI 162`;
     const description = leadSnippet;
-    const images = (news.gambar_url || '').split(/[\s,]+/).filter(Boolean);
-    let host = hostHeader || 'pbilibili162.99apps.id';
-    if (host.includes('127.0.0.1') || host.includes('localhost')) {
-      host = 'pbilibili162.99apps.id';
-    } else {
-      host = host.split(':')[0];
-    }
-    const origin = `https://${host}`;
-
-    // Use direct public Supabase CDN URL ending in .jpg for WhatsApp crawler compatibility
-    const mainImage = images.length > 0
-      ? images[0]
-      : `${origin}/logo_pb_bilibili_162.png`;
-
-    let imageType = 'image/jpeg';
-    if (images.length > 0) {
-      const firstImg = images[0].toLowerCase();
-      if (firstImg.endsWith('.png')) imageType = 'image/png';
-      else if (firstImg.endsWith('.webp')) imageType = 'image/webp';
-    }
-
-    const fullUrl = `${origin}/berita?newsId=${news.id}`;
+    
+    // Always use public production domain for WhatsApp and social media web scrapers
+    const PUBLIC_DOMAIN = 'https://pbilibili162.99apps.id';
+    const proxyImage = `${PUBLIC_DOMAIN}/api/news-image?id=${news.id}`;
+    const fullUrl = `${PUBLIC_DOMAIN}/berita?newsId=${news.id}`;
 
     const metaInject = `
     <!-- Dynamic Open Graph Meta Tags for News (WhatsApp & Social Preview) -->
@@ -58,18 +41,18 @@ async function injectNewsMetaTags(html: string, newsId: string, hostHeader?: str
     <meta property="og:url" content="${fullUrl}" />
     <meta property="og:title" content="${ogTitle.replace(/"/g, '&quot;')}" />
     <meta property="og:description" content="${description.replace(/"/g, '&quot;')}" />
-    <meta property="og:image" content="${mainImage}" />
-    <meta property="og:image:url" content="${mainImage}" />
-    <meta property="og:image:secure_url" content="${mainImage}" />
-    <meta property="og:image:type" content="${imageType}" />
+    <meta property="og:image" content="${proxyImage}" />
+    <meta property="og:image:url" content="${proxyImage}" />
+    <meta property="og:image:secure_url" content="${proxyImage}" />
+    <meta property="og:image:type" content="image/jpeg" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="${title.replace(/"/g, '&quot;')}" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="${ogTitle.replace(/"/g, '&quot;')}" />
     <meta name="twitter:description" content="${description.replace(/"/g, '&quot;')}" />
-    <meta name="twitter:image" content="${mainImage}" />
-    <link rel="image_src" href="${mainImage}" />`;
+    <meta name="twitter:image" content="${proxyImage}" />
+    <link rel="image_src" href="${proxyImage}" />`;
 
     // Strip default title, description, and OG/Twitter tags
     let modified = html
@@ -125,19 +108,27 @@ async function startServer() {
           return res.redirect('https://pbilibili162.99apps.id/logo_pb_bilibili_162.png');
         }
 
-        const imgRes = await fetch(imageUrl);
+        // Optimize image to 1200x630 JPEG via weserv.nl for WhatsApp crawler compatibility (fast & lightweight <150KB)
+        const cleanUrl = imageUrl.replace(/^https?:\/\//, '');
+        const optimizedUrl = `https://images.weserv.nl/?url=${encodeURIComponent(cleanUrl)}&w=1200&h=630&fit=cover&output=jpg&q=85`;
+
+        let imgRes = await fetch(optimizedUrl);
+        if (!imgRes.ok) {
+          // Fallback to original image URL
+          imgRes = await fetch(imageUrl);
+        }
+
         if (!imgRes.ok) {
           return res.redirect('https://pbilibili162.99apps.id/logo_pb_bilibili_162.png');
         }
 
-        const contentType = imgRes.headers.get('content-type') || 'image/jpeg';
         const buffer = Buffer.from(await imgRes.arrayBuffer());
 
-        res.setHeader('Content-Type', contentType);
+        res.setHeader('Content-Type', 'image/jpeg');
         res.setHeader('Content-Length', buffer.length.toString());
-        res.setHeader('Cache-Control', 'public, max-age=2592000, s-maxage=2592000');
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
         res.setHeader('Access-Control-Allow-Origin', '*');
-        res.removeHeader('X-Robots-Tag');
+        res.setHeader('X-Robots-Tag', 'index, follow, max-image-preview:large');
         return res.status(200).send(buffer);
       } catch (err) {
         console.error("Failed to proxy news image:", err);
