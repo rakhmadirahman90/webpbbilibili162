@@ -24,7 +24,7 @@ export default function Hero() {
           .from('site_settings')
           .select('value')
           .eq('key', 'hero_config')
-          .single();
+          .maybeSingle();
 
         if (data?.value) {
           const config = data.value;
@@ -70,17 +70,17 @@ export default function Hero() {
   };
 
   return (
-    <section id="home" className="relative w-full pt-0 bg-[#070d1a] overflow-hidden m-0 p-0 border-0">
+    <section id="home" className="relative w-full pt-14 lg:pt-16 bg-[#070d1a] overflow-hidden m-0 p-0 border-0">
       
-      {/* Slider Aspect Ratio Container - Fits 100% flush from top edge behind glass Navbar without gaps or letterboxing */}
-      <div className="relative w-full aspect-[4/3] sm:aspect-[16/9] md:aspect-[2.1/1] lg:aspect-[2.5/1] min-h-[280px] max-h-[85vh] overflow-hidden m-0 p-0">
+      {/* Slider Aspect Ratio Container - Top padded below fixed Navbar so image is 100% visible */}
+      <div className="relative w-full aspect-[16/9] sm:aspect-[2.2/1] md:aspect-[2.6/1] lg:aspect-[3/1] min-h-[200px] sm:min-h-[260px] max-h-[65vh] overflow-hidden m-0 p-0 flex items-center justify-center">
         
         {/* Background Visual Layer */}
-        <div className="absolute inset-0 z-0 w-full h-full">
+        <div className="absolute inset-0 z-0 w-full h-full flex items-center justify-center">
           {slides.map((slide, index) => (
             <div
               key={slide.id || index}
-              className={`absolute inset-0 w-full h-full transition-opacity duration-[2000ms] ease-in-out ${
+              className={`absolute inset-0 w-full h-full flex items-center justify-center transition-opacity duration-[2000ms] ease-in-out ${
                 index === currentSlide ? 'opacity-100 visible' : 'opacity-0 invisible'
               }`}
             >
@@ -89,20 +89,20 @@ export default function Hero() {
                 <img
                   src={getOptimizedImageUrl(slide.image, 150, 40)}
                   alt=""
-                  className="w-full h-full object-cover blur-3xl opacity-75 scale-110 select-none pointer-events-none"
+                  className="w-full h-full object-cover blur-3xl opacity-80 scale-110 select-none pointer-events-none"
                   loading={index === 0 ? "eager" : "lazy"}
                   decoding="async"
                 />
               </div>
 
-              {/* Main Slide Image: object-cover with center alignment to auto-fit flush against top navbar without empty gaps */}
+              {/* Main Slide Image: object-contain with ambient blur so whole picture fits and is 100% visible on screen */}
               <img
                 src={getOptimizedImageUrl(slide.image, 1600)}
                 alt="Slide PB Bilibili 162"
                 loading={index === 0 ? "eager" : "lazy"}
                 decoding="async"
-                className={`absolute inset-0 w-full h-full object-cover object-center transition-transform duration-[20000ms] ease-out select-none z-10
-                  ${index === currentSlide ? 'scale-105' : 'scale-100'}
+                className={`relative w-full h-full object-contain object-center transition-transform duration-[20000ms] ease-out select-none z-10
+                  ${index === currentSlide ? 'scale-102' : 'scale-100'}
                 `}
               />
 

@@ -9,11 +9,13 @@ const SambutanKetua = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center">
           {/* Image side */}
-          <div className="relative">
+          <div className="relative max-w-xs sm:max-w-sm md:max-w-full mx-auto w-full">
             <img 
               src="https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/logos/ketua.png" 
               alt="H. Wawan - Ketua Umum PB Bilibili 162"
               className="rounded-2xl shadow-2xl border border-white/10 w-full h-auto object-cover aspect-[4/5]"
+              loading="lazy"
+              decoding="async"
             />
             {/* Decoration */}
             <div className="absolute -bottom-4 -left-4 w-24 h-24 bg-blue-600/20 rounded-full blur-xl -z-10"></div>

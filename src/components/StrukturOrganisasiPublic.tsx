@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { supabase } from '../supabase';
 import { Loader2, Award, ShieldCheck, Users, Star, Briefcase, Target } from 'lucide-react';
 import { motion, LayoutGroup } from 'framer-motion';
+import LazyImage from './LazyImage';
 
 interface Member {
   id: string;
@@ -91,10 +92,12 @@ export default function StrukturOrganisasiPublic() {
       className={`bg-white rounded-[1.2rem] sm:rounded-[2.5rem] shadow-xl border border-blue-50/50 flex flex-col items-center p-3 sm:p-6 md:p-8 transition-all duration-500 w-[150px] sm:w-64 md:w-72 ${size === 'lg' ? 'w-[200px] sm:w-80' : ''} cursor-pointer`}
     >
       <div className={`w-20 h-20 sm:w-28 sm:h-28 ${size === 'lg' ? 'md:w-36 md:h-36' : ''} rounded-[1.5rem] sm:rounded-[2.2rem] overflow-hidden mb-4 sm:mb-6 bg-slate-50 border-[4px] sm:border-[6px] border-white shadow-inner`}>
-        <img 
+        <LazyImage 
           src={m.photo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(m.name)}&background=0D8ABC&color=fff`} 
           className="w-full h-full object-cover" 
           alt={m.name} 
+          containerClassName="w-full h-full"
+          width={250}
         />
       </div>
       <h3 className="text-slate-900 font-black italic uppercase text-center leading-tight tracking-tighter mb-1.5 sm:mb-3 text-[10px] sm:text-[13px] md:text-[15px]" style={{ fontSize: size === 'lg' ? '14px' : undefined }}>{m.name}</h3>
@@ -177,10 +180,12 @@ export default function StrukturOrganisasiPublic() {
                               {staffs.map(m => (
                                 <motion.div key={m.id} variants={itemVariants} onClick={() => setSelectedMember(m)} className="bg-white p-2 rounded-xl shadow-sm border border-slate-100 flex items-center gap-2 w-full sm:w-60 cursor-pointer hover:bg-slate-50 transition-colors">
                                   <div className="w-8 h-8 rounded-lg overflow-hidden bg-slate-50 border border-white shadow-sm shrink-0">
-                                    <img 
+                                    <LazyImage 
                                       src={m.photo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(m.name)}`} 
                                       className="w-full h-full object-cover" 
                                       alt={m.name}
+                                      containerClassName="w-full h-full"
+                                      width={100}
                                     />
                                   </div>
                                   <div className="flex flex-col min-w-0">
@@ -215,10 +220,12 @@ export default function StrukturOrganisasiPublic() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="w-32 h-32 rounded-2xl overflow-hidden bg-slate-50 mb-4 shadow-inner">
-                <img
+                <LazyImage
                   src={selectedMember.photo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedMember.name)}`}
                   className="w-full h-full object-cover"
                   alt={selectedMember.name}
+                  containerClassName="w-full h-full"
+                  width={200}
                 />
               </div>
               <h2 className="text-slate-900 font-black italic uppercase text-center text-xl mb-1">{selectedMember.name}</h2>

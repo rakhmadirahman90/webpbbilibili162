@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, User, Edit3 } from 'lucide-react';
 import { Registrant } from '../types';
+import LazyImage from './LazyImage';
 
 interface Props {
   atlet: Registrant;
@@ -25,7 +26,7 @@ export default function AthleteProfileModal({ atlet, onClose, onEdit }: Props) {
         <div className="relative pt-8 pb-6 flex flex-col items-center bg-gradient-to-b from-blue-900/20 to-[#0c1426]">
           <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-[#0c1426] shadow-2xl">
             {atlet.foto_url ? (
-              <img src={atlet.foto_url} className="w-full h-full object-cover" alt={atlet.nama} />
+              <LazyImage src={atlet.foto_url} className="w-full h-full object-cover" alt={atlet.nama} containerClassName="w-full h-full" width={200} />
             ) : (
               <User className="w-full h-full p-4 bg-slate-800 text-slate-400" />
             )}

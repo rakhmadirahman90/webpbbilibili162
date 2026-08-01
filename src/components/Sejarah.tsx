@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
 import { Loader2, History, BookOpen, Award, ShieldCheck, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
+import LazyImage from './LazyImage';
 
 export default function Sejarah() {
   const [loading, setLoading] = useState(true);
@@ -96,11 +97,12 @@ export default function Sejarah() {
             <div className="absolute top-0 right-0 w-28 h-28 bg-blue-500/10 blur-2xl pointer-events-none" />
 
             <div className="relative w-full h-full flex items-center justify-center overflow-hidden rounded-xl sm:rounded-2xl border border-white/10 group bg-slate-900">
-              <img 
+              <LazyImage 
                 src={dynamicContent.sejarah_image || "https://images.unsplash.com/photo-1544033527-b192daee1f5b?q=80&w=2070"} 
                 alt="Pendiri & Sejarah PB Bilibili 162" 
                 className="w-full h-full object-cover object-[center_20%] group-hover:scale-105 transition-transform duration-700"
-                referrerPolicy="no-referrer"
+                containerClassName="w-full h-full"
+                width={800}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-[#070d1a]/90 via-black/10 to-transparent" />
 

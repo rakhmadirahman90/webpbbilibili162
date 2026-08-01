@@ -511,6 +511,8 @@ export default function ManajemenAtlet() {
                     {atlet.foto_url ? (
                       <img
                         src={atlet.foto_url}
+                        loading="lazy"
+                        decoding="async"
                         className="w-full h-full object-cover object-[center_25%] group-hover:scale-110 transition-transform duration-700"
                         alt={atlet.nama}
                       />
@@ -630,7 +632,10 @@ export default function ManajemenAtlet() {
                 {newAtlet.foto_url ? (
                   <img
                     src={newAtlet.foto_url}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover"
+                    alt="Preview"
                   />
                 ) : (
                   <User className="w-full h-full p-10 text-slate-300" />

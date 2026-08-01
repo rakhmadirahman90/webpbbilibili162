@@ -375,13 +375,15 @@ export default function AdminGallery({ session }: { session?: any }) {
               className="group relative bg-zinc-900/30 border border-white/5 rounded-[2.5rem] overflow-hidden aspect-[4/3] transition-all hover:border-blue-600/50 animate-in fade-in zoom-in duration-500"
             >
               {item.type === 'image' ? (
-                <img src={item.url} className="w-full h-full object-cover grayscale-[50%] group-hover:grayscale-0 transition-all duration-700 group-hover:scale-110" alt={item.title} />
+                <img src={item.url} loading="lazy" decoding="async" className="w-full h-full object-cover grayscale-[50%] group-hover:grayscale-0 transition-all duration-700 group-hover:scale-110" alt={item.title} />
               ) : (
                 <div className="relative w-full h-full bg-black">
                     {item.url.includes('youtube.com') || item.url.includes('youtu.be') ? (
                         <div className="w-full h-full relative">
                             <img 
                                 src={`https://img.youtube.com/vi/${getYouTubeID(item.url)}/maxresdefault.jpg`} 
+                                loading="lazy"
+                                decoding="async"
                                 className="w-full h-full object-cover opacity-40 group-hover:opacity-80 transition-opacity"
                                 alt="Thumbnail"
                                 onError={(e: any) => { e.target.src = `https://img.youtube.com/vi/${getYouTubeID(item.url)}/mqdefault.jpg`; }}

@@ -116,10 +116,25 @@ function UrlSynchronizer({
     const path = location.pathname.substring(1).toLowerCase();
     const params = new URLSearchParams(location.search);
     
-    const fullPageMenus = ['jadwal', 'jadwal-latihan', 'schedule', 'kas', 'quiz', 'contact', 'kontak', 'struktur', 'struktur-organisasi', 'dokumen-penting', 'register', 'pendaftaran', 'peringkat', 'rankings', 'atlet', 'players', 'tentang-kami', 'about', 'galeri', 'gallery', 'sejarah', 'visi-misi', 'fasilitas', 'inventaris', 'berita', 'news', 'faq'];
+    const fullPageMenus = [
+      'jadwal', 'jadwal-latihan', 'schedule', 
+      'kas', 'quiz', 
+      'contact', 'kontak', 
+      'struktur', 'struktur-organisasi', 
+      'dokumen-penting', 'dokumen', 'documents',
+      'register', 'pendaftaran', 
+      'peringkat', 'rankings', 'ranking',
+      'atlet', 'players', 'player',
+      'tentang-kami', 'about', 'tentang', 'sejarah',
+      'galeri', 'gallery', 
+      'visi-misi', 'visi', 'misi', 'fasilitas', 'inventaris', 'public-inventaris',
+      'berita', 'news', 'faq', 'sambutan', 'sambutan-ketua'
+    ];
     
     if (path) {
-      if (fullPageMenus.includes(path)) {
+      if (path === 'home' || path === 'beranda') {
+        if (activeView !== null) setActiveView(null);
+      } else if (fullPageMenus.includes(path)) {
         if (activeView !== path) {
           setActiveView(path);
         }
@@ -260,6 +275,8 @@ function ImagePopup() {
                {/* Main Banner Image - Fully spans the width proportionally without cropping */}
                <img 
                  src={current.url_gambar} 
+                 loading="lazy"
+                 decoding="async"
                  className="w-full h-auto block z-10 select-none pointer-events-none" 
                  alt={current.judul} 
                  onError={(e) => {
@@ -768,10 +785,16 @@ export default function App() {
   }, []);
 
   const handleNavigate = (sectionId: string, subPath?: string) => {
-    console.log("DEBUG: handleNavigate called with sectionId:", sectionId, "subPath:", subPath);
+    const rawTarget = (subPath || sectionId || '').toLowerCase().trim();
     
-    if (sectionId === 'atlet' || sectionId === 'players') {
-      setActiveView('atlet'); // Pastikan view tetap 'atlet'
+    if (!rawTarget || rawTarget === 'home' || rawTarget === 'beranda') {
+      setActiveView(null);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    if (rawTarget === 'atlet' || rawTarget === 'players' || rawTarget === 'player') {
+      setActiveView('atlet');
       if (subPath) {
         const path = subPath.toLowerCase();
         if (path.includes('senior')) setActiveAthleteFilter('Senior');
@@ -784,21 +807,28 @@ export default function App() {
       return;
     }
 
-    const fullPageMenus = ['jadwal', 'jadwal-latihan', 'schedule', 'kas', 'quiz', 'contact', 'kontak', 'struktur', 'struktur-organisasi', 'dokumen-penting', 'register', 'pendaftaran', 'peringkat', 'rankings', 'atlet', 'players', 'tentang-kami', 'about', 'galeri', 'gallery', 'sejarah', 'visi-misi', 'fasilitas', 'inventaris', 'berita', 'news', 'faq'];
+    const fullPageMenus = [
+      'jadwal', 'jadwal-latihan', 'schedule', 
+      'kas', 'quiz', 
+      'contact', 'kontak', 
+      'struktur', 'struktur-organisasi', 
+      'dokumen-penting', 'dokumen', 'documents',
+      'register', 'pendaftaran', 
+      'peringkat', 'rankings', 'ranking',
+      'atlet', 'players', 'player',
+      'tentang-kami', 'about', 'tentang', 'sejarah',
+      'galeri', 'gallery', 
+      'visi-misi', 'visi', 'misi', 'fasilitas', 'inventaris', 'public-inventaris',
+      'berita', 'news', 'faq', 'sambutan', 'sambutan-ketua'
+    ];
 
-    // Prioritaskan subPath jika ada, karena itu adalah target navigasi sebenarnya
-    const target = (subPath || sectionId).toLowerCase();
-    console.log("DEBUG: handleNavigate target:", target);
-    
-    if (fullPageMenus.includes(target)) {
-        console.log("DEBUG: Setting activeView to", target);
-        setActiveView(target);
+    if (fullPageMenus.includes(rawTarget)) {
+        setActiveView(rawTarget);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
-        console.log("DEBUG: Setting activeView to null, scrolling to", target);
         setActiveView(null);
         setTimeout(() => {
-            const element = document.getElementById(target);
+            const element = document.getElementById(rawTarget);
             if (element) {
                 const offset = 100;
                 window.scrollTo({ top: element.getBoundingClientRect().top + window.pageYOffset - offset, behavior: 'smooth' });
@@ -1133,21 +1163,22 @@ export default function App() {
                 <div className="w-full flex flex-col flex-grow max-w-7xl px-2.5 sm:px-4 md:px-8 mx-auto min-h-0">
                   {/* Render Komponen dengan Props masing-masing */}
                   {(activeView === 'jadwal' || activeView === 'jadwal-latihan' || activeView === 'schedule') && <JadwalLatihanView />}
-                  {activeView === 'kas' && <PublicKasView />}
+                  {(activeView === 'kas') && <PublicKasView />}
                   {(activeView === 'quiz') && <BadmintonQuiz />}
                   {(activeView === 'contact' || activeView === 'kontak') && <Contact />}
                   {(activeView === 'struktur' || activeView === 'struktur-organisasi') && <StrukturOrganisasiPublic />}
-                  {activeView === 'dokumen-penting' && <DokumenPenting />}
+                  {(activeView === 'dokumen-penting' || activeView === 'dokumen' || activeView === 'documents') && <DokumenPenting />}
                   {(activeView === 'register' || activeView === 'pendaftaran') && <RegistrationForm />}
-                  {(activeView === 'peringkat' || activeView === 'rankings') && <Ranking />}
-                  {(activeView === 'atlet' || activeView === 'players') && <Athletes initialFilter={activeAthleteFilter} />}
-                  {(activeView === 'sejarah') && <Sejarah />}
-                  {(activeView === 'visi-misi') && <VisiMisi />}
+                  {(activeView === 'peringkat' || activeView === 'rankings' || activeView === 'ranking') && <Ranking />}
+                  {(activeView === 'atlet' || activeView === 'players' || activeView === 'player') && <Athletes initialFilter={activeAthleteFilter} />}
+                  {(activeView === 'sejarah' || activeView === 'tentang-kami' || activeView === 'about' || activeView === 'tentang') && <Sejarah />}
+                  {(activeView === 'visi-misi' || activeView === 'visi' || activeView === 'misi') && <VisiMisi />}
                   {(activeView === 'fasilitas') && <Fasilitas />}
-                  {(activeView === 'inventaris') && <PublicInventaris />}
+                  {(activeView === 'inventaris' || activeView === 'public-inventaris') && <PublicInventaris />}
                   {(activeView === 'berita' || activeView === 'news') && <News />}
                   {(activeView === 'galeri' || activeView === 'gallery') && <Gallery />}
-                  {activeView === 'faq' && <PublicFAQ />}
+                  {(activeView === 'faq') && <PublicFAQ />}
+                  {(activeView === 'sambutan' || activeView === 'sambutan-ketua') && <SambutanKetua />}
                 </div>
               </motion.div>
             </AnimatePresence>
@@ -1350,6 +1381,8 @@ function AdminLayout({ session }: { session: any }) {
                 <img 
                   src={userFotoUrl} 
                   alt="Profil" 
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover"
                   referrerPolicy="no-referrer"
                   onError={() => setUserFotoUrl(null)}

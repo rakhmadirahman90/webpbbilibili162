@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { PackageOpen, Box } from 'lucide-react';
 import { supabase } from '../supabase';
+import LazyImage from './LazyImage';
 
 interface Item {
   id: string;
@@ -84,11 +85,12 @@ export default function PublicInventaris() {
                 {/* Image Header */}
                 <div className="relative h-44 bg-black/40 overflow-hidden border-b border-white/5 shrink-0">
                   {item.gambar ? (
-                    <img 
+                    <LazyImage 
                       src={item.gambar} 
                       alt={item.nama} 
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      referrerPolicy="no-referrer"
+                      containerClassName="w-full h-full"
+                      width={400}
                     />
                   ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-amber-500/5 to-orange-500/10 text-amber-500/40">

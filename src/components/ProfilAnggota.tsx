@@ -1179,6 +1179,8 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
                       <img 
                         src={memberData.foto_url} 
                         alt={memberData.nama} 
+                        loading="lazy"
+                        decoding="async"
                         className="w-full h-full object-cover rounded-2xl"
                         onError={(e) => {
                           e.currentTarget.src = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80";
@@ -1620,7 +1622,7 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
                 <div className="flex items-center gap-3 sm:gap-4 relative z-10 my-1">
                   <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl overflow-hidden border-2 border-white/30 bg-slate-900 shrink-0">
                     {memberData.foto_url ? (
-                      <img src={memberData.foto_url} alt={memberData.nama} className="w-full h-full object-cover" />
+                      <img src={memberData.foto_url} alt={memberData.nama} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center font-black text-lg sm:text-xl text-blue-300">
                         {memberData.nama.charAt(0).toUpperCase()}

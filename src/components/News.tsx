@@ -1119,6 +1119,8 @@ ${shareUrl}`;
                         <img 
                           src={getOptimizedImageUrl(img, 1200)} 
                           alt="" 
+                          loading={idx === 0 ? "eager" : "lazy"}
+                          decoding="async"
                           className="w-full h-full object-cover object-center" 
                           referrerPolicy="no-referrer"
                         />
@@ -1258,6 +1260,8 @@ ${shareUrl}`;
                             <img 
                               src={getOptimizedImageUrl(img, 500)} 
                               alt="" 
+                              loading="lazy"
+                              decoding="async"
                               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
                               referrerPolicy="no-referrer"
                             />
@@ -1514,7 +1518,7 @@ ${shareUrl}`;
                             onClick={() => setLightboxIndex(idx)}
                             className={`w-14 h-10 rounded overflow-hidden shrink-0 border-2 transition-all ${lightboxIndex === idx ? 'border-blue-500 scale-105 opacity-100' : 'border-transparent opacity-45 hover:opacity-85'}`}
                           >
-                            <img src={getOptimizedImageUrl(img, 150)} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                            <img src={getOptimizedImageUrl(img, 150)} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                           </button>
                         ))}
                       </div>

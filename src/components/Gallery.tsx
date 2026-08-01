@@ -552,6 +552,8 @@ export default function Gallery() {
                               <img 
                                 src={getOptimizedImageUrl(img, 200)} 
                                 alt="" 
+                                loading="lazy"
+                                decoding="async"
                                 className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-40 scale-110 pointer-events-none select-none" 
                                 referrerPolicy="no-referrer"
                               />
@@ -559,6 +561,8 @@ export default function Gallery() {
                               <img 
                                 src={getOptimizedImageUrl(img, 1200)} 
                                 alt="" 
+                                loading={idx === 0 ? "eager" : "lazy"}
+                                decoding="async"
                                 className="relative max-w-full max-h-full object-contain z-10 shadow-2xl transition-all duration-300" 
                                 referrerPolicy="no-referrer"
                               />
@@ -681,6 +685,8 @@ export default function Gallery() {
                               <img 
                                 src={getOptimizedImageUrl(img, 400)} 
                                 alt="" 
+                                loading="lazy"
+                                decoding="async"
                                 className="w-full h-full object-cover" 
                                 referrerPolicy="no-referrer"
                               />

@@ -552,7 +552,7 @@ const totalSeniorPutri = registrants.filter(r =>
                           className="w-10 h-10 rounded-xl bg-slate-200 border border-slate-100 shadow-sm overflow-hidden flex-shrink-0 cursor-zoom-in hover:opacity-80 transition-opacity"
                         >
                           {item.foto_url ? (
-                            <img src={item.foto_url} className="w-full h-full object-cover object-top" alt={item.nama} />
+                            <img src={item.foto_url} loading="lazy" decoding="async" className="w-full h-full object-cover object-top" alt={item.nama} />
                           ) : (
                             <User className="m-auto mt-1.5 text-slate-400" size={20} />
                           )}
@@ -656,7 +656,7 @@ const totalSeniorPutri = registrants.filter(r =>
                       className="w-12 h-12 rounded-xl bg-slate-200 border border-slate-100 shadow-sm overflow-hidden flex-shrink-0 cursor-zoom-in"
                     >
                       {item.foto_url ? (
-                        <img src={item.foto_url} className="w-full h-full object-cover object-top" alt={item.nama} />
+                        <img src={item.foto_url} loading="lazy" decoding="async" className="w-full h-full object-cover object-top" alt={item.nama} />
                       ) : (
                         <User className="m-auto mt-2 text-slate-400" size={24} />
                       )}

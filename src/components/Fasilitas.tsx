@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
 import { Zap, Loader2, Building, Sparkles, CheckCircle2, Eye, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import LazyImage from './LazyImage';
 
 export default function Fasilitas() {
   const [loading, setLoading] = useState(true);
@@ -159,11 +160,12 @@ export default function Fasilitas() {
                   onClick={() => setSelectedImg(img)}
                   className="group relative w-full h-full rounded-xl overflow-hidden border border-white/10 cursor-pointer bg-slate-900"
                 >
-                  <img 
+                  <LazyImage 
                     src={img} 
                     alt={`Fasilitas ${idx + 1}`} 
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                    referrerPolicy="no-referrer"
+                    containerClassName="w-full h-full"
+                    width={400}
                   />
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                     <Eye size={18} className="text-white" />

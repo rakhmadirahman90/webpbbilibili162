@@ -5,9 +5,18 @@ import {
   Plus, Trash2, MoveUp, MoveDown, 
   Image as ImageIcon, RefreshCcw, 
   CheckCircle2, AlertCircle, Clock, Zap,
-  Layers, Settings2, Edit3, X, ZoomIn, ZoomOut
+  Layers, Settings2, Edit3, X, ZoomIn, ZoomOut,
+  RotateCw, Crop, Maximize2, Sparkles, Monitor,
+  Gauge, HardDrive
 } from 'lucide-react';
 import Cropper from 'react-easy-crop';
+
+const ASPECT_RATIO_PRESETS = [
+  { label: 'Hero Banner (2.5 : 1)', value: 2.5 / 1, desc: 'Sesuai Hero Slider Published' },
+  { label: 'Widescreen (16 : 9)', value: 16 / 9, desc: 'Standar Layar' },
+  { label: 'Ultra-Wide (21 : 9)', value: 21 / 9, desc: 'Banner Sinematik' },
+  { label: 'Standard Photo (4 : 3)', value: 4 / 3, desc: 'Foto Proporsional' },
+];
 
 const KelolaHero: React.FC = () => {
   const [slides, setSlides] = useState<any[]>([]);
@@ -27,14 +36,16 @@ const KelolaHero: React.FC = () => {
   const [formError, setFormError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Crop & Zoom & Quality State
   const [imageToCrop, setImageToCrop] = useState<string | null>(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
+  const [rotation, setRotation] = useState(0);
+  const [aspectRatio, setAspectRatio] = useState<number>(2.5 / 1); // Match landing page Hero
+  const [qualityLevel, setQualityLevel] = useState<number>(8); // 1-10 Optimize Level
+  const [estimatedSizeKb, setEstimatedSizeKb] = useState<number | null>(null);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
   const [showCropModal, setShowCropModal] = useState(false);
-
-  // ID Konsisten untuk Konfigurasi Hero
-  const HERO_CONFIG_ID = '6d9e09d9-acc2-46e9-9a73-87bc05444018';
 
   useEffect(() => {
     fetchHeroData();
@@ -67,15 +78,95 @@ const KelolaHero: React.FC = () => {
     setCroppedAreaPixels(croppedAreaPixels);
   }, []);
 
+  useEffect(() => {
+    if (!showCropModal || !imageToCrop) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.src = imageToCrop;
+        await new Promise((res) => { img.onload = res; img.onerror = res; });
+
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const sourceWidth = croppedAreaPixels?.width || img.width;
+        const sourceHeight = croppedAreaPixels?.height || img.height;
+
+        const targetWidth = Math.min(Math.max(sourceWidth, 1600), 2400);
+        const targetHeight = Math.round(targetWidth * (sourceHeight / sourceWidth)) || 900;
+
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+
+        if (ctx) {
+          ctx.fillStyle = "#070d1a";
+          ctx.fillRect(0, 0, targetWidth, targetHeight);
+          ctx.drawImage(
+            img,
+            croppedAreaPixels?.x || 0, croppedAreaPixels?.y || 0,
+            sourceWidth, sourceHeight,
+            0, 0, targetWidth, targetHeight
+          );
+        }
+
+        const qualityRatio = qualityLevel / 10;
+        canvas.toBlob((b) => {
+          if (b) {
+            setEstimatedSizeKb(Math.round(b.size / 1024));
+          }
+        }, 'image/webp', qualityRatio);
+      } catch (e) {
+        console.warn("Size preview estimation error:", e);
+      }
+    }, 200);
+
+    return () => clearTimeout(timer);
+  }, [showCropModal, imageToCrop, croppedAreaPixels, qualityLevel, rotation]);
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.addEventListener('load', () => {
         setImageToCrop(reader.result as string);
+        setZoom(1);
+        setCrop({ x: 0, y: 0 });
+        setRotation(0);
+        setQualityLevel(8);
         setShowCropModal(true);
       });
       reader.readAsDataURL(file);
+    }
+  };
+
+  const openCropperForUrl = async (url: string) => {
+    if (!url) return;
+    setIsLoading(true);
+    try {
+      // Load via CORS-safe blob or direct data URL
+      const res = await fetch(url, { mode: 'cors' });
+      const blob = await res.blob();
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImageToCrop(reader.result as string);
+        setZoom(1);
+        setCrop({ x: 0, y: 0 });
+        setRotation(0);
+        setQualityLevel(8);
+        setShowCropModal(true);
+        setIsLoading(false);
+      };
+      reader.readAsDataURL(blob);
+    } catch (err) {
+      console.warn("Direct fetch failed, fallback to url direct", err);
+      setImageToCrop(url);
+      setZoom(1);
+      setCrop({ x: 0, y: 0 });
+      setRotation(0);
+      setQualityLevel(8);
+      setShowCropModal(true);
+      setIsLoading(false);
     }
   };
 
@@ -87,48 +178,96 @@ const KelolaHero: React.FC = () => {
 
     try {
       const image = new Image();
+      image.crossOrigin = "anonymous";
       image.src = imageToCrop;
-      await new Promise((resolve) => (image.onload = resolve));
+      await new Promise((resolve, reject) => {
+        image.onload = resolve;
+        image.onerror = reject;
+      });
 
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
 
-      const targetWidth = 1920;
-      const targetHeight = 1080;
+      const sourceWidth = croppedAreaPixels.width;
+      const sourceHeight = croppedAreaPixels.height;
+
+      // Keep crisp resolution up to 2400px width matching cropped aspect ratio
+      const targetWidth = Math.min(Math.max(sourceWidth, 1600), 2400);
+      const targetHeight = Math.round(targetWidth * (sourceHeight / sourceWidth));
+
       canvas.width = targetWidth;
       canvas.height = targetHeight;
 
       if (ctx) {
-        ctx.fillStyle = "#FFFFFF";
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.fillStyle = "#070d1a";
         ctx.fillRect(0, 0, targetWidth, targetHeight);
+
+        if (rotation !== 0) {
+          ctx.save();
+          ctx.translate(targetWidth / 2, targetHeight / 2);
+          ctx.rotate((rotation * Math.PI) / 180);
+          ctx.translate(-targetWidth / 2, -targetHeight / 2);
+        }
+
         ctx.drawImage(
           image,
           croppedAreaPixels.x, croppedAreaPixels.y,
-          croppedAreaPixels.width, croppedAreaPixels.height,
-          0, 0, targetWidth, targetHeight
+          sourceWidth, sourceHeight,
+          0, 0,
+          targetWidth, targetHeight
         );
+
+        if (rotation !== 0) {
+          ctx.restore();
+        }
       }
 
-      const blob = await new Promise<Blob | null>((resolve) => {
-        canvas.toBlob((b) => resolve(b), 'image/jpeg', 0.8);
-      });
+      // Convert canvas to compressed format using user-selected qualityLevel (1-10)
+      const qualityRatio = qualityLevel / 10;
+      let blob: Blob | null = await new Promise<Blob | null>((resolve) => 
+        canvas.toBlob((b) => resolve(b), 'image/webp', qualityRatio)
+      );
 
-      if (!blob) throw new Error("Gagal mengolah gambar.");
+      let mimeType = 'image/webp';
+      let fileExt = 'webp';
 
-      const fileName = `hero-${Date.now()}.jpg`;
+      if (!blob || blob.type !== 'image/webp') {
+        blob = await new Promise<Blob | null>((resolve) => 
+          canvas.toBlob((b) => resolve(b), 'image/jpeg', qualityRatio)
+        );
+        mimeType = 'image/jpeg';
+        fileExt = 'jpg';
+      }
+
+      if (!blob) throw new Error("Gagal memproses & mengompresi gambar.");
+
+      const fileSizeKb = Math.round(blob.size / 1024);
+      const fileName = `hero-${Date.now()}.${fileExt}`;
       const filePath = `hero-sliders/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('assets')
-        .upload(filePath, blob, { contentType: 'image/jpeg' });
+        .upload(filePath, blob, { contentType: mimeType, upsert: true });
 
       if (uploadError) throw uploadError;
 
       const { data } = supabase.storage.from('assets').getPublicUrl(filePath);
       setImageUrl(data.publicUrl);
 
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: `Hero Image Dioptimasi! Lvl ${qualityLevel} (${fileExt.toUpperCase()} ~${fileSizeKb} KB)`,
+        showConfirmButton: false,
+        timer: 2800
+      });
+
     } catch (err: any) {
-      setFormError(err.message);
+      console.error("Crop & upload error:", err);
+      setFormError(err.message || "Gagal mengolah gambar.");
     } finally {
       setIsUploading(false);
       setImageToCrop(null);
@@ -136,11 +275,6 @@ const KelolaHero: React.FC = () => {
     }
   };
 
-  /**
-   * PERBAIKAN UTAMA: Penanganan Unique Constraint "key"
-   * Menggunakan onConflict: 'key' untuk memastikan jika key 'hero_config' sudah ada,
-   * maka baris tersebut akan diperbarui, bukan membuat duplikat.
-   */
   const saveToDatabase = async (updatedSlides: any[], updatedSettings = sliderSettings) => {
     const payload = {
       slides: updatedSlides,
@@ -148,7 +282,6 @@ const KelolaHero: React.FC = () => {
       updated_at: new Date().toISOString()
     };
 
-    // Menggunakan key sebagai target konflik agar tidak melanggar unique constraint
     const { error } = await supabase
       .from('site_settings')
       .upsert({ 
@@ -209,17 +342,6 @@ const KelolaHero: React.FC = () => {
       return s;
     });
     await saveToDatabase(updatedSlides);
-  };
-
-  const deleteFromStorage = async (url: string) => {
-    try {
-      const path = url.split('/public/assets/')[1];
-      if (path) {
-        await supabase.storage.from('assets').remove([path]);
-      }
-    } catch (err) {
-      console.error("Cleanup error:", err);
-    }
   };
 
   const deleteSlide = async (id: number) => {
@@ -285,98 +407,273 @@ const KelolaHero: React.FC = () => {
   };
 
   return (
-    <div className="h-screen bg-[#070d1a] text-white flex flex-col overflow-hidden p-4 md:p-8 font-sans selection:bg-blue-500/30">
+    <div className="min-h-screen bg-[#070d1a] text-white flex flex-col overflow-x-hidden p-4 md:p-8 font-sans selection:bg-blue-500/30">
       
-      {/* MODAL CROPPER */}
+      {/* MODAL CROPPER & ZOOM ADJUSTMENT */}
       {showCropModal && imageToCrop && (
-        <div className="fixed inset-0 z-[999] bg-black/95 flex flex-col items-center justify-center p-4 md:p-10 backdrop-blur-xl">
-          <div className="w-full max-w-4xl bg-zinc-900 rounded-[2.5rem] overflow-hidden border border-white/10 shadow-2xl">
-            <div className="p-6 border-b border-white/5 flex justify-between items-center bg-zinc-900/50">
-              <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-500 flex items-center gap-3">
-                <ImageIcon size={16} /> Precision Visual Cropping
-              </h3>
-              <button onClick={() => setShowCropModal(false)} className="text-zinc-500 hover:text-white transition-colors">
-                <X size={20} />
+        <div className="fixed inset-0 z-[999] bg-black/95 flex flex-col items-center justify-center p-3 sm:p-6 md:p-10 backdrop-blur-2xl overflow-y-auto">
+          <div className="w-full max-w-4xl bg-zinc-900 rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden border border-white/10 shadow-2xl flex flex-col my-auto">
+            
+            {/* Modal Header */}
+            <div className="p-4 sm:p-6 border-b border-white/10 flex justify-between items-center bg-zinc-900/80">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-600/20 text-blue-400 rounded-xl border border-blue-500/30">
+                  <Crop size={18} />
+                </div>
+                <div>
+                  <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-white flex items-center gap-2">
+                    Penyesuaian Crop & Zoom Hero
+                  </h3>
+                  <p className="text-[10px] font-bold text-zinc-400">Atur posisi & zoom agar pas di slider landing page</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowCropModal(false)} 
+                className="p-2 text-zinc-400 hover:text-white bg-zinc-800 hover:bg-zinc-700 rounded-xl transition-colors"
+              >
+                <X size={18} />
               </button>
             </div>
 
-            <div className="relative h-[50vh] w-full bg-black">
+            {/* Aspect Ratio Selector Presets */}
+            <div className="px-4 py-3 bg-zinc-950 border-b border-white/5 flex items-center justify-between gap-2 overflow-x-auto custom-scrollbar">
+              <span className="text-[10px] font-black uppercase text-zinc-400 shrink-0 flex items-center gap-1.5 mr-1">
+                <Monitor size={12} className="text-blue-500" /> Rasio Layar:
+              </span>
+              <div className="flex gap-1.5 shrink-0">
+                {ASPECT_RATIO_PRESETS.map((preset) => (
+                  <button
+                    key={preset.label}
+                    type="button"
+                    onClick={() => setAspectRatio(preset.value)}
+                    className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase transition-all flex items-center gap-1.5 ${
+                      aspectRatio === preset.value
+                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 border border-blue-400/50'
+                        : 'bg-zinc-800/80 text-zinc-400 hover:bg-zinc-800 hover:text-white border border-white/5'
+                    }`}
+                  >
+                    {preset.value === 2.5/1 && <Sparkles size={12} className="text-amber-300 animate-pulse" />}
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Cropper Container */}
+            <div className="relative h-[42vh] sm:h-[50vh] w-full bg-black/90">
               <Cropper
                 image={imageToCrop}
                 crop={crop}
                 zoom={zoom}
-                aspect={16 / 9}
+                rotation={rotation}
+                aspect={aspectRatio}
                 onCropChange={setCrop}
                 onCropComplete={onCropComplete}
                 onZoomChange={setZoom}
+                onRotationChange={setRotation}
               />
+              {/* Overlay Guide Badge */}
+              <div className="absolute top-3 left-3 z-10 pointer-events-none bg-black/75 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 text-[9px] font-black uppercase tracking-wider text-blue-300 flex items-center gap-2">
+                <Maximize2 size={12} /> Fit Landing Page Hero Slider
+              </div>
             </div>
 
-            <div className="p-8 space-y-6 bg-zinc-900">
-              <div className="flex items-center gap-6">
-                <ZoomOut size={16} className="text-zinc-500" />
-                <input
-                  type="range"
-                  value={zoom}
-                  min={1}
-                  max={3}
-                  step={0.1}
-                  onChange={(e) => setZoom(Number(e.target.value))}
-                  className="flex-grow h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                />
-                <ZoomIn size={16} className="text-zinc-500" />
+            {/* Interactive Controls Bar */}
+            <div className="p-5 sm:p-7 space-y-5 bg-zinc-900 border-t border-white/5">
+              
+              {/* Zoom & Rotation Controls */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-zinc-950 p-4 rounded-2xl border border-white/5">
+                
+                {/* Zoom Controls */}
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center text-[10px] font-black uppercase text-zinc-400">
+                    <span className="flex items-center gap-1.5">
+                      <ZoomIn size={14} className="text-blue-400" /> Perbesaran (Zoom): {zoom.toFixed(1)}x
+                    </span>
+                    <button 
+                      onClick={() => setZoom(1)} 
+                      className="text-blue-400 hover:underline text-[9px] lowercase font-semibold"
+                    >
+                      reset zoom
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button 
+                      type="button"
+                      onClick={() => setZoom((z) => Math.max(1, +(z - 0.1).toFixed(2)))}
+                      className="p-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl transition-colors active:scale-95"
+                      title="Zoom Out"
+                    >
+                      <ZoomOut size={16} />
+                    </button>
+                    <input
+                      type="range"
+                      value={zoom}
+                      min={1}
+                      max={3}
+                      step={0.05}
+                      onChange={(e) => setZoom(Number(e.target.value))}
+                      className="flex-grow h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                    />
+                    <button 
+                      type="button"
+                      onClick={() => setZoom((z) => Math.min(3, +(z + 0.1).toFixed(2)))}
+                      className="p-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl transition-colors active:scale-95"
+                      title="Zoom In"
+                    >
+                      <ZoomIn size={16} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Rotation Controls */}
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center text-[10px] font-black uppercase text-zinc-400">
+                    <span className="flex items-center gap-1.5">
+                      <RotateCw size={14} className="text-blue-400" /> Rotasi Gambar: {rotation}°
+                    </span>
+                    <button 
+                      onClick={() => setRotation(0)} 
+                      className="text-blue-400 hover:underline text-[9px] lowercase font-semibold"
+                    >
+                      reset rotasi
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button 
+                      type="button"
+                      onClick={() => setRotation((r) => (r + 90) % 360)}
+                      className="w-full py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl text-[10px] font-black uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
+                    >
+                      <RotateCw size={14} /> Putar 90°
+                    </button>
+                  </div>
+                </div>
+
               </div>
 
-              <div className="flex gap-4">
+              {/* Quality & Optimize Level Selector (1-10) */}
+              <div className="space-y-3 bg-zinc-950 p-4 rounded-2xl border border-white/5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Gauge size={16} className="text-amber-400" />
+                    <span className="text-[10px] font-black uppercase text-zinc-300 tracking-wider">
+                      Level Optimasi Kualitas (1 - 10):
+                    </span>
+                    <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-black">
+                      Level {qualityLevel} ({qualityLevel * 10}%)
+                    </span>
+                  </div>
+
+                  {estimatedSizeKb !== null && (
+                    <div className="flex items-center gap-1.5 text-[10px] font-black text-emerald-400 bg-emerald-950/60 px-2.5 py-1 rounded-xl border border-emerald-500/20">
+                      <HardDrive size={13} />
+                      <span>Estimasi Ukuran: ~{estimatedSizeKb} KB (WebP)</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Slider 1 to 10 */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3">
+                    <span className="text-[9px] font-black uppercase text-zinc-500 shrink-0">Lvl 1 (Kompres)</span>
+                    <input
+                      type="range"
+                      value={qualityLevel}
+                      min={1}
+                      max={10}
+                      step={1}
+                      onChange={(e) => setQualityLevel(Number(e.target.value))}
+                      className="flex-grow h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                    />
+                    <span className="text-[9px] font-black uppercase text-zinc-500 shrink-0">Lvl 10 (Asli)</span>
+                  </div>
+
+                  {/* Quick Presets for Quality Level */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                    {[
+                      { level: 3, label: 'Lvl 3 - High Compress', desc: 'Sangat Ringan' },
+                      { level: 5, label: 'Lvl 5 - Balanced', desc: 'Load Cepat' },
+                      { level: 8, label: 'Lvl 8 - Recommended', desc: 'Jernih & Tajam' },
+                      { level: 10, label: 'Lvl 10 - Lossless / Max', desc: 'Resolusi Asli' },
+                    ].map((preset) => (
+                      <button
+                        key={preset.level}
+                        type="button"
+                        onClick={() => setQualityLevel(preset.level)}
+                        className={`p-2 rounded-xl text-center transition-all border ${
+                          qualityLevel === preset.level
+                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 font-black shadow-lg shadow-amber-500/10'
+                            : 'bg-zinc-800/60 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200 border-white/5'
+                        }`}
+                      >
+                        <div className="text-[9px] font-black uppercase">{preset.label}</div>
+                        <div className="text-[8px] opacity-70 font-medium mt-0.5">{preset.desc}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3">
                 <button 
+                  type="button"
                   onClick={() => setShowCropModal(false)}
-                  className="flex-1 py-4 bg-zinc-800 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-zinc-700 transition-all"
+                  className="flex-1 py-3.5 sm:py-4 bg-zinc-800 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-zinc-700 transition-all text-zinc-300"
                 >
-                  Cancel
+                  Batal
                 </button>
                 <button 
+                  type="button"
                   onClick={processAndUploadImage}
-                  className="flex-[2] py-4 bg-blue-600 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-blue-500 transition-all shadow-[0_10px_30px_rgba(37,99,235,0.3)]"
+                  className="flex-[2] py-3.5 sm:py-4 bg-blue-600 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-blue-500 transition-all shadow-[0_10px_30px_rgba(37,99,235,0.4)] flex items-center justify-center gap-2 text-white"
                 >
-                  Apply Crop & Save
+                  <Crop size={16} /> Terapkan Crop & Simpan
                 </button>
               </div>
+
             </div>
           </div>
         </div>
       )}
 
       <div className="max-w-7xl mx-auto w-full flex flex-col h-full overflow-hidden">
+        
+        {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 shrink-0">
           <div>
             <h1 className="text-2xl md:text-3xl font-black italic tracking-tighter uppercase text-white leading-none">
-              HERO <span className="text-blue-600">ENGINE</span>
+              HERO <span className="text-blue-500">ENGINE</span>
             </h1>
             <p className="text-zinc-500 text-[10px] font-black uppercase tracking-[0.3em] mt-1">
-              Manajemen Visual PB Bilibili 162
+              Manajemen Banner Slider & Visual PB Bilibili 162
             </p>
           </div>
           <button 
             onClick={fetchHeroData}
             disabled={isLoading}
-            className="flex items-center gap-3 px-8 py-4 bg-zinc-900 rounded-2xl border border-white/5 hover:bg-zinc-800 transition-all active:scale-95 shadow-2xl disabled:opacity-50"
+            className="flex items-center gap-3 px-6 py-3 bg-zinc-900 rounded-2xl border border-white/5 hover:bg-zinc-800 transition-all active:scale-95 shadow-2xl disabled:opacity-50"
           >
-            <RefreshCcw size={18} className={isLoading ? 'animate-spin text-blue-500' : 'text-zinc-400'} />
+            <RefreshCcw size={16} className={isLoading ? 'animate-spin text-blue-500' : 'text-zinc-400'} />
             <span className="text-[10px] font-black uppercase tracking-widest">Resync Data</span>
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto overflow-x-hidden grid lg:grid-cols-12 gap-6 pr-1 custom-scrollbar pb-10">
-          {/* SISI KIRI: CONFIG */}
-          <div className="lg:col-span-4 space-y-6">
-            <div className="bg-blue-600 p-8 rounded-[2.5rem] shadow-[0_20px_50px_rgba(37,99,235,0.3)] relative overflow-hidden group">
+          
+          {/* SISI KIRI: CONFIG & FORM */}
+          <div className="lg:col-span-5 space-y-6">
+            
+            {/* Slider Duration Box */}
+            <div className="bg-gradient-to-br from-blue-600 to-blue-700 p-6 sm:p-8 rounded-[2.5rem] shadow-[0_20px_50px_rgba(37,99,235,0.3)] relative overflow-hidden group">
                <Settings2 className="absolute -right-4 -bottom-4 text-white/10 w-32 h-32 rotate-12 group-hover:rotate-0 transition-transform duration-700" />
-               <h3 className="text-[10px] font-black uppercase tracking-[0.2em] mb-6 flex items-center gap-2 text-white/90">
+               <h3 className="text-[10px] font-black uppercase tracking-[0.2em] mb-4 flex items-center gap-2 text-white/90">
                  <Zap size={16} /> Slider Behavior
                </h3>
-               <div className="space-y-6 relative z-10">
+               <div className="space-y-4 relative z-10">
                  <div>
-                   <label className="text-[9px] font-black uppercase text-blue-100 flex items-center gap-2 mb-3">
+                   <label className="text-[9px] font-black uppercase text-blue-100 flex items-center gap-2 mb-2">
                      <Clock size={12} /> Auto-Slide Duration
                    </label>
                    <input 
@@ -384,76 +681,116 @@ const KelolaHero: React.FC = () => {
                      value={sliderSettings.duration}
                      onChange={(e) => setSliderSettings({...sliderSettings, duration: parseInt(e.target.value)})}
                      onMouseUp={() => saveToDatabase(slides, sliderSettings)}
-                     className="w-full h-1.5 bg-blue-400 rounded-lg appearance-none cursor-pointer accent-white"
+                     className="w-full h-1.5 bg-blue-400/50 rounded-lg appearance-none cursor-pointer accent-white"
                    />
                    <div className="flex justify-between mt-2 text-[10px] font-black text-white">
                      <span>3s</span>
-                     <span className="bg-white text-blue-600 px-3 py-0.5 rounded-full">{sliderSettings.duration} DETIK</span>
+                     <span className="bg-white text-blue-600 px-3 py-0.5 rounded-full shadow-md">{sliderSettings.duration} DETIK</span>
                      <span>15s</span>
                    </div>
                  </div>
                </div>
             </div>
 
-            <div className={`bg-zinc-900/50 border ${editingId ? 'border-blue-600/50 shadow-[0_0_30px_rgba(37,99,235,0.1)]' : 'border-white/10'} p-8 rounded-[2.5rem] backdrop-blur-xl transition-all`}>
-              <div className="flex justify-between items-center mb-8">
-                <h3 className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-blue-500">
+            {/* Upload & Edit Form */}
+            <div className={`bg-zinc-900/60 border ${editingId ? 'border-blue-500/50 shadow-[0_0_30px_rgba(37,99,235,0.15)]' : 'border-white/10'} p-6 sm:p-8 rounded-[2.5rem] backdrop-blur-xl transition-all`}>
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-blue-400">
                   {editingId ? <Edit3 size={16} /> : <Plus size={16} />} 
-                  {editingId ? 'Modify Slide' : 'Register New Slide'}
+                  {editingId ? 'Edit Slide Hero' : 'Tambah Slide Hero Baru'}
                 </h3>
+                {editingId && (
+                  <button 
+                    onClick={resetForm} 
+                    className="text-[9px] font-bold uppercase text-zinc-400 hover:text-white px-2 py-1 bg-zinc-800 rounded-lg"
+                  >
+                    Batal Edit
+                  </button>
+                )}
               </div>
               
               <form onSubmit={handleAddSlide} className="space-y-5">
-                <div 
-                  onClick={() => !isUploading && fileInputRef.current?.click()}
-                  className={`group relative w-full h-44 bg-black border-2 border-dashed ${isUploading ? 'border-blue-600' : 'border-zinc-800'} rounded-[2rem] flex flex-col items-center justify-center cursor-pointer hover:border-blue-600/50 transition-all overflow-hidden`}
-                >
-                  {imageUrl ? (
-                    <img src={imageUrl} alt="Preview" className="w-full h-full object-cover transition-transform group-hover:scale-110" />
-                  ) : (
-                    <div className="text-center">
-                      <ImageIcon size={32} className="mx-auto text-zinc-700 mb-3" />
-                      <p className="text-[8px] font-black uppercase text-zinc-500 tracking-widest">Select Visual</p>
-                    </div>
-                  )}
-                  {isUploading && (
-                    <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center gap-2">
-                      <RefreshCcw className="animate-spin text-blue-500" />
-                      <span className="text-[8px] font-black uppercase tracking-tighter">Optimizing...</span>
-                    </div>
+                
+                {/* File Upload / Preview Box */}
+                <div className="space-y-2">
+                  <div 
+                    onClick={() => !isUploading && fileInputRef.current?.click()}
+                    className={`group relative w-full h-44 bg-black border-2 border-dashed ${isUploading ? 'border-blue-500' : 'border-zinc-800'} rounded-[2rem] flex flex-col items-center justify-center cursor-pointer hover:border-blue-500/50 transition-all overflow-hidden`}
+                  >
+                    {imageUrl ? (
+                      <div className="relative w-full h-full">
+                        <img src={imageUrl} alt="Preview" className="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                          <span className="px-3 py-1.5 bg-blue-600/90 text-white rounded-xl text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 shadow-lg">
+                            <Crop size={12} /> Ganti / Crop Ulang
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center p-4">
+                        <ImageIcon size={32} className="mx-auto text-zinc-600 mb-2 group-hover:text-blue-400 transition-colors" />
+                        <p className="text-[9px] font-black uppercase text-zinc-400 tracking-widest">Pilih Gambar Banner</p>
+                        <p className="text-[8px] font-semibold text-zinc-600 mt-1">Disertai Fitur Crop & Zoom Otomatis</p>
+                      </div>
+                    )}
+                    {isUploading && (
+                      <div className="absolute inset-0 bg-black/85 backdrop-blur-sm flex flex-col items-center justify-center gap-2 z-20">
+                        <RefreshCcw className="animate-spin text-blue-500" size={24} />
+                        <span className="text-[9px] font-black uppercase tracking-wider text-blue-300">Mengolah Gambar...</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Manual Crop Trigger for existing image */}
+                  {imageUrl && (
+                    <button
+                      type="button"
+                      onClick={() => openCropperForUrl(imageUrl)}
+                      className="w-full py-2.5 bg-zinc-800 hover:bg-zinc-700 text-blue-400 hover:text-blue-300 rounded-xl text-[9px] font-black uppercase tracking-wider transition-colors flex items-center justify-center gap-2 border border-white/5"
+                    >
+                      <Crop size={14} /> Adjust Crop & Zoom Gambar Ini
+                    </button>
                   )}
                 </div>
+
                 <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" accept="image/*" />
 
-                <input 
-                  type="text" placeholder="Judul Utama" 
-                  value={title} onChange={(e) => setTitle(e.target.value)}
-                  className="w-full bg-black border border-white/5 rounded-xl px-5 py-4 text-xs font-bold focus:border-blue-600 outline-none transition-colors"
-                />
-                <textarea 
-                  placeholder="Deskripsi singkat..." 
-                  value={subtitle} onChange={(e) => setSubtitle(e.target.value)}
-                  className="w-full bg-black border border-white/5 rounded-xl px-5 py-4 text-xs font-bold focus:border-blue-600 outline-none h-28 resize-none transition-colors"
-                />
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black uppercase text-zinc-400">Judul Banner</label>
+                  <input 
+                    type="text" placeholder="Contoh: PB BILIBILI 162 ACADEMY" 
+                    value={title} onChange={(e) => setTitle(e.target.value)}
+                    className="w-full bg-black/80 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold focus:border-blue-500 outline-none transition-colors text-white placeholder:text-zinc-600"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black uppercase text-zinc-400">Deskripsi / Subtitle</label>
+                  <textarea 
+                    placeholder="Deskripsi singkat slider hero..." 
+                    value={subtitle} onChange={(e) => setSubtitle(e.target.value)}
+                    className="w-full bg-black/80 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold focus:border-blue-500 outline-none h-24 resize-none transition-colors text-white placeholder:text-zinc-600"
+                  />
+                </div>
 
                 {formError && (
-                  <p className="text-red-500 text-[9px] font-black uppercase tracking-tighter flex items-center gap-2">
+                  <p className="text-red-400 text-[9px] font-black uppercase tracking-tighter flex items-center gap-2 bg-red-950/40 p-2.5 rounded-xl border border-red-500/20">
                     <AlertCircle size={14}/> {formError}
                   </p>
                 )}
 
-                <div className="flex gap-3">
+                <div className="flex gap-3 pt-2">
                   {editingId && (
-                    <button type="button" onClick={resetForm} className="flex-1 bg-zinc-800 hover:bg-zinc-700 py-5 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all">
-                      Cancel
+                    <button type="button" onClick={resetForm} className="flex-1 bg-zinc-800 hover:bg-zinc-700 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all">
+                      Batal
                     </button>
                   )}
                   <button 
                     type="submit" 
                     disabled={isUploading}
-                    className={`flex-[2] ${editingId ? 'bg-green-600 hover:bg-green-500' : 'bg-blue-600 hover:bg-blue-500'} py-5 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all shadow-xl disabled:opacity-50`}
+                    className={`flex-[2] ${editingId ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-blue-600 hover:bg-blue-500'} py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all shadow-xl disabled:opacity-50 text-white flex items-center justify-center gap-2`}
                   >
-                    {editingId ? 'Save Changes' : 'Publish to Hero'}
+                    {editingId ? 'Simpan Perubahan' : 'Terbitkan ke Hero Slider'}
                   </button>
                 </div>
               </form>
@@ -461,40 +798,64 @@ const KelolaHero: React.FC = () => {
           </div>
 
           {/* SISI KANAN: LIST SLIDES */}
-          <div className="lg:col-span-8 space-y-4">
+          <div className="lg:col-span-7 space-y-4">
+            <div className="flex items-center justify-between px-2">
+              <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2">
+                <Layers size={14} className="text-blue-500" /> Daftar Slide Terpasang ({slides.length})
+              </h3>
+            </div>
+
             {slides.length === 0 ? (
-              <div className="text-center py-40 border-2 border-dashed border-zinc-900 rounded-[3rem] opacity-30">
-                <Layers size={64} className="mx-auto mb-6" />
-                <p className="font-black uppercase text-[10px] tracking-[0.4em]">Gallery Kosong</p>
+              <div className="text-center py-24 border-2 border-dashed border-zinc-800 rounded-[2.5rem] opacity-40">
+                <Layers size={48} className="mx-auto mb-4 text-zinc-500" />
+                <p className="font-black uppercase text-[10px] tracking-[0.3em] text-zinc-400">Belum Ada Slide Hero</p>
               </div>
             ) : (
               slides.map((slide, index) => (
-                <div key={slide.id} className={`group flex flex-col md:flex-row items-center gap-6 bg-zinc-900 border ${editingId === slide.id ? 'border-blue-600' : 'border-white/5'} p-6 rounded-[2.5rem] hover:border-blue-600/40 transition-all relative overflow-hidden`}>
-                  <div className="relative w-full md:w-56 h-36 rounded-[1.5rem] overflow-hidden flex-shrink-0 shadow-2xl bg-black">
-                    <img src={slide.image} alt="" className={`w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ${slide.active === false ? 'opacity-30 grayscale' : ''}`} />
-                    <div className="absolute top-4 left-4 bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-black">
+                <div 
+                  key={slide.id} 
+                  className={`group flex flex-col md:flex-row items-center gap-5 bg-zinc-900/80 border ${editingId === slide.id ? 'border-blue-500' : 'border-white/5'} p-5 rounded-[2rem] hover:border-blue-500/30 transition-all relative overflow-hidden`}
+                >
+                  {/* Thumbnail */}
+                  <div className="relative w-full md:w-52 h-32 rounded-[1.2rem] overflow-hidden flex-shrink-0 shadow-xl bg-black">
+                    <img 
+                      src={slide.image} 
+                      alt={slide.title} 
+                      className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${slide.active === false ? 'opacity-30 grayscale' : ''}`} 
+                    />
+                    <div className="absolute top-2 left-2 bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-black shadow-md">
                       {index + 1}
                     </div>
                     {slide.active === false && (
-                      <div className="absolute inset-0 bg-black/55 flex items-center justify-center">
-                        <span className="text-[8px] font-black uppercase tracking-widest bg-red-600 text-white px-2.5 py-1 rounded-full shadow-lg">Nonaktif</span>
+                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                        <span className="text-[8px] font-black uppercase tracking-widest bg-red-600 text-white px-2 py-0.5 rounded-full shadow-lg">Nonaktif</span>
                       </div>
                     )}
                   </div>
-                  <div className="flex-grow w-full">
-                    <div className="flex flex-wrap items-center gap-2 mb-2">
-                      <h4 className={`font-black uppercase italic text-lg tracking-tighter ${slide.active === false ? 'text-zinc-500' : 'text-white'}`}>{slide.title}</h4>
+
+                  {/* Text Details */}
+                  <div className="flex-grow w-full min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                      <h4 className={`font-black uppercase italic text-base tracking-tighter truncate ${slide.active === false ? 'text-zinc-500' : 'text-white'}`}>
+                        {slide.title}
+                      </h4>
                       {slide.active !== false ? (
-                        <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[8px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full">Aktif</span>
+                        <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full">
+                          Aktif
+                        </span>
                       ) : (
-                        <span className="bg-red-500/10 text-red-400 border border-red-500/20 text-[8px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full">Sembunyi</span>
+                        <span className="bg-red-500/10 text-red-400 border border-red-500/20 text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full">
+                          Sembunyi
+                        </span>
                       )}
                     </div>
-                    <p className={`text-[10px] font-bold uppercase leading-relaxed line-clamp-2 ${slide.active === false ? 'text-zinc-600' : 'text-zinc-500'}`}>{slide.subtitle}</p>
+                    <p className={`text-[10px] font-medium leading-snug line-clamp-2 ${slide.active === false ? 'text-zinc-600' : 'text-zinc-400'}`}>
+                      {slide.subtitle || 'Tidak ada deskripsi'}
+                    </p>
                     
-                    {/* TOGGLE SWITCH */}
-                    <div className="mt-4 flex items-center gap-3">
-                      <span className="text-[9px] font-black uppercase tracking-widest text-zinc-400">Aktifkan Slider:</span>
+                    {/* Toggle Switch */}
+                    <div className="mt-3 flex items-center gap-3">
+                      <span className="text-[8px] font-black uppercase tracking-wider text-zinc-500">Tampilkan di Landing:</span>
                       <button
                         type="button"
                         onClick={() => toggleSlideActive(slide.id)}
@@ -503,23 +864,63 @@ const KelolaHero: React.FC = () => {
                         }`}
                       >
                         <span
-                          className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform duration-250 ${
+                          className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform duration-200 ${
                             slide.active !== false ? 'translate-x-6' : 'translate-x-1'
                           }`}
                         />
                       </button>
                     </div>
                   </div>
-                  <div className="flex md:flex-col gap-2 shrink-0">
-                    <div className="flex bg-black p-1.5 rounded-2xl border border-white/5 justify-center">
-                      <button onClick={() => moveSlide(index, 'up')} className="p-2 text-zinc-500 hover:text-white transition-colors"><MoveUp size={18}/></button>
-                      <button onClick={() => moveSlide(index, 'down')} className="p-2 text-zinc-500 hover:text-white transition-colors"><MoveDown size={18}/></button>
+
+                  {/* Actions */}
+                  <div className="flex md:flex-col gap-2 shrink-0 w-full md:w-auto justify-end">
+                    <div className="flex bg-black/60 p-1 rounded-xl border border-white/5 justify-center">
+                      <button 
+                        onClick={() => moveSlide(index, 'up')} 
+                        disabled={index === 0}
+                        className="p-1.5 text-zinc-400 hover:text-white disabled:opacity-30 transition-colors"
+                        title="Geser Ke Atas"
+                      >
+                        <MoveUp size={16}/>
+                      </button>
+                      <button 
+                        onClick={() => moveSlide(index, 'down')} 
+                        disabled={index === slides.length - 1}
+                        className="p-1.5 text-zinc-400 hover:text-white disabled:opacity-30 transition-colors"
+                        title="Geser Ke Bawah"
+                      >
+                        <MoveDown size={16}/>
+                      </button>
                     </div>
-                    <div className="flex gap-2">
-                      <button onClick={() => startEdit(slide)} className="flex-1 p-4 bg-blue-600/10 text-blue-500 hover:bg-blue-600 hover:text-white rounded-2xl transition-all"><Edit3 size={20} /></button>
-                      <button onClick={() => deleteSlide(slide.id)} className="flex-1 p-4 bg-red-600/10 text-red-600 hover:bg-red-600 hover:text-white rounded-2xl transition-all"><Trash2 size={20} /></button>
+
+                    <div className="flex gap-1.5">
+                      <button 
+                        onClick={() => {
+                          startEdit(slide);
+                          openCropperForUrl(slide.image);
+                        }} 
+                        className="p-2 bg-blue-600/10 text-blue-400 hover:bg-blue-600 hover:text-white rounded-xl transition-all"
+                        title="Crop & Edit Gambar"
+                      >
+                        <Crop size={16} />
+                      </button>
+                      <button 
+                        onClick={() => startEdit(slide)} 
+                        className="p-2 bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white rounded-xl transition-all"
+                        title="Edit Text Slide"
+                      >
+                        <Edit3 size={16} />
+                      </button>
+                      <button 
+                        onClick={() => deleteSlide(slide.id)} 
+                        className="p-2 bg-red-600/10 text-red-400 hover:bg-red-600 hover:text-white rounded-xl transition-all"
+                        title="Hapus Slide"
+                      >
+                        <Trash2 size={16} />
+                      </button>
                     </div>
                   </div>
+
                 </div>
               ))
             )}
@@ -527,11 +928,11 @@ const KelolaHero: React.FC = () => {
         </div>
       </div>
 
-      {/* NOTIFIKASI SUKSES */}
-      <div className={`fixed bottom-12 left-1/2 -translate-x-1/2 transition-all duration-1000 z-[100] ${showSuccess ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-20 pointer-events-none'}`}>
-        <div className="bg-blue-600 px-10 py-5 rounded-full flex items-center gap-4 shadow-2xl border border-white/20">
-          <div className="bg-white/20 p-2 rounded-full text-white"><CheckCircle2 size={20} /></div>
-          <span className="font-black uppercase text-[11px] tracking-[0.3em]">System Synced & Optimized</span>
+      {/* Success Toast Notification */}
+      <div className={`fixed bottom-8 left-1/2 -translate-x-1/2 transition-all duration-700 z-[100] ${showSuccess ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'}`}>
+        <div className="bg-blue-600 px-8 py-3.5 rounded-full flex items-center gap-3 shadow-2xl border border-white/20">
+          <div className="bg-white/20 p-1.5 rounded-full text-white"><CheckCircle2 size={16} /></div>
+          <span className="font-black uppercase text-[10px] tracking-widest text-white">Hero Slider Berhasil Diperbarui</span>
         </div>
       </div>
     </div>

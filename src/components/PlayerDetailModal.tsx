@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { X, User } from "lucide-react";
 import { useState, useEffect } from "react";
+import LazyImage from "./LazyImage";
 
 export const PlayerDetailModal = ({ player, processedPlayers, onClose }: any) => {
   const [activeTab, setActiveTab] = useState<'profil' | 'stats'>('profil');
@@ -35,7 +36,7 @@ export const PlayerDetailModal = ({ player, processedPlayers, onClose }: any) =>
             {/* Photo Section */}
             <div className="relative w-full h-[32vh] sm:h-[40vh] overflow-hidden bg-[#1a1d26]">
               {player.img ? (
-                <img src={player.img} className="w-full h-full object-cover object-top" alt={player.name} />
+                <LazyImage src={player.img} className="w-full h-full object-cover object-top" alt={player.name} containerClassName="w-full h-full" width={500} />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-zinc-700">
                   <User size={80} />

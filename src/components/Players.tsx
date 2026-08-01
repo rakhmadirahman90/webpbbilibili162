@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { PlayerDetailModal } from './PlayerDetailModal';
 import { motion, AnimatePresence } from 'framer-motion';
+import LazyImage from './LazyImage';
 
 const Players: React.FC<{ initialFilter?: string }> = ({
   initialFilter = 'Semua',
@@ -293,7 +294,13 @@ const Players: React.FC<{ initialFilter?: string }> = ({
                       className="group cursor-pointer relative aspect-[3/4.2] rounded-[2.5rem] overflow-hidden bg-[#1a1d26] border border-white/5 hover:border-blue-600/50 transition-all duration-500 shadow-2xl"
                     >
                       {player.img ? (
-                        <img src={player.img} className="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 group-hover:scale-110 transition-all duration-700" alt={player.name} />
+                        <LazyImage 
+                          src={player.img} 
+                          className="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 group-hover:scale-110 transition-all duration-700" 
+                          alt={player.name}
+                          containerClassName="w-full h-full"
+                          width={400}
+                        />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center bg-[#1a1d26] text-slate-600"><User size={60} /></div>
                       )}
