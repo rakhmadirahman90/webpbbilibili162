@@ -505,7 +505,7 @@ export default function News() {
   };
 
   const handleShare = async (news: Berita, platform: 'wa' | 'fb' | 'x' | 'copy' | 'native') => {
-    const shareUrl = `${window.location.origin}${window.location.pathname}?newsId=${news.id}`;
+    const shareUrl = `${window.location.origin}/berita?newsId=${news.id}`;
     const excerpt = news.ringkasan || (news.konten ? news.konten.substring(0, 140) + '...' : '');
 
     const waText = 
