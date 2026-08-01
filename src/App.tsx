@@ -350,6 +350,17 @@ export default function App() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const wasAutoPausedRef = useRef<boolean>(false);
   const [isMarsPlaying, setIsMarsPlaying] = useState(false);
+  const [marsProgress, setMarsProgress] = useState(0);
+  const [marsDuration, setMarsDuration] = useState(0);
+  const [marsCurrentTime, setMarsCurrentTime] = useState(0);
+
+  const formatAudioTime = (seconds: number) => {
+    if (isNaN(seconds) || seconds <= 0) return '0:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  };
+
   const [marsVolume, setMarsVolume] = useState<number>(() => {
     try {
       const saved = localStorage.getItem('mars_audio_volume');
@@ -922,21 +933,57 @@ export default function App() {
               )}
             </AnimatePresence>
 
-            {/* Play / Mute Circle Icon */}
-            <button 
-              type="button"
-              onClick={toggleAudio}
-              onPointerDown={(e) => e.stopPropagation()}
-              className={`pointer-events-auto w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center transition-all duration-300 cursor-pointer border shadow-[0_8px_25px_rgba(0,0,0,0.5)] ${
-                isMarsPlaying 
-                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-blue-400/50 shadow-blue-600/40 hover:scale-105 active:scale-95 ring-2 ring-blue-500/30' 
-                  : 'bg-slate-900/90 text-slate-300 border-white/15 hover:bg-slate-800 hover:text-white hover:scale-105 active:scale-95 backdrop-blur-xl'
-              }`}
-              title={isMarsPlaying ? "Matikan Musik Mars PB Bilibili 162" : "Putar Musik Mars PB Bilibili 162"}
-              aria-label={isMarsPlaying ? "Matikan Musik Mars PB Bilibili 162" : "Putar Musik Mars PB Bilibili 162"}
-            >
-              {isMarsPlaying ? <Volume2 size={18} className="animate-pulse text-white" /> : <VolumeX size={18} />}
-            </button>
+            {/* Play / Mute Circle Icon with Circular Progress Ring */}
+            <div className="relative flex items-center justify-center p-0.5 pointer-events-auto group">
+              {/* Circular SVG Progress Ring surrounding button */}
+              <svg 
+                className="absolute -inset-1.5 w-[52px] h-[52px] sm:w-[56px] sm:h-[56px] -rotate-90 pointer-events-none z-20 drop-shadow-[0_0_8px_rgba(59,130,246,0.3)]" 
+                viewBox="0 0 56 56"
+              >
+                {/* Background Track Circle */}
+                <circle
+                  cx="28"
+                  cy="28"
+                  r="23"
+                  className="text-slate-700/60"
+                  strokeWidth="3"
+                  stroke="currentColor"
+                  fill="none"
+                />
+                {/* Progress Circle */}
+                <circle
+                  cx="28"
+                  cy="28"
+                  r="23"
+                  className="text-blue-400 transition-[stroke-dashoffset] duration-300 ease-linear"
+                  strokeWidth="3.5"
+                  strokeDasharray={144.5}
+                  strokeDashoffset={144.5 - (144.5 * (marsProgress / 100))}
+                  strokeLinecap="round"
+                  stroke="currentColor"
+                  fill="none"
+                />
+              </svg>
+
+              <button 
+                type="button"
+                onClick={toggleAudio}
+                onPointerDown={(e) => e.stopPropagation()}
+                className={`relative z-10 w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center transition-all duration-300 cursor-pointer border shadow-[0_8px_25px_rgba(0,0,0,0.5)] ${
+                  isMarsPlaying 
+                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-blue-400/50 shadow-blue-600/40 hover:scale-105 active:scale-95 ring-2 ring-blue-500/30' 
+                    : 'bg-slate-900/90 text-slate-300 border-white/15 hover:bg-slate-800 hover:text-white hover:scale-105 active:scale-95 backdrop-blur-xl'
+                }`}
+                title={
+                  isMarsPlaying && marsDuration > 0
+                    ? `Matikan Musik Mars (${formatAudioTime(marsCurrentTime)} / ${formatAudioTime(marsDuration)})` 
+                    : "Putar Musik Mars PB Bilibili 162"
+                }
+                aria-label={isMarsPlaying ? "Matikan Musik Mars PB Bilibili 162" : "Putar Musik Mars PB Bilibili 162"}
+              >
+                {isMarsPlaying ? <Volume2 size={18} className="animate-pulse text-white" /> : <VolumeX size={18} />}
+              </button>
+            </div>
 
             {/* Volume Control Pod (- / + & Slider) */}
             <div 
@@ -1081,7 +1128,25 @@ export default function App() {
     <Router>
       <ScrollToTop />
       <UrlSynchronizer activeView={activeView} setActiveView={setActiveView} />
-      <audio ref={audioRef} src={MARS_URL} loop />
+      <audio 
+        ref={audioRef} 
+        src={MARS_URL} 
+        loop 
+        onTimeUpdate={(e) => {
+          const el = e.currentTarget;
+          if (el.duration && !isNaN(el.duration)) {
+            setMarsProgress((el.currentTime / el.duration) * 100);
+            setMarsCurrentTime(el.currentTime);
+            setMarsDuration(el.duration);
+          }
+        }}
+        onLoadedMetadata={(e) => {
+          const el = e.currentTarget;
+          if (el.duration && !isNaN(el.duration)) {
+            setMarsDuration(el.duration);
+          }
+        }}
+      />
       <KasRealtimeNotifier />
       <PwaInstallNotification />
       
