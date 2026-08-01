@@ -24,7 +24,6 @@ import Footer from './components/Footer';
 import PublicKasView from './components/PublicKasView';
 import DokumenPenting from './components/DokumenPenting'; 
 import StrukturOrganisasiPublic from './components/StrukturOrganisasiPublic';
-import LandingFeatures from './components/LandingFeatures';
 import JadwalLatihanView from './components/JadwalLatihanView';
 
 // Import Komponen Admin
@@ -1133,8 +1132,6 @@ export default function App() {
             <div className="flex-grow">
               <Hero />
               <SambutanKetua />
-              
-              <LandingFeatures onNavigate={handleNavigate} />
 
               {/* Jadwal Sholat Khusus Seluler - Tampil Tepat di Bawah Slider Hero */}
               <div className="block lg:hidden max-w-xl mx-auto px-4 sm:px-6 md:px-8 mt-6 mb-2">
