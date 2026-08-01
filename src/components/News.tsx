@@ -40,6 +40,65 @@ interface Berita {
   comments_count?: number;
 }
 
+// Helper Format Waktu & Penerbit Sesuai Standar Jurnalistik Indonesia
+export function formatJournalisticDate(dateStr?: string) {
+  const publisher = 'Humas PB Bilibili 162';
+  if (!dateStr) {
+    return {
+      dateFormatted: 'Sabtu, 1 Agustus 2026',
+      timeFormatted: '08:00 WITA',
+      fullDateline: 'Sabtu, 1 Agustus 2026 | 08:00 WITA',
+      publisher,
+    };
+  }
+
+  const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+  const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
+  let d: Date | null = null;
+  if (/^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
+    const parts = dateStr.split(/[-T :]/);
+    const year = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1;
+    const day = parseInt(parts[2], 10);
+    const hour = parts[3] ? parseInt(parts[3], 10) : 8;
+    const minute = parts[4] ? parseInt(parts[4], 10) : 0;
+    d = new Date(year, month, day, hour, minute);
+  } else {
+    const parsed = Date.parse(dateStr);
+    if (!isNaN(parsed)) {
+      d = new Date(parsed);
+    }
+  }
+
+  if (d && !isNaN(d.getTime())) {
+    const dayName = days[d.getDay()];
+    const dayNum = d.getDate();
+    const monthName = months[d.getMonth()];
+    const year = d.getFullYear();
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+
+    const dateFormatted = `${dayName}, ${dayNum} ${monthName} ${year}`;
+    const timeFormatted = `${hours}:${minutes} WITA`;
+    const fullDateline = `${dateFormatted} | ${timeFormatted}`;
+
+    return {
+      dateFormatted,
+      timeFormatted,
+      fullDateline,
+      publisher,
+    };
+  }
+
+  return {
+    dateFormatted: dateStr,
+    timeFormatted: '08:00 WITA',
+    fullDateline: `${dateStr} | 08:00 WITA`,
+    publisher,
+  };
+}
+
 export default function News() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [beritaList, setBeritaList] = useState<Berita[]>([]);
@@ -509,6 +568,8 @@ export default function News() {
     const titleClean = news.judul.trim();
     const rawExcerpt = (news.ringkasan || (news.konten ? news.konten.substring(0, 160).replace(/["\n\r]/g, ' ').trim() : '')).trim();
 
+    const dateInfo = formatJournalisticDate(news.tanggal);
+
     // Check if rawExcerpt duplicates or starts with titleClean
     const isDuplicate = !rawExcerpt || 
       rawExcerpt.toLowerCase() === titleClean.toLowerCase() ||
@@ -518,22 +579,16 @@ export default function News() {
     const excerptBlock = isDuplicate ? '' : `_"${rawExcerpt}"_\n\n`;
 
     const waText = 
-`🏸 *BERITA RESMI PB BILIBILI 162* 📰
-━━━━━━━━━━━━━━━━━━━━━━━
+`*${titleClean} - PB BILIBILI 162*
 
-*${titleClean}*
-
-${excerptBlock}📅 *Tanggal:* ${news.tanggal || '-'}
-🏷️ *Kategori:* ${news.kategori || 'Program'}
-
-✨ *Lihat Foto Utama & Baca Selengkapnya:*
+_${dateInfo.publisher}, ${dateInfo.fullDateline} —_ ${!isDuplicate ? `${rawExcerpt}\n\n` : ''}✨ *Baca Selengkapnya:*
 ${shareUrl}`;
 
     if (platform === 'native' && navigator.share) {
       try {
         await navigator.share({
-          title: titleClean,
-          text: `🏸 ${titleClean}${!isDuplicate ? `\n\n"${rawExcerpt}"` : ''}`,
+          title: `${titleClean} - PB BILIBILI 162`,
+          text: `*${titleClean} - PB BILIBILI 162*\n\n_${dateInfo.publisher}, ${dateInfo.fullDateline} —_ ${!isDuplicate ? rawExcerpt : ''}`,
           url: shareUrl,
         });
         return;
@@ -825,8 +880,10 @@ ${shareUrl}`;
 
                   {/* News Card Content */}
                   <div className="p-6 sm:p-7 flex flex-col flex-grow">
-                    <div className="text-slate-400 text-[10px] mb-2 font-extrabold uppercase tracking-widest">
-                      {news.tanggal}
+                    <div className="text-slate-400 text-[10px] mb-2 font-extrabold uppercase tracking-widest flex items-center gap-1.5 flex-wrap">
+                      <span className="text-[#22c55e] font-black">{formatJournalisticDate(news.tanggal).publisher}</span>
+                      <span>•</span>
+                      <span>{formatJournalisticDate(news.tanggal).fullDateline}</span>
                     </div>
                     
                     <h3 
@@ -1077,7 +1134,11 @@ ${shareUrl}`;
 
                   {/* News Metadata Row with elegant icons */}
                   <div className="flex flex-wrap items-center gap-y-2 gap-x-4 text-[11px] sm:text-xs text-slate-500 font-bold uppercase tracking-wider border-b border-gray-100 pb-4 mb-6">
-                    <span>{selectedNews.tanggal}</span>
+                    <span className="text-emerald-700 font-extrabold flex items-center gap-1">
+                      📢 {formatJournalisticDate(selectedNews.tanggal).publisher}
+                    </span>
+                    <span className="text-slate-200">|</span>
+                    <span>📅 {formatJournalisticDate(selectedNews.tanggal).fullDateline}</span>
                     <span className="text-slate-200">|</span>
                     <span className="flex items-center gap-1.5">
                       <Eye size={14} className="text-slate-400" /> {selectedNews.views || 0} VIEWS
@@ -1099,11 +1160,19 @@ ${shareUrl}`;
                     <span className="flex items-center gap-1.5">
                       <MessageCircle size={14} className="text-slate-400" /> {comments.length} KOMENTAR
                     </span>
+                    <button 
+                      onClick={() => handleShare(selectedNews, 'native')}
+                      className="ml-auto flex items-center gap-1.5 px-3 py-1 bg-[#25D366] hover:bg-emerald-600 text-white rounded-full text-[11px] font-black uppercase tracking-wider shadow-sm transition-all active:scale-95 cursor-pointer"
+                      title="Bagikan Berita ini via Web Share API / WhatsApp"
+                    >
+                      <Share2 size={13} />
+                      <span>Bagikan</span>
+                    </button>
                   </div>
 
                   {/* Location and Date prefix line */}
-                  <div className="text-slate-900 font-bold mb-5 text-sm sm:text-base italic">
-                    {selectedNews.penulis || "Humas PB Bilibili 162"}, {selectedNews.tanggal} —
+                  <div className="text-slate-900 font-bold mb-5 text-sm sm:text-base italic border-l-4 border-[#22c55e] pl-3 py-1 bg-slate-50/80 rounded-r-md">
+                    {selectedNews.penulis || formatJournalisticDate(selectedNews.tanggal).publisher}, {formatJournalisticDate(selectedNews.tanggal).fullDateline} —
                   </div>
 
                   {/* Article Text Content */}
@@ -1207,26 +1276,41 @@ ${shareUrl}`;
                   <div className="mt-12 p-6 bg-slate-50 rounded-2xl border border-slate-100/80 flex flex-col sm:flex-row justify-between items-center gap-4">
                     <div className="text-center sm:text-left">
                       <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1.5">Bagikan Berita Ini</p>
-                      <p className="text-xs text-slate-500 font-medium">Sebarkan informasi menarik ini kepada rekan klub Anda</p>
+                      <p className="text-xs text-slate-500 font-medium">Sebarkan informasi resmi ini ke WhatsApp & media sosial rekan klub Anda</p>
                     </div>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button 
+                        onClick={() => handleShare(selectedNews, 'native')} 
+                        className="flex items-center gap-2 px-4 py-2 bg-[#25D366] hover:bg-emerald-600 text-white rounded-full font-black text-xs uppercase shadow-md shadow-emerald-200 transition-all active:scale-95 cursor-pointer"
+                        title="Bagikan via Web Share API / WhatsApp"
+                      >
+                        <Share2 size={15} />
+                        <span>Bagikan</span>
+                      </button>
                       <button 
                         onClick={() => handleShare(selectedNews, 'wa')} 
-                        className="w-9 h-9 bg-[#25D366] text-white rounded-full flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-md shadow-green-100"
-                        title="Bagikan ke WhatsApp"
+                        className="w-9 h-9 bg-emerald-800 hover:bg-emerald-900 text-white rounded-full flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-md shadow-emerald-100 cursor-pointer"
+                        title="Bagikan ke WhatsApp Web / App"
                       >
-                        <Share2 size={16} />
+                        <MessageCircle size={16} />
                       </button>
                       <button 
                         onClick={() => handleShare(selectedNews, 'fb')} 
-                        className="w-9 h-9 bg-[#1877F2] text-white rounded-full flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-md shadow-blue-100 font-extrabold text-sm"
+                        className="w-9 h-9 bg-[#1877F2] text-white rounded-full flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-md shadow-blue-100 font-extrabold text-sm cursor-pointer"
                         title="Bagikan ke Facebook"
                       >
                         f
                       </button>
                       <button 
+                        onClick={() => handleShare(selectedNews, 'x')} 
+                        className="w-9 h-9 bg-slate-900 hover:bg-black text-white rounded-full flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-md shadow-slate-200 font-extrabold text-xs cursor-pointer"
+                        title="Bagikan ke X / Twitter"
+                      >
+                        𝕏
+                      </button>
+                      <button 
                         onClick={() => handleShare(selectedNews, 'copy')} 
-                        className="flex items-center gap-2 px-4 h-9 bg-white text-slate-700 hover:text-blue-600 rounded-full border border-slate-200 hover:border-blue-200 transition-all text-xs font-bold uppercase active:scale-95 shadow-xs"
+                        className="flex items-center gap-2 px-4 py-2 bg-white text-slate-700 hover:text-blue-600 rounded-full border border-slate-200 hover:border-blue-200 transition-all text-xs font-bold uppercase active:scale-95 shadow-xs cursor-pointer"
                       >
                         <Link2 size={14} /> 
                         {copySuccess === selectedNews.id ? 'Salin Berhasil!' : 'Salin Tautan'}

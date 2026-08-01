@@ -16,12 +16,22 @@ async function injectNewsMetaTags(html: string, newsId: string, hostHeader?: str
     if (!Array.isArray(data) || data.length === 0) return html;
 
     const news = data[0];
-    const title = news.judul || 'Berita PB Bilibili 162';
-    const description = (news.ringkasan || news.konten || '').substring(0, 160).replace(/["\n\r]/g, ' ').trim();
+    const title = (news.judul || 'Berita PB Bilibili 162').trim();
+    const rawContent = (news.ringkasan || news.konten || '').replace(/["\n\r]/g, ' ').replace(/\s+/g, ' ').trim();
+    
+    // Journalistic lead snippet format matching Kilas Sulawesi sample (e.g. PAREPARE– ...)
+    const leadSnippet = rawContent.toUpperCase().startsWith('PAREPARE')
+      ? rawContent.substring(0, 160)
+      : `PAREPARE– ${rawContent.substring(0, 150)}`;
+
+    const ogTitle = `${title} - PB BILIBILI 162`;
+    const description = leadSnippet;
     const images = (news.gambar_url || '').split(/[\s,]+/).filter(Boolean);
     let host = hostHeader || 'pbilibili162.99apps.id';
     if (host.includes('127.0.0.1') || host.includes('localhost')) {
       host = 'pbilibili162.99apps.id';
+    } else {
+      host = host.split(':')[0];
     }
     const origin = `https://${host}`;
 
@@ -41,12 +51,12 @@ async function injectNewsMetaTags(html: string, newsId: string, hostHeader?: str
 
     const metaInject = `
     <!-- Dynamic Open Graph Meta Tags for News (WhatsApp & Social Preview) -->
-    <title>${title.replace(/"/g, '&quot;')} - PB Bilibili 162</title>
+    <title>${ogTitle.replace(/"/g, '&quot;')}</title>
     <meta name="description" content="${description.replace(/"/g, '&quot;')}" />
     <meta property="og:type" content="article" />
-    <meta property="og:site_name" content="PB Bilibili 162" />
+    <meta property="og:site_name" content="PB BILIBILI 162" />
     <meta property="og:url" content="${fullUrl}" />
-    <meta property="og:title" content="${title.replace(/"/g, '&quot;')}" />
+    <meta property="og:title" content="${ogTitle.replace(/"/g, '&quot;')}" />
     <meta property="og:description" content="${description.replace(/"/g, '&quot;')}" />
     <meta property="og:image" content="${mainImage}" />
     <meta property="og:image:url" content="${mainImage}" />
@@ -56,7 +66,7 @@ async function injectNewsMetaTags(html: string, newsId: string, hostHeader?: str
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="${title.replace(/"/g, '&quot;')}" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="${title.replace(/"/g, '&quot;')}" />
+    <meta name="twitter:title" content="${ogTitle.replace(/"/g, '&quot;')}" />
     <meta name="twitter:description" content="${description.replace(/"/g, '&quot;')}" />
     <meta name="twitter:image" content="${mainImage}" />
     <link rel="image_src" href="${mainImage}" />`;
