@@ -237,10 +237,11 @@ export default function ScheduleWidget() {
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.8 }}
           onClick={() => setShowSchedulePopup(true)}
-          className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 w-12 h-12 rounded-2xl bg-[#0b1224]/95 hover:bg-[#121c38] text-amber-400 border border-amber-500/40 shadow-[0_10px_25px_rgba(0,0,0,0.6)] backdrop-blur-xl z-50 flex items-center justify-center transition-all active:scale-95 cursor-pointer group hover:border-amber-400 hover:shadow-amber-500/20"
+          className="fixed bottom-[58px] right-3 sm:bottom-[76px] sm:right-6 w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-[#0b1224]/95 hover:bg-[#121c38] text-amber-400 border border-amber-500/40 shadow-[0_10px_25px_rgba(0,0,0,0.6)] backdrop-blur-xl z-50 flex items-center justify-center transition-all active:scale-95 cursor-pointer group hover:border-amber-400 hover:shadow-amber-500/20"
           title="Jadwal & Countdown Latihan PB 162"
+          aria-label="Jadwal & Countdown Latihan PB 162"
         >
-          <Timer size={22} className="group-hover:scale-110 group-hover:rotate-12 transition-transform" />
+          <Timer size={20} className="group-hover:scale-110 group-hover:rotate-12 transition-transform" />
           <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-amber-400 border-2 border-[#0b1224] flex items-center justify-center">
             <span className="w-full h-full rounded-full bg-amber-400 animate-ping opacity-75" />
           </span>

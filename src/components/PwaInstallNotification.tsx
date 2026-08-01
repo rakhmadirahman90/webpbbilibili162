@@ -170,13 +170,15 @@ export default function PwaInstallNotification() {
       {!isVisible && isMinimized && (
         <button
           onClick={() => setIsVisible(true)}
-          className="fixed bottom-4 right-4 z-[9998] bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white p-2.5 sm:px-4 sm:py-2.5 rounded-full shadow-2xl shadow-indigo-600/40 border border-white/20 flex items-center gap-2 transition-all hover:scale-105 active:scale-95 group cursor-pointer"
-          title="Install Aplikasi PB Bilibili 162"
+          className="fixed bottom-3 right-3 sm:bottom-6 sm:right-6 z-[9998] bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white w-10 h-10 sm:w-auto sm:px-4 sm:py-2.5 rounded-full shadow-[0_8px_25px_rgba(79,70,229,0.45)] border border-white/20 flex items-center justify-center gap-2 transition-all hover:scale-105 active:scale-95 group cursor-pointer backdrop-blur-md relative"
+          title="Install / Informasi Aplikasi PB Bilibili 162"
+          aria-label="Install / Informasi Aplikasi PB Bilibili 162"
         >
-          <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-            <Smartphone size={14} className="text-white group-hover:rotate-12 transition-transform" />
+          <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+            <Smartphone size={13} className="text-white group-hover:rotate-12 transition-transform" />
           </div>
-          <span className="hidden sm:inline text-xs font-bold tracking-wide">Install App PB 162</span>
+          <span className="hidden sm:inline text-xs font-black tracking-wide uppercase">Install App</span>
+          <span className="sm:hidden absolute -top-0.5 -right-0.5 w-3 h-3 bg-indigo-400 rounded-full border-2 border-[#0c1427] animate-pulse" />
         </button>
       )}
 

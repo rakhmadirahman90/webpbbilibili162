@@ -348,7 +348,75 @@ export default function App() {
 
   // AUDIO LOGIC
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const wasAutoPausedRef = useRef<boolean>(false);
   const [isMarsPlaying, setIsMarsPlaying] = useState(false);
+  const [audioToast, setAudioToast] = useState<{ show: boolean; message: string; type: 'play' | 'mute' }>({
+    show: false,
+    message: '',
+    type: 'mute'
+  });
+
+  useEffect(() => {
+    if (audioToast.show) {
+      const timer = setTimeout(() => {
+        setAudioToast(prev => ({ ...prev, show: false }));
+      }, 2200);
+      return () => clearTimeout(timer);
+    }
+  }, [audioToast.show, audioToast.message]);
+
+  // Auto-pause background Mars audio when user plays a video or other media
+  useEffect(() => {
+    const handleMediaPlay = (e: Event) => {
+      const target = e.target as HTMLElement;
+      if (target && target !== audioRef.current && (target.tagName === 'VIDEO' || target.tagName === 'AUDIO')) {
+        if (audioRef.current && !audioRef.current.paused) {
+          audioRef.current.pause();
+          setIsMarsPlaying(false);
+          wasAutoPausedRef.current = true;
+          setAudioToast({ show: true, message: 'Mars Di-pause (Media Diputar)', type: 'mute' });
+        }
+      }
+    };
+
+    const handleMediaPauseOrEnd = (e: Event) => {
+      const target = e.target as HTMLElement;
+      if (target && target !== audioRef.current && (target.tagName === 'VIDEO' || target.tagName === 'AUDIO')) {
+        if (wasAutoPausedRef.current && audioRef.current) {
+          audioRef.current.play().then(() => {
+            setIsMarsPlaying(true);
+            setAudioToast({ show: true, message: 'Mars Lanjut Diputar', type: 'play' });
+          }).catch(() => {});
+          wasAutoPausedRef.current = false;
+        }
+      }
+    };
+
+    document.addEventListener('play', handleMediaPlay, true);
+    document.addEventListener('pause', handleMediaPauseOrEnd, true);
+    document.addEventListener('ended', handleMediaPauseOrEnd, true);
+
+    return () => {
+      document.removeEventListener('play', handleMediaPlay, true);
+      document.removeEventListener('pause', handleMediaPauseOrEnd, true);
+      document.removeEventListener('ended', handleMediaPauseOrEnd, true);
+    };
+  }, []);
+
+  const toggleAudio = () => {
+    wasAutoPausedRef.current = false;
+    if (audioRef.current) {
+      if (isMarsPlaying) {
+        audioRef.current.pause();
+        setIsMarsPlaying(false);
+        setAudioToast({ show: true, message: 'Musik Dimatikan', type: 'mute' });
+      } else {
+        audioRef.current.play().catch(() => {});
+        setIsMarsPlaying(true);
+        setAudioToast({ show: true, message: 'Memutar Mars PB 162', type: 'play' });
+      }
+    }
+  };
 
   // --- REAL-TIME PRAYER NOTIFICATION SYSTEM ---
   const [prayerTimings, setPrayerTimings] = useState<any>(() => {
@@ -749,7 +817,7 @@ export default function App() {
         </AnimatePresence>
       </div>
       
-      {/* BACK TO HOME BUTTON (Centered bottom) */}
+      {/* BACK TO HOME BUTTON (Centered bottom, compact & perfectly responsive) */}
       <AnimatePresence>
         {activeView && !isOverlayActive && (
           <motion.div
@@ -758,69 +826,91 @@ export default function App() {
             exit={{ opacity: 0, y: 30, x: "-50%" }}
             transition={{ type: 'spring', damping: 25, stiffness: 220 }}
             style={{ x: "-50%" }}
-            className="fixed bottom-3 sm:bottom-6 left-1/2 z-[99999] max-w-[calc(100vw-5rem)]"
+            className="fixed bottom-3 sm:bottom-6 left-1/2 z-[99999] max-w-[calc(100vw-6rem)]"
           >
             <button 
               onClick={() => { setActiveView(null); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-              className="flex items-center gap-2 px-4 py-2 sm:px-5 sm:py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-full font-black text-[9px] sm:text-[10px] uppercase tracking-[0.12em] sm:tracking-[0.15em] transition-all duration-200 active:scale-95 cursor-pointer border border-white/20 shadow-[0_12px_30px_rgba(37,99,235,0.45)] hover:shadow-blue-600/50 backdrop-blur-xl shrink-0"
+              className="flex items-center gap-1.5 sm:gap-2 px-3.5 py-2 sm:px-5 sm:py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-full font-black text-[10px] sm:text-[11px] uppercase tracking-wider sm:tracking-[0.15em] transition-all duration-200 active:scale-95 cursor-pointer border border-white/20 shadow-[0_10px_25px_rgba(37,99,235,0.45)] hover:shadow-blue-600/50 backdrop-blur-xl shrink-0"
             >
-              <ArrowLeft size={12} className="shrink-0" />
-              <span className="truncate">Kembali ke Beranda</span>
+              <ArrowLeft size={13} className="shrink-0" />
+              <span className="truncate">
+                <span className="hidden xs:inline">Kembali ke </span>Beranda
+              </span>
             </button>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* AUDIO CONTROLLER (Floating bottom right, compact & non-colliding) */}
+      {/* AUDIO CONTROLLER MARS PB 162 (Floating bottom-left, compact & non-colliding) */}
       <AnimatePresence>
         {!isOverlayActive && (
           <motion.div 
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            className="fixed bottom-3 sm:bottom-6 right-3 sm:right-6 z-[99999] flex items-center gap-2 pointer-events-none"
+            initial={{ opacity: 0, scale: 0.85, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.85, y: 10 }}
+            className="fixed bottom-3 left-3 sm:bottom-6 sm:left-6 z-[9999] flex items-center gap-2 pointer-events-none relative"
           >
-            {/* Subtle playing text / visualizer - visible on sm+ screens */}
+            {/* Audio Action Toast Notification */}
             <AnimatePresence>
-              {isMarsPlaying && (
+              {audioToast.show && (
                 <motion.div 
-                  initial={{ opacity: 0, x: 10, filter: "blur(4px)" }} 
-                  animate={{ opacity: 1, x: 0, filter: "blur(0px)" }} 
-                  exit={{ opacity: 0, x: 10, filter: "blur(4px)" }} 
-                  className="hidden sm:flex bg-slate-900/95 backdrop-blur-md border border-white/10 px-2.5 py-1.5 rounded-xl shadow-lg items-center gap-1.5 pointer-events-auto"
+                  initial={{ opacity: 0, y: 8, scale: 0.9 }} 
+                  animate={{ opacity: 1, y: 0, scale: 1 }} 
+                  exit={{ opacity: 0, y: -8, scale: 0.9 }} 
+                  transition={{ duration: 0.2 }}
+                  className={`absolute -top-12 left-0 whitespace-nowrap px-3 py-1.5 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider shadow-2xl border backdrop-blur-xl flex items-center gap-1.5 pointer-events-none z-[10000] ${
+                    audioToast.type === 'play' 
+                      ? 'bg-blue-950/95 text-blue-200 border-blue-400/50 shadow-blue-900/60' 
+                      : 'bg-slate-900/95 text-amber-300 border-amber-500/40 shadow-black/80'
+                  }`}
                 >
-                  <div className="flex gap-0.5 items-end h-2.5">
-                     {[1,2,3].map(i => (
-                       <motion.div 
-                         key={i} 
-                         animate={{ height: [2, 7, 2] }} 
-                         transition={{ repeat: Infinity, duration: 0.6, delay: i * 0.15 }} 
-                         className="w-0.5 bg-blue-400 rounded-full" 
-                       />
-                     ))}
-                  </div>
-                  <span className="text-[8px] font-extrabold uppercase tracking-widest text-slate-300 italic whitespace-nowrap">Mars PB Bilibili 162</span>
+                  {audioToast.type === 'play' ? (
+                    <Volume2 size={13} className="text-blue-400 animate-pulse shrink-0" />
+                  ) : (
+                    <VolumeX size={13} className="text-amber-400 shrink-0" />
+                  )}
+                  <span>{audioToast.message}</span>
                 </motion.div>
               )}
             </AnimatePresence>
 
             {/* Play / Mute Circle Icon */}
             <button 
-              onClick={() => {
-                if (audioRef.current) {
-                  isMarsPlaying ? audioRef.current.pause() : audioRef.current.play();
-                  setIsMarsPlaying(!isMarsPlaying);
-                }
-              }}
-              className={`pointer-events-auto w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center transition-all duration-300 cursor-pointer border shadow-[0_4px_12px_rgba(0,0,0,0.3)] ${
+              onClick={toggleAudio}
+              className={`pointer-events-auto w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center transition-all duration-300 cursor-pointer border shadow-[0_8px_25px_rgba(0,0,0,0.5)] ${
                 isMarsPlaying 
-                  ? 'bg-blue-600 text-white border-blue-500/50 hover:bg-blue-500' 
-                  : 'bg-slate-800 text-slate-400 border-white/10 hover:bg-slate-700 hover:text-slate-200'
+                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-blue-400/50 shadow-blue-600/40 hover:scale-105 active:scale-95 ring-2 ring-blue-500/30' 
+                  : 'bg-slate-900/90 text-slate-300 border-white/15 hover:bg-slate-800 hover:text-white hover:scale-105 active:scale-95 backdrop-blur-xl'
               }`}
-              title={isMarsPlaying ? "Pause Mars PB Bilibili 162" : "Play Mars PB Bilibili 162"}
+              title={isMarsPlaying ? "Matikan Musik Mars PB Bilibili 162" : "Putar Musik Mars PB Bilibili 162"}
+              aria-label={isMarsPlaying ? "Matikan Musik Mars PB Bilibili 162" : "Putar Musik Mars PB Bilibili 162"}
             >
-              {isMarsPlaying ? <Volume2 size={13} className="animate-pulse" /> : <VolumeX size={13} />}
+              {isMarsPlaying ? <Volume2 size={18} className="animate-pulse text-white" /> : <VolumeX size={18} />}
             </button>
+
+            {/* Subtle playing text / visualizer - visible on md+ screens */}
+            <AnimatePresence>
+              {isMarsPlaying && (
+                <motion.div 
+                  initial={{ opacity: 0, x: -10, filter: "blur(4px)" }} 
+                  animate={{ opacity: 1, x: 0, filter: "blur(0px)" }} 
+                  exit={{ opacity: 0, x: -10, filter: "blur(4px)" }} 
+                  className="hidden md:flex bg-slate-900/95 backdrop-blur-xl border border-blue-500/30 px-3 py-1.5 rounded-2xl shadow-xl items-center gap-2 pointer-events-auto"
+                >
+                  <div className="flex gap-0.5 items-end h-3">
+                     {[1,2,3,4].map(i => (
+                       <motion.div 
+                         key={i} 
+                         animate={{ height: [3, 11, 3] }} 
+                         transition={{ repeat: Infinity, duration: 0.5, delay: i * 0.12 }} 
+                         className="w-0.5 bg-blue-400 rounded-full" 
+                       />
+                     ))}
+                  </div>
+                  <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-blue-200 italic whitespace-nowrap">Mars PB 162</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         )}
       </AnimatePresence>
