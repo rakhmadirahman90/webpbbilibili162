@@ -19,7 +19,7 @@ export function getOptimizedImageUrl(url: string, width?: number, quality: numbe
   const trimmedUrl = url.trim().split(/[\s,]+/)[0];
   if (!trimmedUrl) return '';
 
-  // Bypass if it is a local asset, data URI (base64), SVG, or Supabase Storage URL
+  // Bypass if it is a local asset, data URI (base64), SVG, or Supabase CDN URL
   if (
     trimmedUrl.startsWith('/') || 
     trimmedUrl.startsWith('data:') || 

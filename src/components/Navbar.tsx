@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Globe, ChevronDown, Menu, X, MapPin, UserPlus, Wallet, FileText, Trophy, BrainCircuit, ArrowLeft, Youtube, Instagram, Facebook, Twitter, Radio, LogIn, LayoutDashboard, UserCheck, LogOut, Timer, HelpCircle, Smartphone } from 'lucide-react';
+import { Globe, ChevronDown, Menu, X, MapPin, UserPlus, Wallet, FileText, Trophy, BrainCircuit, ArrowLeft, Youtube, Instagram, Facebook, Twitter, Radio, LogIn, LayoutDashboard, UserCheck, LogOut, Timer, HelpCircle } from 'lucide-react';
 import { supabase } from '../supabase'; 
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
@@ -526,17 +526,6 @@ export default function Navbar({ onNavigate }: NavbarProps) {
               )}
             </div>
 
-            {/* UNDUH APP / APK BUTTON */}
-            <button 
-              type="button"
-              onClick={() => navigate('/admin/pwa-apk')}
-              className="px-2.5 py-1.5 lg:px-3 lg:py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 rounded-full text-[9.5px] lg:text-[10px] xl:text-[11.5px] font-bold uppercase tracking-wider transition-all flex items-center gap-1 shadow-lg shadow-purple-600/20 hover:-translate-y-0.5 active:scale-95 cursor-pointer text-white shrink-0"
-              title="Unduh File APK / Install Aplikasi Native"
-            >
-              <Smartphone size={13} className="text-purple-200 shrink-0" />
-              <span className="whitespace-nowrap">Unduh App</span>
-            </button>
-
             {/* LOGIN / DASHBOARD & LOGOUT DEDICATED BUTTONS */}
             {session ? (
               <div className="flex items-center gap-1.5 shrink-0">
@@ -720,17 +709,6 @@ export default function Navbar({ onNavigate }: NavbarProps) {
                 >
                   <HelpCircle size={13} className="text-blue-500 shrink-0" />
                   <span>FAQ</span>
-                </button>
-              </div>
-
-              {/* Install PWA / Download APK Item */}
-              <div>
-                <button 
-                  onClick={() => { setIsMobileMenuOpen(false); navigate('/admin/pwa-apk'); }}
-                  className="flex items-center gap-2 w-full px-3 py-2 text-[11px] font-bold tracking-wider uppercase text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/20 rounded-lg transition-all duration-200 text-left border border-indigo-500/20 cursor-pointer"
-                >
-                  <Smartphone size={13} className="text-indigo-400 shrink-0" />
-                  <span>Aplikasi Mobile & APK</span>
                 </button>
               </div>
 
