@@ -506,19 +506,34 @@ export default function News() {
 
   const handleShare = async (news: Berita, platform: 'wa' | 'fb' | 'x' | 'copy' | 'native') => {
     const shareUrl = `${window.location.origin}/berita?newsId=${news.id}`;
+    const titleClean = news.judul.trim();
+    const rawExcerpt = (news.ringkasan || (news.konten ? news.konten.substring(0, 160).replace(/["\n\r]/g, ' ').trim() : '')).trim();
 
-    // Pesan WhatsApp dibuat ringkas tanpa duplikasi judul & kutipan agar kartu preview link WhatsApp (Foto Utama, Judul, & Ringkasan) tampil bersih tanpa pengulangan teks
+    // Check if rawExcerpt duplicates or starts with titleClean
+    const isDuplicate = !rawExcerpt || 
+      rawExcerpt.toLowerCase() === titleClean.toLowerCase() ||
+      rawExcerpt.toLowerCase().startsWith(titleClean.toLowerCase()) ||
+      titleClean.toLowerCase().startsWith(rawExcerpt.toLowerCase());
+
+    const excerptBlock = isDuplicate ? '' : `_"${rawExcerpt}"_\n\n`;
+
     const waText = 
 `🏸 *BERITA RESMI PB BILIBILI 162* 📰
+━━━━━━━━━━━━━━━━━━━━━━━
 
-✨ *Lihat Foto Utama & Baca Berita Selengkapnya:*
+*${titleClean}*
+
+${excerptBlock}📅 *Tanggal:* ${news.tanggal || '-'}
+🏷️ *Kategori:* ${news.kategori || 'Program'}
+
+✨ *Lihat Foto Utama & Baca Selengkapnya:*
 ${shareUrl}`;
 
     if (platform === 'native' && navigator.share) {
       try {
         await navigator.share({
-          title: news.judul,
-          text: `🏸 ${news.judul}`,
+          title: titleClean,
+          text: `🏸 ${titleClean}${!isDuplicate ? `\n\n"${rawExcerpt}"` : ''}`,
           url: shareUrl,
         });
         return;

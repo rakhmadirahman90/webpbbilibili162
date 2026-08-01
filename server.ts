@@ -25,10 +25,17 @@ async function injectNewsMetaTags(html: string, newsId: string, hostHeader?: str
     }
     const origin = `https://${host}`;
 
-    // Use our clean proxy endpoint for image previews to strip Supabase's x-robots-tag: none
+    // Use clean proxy endpoint for image previews to strip Supabase's x-robots-tag: none header for WhatsApp crawlers
     const mainImage = images.length > 0
       ? `${origin}/api/news-image?id=${news.id}`
       : `${origin}/logo_pb_bilibili_162.png`;
+
+    let imageType = 'image/jpeg';
+    if (images.length > 0) {
+      const firstImg = images[0].toLowerCase();
+      if (firstImg.endsWith('.png')) imageType = 'image/png';
+      else if (firstImg.endsWith('.webp')) imageType = 'image/webp';
+    }
 
     const fullUrl = `${origin}/berita?newsId=${news.id}`;
 
@@ -44,7 +51,7 @@ async function injectNewsMetaTags(html: string, newsId: string, hostHeader?: str
     <meta property="og:image" content="${mainImage}" />
     <meta property="og:image:url" content="${mainImage}" />
     <meta property="og:image:secure_url" content="${mainImage}" />
-    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:type" content="${imageType}" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="${title.replace(/"/g, '&quot;')}" />
