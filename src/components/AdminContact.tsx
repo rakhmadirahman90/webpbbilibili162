@@ -136,7 +136,7 @@ export default function AdminContact() {
                   <Mail size={12} className="text-blue-500"/> Official Email
                 </label>
                 <input 
-                  className="w-full bg-zinc-950/50 border border-white/10 rounded-2xl p-4 text-sm outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 transition-all font-semibold text-zinc-200 placeholder:text-zinc-700"
+                  className="w-full bg-zinc-950/50 border border-white/10 rounded-2xl p-4 text-sm outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 transition-all font-semibold text-zinc-200 placeholder:text-slate-500"
                   value={contactData.email}
                   onChange={e => setContactData({...contactData, email: e.target.value})}
                   placeholder="e.g. hello@pbbilibili162.com"
@@ -148,7 +148,7 @@ export default function AdminContact() {
                   <Phone size={12} className="text-emerald-500"/> WhatsApp Center
                 </label>
                 <input 
-                  className="w-full bg-zinc-950/50 border border-white/10 rounded-2xl p-4 text-sm outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 transition-all font-semibold text-zinc-200 placeholder:text-zinc-700"
+                  className="w-full bg-zinc-950/50 border border-white/10 rounded-2xl p-4 text-sm outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 transition-all font-semibold text-zinc-200 placeholder:text-slate-500"
                   value={contactData.phone}
                   onChange={e => setContactData({...contactData, phone: e.target.value})}
                   placeholder="e.g. 62812345678"
@@ -233,7 +233,7 @@ export default function AdminContact() {
                 title="Preview"
               />
             ) : (
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-zinc-800 gap-4">
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-600 gap-4">
                 <Globe size={48} strokeWidth={1}/>
                 <span className="text-[10px] uppercase font-black tracking-[0.3em]">No Map Configured</span>
               </div>

@@ -898,7 +898,7 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
             <div className="overflow-y-auto flex-1 min-h-0 divide-y divide-white/5 custom-scrollbar">
               {filteredSuratMasuk.length === 0 ? (
                 <div className="p-10 text-center flex flex-col items-center gap-2">
-                  <FileText size={30} className="text-zinc-800" />
+                  <FileText size={30} className="text-slate-600" />
                   <p className="text-slate-500 text-[10px] sm:text-xs uppercase tracking-widest font-bold">
                     {searchMasuk || masukFilterStatus !== 'semua' ? 'Tidak ada surat masuk yang sesuai filter' : 'Belum Ada Surat Masuk Tercatat'}
                   </p>
@@ -978,7 +978,7 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
             <div className="p-10 text-center"><Loader2 className="animate-spin mx-auto text-blue-500" size={24} /></div>
           ) : filteredSurat.length === 0 ? (
             <div className="p-10 text-center flex flex-col items-center gap-2">
-              <Search size={30} className="text-zinc-800" />
+              <Search size={30} className="text-slate-600" />
               <p className="text-slate-500 text-[10px] sm:text-xs uppercase tracking-widest font-bold">
                 {searchTerm ? `Tidak ditemukan hasil untuk "${searchTerm}"` : 'Belum Ada Arsip Surat'}
               </p>

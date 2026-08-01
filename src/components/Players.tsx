@@ -295,7 +295,7 @@ const Players: React.FC<{ initialFilter?: string }> = ({
                       {player.img ? (
                         <img src={player.img} className="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 group-hover:scale-110 transition-all duration-700" alt={player.name} />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-[#1a1d26] text-zinc-800"><User size={60} /></div>
+                        <div className="w-full h-full flex items-center justify-center bg-[#1a1d26] text-slate-600"><User size={60} /></div>
                       )}
                       
                       {/* Overlay Gradient Elegan */}
@@ -318,8 +318,8 @@ const Players: React.FC<{ initialFilter?: string }> = ({
               </Swiper>
             ) : (
               <div className="py-32 text-center bg-[#1a1d26]/50 rounded-[3rem] border border-white/5">
-                <Search className="mx-auto text-zinc-800 mb-4" size={48} />
-                <p className="text-zinc-600 font-black uppercase italic tracking-widest">Atlet tidak ditemukan</p>
+                <Search className="mx-auto text-slate-600 mb-4" size={48} />
+                <p className="text-slate-500 font-black uppercase italic tracking-widest">Atlet tidak ditemukan</p>
                 <button onClick={() => {setCurrentAgeGroup('Semua'); setSearchTerm('');}} className="mt-6 px-8 py-3 bg-blue-600 text-white rounded-full text-[10px] font-black uppercase hover:bg-blue-700 transition-all shadow-xl shadow-blue-600/20">Lihat Semua Atlet</button>
               </div>
             )}

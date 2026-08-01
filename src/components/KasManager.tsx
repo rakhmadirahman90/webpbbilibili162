@@ -979,7 +979,7 @@ export default function KasManager() {
                 <div className="p-10 text-center"><Loader2 className="animate-spin mx-auto text-blue-500" size={24} /></div>
               ) : currentItems.length === 0 ? (
                 <div className="p-10 text-center flex flex-col items-center gap-2">
-                  <Search size={30} className="text-zinc-800" />
+                  <Search size={30} className="text-slate-600" />
                   <p className="text-slate-500 text-[10px] sm:text-xs uppercase tracking-widest font-bold">
                     {searchTerm ? `Tidak ditemukan hasil untuk "${searchTerm}"` : 'Belum Ada Data'}
                   </p>

@@ -170,7 +170,7 @@ export default function AuditLogPoin() {
                       </td>
                       <td className="p-6">
                         <div className="flex items-center gap-2">
-                          <UserIcon size={12} className="text-zinc-700" />
+                          <UserIcon size={12} className="text-slate-500" />
                           <span className="text-sm font-black uppercase tracking-tight text-white">{log.atlet_nama}</span>
                         </div>
                       </td>
@@ -188,7 +188,7 @@ export default function AuditLogPoin() {
                             <p className="text-[9px] font-bold text-zinc-600 uppercase">Before</p>
                             <p className="text-xs font-mono text-zinc-400">{log.poin_sebelum}</p>
                           </div>
-                          <ArrowRight size={16} className="text-zinc-800" />
+                          <ArrowRight size={16} className="text-slate-500" />
                           <div className="bg-zinc-800/30 p-2 rounded-xl border border-white/[0.03] min-w-[100px] text-center">
                             <p className={`text-sm font-black ${log.perubahan > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
                               {log.poin_sesudah} 

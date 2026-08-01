@@ -365,8 +365,8 @@ export default function AdminGallery({ session }: { session?: any }) {
             </div>
           ) : paginatedItems.length === 0 ? (
             <div className="col-span-full py-32 text-center border-4 border-dashed border-white/5 rounded-[3rem] group">
-                <ImageIcon size={48} className="mx-auto text-zinc-800 mb-6 group-hover:text-blue-600/20 transition-colors" />
-                <p className="text-zinc-600 font-black uppercase italic tracking-widest">No assets found in this category</p>
+                <ImageIcon size={48} className="mx-auto text-slate-600 mb-6 group-hover:text-blue-600/20 transition-colors" />
+                <p className="text-slate-500 font-black uppercase italic tracking-widest">No assets found in this category</p>
             </div>
           ) : paginatedItems.map((item, idx) => (
             <div 
@@ -522,7 +522,7 @@ export default function AdminGallery({ session }: { session?: any }) {
                   </label>
                   <input 
                     required
-                    className="w-full bg-zinc-900/50 border border-white/10 rounded-2xl p-5 outline-none focus:border-blue-600 font-bold uppercase transition-all placeholder:text-zinc-800"
+                    className="w-full bg-zinc-900/50 border border-white/10 rounded-2xl p-5 outline-none focus:border-blue-600 font-bold uppercase transition-all placeholder:text-slate-500 text-white"
                     placeholder="E.g. Training Session..."
                     value={formData.title}
                     onChange={e => setFormData({...formData, title: e.target.value})}
@@ -551,7 +551,7 @@ export default function AdminGallery({ session }: { session?: any }) {
                 <textarea 
                   required
                   rows={3}
-                  className="w-full bg-zinc-900/50 border border-white/10 rounded-3xl p-6 outline-none focus:border-blue-600 font-medium transition-all placeholder:text-zinc-800 resize-none"
+                  className="w-full bg-zinc-900/50 border border-white/10 rounded-3xl p-6 outline-none focus:border-blue-600 font-medium transition-all placeholder:text-slate-500 text-white resize-none"
                   placeholder="Tell the story about this moment..."
                   value={formData.description}
                   onChange={e => setFormData({...formData, description: e.target.value})}

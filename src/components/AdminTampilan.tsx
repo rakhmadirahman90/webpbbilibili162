@@ -431,7 +431,7 @@ export default function AdminTampilan() {
                         {slide.image ? (
                           <img src={slide.image} key={slide.image} className={`w-full h-full object-cover object-center transition-all ${slide.active === false ? 'opacity-30 grayscale' : 'opacity-80'}`} alt="Preview" />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-zinc-800 text-[10px] font-black uppercase italic">No Image</div>
+                          <div className="w-full h-full flex items-center justify-center text-slate-600 text-[10px] font-black uppercase italic">No Image</div>
                         )}
                         {slide.active === false && (
                           <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
@@ -496,7 +496,7 @@ export default function AdminTampilan() {
         {/* LIVE PREVIEW */}
         <div className="lg:col-span-5">
           <div className="sticky top-8 bg-zinc-900/20 border border-dashed border-zinc-800 rounded-[2.5rem] p-5 shadow-inner">
-            <p className="text-[9px] font-black text-zinc-700 uppercase tracking-widest mb-5 ml-4 flex items-center gap-2">
+            <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-5 ml-4 flex items-center gap-2">
               <MousePointer2 size={10} /> Dynamic Live UI Preview
             </p>
             
@@ -507,7 +507,7 @@ export default function AdminTampilan() {
                     {s.image ? (
                       <img src={s.image} key={s.image} className={`absolute inset-0 w-full h-full object-cover object-[center_15%] transition-all ${s.active === false ? 'opacity-15 grayscale' : 'opacity-50'}`} alt={`Slide ${i+1}`} />
                     ) : (
-                       <div className="absolute inset-0 bg-zinc-950 flex items-center justify-center text-zinc-900 font-black italic text-4xl">NO IMAGE</div>
+                       <div className="absolute inset-0 bg-zinc-950 flex items-center justify-center text-slate-800 font-black italic text-4xl">NO IMAGE</div>
                     )}
                     
                     <div className="absolute inset-0 bg-gradient-to-r from-black via-black/40 to-transparent z-0" />

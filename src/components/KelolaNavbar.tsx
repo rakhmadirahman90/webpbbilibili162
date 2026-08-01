@@ -378,7 +378,7 @@ const KelolaNavbar: React.FC = () => {
           <div className="md:col-span-8 space-y-4">
             {mainMenus.length === 0 ? (
               <div className="text-center py-40 border-2 border-dashed border-zinc-900 rounded-[3rem] bg-zinc-900/10">
-                <Menu size={64} className="mx-auto text-zinc-900 mb-6 opacity-20" />
+                <Menu size={64} className="mx-auto text-slate-700 mb-6 opacity-40" />
                 <p className="text-zinc-600 font-black uppercase text-[10px] tracking-[0.3em]">System Navigation Empty</p>
               </div>
             ) : (
@@ -390,7 +390,7 @@ const KelolaNavbar: React.FC = () => {
                 >
                   <div className="group flex items-center justify-between bg-zinc-900 border border-white/5 p-6 rounded-[2.2rem] hover:border-blue-600/50 transition-all shadow-2xl cursor-grab active:cursor-grabbing">
                     <div className="flex items-center gap-6">
-                      <GripVertical size={20} className="text-zinc-800 group-hover:text-blue-500" />
+                      <GripVertical size={20} className="text-slate-600 group-hover:text-blue-500" />
                       <div className="w-12 h-12 bg-black rounded-2xl flex items-center justify-center text-blue-500 font-black text-sm border border-white/5">
                         {index + 1}
                       </div>
@@ -425,7 +425,7 @@ const KelolaNavbar: React.FC = () => {
                     {getSubMenus(item.id).map((sub) => (
                       <div key={sub.id} className="flex items-center justify-between bg-zinc-900/40 border border-white/5 p-4 rounded-2xl hover:bg-zinc-800 transition-all group/sub">
                         <div className="flex items-center gap-4">
-                          <CornerDownRight size={18} className="text-zinc-700 group-hover/sub:text-blue-500" />
+                          <CornerDownRight size={18} className="text-slate-500 group-hover/sub:text-blue-500" />
                           <div>
                             {editingId === sub.id ? (
                                <input 
@@ -440,7 +440,7 @@ const KelolaNavbar: React.FC = () => {
                             <p className="text-[8px] text-zinc-600 font-bold uppercase tracking-widest mt-0.5">{sub.path}</p>
                           </div>
                         </div>
-                        <button onClick={() => deleteMenu(sub.id)} className="p-2 text-zinc-800 hover:text-red-500 transition-colors"><Trash2 size={14}/></button>
+                        <button onClick={() => deleteMenu(sub.id)} className="p-2 text-slate-500 hover:text-red-500 transition-colors"><Trash2 size={14}/></button>
                       </div>
                     ))}
                   </div>

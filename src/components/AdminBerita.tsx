@@ -728,8 +728,8 @@ export default function AdminBerita({ session }: { session?: any }) {
                 ))
               ) : (
                 <div className="py-20 text-center space-y-3">
-                  <MessageSquare className="mx-auto text-zinc-800" size={48} />
-                  <p className="text-zinc-600 font-black uppercase tracking-widest text-xs">Belum ada komentar.</p>
+                  <MessageSquare className="mx-auto text-slate-600" size={48} />
+                  <p className="text-slate-500 font-black uppercase tracking-widest text-xs">Belum ada komentar.</p>
                 </div>
               )}
             </div>

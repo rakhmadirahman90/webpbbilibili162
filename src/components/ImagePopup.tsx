@@ -63,7 +63,7 @@ function ImagePopup() {
       return (
         <p 
           key={i} 
-          className="mb-5 last:mb-0 !leading-7 text-zinc-800 !text-justify text-[15px]"
+          className="mb-5 last:mb-0 !leading-7 text-slate-800 !text-justify text-[15px]"
           style={{ 
             overflowWrap: 'break-word', 
             wordWrap: 'break-word'

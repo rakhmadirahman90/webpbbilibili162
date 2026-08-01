@@ -1083,7 +1083,7 @@ export default function AdminRekapKeuangan({ isAdmin = true, session }: AdminRek
             <input 
               type="text" 
               placeholder="Cari nama anggota..." 
-              className="bg-transparent text-[10px] sm:text-xs font-bold outline-none text-white w-full placeholder:text-zinc-600"
+              className="bg-transparent text-[10px] sm:text-xs font-bold outline-none text-white w-full placeholder:text-slate-500"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -1109,7 +1109,7 @@ export default function AdminRekapKeuangan({ isAdmin = true, session }: AdminRek
             </div>
           ) : currentItems.length === 0 ? (
             <div className="p-10 text-center flex flex-col items-center justify-center h-64 gap-3">
-              <Search size={36} className="text-zinc-700" />
+              <Search size={36} className="text-slate-600" />
               <p className="text-slate-500 text-xs uppercase tracking-widest font-black">
                 {searchTerm ? `Anggota "${searchTerm}" Tidak Ditemukan` : 'Belum Ada Data Anggota'}
               </p>
@@ -1627,7 +1627,7 @@ export default function AdminRekapKeuangan({ isAdmin = true, session }: AdminRek
                           placeholder="Contoh: Pembayaran Kas bulan Juli 2026"
                           value={txForm.keterangan} 
                           onChange={e => setTxForm({ ...txForm, keterangan: e.target.value })} 
-                          className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-white outline-none focus:border-blue-500 text-xs font-medium placeholder:text-zinc-600" 
+                          className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-white outline-none focus:border-blue-500 text-xs font-medium placeholder:text-slate-500" 
                         />
                       </div>
 

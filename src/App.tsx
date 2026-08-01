@@ -172,7 +172,7 @@ const renderDescriptionWithLinks = (text: string) => {
   const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+)/g;
   
   return text.split('\n').map((line, i) => (
-    <p key={i} className="mb-4 last:mb-0 leading-relaxed text-zinc-700 text-justify whitespace-normal">
+    <p key={i} className="mb-4 last:mb-0 leading-relaxed text-slate-700 text-justify whitespace-normal">
       {line.split(urlRegex).map((part, index) => {
         if (part.match(urlRegex)) {
           const cleanUrl = part.startsWith('www.') ? `https://${part}` : part;
@@ -284,7 +284,7 @@ function ImagePopup() {
              </div>
              <div className="p-8">
                 <h3 className="text-xl font-black uppercase mb-4 text-blue-700">{current.judul}</h3>
-                <div className="text-zinc-700 text-[15px] mb-6">{renderDescriptionWithLinks(current.deskripsi)}</div>
+                <div className="text-slate-700 text-[15px] mb-6">{renderDescriptionWithLinks(current.deskripsi)}</div>
                 <button onClick={closePopup} className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold uppercase tracking-widest text-[10px] mb-2">Tutup</button>
                 {navigator.share && (
                   <button
