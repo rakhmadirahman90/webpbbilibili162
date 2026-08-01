@@ -119,6 +119,7 @@ export default function News() {
 
   // State Baru untuk Berbagi
   const [copySuccess, setCopySuccess] = useState<string | null>(null);
+  const [sharePreviewNews, setSharePreviewNews] = useState<Berita | null>(null);
 
   // State untuk slider gambar & lightbox
   const [activeImgIndex, setActiveImgIndex] = useState(0);
@@ -564,31 +565,24 @@ export default function News() {
   };
 
   const handleShare = async (news: Berita, platform: 'wa' | 'fb' | 'x' | 'copy' | 'native') => {
-    const shareUrl = `${window.location.origin}/berita?newsId=${news.id}`;
+    // Use official production domain to ensure WhatsApp web scrapers can fetch OG meta tags & preview image
+    const publicDomain = 'https://pbilibili162.99apps.id';
+    const shareUrl = `${publicDomain}/berita?newsId=${news.id}`;
     const titleClean = news.judul.trim();
-    const rawExcerpt = (news.ringkasan || (news.konten ? news.konten.substring(0, 160).replace(/["\n\r]/g, ' ').trim() : '')).trim();
 
     const dateInfo = formatJournalisticDate(news.tanggal);
-
-    // Check if rawExcerpt duplicates or starts with titleClean
-    const isDuplicate = !rawExcerpt || 
-      rawExcerpt.toLowerCase() === titleClean.toLowerCase() ||
-      rawExcerpt.toLowerCase().startsWith(titleClean.toLowerCase()) ||
-      titleClean.toLowerCase().startsWith(rawExcerpt.toLowerCase());
-
-    const excerptBlock = isDuplicate ? '' : `_"${rawExcerpt}"_\n\n`;
 
     const waText = 
 `*${titleClean} - PB BILIBILI 162*
 
-_${dateInfo.publisher}, ${dateInfo.fullDateline} —_ ${!isDuplicate ? `${rawExcerpt}\n\n` : ''}✨ *Baca Selengkapnya:*
+_${dateInfo.publisher}, ${dateInfo.fullDateline} —_ ✨ *Baca Selengkapnya:*
 ${shareUrl}`;
 
     if (platform === 'native' && navigator.share) {
       try {
         await navigator.share({
           title: `${titleClean} - PB BILIBILI 162`,
-          text: `*${titleClean} - PB BILIBILI 162*\n\n_${dateInfo.publisher}, ${dateInfo.fullDateline} —_ ${!isDuplicate ? rawExcerpt : ''}`,
+          text: `*${titleClean} - PB BILIBILI 162*\n\n_${dateInfo.publisher}, ${dateInfo.fullDateline} —_ ✨ *Baca Selengkapnya:*`,
           url: shareUrl,
         });
         return;
@@ -606,7 +600,7 @@ ${shareUrl}`;
         window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`, '_blank');
         break;
       case 'x':
-        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`🏸 *${news.judul}*\n\n`)}&url=${encodeURIComponent(shareUrl)}`, '_blank');
+        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`*${titleClean} - PB BILIBILI 162*\n\n`)}&url=${encodeURIComponent(shareUrl)}`, '_blank');
         break;
       case 'copy':
         try {
@@ -1161,9 +1155,9 @@ ${shareUrl}`;
                       <MessageCircle size={14} className="text-slate-400" /> {comments.length} KOMENTAR
                     </span>
                     <button 
-                      onClick={() => handleShare(selectedNews, 'native')}
+                      onClick={() => setSharePreviewNews(selectedNews)}
                       className="ml-auto flex items-center gap-1.5 px-3 py-1 bg-[#25D366] hover:bg-emerald-600 text-white rounded-full text-[11px] font-black uppercase tracking-wider shadow-sm transition-all active:scale-95 cursor-pointer"
-                      title="Bagikan Berita ini via Web Share API / WhatsApp"
+                      title="Pratinjau & Bagikan Berita ke WhatsApp"
                     >
                       <Share2 size={13} />
                       <span>Bagikan</span>
@@ -1280,17 +1274,17 @@ ${shareUrl}`;
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                       <button 
-                        onClick={() => handleShare(selectedNews, 'native')} 
+                        onClick={() => setSharePreviewNews(selectedNews)} 
                         className="flex items-center gap-2 px-4 py-2 bg-[#25D366] hover:bg-emerald-600 text-white rounded-full font-black text-xs uppercase shadow-md shadow-emerald-200 transition-all active:scale-95 cursor-pointer"
-                        title="Bagikan via Web Share API / WhatsApp"
+                        title="Pratinjau & Bagikan ke WhatsApp"
                       >
                         <Share2 size={15} />
-                        <span>Bagikan</span>
+                        <span>Pratinjau WA</span>
                       </button>
                       <button 
-                        onClick={() => handleShare(selectedNews, 'wa')} 
+                        onClick={() => setSharePreviewNews(selectedNews)} 
                         className="w-9 h-9 bg-emerald-800 hover:bg-emerald-900 text-white rounded-full flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-md shadow-emerald-100 cursor-pointer"
-                        title="Bagikan ke WhatsApp Web / App"
+                        title="Pratinjau Pesan WhatsApp"
                       >
                         <MessageCircle size={16} />
                       </button>
@@ -1470,6 +1464,148 @@ ${shareUrl}`;
                 )}
               </AnimatePresence>
 
+            </motion.div>
+          );
+        })()}
+      </AnimatePresence>
+
+      {/* MODAL POPUP PRATINJAU SHARE WHATSAPP */}
+      <AnimatePresence>
+        {sharePreviewNews && (() => {
+          const publicDomain = 'https://pbilibili162.99apps.id';
+          const shareUrl = `${publicDomain}/berita?newsId=${sharePreviewNews.id}`;
+          const titleClean = sharePreviewNews.judul.trim();
+          const dateInfo = formatJournalisticDate(sharePreviewNews.tanggal);
+          const firstImg = sharePreviewNews.gambar_url ? sharePreviewNews.gambar_url.split(/[\s,]+/)[0] : '';
+
+          return (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-xs overflow-y-auto"
+              onClick={() => setSharePreviewNews(null)}
+            >
+              <motion.div 
+                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200 relative my-auto"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Modal Header WhatsApp Theme */}
+                <div className="bg-[#075E54] text-white p-4 flex items-center justify-between shadow-md">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-[#25D366] flex items-center justify-center text-white shadow-inner font-bold">
+                      <MessageCircle size={20} />
+                    </div>
+                    <div>
+                      <h3 className="font-extrabold text-sm sm:text-base leading-tight">Pratinjau Pesan WhatsApp</h3>
+                      <p className="text-[11px] text-emerald-100/90 font-medium">Tampilan berita saat diterima di WhatsApp</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setSharePreviewNews(null)}
+                    className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors cursor-pointer"
+                    aria-label="Tutup Pratinjau"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+
+                {/* WhatsApp Chat Wallpaper Screen */}
+                <div className="p-4 sm:p-5 bg-[#efeae2] min-h-[320px] max-h-[62vh] overflow-y-auto space-y-3 font-sans">
+                  
+                  {/* WhatsApp Date pill */}
+                  <div className="flex justify-center">
+                    <span className="bg-white/80 backdrop-blur-xs text-slate-500 text-[10px] font-bold px-3 py-1 rounded-md shadow-2xs border border-slate-200/60 uppercase tracking-wider">
+                      HARI INI
+                    </span>
+                  </div>
+
+                  {/* WhatsApp Chat Bubble (Right aligned light green bubble) */}
+                  <div className="bg-[#dcf8c6] text-slate-900 rounded-2xl rounded-tr-none p-3.5 shadow-md border border-emerald-200/80 max-w-[94%] ml-auto relative">
+                    
+                    {/* 1. Main Thumbnail Preview Image */}
+                    {firstImg && (
+                      <div className="mb-2.5 rounded-xl overflow-hidden border border-emerald-300/40 bg-black/5 aspect-[16/9] relative shadow-2xs">
+                        <LazyImage
+                          src={getOptimizedImageUrl(firstImg, 800)}
+                          alt={titleClean}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
+
+                    {/* 2. WhatsApp Link Card Preview (OG Meta Box Simulation) */}
+                    <div className="bg-white/95 rounded-lg p-2.5 mb-2.5 border-l-4 border-[#25D366] shadow-2xs text-left">
+                      <p className="font-extrabold text-slate-900 text-xs sm:text-sm line-clamp-2 leading-snug mb-1">
+                        {titleClean} - PB BILIBILI 162
+                      </p>
+                      <p className="text-[11px] text-slate-600 line-clamp-2 leading-relaxed">
+                        {dateInfo.publisher}, {dateInfo.fullDateline} — {sharePreviewNews.ringkasan || (sharePreviewNews.konten ? sharePreviewNews.konten.substring(0, 110) : '')}
+                      </p>
+                      <p className="text-[10px] text-emerald-700 font-bold mt-1.5 flex items-center gap-1">
+                        <Link2 size={11} /> pbilibili162.99apps.id
+                      </p>
+                    </div>
+
+                    {/* 3. Text Message formatting with WhatsApp asterisk & italics */}
+                    <div className="text-xs sm:text-[13px] text-slate-800 space-y-1.5 leading-relaxed font-sans text-left">
+                      <p className="font-black text-slate-900">
+                        *{titleClean} - PB BILIBILI 162*
+                      </p>
+                      <p className="italic text-slate-700 text-[11.5px]">
+                        _{dateInfo.publisher}, {dateInfo.fullDateline} —_ ✨ *Baca Selengkapnya:*
+                      </p>
+                      <p className="text-blue-700 font-bold underline break-all text-[11px]">
+                        {shareUrl}
+                      </p>
+                    </div>
+
+                    {/* Timestamp & Double Checkmark Status */}
+                    <div className="flex items-center justify-end gap-1 mt-2 text-[10px] text-slate-500 font-medium">
+                      <span>13:28</span>
+                      <span className="text-[#34B7F1] font-extrabold text-xs leading-none">✓✓</span>
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* Modal Footer Controls */}
+                <div className="p-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-2.5">
+                  <button
+                    onClick={() => {
+                      handleShare(sharePreviewNews, 'wa');
+                      setSharePreviewNews(null);
+                    }}
+                    className="w-full sm:w-auto flex-1 flex items-center justify-center gap-2 px-5 py-2.5 bg-[#25D366] hover:bg-emerald-600 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md shadow-emerald-200 transition-all active:scale-95 cursor-pointer"
+                  >
+                    <MessageCircle size={16} />
+                    <span>Kirim ke WhatsApp Sekarang</span>
+                  </button>
+                  
+                  <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                    <button
+                      onClick={() => {
+                        handleShare(sharePreviewNews, 'copy');
+                      }}
+                      className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-2.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-bold text-xs uppercase rounded-xl transition-all active:scale-95 cursor-pointer"
+                      title="Salin Tautan Berita"
+                    >
+                      <Link2 size={14} />
+                      <span>{copySuccess === sharePreviewNews.id ? 'Tersalin!' : 'Salin Tautan'}</span>
+                    </button>
+                    <button
+                      onClick={() => setSharePreviewNews(null)}
+                      className="px-3 py-2.5 text-slate-500 hover:text-slate-800 text-xs font-bold uppercase rounded-xl cursor-pointer"
+                    >
+                      Tutup
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
             </motion.div>
           );
         })()}
