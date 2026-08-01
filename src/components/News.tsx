@@ -506,18 +506,10 @@ export default function News() {
 
   const handleShare = async (news: Berita, platform: 'wa' | 'fb' | 'x' | 'copy' | 'native') => {
     const shareUrl = `${window.location.origin}/berita?newsId=${news.id}`;
-    const excerpt = news.ringkasan || (news.konten ? news.konten.substring(0, 140) + '...' : '');
 
+    // Pesan WhatsApp dibuat ringkas tanpa duplikasi judul & kutipan agar kartu preview link WhatsApp (Foto Utama, Judul, & Ringkasan) tampil bersih tanpa pengulangan teks
     const waText = 
 `🏸 *BERITA RESMI PB BILIBILI 162* 📰
-━━━━━━━━━━━━━━━━━━━━━━━
-
-*${news.judul.trim()}*
-
-_"${excerpt}"_
-
-📅 *Tanggal:* ${news.tanggal || ''}
-🏷️ *Kategori:* ${news.kategori || 'Program'}
 
 ✨ *Lihat Foto Utama & Baca Berita Selengkapnya:*
 ${shareUrl}`;
@@ -526,7 +518,7 @@ ${shareUrl}`;
       try {
         await navigator.share({
           title: news.judul,
-          text: `🏸 ${news.judul}\n\n${excerpt}`,
+          text: `🏸 ${news.judul}`,
           url: shareUrl,
         });
         return;

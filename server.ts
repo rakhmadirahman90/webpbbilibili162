@@ -4,7 +4,7 @@ import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 
-async function injectNewsMetaTags(html: string, newsId: string, hostHeader?: string, protocol: string = 'https'): Promise<string> {
+async function injectNewsMetaTags(html: string, newsId: string, hostHeader?: string): Promise<string> {
   try {
     const response = await fetch(`https://missjyvqfehamtpyodjr.supabase.co/rest/v1/berita?id=eq.${newsId}&select=*`, {
       headers: {
@@ -19,30 +19,40 @@ async function injectNewsMetaTags(html: string, newsId: string, hostHeader?: str
     const title = news.judul || 'Berita PB Bilibili 162';
     const description = (news.ringkasan || news.konten || '').substring(0, 160).replace(/["\n\r]/g, ' ').trim();
     const images = (news.gambar_url || '').split(/[\s,]+/).filter(Boolean);
-    const mainImage = images[0] || 'https://pbilibili162.99apps.id/logo_pb_bilibili_162.svg';
-    const host = hostHeader || 'pbilibili162.99apps.id';
-    const fullUrl = `${protocol}://${host}/?newsId=${news.id}`;
+    let host = hostHeader || 'pbilibili162.99apps.id';
+    if (host.includes('127.0.0.1') || host.includes('localhost')) {
+      host = 'pbilibili162.99apps.id';
+    }
+    const origin = `https://${host}`;
+
+    // Use our clean proxy endpoint for image previews to strip Supabase's x-robots-tag: none
+    const mainImage = images.length > 0
+      ? `${origin}/api/news-image?id=${news.id}`
+      : `${origin}/logo_pb_bilibili_162.png`;
+
+    const fullUrl = `${origin}/berita?newsId=${news.id}`;
 
     const metaInject = `
-    <!-- Dynamic Open Graph Meta Tags for News -->
-    <title>${title} - PB Bilibili 162</title>
-    <meta name="description" content="${description}" />
+    <!-- Dynamic Open Graph Meta Tags for News (WhatsApp & Social Preview) -->
+    <title>${title.replace(/"/g, '&quot;')} - PB Bilibili 162</title>
+    <meta name="description" content="${description.replace(/"/g, '&quot;')}" />
     <meta property="og:type" content="article" />
     <meta property="og:site_name" content="PB Bilibili 162" />
     <meta property="og:url" content="${fullUrl}" />
     <meta property="og:title" content="${title.replace(/"/g, '&quot;')}" />
-    <meta property="og:description" content="${description}" />
+    <meta property="og:description" content="${description.replace(/"/g, '&quot;')}" />
     <meta property="og:image" content="${mainImage}" />
+    <meta property="og:image:url" content="${mainImage}" />
     <meta property="og:image:secure_url" content="${mainImage}" />
     <meta property="og:image:type" content="image/jpeg" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="${title.replace(/"/g, '&quot;')}" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="${title.replace(/"/g, '&quot;')}" />
-    <meta name="twitter:description" content="${description}" />
+    <meta name="twitter:description" content="${description.replace(/"/g, '&quot;')}" />
     <meta name="twitter:image" content="${mainImage}" />
-    <link rel="image_src" href="${mainImage}" />
-    `;
+    <link rel="image_src" href="${mainImage}" />`;
 
     // Strip default title, description, and OG/Twitter tags
     let modified = html
@@ -50,7 +60,8 @@ async function injectNewsMetaTags(html: string, newsId: string, hostHeader?: str
       .replace(/<meta\s+(?:property|name)=["'](?:og:|twitter:)[^"']+["']\s+content=["'][^"']*["']\s*\/?>/gi, '')
       .replace(/<meta\s+name=["']description["']\s+content=["'][^"']*["']\s*\/?>/gi, '');
 
-    modified = modified.replace('</head>', `${metaInject}\n</head>`);
+    // Inject dynamic news tags right at the top of <head>
+    modified = modified.replace('<head>', `<head>${metaInject}`);
     return modified;
   } catch (err) {
     console.error("Failed to inject news meta tags:", err);
@@ -63,11 +74,58 @@ async function startServer() {
     const app = express();
     const PORT = 3000;
 
+    app.set('trust proxy', true);
     app.use(express.json());
 
     // API Routes
     app.get("/api/health", (req, res) => {
       res.json({ status: "ok" });
+    });
+
+    // Clean image proxy route for WhatsApp / Open Graph crawlers (bypasses Supabase x-robots-tag: none)
+    app.get("/api/news-image", async (req, res) => {
+      try {
+        const newsId = (req.query.id || req.query.newsId) as string;
+        const directUrl = req.query.url as string;
+
+        let imageUrl = directUrl;
+        if (!imageUrl && newsId) {
+          const response = await fetch(`https://missjyvqfehamtpyodjr.supabase.co/rest/v1/berita?id=eq.${newsId}&select=gambar_url`, {
+            headers: {
+              'apikey': 'sb_publishable_trhfpzLX50WdkdaItRPFMQ_ewqF0fgn'
+            }
+          });
+          if (response.ok) {
+            const data = await response.json();
+            if (Array.isArray(data) && data.length > 0 && data[0].gambar_url) {
+              const images = data[0].gambar_url.split(/[\s,]+/).filter(Boolean);
+              imageUrl = images[0];
+            }
+          }
+        }
+
+        if (!imageUrl) {
+          return res.redirect('https://pbilibili162.99apps.id/logo_pb_bilibili_162.png');
+        }
+
+        const imgRes = await fetch(imageUrl);
+        if (!imgRes.ok) {
+          return res.redirect('https://pbilibili162.99apps.id/logo_pb_bilibili_162.png');
+        }
+
+        const contentType = imgRes.headers.get('content-type') || 'image/jpeg';
+        const buffer = Buffer.from(await imgRes.arrayBuffer());
+
+        res.setHeader('Content-Type', contentType);
+        res.setHeader('Content-Length', buffer.length.toString());
+        res.setHeader('Cache-Control', 'public, max-age=2592000, s-maxage=2592000');
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.removeHeader('X-Robots-Tag');
+        return res.status(200).send(buffer);
+      } catch (err) {
+        console.error("Failed to proxy news image:", err);
+        return res.redirect('https://pbilibili162.99apps.id/logo_pb_bilibili_162.png');
+      }
     });
 
     const ai = new GoogleGenAI({
@@ -198,49 +256,49 @@ async function startServer() {
       }
     });
 
-    // Vite middleware for development
+    // Shared News Meta Tag Middleware (Runs BEFORE express.static and vite.middlewares)
+    app.use(async (req, res, next) => {
+      const isAsset = req.path.includes('.') || req.path.startsWith('/api') || req.path.startsWith('/@');
+      const urlObj = new URL(req.originalUrl || req.url, 'https://pbilibili162.99apps.id');
+      const newsId = (req.query.newsId as string) || urlObj.searchParams.get('newsId') || urlObj.searchParams.get('id');
+
+      if (newsId && !isAsset) {
+        try {
+          const host = req.get('x-forwarded-host') || req.get('host') || 'pbilibili162.99apps.id';
+          if (process.env.NODE_ENV !== "production" && viteServer) {
+            const rawHtml = fs.readFileSync(path.join(process.cwd(), 'index.html'), 'utf-8');
+            const transformedHtml = await viteServer.transformIndexHtml(req.originalUrl, rawHtml);
+            const injectedHtml = await injectNewsMetaTags(transformedHtml, newsId, host);
+            return res.status(200).set({ 'Content-Type': 'text/html; charset=utf-8' }).end(injectedHtml);
+          } else {
+            const distPath = path.join(process.cwd(), 'dist');
+            const rawHtml = fs.readFileSync(path.join(distPath, 'index.html'), 'utf-8');
+            const injectedHtml = await injectNewsMetaTags(rawHtml, newsId, host);
+            return res.status(200).set({ 'Content-Type': 'text/html; charset=utf-8' }).end(injectedHtml);
+          }
+        } catch (e) {
+          console.error("Meta injection failed:", e);
+          next();
+        }
+      } else {
+        next();
+      }
+    });
+
+    // Development or Production static handlers
+    let viteServer: any = null;
     if (process.env.NODE_ENV !== "production") {
-      const vite = await createViteServer({
+      viteServer = await createViteServer({
         server: { middlewareMode: true },
         appType: "spa",
       });
-
-      app.use(async (req, res, next) => {
-        const newsId = req.query.newsId as string;
-        const isAsset = req.path.includes('.') || req.path.startsWith('/api') || req.path.startsWith('/@');
-        if (newsId && !isAsset) {
-          try {
-            const rawHtml = fs.readFileSync(path.join(process.cwd(), 'index.html'), 'utf-8');
-            const transformedHtml = await vite.transformIndexHtml(req.originalUrl, rawHtml);
-            const injectedHtml = await injectNewsMetaTags(transformedHtml, newsId, req.get('host'), req.protocol);
-            return res.status(200).set({ 'Content-Type': 'text/html; charset=utf-8' }).end(injectedHtml);
-          } catch (e) {
-            next();
-          }
-        } else {
-          next();
-        }
-      });
-
-      app.use(vite.middlewares);
+      app.use(viteServer.middlewares);
     } else {
       const distPath = path.join(process.cwd(), 'dist');
-
-      app.get('*all', async (req, res, next) => {
-        const newsId = req.query.newsId as string;
-        if (newsId) {
-          try {
-            const rawHtml = fs.readFileSync(path.join(distPath, 'index.html'), 'utf-8');
-            const injectedHtml = await injectNewsMetaTags(rawHtml, newsId, req.get('host'), req.protocol);
-            return res.status(200).set({ 'Content-Type': 'text/html' }).end(injectedHtml);
-          } catch (e) {
-            return res.sendFile(path.join(distPath, 'index.html'));
-          }
-        }
+      app.use(express.static(distPath));
+      app.get('*', (req, res) => {
         res.sendFile(path.join(distPath, 'index.html'));
       });
-
-      app.use(express.static(distPath));
     }
 
     app.listen(PORT, "0.0.0.0", () => {
