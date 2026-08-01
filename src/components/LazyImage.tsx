@@ -27,7 +27,25 @@ export default function LazyImage({
   const [isLoaded, setIsLoaded] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const optimizedSrc = getOptimizedImageUrl(src, width, quality);
+  // Extract first URL if multiple space/comma-separated URLs are passed in src
+  const primarySrc = (src || '').trim().split(/[\s,]+/)[0] || '';
+  const [currentSrc, setCurrentSrc] = useState(() => getOptimizedImageUrl(primarySrc, width, quality));
+
+  useEffect(() => {
+    const nextSrc = getOptimizedImageUrl(primarySrc, width, quality);
+    setCurrentSrc(nextSrc);
+    setIsLoaded(false);
+  }, [primarySrc, width, quality]);
+
+  const handleImgError = (e: any) => {
+    if (currentSrc !== primarySrc && primarySrc) {
+      // Fallback to direct raw primarySrc if proxy/optimized URL fails
+      setCurrentSrc(primarySrc);
+    } else {
+      setIsLoaded(true); // Stop loading shimmer if image fails completely
+      if (onError) onError(e);
+    }
+  };
 
   useEffect(() => {
     if (!('IntersectionObserver' in window)) {
@@ -70,13 +88,13 @@ export default function LazyImage({
       {/* Actual image loaded dynamically when in view */}
       {isInView && (
         <motion.img
-          src={optimizedSrc}
+          src={currentSrc}
           alt={alt}
           referrerPolicy="no-referrer"
           loading="lazy"
           decoding="async"
           onLoad={() => setIsLoaded(true)}
-          onError={onError}
+          onError={handleImgError}
           initial={{ filter: 'blur(20px)', opacity: 0 }}
           animate={
             isLoaded

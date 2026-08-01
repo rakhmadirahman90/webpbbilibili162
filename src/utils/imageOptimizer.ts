@@ -15,14 +15,17 @@
 export function getOptimizedImageUrl(url: string, width?: number, quality: number = 80): string {
   if (!url) return '';
 
-  const trimmedUrl = url.trim();
+  // Extract first valid URL if multiple space/comma separated URLs are passed
+  const trimmedUrl = url.trim().split(/[\s,]+/)[0];
+  if (!trimmedUrl) return '';
 
-  // Bypass if it is a local asset, data URI (base64), or SVG
+  // Bypass if it is a local asset, data URI (base64), SVG, or Supabase Storage URL
   if (
     trimmedUrl.startsWith('/') || 
     trimmedUrl.startsWith('data:') || 
     trimmedUrl.endsWith('.svg') ||
-    trimmedUrl.includes('.svg?')
+    trimmedUrl.includes('.svg?') ||
+    trimmedUrl.includes('supabase.co')
   ) {
     return trimmedUrl;
   }

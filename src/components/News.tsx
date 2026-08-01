@@ -679,7 +679,7 @@ export default function News() {
                   {/* News Card Image with Floating elements */}
                   <div className="relative aspect-[1.8/1] overflow-hidden bg-slate-100">
                     <LazyImage 
-                      src={news.gambar_url} 
+                      src={getNewsImages(news)[0] || news.gambar_url} 
                       alt={news.judul} 
                       containerClassName="w-full h-full"
                       className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700" 

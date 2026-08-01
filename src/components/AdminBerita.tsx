@@ -511,7 +511,7 @@ export default function AdminBerita({ session }: { session?: any }) {
             filteredAndSortedNews.map((item) => (
               <div key={item.id} className="bg-zinc-900/40 backdrop-blur-md border border-white/5 p-6 rounded-[2rem] flex flex-col md:flex-row items-center gap-6 group hover:border-blue-600/30 transition-all shadow-xl">
                 <div className="w-full md:w-48 h-32 rounded-2xl overflow-hidden bg-zinc-800 shrink-0 relative">
-                  <img src={item.gambar_url} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                  <img src={(item.gambar_url || '').split(/[\s,]+/)[0]} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                   <div className="absolute top-2 left-2 px-2 py-1 bg-black/60 rounded-lg text-[8px] font-black uppercase text-blue-400">{item.kategori}</div>
                 </div>
                 <div className="flex-grow space-y-2">
@@ -577,7 +577,7 @@ export default function AdminBerita({ session }: { session?: any }) {
                    <label className="flex flex-col items-center justify-center w-full h-48 bg-white/5 rounded-[2rem] border-2 border-dashed border-white/10 hover:border-blue-600 transition-all cursor-pointer group relative overflow-hidden">
                      {formData.gambar_url ? (
                         <>
-                          <img src={formData.gambar_url} className="absolute inset-0 w-full h-full object-cover opacity-40" alt="" />
+                          <img src={(formData.gambar_url || '').split(/[\s,]+/)[0]} className="absolute inset-0 w-full h-full object-cover opacity-40" alt="" />
                           <div className="relative z-10 flex flex-col items-center gap-2">
                             <Upload className="text-blue-500" />
                             <span className="text-[10px] font-black uppercase">Ganti Gambar</span>
