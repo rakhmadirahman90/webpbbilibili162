@@ -81,7 +81,7 @@ import FcmSettingsDashboard from './components/FcmSettingsDashboard';
 import PwaApkManager from './components/PwaApkManager';
 import PwaInstallNotification from './components/PwaInstallNotification';
 
-import { X, ChevronLeft, ChevronRight, Menu, Zap, Download, ExternalLink, Volume2, Volume1, VolumeX, ArrowLeft, Plus, Minus } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Menu, Zap, Download, ExternalLink, Volume2, Volume1, VolumeX, ArrowLeft, Plus, Minus, SlidersHorizontal } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // --- KONSTANTA AUDIO ---
@@ -369,6 +369,7 @@ export default function App() {
       return 0.8;
     }
   });
+  const [isVolumeExpanded, setIsVolumeExpanded] = useState<boolean>(false);
   const [audioToast, setAudioToast] = useState<{ show: boolean; message: string; type: 'play' | 'mute' }>({
     show: false,
     message: '',
@@ -933,7 +934,7 @@ export default function App() {
               )}
             </AnimatePresence>
 
-            {/* Play / Mute Circle Icon with Circular Progress Ring */}
+            {/* Play / Mute Circle Icon with Circular Progress Ring & Integrated Volume Badge */}
             <div className="relative flex items-center justify-center p-0.5 pointer-events-auto group">
               {/* Circular SVG Progress Ring surrounding button */}
               <svg 
@@ -983,51 +984,91 @@ export default function App() {
               >
                 {isMarsPlaying ? <Volume2 size={18} className="animate-pulse text-white" /> : <VolumeX size={18} />}
               </button>
+
+              {/* Integrated Volume Badge trigger on the top-right corner of the audio icon */}
+              {!isVolumeExpanded && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsVolumeExpanded(true);
+                  }}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  className="absolute -top-1 -right-1 z-30 w-5 h-5 rounded-full bg-slate-900 border border-blue-400/60 text-blue-300 hover:text-white hover:bg-blue-600 flex items-center justify-center shadow-md transition-all active:scale-90 cursor-pointer hover:scale-110"
+                  title={`Pengaturan Volume (${Math.round(marsVolume * 100)}%)`}
+                  aria-label="Pengaturan Volume"
+                >
+                  <SlidersHorizontal size={10} />
+                </button>
+              )}
             </div>
 
-            {/* Volume Control Pod (- / + & Slider) */}
-            <div 
-              onPointerDown={(e) => e.stopPropagation()}
-              className="flex items-center gap-1.5 bg-slate-900/95 backdrop-blur-xl border border-white/15 px-2.5 py-1.5 rounded-full shadow-2xl pointer-events-auto"
-            >
-              <button
-                type="button"
-                onClick={decreaseVolume}
-                disabled={marsVolume <= 0}
-                className="w-6 h-6 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition-all active:scale-90 disabled:opacity-40 cursor-pointer"
-                title="Kurangi Volume (-10%)"
-                aria-label="Kurangi Volume"
-              >
-                <Minus size={12} />
-              </button>
+            {/* Expanded Volume Control Pod (- / + & Slider) */}
+            <AnimatePresence>
+              {isVolumeExpanded && (
+                <motion.div
+                  key="volume-expanded"
+                  initial={{ opacity: 0, scale: 0.85, x: -10 }}
+                  animate={{ opacity: 1, scale: 1, x: 0 }}
+                  exit={{ opacity: 0, scale: 0.85, x: -10 }}
+                  transition={{ duration: 0.18 }}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  className="flex items-center gap-1.5 bg-slate-900/95 backdrop-blur-xl border border-white/15 px-2.5 py-1.5 rounded-full shadow-2xl pointer-events-auto"
+                >
+                  <button
+                    type="button"
+                    onClick={decreaseVolume}
+                    disabled={marsVolume <= 0}
+                    className="w-6 h-6 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition-all active:scale-90 disabled:opacity-40 cursor-pointer"
+                    title="Kurangi Volume (-10%)"
+                    aria-label="Kurangi Volume"
+                  >
+                    <Minus size={12} />
+                  </button>
 
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.02"
-                value={marsVolume}
-                onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
-                className="w-12 sm:w-16 h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                title={`Volume: ${Math.round(marsVolume * 100)}%`}
-                aria-label="Slider Volume Audio"
-              />
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.02"
+                    value={marsVolume}
+                    onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
+                    className="w-12 sm:w-16 h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                    title={`Volume: ${Math.round(marsVolume * 100)}%`}
+                    aria-label="Slider Volume Audio"
+                  />
 
-              <button
-                type="button"
-                onClick={increaseVolume}
-                disabled={marsVolume >= 1}
-                className="w-6 h-6 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition-all active:scale-90 disabled:opacity-40 cursor-pointer"
-                title="Tambah Volume (+10%)"
-                aria-label="Tambah Volume"
-              >
-                <Plus size={12} />
-              </button>
+                  <button
+                    type="button"
+                    onClick={increaseVolume}
+                    disabled={marsVolume >= 1}
+                    className="w-6 h-6 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition-all active:scale-90 disabled:opacity-40 cursor-pointer"
+                    title="Tambah Volume (+10%)"
+                    aria-label="Tambah Volume"
+                  >
+                    <Plus size={12} />
+                  </button>
 
-              <span className="text-[10px] font-bold text-blue-300 min-w-[28px] text-right font-mono">
-                {Math.round(marsVolume * 100)}%
-              </span>
-            </div>
+                  <span className="text-[10px] font-bold text-blue-300 min-w-[28px] text-right font-mono">
+                    {Math.round(marsVolume * 100)}%
+                  </span>
+
+                  {/* Close / Minimize button */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsVolumeExpanded(false);
+                    }}
+                    className="w-5 h-5 rounded-full bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-all ml-0.5 cursor-pointer"
+                    title="Minimize Kontrol Volume"
+                    aria-label="Minimize Kontrol Volume"
+                  >
+                    <X size={11} />
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Subtle playing text / visualizer - visible on md+ screens */}
             <AnimatePresence>
