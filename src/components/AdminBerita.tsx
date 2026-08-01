@@ -312,17 +312,34 @@ export default function AdminBerita({ session }: { session?: any }) {
     if (!formData.gambar_url) return setFormError("Wajib upload gambar.");
     setIsSaving(true);
     try {
+      const allImages = [
+        formData.gambar_url,
+        formData.gambar_url_2,
+        formData.gambar_url_3,
+        formData.gambar_url_4,
+        formData.gambar_url_5
+      ].map(u => u.trim()).filter(Boolean).join(' ');
+
+      const dbPayload = {
+        judul: formData.judul,
+        ringkasan: formData.ringkasan,
+        konten: formData.konten,
+        kategori: formData.kategori,
+        gambar_url: allImages,
+        tanggal: formData.tanggal || new Date().toISOString().split('T')[0]
+      };
+
       if (editingId) {
         if (typeof editingId === 'string' && editingId.startsWith('local_')) {
           const localData = JSON.parse(localStorage.getItem('berita_local') || '[]');
-          const updated = localData.map((item: any) => item.id === editingId ? { ...item, ...formData } : item);
+          const updated = localData.map((item: any) => item.id === editingId ? { ...item, ...formData, ...dbPayload } : item);
           localStorage.setItem('berita_local', JSON.stringify(updated));
         } else {
-          const { error } = await supabase.from('berita').update(formData).eq('id', editingId);
+          const { error } = await supabase.from('berita').update(dbPayload).eq('id', editingId);
           if (error) {
             if (error.message.includes('row-level security') || error.code === '42501') {
               const localData = JSON.parse(localStorage.getItem('berita_local') || '[]');
-              const updated = localData.map((item: any) => item.id === editingId ? { ...item, ...formData } : item);
+              const updated = localData.map((item: any) => item.id === editingId ? { ...item, ...formData, ...dbPayload } : item);
               localStorage.setItem('berita_local', JSON.stringify(updated));
             } else {
               throw error;
@@ -330,8 +347,8 @@ export default function AdminBerita({ session }: { session?: any }) {
           }
         }
       } else {
-        const newLocalItem = { ...formData, id: 'local_' + Date.now(), tanggal: formData.tanggal || new Date().toISOString().split('T')[0], comments_count: 0, likes: 0 };
-        const { error } = await supabase.from('berita').insert([formData]);
+        const newLocalItem = { ...formData, ...dbPayload, id: 'local_' + Date.now(), comments_count: 0, likes: 0 };
+        const { error } = await supabase.from('berita').insert([dbPayload]);
         if (error) {
           if (error.message.includes('row-level security') || error.code === '42501') {
             const localData = JSON.parse(localStorage.getItem('berita_local') || '[]');
@@ -400,16 +417,17 @@ export default function AdminBerita({ session }: { session?: any }) {
 
   const openModal = (item?: Berita) => {
     if (item) {
+      const imgList = (item.gambar_url || '').split(/[\s,]+/).filter(Boolean);
       setFormData({
         judul: item.judul || '',
         ringkasan: item.ringkasan || '',
         konten: item.konten || '',
         kategori: item.kategori || 'Prestasi',
-        gambar_url: item.gambar_url || '',
-        gambar_url_2: item.gambar_url_2 || '',
-        gambar_url_3: item.gambar_url_3 || '',
-        gambar_url_4: item.gambar_url_4 || '',
-        gambar_url_5: item.gambar_url_5 || '',
+        gambar_url: imgList[0] || item.gambar_url || '',
+        gambar_url_2: item.gambar_url_2 || imgList[1] || '',
+        gambar_url_3: item.gambar_url_3 || imgList[2] || '',
+        gambar_url_4: item.gambar_url_4 || imgList[3] || '',
+        gambar_url_5: item.gambar_url_5 || imgList[4] || '',
         tanggal: item.tanggal || new Date().toISOString().split('T')[0]
       });
     } else {
