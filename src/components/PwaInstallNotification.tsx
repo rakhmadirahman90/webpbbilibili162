@@ -106,7 +106,7 @@ export default function PwaInstallNotification() {
     <>
       {/* 1. FLOATING INSTALL BANNER / NOTIFICATION */}
       {isVisible && (
-        <div className="fixed bottom-4 left-3 right-3 sm:left-auto sm:right-6 sm:max-w-md z-[9999] bg-[#0c1427]/95 backdrop-blur-md text-white rounded-2xl p-4 shadow-2xl border border-indigo-500/30 animate-in slide-in-from-bottom-6 duration-300">
+        <div className="fixed bottom-16 left-3 right-3 sm:bottom-6 sm:left-auto sm:right-6 sm:max-w-md z-[9999] bg-[#0c1427]/95 backdrop-blur-md text-white rounded-2xl p-4 shadow-2xl border border-indigo-500/30 animate-in slide-in-from-bottom-6 duration-300">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-2xl bg-slate-900/90 border border-blue-500/40 p-1 shadow-lg shadow-blue-500/20 shrink-0 relative overflow-hidden flex items-center justify-center">
