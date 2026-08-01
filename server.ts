@@ -1,7 +1,62 @@
 import express from "express";
 import path from "path";
+import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
+
+async function injectNewsMetaTags(html: string, newsId: string, hostHeader?: string, protocol: string = 'https'): Promise<string> {
+  try {
+    const response = await fetch(`https://missjyvqfehamtpyodjr.supabase.co/rest/v1/berita?id=eq.${newsId}&select=*`, {
+      headers: {
+        'apikey': 'sb_publishable_trhfpzLX50WdkdaItRPFMQ_ewqF0fgn'
+      }
+    });
+    if (!response.ok) return html;
+    const data = await response.json();
+    if (!Array.isArray(data) || data.length === 0) return html;
+
+    const news = data[0];
+    const title = news.judul || 'Berita PB Bilibili 162';
+    const description = (news.ringkasan || news.konten || '').substring(0, 160).replace(/["\n\r]/g, ' ').trim();
+    const images = (news.gambar_url || '').split(/[\s,]+/).filter(Boolean);
+    const mainImage = images[0] || 'https://pbilibili162.99apps.id/logo_pb_bilibili_162.svg';
+    const host = hostHeader || 'pbilibili162.99apps.id';
+    const fullUrl = `${protocol}://${host}/?newsId=${news.id}`;
+
+    const metaInject = `
+    <!-- Dynamic Open Graph Meta Tags for News -->
+    <title>${title} - PB Bilibili 162</title>
+    <meta name="description" content="${description}" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="PB Bilibili 162" />
+    <meta property="og:url" content="${fullUrl}" />
+    <meta property="og:title" content="${title.replace(/"/g, '&quot;')}" />
+    <meta property="og:description" content="${description}" />
+    <meta property="og:image" content="${mainImage}" />
+    <meta property="og:image:secure_url" content="${mainImage}" />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="${title.replace(/"/g, '&quot;')}" />
+    <meta name="twitter:description" content="${description}" />
+    <meta name="twitter:image" content="${mainImage}" />
+    <link rel="image_src" href="${mainImage}" />
+    `;
+
+    // Strip default title, description, and OG/Twitter tags
+    let modified = html
+      .replace(/<title>[\s\S]*?<\/title>/gi, '')
+      .replace(/<meta\s+(?:property|name)=["'](?:og:|twitter:)[^"']+["']\s+content=["'][^"']*["']\s*\/?>/gi, '')
+      .replace(/<meta\s+name=["']description["']\s+content=["'][^"']*["']\s*\/?>/gi, '');
+
+    modified = modified.replace('</head>', `${metaInject}\n</head>`);
+    return modified;
+  } catch (err) {
+    console.error("Failed to inject news meta tags:", err);
+    return html;
+  }
+}
 
 async function startServer() {
   try {
@@ -149,13 +204,43 @@ async function startServer() {
         server: { middlewareMode: true },
         appType: "spa",
       });
+
+      app.use(async (req, res, next) => {
+        const newsId = req.query.newsId as string;
+        const isAsset = req.path.includes('.') || req.path.startsWith('/api') || req.path.startsWith('/@');
+        if (newsId && !isAsset) {
+          try {
+            const rawHtml = fs.readFileSync(path.join(process.cwd(), 'index.html'), 'utf-8');
+            const transformedHtml = await vite.transformIndexHtml(req.originalUrl, rawHtml);
+            const injectedHtml = await injectNewsMetaTags(transformedHtml, newsId, req.get('host'), req.protocol);
+            return res.status(200).set({ 'Content-Type': 'text/html; charset=utf-8' }).end(injectedHtml);
+          } catch (e) {
+            next();
+          }
+        } else {
+          next();
+        }
+      });
+
       app.use(vite.middlewares);
     } else {
       const distPath = path.join(process.cwd(), 'dist');
-      app.use(express.static(distPath));
-      app.get('*all', (req, res) => {
+
+      app.get('*all', async (req, res, next) => {
+        const newsId = req.query.newsId as string;
+        if (newsId) {
+          try {
+            const rawHtml = fs.readFileSync(path.join(distPath, 'index.html'), 'utf-8');
+            const injectedHtml = await injectNewsMetaTags(rawHtml, newsId, req.get('host'), req.protocol);
+            return res.status(200).set({ 'Content-Type': 'text/html' }).end(injectedHtml);
+          } catch (e) {
+            return res.sendFile(path.join(distPath, 'index.html'));
+          }
+        }
         res.sendFile(path.join(distPath, 'index.html'));
       });
+
+      app.use(express.static(distPath));
     }
 
     app.listen(PORT, "0.0.0.0", () => {

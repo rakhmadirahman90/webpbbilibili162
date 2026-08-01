@@ -465,24 +465,86 @@ export default function News() {
     }
   };
 
+  // Stage 3: Dynamically update page title & Open Graph meta tags when selectedNews changes
+  useEffect(() => {
+    if (selectedNews) {
+      const mainImg = (selectedNews.gambar_url || '').split(/[\s,]+/)[0] || '';
+      const shareUrl = `${window.location.origin}${window.location.pathname}?newsId=${selectedNews.id}`;
+      const title = `${selectedNews.judul} - PB Bilibili 162`;
+      const desc = selectedNews.ringkasan || (selectedNews.konten ? selectedNews.konten.substring(0, 160) : '');
+
+      document.title = title;
+
+      const updateMeta = (attrName: string, attrVal: string, content: string) => {
+        let el = document.querySelector(`meta[${attrName}="${attrVal}"]`);
+        if (!el) {
+          el = document.createElement('meta');
+          el.setAttribute(attrName, attrVal);
+          document.head.appendChild(el);
+        }
+        el.setAttribute('content', content);
+      };
+
+      updateMeta('name', 'description', desc);
+      updateMeta('property', 'og:title', selectedNews.judul);
+      updateMeta('property', 'og:description', desc);
+      updateMeta('property', 'og:image', mainImg);
+      updateMeta('property', 'og:image:secure_url', mainImg);
+      updateMeta('property', 'og:url', shareUrl);
+      updateMeta('name', 'twitter:title', selectedNews.judul);
+      updateMeta('name', 'twitter:description', desc);
+      updateMeta('name', 'twitter:image', mainImg);
+    } else {
+      document.title = 'PB Bilibili 162 - Persatuan Bulutangkis Terpadu';
+    }
+  }, [selectedNews]);
+
   const handleLike = (e: React.MouseEvent, newsId: string) => {
     const currentRx = userReactions[newsId];
     handleReact(e, newsId, currentRx || 'love');
   };
 
-  const handleShare = async (news: Berita, platform: 'wa' | 'fb' | 'x' | 'copy') => {
+  const handleShare = async (news: Berita, platform: 'wa' | 'fb' | 'x' | 'copy' | 'native') => {
     const shareUrl = `${window.location.origin}${window.location.pathname}?newsId=${news.id}`;
-    const shareText = `Cek berita terbaru dari PB Bilibili 162: "${news.judul}"`;
+    const excerpt = news.ringkasan || (news.konten ? news.konten.substring(0, 140) + '...' : '');
+
+    const waText = 
+`🏸 *BERITA RESMI PB BILIBILI 162* 📰
+━━━━━━━━━━━━━━━━━━━━━━━
+
+*${news.judul.trim()}*
+
+_"${excerpt}"_
+
+📅 *Tanggal:* ${news.tanggal || ''}
+🏷️ *Kategori:* ${news.kategori || 'Program'}
+
+✨ *Lihat Foto Utama & Baca Berita Selengkapnya:*
+${shareUrl}`;
+
+    if (platform === 'native' && navigator.share) {
+      try {
+        await navigator.share({
+          title: news.judul,
+          text: `🏸 ${news.judul}\n\n${excerpt}`,
+          url: shareUrl,
+        });
+        return;
+      } catch (err) {
+        // Fallback to direct WhatsApp share
+      }
+    }
 
     switch (platform) {
       case 'wa':
-        window.open(`https://wa.me/?text=${encodeURIComponent(shareText + ' ' + shareUrl)}`, '_blank');
+      case 'native':
+        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(waText)}`, '_blank');
         break;
       case 'fb':
         window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`, '_blank');
         break;
       case 'x':
-        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`, '_blank');
+        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`🏸 *${news.judul}*\n\n`)}&url=${encodeURIComponent(shareUrl)}`, '_blank');
         break;
       case 'copy':
         try {
@@ -803,6 +865,13 @@ export default function News() {
                         <div className="flex items-center gap-1">
                           <MessageCircle size={13} />
                           <span className="text-[10px] font-bold text-slate-500">{news.comments_count || 0}</span>
+                        </div>
+                        <div 
+                          onClick={(e) => { e.stopPropagation(); handleShare(news, 'wa'); }}
+                          className="flex items-center gap-1 cursor-pointer hover:scale-110 text-emerald-600 hover:text-emerald-500 transition-all ml-1"
+                          title="Bagikan ke WhatsApp"
+                        >
+                          <Share2 size={13} />
                         </div>
                       </div>
                     </div>
