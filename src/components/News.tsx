@@ -564,7 +564,7 @@ export default function News() {
     handleReact(e, newsId, currentRx || 'love');
   };
 
-  const handleShare = async (news: Berita, platform: 'wa' | 'fb' | 'x' | 'copy' | 'native') => {
+  const handleShare = async (news: Berita, platform: 'wa' | 'wa_link' | 'fb' | 'x' | 'copy' | 'native') => {
     // Use official production domain to ensure WhatsApp web scrapers can fetch OG meta tags & preview image
     const publicDomain = 'https://pbilibili162.99apps.id';
     const shareUrl = `${publicDomain}/berita?newsId=${news.id}`;
@@ -580,9 +580,9 @@ ${shareUrl}`;
 
     if (platform === 'native' && navigator.share) {
       try {
+        // Omitting 'text' parameter forces WhatsApp native share sheet to generate the Rich Link Image Card Preview
         await navigator.share({
           title: `${titleClean} - PB BILIBILI 162`,
-          text: `*${titleClean} - PB BILIBILI 162*\n\n_${dateInfo.publisher}, ${dateInfo.fullDateline} —_ ✨ *Baca Selengkapnya:*`,
           url: shareUrl,
         });
         return;
@@ -592,6 +592,10 @@ ${shareUrl}`;
     }
 
     switch (platform) {
+      case 'wa_link':
+        // Sending URL alone triggers WhatsApp's OpenGraph link preview card with big image banner
+        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareUrl)}`, '_blank');
+        break;
       case 'wa':
       case 'native':
         window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(waText)}`, '_blank');
@@ -1574,32 +1578,48 @@ ${shareUrl}`;
                 </div>
 
                 {/* Modal Footer Controls */}
-                <div className="p-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-2.5">
-                  <button
-                    onClick={() => {
-                      handleShare(sharePreviewNews, 'wa');
-                      setSharePreviewNews(null);
-                    }}
-                    className="w-full sm:w-auto flex-1 flex items-center justify-center gap-2 px-5 py-2.5 bg-[#25D366] hover:bg-emerald-600 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md shadow-emerald-200 transition-all active:scale-95 cursor-pointer"
-                  >
-                    <MessageCircle size={16} />
-                    <span>Kirim ke WhatsApp Sekarang</span>
-                  </button>
+                <div className="p-4 bg-slate-50 border-t border-slate-200 flex flex-col gap-2.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full">
+                    <button
+                      onClick={() => {
+                        handleShare(sharePreviewNews, 'wa_link');
+                        setSharePreviewNews(null);
+                      }}
+                      className="flex items-center justify-center gap-2 px-4 py-2.5 bg-[#25D366] hover:bg-emerald-600 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md shadow-emerald-200 transition-all active:scale-95 cursor-pointer"
+                      title="Satu klik untuk memicu tampilan Card Banner Gambar Besar di WhatsApp"
+                    >
+                      <Share2 size={16} />
+                      <span>Kirim Card Gambar WA</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        handleShare(sharePreviewNews, 'wa');
+                        setSharePreviewNews(null);
+                      }}
+                      className="flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-800 hover:bg-emerald-900 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all active:scale-95 cursor-pointer"
+                      title="Kirim dengan pesan teks judul lengkap"
+                    >
+                      <MessageCircle size={16} />
+                      <span>Kirim Teks Lengkap</span>
+                    </button>
+                  </div>
                   
-                  <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                  <div className="flex items-center justify-between gap-2 w-full pt-1">
                     <button
                       onClick={() => {
                         handleShare(sharePreviewNews, 'copy');
                       }}
-                      className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-2.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-bold text-xs uppercase rounded-xl transition-all active:scale-95 cursor-pointer"
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-bold text-xs uppercase rounded-lg transition-all active:scale-95 cursor-pointer"
                       title="Salin Tautan Berita"
                     >
-                      <Link2 size={14} />
+                      <Link2 size={13} />
                       <span>{copySuccess === sharePreviewNews.id ? 'Tersalin!' : 'Salin Tautan'}</span>
                     </button>
+
                     <button
                       onClick={() => setSharePreviewNews(null)}
-                      className="px-3 py-2.5 text-slate-500 hover:text-slate-800 text-xs font-bold uppercase rounded-xl cursor-pointer"
+                      className="px-3 py-1.5 text-slate-500 hover:text-slate-800 text-xs font-bold uppercase rounded-lg cursor-pointer"
                     >
                       Tutup
                     </button>

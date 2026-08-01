@@ -35,9 +35,9 @@ async function injectNewsMetaTags(html: string, newsId: string, hostHeader?: str
     }
     const origin = `https://${host}`;
 
-    // Use clean proxy endpoint for image previews to strip Supabase's x-robots-tag: none header for WhatsApp crawlers
+    // Use direct public Supabase CDN URL ending in .jpg for WhatsApp crawler compatibility
     const mainImage = images.length > 0
-      ? `${origin}/api/news-image?id=${news.id}`
+      ? images[0]
       : `${origin}/logo_pb_bilibili_162.png`;
 
     let imageType = 'image/jpeg';
@@ -273,6 +273,15 @@ async function startServer() {
       }
     });
 
+    // Initialize Vite server in dev mode first so transformIndexHtml is available
+    let viteServer: any = null;
+    if (process.env.NODE_ENV !== "production") {
+      viteServer = await createViteServer({
+        server: { middlewareMode: true },
+        appType: "spa",
+      });
+    }
+
     // Shared News Meta Tag Middleware (Runs BEFORE express.static and vite.middlewares)
     app.use(async (req, res, next) => {
       const isAsset = req.path.includes('.') || req.path.startsWith('/api') || req.path.startsWith('/@');
@@ -303,12 +312,7 @@ async function startServer() {
     });
 
     // Development or Production static handlers
-    let viteServer: any = null;
-    if (process.env.NODE_ENV !== "production") {
-      viteServer = await createViteServer({
-        server: { middlewareMode: true },
-        appType: "spa",
-      });
+    if (process.env.NODE_ENV !== "production" && viteServer) {
       app.use(viteServer.middlewares);
     } else {
       const distPath = path.join(process.cwd(), 'dist');
