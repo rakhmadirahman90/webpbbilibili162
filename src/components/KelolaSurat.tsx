@@ -50,6 +50,37 @@ Bersama surat ini, kami mengajukan permohonan kerjasama dan dukungan dalam bentu
   }
 ];
 
+const parseLampiranRow = (rawLine: string) => {
+  let line = rawLine.trim();
+  if (!line) return null;
+
+  // Remove leading numbers if present (e.g., "1. ", "1) ", "[1] ")
+  line = line.replace(/^(?:\d+[.)]|\[\d+\])\s*/, '').trim();
+
+  let nama = line;
+  let keterangan = '';
+
+  if (line.includes('|')) {
+    const parts = line.split('|');
+    nama = parts[0].trim();
+    keterangan = parts.slice(1).join('|').trim();
+  } else if (line.includes('\t')) {
+    const parts = line.split('\t');
+    nama = parts[0].trim();
+    keterangan = parts.slice(1).join(' ').trim();
+  } else if (line.includes(' - ')) {
+    const parts = line.split(' - ');
+    nama = parts[0].trim();
+    keterangan = parts.slice(1).join(' - ').trim();
+  } else if (line.includes(';')) {
+    const parts = line.split(';');
+    nama = parts[0].trim();
+    keterangan = parts.slice(1).join(';').trim();
+  }
+
+  return { nama, keterangan };
+};
+
 export function KelolaSurat() {
   const [suratList, setSuratList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1250,10 +1281,13 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                           />
                         </div>
                         <div>
-                          <label className="text-[10px] font-bold text-purple-300 uppercase">Daftar Nama / Rincian Lampiran (1 baris per item)</label>
+                          <label className="text-[10px] font-bold text-purple-300 uppercase block">Daftar Nama &amp; Keterangan (1 baris per item)</label>
+                          <p className="text-[9px] text-purple-200/80 mb-1">
+                            Format: <code className="bg-purple-900/60 px-1 py-0.5 rounded text-purple-200 font-mono">Nama | Keterangan</code> atau <code className="bg-purple-900/60 px-1 py-0.5 rounded text-purple-200 font-mono">Nama - Keterangan</code>
+                          </p>
                           <textarea 
-                            placeholder="Budi Santoso&#10;Andi Irawan&#10;Citra Lestari" 
-                            className="w-full p-2.5 bg-black/40 border border-purple-500/30 rounded-lg text-xs h-28 whitespace-pre-wrap text-white font-mono" 
+                            placeholder={"Ali & Mas Ahmad | Manajer & Pelatih\nAbd. Majid & Owan | Pasangan Ganda\nH. Wawan & Janggoe - Ofisial"} 
+                            className="w-full p-2.5 bg-black/40 border border-purple-500/30 rounded-lg text-xs h-32 whitespace-pre-wrap text-white font-mono" 
                             value={formData.lampiran_peserta || ''} 
                             onChange={(e)=>setFormData({...formData, lampiran_peserta: e.target.value})} 
                           />
@@ -1394,13 +1428,17 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                           </tr>
                         </thead>
                         <tbody>
-                          {formData.lampiran_peserta.split('\n').filter(name => name.trim() !== '').map((name, i) => (
-                            <tr key={i}>
-                              <td className="border border-black p-2 text-center">{i + 1}</td>
-                              <td className="border border-black p-2">{name}</td>
-                              <td className="border border-black p-2"></td>
-                            </tr>
-                          ))}
+                          {(formData.lampiran_peserta || '')
+                            .split('\n')
+                            .map(line => parseLampiranRow(line))
+                            .filter((row): row is { nama: string; keterangan: string } => row !== null && (row.nama.length > 0 || row.keterangan.length > 0))
+                            .map((row, i) => (
+                              <tr key={i}>
+                                <td className="border border-black p-2 text-center">{i + 1}</td>
+                                <td className="border border-black p-2">{row.nama}</td>
+                                <td className="border border-black p-2">{row.keterangan || '-'}</td>
+                              </tr>
+                            ))}
                         </tbody>
                       </table>
                     </div>
