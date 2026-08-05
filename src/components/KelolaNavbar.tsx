@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from "../supabase";
+import { saveSiteSetting } from "../utils/siteSettingsHelper";
 import Swal from 'sweetalert2';
 import { 
   Menu, Plus, Trash2, MoveUp, MoveDown, 
@@ -71,26 +72,7 @@ const KelolaNavbar: React.FC = () => {
 
   // --- PERBAIKAN LOGIKA SIMPAN (SOLUSI ERROR LABEL) ---
   const performBrandingUpsert = async (newSettings: any) => {
-    // Mencoba melakukan update hanya pada kolom 'value' terlebih dahulu 
-    // untuk menghindari error jika kolom 'label' tidak terdeteksi oleh cache schema Supabase
-    const payload: any = { 
-      key: 'navbar_branding', 
-      value: newSettings 
-    };
-
-    // Kita tambahkan label secara opsional. Jika kolom label benar-benar hilang di DB, 
-    // Supabase biasanya akan memberikan error spesifik.
-    const { error } = await supabase
-      .from('site_settings')
-      .upsert({ ...payload, label: 'Pengaturan Header & Branding' }, { onConflict: 'key' });
-
-    // Jika gagal karena kolom label, coba upsert tanpa kolom label
-    if (error && error.message.includes('label')) {
-      console.warn("Retrying without 'label' column due to schema cache issue...");
-      return await supabase.from('site_settings').upsert(payload, { onConflict: 'key' });
-    }
-
-    return { error };
+    return await saveSiteSetting('navbar_branding', newSettings, 'Pengaturan Header & Branding');
   };
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {

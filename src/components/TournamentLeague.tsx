@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { supabase } from '../supabase';
+import { saveSiteSetting, deleteSiteSetting } from '../utils/siteSettingsHelper';
 import { 
   Trophy, 
   Tv, 
@@ -24,7 +26,6 @@ import {
   Send
 } from 'lucide-react';
 import Swal from 'sweetalert2';
-import { supabase } from '../supabase';
 import { triggerPushNotification } from '../utils/firebaseMessaging';
 
 interface BracketMatch {
@@ -354,10 +355,7 @@ export default function TournamentLeague({ isAdmin }: { isAdmin: boolean }) {
     localStorage.setItem('pb_bilibili_standings', JSON.stringify(sorted));
 
     try {
-      await supabase.from('site_settings').upsert({
-        key: 'tournament_standings',
-        value: JSON.stringify(sorted)
-      }, { onConflict: 'key' });
+      await saveSiteSetting('tournament_standings', JSON.stringify(sorted));
     } catch (err) {
       console.warn('Gagal menyimpan klasemen ke database:', err);
     }
@@ -368,10 +366,7 @@ export default function TournamentLeague({ isAdmin }: { isAdmin: boolean }) {
     localStorage.setItem('pb_bilibili_bracket', JSON.stringify(updated));
 
     try {
-      await supabase.from('site_settings').upsert({
-        key: 'tournament_bracket',
-        value: JSON.stringify(updated)
-      }, { onConflict: 'key' });
+      await saveSiteSetting('tournament_bracket', JSON.stringify(updated));
     } catch (err) {
       console.warn('Gagal menyimpan bagan ke database:', err);
     }
@@ -485,8 +480,8 @@ export default function TournamentLeague({ isAdmin }: { isAdmin: boolean }) {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          await supabase.from('site_settings').delete().eq('key', 'tournament_standings');
-          await supabase.from('site_settings').delete().eq('key', 'tournament_bracket');
+          await deleteSiteSetting('tournament_standings');
+          await deleteSiteSetting('tournament_bracket');
           
           setBracket(DEFAULT_BRACKET);
           localStorage.removeItem('pb_bilibili_standings');
@@ -577,10 +572,7 @@ export default function TournamentLeague({ isAdmin }: { isAdmin: boolean }) {
     localStorage.setItem('pb_bilibili_fixtures', JSON.stringify(updated));
 
     try {
-      await supabase.from('site_settings').upsert({
-        key: 'tournament_fixtures',
-        value: JSON.stringify(updated)
-      }, { onConflict: 'key' });
+      await saveSiteSetting('tournament_fixtures', JSON.stringify(updated));
     } catch (err) {
       console.warn('Gagal menyimpan jadwal ke database:', err);
     }

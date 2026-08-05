@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Save, MapPin, Phone, Mail, Instagram, Facebook, Youtube, Twitter, Eye, Plus, Trash2, ArrowUp, ArrowDown, MessageCircle, Upload, Type } from 'lucide-react';
-import { supabase } from '../supabase'; 
+import { supabase } from '../supabase';
+import { saveSiteSetting } from '../utils/siteSettingsHelper'; 
 import Swal from 'sweetalert2';
 
 // KONFIGURASI IDENTITAS DATABASE
@@ -118,16 +119,7 @@ export default function AdminFooter() {
   const handleUpdate = async () => {
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from('site_settings')
-        .upsert({ 
-          id: SETTINGS_ID, 
-          key: SETTINGS_KEY, 
-          footer_config: footerConfig,
-          value: "active_footer",
-          updated_at: new Date().toISOString()
-        }, { onConflict: 'key' }); 
-
+      const { error } = await saveSiteSetting(SETTINGS_KEY, footerConfig, 'Pengaturan Footer');
       if (error) throw error;
 
       Toast.fire({

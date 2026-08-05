@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from "../supabase";
+import { saveSiteSetting, getSiteSetting } from "../utils/siteSettingsHelper";
 import Swal from 'sweetalert2';
 import { 
   Plus, Trash2, MoveUp, MoveDown, 
@@ -7,9 +8,149 @@ import {
   CheckCircle2, AlertCircle, Clock, Zap,
   Layers, Settings2, Edit3, X, ZoomIn, ZoomOut,
   RotateCw, Crop, Maximize2, Sparkles, Monitor,
-  Gauge, HardDrive
+  Gauge, HardDrive, Film, Video as VideoIcon, Play
 } from 'lucide-react';
 import Cropper from 'react-easy-crop';
+import { isVideoUrl } from './Hero';
+
+/**
+ * Compresses a video file client-side using HTML5 Video, Canvas, and MediaRecorder API.
+ * High-compression level (1-10) controls target bitrate and resolution scale.
+ */
+async function compressVideoFile(
+  file: File,
+  qualityLevel: number = 8,
+  onProgress?: (progressText: string) => void
+): Promise<{ videoBlob: Blob; posterBlob: Blob; fileExt: string; mimeType: string }> {
+  return new Promise((resolve, reject) => {
+    const videoUrl = URL.createObjectURL(file);
+    const video = document.createElement('video');
+    video.src = videoUrl;
+    video.muted = true;
+    video.playsInline = true;
+
+    video.onloadedmetadata = async () => {
+      try {
+        if (onProgress) onProgress('Mempersiapkan kompresi video...');
+        video.currentTime = Math.min(0.5, (video.duration || 1) / 2);
+        await new Promise((res) => {
+          const handler = () => { video.removeEventListener('seeked', handler); res(null); };
+          video.addEventListener('seeked', handler);
+          setTimeout(res, 500);
+        });
+
+        // 1. Generate Poster Thumbnail Frame
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const origW = video.videoWidth || 1280;
+        const origH = video.videoHeight || 720;
+
+        const targetW = Math.min(origW, 1920);
+        const targetH = Math.round(targetW * (origH / origW));
+
+        canvas.width = targetW;
+        canvas.height = targetH;
+        if (ctx) {
+          ctx.drawImage(video, 0, 0, targetW, targetH);
+        }
+
+        const posterBlob: Blob = await new Promise((res) =>
+          canvas.toBlob((b) => res(b || new Blob()), 'image/webp', 0.85)
+        );
+
+        // Check MediaRecorder support
+        const supportedType = typeof MediaRecorder !== 'undefined'
+          ? (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+              ? 'video/webm;codecs=vp9'
+              : MediaRecorder.isTypeSupported('video/webm')
+              ? 'video/webm'
+              : MediaRecorder.isTypeSupported('video/mp4')
+              ? 'video/mp4'
+              : '')
+          : '';
+
+        if (!supportedType) {
+          URL.revokeObjectURL(videoUrl);
+          return resolve({
+            videoBlob: file,
+            posterBlob,
+            fileExt: file.name.split('.').pop() || 'mp4',
+            mimeType: file.type || 'video/mp4',
+          });
+        }
+
+        // Bitrate calculation based on qualityLevel (1-10)
+        const targetBitrate = Math.round(500000 + (qualityLevel / 10) * 2500000);
+
+        const stream = canvas.captureStream(30);
+        const recorder = new MediaRecorder(stream, {
+          mimeType: supportedType,
+          videoBitsPerSecond: targetBitrate,
+        });
+
+        const chunks: BlobPart[] = [];
+        recorder.ondataavailable = (e) => {
+          if (e.data && e.data.size > 0) chunks.push(e.data);
+        };
+
+        recorder.onstop = () => {
+          const compressedBlob = new Blob(chunks, { type: supportedType.split(';')[0] });
+          URL.revokeObjectURL(videoUrl);
+          const ext = supportedType.includes('mp4') ? 'mp4' : 'webm';
+          resolve({
+            videoBlob: compressedBlob.size > 0 ? compressedBlob : file,
+            posterBlob,
+            fileExt: ext,
+            mimeType: supportedType.split(';')[0],
+          });
+        };
+
+        recorder.start(100);
+        video.currentTime = 0;
+        await video.play().catch(() => {});
+
+        const duration = Math.min(video.duration || 10, 20); // Limit max 20s for hero slider
+        const startTime = Date.now();
+
+        const drawFrame = () => {
+          const elapsed = (Date.now() - startTime) / 1000;
+          if (elapsed >= duration || video.ended || video.paused) {
+            video.pause();
+            if (recorder.state !== 'inactive') recorder.stop();
+            return;
+          }
+
+          if (ctx) {
+            ctx.drawImage(video, 0, 0, targetW, targetH);
+          }
+
+          if (onProgress) {
+            const pct = Math.min(99, Math.round((elapsed / duration) * 100));
+            onProgress(`Mengompresi video (${targetW}x${targetH} @ ~${Math.round(targetBitrate/1000)}kbps)... ${pct}%`);
+          }
+
+          requestAnimationFrame(drawFrame);
+        };
+
+        drawFrame();
+      } catch (err) {
+        console.warn("MediaRecorder encoding fallback:", err);
+        URL.revokeObjectURL(videoUrl);
+        resolve({
+          videoBlob: file,
+          posterBlob: file,
+          fileExt: file.name.split('.').pop() || 'mp4',
+          mimeType: file.type || 'video/mp4',
+        });
+      }
+    };
+
+    video.onerror = () => {
+      URL.revokeObjectURL(videoUrl);
+      reject(new Error("Format file video tidak dapat dibaca oleh browser"));
+    };
+  });
+}
 
 const ASPECT_RATIO_PRESETS = [
   { label: 'Hero Banner (2.5 : 1)', value: 2.5 / 1, desc: 'Sesuai Hero Slider Published' },
@@ -54,18 +195,14 @@ const KelolaHero: React.FC = () => {
   const fetchHeroData = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('site_settings')
-        .select('value')
-        .eq('key', 'hero_config')
-        .maybeSingle();
-
-      if (error) throw error;
-
-      if (data?.value) {
-        const val = data.value;
-        setSlides(val.slides || []);
-        setSliderSettings(val.settings || { duration: 6, effect: 'fade' });
+      const val = await getSiteSetting('hero_config');
+      if (val) {
+        let config = val;
+        if (typeof config === 'string') {
+          try { config = JSON.parse(config); } catch (e) {}
+        }
+        setSlides(config.slides || []);
+        setSliderSettings(config.settings || { duration: 6, effect: 'fade' });
       }
     } catch (err: any) {
       console.error("Error fetching hero data:", err.message);
@@ -124,9 +261,113 @@ const KelolaHero: React.FC = () => {
     return () => clearTimeout(timer);
   }, [showCropModal, imageToCrop, croppedAreaPixels, qualityLevel, rotation]);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const processAndCompressVideo = async (file: File) => {
+    setIsUploading(true);
+    try {
+      Swal.fire({
+        title: 'Mengompresi Video Hero',
+        html: '<div class="text-xs font-bold text-amber-400 mt-2">Sedang mengompresi & mengoptimasi video untuk tayang cepat di web...</div>',
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        },
+        background: '#0F172A',
+        color: '#fff'
+      });
+
+      const { videoBlob, posterBlob, fileExt, mimeType } = await compressVideoFile(
+        file,
+        qualityLevel,
+        (statusText) => {
+          Swal.update({
+            html: `<div class="text-xs font-bold text-amber-400 mt-2">${statusText}</div>`
+          });
+        }
+      );
+
+      const timestamp = Date.now();
+      const videoFileName = `hero-video-${timestamp}.${fileExt}`;
+      const videoPath = `hero-sliders/${videoFileName}`;
+
+      const posterFileName = `hero-poster-${timestamp}.webp`;
+      const posterPath = `hero-sliders/${posterFileName}`;
+
+      let publicVideoUrl = '';
+      try {
+        const { error: videoUploadError } = await supabase.storage
+          .from('assets')
+          .upload(videoPath, videoBlob, { contentType: mimeType, upsert: true });
+
+        if (videoUploadError) throw videoUploadError;
+
+        const { data: videoUrlData } = supabase.storage.from('assets').getPublicUrl(videoPath);
+        publicVideoUrl = videoUrlData.publicUrl;
+      } catch (storageErr) {
+        console.warn("Storage upload failed, using Data URL fallback:", storageErr);
+        // Fallback: convert videoBlob to Data URL so media is never lost
+        publicVideoUrl = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(videoBlob);
+        });
+      }
+
+      // Upload Poster image frame
+      let publicPosterUrl = '';
+      if (posterBlob && posterBlob.size > 0) {
+        try {
+          const { error: posterUploadError } = await supabase.storage
+            .from('assets')
+            .upload(posterPath, posterBlob, { contentType: 'image/webp', upsert: true });
+
+          if (!posterUploadError) {
+            const { data: posterUrlData } = supabase.storage.from('assets').getPublicUrl(posterPath);
+            publicPosterUrl = posterUrlData.publicUrl;
+          }
+        } catch (e) {}
+      }
+
+      setImageUrl(publicVideoUrl);
+
+      const sizeKb = Math.round(videoBlob.size / 1024);
+      const sizeMb = (sizeKb / 1024).toFixed(2);
+
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: `Video Hero Dioptimasi! (${fileExt.toUpperCase()} ~${sizeMb} MB)`,
+        showConfirmButton: false,
+        timer: 3000
+      });
+
+    } catch (err: any) {
+      console.error("Video processing error:", err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Gagal Memproses Video',
+        text: err.message || 'Terjadi kesalahan saat mengompresi & mengunggah video.',
+        confirmButtonColor: '#EF4444',
+        background: '#0F172A',
+        color: '#fff'
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
+    if (!file) return;
+
+    // Reset input so same file selection re-triggers change event
+    e.target.value = '';
+
+    const isVideo = file.type.startsWith('video/') || /\.(mp4|webm|mov|m4v|ogg)$/i.test(file.name);
+
+    if (isVideo) {
+      await processAndCompressVideo(file);
+    } else {
       const reader = new FileReader();
       reader.addEventListener('load', () => {
         setImageToCrop(reader.result as string);
@@ -282,12 +523,7 @@ const KelolaHero: React.FC = () => {
       updated_at: new Date().toISOString()
     };
 
-    const { error } = await supabase
-      .from('site_settings')
-      .upsert({ 
-        key: 'hero_config', 
-        value: payload
-      }, { onConflict: 'key' }); 
+    const { error } = await saveSiteSetting('hero_config', payload, 'Pengaturan Hero Slider');
 
     if (!error) {
       setSlides(updatedSlides);
@@ -308,22 +544,35 @@ const KelolaHero: React.FC = () => {
 
   const handleAddSlide = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!imageUrl || !title.trim()) {
-      setFormError("Judul dan Gambar tidak boleh kosong");
+    if (!imageUrl) {
+      setFormError("Media (Gambar atau Video) wajib dipilih atau diunggah");
       return;
     }
+
+    const isVideo = isVideoUrl(imageUrl);
+    const finalTitle = title.trim() || (isVideo ? "PB Bilibili Video Hero" : "PB Bilibili 162");
 
     let updatedSlides;
     if (editingId) {
       updatedSlides = slides.map(s => 
-        s.id === editingId ? { ...s, title, subtitle, image: imageUrl } : s
+        s.id === editingId ? { 
+          ...s, 
+          title: finalTitle, 
+          subtitle: subtitle.trim(), 
+          image: imageUrl, 
+          videoUrl: isVideo ? imageUrl : s.videoUrl, 
+          type: isVideo ? 'video' : 'image',
+          active: true
+        } : s
       );
     } else {
       const newSlide = {
         id: Date.now(),
-        title: title.trim(),
+        title: finalTitle,
         subtitle: subtitle.trim(),
         image: imageUrl,
+        videoUrl: isVideo ? imageUrl : undefined,
+        type: isVideo ? 'video' : 'image',
         active: true,
       };
       updatedSlides = [...slides, newSlide];
@@ -719,30 +968,58 @@ const KelolaHero: React.FC = () => {
                   >
                     {imageUrl ? (
                       <div className="relative w-full h-full">
-                        <img src={imageUrl} alt="Preview" className="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                        {isVideoUrl(imageUrl) ? (
+                          <video 
+                            src={imageUrl} 
+                            autoPlay 
+                            loop 
+                            muted 
+                            playsInline 
+                            className="w-full h-full object-cover transition-transform group-hover:scale-105" 
+                          />
+                        ) : (
+                          <img src={imageUrl} alt="Preview" className="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                        )}
+                        <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-white text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 border border-white/20 z-10">
+                          {isVideoUrl(imageUrl) ? (
+                            <>
+                              <Film size={12} className="text-amber-400 animate-pulse" />
+                              <span>Video Hero</span>
+                            </>
+                          ) : (
+                            <>
+                              <ImageIcon size={12} className="text-blue-400" />
+                              <span>Foto WebP</span>
+                            </>
+                          )}
+                        </div>
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                           <span className="px-3 py-1.5 bg-blue-600/90 text-white rounded-xl text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 shadow-lg">
-                            <Crop size={12} /> Ganti / Crop Ulang
+                            {isVideoUrl(imageUrl) ? <VideoIcon size={12} /> : <Crop size={12} />} 
+                            Ganti Media / Upload Ulang
                           </span>
                         </div>
                       </div>
                     ) : (
                       <div className="text-center p-4">
-                        <ImageIcon size={32} className="mx-auto text-zinc-600 mb-2 group-hover:text-blue-400 transition-colors" />
-                        <p className="text-[9px] font-black uppercase text-zinc-400 tracking-widest">Pilih Gambar Banner</p>
-                        <p className="text-[8px] font-semibold text-zinc-600 mt-1">Disertai Fitur Crop & Zoom Otomatis</p>
+                        <div className="flex justify-center gap-2 text-zinc-600 mb-2 group-hover:text-blue-400 transition-colors">
+                          <ImageIcon size={28} />
+                          <Film size={28} className="text-amber-500/70" />
+                        </div>
+                        <p className="text-[9px] font-black uppercase text-zinc-400 tracking-widest">Pilih Gambar / Video Banner</p>
+                        <p className="text-[8px] font-semibold text-zinc-500 mt-1">Dukungan Foto (WebP) & Video Singkat (MP4/WebM) Terkompresi</p>
                       </div>
                     )}
                     {isUploading && (
                       <div className="absolute inset-0 bg-black/85 backdrop-blur-sm flex flex-col items-center justify-center gap-2 z-20">
                         <RefreshCcw className="animate-spin text-blue-500" size={24} />
-                        <span className="text-[9px] font-black uppercase tracking-wider text-blue-300">Mengolah Gambar...</span>
+                        <span className="text-[9px] font-black uppercase tracking-wider text-blue-300">Mengolah & Mengompresi Media...</span>
                       </div>
                     )}
                   </div>
 
                   {/* Manual Crop Trigger for existing image */}
-                  {imageUrl && (
+                  {imageUrl && !isVideoUrl(imageUrl) && (
                     <button
                       type="button"
                       onClick={() => openCropperForUrl(imageUrl)}
@@ -753,7 +1030,7 @@ const KelolaHero: React.FC = () => {
                   )}
                 </div>
 
-                <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" accept="image/*" />
+                <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" accept="image/*,video/*" />
 
                 <div className="space-y-1">
                   <label className="text-[9px] font-black uppercase text-zinc-400">Judul Banner</label>
@@ -811,118 +1088,149 @@ const KelolaHero: React.FC = () => {
                 <p className="font-black uppercase text-[10px] tracking-[0.3em] text-zinc-400">Belum Ada Slide Hero</p>
               </div>
             ) : (
-              slides.map((slide, index) => (
-                <div 
-                  key={slide.id} 
-                  className={`group flex flex-col md:flex-row items-center gap-5 bg-zinc-900/80 border ${editingId === slide.id ? 'border-blue-500' : 'border-white/5'} p-5 rounded-[2rem] hover:border-blue-500/30 transition-all relative overflow-hidden`}
-                >
-                  {/* Thumbnail */}
-                  <div className="relative w-full md:w-52 h-32 rounded-[1.2rem] overflow-hidden flex-shrink-0 shadow-xl bg-black">
-                    <img 
-                      src={slide.image} 
-                      alt={slide.title} 
-                      className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${slide.active === false ? 'opacity-30 grayscale' : ''}`} 
-                    />
-                    <div className="absolute top-2 left-2 bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-black shadow-md">
-                      {index + 1}
-                    </div>
-                    {slide.active === false && (
-                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                        <span className="text-[8px] font-black uppercase tracking-widest bg-red-600 text-white px-2 py-0.5 rounded-full shadow-lg">Nonaktif</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Text Details */}
-                  <div className="flex-grow w-full min-w-0">
-                    <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                      <h4 className={`font-black uppercase italic text-base tracking-tighter truncate ${slide.active === false ? 'text-zinc-500' : 'text-white'}`}>
-                        {slide.title}
-                      </h4>
-                      {slide.active !== false ? (
-                        <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full">
-                          Aktif
-                        </span>
+              slides.map((slide, index) => {
+                const isVideo = isVideoUrl(slide.image || slide.videoUrl, slide.type);
+                return (
+                  <div 
+                    key={slide.id} 
+                    className={`group flex flex-col md:flex-row items-center gap-5 bg-zinc-900/80 border ${editingId === slide.id ? 'border-blue-500' : 'border-white/5'} p-5 rounded-[2rem] hover:border-blue-500/30 transition-all relative overflow-hidden`}
+                  >
+                    {/* Thumbnail */}
+                    <div className="relative w-full md:w-52 h-32 rounded-[1.2rem] overflow-hidden flex-shrink-0 shadow-xl bg-black">
+                      {isVideo ? (
+                        <video 
+                          src={slide.image || slide.videoUrl} 
+                          autoPlay 
+                          loop 
+                          muted 
+                          playsInline 
+                          className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${slide.active === false ? 'opacity-30 grayscale' : ''}`} 
+                        />
                       ) : (
-                        <span className="bg-red-500/10 text-red-400 border border-red-500/20 text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full">
-                          Sembunyi
-                        </span>
+                        <img 
+                          src={slide.image} 
+                          alt={slide.title} 
+                          className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${slide.active === false ? 'opacity-30 grayscale' : ''}`} 
+                        />
+                      )}
+                      <div className="absolute top-2 left-2 bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-black shadow-md">
+                        {index + 1}
+                      </div>
+                      
+                      {/* Media Format Badge */}
+                      <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-black/70 backdrop-blur-md text-[8px] font-black uppercase text-white tracking-widest flex items-center gap-1 border border-white/20">
+                        {isVideo ? (
+                          <>
+                            <Film size={10} className="text-amber-400" />
+                            <span>Video</span>
+                          </>
+                        ) : (
+                          <>
+                            <ImageIcon size={10} className="text-blue-400" />
+                            <span>Foto</span>
+                          </>
+                        )}
+                      </div>
+
+                      {slide.active === false && (
+                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                          <span className="text-[8px] font-black uppercase tracking-widest bg-red-600 text-white px-2 py-0.5 rounded-full shadow-lg">Nonaktif</span>
+                        </div>
                       )}
                     </div>
-                    <p className={`text-[10px] font-medium leading-snug line-clamp-2 ${slide.active === false ? 'text-zinc-600' : 'text-zinc-400'}`}>
-                      {slide.subtitle || 'Tidak ada deskripsi'}
-                    </p>
-                    
-                    {/* Toggle Switch */}
-                    <div className="mt-3 flex items-center gap-3">
-                      <span className="text-[8px] font-black uppercase tracking-wider text-zinc-500">Tampilkan di Landing:</span>
-                      <button
-                        type="button"
-                        onClick={() => toggleSlideActive(slide.id)}
-                        className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors focus:outline-none ${
-                          slide.active !== false ? 'bg-blue-600' : 'bg-zinc-800'
-                        }`}
-                      >
-                        <span
-                          className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform duration-200 ${
-                            slide.active !== false ? 'translate-x-6' : 'translate-x-1'
+
+                    {/* Text Details */}
+                    <div className="flex-grow w-full min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                        <h4 className={`font-black uppercase italic text-base tracking-tighter truncate ${slide.active === false ? 'text-zinc-500' : 'text-white'}`}>
+                          {slide.title}
+                        </h4>
+                        {slide.active !== false ? (
+                          <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full">
+                            Aktif
+                          </span>
+                        ) : (
+                          <span className="bg-red-500/10 text-red-400 border border-red-500/20 text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full">
+                            Sembunyi
+                          </span>
+                        )}
+                      </div>
+                      <p className={`text-[10px] font-medium leading-snug line-clamp-2 ${slide.active === false ? 'text-zinc-600' : 'text-zinc-400'}`}>
+                        {slide.subtitle || 'Tidak ada deskripsi'}
+                      </p>
+                      
+                      {/* Toggle Switch */}
+                      <div className="mt-3 flex items-center gap-3">
+                        <span className="text-[8px] font-black uppercase tracking-wider text-zinc-500">Tampilkan di Landing:</span>
+                        <button
+                          type="button"
+                          onClick={() => toggleSlideActive(slide.id)}
+                          className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors focus:outline-none ${
+                            slide.active !== false ? 'bg-blue-600' : 'bg-zinc-800'
                           }`}
-                        />
-                      </button>
+                        >
+                          <span
+                            className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform duration-200 ${
+                              slide.active !== false ? 'translate-x-6' : 'translate-x-1'
+                            }`}
+                          />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex md:flex-col gap-2 shrink-0 w-full md:w-auto justify-end">
+                      <div className="flex bg-black/60 p-1 rounded-xl border border-white/5 justify-center">
+                        <button 
+                          onClick={() => moveSlide(index, 'up')} 
+                          disabled={index === 0}
+                          className="p-1.5 text-zinc-400 hover:text-white disabled:opacity-30 transition-colors"
+                          title="Geser Ke Atas"
+                        >
+                          <MoveUp size={16}/>
+                        </button>
+                        <button 
+                          onClick={() => moveSlide(index, 'down')} 
+                          disabled={index === slides.length - 1}
+                          className="p-1.5 text-zinc-400 hover:text-white disabled:opacity-30 transition-colors"
+                          title="Geser Ke Bawah"
+                        >
+                          <MoveDown size={16}/>
+                        </button>
+                      </div>
+
+                      <div className="flex gap-1.5">
+                        {!isVideo && (
+                          <button 
+                            onClick={() => {
+                              startEdit(slide);
+                              openCropperForUrl(slide.image);
+                            }} 
+                            className="p-2 bg-blue-600/10 text-blue-400 hover:bg-blue-600 hover:text-white rounded-xl transition-all"
+                            title="Crop & Edit Gambar"
+                          >
+                            <Crop size={16} />
+                          </button>
+                        )}
+                        <button 
+                          onClick={() => startEdit(slide)} 
+                          className="p-2 bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white rounded-xl transition-all"
+                          title="Edit Slide"
+                        >
+                          <Edit3 size={16} />
+                        </button>
+                        <button 
+                          onClick={() => deleteSlide(slide.id)} 
+                          className="p-2 bg-red-600/10 text-red-400 hover:bg-red-600 hover:text-white rounded-xl transition-all"
+                          title="Hapus Slide"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     </div>
                   </div>
-
-                  {/* Actions */}
-                  <div className="flex md:flex-col gap-2 shrink-0 w-full md:w-auto justify-end">
-                    <div className="flex bg-black/60 p-1 rounded-xl border border-white/5 justify-center">
-                      <button 
-                        onClick={() => moveSlide(index, 'up')} 
-                        disabled={index === 0}
-                        className="p-1.5 text-zinc-400 hover:text-white disabled:opacity-30 transition-colors"
-                        title="Geser Ke Atas"
-                      >
-                        <MoveUp size={16}/>
-                      </button>
-                      <button 
-                        onClick={() => moveSlide(index, 'down')} 
-                        disabled={index === slides.length - 1}
-                        className="p-1.5 text-zinc-400 hover:text-white disabled:opacity-30 transition-colors"
-                        title="Geser Ke Bawah"
-                      >
-                        <MoveDown size={16}/>
-                      </button>
-                    </div>
-
-                    <div className="flex gap-1.5">
-                      <button 
-                        onClick={() => {
-                          startEdit(slide);
-                          openCropperForUrl(slide.image);
-                        }} 
-                        className="p-2 bg-blue-600/10 text-blue-400 hover:bg-blue-600 hover:text-white rounded-xl transition-all"
-                        title="Crop & Edit Gambar"
-                      >
-                        <Crop size={16} />
-                      </button>
-                      <button 
-                        onClick={() => startEdit(slide)} 
-                        className="p-2 bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white rounded-xl transition-all"
-                        title="Edit Text Slide"
-                      >
-                        <Edit3 size={16} />
-                      </button>
-                      <button 
-                        onClick={() => deleteSlide(slide.id)} 
-                        className="p-2 bg-red-600/10 text-red-400 hover:bg-red-600 hover:text-white rounded-xl transition-all"
-                        title="Hapus Slide"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </div>
-
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>

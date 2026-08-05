@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
+import { saveSiteSetting } from '../utils/siteSettingsHelper';
 import { Save, Award, Upload, X, Loader2, ImageIcon } from 'lucide-react';
 import Swal from 'sweetalert2';
 
@@ -77,7 +78,7 @@ export default function AdminFasilitas() {
 
         const updatedVal = { ...existingVal, ...content };
 
-        await supabase.from('site_settings').upsert({ key: 'about_content', value: updatedVal }, { onConflict: 'key' });
+        await saveSiteSetting('about_content', updatedVal);
         
         await supabase.from('page_contents').upsert({ title: 'Fasilitas', content: content.fasilitas_title, image_url: content.fasilitas_img1 }, { onConflict: 'title' });
         await supabase.from('page_contents').upsert({ title: 'fasilitas_detail_1', content: 'Detail 1', image_url: content.fasilitas_img2 }, { onConflict: 'title' });

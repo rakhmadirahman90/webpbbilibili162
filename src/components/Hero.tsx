@@ -1,7 +1,131 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '../supabase'; 
 import { getOptimizedImageUrl } from '../utils/imageOptimizer'; 
+import { getSiteSetting } from '../utils/siteSettingsHelper';
+
+export function isVideoUrl(url?: string, type?: string): boolean {
+  if (type === 'video') return true;
+  if (!url) return false;
+  const clean = url.toLowerCase().split('?')[0];
+  return (
+    clean.endsWith('.mp4') ||
+    clean.endsWith('.webm') ||
+    clean.endsWith('.mov') ||
+    clean.endsWith('.ogg') ||
+    clean.endsWith('.m4v') ||
+    clean.includes('video/') ||
+    clean.includes('hero-video') ||
+    clean.includes('.mp4') ||
+    clean.includes('.webm') ||
+    clean.includes('youtube.com') ||
+    clean.includes('youtu.be') ||
+    clean.includes('vimeo.com')
+  );
+}
+
+export function getEmbedVideoUrl(url: string): string | null {
+  if (!url) return null;
+  if (url.includes('youtube.com') || url.includes('youtu.be')) {
+    let videoId = '';
+    if (url.includes('youtu.be/')) {
+      videoId = url.split('youtu.be/')[1]?.split('?')[0]?.split('&')[0];
+    } else if (url.includes('watch?v=')) {
+      videoId = url.split('watch?v=')[1]?.split('&')[0];
+    } else if (url.includes('embed/')) {
+      videoId = url.split('embed/')[1]?.split('?')[0];
+    }
+    if (videoId) {
+      return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${videoId}&playsinline=1&rel=0`;
+    }
+  }
+  if (url.includes('vimeo.com')) {
+    const videoId = url.split('vimeo.com/')[1]?.split('?')[0];
+    if (videoId) {
+      return `https://player.vimeo.com/video/${videoId}?autoplay=1&muted=1&loop=1&background=1`;
+    }
+  }
+  return null;
+}
+
+function HeroVideoPlayer({ src, poster, isCurrent }: { src: string; poster?: string; isCurrent: boolean }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    if (!videoRef.current) return;
+    if (isCurrent) {
+      const playPromise = videoRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {
+          if (videoRef.current) {
+            videoRef.current.muted = true;
+            videoRef.current.play().catch(() => {});
+          }
+        });
+      }
+    } else {
+      videoRef.current.pause();
+    }
+  }, [isCurrent]);
+
+  const embedUrl = getEmbedVideoUrl(src);
+  if (embedUrl) {
+    return (
+      <iframe
+        src={embedUrl}
+        className="w-full h-full object-cover border-0 pointer-events-none"
+        allow="autoplay; encrypted-media"
+        title="Hero Video"
+      />
+    );
+  }
+
+  return (
+    <video
+      ref={videoRef}
+      src={src}
+      poster={poster}
+      autoPlay
+      loop
+      muted
+      playsInline
+      controls={false}
+      preload="auto"
+      className={`w-full h-full object-contain object-center transition-transform duration-[20000ms] ease-out select-none ${
+        isCurrent ? 'scale-102' : 'scale-100'
+      }`}
+    />
+  );
+}
+
+function HeroVideoBlur({ src, isCurrent }: { src: string; isCurrent: boolean }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    if (!videoRef.current) return;
+    if (isCurrent) {
+      videoRef.current.play().catch(() => {});
+    } else {
+      videoRef.current.pause();
+    }
+  }, [isCurrent]);
+
+  const embedUrl = getEmbedVideoUrl(src);
+  if (embedUrl) return null;
+
+  return (
+    <video
+      ref={videoRef}
+      src={src}
+      autoPlay
+      loop
+      muted
+      playsInline
+      aria-hidden="true"
+      className="w-full h-full object-cover blur-3xl opacity-80 scale-110 select-none pointer-events-none"
+    />
+  );
+}
 
 const defaultSlides = [
   { id: 1, image: '/whatsapp_image_2026-02-02_at_08.39.03.jpeg' },
@@ -17,29 +141,62 @@ export default function Hero() {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [settings, setSettings] = useState({ duration: 7 });
 
-  useEffect(() => {
-    const fetchHeroData = async () => {
-      try {
-        const { data } = await supabase
-          .from('site_settings')
-          .select('value')
-          .eq('key', 'hero_config')
-          .maybeSingle();
-
-        if (data?.value) {
-          const config = data.value;
-          const allSlides = config.slides || (Array.isArray(config) ? config : []);
-          const activeSlides = allSlides.filter((s: any) => s.active !== false);
-          setSlides(activeSlides.length > 0 ? activeSlides : defaultSlides);
-          setSettings(config.settings || { duration: 7 });
+  const loadHeroConfig = async () => {
+    try {
+      const data = await getSiteSetting('hero_config');
+      if (data) {
+        let config = data;
+        if (typeof config === 'string') {
+          try {
+            config = JSON.parse(config);
+          } catch (e) {}
         }
-      } catch (err) {
-        console.warn("Error fetching hero data:", err);
-      } finally {
-        setLoading(false);
+        const allSlides = config.slides || (Array.isArray(config) ? config : []);
+        const activeSlides = allSlides.filter((s: any) => s.active !== false);
+        setSlides(activeSlides.length > 0 ? activeSlides : defaultSlides);
+        if (config.settings) {
+          setSettings(config.settings);
+        }
+      }
+    } catch (err) {
+      console.warn("Error fetching hero data:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadHeroConfig();
+
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'site_setting_hero_config' || e.key === 'hero_config') {
+        loadHeroConfig();
       }
     };
-    fetchHeroData();
+    const handleCustomUpdate = (e: any) => {
+      if (e.detail?.key === 'hero_config') {
+        loadHeroConfig();
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+    window.addEventListener('site_setting_updated', handleCustomUpdate);
+
+    const channel = supabase
+      .channel('public:site_settings_hero')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'site_settings', filter: 'key=eq.hero_config' },
+        () => {
+          loadHeroConfig();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('site_setting_updated', handleCustomUpdate);
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   useEffect(() => {
@@ -62,54 +219,63 @@ export default function Hero() {
     setTimeout(() => setIsTransitioning(false), 1500);
   };
 
-  const scrollToAbout = () => {
-    const nextSection = document.getElementById('tentang-kami') || document.getElementById('about');
-    if (nextSection) {
-      nextSection.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
   return (
     <section id="home" className="relative w-full pt-14 lg:pt-16 bg-[#070d1a] overflow-hidden m-0 p-0 border-0">
       
-      {/* Slider Aspect Ratio Container - Top padded below fixed Navbar so image is 100% visible */}
+      {/* Slider Aspect Ratio Container */}
       <div className="relative w-full aspect-[16/9] sm:aspect-[2.2/1] md:aspect-[2.6/1] lg:aspect-[3/1] min-h-[200px] sm:min-h-[260px] max-h-[65vh] overflow-hidden m-0 p-0 flex items-center justify-center">
         
         {/* Background Visual Layer */}
         <div className="absolute inset-0 z-0 w-full h-full flex items-center justify-center">
-          {slides.map((slide, index) => (
-            <div
-              key={slide.id || index}
-              className={`absolute inset-0 w-full h-full flex items-center justify-center transition-opacity duration-[2000ms] ease-in-out ${
-                index === currentSlide ? 'opacity-100 visible' : 'opacity-0 invisible'
-              }`}
-            >
-              {/* Ambient Blurred Background Layer */}
-              <div className="absolute inset-0 overflow-hidden w-full h-full">
-                <img
-                  src={getOptimizedImageUrl(slide.image, 150, 40)}
-                  alt=""
-                  className="w-full h-full object-cover blur-3xl opacity-80 scale-110 select-none pointer-events-none"
-                  loading={index === 0 ? "eager" : "lazy"}
-                  decoding="async"
-                />
+          {slides.map((slide, index) => {
+            const isVideo = isVideoUrl(slide.image || slide.videoUrl, slide.type);
+            const mediaSrc = slide.videoUrl || slide.image;
+            const isCurrent = index === currentSlide;
+
+            return (
+              <div
+                key={slide.id || index}
+                className={`absolute inset-0 w-full h-full flex items-center justify-center transition-opacity duration-[2000ms] ease-in-out ${
+                  isCurrent ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'
+                }`}
+              >
+                {/* Ambient Blurred Background Layer */}
+                <div className="absolute inset-0 overflow-hidden w-full h-full">
+                  {isVideo ? (
+                    <HeroVideoBlur src={mediaSrc} isCurrent={isCurrent} />
+                  ) : (
+                    <img
+                      src={getOptimizedImageUrl(slide.image, 150, 40)}
+                      alt=""
+                      className="w-full h-full object-cover blur-3xl opacity-80 scale-110 select-none pointer-events-none"
+                      loading={index === 0 ? "eager" : "lazy"}
+                      decoding="async"
+                    />
+                  )}
+                </div>
+
+                {/* Main Slide Media */}
+                {isVideo ? (
+                  <div className="relative w-full h-full flex items-center justify-center z-10">
+                    <HeroVideoPlayer src={mediaSrc} poster={slide.poster} isCurrent={isCurrent} />
+                  </div>
+                ) : (
+                  <img
+                    src={getOptimizedImageUrl(slide.image, 1600)}
+                    alt={slide.title || "Slide PB Bilibili 162"}
+                    loading={index === 0 ? "eager" : "lazy"}
+                    decoding="async"
+                    className={`relative w-full h-full object-contain object-center transition-transform duration-[20000ms] ease-out select-none z-10 ${
+                      isCurrent ? 'scale-102' : 'scale-100'
+                    }`}
+                  />
+                )}
+
+                {/* Minimal Bottom Overlay Gradient for clean contrast on dots */}
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent via-60% to-black/60 z-20 pointer-events-none" />
               </div>
-
-              {/* Main Slide Image: object-contain with ambient blur so whole picture fits and is 100% visible on screen */}
-              <img
-                src={getOptimizedImageUrl(slide.image, 1600)}
-                alt="Slide PB Bilibili 162"
-                loading={index === 0 ? "eager" : "lazy"}
-                decoding="async"
-                className={`relative w-full h-full object-contain object-center transition-transform duration-[20000ms] ease-out select-none z-10
-                  ${index === currentSlide ? 'scale-102' : 'scale-100'}
-                `}
-              />
-
-              {/* Minimal Bottom Overlay Gradient for clean contrast on dots */}
-              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent via-60% to-black/60 z-20 pointer-events-none" />
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Floating Side Navigation Arrows */}

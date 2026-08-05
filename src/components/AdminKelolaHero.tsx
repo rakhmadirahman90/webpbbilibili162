@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabase';
+import { saveSiteSetting, getSiteSetting } from '../utils/siteSettingsHelper';
 import Swal from 'sweetalert2';
 import { Trash2, Plus, Image as ImageIcon, Loader2, X, ZoomIn, ZoomOut, Check } from 'lucide-react';
 import Cropper from 'react-easy-crop';
@@ -37,12 +38,11 @@ export default function HeroAdmin() {
   const fetchHeroData = async () => {
     setLoading(true);
     try {
-      const { data } = await supabase
-        .from('site_settings')
-        .select('value')
-        .eq('key', 'hero_config')
-        .maybeSingle();
-      if (data && data.value) setSlides(data.value.slides || []);
+      const data = await getSiteSetting('hero_config');
+      if (data) {
+        const val = typeof data === 'string' ? JSON.parse(data) : data;
+        setSlides(val.slides || []);
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -122,10 +122,7 @@ export default function HeroAdmin() {
       const { data: { publicUrl } } = supabase.storage.from('assets').getPublicUrl(`hero/${fileName}`);
 
       const updated = [...slides, { id: Date.now(), title: newTitle, subtitle: newSubtitle, image: publicUrl }];
-      await supabase.from('site_settings').upsert({
-        key: 'hero_config',
-        value: { settings: { duration: 7 }, slides: updated }
-      });
+      await saveSiteSetting('hero_config', { settings: { duration: 7 }, slides: updated });
       setSlides(updated);
       setTempPreview(null); setNewTitle(''); setNewSubtitle('');
       Swal.fire({
@@ -233,7 +230,7 @@ export default function HeroAdmin() {
 
                 if (result.isConfirmed) {
                   const filtered = slides.filter(x => x.id !== s.id);
-                  const { error } = await supabase.from('site_settings').upsert({ key: 'hero_config', value: { slides: filtered } });
+                  const { error } = await saveSiteSetting('hero_config', { slides: filtered });
                   if (!error) {
                     setSlides(filtered);
                     Swal.fire({

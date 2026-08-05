@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
+import { saveSiteSetting } from '../utils/siteSettingsHelper';
 import { Save, Target, Rocket, Plus, Trash2, Loader2, Pencil, Check, X } from 'lucide-react';
 import Swal from 'sweetalert2';
 
@@ -52,7 +53,7 @@ export default function AdminVisiMisi() {
 
       const updatedVal = { ...existingVal, ...content };
 
-      await supabase.from('site_settings').upsert({ key: 'about_content', value: updatedVal }, { onConflict: 'key' });
+      await saveSiteSetting('about_content', updatedVal);
       await supabase.from('page_contents').upsert({ title: 'Visi', content: content.vision, updated_at: new Date().toISOString() }, { onConflict: 'title' });
       await supabase.from('page_contents').upsert({ title: 'Misi', content: content.missions.join('\n'), updated_at: new Date().toISOString() }, { onConflict: 'title' });
 

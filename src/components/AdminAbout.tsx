@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
+import { saveSiteSetting } from '../utils/siteSettingsHelper';
 import { 
   Save, 
   BookOpen, 
@@ -116,12 +117,7 @@ export default function AdminAbout() {
     setSaving(true);
     try {
       // 1. Simpan ke site_settings (Master Data Admin)
-      const { error: errorSettings } = await supabase
-        .from('site_settings')
-        .upsert({ 
-          key: 'about_content', 
-          value: content 
-        }, { onConflict: 'key' });
+      const { error: errorSettings } = await saveSiteSetting('about_content', content, 'Konten Tentang Kami');
 
       if (errorSettings) throw errorSettings;
 

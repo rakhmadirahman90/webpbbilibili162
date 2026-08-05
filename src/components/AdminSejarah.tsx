@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
+import { saveSiteSetting } from '../utils/siteSettingsHelper';
 import { Save, BookOpen, Loader2, Upload, X, ImageIcon } from 'lucide-react';
 import Swal from 'sweetalert2';
 
@@ -84,12 +85,7 @@ export default function AdminSejarah() {
 
       const updatedVal = { ...existingVal, ...content };
 
-      const { error: errorSettings } = await supabase
-        .from('site_settings')
-        .upsert({ 
-          key: 'about_content', 
-          value: updatedVal
-        }, { onConflict: 'key' });
+      const { error: errorSettings } = await saveSiteSetting('about_content', updatedVal);
 
       if (errorSettings) throw errorSettings;
 

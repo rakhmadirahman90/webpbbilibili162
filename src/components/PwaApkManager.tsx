@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { supabase } from '../supabase';
+import { saveSiteSetting } from '../utils/siteSettingsHelper';
 import { 
   Smartphone, 
   Download, 
@@ -19,7 +21,6 @@ import {
   MessageCircle
 } from 'lucide-react';
 import Swal from 'sweetalert2';
-import { supabase } from '../supabase';
 
 interface PwaApkManagerProps {
   userRole?: string;
@@ -96,12 +97,7 @@ export default function PwaApkManager({ userRole = 'member' }: PwaApkManagerProp
   const handleSaveApkUrl = async () => {
     setSavingUrl(true);
     try {
-      const { error } = await supabase
-        .from('site_settings')
-        .upsert({
-          key: 'custom_apk_url',
-          value: JSON.stringify({ url: apkUrl, updated_at: new Date().toISOString() })
-        });
+      const { error } = await saveSiteSetting('custom_apk_url', JSON.stringify({ url: apkUrl, updated_at: new Date().toISOString() }));
 
       if (error) throw error;
 

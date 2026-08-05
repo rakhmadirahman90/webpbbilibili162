@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
+import { saveSiteSetting, getSiteSetting } from '../utils/siteSettingsHelper';
 import Swal from 'sweetalert2';
 import { 
   Layout, Save, Image as ImageIcon, MousePointer2, Info, Loader2, 
@@ -82,11 +83,11 @@ export default function AdminTampilan() {
       if (error) throw error;
 
       setIsOnline(true);
-      const heroRes = data.find(item => item.key === 'hero_config');
-      const footerRes = data.find(item => item.key === 'footer_config');
+      const heroVal = await getSiteSetting('hero_config');
+      const footerRes = data?.find(item => item.key === 'footer_config');
 
-      if (heroRes?.value) {
-        const val = typeof heroRes.value === 'string' ? JSON.parse(heroRes.value) : heroRes.value;
+      if (heroVal) {
+        const val = typeof heroVal === 'string' ? JSON.parse(heroVal) : heroVal;
         setSlides(val.slides && val.slides.length > 0 ? val.slides : DEFAULT_SLIDES);
         setHeroSettings(val.settings || { duration: 7 });
       } else {
@@ -248,31 +249,10 @@ export default function AdminTampilan() {
     setLoading(true);
     setMessage('Menyimpan ke database...');
     try {
-      const now = new Date().toISOString();
-
-      // Memastikan penggunaan upsert dengan definisi kolom 'key' sebagai target konflik
-      const { error: heroErr } = await supabase
-        .from('site_settings')
-        .upsert(
-          { 
-            key: 'hero_config', 
-            value: { settings: heroSettings, slides: slides },
-            updated_at: now 
-          }, 
-          { onConflict: 'key' } // Menghindari Duplicate Key Error
-        );
+      const { error: heroErr } = await saveSiteSetting('hero_config', { settings: heroSettings, slides: slides }, 'Pengaturan Hero Slider');
       if (heroErr) throw heroErr;
 
-      const { error: footerErr } = await supabase
-        .from('site_settings')
-        .upsert(
-          { 
-            key: 'footer_config', 
-            value: footerData,
-            updated_at: now 
-          }, 
-          { onConflict: 'key' } // Menghindari Duplicate Key Error
-        );
+      const { error: footerErr } = await saveSiteSetting('footer_config', footerData, 'Pengaturan Footer');
       if (footerErr) throw footerErr;
 
       setMessage('');
