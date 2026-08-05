@@ -1,5 +1,26 @@
 import { supabase } from '../supabase';
 
+export function parsePopupList(raw: any): any[] {
+  if (!raw) return [];
+  if (typeof raw === 'string') {
+    try {
+      raw = JSON.parse(raw);
+    } catch {
+      return [];
+    }
+  }
+  if (Array.isArray(raw)) return raw;
+  if (raw && Array.isArray(raw.items)) return raw.items;
+  if (raw && Array.isArray(raw.slides)) return raw.slides;
+  if (typeof raw === 'object' && raw !== null) {
+    const keys = Object.keys(raw).filter(k => !isNaN(Number(k)));
+    if (keys.length > 0) {
+      return keys.sort((a, b) => Number(a) - Number(b)).map(k => raw[k]);
+    }
+  }
+  return [];
+}
+
 /**
  * Resiliently saves a setting to the 'site_settings' table.
  * 1. Tries UPDATE first to bypass RLS INSERT restrictions if row exists.
@@ -10,9 +31,14 @@ import { supabase } from '../supabase';
 export async function saveSiteSetting(key: string, value: any, label?: string) {
   const now = new Date().toISOString();
   
-  const payloadWithValue = typeof value === 'object' && value !== null
-    ? { ...value, updated_at: value.updated_at || now }
-    : value;
+  let payloadWithValue: any;
+  if (Array.isArray(value)) {
+    payloadWithValue = { items: value, updated_at: now };
+  } else if (typeof value === 'object' && value !== null) {
+    payloadWithValue = { ...value, updated_at: value.updated_at || now };
+  } else {
+    payloadWithValue = value;
+  }
 
   // Always back up to LocalStorage immediately
   try {
@@ -160,6 +186,14 @@ export async function getSiteSetting(key: string) {
     if (key === 'hero_config' && Array.isArray(localVal?.slides) && localVal.slides.length > 0) {
       const dbSlides = Array.isArray(dbVal?.slides) ? dbVal.slides : [];
       if (localVal.slides.length > dbSlides.length) {
+        return localVal;
+      }
+    }
+
+    if (key === 'popup_config') {
+      const localP = parsePopupList(localVal);
+      const dbP = parsePopupList(dbVal);
+      if (localP.length > dbP.length) {
         return localVal;
       }
     }

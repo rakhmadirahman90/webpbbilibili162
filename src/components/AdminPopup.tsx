@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
-import { saveSiteSetting, getSiteSetting } from '../utils/siteSettingsHelper';
+import { saveSiteSetting, getSiteSetting, parsePopupList } from '../utils/siteSettingsHelper';
 import { 
   Plus, Trash2, Image as ImageIcon, Save, 
   Loader2, Power, PowerOff, Upload, X, Camera, Edit3, GripVertical, FileText, Download, ExternalLink 
@@ -161,24 +161,30 @@ export default function AdminPopup() {
     setLoading(true);
     try {
       const siteConfig = await getSiteSetting('popup_config');
-      const { data, error } = await supabase
-        .from('konfigurasi_popup')
-        .select('*')
-        .order('urutan', { ascending: true });
-      
-      if (!error && data && data.length > 0) {
-        setPopups(data);
-      } else if (siteConfig) {
-        const parsed = typeof siteConfig === 'string' ? JSON.parse(siteConfig) : siteConfig;
-        if (Array.isArray(parsed)) setPopups(parsed);
+      const sitePopups = parsePopupList(siteConfig);
+
+      let dbPopups: PopupConfig[] = [];
+      try {
+        const { data, error } = await supabase
+          .from('konfigurasi_popup')
+          .select('*')
+          .order('urutan', { ascending: true });
+        
+        if (!error && data) dbPopups = data;
+      } catch (e) {}
+
+      if (sitePopups.length >= dbPopups.length && sitePopups.length > 0) {
+        setPopups(sitePopups);
+      } else if (dbPopups.length > 0) {
+        setPopups(dbPopups);
+      } else if (sitePopups.length > 0) {
+        setPopups(sitePopups);
       }
     } catch (err) {
       console.warn("fetchPopups error:", err);
       const siteConfig = await getSiteSetting('popup_config');
-      if (siteConfig) {
-        const parsed = typeof siteConfig === 'string' ? JSON.parse(siteConfig) : siteConfig;
-        if (Array.isArray(parsed)) setPopups(parsed);
-      }
+      const sitePopups = parsePopupList(siteConfig);
+      if (sitePopups.length > 0) setPopups(sitePopups);
     } finally {
       setLoading(false);
     }

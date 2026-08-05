@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from './supabase'; 
-import { getSiteSetting } from './utils/siteSettingsHelper'; 
+import { getSiteSetting, parsePopupList } from './utils/siteSettingsHelper'; 
 
 // --- IMPORT FALLBACK DATA ---
 import popupFallback from './data/konfigurasi_popup.json';
@@ -223,23 +223,26 @@ function ImagePopup() {
     const fetchActivePopups = async () => {
       try {
         let activeItems: any[] = [];
+        
+        const siteConfig = await getSiteSetting('popup_config');
+        const sitePopups = parsePopupList(siteConfig);
+        const activeSite = sitePopups.filter((p: any) => p.is_active !== false);
+
+        let dbItems: any[] = [];
         const { data, error } = await supabase
           .from('konfigurasi_popup')
           .select('*')
           .eq('is_active', true)
           .order('created_at', { ascending: false });
         
-        if (!error && data && data.length > 0) {
-          activeItems = data;
-        }
+        if (!error && data) dbItems = data;
 
-        const siteConfig = await getSiteSetting('popup_config');
-        if (siteConfig) {
-          const parsed = typeof siteConfig === 'string' ? JSON.parse(siteConfig) : siteConfig;
-          if (Array.isArray(parsed)) {
-            const activeSite = parsed.filter((p: any) => p.is_active !== false);
-            if (activeSite.length > 0) activeItems = activeSite;
-          }
+        if (activeSite.length >= dbItems.length && activeSite.length > 0) {
+          activeItems = activeSite;
+        } else if (dbItems.length > 0) {
+          activeItems = dbItems;
+        } else if (activeSite.length > 0) {
+          activeItems = activeSite;
         }
 
         if (activeItems.length > 0) {
