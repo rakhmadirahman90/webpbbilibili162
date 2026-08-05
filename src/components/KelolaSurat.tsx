@@ -114,6 +114,7 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     show_greetings: true,
     title_override: '',
     include_lampiran_peserta: false,
+    judul_lampiran: 'Daftar Lampiran Peserta',
     lampiran_peserta: ''
   };
 
@@ -363,9 +364,15 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     try {
       const { data, error } = await supabase.from('arsip_surat').select('*').order('created_at', { ascending: false });
       const localData = JSON.parse(localStorage.getItem('arsip_surat_local') || '[]');
-      const combined = [...(data || []), ...localData];
-      // Deduplicate by id or nomor_surat
-      const unique = Array.from(new Map(combined.map(item => [item.id || item.nomor_surat, item])).values());
+      
+      const map = new Map();
+      (data || []).forEach(item => {
+        if (item) map.set(item.id || item.nomor_surat, item);
+      });
+      localData.forEach((item: any) => {
+        if (item) map.set(item.id || item.nomor_surat, item);
+      });
+      const unique = Array.from(map.values());
       setSuratList(unique);
     } catch (err: any) { 
         console.error(err);
@@ -515,7 +522,18 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     setEditId(surat.id);
     setIsPreviewOnly(false);
     setActiveModalTab('form');
-    setFormData(surat);
+    setFormData({
+      ...defaultForm,
+      ...surat,
+      show_recipient: surat.show_recipient !== undefined ? Boolean(surat.show_recipient) : true,
+      show_greetings: surat.show_greetings !== undefined ? Boolean(surat.show_greetings) : true,
+      title_override: surat.title_override || '',
+      include_lampiran_peserta: surat.include_lampiran_peserta !== undefined ? Boolean(surat.include_lampiran_peserta) : false,
+      judul_lampiran: surat.judul_lampiran || 'Daftar Lampiran Peserta',
+      lampiran_peserta: surat.lampiran_peserta || '',
+      tempat_tanggal: surat.tempat_tanggal || defaultForm.tempat_tanggal,
+      lampiran: surat.lampiran || '-',
+    });
     setIsModalOpen(true);
   };
 
@@ -523,25 +541,36 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     setEditId(null);
     setIsPreviewOnly(true);
     setActiveModalTab('preview');
-    setFormData(surat);
+    setFormData({
+      ...defaultForm,
+      ...surat,
+      show_recipient: surat.show_recipient !== undefined ? Boolean(surat.show_recipient) : true,
+      show_greetings: surat.show_greetings !== undefined ? Boolean(surat.show_greetings) : true,
+      title_override: surat.title_override || '',
+      include_lampiran_peserta: surat.include_lampiran_peserta !== undefined ? Boolean(surat.include_lampiran_peserta) : false,
+      judul_lampiran: surat.judul_lampiran || 'Daftar Lampiran Peserta',
+      lampiran_peserta: surat.lampiran_peserta || '',
+      tempat_tanggal: surat.tempat_tanggal || defaultForm.tempat_tanggal,
+      lampiran: surat.lampiran || '-',
+    });
     setIsModalOpen(true);
   };
 
   const handleSave = async () => {
     setIsSubmitting(true);
-    const { id, created_at, show_recipient, show_greetings, title_override, ...payload } = formData as any;
+    const { id, created_at, ...payload } = formData as any;
 
     try {
-      // Always save locally to localStorage as a reliable primary/backup archive store
       const localData = JSON.parse(localStorage.getItem('arsip_surat_local') || '[]');
+      let updated;
       if (editId) {
-        if (typeof editId === 'string' && editId.startsWith('local_')) {
-          const updated = localData.map((item: any) => item.id === editId ? { ...item, ...payload } : item);
-          localStorage.setItem('arsip_surat_local', JSON.stringify(updated));
+        const existingIndex = localData.findIndex((item: any) => item.id === editId || item.nomor_surat === formData.nomor_surat);
+        if (existingIndex >= 0) {
+          updated = localData.map((item: any) => (item.id === editId || item.nomor_surat === formData.nomor_surat) ? { ...item, ...payload, id: editId } : item);
         } else {
-          const updated = localData.map((item: any) => item.id === editId ? { ...item, ...payload } : item);
-          localStorage.setItem('arsip_surat_local', JSON.stringify(updated));
+          updated = [{ ...payload, id: editId, created_at: formData.created_at || new Date().toISOString() }, ...localData];
         }
+        localStorage.setItem('arsip_surat_local', JSON.stringify(updated));
         try {
           await supabase.from('arsip_surat').update(payload).eq('id', editId);
         } catch (supabaseErr) {
@@ -549,7 +578,8 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
         }
         Swal.fire('Berhasil', 'Surat berhasil diperbarui dan disimpan ke arsip!', 'success');
       } else {
-        const newLocalItem = { ...payload, id: 'local_' + Date.now(), created_at: new Date().toISOString() };
+        const newId = 'local_' + Date.now();
+        const newLocalItem = { ...payload, id: newId, created_at: new Date().toISOString() };
         localStorage.setItem('arsip_surat_local', JSON.stringify([newLocalItem, ...localData]));
         try {
           await supabase.from('arsip_surat').insert([payload]);
@@ -578,8 +608,13 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     });
 
     if (result.isConfirmed) {
-      await supabase.from('arsip_surat').delete().eq('id', id);
+      try {
+        await supabase.from('arsip_surat').delete().eq('id', id);
+      } catch (e) {}
+      const localData = JSON.parse(localStorage.getItem('arsip_surat_local') || '[]');
+      localStorage.setItem('arsip_surat_local', JSON.stringify(localData.filter((i: any) => i.id !== id)));
       fetchSurat();
+      Swal.fire('Terhapus', 'Surat berhasil dihapus.', 'success');
     }
   };
 
@@ -1049,8 +1084,9 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                   <button onClick={() => setIsModalOpen(false)} className="text-slate-500 hover:text-white cursor-pointer"><X size={20}/></button>
                 </div>
                 <div className="grid grid-cols-1 gap-3">
+                  {/* SECTION 1: Media & Identitas Kop */}
                   <div className="p-4 bg-white/5 border border-white/10 rounded-2xl space-y-3">
-                      <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">Media & Identitas</p>
+                      <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">Media & Identitas Kop</p>
                       <div className="grid grid-cols-2 gap-2">
                           <label className="flex flex-col items-center justify-center p-2 border-2 border-dashed border-white/10 rounded-xl hover:bg-white/5 cursor-pointer">
                               <ImageIcon size={14} className="mb-1 text-slate-400"/>
@@ -1074,8 +1110,10 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                           </label>
                       </div>
                   </div>
-                  <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-slate-500 uppercase">Jenis / Template Surat</label>
+
+                  {/* SECTION 2: Template & Judul Khusus */}
+                  <div className="space-y-2 p-3 bg-white/5 border border-white/10 rounded-2xl">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase block">Jenis / Template Surat</label>
                       <select 
                         className="w-full p-2.5 bg-blue-600/10 border border-blue-500/20 rounded-lg text-xs font-bold text-blue-400 outline-none cursor-pointer"
                         onChange={(e) => {
@@ -1093,75 +1131,134 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                         }}
                         defaultValue=""
                       >
-                        <option value="" disabled className="bg-slate-900 text-slate-500">Pilih jenis surat...</option>
+                        <option value="" disabled className="bg-slate-900 text-slate-500">Pilih template (opsional)...</option>
                         {JENIS_SURAT_TEMPLATES.map(t => (
                           <option key={t.id} value={t.id} className="bg-slate-900 text-white">{t.label}</option>
                         ))}
                       </select>
-                  </div>
 
-                  <div className="grid grid-cols-2 gap-3 mt-1">
-                    <div className="flex items-center gap-2 p-2 bg-white/5 border border-white/10 rounded-lg cursor-pointer hover:bg-white/10 transition-all" onClick={() => setFormData({...formData, show_recipient: !formData.show_recipient})}>
-                      <input type="checkbox" checked={formData.show_recipient} onChange={() => {}} className="w-3 h-3 rounded bg-blue-600 border-none pointer-events-none" />
-                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Tampilkan Penerima</span>
-                    </div>
-                    <div className="flex items-center gap-2 p-2 bg-white/5 border border-white/10 rounded-lg cursor-pointer hover:bg-white/10 transition-all" onClick={() => setFormData({...formData, show_greetings: !formData.show_greetings})}>
-                      <input type="checkbox" checked={formData.show_greetings} onChange={() => {}} className="w-3 h-3 rounded bg-blue-600 border-none pointer-events-none" />
-                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Tampilkan Salam</span>
-                    </div>
-                  </div>
-
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Nomor Surat</label>
-                  <input type="text" className="w-full p-2.5 bg-white/5 border border-white/10 rounded-lg text-xs font-mono text-blue-400" value={formData.nomor_surat} onChange={(e)=>setFormData({...formData, nomor_surat: e.target.value})} />
-                  <div className="grid grid-cols-2 gap-2">
                       <div>
-                          <label className="text-[10px] font-bold text-slate-500 uppercase">Ketua</label>
-                          <input type="text" className="w-full p-2.5 bg-white/5 border border-white/10 rounded-lg text-xs text-white" value={formData.nama_ketua} onChange={(e)=>setFormData({...formData, nama_ketua: e.target.value})} />
+                        <label className="text-[10px] font-bold text-slate-400 uppercase block mt-2">Judul Khusus Surat (Title Override)</label>
+                        <input 
+                          type="text" 
+                          placeholder="Contoh: SURAT TUGAS, SURAT IZIN (Kosongkan jika biasa)" 
+                          className="w-full p-2.5 bg-black/40 border border-white/10 rounded-lg text-xs text-white font-bold" 
+                          value={formData.title_override || ''} 
+                          onChange={(e)=>setFormData({...formData, title_override: e.target.value})} 
+                        />
                       </div>
-                      <div>
-                          <label className="text-[10px] font-bold text-slate-500 uppercase">Sekretaris</label>
-                          <input type="text" className="w-full p-2.5 bg-white/5 border border-white/10 rounded-lg text-xs text-white" value={formData.nama_sekretaris} onChange={(e)=>setFormData({...formData, nama_sekretaris: e.target.value})} />
+
+                      <div className="grid grid-cols-2 gap-2 mt-2">
+                        <div className="flex items-center gap-2 p-2 bg-black/30 border border-white/10 rounded-lg cursor-pointer hover:bg-white/10 transition-all" onClick={() => setFormData({...formData, show_recipient: !formData.show_recipient})}>
+                          <input type="checkbox" checked={formData.show_recipient} onChange={() => {}} className="w-3 h-3 rounded bg-blue-600 border-none pointer-events-none" />
+                          <span className="text-[9px] font-black text-slate-300 uppercase tracking-tighter">Tampilkan Penerima</span>
+                        </div>
+                        <div className="flex items-center gap-2 p-2 bg-black/30 border border-white/10 rounded-lg cursor-pointer hover:bg-white/10 transition-all" onClick={() => setFormData({...formData, show_greetings: !formData.show_greetings})}>
+                          <input type="checkbox" checked={formData.show_greetings} onChange={() => {}} className="w-3 h-3 rounded bg-blue-600 border-none pointer-events-none" />
+                          <span className="text-[9px] font-black text-slate-300 uppercase tracking-tighter">Tampilkan Salam</span>
+                        </div>
                       </div>
                   </div>
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Tujuan (Yth)</label>
-                  <input type="text" className="w-full p-2.5 bg-white/5 border border-white/10 rounded-lg text-xs text-white" value={formData.tujuan_yth} onChange={(e)=>setFormData({...formData, tujuan_yth: e.target.value})} />
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Jabatan Tujuan</label>
-                  <input type="text" className="w-full p-2.5 bg-white/5 border border-white/10 rounded-lg text-xs text-white" value={formData.jabatan_tujuan} onChange={(e)=>setFormData({...formData, jabatan_tujuan: e.target.value})} />
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Perihal</label>
-                  <textarea className="w-full p-2.5 bg-white/5 border border-white/10 rounded-lg text-xs h-16 text-white" value={formData.perihal} onChange={(e)=>setFormData({...formData, perihal: e.target.value})} />
-                  <div className="flex items-center justify-between">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase">Isi Paragraf</label>
-                    <button 
-                      onClick={handleGenerateAI}
-                      disabled={isGeneratingAI}
-                      className="flex items-center gap-1.5 px-2 py-1 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 rounded-md text-[9px] font-black uppercase tracking-wider border border-blue-500/20 transition-all disabled:opacity-50 cursor-pointer"
-                    >
-                      {isGeneratingAI ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
-                      {isGeneratingAI ? 'Generating...' : 'Generate AI'}
-                    </button>
+
+                  {/* SECTION 3: Detail Utama Surat (Hal. 1) */}
+                  <div className="p-3 bg-white/5 border border-white/10 rounded-2xl space-y-2">
+                    <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">Detail Dokumen (Hal. 1)</p>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase">Nomor Surat</label>
+                      <input type="text" className="w-full p-2.5 bg-black/40 border border-white/10 rounded-lg text-xs font-mono text-blue-400" value={formData.nomor_surat || ''} onChange={(e)=>setFormData({...formData, nomor_surat: e.target.value})} />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase">Tempat & Tanggal</label>
+                        <input type="text" className="w-full p-2.5 bg-black/40 border border-white/10 rounded-lg text-xs text-white" value={formData.tempat_tanggal || ''} onChange={(e)=>setFormData({...formData, tempat_tanggal: e.target.value})} placeholder="Parepare, 27 Februari 2026" />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase">Lampiran</label>
+                        <input type="text" className="w-full p-2.5 bg-black/40 border border-white/10 rounded-lg text-xs text-white" value={formData.lampiran || ''} onChange={(e)=>setFormData({...formData, lampiran: e.target.value})} placeholder="1 Lembar / -" />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase">Perihal</label>
+                      <textarea className="w-full p-2.5 bg-black/40 border border-white/10 rounded-lg text-xs h-16 text-white" value={formData.perihal || ''} onChange={(e)=>setFormData({...formData, perihal: e.target.value})} />
+                    </div>
+
+                    {formData.show_recipient && (
+                      <div className="grid grid-cols-1 gap-2 pt-1">
+                        <div>
+                          <label className="text-[10px] font-bold text-slate-400 uppercase">Tujuan Yth.</label>
+                          <input type="text" className="w-full p-2.5 bg-black/40 border border-white/10 rounded-lg text-xs text-white" value={formData.tujuan_yth || ''} onChange={(e)=>setFormData({...formData, tujuan_yth: e.target.value})} />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-slate-400 uppercase">Jabatan / Lokasi Tujuan</label>
+                          <input type="text" className="w-full p-2.5 bg-black/40 border border-white/10 rounded-lg text-xs text-white" value={formData.jabatan_tujuan || ''} onChange={(e)=>setFormData({...formData, jabatan_tujuan: e.target.value})} />
+                        </div>
+                      </div>
+                    )}
+
+                    <div>
+                      <div className="flex items-center justify-between my-1">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase">Isi Paragraf Surat</label>
+                        <button 
+                          type="button"
+                          onClick={handleGenerateAI}
+                          disabled={isGeneratingAI}
+                          className="flex items-center gap-1.5 px-2 py-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded-md text-[9px] font-black uppercase tracking-wider border border-blue-500/30 transition-all disabled:opacity-50 cursor-pointer"
+                        >
+                          {isGeneratingAI ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
+                          {isGeneratingAI ? 'Generating...' : 'Generate AI'}
+                        </button>
+                      </div>
+                      <textarea className="w-full p-2.5 bg-black/40 border border-white/10 rounded-lg text-xs h-32 text-white" value={formData.isi_surat || ''} onChange={(e)=>setFormData({...formData, isi_surat: e.target.value})} />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase">Ketua</label>
+                        <input type="text" className="w-full p-2.5 bg-black/40 border border-white/10 rounded-lg text-xs text-white" value={formData.nama_ketua || ''} onChange={(e)=>setFormData({...formData, nama_ketua: e.target.value})} />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase">Sekretaris</label>
+                        <input type="text" className="w-full p-2.5 bg-black/40 border border-white/10 rounded-lg text-xs text-white" value={formData.nama_sekretaris || ''} onChange={(e)=>setFormData({...formData, nama_sekretaris: e.target.value})} />
+                      </div>
+                    </div>
                   </div>
-                  <textarea className="w-full p-2.5 bg-white/5 border border-white/10 rounded-lg text-xs h-32 text-white" value={formData.isi_surat} onChange={(e)=>setFormData({...formData, isi_surat: e.target.value})} />
-                  
-                  <div className="pt-2 border-t border-white/10 mt-2">
-                    <label className="flex items-center gap-2 cursor-pointer mb-2">
+
+                  {/* SECTION 4: Halaman Lampiran (Hal. 2 Seterusnya) */}
+                  <div className="p-3 bg-purple-900/20 border border-purple-500/20 rounded-2xl space-y-2">
+                    <label className="flex items-center gap-2 cursor-pointer">
                       <input 
                         type="checkbox" 
-                        className="w-3.5 h-3.5 accent-blue-500 rounded bg-white/5 border-white/20"
+                        className="w-4 h-4 accent-purple-500 rounded bg-black/40 border-white/20"
                         checked={formData.include_lampiran_peserta}
                         onChange={(e) => setFormData({...formData, include_lampiran_peserta: e.target.checked})}
                       />
-                      <span className="text-[10px] font-bold text-slate-400 uppercase">Sertakan Lampiran Peserta (Hal. 2)</span>
+                      <span className="text-[11px] font-black text-purple-300 uppercase tracking-wider">Sertakan Halaman Lampiran (Hal. 2)</span>
                     </label>
+                    
                     {formData.include_lampiran_peserta && (
-                      <>
-                        <label className="text-[10px] font-bold text-slate-500 uppercase">Daftar Peserta (1 baris per nama)</label>
-                        <textarea 
-                          placeholder="Budi Santoso&#10;Andi Irawan&#10;Citra Lestari" 
-                          className="w-full p-2.5 bg-white/5 border border-white/10 rounded-lg text-xs h-24 mt-1 whitespace-pre-wrap text-white" 
-                          value={formData.lampiran_peserta} 
-                          onChange={(e)=>setFormData({...formData, lampiran_peserta: e.target.value})} 
-                        />
-                      </>
+                      <div className="space-y-2 pt-2 border-t border-purple-500/20">
+                        <div>
+                          <label className="text-[10px] font-bold text-purple-300 uppercase">Judul Lampiran</label>
+                          <input 
+                            type="text"
+                            className="w-full p-2.5 bg-black/40 border border-purple-500/30 rounded-lg text-xs text-white font-bold"
+                            value={formData.judul_lampiran || 'Daftar Lampiran Peserta'}
+                            onChange={(e) => setFormData({...formData, judul_lampiran: e.target.value})}
+                            placeholder="Daftar Lampiran Peserta / Daftar Delegasi / Atlet"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-purple-300 uppercase">Daftar Nama / Rincian Lampiran (1 baris per item)</label>
+                          <textarea 
+                            placeholder="Budi Santoso&#10;Andi Irawan&#10;Citra Lestari" 
+                            className="w-full p-2.5 bg-black/40 border border-purple-500/30 rounded-lg text-xs h-28 whitespace-pre-wrap text-white font-mono" 
+                            value={formData.lampiran_peserta || ''} 
+                            onChange={(e)=>setFormData({...formData, lampiran_peserta: e.target.value})} 
+                          />
+                        </div>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -1287,7 +1384,7 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                         <p>Tanggal : {formData.tempat_tanggal.split(', ')[1] || formData.tempat_tanggal}</p>
                         <p>Perihal : {formData.perihal}</p>
                       </div>
-                      <h3 className="text-lg font-bold text-center mb-6 uppercase">Daftar Lampiran Peserta</h3>
+                      <h3 className="text-lg font-bold text-center mb-6 uppercase">{formData.judul_lampiran || 'Daftar Lampiran Peserta'}</h3>
                       <table className="w-full border-collapse border border-black text-left font-sans text-[10pt]">
                         <thead>
                           <tr>
