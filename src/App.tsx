@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from './supabase'; 
+import { getSiteSetting } from './utils/siteSettingsHelper'; 
 
 // --- IMPORT FALLBACK DATA ---
 import popupFallback from './data/konfigurasi_popup.json';
@@ -221,6 +222,7 @@ function ImagePopup() {
   useEffect(() => {
     const fetchActivePopups = async () => {
       try {
+        let activeItems: any[] = [];
         const { data, error } = await supabase
           .from('konfigurasi_popup')
           .select('*')
@@ -228,7 +230,20 @@ function ImagePopup() {
           .order('created_at', { ascending: false });
         
         if (!error && data && data.length > 0) {
-          setPromoImages(data);
+          activeItems = data;
+        }
+
+        const siteConfig = await getSiteSetting('popup_config');
+        if (siteConfig) {
+          const parsed = typeof siteConfig === 'string' ? JSON.parse(siteConfig) : siteConfig;
+          if (Array.isArray(parsed)) {
+            const activeSite = parsed.filter((p: any) => p.is_active !== false);
+            if (activeSite.length > 0) activeItems = activeSite;
+          }
+        }
+
+        if (activeItems.length > 0) {
+          setPromoImages(activeItems);
           setTimeout(() => { setIsImageLoading(true); setIsOpen(true); }, 1000);
         } else {
           const activeFallbacks = (popupFallback as any[]).filter(p => p.is_active);
@@ -242,6 +257,14 @@ function ImagePopup() {
       }
     };
     fetchActivePopups();
+
+    const handleUpdate = (e: any) => {
+      if (e.detail?.key === 'popup_config') {
+        fetchActivePopups();
+      }
+    };
+    window.addEventListener('site_setting_updated', handleUpdate);
+    return () => window.removeEventListener('site_setting_updated', handleUpdate);
   }, []);
 
   useEffect(() => {

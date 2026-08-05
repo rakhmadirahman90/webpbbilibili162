@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Download } from 'lucide-react';
 import { supabase } from '../supabase';
+import { getSiteSetting } from '../utils/siteSettingsHelper';
 
 function ImagePopup() {
   const [isOpen, setIsOpen] = useState(false);
@@ -12,6 +13,7 @@ function ImagePopup() {
   useEffect(() => {
     const fetchActivePopups = async () => {
       try {
+        let items: any[] = [];
         const { data, error } = await supabase
           .from('konfigurasi_popup')
           .select('*')
@@ -19,7 +21,20 @@ function ImagePopup() {
           .order('created_at', { ascending: false });
         
         if (!error && data && data.length > 0) {
-          setPromoImages(data);
+          items = data;
+        }
+
+        const siteConfig = await getSiteSetting('popup_config');
+        if (siteConfig) {
+          const parsed = typeof siteConfig === 'string' ? JSON.parse(siteConfig) : siteConfig;
+          if (Array.isArray(parsed)) {
+            const activeSite = parsed.filter((p: any) => p.is_active !== false);
+            if (activeSite.length > 0) items = activeSite;
+          }
+        }
+
+        if (items.length > 0) {
+          setPromoImages(items);
           setTimeout(() => setIsOpen(true), 1000);
         }
       } catch (err) {
@@ -27,6 +42,14 @@ function ImagePopup() {
       }
     };
     fetchActivePopups();
+
+    const handleUpdate = (e: any) => {
+      if (e.detail?.key === 'popup_config') {
+        fetchActivePopups();
+      }
+    };
+    window.addEventListener('site_setting_updated', handleUpdate);
+    return () => window.removeEventListener('site_setting_updated', handleUpdate);
   }, []);
 
   useEffect(() => {
