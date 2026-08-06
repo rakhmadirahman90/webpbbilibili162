@@ -270,6 +270,15 @@ export function KelolaSurat() {
   const [isPreviewOnly, setIsPreviewOnly] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
+  // Realtime Database Sync States
+  const [realtimeSyncStatus, setRealtimeSyncStatus] = useState<'synced' | 'saving' | 'offline' | 'idle'>('idle');
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isInitialModalLoadRef = useRef<boolean>(true);
+
+  const [masukSyncStatus, setMasukSyncStatus] = useState<'synced' | 'saving' | 'offline' | 'idle'>('idle');
+  const masukSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isMasukInitialRef = useRef<boolean>(true);
+
   const [logoPos, setLogoPos] = useState({ x: 0, y: 0 });
   const [stempelPos, setStempelPos] = useState({ x: -40, y: 0 });
   const [ttdKetuaPos, setTtdKetuaPos] = useState({ x: 0, y: 0 });
@@ -634,6 +643,67 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     }
   };
 
+  const saveSuratToSupabase = async (
+    currentFormData: any,
+    currentEditId: string | null,
+    currentPositions: {
+      logoPos: { x: number; y: number };
+      stempelPos: { x: number; y: number };
+      ttdKetuaPos: { x: number; y: number };
+      ttdSekretarisPos: { x: number; y: number };
+    }
+  ) => {
+    const { id, created_at, ...rawPayload } = currentFormData as any;
+    const payload: any = {
+      ...rawPayload,
+      logo_url: getValidAssetUrl(rawPayload.logo_url, DEFAULT_LOGO_URL),
+      ttd_ketua_url: getValidAssetUrl(rawPayload.ttd_ketua_url, DEFAULT_TTD_KETUA_URL),
+      ttd_sekretaris_url: getValidAssetUrl(rawPayload.ttd_sekretaris_url, DEFAULT_TTD_SEKRETARIS_URL),
+      cap_stempel_url: getValidAssetUrl(rawPayload.cap_stempel_url, DEFAULT_CAP_STEMPEL_URL),
+      logo_pos: currentPositions.logoPos,
+      stempel_pos: currentPositions.stempelPos,
+      ttd_ketua_pos: currentPositions.ttdKetuaPos,
+      ttd_sekretaris_pos: currentPositions.ttdSekretarisPos
+    };
+
+    let resultId = currentEditId;
+
+    if (currentEditId && !currentEditId.toString().startsWith('local_')) {
+      const { error } = await supabase.from('arsip_surat').update(payload).eq('id', currentEditId);
+      if (error) {
+        console.warn("Supabase update warning (fallback safe payload):", error.message);
+        const { logo_pos, stempel_pos, ttd_ketua_pos, ttd_sekretaris_pos, ...safePayload } = payload;
+        await supabase.from('arsip_surat').update(safePayload).eq('id', currentEditId);
+      }
+    } else {
+      const { data, error } = await supabase.from('arsip_surat').insert([payload]).select().single();
+      if (error) {
+        console.warn("Supabase insert warning (fallback safe payload):", error.message);
+        const { logo_pos, stempel_pos, ttd_ketua_pos, ttd_sekretaris_pos, ...safePayload } = payload;
+        const { data: safeData } = await supabase.from('arsip_surat').insert([safePayload]).select().single();
+        if (safeData?.id) resultId = safeData.id;
+      } else if (data?.id) {
+        resultId = data.id;
+      }
+    }
+
+    try {
+      const localData = JSON.parse(localStorage.getItem('arsip_surat_local') || '[]');
+      const targetId = resultId || currentEditId || 'local_' + Date.now();
+      const localItem = { ...payload, id: targetId, created_at: created_at || new Date().toISOString() };
+      const idx = localData.findIndex((i: any) => i.id === targetId || (currentEditId && i.id === currentEditId));
+      let updated;
+      if (idx >= 0) {
+        updated = localData.map((item: any, i: number) => i === idx ? localItem : item);
+      } else {
+        updated = [localItem, ...localData];
+      }
+      safeLocalStorageSet('arsip_surat_local', JSON.stringify(updated));
+    } catch (e) {}
+
+    return resultId;
+  };
+
   const fetchSurat = async () => {
     setLoading(true);
     try {
@@ -650,15 +720,15 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
         }
       });
 
-      // Override with DB data
-      (data || []).forEach(item => {
+      // Override with localData
+      localData.forEach((item: any) => {
         if (item && !deletedIds.includes(item.id) && !deletedIds.includes(item.nomor_surat)) {
           map.set(item.id || item.nomor_surat, item);
         }
       });
 
-      // Override with localData
-      localData.forEach((item: any) => {
+      // Database data takes precedence for real-time synchronization
+      (data || []).forEach(item => {
         if (item && !deletedIds.includes(item.id) && !deletedIds.includes(item.nomor_surat)) {
           map.set(item.id || item.nomor_surat, item);
         }
@@ -727,8 +797,14 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     try {
       const { data } = await supabase.from('arsip_surat_masuk').select('*').order('created_at', { ascending: false });
       const localData = JSON.parse(localStorage.getItem('arsip_surat_masuk_local') || '[]');
-      const combined = [...(data || []), ...localData];
-      const unique = Array.from(new Map(combined.map(item => [item.id || item.nomor_surat, item])).values());
+      const map = new Map();
+      localData.forEach((item: any) => {
+        if (item) map.set(item.id || item.nomor_surat, item);
+      });
+      (data || []).forEach(item => {
+        if (item) map.set(item.id || item.nomor_surat, item);
+      });
+      const unique = Array.from(map.values());
       setSuratMasukList(unique);
     } catch (err) {
       const localData = JSON.parse(localStorage.getItem('arsip_surat_masuk_local') || '[]');
@@ -739,17 +815,127 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
   useEffect(() => { 
     fetchSurat(); 
     fetchSuratMasuk();
+
+    // Subscribe to real-time changes in Supabase for arsip_surat
+    const channelSurat = supabase
+      .channel('realtime_arsip_surat_channel')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'arsip_surat' },
+        () => {
+          fetchSurat();
+        }
+      )
+      .subscribe();
+
+    // Subscribe to real-time changes in Supabase for arsip_surat_masuk
+    const channelSuratMasuk = supabase
+      .channel('realtime_arsip_surat_masuk_channel')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'arsip_surat_masuk' },
+        () => {
+          fetchSuratMasuk();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channelSurat);
+      supabase.removeChannel(channelSuratMasuk);
+    };
   }, []);
+
+  // Debounced Realtime Auto-Save for Surat Keluar
+  useEffect(() => {
+    if (!isModalOpen || isPreviewOnly) return;
+
+    if (isInitialModalLoadRef.current) {
+      isInitialModalLoadRef.current = false;
+      return;
+    }
+
+    setRealtimeSyncStatus('saving');
+
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    saveTimeoutRef.current = setTimeout(async () => {
+      try {
+        const dbId = await saveSuratToSupabase(formData, editId, {
+          logoPos,
+          stempelPos,
+          ttdKetuaPos,
+          ttdSekretarisPos
+        });
+        if (dbId && dbId !== editId) {
+          setEditId(dbId);
+        }
+        setRealtimeSyncStatus('synced');
+      } catch (err) {
+        console.warn('Realtime auto-save error:', err);
+        setRealtimeSyncStatus('offline');
+      }
+    }, 750);
+
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [formData, logoPos, stempelPos, ttdKetuaPos, ttdSekretarisPos, isModalOpen, isPreviewOnly]);
+
+  // Debounced Realtime Auto-Save for Surat Masuk
+  useEffect(() => {
+    if (!isMasukModalOpen) return;
+
+    if (isMasukInitialRef.current) {
+      isMasukInitialRef.current = false;
+      return;
+    }
+
+    setMasukSyncStatus('saving');
+
+    if (masukSaveTimeoutRef.current) {
+      clearTimeout(masukSaveTimeoutRef.current);
+    }
+
+    masukSaveTimeoutRef.current = setTimeout(async () => {
+      try {
+        const { id, created_at, ...payload } = suratMasukForm as any;
+        if (!payload.nomor_surat && !payload.pengirim && !payload.perihal) return;
+
+        if (editMasukId && !editMasukId.toString().startsWith('local_')) {
+          await supabase.from('arsip_surat_masuk').update(payload).eq('id', editMasukId);
+        } else {
+          const { data } = await supabase.from('arsip_surat_masuk').insert([payload]).select().single();
+          if (data?.id) {
+            setEditMasukId(data.id);
+          }
+        }
+        setMasukSyncStatus('synced');
+      } catch (err) {
+        setMasukSyncStatus('offline');
+      }
+    }, 750);
+
+    return () => {
+      if (masukSaveTimeoutRef.current) clearTimeout(masukSaveTimeoutRef.current);
+    };
+  }, [suratMasukForm, isMasukModalOpen]);
 
   const prepareNewSuratMasuk = () => {
     setEditMasukId(null);
     setSuratMasukForm(defaultSuratMasuk);
+    isMasukInitialRef.current = true;
     setIsMasukModalOpen(true);
   };
 
   const handleEditSuratMasuk = (surat: any) => {
     setEditMasukId(surat.id);
     setSuratMasukForm(surat);
+    isMasukInitialRef.current = true;
     setIsMasukModalOpen(true);
   };
 
@@ -918,7 +1104,10 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     setEditId(null);
     setIsPreviewOnly(false);
     setActiveModalTab('form');
+    setLogoPos({ x: 0, y: 0 });
     setStempelPos({ x: -40, y: 0 });
+    setTtdKetuaPos({ x: 0, y: 0 });
+    setTtdSekretarisPos({ x: 0, y: 0 });
 
     const newFullNomor = generateNextNomorSurat(suratList);
     const storedAssets = getStoredDigitalAssets();
@@ -938,6 +1127,7 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       nama_ketua: lastSurat?.nama_ketua || defaultForm.nama_ketua,
       nama_sekretaris: lastSurat?.nama_sekretaris || defaultForm.nama_sekretaris
     });
+    isInitialModalLoadRef.current = true;
     setIsModalOpen(true);
   };
 
@@ -1016,6 +1206,12 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     setEditId(surat.id);
     setIsPreviewOnly(false);
     setActiveModalTab('form');
+
+    setLogoPos(surat.logo_pos || { x: 0, y: 0 });
+    setStempelPos(surat.stempel_pos || { x: -40, y: 0 });
+    setTtdKetuaPos(surat.ttd_ketua_pos || { x: 0, y: 0 });
+    setTtdSekretarisPos(surat.ttd_sekretaris_pos || { x: 0, y: 0 });
+
     setFormData({
       ...defaultForm,
       ...surat,
@@ -1031,6 +1227,7 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       tempat_tanggal: surat.tempat_tanggal || defaultForm.tempat_tanggal,
       lampiran: surat.lampiran || '-',
     });
+    isInitialModalLoadRef.current = true;
     setIsModalOpen(true);
   };
 
@@ -1038,6 +1235,12 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     setEditId(null);
     setIsPreviewOnly(true);
     setActiveModalTab('preview');
+
+    setLogoPos(surat.logo_pos || { x: 0, y: 0 });
+    setStempelPos(surat.stempel_pos || { x: -40, y: 0 });
+    setTtdKetuaPos(surat.ttd_ketua_pos || { x: 0, y: 0 });
+    setTtdSekretarisPos(surat.ttd_sekretaris_pos || { x: 0, y: 0 });
+
     setFormData({
       ...defaultForm,
       ...surat,
@@ -1053,69 +1256,22 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       tempat_tanggal: surat.tempat_tanggal || defaultForm.tempat_tanggal,
       lampiran: surat.lampiran || '-',
     });
+    isInitialModalLoadRef.current = true;
     setIsModalOpen(true);
   };
 
   const handleSave = async () => {
     setIsSubmitting(true);
-    const { id, created_at, ...rawPayload } = formData as any;
-    const payload = {
-      ...rawPayload,
-      logo_url: getValidAssetUrl(rawPayload.logo_url, DEFAULT_LOGO_URL),
-      ttd_ketua_url: getValidAssetUrl(rawPayload.ttd_ketua_url, DEFAULT_TTD_KETUA_URL),
-      ttd_sekretaris_url: getValidAssetUrl(rawPayload.ttd_sekretaris_url, DEFAULT_TTD_SEKRETARIS_URL),
-      cap_stempel_url: getValidAssetUrl(rawPayload.cap_stempel_url, DEFAULT_CAP_STEMPEL_URL)
-    };
-
     try {
-      const localData = JSON.parse(localStorage.getItem('arsip_surat_local') || '[]');
-      let updated;
-      if (editId) {
-        const existingIndex = localData.findIndex((item: any) => item.id === editId || item.nomor_surat === formData.nomor_surat);
-        if (existingIndex >= 0) {
-          updated = localData.map((item: any) => (item.id === editId || item.nomor_surat === formData.nomor_surat) ? { ...item, ...payload, id: editId } : item);
-        } else {
-          updated = [{ ...payload, id: editId, created_at: formData.created_at || new Date().toISOString() }, ...localData];
-        }
-        if (!safeLocalStorageSet('arsip_surat_local', JSON.stringify(updated))) {
-          const stripped = updated.map((item: any) => {
-            const copy = { ...item };
-            delete copy.logo_url;
-            delete copy.ttd_ketua_url;
-            delete copy.ttd_sekretaris_url;
-            delete copy.cap_stempel_url;
-            return copy;
-          });
-          safeLocalStorageSet('arsip_surat_local', JSON.stringify(stripped));
-        }
-        try {
-          await supabase.from('arsip_surat').update(payload).eq('id', editId);
-        } catch (supabaseErr) {
-          console.warn("Supabase update fallback to local:", supabaseErr);
-        }
-        Swal.fire('Berhasil', 'Surat berhasil diperbarui dan disimpan ke arsip!', 'success');
-      } else {
-        const newId = 'local_' + Date.now();
-        const newLocalItem = { ...payload, id: newId, created_at: new Date().toISOString() };
-        updated = [newLocalItem, ...localData];
-        if (!safeLocalStorageSet('arsip_surat_local', JSON.stringify(updated))) {
-          const stripped = updated.map((item: any) => {
-            const copy = { ...item };
-            delete copy.logo_url;
-            delete copy.ttd_ketua_url;
-            delete copy.ttd_sekretaris_url;
-            delete copy.cap_stempel_url;
-            return copy;
-          });
-          safeLocalStorageSet('arsip_surat_local', JSON.stringify(stripped));
-        }
-        try {
-          await supabase.from('arsip_surat').insert([payload]);
-        } catch (supabaseErr) {
-          console.warn("Supabase insert fallback to local:", supabaseErr);
-        }
-        Swal.fire('Berhasil', 'Surat berhasil disimpan ke arsip!', 'success');
-      }
+      const dbId = await saveSuratToSupabase(formData, editId, {
+        logoPos,
+        stempelPos,
+        ttdKetuaPos,
+        ttdSekretarisPos
+      });
+      if (dbId) setEditId(dbId);
+      setRealtimeSyncStatus('synced');
+      Swal.fire('Berhasil', 'Surat berhasil disimpan secara realtime ke database!', 'success');
       setIsModalOpen(false);
       fetchSurat();
     } catch (err: any) {
@@ -1205,10 +1361,19 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       x: e.clientX - dragStart.x,
       y: e.clientY - dragStart.y
     };
-    if (draggingAsset === 'logo') setLogoPos(newPos);
-    else if (draggingAsset === 'stempel') setStempelPos(newPos);
-    else if (draggingAsset === 'ttd_ketua') setTtdKetuaPos(newPos);
-    else if (draggingAsset === 'ttd_sekretaris') setTtdSekretarisPos(newPos);
+    if (draggingAsset === 'logo') {
+      setLogoPos(newPos);
+      setFormData(prev => ({ ...prev, logo_pos: newPos }));
+    } else if (draggingAsset === 'stempel') {
+      setStempelPos(newPos);
+      setFormData(prev => ({ ...prev, stempel_pos: newPos }));
+    } else if (draggingAsset === 'ttd_ketua') {
+      setTtdKetuaPos(newPos);
+      setFormData(prev => ({ ...prev, ttd_ketua_pos: newPos }));
+    } else if (draggingAsset === 'ttd_sekretaris') {
+      setTtdSekretarisPos(newPos);
+      setFormData(prev => ({ ...prev, ttd_sekretaris_pos: newPos }));
+    }
   };
 
   const handleAssetPointerUp = (e: React.PointerEvent) => {
@@ -1353,6 +1518,8 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
           <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[8px] sm:text-[10px] font-black uppercase tracking-widest mb-0.5 sm:mb-1">
             <Mail size={10} />
             <span>Administrasi Surat</span>
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse ml-1" />
+            <span className="text-[8px] text-emerald-400 font-bold lowercase tracking-normal">realtime db active</span>
           </div>
           <h1 className="text-base sm:text-2xl md:text-3xl font-black text-white italic uppercase tracking-tighter truncate leading-tight">
             Kelola <span className="text-blue-500">Surat Klub</span>
@@ -1647,7 +1814,19 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
             {!isPreviewOnly && (
               <div className={`w-full md:w-1/3 p-4 sm:p-6 overflow-y-auto border-r border-white/5 space-y-4 custom-scrollbar shrink-0 ${activeModalTab === 'form' ? 'flex flex-col flex-1' : 'hidden md:flex md:flex-col'}`}>
                 <div className="hidden md:flex justify-between items-center border-b border-white/10 pb-4">
-                  <h2 className="text-xl font-black uppercase italic">{editId ? 'Edit Surat' : 'Buat Surat Baru'}</h2>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-xl font-black uppercase italic">{editId ? 'Edit Surat' : 'Buat Surat Baru'}</h2>
+                    {realtimeSyncStatus === 'saving' && (
+                      <span className="px-2 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-full text-[9px] font-bold flex items-center gap-1 animate-pulse">
+                        <Loader2 size={10} className="animate-spin" /> Auto-Saving...
+                      </span>
+                    )}
+                    {realtimeSyncStatus === 'synced' && (
+                      <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full text-[9px] font-bold flex items-center gap-1">
+                        <CheckCircle2 size={10} className="text-emerald-400" /> Realtime Sync Active
+                      </span>
+                    )}
+                  </div>
                   <button onClick={() => setIsModalOpen(false)} className="text-slate-500 hover:text-white cursor-pointer"><X size={20}/></button>
                 </div>
                 <div className="grid grid-cols-1 gap-3">
