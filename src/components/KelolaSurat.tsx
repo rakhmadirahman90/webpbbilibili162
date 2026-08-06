@@ -750,6 +750,8 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
         return {
           ...item,
           logo_url: getValidAssetUrl(item.logo_url, baseLogo),
+          logo_scale: item.logo_scale || 100,
+          logo_pos: item.logo_pos || { x: 0, y: 0 },
           ttd_ketua_url: getValidAssetUrl(item.ttd_ketua_url, baseTtdKetua),
           ttd_sekretaris_url: getValidAssetUrl(item.ttd_sekretaris_url, baseTtdSekre),
           cap_stempel_url: getValidAssetUrl(item.cap_stempel_url, baseStempel)
@@ -784,6 +786,8 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       const sanitizeFallback = (item: any) => ({
         ...item,
         logo_url: getValidAssetUrl(item.logo_url, fallbackLogo),
+        logo_scale: item.logo_scale || 100,
+        logo_pos: item.logo_pos || { x: 0, y: 0 },
         ttd_ketua_url: getValidAssetUrl(item.ttd_ketua_url, fallbackTtdKetua),
         ttd_sekretaris_url: getValidAssetUrl(item.ttd_sekretaris_url, fallbackTtdSekre),
         cap_stempel_url: getValidAssetUrl(item.cap_stempel_url, fallbackStempel)
@@ -2322,8 +2326,8 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                       onPointerUp={handleAssetPointerUp}
                       style={{
                         transform: `translate(${logoPos.x}px, ${logoPos.y}px)`,
-                        width: `${96 * ((formData.logo_scale || 100) / 100)}px`,
-                        height: `${96 * ((formData.logo_scale || 100) / 100)}px`,
+                        width: `${72 * ((formData.logo_scale || 100) / 100)}px`,
+                        height: `${72 * ((formData.logo_scale || 100) / 100)}px`,
                       }}
                       className={`flex-shrink-0 flex items-center justify-center mr-4 relative cursor-grab active:cursor-grabbing group transition-all select-none touch-none ${
                         selectedAsset === 'logo' ? 'ring-2 ring-blue-500 ring-offset-2 rounded-lg' : 'hover:ring-1 hover:ring-blue-300 rounded-lg'
