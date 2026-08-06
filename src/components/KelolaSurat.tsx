@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabase';
-import { Mail, Plus, Search, Eye, Edit, Trash2, Printer, X, Upload, Sparkles, Send, ImageIcon, MessageCircle, Move, Loader2, FileText, CheckCircle2, Clock, AlertCircle, Filter, Building, UserCheck, ShieldAlert, ListOrdered, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
+import { Mail, Plus, Search, Eye, Edit, Trash2, Printer, X, Upload, Sparkles, Send, ImageIcon, MessageCircle, Move, Loader2, FileText, CheckCircle2, Clock, AlertCircle, Filter, Building, UserCheck, ShieldAlert, ListOrdered, ZoomIn, ZoomOut, RotateCcw, Maximize2 } from 'lucide-react';
 import Swal from 'sweetalert2';
 
 const JENIS_SURAT_TEMPLATES = [
@@ -273,6 +273,34 @@ export function KelolaSurat() {
   const [stempelPos, setStempelPos] = useState({ x: -40, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [zoomScale, setZoomScale] = useState<number>(0.85);
+  const [selectedAsset, setSelectedAsset] = useState<'logo' | 'stempel' | 'ttd_ketua' | 'ttd_sekretaris' | null>(null);
+
+  const handleResizePointerDown = (
+    e: React.PointerEvent,
+    assetKey: 'logo_scale' | 'stempel_scale' | 'ttd_ketua_scale' | 'ttd_sekretaris_scale'
+  ) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const initialScale = (formData as any)[assetKey] || 100;
+
+    const handlePointerMove = (moveEvent: PointerEvent) => {
+      const dx = moveEvent.clientX - startX;
+      const dy = moveEvent.clientY - startY;
+      const delta = Math.abs(dx) > Math.abs(dy) ? dx : dy;
+      const newScale = Math.min(250, Math.max(30, Math.round(initialScale + delta * 0.8)));
+      setFormData(prev => ({ ...prev, [assetKey]: newScale }));
+    };
+
+    const handlePointerUp = () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+    };
+
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
+  };
 
   const getStoredDigitalAssets = () => {
     try {
@@ -284,6 +312,10 @@ export function KelolaSurat() {
           ttd_ketua_url: getValidAssetUrl(parsed.ttd_ketua_url, DEFAULT_TTD_KETUA_URL),
           ttd_sekretaris_url: getValidAssetUrl(parsed.ttd_sekretaris_url, DEFAULT_TTD_SEKRETARIS_URL),
           cap_stempel_url: getValidAssetUrl(parsed.cap_stempel_url, DEFAULT_CAP_STEMPEL_URL),
+          logo_scale: parsed.logo_scale || 100,
+          ttd_ketua_scale: parsed.ttd_ketua_scale || 100,
+          ttd_sekretaris_scale: parsed.ttd_sekretaris_scale || 100,
+          stempel_scale: parsed.stempel_scale || 100,
         };
       }
     } catch (e) {
@@ -294,6 +326,10 @@ export function KelolaSurat() {
       ttd_ketua_url: DEFAULT_TTD_KETUA_URL,
       ttd_sekretaris_url: DEFAULT_TTD_SEKRETARIS_URL,
       cap_stempel_url: DEFAULT_CAP_STEMPEL_URL,
+      logo_scale: 100,
+      ttd_ketua_scale: 100,
+      ttd_sekretaris_scale: 100,
+      stempel_scale: 100,
     };
   };
 
@@ -341,6 +377,10 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     ttd_ketua_url: DEFAULT_TTD_KETUA_URL, 
     ttd_sekretaris_url: DEFAULT_TTD_SEKRETARIS_URL,
     cap_stempel_url: DEFAULT_CAP_STEMPEL_URL,
+    logo_scale: 100,
+    ttd_ketua_scale: 100,
+    ttd_sekretaris_scale: 100,
+    stempel_scale: 100,
     show_recipient: true,
     show_greetings: true,
     title_override: '',
@@ -815,7 +855,11 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       logo_url: getValidAssetUrl(formData.logo_url, DEFAULT_LOGO_URL),
       ttd_ketua_url: getValidAssetUrl(formData.ttd_ketua_url, DEFAULT_TTD_KETUA_URL),
       ttd_sekretaris_url: getValidAssetUrl(formData.ttd_sekretaris_url, DEFAULT_TTD_SEKRETARIS_URL),
-      cap_stempel_url: getValidAssetUrl(formData.cap_stempel_url, DEFAULT_CAP_STEMPEL_URL)
+      cap_stempel_url: getValidAssetUrl(formData.cap_stempel_url, DEFAULT_CAP_STEMPEL_URL),
+      logo_scale: formData.logo_scale || 100,
+      ttd_ketua_scale: formData.ttd_ketua_scale || 100,
+      ttd_sekretaris_scale: formData.ttd_sekretaris_scale || 100,
+      stempel_scale: formData.stempel_scale || 100,
     };
 
     safeLocalStorageSet('pb_bilibili_digital_assets', JSON.stringify(newAssets));
@@ -883,6 +927,10 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       ttd_ketua_url: getValidAssetUrl(lastSurat?.ttd_ketua_url, storedAssets.ttd_ketua_url),
       ttd_sekretaris_url: getValidAssetUrl(lastSurat?.ttd_sekretaris_url, storedAssets.ttd_sekretaris_url),
       cap_stempel_url: getValidAssetUrl(lastSurat?.cap_stempel_url, storedAssets.cap_stempel_url),
+      logo_scale: lastSurat?.logo_scale || storedAssets.logo_scale || 100,
+      ttd_ketua_scale: lastSurat?.ttd_ketua_scale || storedAssets.ttd_ketua_scale || 100,
+      ttd_sekretaris_scale: lastSurat?.ttd_sekretaris_scale || storedAssets.ttd_sekretaris_scale || 100,
+      stempel_scale: lastSurat?.stempel_scale || storedAssets.stempel_scale || 100,
       nama_ketua: lastSurat?.nama_ketua || defaultForm.nama_ketua,
       nama_sekretaris: lastSurat?.nama_sekretaris || defaultForm.nama_sekretaris
     });
@@ -1852,6 +1900,130 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                 </div>
               </div>
 
+              {/* Floating Active Asset Controls Bar */}
+              {selectedAsset && !isPreviewOnly && (
+                <div className="w-full max-w-4xl mb-3 p-3 bg-slate-900/95 border border-blue-500/50 rounded-2xl shadow-2xl flex flex-wrap items-center justify-between gap-3 text-white no-print z-50 animate-in fade-in slide-in-from-top-2">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 bg-blue-600/30 border border-blue-400/30 rounded-xl text-blue-400">
+                      <Sparkles size={16} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase font-bold text-blue-300 tracking-wider">Aset Digital Terpilih</p>
+                      <p className="text-xs font-black text-white">
+                        {selectedAsset === 'logo' && 'Logo PB Bilibili 162'}
+                        {selectedAsset === 'ttd_ketua' && 'Tanda Tangan Ketua'}
+                        {selectedAsset === 'stempel' && 'Cap Stempel Organisasi'}
+                        {selectedAsset === 'ttd_sekretaris' && 'Tanda Tangan Sekretaris'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Sizing Controls */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase hidden sm:inline">Ukuran:</span>
+                    
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const key = `${selectedAsset}_scale` as any;
+                        setFormData(prev => ({
+                          ...prev,
+                          [key]: Math.max(30, ((prev as any)[key] || 100) - 10)
+                        }));
+                      }}
+                      className="p-1.5 bg-white/10 hover:bg-blue-600 rounded-lg text-white font-bold transition-all cursor-pointer"
+                      title="Perkecil (-10%)"
+                    >
+                      <ZoomOut size={14} />
+                    </button>
+
+                    <input 
+                      type="range"
+                      min="30"
+                      max="250"
+                      value={
+                        selectedAsset === 'logo' ? (formData.logo_scale || 100) :
+                        selectedAsset === 'ttd_ketua' ? (formData.ttd_ketua_scale || 100) :
+                        selectedAsset === 'stempel' ? (formData.stempel_scale || 100) :
+                        (formData.ttd_sekretaris_scale || 100)
+                      }
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value, 10);
+                        const key = `${selectedAsset}_scale` as any;
+                        setFormData(prev => ({ ...prev, [key]: val }));
+                      }}
+                      className="w-24 sm:w-32 accent-blue-500 cursor-pointer"
+                    />
+
+                    <span className="text-xs font-mono font-black text-blue-400 bg-black/60 px-2 py-1 rounded-md border border-white/10 min-w-[50px] text-center">
+                      {selectedAsset === 'logo' ? (formData.logo_scale || 100) :
+                       selectedAsset === 'ttd_ketua' ? (formData.ttd_ketua_scale || 100) :
+                       selectedAsset === 'stempel' ? (formData.stempel_scale || 100) :
+                       (formData.ttd_sekretaris_scale || 100)}%
+                    </span>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const key = `${selectedAsset}_scale` as any;
+                        setFormData(prev => ({
+                          ...prev,
+                          [key]: Math.min(250, ((prev as any)[key] || 100) + 10)
+                        }));
+                      }}
+                      className="p-1.5 bg-white/10 hover:bg-blue-600 rounded-lg text-white font-bold transition-all cursor-pointer"
+                      title="Perbesar (+10%)"
+                    >
+                      <ZoomIn size={14} />
+                    </button>
+
+                    <div className="hidden xs:flex items-center gap-1 border-l border-white/10 pl-2">
+                      {[50, 75, 100, 125, 150, 200].map((preset) => (
+                        <button
+                          key={preset}
+                          type="button"
+                          onClick={() => {
+                            const key = `${selectedAsset}_scale` as any;
+                            setFormData(prev => ({ ...prev, [key]: preset }));
+                          }}
+                          className={`px-1.5 py-0.5 rounded text-[9px] font-bold transition-all cursor-pointer ${
+                            ((selectedAsset === 'logo' ? formData.logo_scale :
+                              selectedAsset === 'ttd_ketua' ? formData.ttd_ketua_scale :
+                              selectedAsset === 'stempel' ? formData.stempel_scale :
+                              formData.ttd_sekretaris_scale) || 100) === preset
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-white/5 text-slate-300 hover:bg-white/15'
+                          }`}
+                        >
+                          {preset}%
+                        </button>
+                      ))}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const key = `${selectedAsset}_scale` as any;
+                        setFormData(prev => ({ ...prev, [key]: 100 }));
+                      }}
+                      className="px-2 py-1 bg-white/10 hover:bg-white/20 rounded-lg text-[10px] font-bold text-slate-300 hover:text-white transition-all cursor-pointer flex items-center gap-1 ml-1"
+                      title="Reset ke 100%"
+                    >
+                      <RotateCcw size={11} /> Reset
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setSelectedAsset(null)}
+                      className="p-1 bg-rose-500/20 hover:bg-rose-600 text-rose-300 hover:text-white rounded-lg transition-all cursor-pointer ml-1"
+                      title="Tutup Kontrol Aset"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Preview Paper wrapper with smooth zoom scale */}
               <div className="w-full flex justify-center items-start overflow-x-auto pb-16 min-h-[500px]">
                 <div 
@@ -1865,16 +2037,39 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                 >
                   <div 
                     ref={printRef} 
+                    onClick={() => setSelectedAsset(null)}
                     className="bg-white text-black p-[1.5cm] w-[21cm] min-h-[29.7cm] shadow-2xl font-serif text-[11pt] leading-relaxed relative overflow-hidden shrink-0"
                   >
                   <div className="flex items-center border-b-[4px] border-black pb-2 mb-6">
-                    <div className="w-24 h-24 flex-shrink-0 flex items-center justify-center mr-4 overflow-hidden">
+                    <div 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedAsset(selectedAsset === 'logo' ? null : 'logo');
+                      }}
+                      style={{
+                        width: `${96 * ((formData.logo_scale || 100) / 100)}px`,
+                        height: `${96 * ((formData.logo_scale || 100) / 100)}px`,
+                      }}
+                      className={`flex-shrink-0 flex items-center justify-center mr-4 relative cursor-pointer transition-all select-none ${
+                        selectedAsset === 'logo' ? 'ring-2 ring-blue-500 ring-offset-2 rounded-lg' : 'hover:ring-1 hover:ring-blue-300 rounded-lg'
+                      }`}
+                      title="Klik untuk memilih & ubah ukuran Logo"
+                    >
                       <img 
                         src={getValidAssetUrl(formData.logo_url, DEFAULT_LOGO_URL)} 
                         alt="Logo PB Bilibili 162" 
                         onError={(e) => { e.currentTarget.src = DEFAULT_LOGO_URL; }}
-                        className="w-full h-full object-contain" 
+                        className="w-full h-full object-contain pointer-events-none" 
                       />
+                      {selectedAsset === 'logo' && !isPreviewOnly && (
+                        <div 
+                          onPointerDown={(e) => handleResizePointerDown(e, 'logo_scale')}
+                          className="no-print absolute -bottom-2 -right-2 w-5 h-5 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg border-2 border-white cursor-se-resize z-30 hover:scale-125 transition-transform"
+                          title="Tarik untuk mengubah ukuran Logo"
+                        >
+                          <Maximize2 size={10} />
+                        </div>
+                      )}
                     </div>
                     <div className="text-center flex-1">
                       <h1 className="text-2xl font-bold uppercase leading-tight tracking-tighter">PB BILIBILI 162</h1>
@@ -1922,30 +2117,76 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                   <div className="mt-12 flex justify-between px-10 relative">
                       <div className="text-center w-48 relative">
                           <p className="mb-16">Ketua,</p>
-                          <img 
-                              src={getValidAssetUrl(formData.ttd_ketua_url, DEFAULT_TTD_KETUA_URL)} 
-                              alt="TTD Ketua" 
-                              onError={(e) => { e.currentTarget.src = DEFAULT_TTD_KETUA_URL; }}
-                              className="absolute top-6 left-1/2 -translate-x-1/2 h-20 object-contain mix-blend-multiply" 
-                          />
+                          <div 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedAsset(selectedAsset === 'ttd_ketua' ? null : 'ttd_ketua');
+                              }}
+                              style={{
+                                height: `${80 * ((formData.ttd_ketua_scale || 100) / 100)}px`,
+                                minWidth: `${120 * ((formData.ttd_ketua_scale || 100) / 100)}px`,
+                              }}
+                              className={`absolute top-6 left-1/2 -translate-x-1/2 flex items-center justify-center cursor-pointer transition-all z-10 select-none ${
+                                selectedAsset === 'ttd_ketua' ? 'ring-2 ring-blue-500 ring-offset-2 rounded-lg' : 'hover:ring-1 hover:ring-blue-300 rounded-lg'
+                              }`}
+                              title="Klik untuk memilih & ubah ukuran TTD Ketua"
+                          >
+                              <img 
+                                  src={getValidAssetUrl(formData.ttd_ketua_url, DEFAULT_TTD_KETUA_URL)} 
+                                  alt="TTD Ketua" 
+                                  onError={(e) => { e.currentTarget.src = DEFAULT_TTD_KETUA_URL; }}
+                                  className="h-full object-contain mix-blend-multiply pointer-events-none" 
+                              />
+                              {selectedAsset === 'ttd_ketua' && !isPreviewOnly && (
+                                <div 
+                                  onPointerDown={(e) => handleResizePointerDown(e, 'ttd_ketua_scale')}
+                                  className="no-print absolute -bottom-2 -right-2 w-5 h-5 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg border-2 border-white cursor-se-resize z-30 hover:scale-125 transition-transform"
+                                  title="Tarik untuk mengubah ukuran TTD Ketua"
+                                >
+                                  <Maximize2 size={10} />
+                                </div>
+                              )}
+                          </div>
                           
                           <div 
-                              onPointerDown={handlePointerDown}
+                              onPointerDown={(e) => {
+                                handlePointerDown(e);
+                                setSelectedAsset('stempel');
+                              }}
                               onPointerMove={handlePointerMove}
                               onPointerUp={handlePointerUp}
-                              style={{ transform: `translate(${stempelPos.x}px, ${stempelPos.y}px)` }}
-                              className="absolute top-4 left-1/2 w-28 h-28 cursor-grab active:cursor-grabbing z-20 group select-none touch-none"
+                              style={{ 
+                                transform: `translate(${stempelPos.x}px, ${stempelPos.y}px)`,
+                                width: `${112 * ((formData.stempel_scale || 100) / 100)}px`,
+                                height: `${112 * ((formData.stempel_scale || 100) / 100)}px`,
+                              }}
+                              className={`absolute top-4 left-1/2 cursor-grab active:cursor-grabbing z-20 group select-none touch-none transition-all ${
+                                selectedAsset === 'stempel' ? 'ring-2 ring-blue-500 ring-offset-2 rounded-full' : 'hover:ring-1 hover:ring-blue-300 rounded-full'
+                              }`}
+                              title="Klik/Tarik untuk menggeser & ubah ukuran Cap Stempel"
                           >
                               <img 
                                   src={getValidAssetUrl(formData.cap_stempel_url, DEFAULT_CAP_STEMPEL_URL)} 
                                   alt="Cap Stempel" 
                                   onError={(e) => { e.currentTarget.src = DEFAULT_CAP_STEMPEL_URL; }}
-                                  className="w-full h-full object-contain opacity-80 mix-blend-darken" 
+                                  className="w-full h-full object-contain opacity-80 mix-blend-darken pointer-events-none" 
                               />
                               {!isPreviewOnly && (
-                                  <div className="hidden group-hover:flex absolute inset-0 border-2 border-blue-500 border-dashed items-center justify-center">
+                                  <div className="hidden group-hover:flex absolute inset-0 border-2 border-blue-500 border-dashed rounded-full items-center justify-center">
                                       <Move size={16} className="text-blue-500"/>
                                   </div>
+                              )}
+                              {selectedAsset === 'stempel' && !isPreviewOnly && (
+                                <div 
+                                  onPointerDown={(e) => {
+                                    e.stopPropagation();
+                                    handleResizePointerDown(e, 'stempel_scale');
+                                  }}
+                                  className="no-print absolute bottom-0 right-0 w-5 h-5 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg border-2 border-white cursor-se-resize z-30 hover:scale-125 transition-transform"
+                                  title="Tarik untuk mengubah ukuran Cap Stempel"
+                                >
+                                  <Maximize2 size={10} />
+                                </div>
                               )}
                           </div>
                           <p className="font-bold underline uppercase whitespace-nowrap">{formData.nama_ketua}</p>
@@ -1953,12 +2194,36 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
 
                       <div className="text-center w-48 relative">
                           <p className="mb-16">Sekretaris,</p>
-                          <img 
-                              src={getValidAssetUrl(formData.ttd_sekretaris_url, DEFAULT_TTD_SEKRETARIS_URL)} 
-                              alt="TTD Sekretaris" 
-                              onError={(e) => { e.currentTarget.src = DEFAULT_TTD_SEKRETARIS_URL; }}
-                              className="absolute top-6 left-1/2 -translate-x-1/2 h-20 object-contain mix-blend-multiply" 
-                          />
+                          <div 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedAsset(selectedAsset === 'ttd_sekretaris' ? null : 'ttd_sekretaris');
+                              }}
+                              style={{
+                                height: `${80 * ((formData.ttd_sekretaris_scale || 100) / 100)}px`,
+                                minWidth: `${120 * ((formData.ttd_sekretaris_scale || 100) / 100)}px`,
+                              }}
+                              className={`absolute top-6 left-1/2 -translate-x-1/2 flex items-center justify-center cursor-pointer transition-all z-10 select-none ${
+                                selectedAsset === 'ttd_sekretaris' ? 'ring-2 ring-blue-500 ring-offset-2 rounded-lg' : 'hover:ring-1 hover:ring-blue-300 rounded-lg'
+                              }`}
+                              title="Klik untuk memilih & ubah ukuran TTD Sekretaris"
+                          >
+                              <img 
+                                  src={getValidAssetUrl(formData.ttd_sekretaris_url, DEFAULT_TTD_SEKRETARIS_URL)} 
+                                  alt="TTD Sekretaris" 
+                                  onError={(e) => { e.currentTarget.src = DEFAULT_TTD_SEKRETARIS_URL; }}
+                                  className="h-full object-contain mix-blend-multiply pointer-events-none" 
+                              />
+                              {selectedAsset === 'ttd_sekretaris' && !isPreviewOnly && (
+                                <div 
+                                  onPointerDown={(e) => handleResizePointerDown(e, 'ttd_sekretaris_scale')}
+                                  className="no-print absolute -bottom-2 -right-2 w-5 h-5 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg border-2 border-white cursor-se-resize z-30 hover:scale-125 transition-transform"
+                                  title="Tarik untuk mengubah ukuran TTD Sekretaris"
+                                >
+                                  <Maximize2 size={10} />
+                                </div>
+                              )}
+                          </div>
                           <p className="font-bold underline uppercase whitespace-nowrap">{formData.nama_sekretaris}</p>
                       </div>
                   </div>
