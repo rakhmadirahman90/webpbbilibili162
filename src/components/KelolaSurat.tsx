@@ -270,8 +270,12 @@ export function KelolaSurat() {
   const [isPreviewOnly, setIsPreviewOnly] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
+  const [logoPos, setLogoPos] = useState({ x: 0, y: 0 });
   const [stempelPos, setStempelPos] = useState({ x: -40, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
+  const [ttdKetuaPos, setTtdKetuaPos] = useState({ x: 0, y: 0 });
+  const [ttdSekretarisPos, setTtdSekretarisPos] = useState({ x: 0, y: 0 });
+
+  const [draggingAsset, setDraggingAsset] = useState<'logo' | 'stempel' | 'ttd_ketua' | 'ttd_sekretaris' | null>(null);
   const [zoomScale, setZoomScale] = useState<number>(0.85);
   const [selectedAsset, setSelectedAsset] = useState<'logo' | 'stempel' | 'ttd_ketua' | 'ttd_sekretaris' | null>(null);
 
@@ -1168,29 +1172,48 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
 
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
-  const handlePointerDown = (e: React.PointerEvent) => {
+  const handleAssetPointerDown = (
+    e: React.PointerEvent,
+    asset: 'logo' | 'stempel' | 'ttd_ketua' | 'ttd_sekretaris'
+  ) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsDragging(true);
-    setDragStart({ x: e.clientX - stempelPos.x, y: e.clientY - stempelPos.y });
+    setSelectedAsset(asset);
+    setDraggingAsset(asset);
+
+    let currentPos = { x: 0, y: 0 };
+    if (asset === 'logo') currentPos = logoPos;
+    else if (asset === 'stempel') currentPos = stempelPos;
+    else if (asset === 'ttd_ketua') currentPos = ttdKetuaPos;
+    else if (asset === 'ttd_sekretaris') currentPos = ttdSekretarisPos;
+
+    setDragStart({
+      x: e.clientX - currentPos.x,
+      y: e.clientY - currentPos.y
+    });
+
     try {
       (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     } catch (err) {}
   };
 
-  const handlePointerMove = (e: React.PointerEvent) => {
-    if (!isDragging) return;
+  const handleAssetPointerMove = (e: React.PointerEvent) => {
+    if (!draggingAsset) return;
     e.preventDefault();
     e.stopPropagation();
-    setStempelPos({
+    const newPos = {
       x: e.clientX - dragStart.x,
       y: e.clientY - dragStart.y
-    });
+    };
+    if (draggingAsset === 'logo') setLogoPos(newPos);
+    else if (draggingAsset === 'stempel') setStempelPos(newPos);
+    else if (draggingAsset === 'ttd_ketua') setTtdKetuaPos(newPos);
+    else if (draggingAsset === 'ttd_sekretaris') setTtdSekretarisPos(newPos);
   };
 
-  const handlePointerUp = (e: React.PointerEvent) => {
-    if (isDragging) {
-      setIsDragging(false);
+  const handleAssetPointerUp = (e: React.PointerEvent) => {
+    if (draggingAsset) {
+      setDraggingAsset(null);
       try {
         (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
       } catch (err) {}
@@ -1630,36 +1653,95 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                 <div className="grid grid-cols-1 gap-3">
                   {/* SECTION 1: Media & Identitas Kop */}
                   <div className="p-4 bg-white/5 border border-white/10 rounded-2xl space-y-3">
-                      <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">Media & Identitas Kop</p>
+                      <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">Media & Ukuran Aset Kop/TTD</p>
                       <div className="grid grid-cols-2 gap-2">
                           <label className="flex flex-col items-center justify-center p-2 border-2 border-dashed border-white/10 rounded-xl hover:bg-white/5 cursor-pointer">
                               <ImageIcon size={14} className="mb-1 text-slate-400"/>
-                              <span className="text-[7px] uppercase font-bold text-slate-500 text-center">Logo Kop</span>
+                              <span className="text-[7px] uppercase font-bold text-slate-500 text-center">Upload Logo</span>
                               <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'logo_url')} />
                           </label>
                           <label className="flex flex-col items-center justify-center p-2 border-2 border-dashed border-white/10 rounded-xl hover:bg-white/5 cursor-pointer">
                               <Upload size={14} className="mb-1 text-slate-400"/>
-                              <span className="text-[7px] uppercase font-bold text-slate-500 text-center">Cap Stempel</span>
+                              <span className="text-[7px] uppercase font-bold text-slate-500 text-center">Upload Cap Stempel</span>
                               <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'cap_stempel_url')} />
                           </label>
                           <label className="flex flex-col items-center justify-center p-2 border-2 border-dashed border-white/10 rounded-xl hover:bg-white/5 cursor-pointer">
                               <Upload size={14} className="mb-1 text-slate-400"/>
-                              <span className="text-[7px] uppercase font-bold text-slate-500 text-center">TTD Ketua</span>
+                              <span className="text-[7px] uppercase font-bold text-slate-500 text-center">Upload TTD Ketua</span>
                               <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'ttd_ketua_url')} />
                           </label>
                           <label className="flex flex-col items-center justify-center p-2 border-2 border-dashed border-white/10 rounded-xl hover:bg-white/5 cursor-pointer">
                               <Upload size={14} className="mb-1 text-slate-400"/>
-                              <span className="text-[7px] uppercase font-bold text-slate-500 text-center">TTD Sekretaris</span>
+                              <span className="text-[7px] uppercase font-bold text-slate-500 text-center">Upload TTD Sekretaris</span>
                               <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'ttd_sekretaris_url')} />
                           </label>
                       </div>
+
+                      {/* Explicit Scale Controls in Form */}
+                      <div className="pt-2 border-t border-white/10 space-y-2">
+                        <p className="text-[9px] font-black text-slate-300 uppercase tracking-wider">Pengaturan Skala Ukuran (%)</p>
+                        <div className="grid grid-cols-2 gap-2 text-[9px]">
+                          <div className="p-2 bg-black/40 border border-white/10 rounded-lg">
+                            <div className="flex justify-between font-bold text-slate-300 mb-1">
+                              <span>Skala Logo</span>
+                              <span className="text-blue-400">{formData.logo_scale || 100}%</span>
+                            </div>
+                            <input 
+                              type="range" min="30" max="250" 
+                              value={formData.logo_scale || 100} 
+                              onChange={(e) => setFormData({...formData, logo_scale: parseInt(e.target.value, 10)})}
+                              className="w-full accent-blue-500 cursor-pointer" 
+                            />
+                          </div>
+
+                          <div className="p-2 bg-black/40 border border-white/10 rounded-lg">
+                            <div className="flex justify-between font-bold text-slate-300 mb-1">
+                              <span>Skala Cap Stempel</span>
+                              <span className="text-blue-400">{formData.stempel_scale || 100}%</span>
+                            </div>
+                            <input 
+                              type="range" min="30" max="250" 
+                              value={formData.stempel_scale || 100} 
+                              onChange={(e) => setFormData({...formData, stempel_scale: parseInt(e.target.value, 10)})}
+                              className="w-full accent-blue-500 cursor-pointer" 
+                            />
+                          </div>
+
+                          <div className="p-2 bg-black/40 border border-white/10 rounded-lg">
+                            <div className="flex justify-between font-bold text-slate-300 mb-1">
+                              <span>Skala TTD Ketua</span>
+                              <span className="text-blue-400">{formData.ttd_ketua_scale || 100}%</span>
+                            </div>
+                            <input 
+                              type="range" min="30" max="250" 
+                              value={formData.ttd_ketua_scale || 100} 
+                              onChange={(e) => setFormData({...formData, ttd_ketua_scale: parseInt(e.target.value, 10)})}
+                              className="w-full accent-blue-500 cursor-pointer" 
+                            />
+                          </div>
+
+                          <div className="p-2 bg-black/40 border border-white/10 rounded-lg">
+                            <div className="flex justify-between font-bold text-slate-300 mb-1">
+                              <span>Skala TTD Sekretaris</span>
+                              <span className="text-blue-400">{formData.ttd_sekretaris_scale || 100}%</span>
+                            </div>
+                            <input 
+                              type="range" min="30" max="250" 
+                              value={formData.ttd_sekretaris_scale || 100} 
+                              onChange={(e) => setFormData({...formData, ttd_sekretaris_scale: parseInt(e.target.value, 10)})}
+                              className="w-full accent-blue-500 cursor-pointer" 
+                            />
+                          </div>
+                        </div>
+                      </div>
+
                       <button
                         type="button"
                         onClick={handleApplyAssetsToAllSurat}
                         className="w-full py-2 px-3 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 rounded-xl font-bold text-[9px] uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                       >
                         <CheckCircle2 size={12} />
-                        Terapkan Aset ke Seluruh Surat
+                        Terapkan Aset & Skala ke Seluruh Surat
                       </button>
                   </div>
 
@@ -2007,9 +2089,23 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                         setFormData(prev => ({ ...prev, [key]: 100 }));
                       }}
                       className="px-2 py-1 bg-white/10 hover:bg-white/20 rounded-lg text-[10px] font-bold text-slate-300 hover:text-white transition-all cursor-pointer flex items-center gap-1 ml-1"
-                      title="Reset ke 100%"
+                      title="Reset Ukuran ke 100%"
                     >
-                      <RotateCcw size={11} /> Reset
+                      <RotateCcw size={11} /> Reset Ukuran
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (selectedAsset === 'logo') setLogoPos({ x: 0, y: 0 });
+                        else if (selectedAsset === 'stempel') setStempelPos({ x: -40, y: 0 });
+                        else if (selectedAsset === 'ttd_ketua') setTtdKetuaPos({ x: 0, y: 0 });
+                        else if (selectedAsset === 'ttd_sekretaris') setTtdSekretarisPos({ x: 0, y: 0 });
+                      }}
+                      className="px-2 py-1 bg-white/10 hover:bg-white/20 rounded-lg text-[10px] font-bold text-slate-300 hover:text-white transition-all cursor-pointer flex items-center gap-1"
+                      title="Reset Posisi Awal"
+                    >
+                      <RotateCcw size={11} /> Reset Posisi
                     </button>
 
                     <button
@@ -2042,18 +2138,18 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                   >
                   <div className="flex items-center border-b-[4px] border-black pb-2 mb-6">
                     <div 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedAsset(selectedAsset === 'logo' ? null : 'logo');
-                      }}
+                      onPointerDown={(e) => handleAssetPointerDown(e, 'logo')}
+                      onPointerMove={handleAssetPointerMove}
+                      onPointerUp={handleAssetPointerUp}
                       style={{
+                        transform: `translate(${logoPos.x}px, ${logoPos.y}px)`,
                         width: `${96 * ((formData.logo_scale || 100) / 100)}px`,
                         height: `${96 * ((formData.logo_scale || 100) / 100)}px`,
                       }}
-                      className={`flex-shrink-0 flex items-center justify-center mr-4 relative cursor-pointer transition-all select-none ${
+                      className={`flex-shrink-0 flex items-center justify-center mr-4 relative cursor-grab active:cursor-grabbing group transition-all select-none touch-none ${
                         selectedAsset === 'logo' ? 'ring-2 ring-blue-500 ring-offset-2 rounded-lg' : 'hover:ring-1 hover:ring-blue-300 rounded-lg'
                       }`}
-                      title="Klik untuk memilih & ubah ukuran Logo"
+                      title="Klik / Tarik untuk menggeser & ubah ukuran Logo"
                     >
                       <img 
                         src={getValidAssetUrl(formData.logo_url, DEFAULT_LOGO_URL)} 
@@ -2061,9 +2157,17 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                         onError={(e) => { e.currentTarget.src = DEFAULT_LOGO_URL; }}
                         className="w-full h-full object-contain pointer-events-none" 
                       />
+                      {!isPreviewOnly && (
+                        <div className="hidden group-hover:flex absolute inset-0 border-2 border-blue-500 border-dashed rounded-lg items-center justify-center">
+                          <Move size={14} className="text-blue-500"/>
+                        </div>
+                      )}
                       {selectedAsset === 'logo' && !isPreviewOnly && (
                         <div 
-                          onPointerDown={(e) => handleResizePointerDown(e, 'logo_scale')}
+                          onPointerDown={(e) => {
+                            e.stopPropagation();
+                            handleResizePointerDown(e, 'logo_scale');
+                          }}
                           className="no-print absolute -bottom-2 -right-2 w-5 h-5 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg border-2 border-white cursor-se-resize z-30 hover:scale-125 transition-transform"
                           title="Tarik untuk mengubah ukuran Logo"
                         >
@@ -2118,18 +2222,18 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                       <div className="text-center w-48 relative">
                           <p className="mb-16">Ketua,</p>
                           <div 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedAsset(selectedAsset === 'ttd_ketua' ? null : 'ttd_ketua');
-                              }}
+                              onPointerDown={(e) => handleAssetPointerDown(e, 'ttd_ketua')}
+                              onPointerMove={handleAssetPointerMove}
+                              onPointerUp={handleAssetPointerUp}
                               style={{
+                                transform: `translate(${ttdKetuaPos.x}px, ${ttdKetuaPos.y}px)`,
                                 height: `${80 * ((formData.ttd_ketua_scale || 100) / 100)}px`,
                                 minWidth: `${120 * ((formData.ttd_ketua_scale || 100) / 100)}px`,
                               }}
-                              className={`absolute top-6 left-1/2 -translate-x-1/2 flex items-center justify-center cursor-pointer transition-all z-10 select-none ${
+                              className={`absolute top-6 left-1/2 -translate-x-1/2 flex items-center justify-center cursor-grab active:cursor-grabbing group transition-all z-10 select-none touch-none ${
                                 selectedAsset === 'ttd_ketua' ? 'ring-2 ring-blue-500 ring-offset-2 rounded-lg' : 'hover:ring-1 hover:ring-blue-300 rounded-lg'
                               }`}
-                              title="Klik untuk memilih & ubah ukuran TTD Ketua"
+                              title="Klik / Tarik untuk menggeser & ubah ukuran TTD Ketua"
                           >
                               <img 
                                   src={getValidAssetUrl(formData.ttd_ketua_url, DEFAULT_TTD_KETUA_URL)} 
@@ -2137,9 +2241,17 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                                   onError={(e) => { e.currentTarget.src = DEFAULT_TTD_KETUA_URL; }}
                                   className="h-full object-contain mix-blend-multiply pointer-events-none" 
                               />
+                              {!isPreviewOnly && (
+                                <div className="hidden group-hover:flex absolute inset-0 border-2 border-blue-500 border-dashed rounded-lg items-center justify-center">
+                                  <Move size={14} className="text-blue-500"/>
+                                </div>
+                              )}
                               {selectedAsset === 'ttd_ketua' && !isPreviewOnly && (
                                 <div 
-                                  onPointerDown={(e) => handleResizePointerDown(e, 'ttd_ketua_scale')}
+                                  onPointerDown={(e) => {
+                                    e.stopPropagation();
+                                    handleResizePointerDown(e, 'ttd_ketua_scale');
+                                  }}
                                   className="no-print absolute -bottom-2 -right-2 w-5 h-5 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg border-2 border-white cursor-se-resize z-30 hover:scale-125 transition-transform"
                                   title="Tarik untuk mengubah ukuran TTD Ketua"
                                 >
@@ -2149,12 +2261,9 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                           </div>
                           
                           <div 
-                              onPointerDown={(e) => {
-                                handlePointerDown(e);
-                                setSelectedAsset('stempel');
-                              }}
-                              onPointerMove={handlePointerMove}
-                              onPointerUp={handlePointerUp}
+                              onPointerDown={(e) => handleAssetPointerDown(e, 'stempel')}
+                              onPointerMove={handleAssetPointerMove}
+                              onPointerUp={handleAssetPointerUp}
                               style={{ 
                                 transform: `translate(${stempelPos.x}px, ${stempelPos.y}px)`,
                                 width: `${112 * ((formData.stempel_scale || 100) / 100)}px`,
@@ -2163,7 +2272,7 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                               className={`absolute top-4 left-1/2 cursor-grab active:cursor-grabbing z-20 group select-none touch-none transition-all ${
                                 selectedAsset === 'stempel' ? 'ring-2 ring-blue-500 ring-offset-2 rounded-full' : 'hover:ring-1 hover:ring-blue-300 rounded-full'
                               }`}
-                              title="Klik/Tarik untuk menggeser & ubah ukuran Cap Stempel"
+                              title="Klik / Tarik untuk menggeser & ubah ukuran Cap Stempel"
                           >
                               <img 
                                   src={getValidAssetUrl(formData.cap_stempel_url, DEFAULT_CAP_STEMPEL_URL)} 
@@ -2195,18 +2304,18 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                       <div className="text-center w-48 relative">
                           <p className="mb-16">Sekretaris,</p>
                           <div 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedAsset(selectedAsset === 'ttd_sekretaris' ? null : 'ttd_sekretaris');
-                              }}
+                              onPointerDown={(e) => handleAssetPointerDown(e, 'ttd_sekretaris')}
+                              onPointerMove={handleAssetPointerMove}
+                              onPointerUp={handleAssetPointerUp}
                               style={{
+                                transform: `translate(${ttdSekretarisPos.x}px, ${ttdSekretarisPos.y}px)`,
                                 height: `${80 * ((formData.ttd_sekretaris_scale || 100) / 100)}px`,
                                 minWidth: `${120 * ((formData.ttd_sekretaris_scale || 100) / 100)}px`,
                               }}
-                              className={`absolute top-6 left-1/2 -translate-x-1/2 flex items-center justify-center cursor-pointer transition-all z-10 select-none ${
+                              className={`absolute top-6 left-1/2 -translate-x-1/2 flex items-center justify-center cursor-grab active:cursor-grabbing group transition-all z-10 select-none touch-none ${
                                 selectedAsset === 'ttd_sekretaris' ? 'ring-2 ring-blue-500 ring-offset-2 rounded-lg' : 'hover:ring-1 hover:ring-blue-300 rounded-lg'
                               }`}
-                              title="Klik untuk memilih & ubah ukuran TTD Sekretaris"
+                              title="Klik / Tarik untuk menggeser & ubah ukuran TTD Sekretaris"
                           >
                               <img 
                                   src={getValidAssetUrl(formData.ttd_sekretaris_url, DEFAULT_TTD_SEKRETARIS_URL)} 
@@ -2214,9 +2323,17 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                                   onError={(e) => { e.currentTarget.src = DEFAULT_TTD_SEKRETARIS_URL; }}
                                   className="h-full object-contain mix-blend-multiply pointer-events-none" 
                               />
+                              {!isPreviewOnly && (
+                                <div className="hidden group-hover:flex absolute inset-0 border-2 border-blue-500 border-dashed rounded-lg items-center justify-center">
+                                  <Move size={14} className="text-blue-500"/>
+                                </div>
+                              )}
                               {selectedAsset === 'ttd_sekretaris' && !isPreviewOnly && (
                                 <div 
-                                  onPointerDown={(e) => handleResizePointerDown(e, 'ttd_sekretaris_scale')}
+                                  onPointerDown={(e) => {
+                                    e.stopPropagation();
+                                    handleResizePointerDown(e, 'ttd_sekretaris_scale');
+                                  }}
                                   className="no-print absolute -bottom-2 -right-2 w-5 h-5 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg border-2 border-white cursor-se-resize z-30 hover:scale-125 transition-transform"
                                   title="Tarik untuk mengubah ukuran TTD Sekretaris"
                                 >
