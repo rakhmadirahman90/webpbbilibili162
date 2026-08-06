@@ -1,9 +1,10 @@
-// 1. TAMBAHKAN KONFIGURASI TTD (Ganti link di bawah dengan hasil upload atau Base64)
+import { DEFAULT_TTD_KETUA_URL, DEFAULT_TTD_SEKRETARIS_URL, DEFAULT_CAP_STEMPEL_URL, getValidAssetUrl } from './KelolaSurat';
+
 const ASSET_SURAT = {
-  // Disarankan menggunakan Base64 string atau URL yang dapat diakses publik
-  ttd_ketua: "https://vclmzvnyvdfxtvkmurxy.supabase.co/storage/v1/object/public/assets/ttd_ketua.png", 
-  ttd_sekretaris: "https://vclmzvnyvdfxtvkmurxy.supabase.co/storage/v1/object/public/assets/ttd_sekre.png",
-  stempel: "https://vclmzvnyvdfxtvkmurxy.supabase.co/storage/v1/object/public/assets/stempel.png"
+  logo: "/logo_pb_bilibili_162.svg",
+  ttd_ketua: DEFAULT_TTD_KETUA_URL, 
+  ttd_sekretaris: DEFAULT_TTD_SEKRETARIS_URL,
+  stempel: DEFAULT_CAP_STEMPEL_URL
 };
 
 const cetakSuratPDF = async (surat: any) => {
@@ -24,15 +25,14 @@ const cetakSuratPDF = async (surat: any) => {
     });
   };
 
-  // 1. KOP SURAT (Header) - TETAP
+  // 1. KOP SURAT (Header)
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
-  doc.text("PENGURUS CABANG PERSATUAN BULUTANGKIS SELURUH INDONESIA", pageWidth / 2, 20, { align: "center" });
-  doc.setFontSize(16);
-  doc.text("PBSI KOTA / KABUPATEN ANDA", pageWidth / 2, 28, { align: "center" });
-  doc.setFontSize(10);
+  doc.setFontSize(18);
+  doc.text("PB BILIBILI 162", pageWidth / 2, 20, { align: "center" });
+  doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
-  doc.text("Sekretariat: Jl. Alamat Lengkap No. 123, Email: pbsi@email.com, WA: 0812...", pageWidth / 2, 34, { align: "center" });
+  doc.text("Sekertariat: Jl. Andi Makkasau No.171, Ujung Lare, Kec. Soreang, Kota Parepare, Sulawesi Selatan 91131", pageWidth / 2, 28, { align: "center" });
+  doc.text("Telepon: 081219027234 | Email: pbilibili162@gmail.com", pageWidth / 2, 34, { align: "center" });
   
   // Garis Double Kop - TETAP
   doc.setLineWidth(0.8);
@@ -65,12 +65,16 @@ const cetakSuratPDF = async (surat: any) => {
   doc.text("Sekretaris,", pageWidth - 70, footerY);
 
   // PROSES ADD TTD & STEMPEL SECARA ASYNC (BARU)
+  const urlKetua = getValidAssetUrl(surat?.ttd_ketua_url, ASSET_SURAT.ttd_ketua);
+  const urlSekre = getValidAssetUrl(surat?.ttd_sekretaris_url, ASSET_SURAT.ttd_sekretaris);
+  const urlStempel = getValidAssetUrl(surat?.cap_stempel_url, ASSET_SURAT.stempel);
+
   // TTD Ketua
-  await addImageFromUrl(ASSET_SURAT.ttd_ketua, 25, footerY + 2, 35, 25);
+  await addImageFromUrl(urlKetua, 25, footerY + 2, 35, 25);
   // TTD Sekretaris
-  await addImageFromUrl(ASSET_SURAT.ttd_sekretaris, pageWidth - 75, footerY + 2, 35, 25);
+  await addImageFromUrl(urlSekre, pageWidth - 75, footerY + 2, 35, 25);
   // Stempel (Diposisikan agak menimpa TTD Ketua agar terlihat asli)
-  await addImageFromUrl(ASSET_SURAT.stempel, 45, footerY + 5, 30, 30);
+  await addImageFromUrl(urlStempel, 45, footerY + 5, 30, 30);
 
   doc.setFont("helvetica", "bold");
   doc.text(surat.nama_ketua.toUpperCase(), 30, footerY + 35);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabase';
-import { Mail, Plus, Search, Eye, Edit, Trash2, Printer, X, Upload, Sparkles, Send, ImageIcon, MessageCircle, Move, Loader2, FileText, CheckCircle2, Clock, AlertCircle, Filter, Building, UserCheck, ShieldAlert } from 'lucide-react';
+import { Mail, Plus, Search, Eye, Edit, Trash2, Printer, X, Upload, Sparkles, Send, ImageIcon, MessageCircle, Move, Loader2, FileText, CheckCircle2, Clock, AlertCircle, Filter, Building, UserCheck, ShieldAlert, ListOrdered, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
 import Swal from 'sweetalert2';
 
 const JENIS_SURAT_TEMPLATES = [
@@ -81,6 +81,182 @@ const parseLampiranRow = (rawLine: string) => {
   return { nama, keterangan };
 };
 
+const rawTtdKetua = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 90" width="200" height="90"><g fill="none" stroke="#0f172a" stroke-linecap="round" stroke-linejoin="round"><path d="M 25 50 C 15 30 35 15 48 30 C 58 42 32 60 22 45 C 18 38 30 25 55 22 C 80 18 100 35 125 32 C 145 30 165 38 180 30" stroke-width="3.2"/><circle cx="82" cy="15" r="2.2" fill="#0f172a"/><path d="M 18 55 Q 75 62 182 48" stroke-width="2.8"/></g></svg>`;
+const rawTtdSekre = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 120" width="180" height="120"><g fill="none" stroke="#0f172a" stroke-linecap="round" stroke-linejoin="round"><path d="M 72 102 C 60 75 52 28 70 12 C 82 2 96 22 76 48 C 62 68 58 92 82 110" stroke-width="3.5"/><path d="M 78 22 C 92 18 122 12 110 38 C 96 62 72 38 102 32 C 132 28 145 58 126 78 C 112 92 92 65 116 48 Q 138 35 155 52" stroke-width="3"/><path d="M 58 62 L 152 58" stroke-width="2.5"/><path d="M 88 38 Q 118 82 132 112" stroke-width="3.2"/></g></svg>`;
+const rawCapStempel = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200"><circle cx="100" cy="100" r="94" fill="none" stroke="#1d4ed8" stroke-width="4.5" opacity="0.95"/><circle cx="100" cy="100" r="86" fill="none" stroke="#1d4ed8" stroke-width="2" opacity="0.95"/><circle cx="100" cy="100" r="56" fill="none" stroke="#1d4ed8" stroke-width="2" opacity="0.95"/><path id="topArc" fill="none" d="M 22,100 A 78,78 0 1,1 178,100" /><path id="bottomArc" fill="none" d="M 178,100 A 78,78 0 0,1 22,100" /><text fill="#1d4ed8" font-size="11.5" font-weight="900" font-family="Arial, sans-serif" letter-spacing="1.5" opacity="0.95"><textPath href="#topArc" startOffset="50%" text-anchor="middle">PB. BILI-BILI 162</textPath></text><text fill="#1d4ed8" font-size="10.5" font-weight="900" font-family="Arial, sans-serif" letter-spacing="2.2" opacity="0.95"><textPath href="#bottomArc" startOffset="50%" text-anchor="middle">PAREPARE</textPath></text><text x="29" y="104" fill="#1d4ed8" font-size="14" font-weight="bold" opacity="0.95">★</text><text x="157" y="104" fill="#1d4ed8" font-size="14" font-weight="bold" opacity="0.95">★</text><g transform="translate(100,100) scale(0.95)" stroke="#1d4ed8" fill="none" opacity="0.95"><path d="M -22 -26 C -22 -26, 0 -32, 22 -26 C 25 -2, 18 22, 0 36 C -18 22, -25 -2, -22 -26 Z" stroke-width="2.2"/><ellipse cx="-8" cy="-14" rx="5" ry="7" transform="rotate(-30 -8 -14)" stroke-width="1.5"/><line x1="-4" y1="-8" x2="10" y2="14" stroke-width="1.5"/><ellipse cx="8" cy="-14" rx="5" ry="7" transform="rotate(30 8 -14)" stroke-width="1.5"/><line x1="4" y1="-8" x2="-10" y2="14" stroke-width="1.5"/><text x="0" y="2" text-anchor="middle" fill="#1d4ed8" font-size="6.5" font-weight="bold" font-family="Arial, sans-serif">PB 162</text><text x="0" y="10" text-anchor="middle" fill="#1d4ed8" font-size="4.5" font-weight="bold" font-family="Arial, sans-serif">BADMINTON</text><text x="0" y="22" text-anchor="middle" fill="#1d4ed8" font-size="7" font-weight="bold">★★★</text></g></svg>`;
+
+export const DEFAULT_TTD_KETUA_URL = `data:image/svg+xml,${encodeURIComponent(rawTtdKetua)}`;
+export const DEFAULT_TTD_SEKRETARIS_URL = `data:image/svg+xml,${encodeURIComponent(rawTtdSekre)}`;
+export const DEFAULT_CAP_STEMPEL_URL = `data:image/svg+xml,${encodeURIComponent(rawCapStempel)}`;
+export const DEFAULT_LOGO_URL = "/logo_pb_bilibili_162.svg";
+
+export const getValidAssetUrl = (url: string | undefined | null, fallbackUrl: string) => {
+  if (
+    !url || 
+    typeof url !== 'string' || 
+    url.trim() === '' || 
+    url === 'null' || 
+    url === 'undefined' || 
+    url.includes('vclmzvnyvdfxtvkmurxy.supabase.co') ||
+    url.startsWith('data:image/svg+xml;utf8')
+  ) {
+    return fallbackUrl;
+  }
+  return url;
+};
+
+export const safeLocalStorageSet = (key: string, value: string): boolean => {
+  try {
+    localStorage.setItem(key, value);
+    return true;
+  } catch (e) {
+    console.warn(`LocalStorage quota exceeded or failed for key "${key}":`, e);
+    return false;
+  }
+};
+
+export const compressImage = (file: File, maxWidth = 600, maxHeight = 600, quality = 0.85): Promise<string> => {
+  return new Promise((resolve) => {
+    if (file.type === 'image/svg+xml' || file.size < 100 * 1024) {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = () => resolve('');
+      reader.readAsDataURL(file);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/png', quality));
+        } else {
+          resolve(event.target?.result as string);
+        }
+      };
+      img.onerror = () => resolve(event.target?.result as string);
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  });
+};
+
+const SEED_SURAT = [
+  {
+    id: 'seed_surat_1',
+    nomor_surat: '001/PB-BILIBILI162/II/2026',
+    lampiran: '-',
+    perihal: 'Permohonan Menjadi Narasumber (Penceramah) Kajian Ramadan Online',
+    tempat_tanggal: 'Parepare, 10 Februari 2026',
+    tujuan_yth: 'Al Hafidz Ustadz Prof. Dr. KH. Muamar Bakry, Lc., M.A',
+    jabatan_tujuan: 'Rektor UIM Al-Ghazali Makassar',
+    alamat_tujuan: 'di Tempat',
+    isi_ringkas: 'Sehubungan dengan datangnya Bulan Suci Ramadan 1447 H, kami dari Pengurus PB Bilibili 162 Parepare bermaksud menyelenggarakan Kajian Ramadan Online. Bersama surat ini, kami memohon kesediaan Bapak/Ustadz untuk menjadi Narasumber/Penceramah pada kegiatan tersebut.',
+    paragraf_2: 'Besar harapan kami agar Bapak berkenan memenuhi permohonan ini demi kelancaran dan keberkahan kegiatan kajian online yang kami selenggarakan.',
+    paragraf_3: 'Demikian permohonan ini kami sampaikan. Atas perhatian dan kesediaan Bapak, kami ucapkan terima kasih.',
+    nama_ketua: 'H. WAWAN',
+    nama_sekretaris: 'H. BARHAMAN MUIN S.AG',
+    ttd_ketua_url: DEFAULT_TTD_KETUA_URL,
+    ttd_sekretaris_url: DEFAULT_TTD_SEKRETARIS_URL,
+    cap_stempel_url: DEFAULT_CAP_STEMPEL_URL,
+    created_at: '2026-02-10T08:00:00.000Z'
+  },
+  {
+    id: 'seed_surat_2',
+    nomor_surat: '002/PB-BILIBILI162/II/2026',
+    lampiran: '-',
+    perihal: 'Permohonan Mengikuti Kajian Ramadan Online',
+    tempat_tanggal: 'Parepare, 26 Februari 2026',
+    tujuan_yth: 'Seluruh Anggota & Pembina PB Bilibili 162',
+    jabatan_tujuan: 'PB Bilibili 162 Parepare',
+    alamat_tujuan: 'di Tempat',
+    isi_ringkas: 'Dalam rangka menyemarakkan amaliah Bulan Suci Ramadan, pengurus menghimbau dan mengundang seluruh anggota serta pembina PB Bilibili 162 untuk dapat mengikuti Kajian Ramadan Online.',
+    paragraf_2: 'Kegiatan ini dilaksanakan secara rutin guna mempererat ukhuwah islamiyah dan menambah wawasan keagamaan seluruh anggota klub.',
+    paragraf_3: 'Demikian penyampaian ini kami sampaikan. Atas perhatian dan partisipasi seluruh anggota, kami ucapkan terima kasih.',
+    nama_ketua: 'H. WAWAN',
+    nama_sekretaris: 'H. BARHAMAN MUIN S.AG',
+    ttd_ketua_url: DEFAULT_TTD_KETUA_URL,
+    ttd_sekretaris_url: DEFAULT_TTD_SEKRETARIS_URL,
+    cap_stempel_url: DEFAULT_CAP_STEMPEL_URL,
+    created_at: '2026-02-26T08:00:00.000Z'
+  },
+  {
+    id: 'seed_surat_3',
+    nomor_surat: '003/PB-BILIBILI162/V/2026',
+    lampiran: '-',
+    perihal: 'Undangan Pertandingan Balasan Persahabatan PB Tiga Lima Sidrap',
+    tempat_tanggal: 'Parepare, 10 Mei 2026',
+    tujuan_yth: 'Pengurus & Atlet PB Tiga Lima Sidrap',
+    jabatan_tujuan: 'PB Tiga Lima Sidrap',
+    alamat_tujuan: 'di Tempat',
+    isi_ringkas: 'Dalam rangka mempererat tali silaturahmi dan menjalin persahabatan antar klub bulutangkis, PB Bilibili 162 Parepare mengundang Pengurus dan Atlet PB Tiga Lima Sidrap untuk hadir dalam Pertandingan Balasan Persahabatan.',
+    paragraf_2: 'Kegiatan pertandingan persahabatan ini diharapkan dapat menjadi ajang uji tanding yang sportif dan menyenangkan bagi seluruh atlet.',
+    paragraf_3: 'Demikian undangan ini kami sampaikan. Atas perhatian dan perkenan kehadiran Bapak/Ibu/Rekan-rekan, kami ucapkan terima kasih.',
+    nama_ketua: 'H. WAWAN',
+    nama_sekretaris: 'H. BARHAMAN MUIN S.AG',
+    ttd_ketua_url: DEFAULT_TTD_KETUA_URL,
+    ttd_sekretaris_url: DEFAULT_TTD_SEKRETARIS_URL,
+    cap_stempel_url: DEFAULT_CAP_STEMPEL_URL,
+    created_at: '2026-05-10T08:00:00.000Z'
+  },
+  {
+    id: 'seed_surat_4',
+    nomor_surat: '004/PB-BILIBILI162/VIII/2026',
+    lampiran: '1 Lembar',
+    perihal: 'Surat Tugas Manajer, Pelatih dan Atlet pada Mabar Arsy',
+    tempat_tanggal: 'Parepare, 6 Agustus 2026',
+    tujuan_yth: 'Manajer, Pelatih, dan Atlet PB Bilibili 162',
+    jabatan_tujuan: 'PB Bilibili 162 Parepare',
+    alamat_tujuan: 'di Tempat',
+    isi_ringkas: 'Pengurus PB Bilibili 162 Parepare menerbitkan Surat Tugas Manajer, Pelatih, dan Atlet bagi nama-nama yang tercantum dalam daftar terlampir untuk menjadi perwakilan resmi klub pada ajang tersebut.',
+    paragraf_2: 'Penugasan ini bertujuan sebagai sarana pemantapan pembinaan atlet melalui program *sparring* dan uji tanding, guna mengasah mental bertanding serta mengukur kualitas permainan para atlet PB Bilibili 162. Manajer dan pelatih yang ditunjuk diharapkan dapat mengoordinasikan tim secara optimal, menyusun strategi pertandingan dengan matang, serta memastikan seluruh atlet senantiasa menjunjung tinggi nilai sportivitas di dalam maupun di luar lapangan.',
+    paragraf_3: 'Demikian surat tugas ini diberikan agar dapat dilaksanakan dengan penuh komitmen dan rasa tanggung jawab. Setelah seluruh rangkaian kegiatan selesai, Manajer Tim diwajibkan menyerahkan laporan hasil pertandingan dan evaluasi performa atlet kepada pengurus klub sebagai bahan acuan pembinaan pada ajang-ajang mendatang.',
+    nama_ketua: 'H. WAWAN',
+    nama_sekretaris: 'H. BARHAMAN MUIN S.AG',
+    ttd_ketua_url: DEFAULT_TTD_KETUA_URL,
+    ttd_sekretaris_url: DEFAULT_TTD_SEKRETARIS_URL,
+    cap_stempel_url: DEFAULT_CAP_STEMPEL_URL,
+    include_lampiran_peserta: true,
+    judul_lampiran: 'DAFTAR LAMPIRAN PESERTA',
+    lampiran_peserta: `1. Ali & Mas Ahmad | Manajer & Pelatih
+2. Abd. Majid & Owan | Pasangan Ganda
+3. H. Wawan & Janggoe | Pasangan Ganda
+4. Salman & Luthfi Munir | Pasangan Ganda
+5. Bustan & Rustam | Pasangan Ganda
+6. H. Ismail & Muliadi | Pasangan Ganda
+7. Dr. Khaliq & Madhy | Pasangan Ganda
+8. H. Amir & Azis | Pasangan Ganda
+9. Ust. Syawal & Hidayatullah | Pasangan Ganda
+10. Munir Razak & Bang Dul | Pasangan Ganda
+11. Andi Mansur & Zainuddin | Pasangan Ganda
+12. Rahman & Ipul | Pasangan Ganda
+13. Idris & Prof. Fikri | Pasangan Ganda
+14. Iwan & Achenk | Pasangan Ganda`,
+    created_at: '2026-08-06T08:00:00.000Z'
+  }
+];
+
 export function KelolaSurat() {
   const [suratList, setSuratList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -96,6 +272,30 @@ export function KelolaSurat() {
 
   const [stempelPos, setStempelPos] = useState({ x: -40, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
+  const [zoomScale, setZoomScale] = useState<number>(0.85);
+
+  const getStoredDigitalAssets = () => {
+    try {
+      const saved = localStorage.getItem('pb_bilibili_digital_assets');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return {
+          logo_url: getValidAssetUrl(parsed.logo_url, DEFAULT_LOGO_URL),
+          ttd_ketua_url: getValidAssetUrl(parsed.ttd_ketua_url, DEFAULT_TTD_KETUA_URL),
+          ttd_sekretaris_url: getValidAssetUrl(parsed.ttd_sekretaris_url, DEFAULT_TTD_SEKRETARIS_URL),
+          cap_stempel_url: getValidAssetUrl(parsed.cap_stempel_url, DEFAULT_CAP_STEMPEL_URL),
+        };
+      }
+    } catch (e) {
+      console.error('Error reading stored digital assets:', e);
+    }
+    return {
+      logo_url: DEFAULT_LOGO_URL,
+      ttd_ketua_url: DEFAULT_TTD_KETUA_URL,
+      ttd_sekretaris_url: DEFAULT_TTD_SEKRETARIS_URL,
+      cap_stempel_url: DEFAULT_CAP_STEMPEL_URL,
+    };
+  };
 
   // Surat Masuk States
   const [activeTab, setActiveTab] = useState<'keluar' | 'masuk'>('keluar');
@@ -138,9 +338,9 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     nama_ketua: 'H. Wawan',
     nama_sekretaris: 'H. Barhaman Muin S.Ag',
     logo_url: '/logo_pb_bilibili_162.svg', 
-    ttd_ketua_url: '', 
-    ttd_sekretaris_url: '',
-    cap_stempel_url: '',
+    ttd_ketua_url: DEFAULT_TTD_KETUA_URL, 
+    ttd_sekretaris_url: DEFAULT_TTD_SEKRETARIS_URL,
+    cap_stempel_url: DEFAULT_CAP_STEMPEL_URL,
     show_recipient: true,
     show_greetings: true,
     title_override: '',
@@ -393,22 +593,89 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
   const fetchSurat = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.from('arsip_surat').select('*').order('created_at', { ascending: false });
+      const { data } = await supabase.from('arsip_surat').select('*').order('created_at', { ascending: false });
       const localData = JSON.parse(localStorage.getItem('arsip_surat_local') || '[]');
-      
+      const deletedIds: string[] = JSON.parse(localStorage.getItem('arsip_surat_deleted') || '[]');
+
       const map = new Map();
+
+      // Seed default letters first
+      SEED_SURAT.forEach(item => {
+        if (!deletedIds.includes(item.id) && !deletedIds.includes(item.nomor_surat)) {
+          map.set(item.id, item);
+        }
+      });
+
+      // Override with DB data
       (data || []).forEach(item => {
-        if (item) map.set(item.id || item.nomor_surat, item);
+        if (item && !deletedIds.includes(item.id) && !deletedIds.includes(item.nomor_surat)) {
+          map.set(item.id || item.nomor_surat, item);
+        }
       });
+
+      // Override with localData
       localData.forEach((item: any) => {
-        if (item) map.set(item.id || item.nomor_surat, item);
+        if (item && !deletedIds.includes(item.id) && !deletedIds.includes(item.nomor_surat)) {
+          map.set(item.id || item.nomor_surat, item);
+        }
       });
-      const unique = Array.from(map.values());
+
+      const allItems = Array.from(map.values());
+      const refItem = 
+        allItems.find((i: any) => i.nomor_surat && i.nomor_surat.includes('002') && i.ttd_ketua_url && i.ttd_ketua_url.trim() !== '') ||
+        allItems.find((i: any) => i.ttd_ketua_url && i.ttd_ketua_url.trim() !== '') ||
+        map.get('seed_surat_2');
+
+      const baseLogo = getValidAssetUrl(refItem?.logo_url, DEFAULT_LOGO_URL);
+      const baseTtdKetua = getValidAssetUrl(refItem?.ttd_ketua_url, DEFAULT_TTD_KETUA_URL);
+      const baseTtdSekre = getValidAssetUrl(refItem?.ttd_sekretaris_url, DEFAULT_TTD_SEKRETARIS_URL);
+      const baseStempel = getValidAssetUrl(refItem?.cap_stempel_url, DEFAULT_CAP_STEMPEL_URL);
+
+      const sanitizeSurat = (item: any) => {
+        if (!item) return item;
+        return {
+          ...item,
+          logo_url: getValidAssetUrl(item.logo_url, baseLogo),
+          ttd_ketua_url: getValidAssetUrl(item.ttd_ketua_url, baseTtdKetua),
+          ttd_sekretaris_url: getValidAssetUrl(item.ttd_sekretaris_url, baseTtdSekre),
+          cap_stempel_url: getValidAssetUrl(item.cap_stempel_url, baseStempel)
+        };
+      };
+
+      const unique = allItems.map(sanitizeSurat).sort((a, b) => {
+        const timeA = new Date(a.created_at || a.created_at_time || 0).getTime();
+        const timeB = new Date(b.created_at || b.created_at_time || 0).getTime();
+        return timeB - timeA;
+      });
+
       setSuratList(unique);
     } catch (err: any) { 
-        console.error(err);
-        const localData = JSON.parse(localStorage.getItem('arsip_surat_local') || '[]');
-        setSuratList(localData);
+      console.error(err);
+      const localData = JSON.parse(localStorage.getItem('arsip_surat_local') || '[]');
+      const deletedIds: string[] = JSON.parse(localStorage.getItem('arsip_surat_deleted') || '[]');
+      const map = new Map();
+      SEED_SURAT.forEach(item => {
+        if (!deletedIds.includes(item.id)) map.set(item.id, item);
+      });
+      localData.forEach((item: any) => {
+        if (item && !deletedIds.includes(item.id)) map.set(item.id || item.nomor_surat, item);
+      });
+      const fallbackItems = Array.from(map.values());
+      const fallbackRef = fallbackItems.find((i: any) => i.nomor_surat && i.nomor_surat.includes('002')) || fallbackItems[0];
+      const fallbackLogo = getValidAssetUrl(fallbackRef?.logo_url, DEFAULT_LOGO_URL);
+      const fallbackTtdKetua = getValidAssetUrl(fallbackRef?.ttd_ketua_url, DEFAULT_TTD_KETUA_URL);
+      const fallbackTtdSekre = getValidAssetUrl(fallbackRef?.ttd_sekretaris_url, DEFAULT_TTD_SEKRETARIS_URL);
+      const fallbackStempel = getValidAssetUrl(fallbackRef?.cap_stempel_url, DEFAULT_CAP_STEMPEL_URL);
+
+      const sanitizeFallback = (item: any) => ({
+        ...item,
+        logo_url: getValidAssetUrl(item.logo_url, fallbackLogo),
+        ttd_ketua_url: getValidAssetUrl(item.ttd_ketua_url, fallbackTtdKetua),
+        ttd_sekretaris_url: getValidAssetUrl(item.ttd_sekretaris_url, fallbackTtdSekre),
+        cap_stempel_url: getValidAssetUrl(item.cap_stempel_url, fallbackStempel)
+      });
+
+      setSuratList(fallbackItems.map(sanitizeFallback));
     } finally { setLoading(false); }
   };
 
@@ -456,14 +723,14 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       const localData = JSON.parse(localStorage.getItem('arsip_surat_masuk_local') || '[]');
       if (editMasukId) {
         const updated = localData.map((item: any) => item.id === editMasukId ? { ...item, ...payload } : item);
-        localStorage.setItem('arsip_surat_masuk_local', JSON.stringify(updated));
+        safeLocalStorageSet('arsip_surat_masuk_local', JSON.stringify(updated));
         try {
           await supabase.from('arsip_surat_masuk').update(payload).eq('id', editMasukId);
         } catch (e) {}
         Swal.fire('Berhasil', 'Surat masuk berhasil diperbarui!', 'success');
       } else {
         const newItem = { ...payload, id: 'local_' + Date.now(), created_at: new Date().toISOString() };
-        localStorage.setItem('arsip_surat_masuk_local', JSON.stringify([newItem, ...localData]));
+        safeLocalStorageSet('arsip_surat_masuk_local', JSON.stringify([newItem, ...localData]));
         try {
           await supabase.from('arsip_surat_masuk').insert([payload]);
         } catch (e) {}
@@ -491,7 +758,7 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       try {
         await supabase.from('arsip_surat_masuk').delete().eq('id', id);
         const localData = JSON.parse(localStorage.getItem('arsip_surat_masuk_local') || '[]');
-        localStorage.setItem('arsip_surat_masuk_local', JSON.stringify(localData.filter((i: any) => i.id !== id)));
+        safeLocalStorageSet('arsip_surat_masuk_local', JSON.stringify(localData.filter((i: any) => i.id !== id)));
         fetchSuratMasuk();
         Swal.fire('Terhapus', 'Surat masuk berhasil dihapus.', 'success');
       } catch (err: any) {
@@ -511,42 +778,186 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     }
   };
 
+  const generateNextNomorSurat = (list: any[], customDate: Date = new Date()) => {
+    const currentYear = customDate.getFullYear().toString();
+    const currentMonthRoman = getRomanMonth(customDate.getMonth());
+
+    let maxNum = 0;
+    let orgCode = 'PB-BILIBILI162';
+
+    if (Array.isArray(list) && list.length > 0) {
+      list.forEach((s) => {
+        if (!s || !s.nomor_surat) return;
+        const parts = s.nomor_surat.split('/');
+        if (parts.length >= 2) {
+          const numPart = parseInt(parts[0], 10);
+          if (parts[1] && parts[1].trim()) {
+            orgCode = parts[1].trim();
+          }
+          if (!isNaN(numPart)) {
+            const itemYear = parts[parts.length - 1];
+            if (!itemYear || itemYear.trim() === currentYear) {
+              if (numPart > maxNum) maxNum = numPart;
+            } else if (numPart > maxNum) {
+              maxNum = numPart;
+            }
+          }
+        }
+      });
+    }
+
+    const nextPadded = (maxNum + 1).toString().padStart(3, '0');
+    return `${nextPadded}/${orgCode}/${currentMonthRoman}/${currentYear}`;
+  };
+
+  const handleApplyAssetsToAllSurat = async () => {
+    const newAssets = {
+      logo_url: getValidAssetUrl(formData.logo_url, DEFAULT_LOGO_URL),
+      ttd_ketua_url: getValidAssetUrl(formData.ttd_ketua_url, DEFAULT_TTD_KETUA_URL),
+      ttd_sekretaris_url: getValidAssetUrl(formData.ttd_sekretaris_url, DEFAULT_TTD_SEKRETARIS_URL),
+      cap_stempel_url: getValidAssetUrl(formData.cap_stempel_url, DEFAULT_CAP_STEMPEL_URL)
+    };
+
+    safeLocalStorageSet('pb_bilibili_digital_assets', JSON.stringify(newAssets));
+
+    const updatedList = suratList.map((item: any) => ({
+      ...item,
+      ...newAssets
+    }));
+    setSuratList(updatedList);
+
+    try {
+      const localData = JSON.parse(localStorage.getItem('arsip_surat_local') || '[]');
+      const updatedLocal = localData.map((item: any) => ({
+        ...item,
+        ...newAssets
+      }));
+      if (!safeLocalStorageSet('arsip_surat_local', JSON.stringify(updatedLocal))) {
+        // If storage quota exceeded, strip redundant assets that match global stored assets
+        const strippedLocal = updatedLocal.map((item: any) => {
+          const copy = { ...item };
+          delete copy.logo_url;
+          delete copy.ttd_ketua_url;
+          delete copy.ttd_sekretaris_url;
+          delete copy.cap_stempel_url;
+          return copy;
+        });
+        safeLocalStorageSet('arsip_surat_local', JSON.stringify(strippedLocal));
+      }
+    } catch (e) {
+      console.warn('Local storage sync warning:', e);
+    }
+
+    try {
+      for (const item of updatedList) {
+        if (item.id && !item.id.toString().startsWith('local_')) {
+          await supabase.from('arsip_surat').update(newAssets).eq('id', item.id);
+        }
+      }
+    } catch (e) {
+      console.warn('Supabase bulk asset update error:', e);
+    }
+
+    Swal.fire({
+      title: 'Aset Digital Berhasil Diterapkan!',
+      text: 'Logo, TTD Ketua, TTD Sekretaris, dan Cap Stempel telah diberlakukan secara lengkap untuk SELURUH nomor surat (lama & selanjutnya).',
+      icon: 'success',
+      confirmButtonColor: '#2563eb'
+    });
+  };
+
   const prepareNewSurat = () => {
     setEditId(null);
     setIsPreviewOnly(false);
     setActiveModalTab('form');
     setStempelPos({ x: -40, y: 0 });
 
-    const currentYear = new Date().getFullYear().toString();
-    const currentMonthRoman = getRomanMonth(new Date().getMonth());
+    const newFullNomor = generateNextNomorSurat(suratList);
+    const storedAssets = getStoredDigitalAssets();
+    const lastSurat = suratList.length > 0 ? suratList[0] : null;
 
-    if (suratList.length > 0) {
-      const lastSurat = suratList[0];
-      const lastNomorStr = (lastSurat.nomor_surat || '').split('/')[0] || '1';
-      const lastYear = (lastSurat.nomor_surat || '').split('/').pop();
-      
-      let nextNumber = 1;
-      if (lastYear === currentYear) {
-         nextNumber = parseInt(lastNomorStr) || 1;
-      }
-      
-      const nextNumberPadded = nextNumber.toString().padStart(3, '0');
-      const newFullNomor = `${nextNumberPadded}/PB-Bilibili162/${currentMonthRoman}/${currentYear}`;
-
-      setFormData({
-        ...defaultForm,
-        nomor_surat: newFullNomor,
-        logo_url: lastSurat.logo_url || defaultForm.logo_url,
-        ttd_ketua_url: lastSurat.ttd_ketua_url || '',
-        ttd_sekretaris_url: lastSurat.ttd_sekretaris_url || '',
-        cap_stempel_url: lastSurat.cap_stempel_url || '',
-        nama_ketua: lastSurat.nama_ketua || defaultForm.nama_ketua,
-        nama_sekretaris: lastSurat.nama_sekretaris || defaultForm.nama_sekretaris
-      });
-    } else {
-      setFormData({ ...defaultForm, nomor_surat: `001/PB-Bilibili162/${currentMonthRoman}/${currentYear}` });
-    }
+    setFormData({
+      ...defaultForm,
+      nomor_surat: newFullNomor,
+      logo_url: getValidAssetUrl(lastSurat?.logo_url, storedAssets.logo_url),
+      ttd_ketua_url: getValidAssetUrl(lastSurat?.ttd_ketua_url, storedAssets.ttd_ketua_url),
+      ttd_sekretaris_url: getValidAssetUrl(lastSurat?.ttd_sekretaris_url, storedAssets.ttd_sekretaris_url),
+      cap_stempel_url: getValidAssetUrl(lastSurat?.cap_stempel_url, storedAssets.cap_stempel_url),
+      nama_ketua: lastSurat?.nama_ketua || defaultForm.nama_ketua,
+      nama_sekretaris: lastSurat?.nama_sekretaris || defaultForm.nama_sekretaris
+    });
     setIsModalOpen(true);
+  };
+
+  const handleResequenceNumbers = async () => {
+    if (suratList.length === 0) {
+      Swal.fire('Informasi', 'Belum ada data surat untuk dirapikan.', 'info');
+      return;
+    }
+
+    const result = await Swal.fire({
+      title: 'Rapikan & Urutkan Penomoran Surat?',
+      html: 'Seluruh surat keluar akan diurutkan secara otomatis (001, 002, 003, dst) berdasarkan urutan tanggal pembuatan.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#2563eb',
+      confirmButtonText: 'Ya, Rapikan Penomoran',
+      cancelButtonText: 'Batal'
+    });
+
+    if (!result.isConfirmed) return;
+
+    setIsSubmitting(true);
+    try {
+      // Sort ascending by created_at time so older letters come first (001, 002, ...)
+      const sorted = [...suratList].sort((a, b) => {
+        const timeA = new Date(a.created_at || a.created_at_time || 0).getTime();
+        const timeB = new Date(b.created_at || b.created_at_time || 0).getTime();
+        return timeA - timeB;
+      });
+
+      const updatedMap = new Map();
+
+      sorted.forEach((item, index) => {
+        const seq = (index + 1).toString().padStart(3, '0');
+        const parts = (item.nomor_surat || '').split('/');
+        const orgCode = parts[1] || 'PB-BILIBILI162';
+        const monthRoman = parts[2] || getRomanMonth(new Date().getMonth());
+        const year = parts[3] || new Date().getFullYear().toString();
+
+        const newNomor = `${seq}/${orgCode}/${monthRoman}/${year}`;
+        updatedMap.set(item.id || item.nomor_surat, { ...item, nomor_surat: newNomor });
+      });
+
+      const updatedArray = Array.from(updatedMap.values());
+
+      // Update LocalStorage
+      const localData = JSON.parse(localStorage.getItem('arsip_surat_local') || '[]');
+      const updatedLocal = localData.map((locItem: any) => {
+        const updated = updatedMap.get(locItem.id || locItem.nomor_surat);
+        return updated || locItem;
+      });
+      localStorage.setItem('arsip_surat_local', JSON.stringify(updatedLocal));
+
+      // Update Supabase
+      for (const item of updatedArray) {
+        if (item.id && !item.id.toString().startsWith('local_')) {
+          try {
+            await supabase.from('arsip_surat').update({ nomor_surat: item.nomor_surat }).eq('id', item.id);
+          } catch (e) {
+            console.warn('Supabase update error:', e);
+          }
+        }
+      }
+
+      await fetchSurat();
+      Swal.fire('Berhasil', 'Penomoran surat telah dirapikan secara berurutan!', 'success');
+    } catch (err: any) {
+      console.error(err);
+      Swal.fire('Error', 'Gagal merapikan penomoran: ' + err.message, 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleEdit = (surat: any) => {
@@ -556,6 +967,9 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     setFormData({
       ...defaultForm,
       ...surat,
+      ttd_ketua_url: getValidAssetUrl(surat.ttd_ketua_url, DEFAULT_TTD_KETUA_URL),
+      ttd_sekretaris_url: getValidAssetUrl(surat.ttd_sekretaris_url, DEFAULT_TTD_SEKRETARIS_URL),
+      cap_stempel_url: getValidAssetUrl(surat.cap_stempel_url, DEFAULT_CAP_STEMPEL_URL),
       show_recipient: surat.show_recipient !== undefined ? Boolean(surat.show_recipient) : true,
       show_greetings: surat.show_greetings !== undefined ? Boolean(surat.show_greetings) : true,
       title_override: surat.title_override || '',
@@ -575,6 +989,9 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     setFormData({
       ...defaultForm,
       ...surat,
+      ttd_ketua_url: getValidAssetUrl(surat.ttd_ketua_url, DEFAULT_TTD_KETUA_URL),
+      ttd_sekretaris_url: getValidAssetUrl(surat.ttd_sekretaris_url, DEFAULT_TTD_SEKRETARIS_URL),
+      cap_stempel_url: getValidAssetUrl(surat.cap_stempel_url, DEFAULT_CAP_STEMPEL_URL),
       show_recipient: surat.show_recipient !== undefined ? Boolean(surat.show_recipient) : true,
       show_greetings: surat.show_greetings !== undefined ? Boolean(surat.show_greetings) : true,
       title_override: surat.title_override || '',
@@ -589,7 +1006,14 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
 
   const handleSave = async () => {
     setIsSubmitting(true);
-    const { id, created_at, ...payload } = formData as any;
+    const { id, created_at, ...rawPayload } = formData as any;
+    const payload = {
+      ...rawPayload,
+      logo_url: getValidAssetUrl(rawPayload.logo_url, DEFAULT_LOGO_URL),
+      ttd_ketua_url: getValidAssetUrl(rawPayload.ttd_ketua_url, DEFAULT_TTD_KETUA_URL),
+      ttd_sekretaris_url: getValidAssetUrl(rawPayload.ttd_sekretaris_url, DEFAULT_TTD_SEKRETARIS_URL),
+      cap_stempel_url: getValidAssetUrl(rawPayload.cap_stempel_url, DEFAULT_CAP_STEMPEL_URL)
+    };
 
     try {
       const localData = JSON.parse(localStorage.getItem('arsip_surat_local') || '[]');
@@ -601,7 +1025,17 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
         } else {
           updated = [{ ...payload, id: editId, created_at: formData.created_at || new Date().toISOString() }, ...localData];
         }
-        localStorage.setItem('arsip_surat_local', JSON.stringify(updated));
+        if (!safeLocalStorageSet('arsip_surat_local', JSON.stringify(updated))) {
+          const stripped = updated.map((item: any) => {
+            const copy = { ...item };
+            delete copy.logo_url;
+            delete copy.ttd_ketua_url;
+            delete copy.ttd_sekretaris_url;
+            delete copy.cap_stempel_url;
+            return copy;
+          });
+          safeLocalStorageSet('arsip_surat_local', JSON.stringify(stripped));
+        }
         try {
           await supabase.from('arsip_surat').update(payload).eq('id', editId);
         } catch (supabaseErr) {
@@ -611,7 +1045,18 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       } else {
         const newId = 'local_' + Date.now();
         const newLocalItem = { ...payload, id: newId, created_at: new Date().toISOString() };
-        localStorage.setItem('arsip_surat_local', JSON.stringify([newLocalItem, ...localData]));
+        updated = [newLocalItem, ...localData];
+        if (!safeLocalStorageSet('arsip_surat_local', JSON.stringify(updated))) {
+          const stripped = updated.map((item: any) => {
+            const copy = { ...item };
+            delete copy.logo_url;
+            delete copy.ttd_ketua_url;
+            delete copy.ttd_sekretaris_url;
+            delete copy.cap_stempel_url;
+            return copy;
+          });
+          safeLocalStorageSet('arsip_surat_local', JSON.stringify(stripped));
+        }
         try {
           await supabase.from('arsip_surat').insert([payload]);
         } catch (supabaseErr) {
@@ -642,22 +1087,34 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       try {
         await supabase.from('arsip_surat').delete().eq('id', id);
       } catch (e) {}
+      const deletedIds: string[] = JSON.parse(localStorage.getItem('arsip_surat_deleted') || '[]');
+      if (!deletedIds.includes(id)) {
+        deletedIds.push(id);
+        safeLocalStorageSet('arsip_surat_deleted', JSON.stringify(deletedIds));
+      }
       const localData = JSON.parse(localStorage.getItem('arsip_surat_local') || '[]');
-      localStorage.setItem('arsip_surat_local', JSON.stringify(localData.filter((i: any) => i.id !== id)));
+      safeLocalStorageSet('arsip_surat_local', JSON.stringify(localData.filter((i: any) => i.id !== id)));
       fetchSurat();
       Swal.fire('Terhapus', 'Surat berhasil dihapus.', 'success');
     }
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, field: string) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: string) => {
     if (isPreviewOnly) return;
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData(prev => ({ ...prev, [field]: reader.result as string }));
-      };
-      reader.readAsDataURL(file);
+      try {
+        const compressed = await compressImage(file, 600, 600, 0.85);
+        if (compressed) {
+          setFormData(prev => ({ ...prev, [field]: compressed }));
+        }
+      } catch (err) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setFormData(prev => ({ ...prev, [field]: reader.result as string }));
+        };
+        reader.readAsDataURL(file);
+      }
     }
   };
 
@@ -1037,6 +1494,14 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
           <div className="bg-[#0b1224]/90 border border-white/10 rounded-2xl md:rounded-[2.5rem] overflow-hidden flex flex-col flex-1 min-h-0 shadow-xl">
             <div className="p-3 sm:p-5 border-b border-white/5 flex items-center justify-between shrink-0 bg-black/20">
               <h3 className="text-[10px] sm:text-xs font-black uppercase tracking-[0.3em] text-slate-400">Arsip_Surat.log ({filteredSurat.length})</h3>
+              <button 
+                onClick={handleResequenceNumbers}
+                className="flex items-center gap-1.5 px-3 py-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 hover:text-white rounded-xl text-[10px] font-black uppercase tracking-wider border border-blue-500/30 transition-all cursor-pointer"
+                title="Urutkan & Rapikan Penomoran Surat"
+              >
+                <ListOrdered size={13} />
+                <span>Rapikan Penomoran</span>
+              </button>
             </div>
 
             <div className="overflow-y-auto flex-1 min-h-0 divide-y divide-white/5">
@@ -1140,6 +1605,14 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                               <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'ttd_sekretaris_url')} />
                           </label>
                       </div>
+                      <button
+                        type="button"
+                        onClick={handleApplyAssetsToAllSurat}
+                        className="w-full py-2 px-3 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 rounded-xl font-bold text-[9px] uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                      >
+                        <CheckCircle2 size={12} />
+                        Terapkan Aset ke Seluruh Surat
+                      </button>
                   </div>
 
                   {/* SECTION 2: Template & Judul Khusus */}
@@ -1195,7 +1668,16 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                   <div className="p-3 bg-white/5 border border-white/10 rounded-2xl space-y-2">
                     <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">Detail Dokumen (Hal. 1)</p>
                     <div>
-                      <label className="text-[10px] font-bold text-slate-400 uppercase">Nomor Surat</label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase">Nomor Surat</label>
+                        <button
+                          type="button"
+                          onClick={() => setFormData({ ...formData, nomor_surat: generateNextNomorSurat(suratList) })}
+                          className="text-[9px] font-bold text-blue-400 hover:text-blue-300 underline cursor-pointer"
+                        >
+                          Generate Otomatis Berikutnya
+                        </button>
+                      </div>
                       <input type="text" className="w-full p-2.5 bg-black/40 border border-white/10 rounded-lg text-xs font-mono text-blue-400" value={formData.nomor_surat || ''} onChange={(e)=>setFormData({...formData, nomor_surat: e.target.value})} />
                     </div>
 
@@ -1311,27 +1793,88 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
 
             {/* Preview Column */}
             <div className={`flex-1 bg-slate-800 p-2 sm:p-6 md:p-8 overflow-y-auto custom-scrollbar relative flex flex-col items-center ${!isPreviewOnly && activeModalTab === 'form' ? 'hidden md:flex' : 'flex'}`}>
-              <div className="absolute top-4 right-4 sm:top-6 sm:right-10 flex gap-2 sm:gap-3 z-50 no-print">
+              
+              {/* Preview Header Toolbar with Action Buttons & Zoom Controls */}
+              <div className="w-full max-w-4xl flex flex-wrap items-center justify-between gap-2 mb-4 pt-1 sm:pt-0 z-50 no-print">
+                {/* Zoom In / Out Controls */}
+                <div className="flex items-center gap-1 bg-slate-900/90 border border-white/10 rounded-xl p-1.5 text-white shadow-xl">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1 hidden sm:inline">Zoom:</span>
+                  <button 
+                    onClick={() => setZoomScale(prev => Math.max(0.3, parseFloat((prev - 0.1).toFixed(2))))} 
+                    className="p-1.5 hover:bg-white/10 active:bg-blue-600 rounded-lg text-slate-300 hover:text-white transition-all cursor-pointer"
+                    title="Zoom Out (-10%)"
+                  >
+                    <ZoomOut size={15} />
+                  </button>
+                  <span className="text-xs font-mono font-bold px-2 py-0.5 bg-black/60 border border-white/10 rounded-md text-blue-400 min-w-[50px] text-center">
+                    {Math.round(zoomScale * 100)}%
+                  </span>
+                  <button 
+                    onClick={() => setZoomScale(prev => Math.min(2.0, parseFloat((prev + 0.1).toFixed(2))))} 
+                    className="p-1.5 hover:bg-white/10 active:bg-blue-600 rounded-lg text-slate-300 hover:text-white transition-all cursor-pointer"
+                    title="Zoom In (+10%)"
+                  >
+                    <ZoomIn size={15} />
+                  </button>
+                  <button 
+                    onClick={() => setZoomScale(1.0)} 
+                    className="p-1.5 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-all cursor-pointer"
+                    title="Reset (100%)"
+                  >
+                    <RotateCcw size={13} />
+                  </button>
+                  
+                  {/* Zoom Presets */}
+                  <div className="hidden xs:flex items-center gap-1 border-l border-white/10 pl-1.5 ml-1">
+                    {[0.5, 0.75, 1.0, 1.25].map(p => (
+                      <button
+                        key={p}
+                        onClick={() => setZoomScale(p)}
+                        className={`px-1.5 py-0.5 rounded text-[9px] font-bold transition-all cursor-pointer ${
+                          Math.abs(zoomScale - p) < 0.05
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white'
+                        }`}
+                      >
+                        {Math.round(p * 100)}%
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex items-center gap-2">
                   <button onClick={() => handleSendWhatsApp(formData)} disabled={isSubmitting} className="px-3 py-1.5 sm:px-4 sm:py-2 bg-green-600 rounded-lg font-bold text-[10px] sm:text-xs flex items-center gap-1.5 shadow-xl hover:bg-green-500 transition-all disabled:opacity-50 cursor-pointer text-white">
                     {isSubmitting ? <Loader2 size={12} className="animate-spin"/> : <MessageCircle size={12}/>} <span className="hidden xs:inline">Kirim Link</span> WA
                   </button>
                   <button onClick={handlePrint} className="px-3 py-1.5 sm:px-4 sm:py-2 bg-blue-600 rounded-lg font-bold text-[10px] sm:text-xs flex items-center gap-1.5 shadow-xl hover:bg-blue-500 transition-all cursor-pointer text-white"><Printer size={12}/> Cetak</button>
                   <button onClick={() => setIsModalOpen(false)} className="p-1.5 sm:p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-all cursor-pointer text-white"><X size={16}/></button>
+                </div>
               </div>
 
-              {/* Preview Paper wrapper with responsive scale on mobile */}
-              <div className="w-full flex justify-center pt-10 sm:pt-4">
+              {/* Preview Paper wrapper with smooth zoom scale */}
+              <div className="w-full flex justify-center items-start overflow-x-auto pb-16 min-h-[500px]">
                 <div 
-                  ref={printRef} 
-                  className="bg-white text-black p-[1.5cm] w-[21cm] min-h-[29.7cm] shadow-2xl font-serif text-[11pt] leading-relaxed relative overflow-hidden shrink-0 origin-top transform scale-[0.45] xs:scale-[0.52] sm:scale-[0.7] md:scale-[0.85] lg:scale-100 mb-[-320px] xs:mb-[-280px] sm:mb-[-150px] md:mb-0"
+                  style={{ 
+                    transform: `scale(${zoomScale})`, 
+                    transformOrigin: 'top center',
+                    transition: 'transform 0.15s ease-out',
+                    marginBottom: zoomScale < 1 ? `-${(1 - zoomScale) * 1100}px` : '0px'
+                  }}
+                  className="shrink-0"
                 >
+                  <div 
+                    ref={printRef} 
+                    className="bg-white text-black p-[1.5cm] w-[21cm] min-h-[29.7cm] shadow-2xl font-serif text-[11pt] leading-relaxed relative overflow-hidden shrink-0"
+                  >
                   <div className="flex items-center border-b-[4px] border-black pb-2 mb-6">
                     <div className="w-24 h-24 flex-shrink-0 flex items-center justify-center mr-4 overflow-hidden">
-                      {formData.logo_url ? (
-                          <img src={formData.logo_url} alt="Logo" className="w-full h-full object-contain" />
-                      ) : (
-                          <img src="/logo_pb_bilibili_162.svg" alt="Logo PB Bilibili 162" className="w-full h-full object-contain" />
-                      )}
+                      <img 
+                        src={getValidAssetUrl(formData.logo_url, DEFAULT_LOGO_URL)} 
+                        alt="Logo PB Bilibili 162" 
+                        onError={(e) => { e.currentTarget.src = DEFAULT_LOGO_URL; }}
+                        className="w-full h-full object-contain" 
+                      />
                     </div>
                     <div className="text-center flex-1">
                       <h1 className="text-2xl font-bold uppercase leading-tight tracking-tighter">PB BILIBILI 162</h1>
@@ -1379,34 +1922,43 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                   <div className="mt-12 flex justify-between px-10 relative">
                       <div className="text-center w-48 relative">
                           <p className="mb-16">Ketua,</p>
-                          {formData.ttd_ketua_url && (
-                              <img src={formData.ttd_ketua_url} alt="TTD Ketua" className="absolute top-6 left-1/2 -translate-x-1/2 h-20 object-contain mix-blend-multiply" />
-                          )}
+                          <img 
+                              src={getValidAssetUrl(formData.ttd_ketua_url, DEFAULT_TTD_KETUA_URL)} 
+                              alt="TTD Ketua" 
+                              onError={(e) => { e.currentTarget.src = DEFAULT_TTD_KETUA_URL; }}
+                              className="absolute top-6 left-1/2 -translate-x-1/2 h-20 object-contain mix-blend-multiply" 
+                          />
                           
-                          {formData.cap_stempel_url && (
-                              <div 
-                                  onPointerDown={handlePointerDown}
-                                  onPointerMove={handlePointerMove}
-                                  onPointerUp={handlePointerUp}
-                                  style={{ transform: `translate(${stempelPos.x}px, ${stempelPos.y}px)` }}
-                                  className="absolute top-4 left-1/2 w-28 h-28 cursor-grab active:cursor-grabbing z-20 group select-none touch-none"
-                              >
-                                  <img src={formData.cap_stempel_url} alt="Cap Stempel" className="w-full h-full object-contain opacity-80 mix-blend-darken" />
-                                  {!isPreviewOnly && (
-                                      <div className="hidden group-hover:flex absolute inset-0 border-2 border-blue-500 border-dashed items-center justify-center">
-                                          <Move size={16} className="text-blue-500"/>
-                                      </div>
-                                  )}
-                              </div>
-                          )}
+                          <div 
+                              onPointerDown={handlePointerDown}
+                              onPointerMove={handlePointerMove}
+                              onPointerUp={handlePointerUp}
+                              style={{ transform: `translate(${stempelPos.x}px, ${stempelPos.y}px)` }}
+                              className="absolute top-4 left-1/2 w-28 h-28 cursor-grab active:cursor-grabbing z-20 group select-none touch-none"
+                          >
+                              <img 
+                                  src={getValidAssetUrl(formData.cap_stempel_url, DEFAULT_CAP_STEMPEL_URL)} 
+                                  alt="Cap Stempel" 
+                                  onError={(e) => { e.currentTarget.src = DEFAULT_CAP_STEMPEL_URL; }}
+                                  className="w-full h-full object-contain opacity-80 mix-blend-darken" 
+                              />
+                              {!isPreviewOnly && (
+                                  <div className="hidden group-hover:flex absolute inset-0 border-2 border-blue-500 border-dashed items-center justify-center">
+                                      <Move size={16} className="text-blue-500"/>
+                                  </div>
+                              )}
+                          </div>
                           <p className="font-bold underline uppercase whitespace-nowrap">{formData.nama_ketua}</p>
                       </div>
 
                       <div className="text-center w-48 relative">
                           <p className="mb-16">Sekretaris,</p>
-                          {formData.ttd_sekretaris_url && (
-                              <img src={formData.ttd_sekretaris_url} alt="TTD Sekretaris" className="absolute top-6 left-1/2 -translate-x-1/2 h-20 object-contain mix-blend-multiply" />
-                          )}
+                          <img 
+                              src={getValidAssetUrl(formData.ttd_sekretaris_url, DEFAULT_TTD_SEKRETARIS_URL)} 
+                              alt="TTD Sekretaris" 
+                              onError={(e) => { e.currentTarget.src = DEFAULT_TTD_SEKRETARIS_URL; }}
+                              className="absolute top-6 left-1/2 -translate-x-1/2 h-20 object-contain mix-blend-multiply" 
+                          />
                           <p className="font-bold underline uppercase whitespace-nowrap">{formData.nama_sekretaris}</p>
                       </div>
                   </div>
@@ -1448,7 +2000,8 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
             </div>
           </div>
         </div>
-      )}
+      </div>
+    )}
 
       {/* MODAL SURAT MASUK */}
       {isMasukModalOpen && (
