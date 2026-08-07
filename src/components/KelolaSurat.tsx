@@ -2155,6 +2155,28 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                   </div>
                 </div>
 
+                {/* Realtime DB Sync Status Indicator Badge */}
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900/90 border border-white/10 rounded-xl text-white shadow-xl">
+                  {realtimeSyncStatus === 'saving' && (
+                    <span className="flex items-center gap-1.5 text-amber-300 text-xs font-bold animate-pulse">
+                      <Loader2 size={13} className="animate-spin text-amber-400" />
+                      <span>Menyimpan Posisi & Skala...</span>
+                    </span>
+                  )}
+                  {(realtimeSyncStatus === 'synced' || realtimeSyncStatus === 'idle') && (
+                    <span className="flex items-center gap-1.5 text-emerald-400 text-xs font-bold">
+                      <CheckCircle2 size={13} className="text-emerald-400" />
+                      <span>Realtime DB Synced</span>
+                    </span>
+                  )}
+                  {realtimeSyncStatus === 'offline' && (
+                    <span className="flex items-center gap-1.5 text-slate-400 text-xs font-bold">
+                      <span className="w-2 h-2 rounded-full bg-slate-500" />
+                      <span>Local Offline Mode</span>
+                    </span>
+                  )}
+                </div>
+
                 {/* Action Buttons */}
                 <div className="flex items-center gap-2">
                   <button onClick={() => handleSendWhatsApp(formData)} disabled={isSubmitting} className="px-3 py-1.5 sm:px-4 sm:py-2 bg-green-600 rounded-lg font-bold text-[10px] sm:text-xs flex items-center gap-1.5 shadow-xl hover:bg-green-500 transition-all disabled:opacity-50 cursor-pointer text-white">
@@ -2173,7 +2195,19 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                       <Sparkles size={16} />
                     </div>
                     <div>
-                      <p className="text-[10px] uppercase font-bold text-blue-300 tracking-wider">Aset Digital Terpilih</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-[10px] uppercase font-bold text-blue-300 tracking-wider">Aset Digital Terpilih</p>
+                        {realtimeSyncStatus === 'saving' && (
+                          <span className="px-2 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-full text-[9px] font-bold flex items-center gap-1 animate-pulse">
+                            <Loader2 size={10} className="animate-spin" /> Auto-Saving...
+                          </span>
+                        )}
+                        {(realtimeSyncStatus === 'synced' || realtimeSyncStatus === 'idle') && (
+                          <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full text-[9px] font-bold flex items-center gap-1">
+                            <CheckCircle2 size={10} className="text-emerald-400" /> Posisi & Skala Synced
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs font-black text-white">
                         {selectedAsset === 'logo' && 'Logo PB Bilibili 162'}
                         {selectedAsset === 'ttd_ketua' && 'Tanda Tangan Ketua'}
@@ -2326,8 +2360,8 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                       onPointerUp={handleAssetPointerUp}
                       style={{
                         transform: `translate(${logoPos.x}px, ${logoPos.y}px)`,
-                        width: `${72 * ((formData.logo_scale || 100) / 100)}px`,
-                        height: `${72 * ((formData.logo_scale || 100) / 100)}px`,
+                        width: `${160 * ((formData.logo_scale || 100) / 100)}px`,
+                        height: `${160 * ((formData.logo_scale || 100) / 100)}px`,
                       }}
                       className={`flex-shrink-0 flex items-center justify-center mr-4 relative cursor-grab active:cursor-grabbing group transition-all select-none touch-none ${
                         selectedAsset === 'logo' ? 'ring-2 ring-blue-500 ring-offset-2 rounded-lg' : 'hover:ring-1 hover:ring-blue-300 rounded-lg'
