@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabase';
-import { Mail, Plus, Search, Eye, Edit, Trash2, Printer, X, Upload, Sparkles, Send, ImageIcon, MessageCircle, Move, Loader2, FileText, CheckCircle2, Clock, AlertCircle, Filter, Building, UserCheck, ShieldAlert, ListOrdered, ZoomIn, ZoomOut, RotateCcw, Maximize2 } from 'lucide-react';
+import { Mail, Plus, Search, Eye, Edit, Trash2, Printer, X, Upload, Sparkles, Send, ImageIcon, MessageCircle, Move, Loader2, FileText, CheckCircle2, Clock, AlertCircle, Filter, Building, UserCheck, ShieldAlert, ListOrdered, ZoomIn, ZoomOut, RotateCcw, Maximize2, Download } from 'lucide-react';
 import Swal from 'sweetalert2';
 
 const JENIS_SURAT_TEMPLATES = [
@@ -266,6 +266,7 @@ export function KelolaSurat() {
   const [activeModalTab, setActiveModalTab] = useState<'form' | 'preview'>('form');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const [isDownloading, setIsDownloading] = useState<'pdf' | 'png' | 'jpg' | null>(null);
   const [editId, setEditId] = useState<string | null>(null);
   const [isPreviewOnly, setIsPreviewOnly] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
@@ -1500,6 +1501,155 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     }
   };
 
+  const handleDownloadPDF = async () => {
+    const element = printRef.current;
+    if (!element) {
+      Swal.fire({
+        title: 'Error',
+        text: 'Elemen preview surat tidak ditemukan.',
+        icon: 'error',
+        background: '#0F172A',
+        color: '#fff'
+      });
+      return;
+    }
+
+    setIsDownloading('pdf');
+    try {
+      setSelectedAsset(null);
+      await new Promise(r => setTimeout(r, 100));
+
+      const html2canvas = (await import('html2canvas')).default;
+      const { jsPDF } = await import('jspdf');
+
+      const canvas = await html2canvas(element, {
+        scale: 2.5,
+        useCORS: true,
+        allowTaint: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      });
+
+      const imgData = canvas.toDataURL('image/png', 1.0);
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      const now = new Date();
+      const ddmmyy = `${String(now.getDate()).padStart(2, '0')}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getFullYear()).slice(-2)}`;
+      const cleanNomor = (formData.nomor_surat || 'surat').replace(/[/\\?%*:|"<>]/g, '-').replace(/\s+/g, '_');
+      const fileName = `Surat_PB162_${cleanNomor}_${ddmmyy}.pdf`;
+
+      pdf.save(fileName);
+
+      Swal.fire({
+        title: 'File PDF Berhasil Diunduh! 📄',
+        text: `Dokumen "${fileName}" berhasil disimpan ke perangkat Anda.`,
+        icon: 'success',
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3500,
+        background: '#0F172A',
+        color: '#fff'
+      });
+    } catch (err: any) {
+      console.error("PDF Download error:", err);
+      Swal.fire({
+        title: 'Gagal Unduh PDF',
+        text: err.message || 'Terjadi kesalahan saat memproses PDF.',
+        icon: 'error',
+        background: '#0F172A',
+        color: '#fff'
+      });
+    } finally {
+      setIsDownloading(null);
+    }
+  };
+
+  const handleDownloadImage = async (format: 'png' | 'jpg') => {
+    const element = printRef.current;
+    if (!element) {
+      Swal.fire({
+        title: 'Error',
+        text: 'Elemen preview surat tidak ditemukan.',
+        icon: 'error',
+        background: '#0F172A',
+        color: '#fff'
+      });
+      return;
+    }
+
+    setIsDownloading(format);
+    try {
+      setSelectedAsset(null);
+      await new Promise(r => setTimeout(r, 100));
+
+      const html2canvas = (await import('html2canvas')).default;
+
+      const canvas = await html2canvas(element, {
+        scale: 2.5,
+        useCORS: true,
+        allowTaint: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      });
+
+      const mimeType = format === 'jpg' ? 'image/jpeg' : 'image/png';
+      const ext = format === 'jpg' ? 'jpg' : 'png';
+      const imgData = canvas.toDataURL(mimeType, format === 'jpg' ? 0.95 : 1.0);
+
+      const now = new Date();
+      const ddmmyy = `${String(now.getDate()).padStart(2, '0')}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getFullYear()).slice(-2)}`;
+      const cleanNomor = (formData.nomor_surat || 'surat').replace(/[/\\?%*:|"<>]/g, '-').replace(/\s+/g, '_');
+      const fileName = `Surat_PB162_${cleanNomor}_${ddmmyy}.${ext}`;
+
+      const link = document.createElement('a');
+      link.href = imgData;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      Swal.fire({
+        title: `Gambar ${ext.toUpperCase()} Berhasil Diunduh! 🖼️`,
+        text: `File "${fileName}" telah berhasil disimpan.`,
+        icon: 'success',
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3500,
+        background: '#0F172A',
+        color: '#fff'
+      });
+    } catch (err: any) {
+      console.error(`Download ${format} error:`, err);
+      Swal.fire({
+        title: `Gagal Unduh ${format.toUpperCase()}`,
+        text: err.message || 'Terjadi kesalahan saat membuat file gambar.',
+        icon: 'error',
+        background: '#0F172A',
+        color: '#fff'
+      });
+    } finally {
+      setIsDownloading(null);
+    }
+  };
+
   const filteredSurat = suratList.filter(s => 
     s.nomor_surat.toLowerCase().includes(searchTerm.toLowerCase()) || 
     s.perihal.toLowerCase().includes(searchTerm.toLowerCase())
@@ -2178,12 +2328,64 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex items-center gap-2">
-                  <button onClick={() => handleSendWhatsApp(formData)} disabled={isSubmitting} className="px-3 py-1.5 sm:px-4 sm:py-2 bg-green-600 rounded-lg font-bold text-[10px] sm:text-xs flex items-center gap-1.5 shadow-xl hover:bg-green-500 transition-all disabled:opacity-50 cursor-pointer text-white">
-                    {isSubmitting ? <Loader2 size={12} className="animate-spin"/> : <MessageCircle size={12}/>} <span className="hidden xs:inline">Kirim Link</span> WA
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                  <button 
+                    onClick={handleDownloadPDF} 
+                    disabled={isDownloading !== null} 
+                    className="px-2.5 py-1.5 sm:px-3 sm:py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg font-bold text-[10px] sm:text-xs flex items-center gap-1.5 shadow-xl hover:shadow-rose-900/30 transition-all disabled:opacity-50 cursor-pointer active:scale-95"
+                    title="Unduh Surat sebagai Dokumen PDF (A4)"
+                  >
+                    {isDownloading === 'pdf' ? <Loader2 size={12} className="animate-spin"/> : <FileText size={12}/>} 
+                    <span>Unduh PDF</span>
                   </button>
-                  <button onClick={handlePrint} className="px-3 py-1.5 sm:px-4 sm:py-2 bg-blue-600 rounded-lg font-bold text-[10px] sm:text-xs flex items-center gap-1.5 shadow-xl hover:bg-blue-500 transition-all cursor-pointer text-white"><Printer size={12}/> Cetak</button>
-                  <button onClick={() => setIsModalOpen(false)} className="p-1.5 sm:p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-all cursor-pointer text-white"><X size={16}/></button>
+
+                  <button 
+                    onClick={() => handleDownloadImage('jpg')} 
+                    disabled={isDownloading !== null} 
+                    className="px-2.5 py-1.5 sm:px-3 sm:py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg font-bold text-[10px] sm:text-xs flex items-center gap-1.5 shadow-xl hover:shadow-amber-900/30 transition-all disabled:opacity-50 cursor-pointer active:scale-95"
+                    title="Unduh Surat sebagai Gambar JPG"
+                  >
+                    {isDownloading === 'jpg' ? <Loader2 size={12} className="animate-spin"/> : <ImageIcon size={12}/>} 
+                    <span>JPG</span>
+                  </button>
+
+                  <button 
+                    onClick={() => handleDownloadImage('png')} 
+                    disabled={isDownloading !== null} 
+                    className="px-2.5 py-1.5 sm:px-3 sm:py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg font-bold text-[10px] sm:text-xs flex items-center gap-1.5 shadow-xl hover:shadow-purple-900/30 transition-all disabled:opacity-50 cursor-pointer active:scale-95"
+                    title="Unduh Surat sebagai Gambar PNG Transparan/High Quality"
+                  >
+                    {isDownloading === 'png' ? <Loader2 size={12} className="animate-spin"/> : <ImageIcon size={12}/>} 
+                    <span>PNG</span>
+                  </button>
+
+                  <button 
+                    onClick={() => handleSendWhatsApp(formData)} 
+                    disabled={isSubmitting || isDownloading !== null} 
+                    className="px-2.5 py-1.5 sm:px-3 sm:py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg font-bold text-[10px] sm:text-xs flex items-center gap-1.5 shadow-xl hover:shadow-green-900/30 transition-all disabled:opacity-50 cursor-pointer active:scale-95"
+                    title="Kirim Link PDF ke WhatsApp"
+                  >
+                    {isSubmitting ? <Loader2 size={12} className="animate-spin"/> : <MessageCircle size={12}/>} 
+                    <span className="hidden xs:inline">WA</span>
+                  </button>
+
+                  <button 
+                    onClick={handlePrint} 
+                    disabled={isDownloading !== null}
+                    className="px-2.5 py-1.5 sm:px-3 sm:py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold text-[10px] sm:text-xs flex items-center gap-1.5 shadow-xl hover:shadow-blue-900/30 transition-all cursor-pointer active:scale-95"
+                    title="Cetak Surat Langsung"
+                  >
+                    <Printer size={12}/> 
+                    <span className="hidden xs:inline">Cetak</span>
+                  </button>
+
+                  <button 
+                    onClick={() => setIsModalOpen(false)} 
+                    className="p-1.5 sm:p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-all cursor-pointer text-white"
+                    title="Tutup Pratinjau"
+                  >
+                    <X size={16}/>
+                  </button>
                 </div>
               </div>
 
@@ -2594,6 +2796,42 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                       </table>
                     </div>
                   )}
+                </div>
+              </div>
+
+              {/* Floating Bottom Action Bar for Quick Download Options */}
+              <div className="sticky bottom-2 z-40 mt-3 px-4 py-2 bg-slate-900/95 border border-white/15 rounded-2xl shadow-2xl flex items-center justify-between gap-3 text-white no-print">
+                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 hidden xs:inline flex items-center gap-1.5">
+                  <Download size={13} className="text-blue-400" /> Unduh Format:
+                </span>
+                <div className="flex items-center gap-2 w-full xs:w-auto justify-end">
+                  <button
+                    type="button"
+                    onClick={handleDownloadPDF}
+                    disabled={isDownloading !== null}
+                    className="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1.5 shadow-md transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+                  >
+                    {isDownloading === 'pdf' ? <Loader2 size={12} className="animate-spin" /> : <FileText size={12} />}
+                    PDF
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDownloadImage('jpg')}
+                    disabled={isDownloading !== null}
+                    className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1.5 shadow-md transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+                  >
+                    {isDownloading === 'jpg' ? <Loader2 size={12} className="animate-spin" /> : <ImageIcon size={12} />}
+                    JPG
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDownloadImage('png')}
+                    disabled={isDownloading !== null}
+                    className="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1.5 shadow-md transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+                  >
+                    {isDownloading === 'png' ? <Loader2 size={12} className="animate-spin" /> : <ImageIcon size={12} />}
+                    PNG
+                  </button>
                 </div>
               </div>
             </div>
