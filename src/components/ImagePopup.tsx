@@ -15,33 +15,43 @@ function ImagePopup() {
 
     const fetchActivePopups = async () => {
       try {
-        let activeItems: any[] = [];
-        
-        // 1. Fetch from site_settings (via siteSettingsHelper)
-        const siteConfig = await getSiteSetting('popup_config');
-        let sitePopups: any[] = [];
-        if (siteConfig !== null && siteConfig !== undefined) {
-          sitePopups = parsePopupList(siteConfig).filter((p: any) => p && p.is_active !== false);
-        }
-
-        // 2. Fetch from Supabase direct table konfigurasi_popup
         let dbItems: any[] = [];
         try {
           const { data, error } = await supabase
             .from('konfigurasi_popup')
             .select('*')
-            .eq('is_active', true)
             .order('urutan', { ascending: true });
           
           if (!error && data) dbItems = data;
         } catch (e) {}
 
-        // Combine / prioritize items
-        if (sitePopups.length > 0) {
-          activeItems = sitePopups;
-        } else if (dbItems.length > 0) {
-          activeItems = dbItems;
+        let sitePopups: any[] = [];
+        try {
+          const siteConfig = await getSiteSetting('popup_config');
+          if (siteConfig !== null && siteConfig !== undefined) {
+            sitePopups = parsePopupList(siteConfig);
+          }
+        } catch (e) {}
+
+        let merged: any[] = [];
+        if (dbItems.length > 0) {
+          const siteMap = new Map(sitePopups.map((p: any) => [p.id, p]));
+          merged = dbItems.map(dbItem => {
+            if (siteMap.has(dbItem.id)) {
+              return { ...dbItem, ...siteMap.get(dbItem.id) };
+            }
+            return dbItem;
+          });
+          for (const siteItem of sitePopups) {
+            if (!merged.some(m => m.id === siteItem.id)) {
+              merged.push(siteItem);
+            }
+          }
+        } else {
+          merged = sitePopups;
         }
+
+        const activeItems = merged.filter((p: any) => p && p.is_active !== false);
 
         const currentHash = JSON.stringify(activeItems.map(item => ({ id: item.id, active: item.is_active, title: item.judul, img: item.url_gambar })));
         if (currentHash !== lastHash) {

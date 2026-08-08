@@ -190,13 +190,13 @@ const KelolaHero: React.FC = () => {
   const [showCropModal, setShowCropModal] = useState(false);
 
   useEffect(() => {
-    fetchHeroData();
+    fetchHeroData(false);
 
     const channel = supabase
       .channel('kelola_hero_realtime_sync')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, (payload: any) => {
         if (!payload.new || payload.new.key === 'hero_config' || payload.old?.key === 'hero_config') {
-          fetchHeroData();
+          fetchHeroData(true);
         }
       })
       .subscribe();
@@ -207,11 +207,11 @@ const KelolaHero: React.FC = () => {
           setSlides(e.detail.value.slides);
           if (e.detail.value.settings) setSliderSettings(e.detail.value.settings);
         } else {
-          fetchHeroData();
+          fetchHeroData(true);
         }
       }
     };
-    const handleFocus = () => fetchHeroData();
+    const handleFocus = () => fetchHeroData(true);
 
     window.addEventListener('site_setting_updated', handleCustomEvent);
     window.addEventListener('focus', handleFocus);
@@ -227,8 +227,8 @@ const KelolaHero: React.FC = () => {
     };
   }, []);
 
-  const fetchHeroData = async () => {
-    setIsLoading(true);
+  const fetchHeroData = async (isSilent = false) => {
+    if (!isSilent && slides.length === 0) setIsLoading(true);
     try {
       const val = await getSiteSetting('hero_config');
       if (val) {
@@ -236,13 +236,13 @@ const KelolaHero: React.FC = () => {
         if (typeof config === 'string') {
           try { config = JSON.parse(config); } catch (e) {}
         }
-        setSlides(config.slides || []);
-        setSliderSettings(config.settings || { duration: 6, effect: 'fade' });
+        if (config.slides) setSlides(config.slides);
+        if (config.settings) setSliderSettings(config.settings);
       }
     } catch (err: any) {
       console.error("Error fetching hero data:", err.message);
     } finally {
-      setIsLoading(false);
+      if (!isSilent) setIsLoading(false);
     }
   };
 

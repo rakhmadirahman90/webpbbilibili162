@@ -36,21 +36,21 @@ export default function HeroAdmin() {
   const [tempPreview, setTempPreview] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchHeroData();
+    fetchHeroData(false);
 
     const channel = supabase
       .channel('admin_kelola_hero_realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, (payload: any) => {
         if (!payload.new || payload.new.key === 'hero_config' || payload.old?.key === 'hero_config') {
-          fetchHeroData();
+          fetchHeroData(true);
         }
       })
       .subscribe();
 
     const handleCustomEvent = (e: any) => {
-      if (e.detail?.key === 'hero_config') fetchHeroData();
+      if (e.detail?.key === 'hero_config') fetchHeroData(true);
     };
-    const handleFocus = () => fetchHeroData();
+    const handleFocus = () => fetchHeroData(true);
 
     window.addEventListener('site_setting_updated', handleCustomEvent);
     window.addEventListener('focus', handleFocus);
@@ -66,18 +66,18 @@ export default function HeroAdmin() {
     };
   }, []);
 
-  const fetchHeroData = async () => {
-    setLoading(true);
+  const fetchHeroData = async (isSilent = false) => {
+    if (!isSilent && slides.length === 0) setLoading(true);
     try {
       const data = await getSiteSetting('hero_config');
       if (data) {
         const val = typeof data === 'string' ? JSON.parse(data) : data;
-        setSlides(val.slides || []);
+        if (val.slides) setSlides(val.slides);
       }
     } catch (err) {
       console.error(err);
     } finally {
-      setLoading(false);
+      if (!isSilent) setLoading(false);
     }
   };
 

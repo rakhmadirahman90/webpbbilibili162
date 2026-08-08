@@ -157,59 +157,79 @@ export default function AdminPopup() {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  const fetchPopups = async () => {
-    setLoading(true);
+  const fetchPopups = async (isSilent = false) => {
+    if (!isSilent && popups.length === 0) setLoading(true);
     try {
-      const siteConfig = await getSiteSetting('popup_config');
-      if (siteConfig !== null && siteConfig !== undefined) {
-        const sitePopups = parsePopupList(siteConfig);
-        setPopups(sitePopups);
-      } else {
-        let dbPopups: PopupConfig[] = [];
-        try {
-          const { data, error } = await supabase
-            .from('konfigurasi_popup')
-            .select('*')
-            .order('urutan', { ascending: true });
-          
-          if (!error && data && data.length > 0) dbPopups = data;
-        } catch (e) {}
+      let dbPopups: PopupConfig[] = [];
+      try {
+        const { data, error } = await supabase
+          .from('konfigurasi_popup')
+          .select('*')
+          .order('urutan', { ascending: true });
+        
+        if (!error && data && data.length > 0) dbPopups = data;
+      } catch (e) {}
 
-        if (dbPopups.length > 0) {
-          setPopups(dbPopups);
-          saveSiteSetting('popup_config', dbPopups, 'Konfigurasi Popup Promo');
-        } else {
-          setPopups([]);
+      let sitePopups: PopupConfig[] = [];
+      try {
+        const siteConfig = await getSiteSetting('popup_config');
+        if (siteConfig !== null && siteConfig !== undefined) {
+          sitePopups = parsePopupList(siteConfig);
         }
+      } catch (e) {}
+
+      let merged: PopupConfig[] = [];
+      if (dbPopups.length > 0) {
+        const siteMap = new Map(sitePopups.map(p => [p.id, p]));
+        merged = dbPopups.map(dbItem => {
+          if (siteMap.has(dbItem.id)) {
+            return { ...dbItem, ...siteMap.get(dbItem.id) };
+          }
+          return dbItem;
+        });
+        for (const siteItem of sitePopups) {
+          if (!merged.some(m => m.id === siteItem.id)) {
+            merged.push(siteItem);
+          }
+        }
+      } else {
+        merged = sitePopups;
       }
+
+      setPopups(prev => {
+        const currentHash = JSON.stringify(prev);
+        const newHash = JSON.stringify(merged);
+        if (currentHash === newHash) return prev;
+        return merged;
+      });
     } catch (err) {
       console.warn("fetchPopups error:", err);
     } finally {
-      setLoading(false);
+      if (!isSilent) setLoading(false);
     }
   };
 
   useEffect(() => { 
-    fetchPopups(); 
+    fetchPopups(false); 
 
-    const syncInterval = setInterval(fetchPopups, 3000);
+    const syncInterval = setInterval(() => fetchPopups(true), 5000);
 
     const channel = supabase
       .channel('admin_popup_realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, (payload: any) => {
         if (!payload.new || payload.new.key === 'popup_config' || payload.old?.key === 'popup_config') {
-          fetchPopups();
+          fetchPopups(true);
         }
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'konfigurasi_popup' }, () => {
-        fetchPopups();
+        fetchPopups(true);
       })
       .subscribe();
 
     const handleCustomEvent = (e: any) => {
-      if (!e.detail?.key || e.detail.key === 'popup_config') fetchPopups();
+      if (!e.detail?.key || e.detail.key === 'popup_config') fetchPopups(true);
     };
-    const handleFocus = () => fetchPopups();
+    const handleFocus = () => fetchPopups(true);
 
     window.addEventListener('site_setting_updated', handleCustomEvent);
     window.addEventListener('focus', handleFocus);
