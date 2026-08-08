@@ -637,7 +637,7 @@ const KelolaHero: React.FC = () => {
           title: finalTitle, 
           subtitle: subtitle.trim(), 
           image: imageUrl, 
-          videoUrl: isVideo ? imageUrl : undefined, 
+          videoUrl: isVideo ? (currentSlide?.videoUrl || imageUrl) : undefined, 
           poster: activePoster || undefined,
           type: isVideo ? 'video' : 'image',
           active: true

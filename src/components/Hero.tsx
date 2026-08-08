@@ -243,7 +243,13 @@ export default function Hero() {
       )
       .subscribe();
 
+    // Polling interval for fast live sync across tabs/devices
+    const syncInterval = setInterval(() => {
+      loadHeroConfig();
+    }, 4000);
+
     return () => {
+      clearInterval(syncInterval);
       window.removeEventListener('storage', handleStorage);
       window.removeEventListener('site_setting_updated', handleCustomUpdate);
       window.removeEventListener('focus', handleFocus);
@@ -282,9 +288,9 @@ export default function Hero() {
           {/* Background Visual Layer */}
           <div className="absolute inset-0 z-0 w-full h-full flex items-center justify-center">
             {slides.map((slide, index) => {
-              const isVideo = isVideoUrl(slide.videoUrl, slide.type) || isVideoUrl(slide.image, slide.type);
-              const mediaSrc = (isVideoUrl(slide.videoUrl, slide.type) ? slide.videoUrl : null) || (isVideoUrl(slide.image, slide.type) ? slide.image : null) || slide.videoUrl || slide.image;
-              const posterSrc = slide.poster || (slide.image !== mediaSrc ? slide.image : undefined);
+              const isVideo = slide.type === 'video' || isVideoUrl(slide.videoUrl, slide.type) || isVideoUrl(slide.image, slide.type);
+              const mediaSrc = slide.videoUrl || (isVideoUrl(slide.image, slide.type) ? slide.image : null) || slide.image;
+              const posterSrc = slide.poster || (slide.image && slide.image !== mediaSrc ? slide.image : undefined);
               const isCurrent = index === currentSlide;
 
               return (

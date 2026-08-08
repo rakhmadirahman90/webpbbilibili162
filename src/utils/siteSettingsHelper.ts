@@ -170,8 +170,34 @@ export async function getSiteSetting(key: string) {
     }
   } catch (err) {}
 
-  // Prioritize serverVal > dbVal > localVal
-  let bestVal = serverVal || dbVal || localVal;
+  // Smart timestamp-based prioritization (serverVal, dbVal, localVal)
+  const getTimestamp = (val: any) => {
+    if (!val) return 0;
+    const parsed = typeof val === 'string' ? (() => { try { return JSON.parse(val); } catch { return {}; } })() : val;
+    if (parsed && typeof parsed === 'object' && parsed.updated_at) {
+      const t = new Date(parsed.updated_at).getTime();
+      if (!isNaN(t)) return t;
+    }
+    return 0;
+  };
+
+  const serverTs = getTimestamp(serverVal);
+  const dbTs = getTimestamp(dbVal);
+  const localTs = getTimestamp(localVal);
+
+  let bestVal: any = null;
+
+  if (serverTs > 0 || dbTs > 0 || localTs > 0) {
+    if (serverTs >= dbTs && serverTs >= localTs) {
+      bestVal = serverVal;
+    } else if (dbTs >= serverTs && dbTs >= localTs) {
+      bestVal = dbVal;
+    } else {
+      bestVal = localVal;
+    }
+  } else {
+    bestVal = serverVal || dbVal || localVal;
+  }
 
   if (key === 'hero_config') {
     if (bestVal && typeof bestVal === 'object') {
@@ -180,7 +206,7 @@ export async function getSiteSetting(key: string) {
         s.type === 'video' || (s.videoUrl && s.videoUrl.trim() !== '') || (s.image && isVideoUrl(s.image, s.type))
       );
 
-      // Prepend the default main video slide if no video slide exists in the configured list
+      // Prepend default main video slide only if config is missing a video slide entirely
       if (!hasVideo && slides.length > 0) {
         const videoSlide = {
           id: 'video-main-1',
