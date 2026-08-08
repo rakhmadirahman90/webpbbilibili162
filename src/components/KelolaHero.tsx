@@ -8,7 +8,7 @@ import {
   CheckCircle2, AlertCircle, Clock, Zap,
   Layers, Settings2, Edit3, X, ZoomIn, ZoomOut,
   RotateCw, Crop, Maximize2, Sparkles, Monitor,
-  Gauge, HardDrive, Film, Video as VideoIcon, Play
+  Gauge, HardDrive, Film, Video as VideoIcon, Play, Eye
 } from 'lucide-react';
 import Cropper from 'react-easy-crop';
 import { isVideoUrl } from './Hero';
@@ -600,7 +600,7 @@ const KelolaHero: React.FC = () => {
           ...s, 
           title: finalTitle, 
           subtitle: subtitle.trim(), 
-          image: (isVideo && activePoster) ? activePoster : imageUrl, 
+          image: imageUrl, 
           videoUrl: isVideo ? imageUrl : undefined, 
           poster: activePoster || undefined,
           type: isVideo ? 'video' : 'image',
@@ -612,7 +612,7 @@ const KelolaHero: React.FC = () => {
         id: Date.now(),
         title: finalTitle,
         subtitle: subtitle.trim(),
-        image: (isVideo && activePoster) ? activePoster : imageUrl,
+        image: imageUrl,
         videoUrl: isVideo ? imageUrl : undefined,
         poster: activePoster || undefined,
         type: isVideo ? 'video' : 'image',
@@ -1096,6 +1096,63 @@ const KelolaHero: React.FC = () => {
                     className="w-full bg-black/80 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold focus:border-blue-500 outline-none h-24 resize-none transition-colors text-white placeholder:text-zinc-600"
                   />
                 </div>
+
+                {/* Live Preview Section Before Save */}
+                {imageUrl && (
+                  <div className="space-y-2 pt-1">
+                    <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-wider text-blue-400">
+                      <span className="flex items-center gap-1.5">
+                        <Eye size={13} className="text-amber-400 animate-pulse" /> Pratinjau Live Media (Sebelum Disimpan)
+                      </span>
+                      <span className="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-300 text-[8px] font-extrabold border border-blue-500/20">
+                        {isVideoUrl(imageUrl) ? 'Video Preview' : 'Foto WebP'}
+                      </span>
+                    </div>
+                    <div className="relative h-44 w-full bg-black rounded-[1.8rem] overflow-hidden border border-blue-500/30 shadow-2xl flex items-end p-5 group">
+                      {isVideoUrl(imageUrl) ? (
+                        <video 
+                          src={imageUrl} 
+                          poster={posterUrl || undefined}
+                          autoPlay 
+                          loop 
+                          muted 
+                          playsInline 
+                          className="absolute inset-0 w-full h-full object-cover opacity-70 group-hover:scale-105 transition-transform duration-700" 
+                        />
+                      ) : (
+                        <img 
+                          src={imageUrl} 
+                          alt="Live Hero Preview" 
+                          className="absolute inset-0 w-full h-full object-cover opacity-70 group-hover:scale-105 transition-transform duration-700" 
+                        />
+                      )}
+                      
+                      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent z-0" />
+                      
+                      <div className="relative z-10 space-y-1.5 w-full">
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-600/90 backdrop-blur-md text-[8px] font-black uppercase text-white tracking-wider border border-white/20 shadow-md">
+                          {isVideoUrl(imageUrl) ? (
+                            <>
+                              <Film size={10} className="text-amber-300 animate-pulse" />
+                              <span>Video Banner Active</span>
+                            </>
+                          ) : (
+                            <>
+                              <ImageIcon size={10} className="text-blue-200" />
+                              <span>Image Banner Active</span>
+                            </>
+                          )}
+                        </div>
+                        <h4 className="text-sm font-black italic tracking-tight text-white line-clamp-1 drop-shadow-md uppercase">
+                          {title.trim() || (isVideoUrl(imageUrl) ? 'PB BILIBILI VIDEO HERO' : 'PB BILIBILI 162')}
+                        </h4>
+                        <p className="text-[10px] text-zinc-300 font-medium line-clamp-2 drop-shadow leading-relaxed">
+                          {subtitle.trim() || 'Deskripsi slider hero akan ditampilkan di atas media banner ini.'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {formError && (
                   <p className="text-red-400 text-[9px] font-black uppercase tracking-tighter flex items-center gap-2 bg-red-950/40 p-2.5 rounded-xl border border-red-500/20">

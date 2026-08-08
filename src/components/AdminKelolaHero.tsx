@@ -14,6 +14,10 @@ interface HeroSlide {
   title: string;
   subtitle: string;
   image: string;
+  videoUrl?: string;
+  poster?: string;
+  type?: 'image' | 'video';
+  active?: boolean;
 }
 
 export default function HeroAdmin() {

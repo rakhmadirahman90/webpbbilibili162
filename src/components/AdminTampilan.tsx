@@ -53,6 +53,9 @@ interface HeroSlide {
   title: string;
   subtitle: string;
   image: string;
+  videoUrl?: string;
+  poster?: string;
+  type?: 'image' | 'video';
   titleSize?: number;
   subtitleSize?: number;
   fontFamily?: string;
