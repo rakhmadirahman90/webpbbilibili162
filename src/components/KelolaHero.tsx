@@ -328,18 +328,28 @@ const KelolaHero: React.FC = () => {
       const posterPath = `hero-sliders/${posterFileName}`;
 
       let publicVideoUrl = '';
-      try {
-        const { error: videoUploadError } = await supabase.storage
-          .from('assets')
-          .upload(videoPath, videoBlob, { contentType: mimeType, upsert: true });
+      const storageBuckets = ['assets', 'images', 'uploads', 'gallery', 'identitas-atlet'];
 
-        if (videoUploadError) throw videoUploadError;
+      for (const bucketName of storageBuckets) {
+        try {
+          const { error: videoUploadError } = await supabase.storage
+            .from(bucketName)
+            .upload(videoPath, videoBlob, { contentType: mimeType, upsert: true });
 
-        const { data: videoUrlData } = supabase.storage.from('assets').getPublicUrl(videoPath);
-        publicVideoUrl = videoUrlData.publicUrl;
-      } catch (storageErr) {
-        console.warn("Storage upload failed, using Data URL fallback:", storageErr);
-        // Fallback: convert videoBlob to Data URL so media is never lost
+          if (!videoUploadError) {
+            const { data: videoUrlData } = supabase.storage.from(bucketName).getPublicUrl(videoPath);
+            if (videoUrlData?.publicUrl) {
+              publicVideoUrl = videoUrlData.publicUrl;
+              break;
+            }
+          }
+        } catch (err) {
+          console.warn(`Storage bucket '${bucketName}' upload video error:`, err);
+        }
+      }
+
+      if (!publicVideoUrl) {
+        // Fallback: convert videoBlob to Data URL so media is preserved
         publicVideoUrl = await new Promise<string>((resolve) => {
           const reader = new FileReader();
           reader.onloadend = () => resolve(reader.result as string);
@@ -350,16 +360,21 @@ const KelolaHero: React.FC = () => {
       // Upload Poster image frame
       let publicPosterUrl = '';
       if (posterBlob && posterBlob.size > 0) {
-        try {
-          const { error: posterUploadError } = await supabase.storage
-            .from('assets')
-            .upload(posterPath, posterBlob, { contentType: 'image/webp', upsert: true });
+        for (const bucketName of storageBuckets) {
+          try {
+            const { error: posterUploadError } = await supabase.storage
+              .from(bucketName)
+              .upload(posterPath, posterBlob, { contentType: 'image/webp', upsert: true });
 
-          if (!posterUploadError) {
-            const { data: posterUrlData } = supabase.storage.from('assets').getPublicUrl(posterPath);
-            publicPosterUrl = posterUrlData.publicUrl;
-          }
-        } catch (e) {}
+            if (!posterUploadError) {
+              const { data: posterUrlData } = supabase.storage.from(bucketName).getPublicUrl(posterPath);
+              if (posterUrlData?.publicUrl) {
+                publicPosterUrl = posterUrlData.publicUrl;
+                break;
+              }
+            }
+          } catch (e) {}
+        }
       }
 
       setImageUrl(publicVideoUrl);
@@ -370,14 +385,35 @@ const KelolaHero: React.FC = () => {
       const sizeKb = Math.round(videoBlob.size / 1024);
       const sizeMb = (sizeKb / 1024).toFixed(2);
 
-      Swal.fire({
-        toast: true,
-        position: 'top-end',
+      const confirmAutoSave = await Swal.fire({
         icon: 'success',
-        title: `Video Hero Dioptimasi! (${fileExt.toUpperCase()} ~${sizeMb} MB)`,
-        showConfirmButton: false,
-        timer: 3000
+        title: 'Video Hero Berhasil Diunggah!',
+        text: `Ukuran: ~${sizeMb} MB (${fileExt.toUpperCase()}). Apakah Anda ingin langsung menyimpan video ini sebagai slide hero utama?`,
+        showCancelButton: true,
+        confirmButtonColor: '#3B82F6',
+        cancelButtonColor: '#374151',
+        confirmButtonText: 'Ya, Simpan Sebagai Slide Utama',
+        cancelButtonText: 'Atur Judul/Deskripsi Dulu',
+        background: '#0F172A',
+        color: '#fff'
       });
+
+      if (confirmAutoSave.isConfirmed) {
+        const autoTitle = title.trim() || "PB Bilibili Video Hero";
+        const newVideoSlide = {
+          id: Date.now(),
+          title: autoTitle,
+          subtitle: subtitle.trim(),
+          image: publicVideoUrl,
+          videoUrl: publicVideoUrl,
+          poster: publicPosterUrl || undefined,
+          type: 'video',
+          active: true
+        };
+        const updatedSlides = [newVideoSlide, ...slides];
+        await saveToDatabase(updatedSlides);
+        resetForm();
+      }
 
     } catch (err: any) {
       console.error("Video processing error:", err);
@@ -618,7 +654,7 @@ const KelolaHero: React.FC = () => {
         type: isVideo ? 'video' : 'image',
         active: true,
       };
-      updatedSlides = [...slides, newSlide];
+      updatedSlides = [newSlide, ...slides];
     }
 
     await saveToDatabase(updatedSlides);

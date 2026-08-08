@@ -165,12 +165,12 @@ export async function getSiteSetting(key: string) {
     if (!error && data?.value !== undefined && data.value !== null) {
       const dbVal = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
 
-      // If localVal has a newer updated_at timestamp, use localVal until DB catches up
-      if (localVal && typeof localVal === 'object' && localVal.updated_at) {
-        const localTime = new Date(localVal.updated_at).getTime();
+      // If localVal has a newer or equal updated_at timestamp, or was saved recently (< 10 mins), prioritize localVal
+      if (localVal && typeof localVal === 'object') {
+        const localTime = localVal.updated_at ? new Date(localVal.updated_at).getTime() : 0;
         const dbTime = dbVal && typeof dbVal === 'object' && dbVal.updated_at ? new Date(dbVal.updated_at).getTime() : 0;
 
-        if (localTime > dbTime && (Date.now() - localTime) < 300000) {
+        if (localTime >= dbTime || (localTime > 0 && (Date.now() - localTime) < 600000)) {
           return localVal;
         }
       }

@@ -273,7 +273,7 @@ export default function Hero() {
           <div className="absolute inset-0 z-0 w-full h-full flex items-center justify-center">
             {slides.map((slide, index) => {
               const isVideo = isVideoUrl(slide.videoUrl, slide.type) || isVideoUrl(slide.image, slide.type);
-              const mediaSrc = (isVideoUrl(slide.videoUrl) ? slide.videoUrl : null) || (isVideoUrl(slide.image) ? slide.image : null) || slide.videoUrl || slide.image;
+              const mediaSrc = (isVideoUrl(slide.videoUrl, slide.type) ? slide.videoUrl : null) || (isVideoUrl(slide.image, slide.type) ? slide.image : null) || slide.videoUrl || slide.image;
               const posterSrc = slide.poster || (slide.image !== mediaSrc ? slide.image : undefined);
               const isCurrent = index === currentSlide;
 
