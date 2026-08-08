@@ -456,17 +456,17 @@ export default function AdminPopup() {
   };
 
   return (
-    <div className="h-screen bg-[#070d1a] text-white flex flex-col overflow-hidden p-4 md:p-8 font-sans">
-      <div className="max-w-7xl mx-auto w-full flex flex-col h-full overflow-hidden">
-        <header className="mb-6 flex justify-between items-center shrink-0">
+    <div className="min-h-screen lg:h-screen bg-[#070d1a] text-white flex flex-col overflow-y-auto lg:overflow-hidden p-3 sm:p-5 md:p-8 font-sans">
+      <div className="max-w-7xl mx-auto w-full flex flex-col h-full">
+        <header className="mb-4 sm:mb-6 flex justify-between items-center shrink-0">
           <div>
-              <h1 className="text-2xl md:text-3xl font-black text-white uppercase italic tracking-tighter">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-white uppercase italic tracking-tighter">
               Kelola <span className="text-blue-500">Pop-up Promo</span>
               </h1>
-              <p className="text-white/40 font-bold text-[10px] uppercase tracking-[0.3em] mt-1">Atur tampilan & lampiran landing page</p>
+              <p className="text-white/40 font-bold text-[9px] sm:text-[10px] uppercase tracking-[0.25em] sm:tracking-[0.3em] mt-0.5 sm:mt-1">Atur tampilan & lampiran landing page</p>
           </div>
           {editingId && (
-              <button onClick={cancelEdit} className="px-5 py-2 bg-rose-600/10 text-rose-500 rounded-xl text-[10px] font-black uppercase tracking-widest border border-rose-500/20 hover:bg-rose-600 hover:text-white transition-all">
+              <button onClick={cancelEdit} className="px-3.5 sm:px-5 py-1.5 sm:py-2 bg-rose-600/10 text-rose-500 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest border border-rose-500/20 hover:bg-rose-600 hover:text-white transition-all shrink-0">
                   Batal Edit
               </button>
           )}
@@ -506,7 +506,7 @@ export default function AdminPopup() {
               )}
             </div>
           </div>
-          <form onSubmit={handleSave} className="lg:col-span-3 p-8 lg:p-12 space-y-6 flex flex-col justify-center border-l border-white/5">
+          <form onSubmit={handleSave} className="lg:col-span-3 p-4 sm:p-6 lg:p-10 space-y-5 sm:space-y-6 flex flex-col justify-center border-t lg:border-t-0 lg:border-l border-white/5">
             <div className="space-y-4">
               <input required className="w-full bg-black/30 border border-white/10 rounded-2xl p-4 text-white font-bold outline-none focus:border-blue-500 transition-all" placeholder="Judul Promosi" value={newPopup.judul} onChange={e => setNewPopup({...newPopup, judul: e.target.value})} />
               
