@@ -143,8 +143,6 @@ export async function deleteSiteSetting(key: string) {
  * Safely reads a setting with LocalStorage fallback and timestamp comparison.
  */
 export async function getSiteSetting(key: string) {
-  let dbVal: any = null;
-
   try {
     const { data, error } = await supabase
       .from('site_settings')
@@ -153,51 +151,27 @@ export async function getSiteSetting(key: string) {
       .maybeSingle();
 
     if (!error && data?.value !== undefined && data.value !== null) {
-      dbVal = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
+      const dbVal = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
+      try {
+        localStorage.setItem(`site_setting_${key}`, typeof dbVal === 'string' ? dbVal : JSON.stringify(dbVal));
+      } catch (e) {}
+      return dbVal;
     }
   } catch (err) {
     console.warn(`[siteSettingsHelper] DB read error for '${key}':`, err);
   }
 
-  // LocalStorage Value
-  let localVal: any = null;
+  // Fallback to LocalStorage only if DB fails or key not found in DB
   try {
     const rawLocal = localStorage.getItem(`site_setting_${key}`);
     if (rawLocal !== null) {
       try {
-        localVal = JSON.parse(rawLocal);
+        return JSON.parse(rawLocal);
       } catch {
-        localVal = rawLocal;
+        return rawLocal;
       }
     }
   } catch (e) {}
-
-  // Compare localVal vs dbVal
-  if (localVal !== null && dbVal !== null) {
-    const localTime = localVal?.updated_at ? new Date(localVal.updated_at).getTime() : 0;
-    const dbTime = dbVal?.updated_at ? new Date(dbVal.updated_at).getTime() : 0;
-
-    // Only prefer localVal if localVal is strictly newer than dbVal
-    if (localTime > dbTime && localTime > 0) {
-      return localVal;
-    }
-
-    // Update local storage to stay in sync with DB
-    try {
-      localStorage.setItem(`site_setting_${key}`, typeof dbVal === 'string' ? dbVal : JSON.stringify(dbVal));
-    } catch (e) {}
-
-    return dbVal;
-  }
-
-  if (dbVal !== null) {
-    try {
-      localStorage.setItem(`site_setting_${key}`, typeof dbVal === 'string' ? dbVal : JSON.stringify(dbVal));
-    } catch (e) {}
-    return dbVal;
-  }
-
-  if (localVal !== null) return localVal;
 
   return null;
 }

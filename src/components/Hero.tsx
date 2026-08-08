@@ -178,8 +178,13 @@ export default function Hero() {
         loadHeroConfig();
       }
     };
+    const handleFocus = () => loadHeroConfig();
+
     window.addEventListener('storage', handleStorage);
     window.addEventListener('site_setting_updated', handleCustomUpdate);
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('online', handleFocus);
+    document.addEventListener('visibilitychange', handleFocus);
 
     const channel = supabase
       .channel('public_site_settings_hero')
@@ -187,9 +192,7 @@ export default function Hero() {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'site_settings' },
         (payload: any) => {
-          if (payload.new && payload.new.key === 'hero_config') {
-            loadHeroConfig();
-          } else {
+          if (!payload.new || payload.new.key === 'hero_config' || payload.old?.key === 'hero_config') {
             loadHeroConfig();
           }
         }
@@ -199,6 +202,9 @@ export default function Hero() {
     return () => {
       window.removeEventListener('storage', handleStorage);
       window.removeEventListener('site_setting_updated', handleCustomUpdate);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('online', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
       supabase.removeChannel(channel);
     };
   }, []);

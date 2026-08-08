@@ -24,8 +24,16 @@ export default function AdminFAQ() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'faq' }, () => fetchFaqs())
       .subscribe();
 
+    const handleFocus = () => fetchFaqs();
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('online', handleFocus);
+    document.addEventListener('visibilitychange', handleFocus);
+
     return () => {
       supabase.removeChannel(channel);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('online', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
     };
   }, []);
 
@@ -37,28 +45,37 @@ export default function AdminFAQ() {
         setFaqs(data);
         localStorage.setItem('faq_local_v3', JSON.stringify(data));
       } else {
-        loadFallback();
+        await loadFallbackAndSeed();
       }
     } catch (error: any) {
-      loadFallback();
+      await loadFallbackAndSeed();
     }
   };
 
-  const loadFallback = () => {
+  const loadFallbackAndSeed = async () => {
+    const defaultData = [
+      { pertanyaan: 'Apakah pemula yang tidak punya pengalaman bermain bulutangkis boleh bergabung?', jawaban: 'Tentu saja! Kami memiliki program reguler khusus untuk pemula. Pelatih kami akan membimbing mulai dari cara memegang raket (grip), langkah kaki (footwork), hingga teknik pukulan dasar.', urutan: 1 },
+      { pertanyaan: 'Berapa biaya pendaftaran dan iuran bulanan?', jawaban: 'Biaya pendaftaran awal adalah Rp 150.000 (sudah termasuk administrasi dan kaos latihan). Untuk iuran bulanan sebesar Rp 100.000 untuk kelas reguler, dan Rp 250.000 untuk kelas prestasi (intensif).', urutan: 2 },
+      { pertanyaan: 'Apa saja perlengkapan yang perlu disiapkan saat latihan?', jawaban: 'Anggota wajib membawa raket sendiri, sepatu khusus bulutangkis (non-marking shoes), pakaian olahraga, dan air minum. Shuttlecock sudah disediakan oleh klub selama sesi latihan.', urutan: 3 },
+      { pertanyaan: 'Kapan jadwal latihannya?', jawaban: 'Jadwal latihan reguler kami adalah hari Rabu (08.00 - 12.00 WITA), Jumat (08.00 - 12.00 WITA), dan Ahad (08.00 - 12.00 WITA). Jadwal bisa menyesuaikan jika ada turnamen.', urutan: 4 },
+      { pertanyaan: 'Apakah ada batasan usia untuk bergabung?', jawaban: 'Kami menerima anggota mulai dari usia dini (pembinaan 7-12 tahun), remaja, hingga dewasa/umum tanpa batasan usia maksimal, asalkan dalam kondisi sehat.', urutan: 5 },
+      { pertanyaan: 'Apakah PB Bilibili 162 rutin mengikuti turnamen?', jawaban: 'Ya, klub kami rutin mengirimkan atlet untuk mengikuti kejuaraan tingkat kota, provinsi (Kejurprov), hingga nasional (Sirnas) sesuai kategori usia dan kemampuan.', urutan: 6 }
+    ];
+
+    try {
+      const { data: inserted } = await supabase.from('faq').insert(defaultData).select();
+      if (inserted && inserted.length > 0) {
+        setFaqs(inserted);
+        localStorage.setItem('faq_local_v3', JSON.stringify(inserted));
+        return;
+      }
+    } catch (e) {}
+
     const local = JSON.parse(localStorage.getItem('faq_local_v3') || '[]');
-    if (local.length === 0) {
-      const defaultData = [
-        { id: 'f1', pertanyaan: 'Apakah pemula yang tidak punya pengalaman bermain bulutangkis boleh bergabung?', jawaban: 'Tentu saja! Kami memiliki program reguler khusus untuk pemula. Pelatih kami akan membimbing mulai dari cara memegang raket (grip), langkah kaki (footwork), hingga teknik pukulan dasar.', urutan: 1 },
-        { id: 'f2', pertanyaan: 'Berapa biaya pendaftaran dan iuran bulanan?', jawaban: 'Biaya pendaftaran awal adalah Rp 150.000 (sudah termasuk administrasi dan kaos latihan). Untuk iuran bulanan sebesar Rp 100.000 untuk kelas reguler, dan Rp 250.000 untuk kelas prestasi (intensif).', urutan: 2 },
-        { id: 'f3', pertanyaan: 'Apa saja perlengkapan yang perlu disiapkan saat latihan?', jawaban: 'Anggota wajib membawa raket sendiri, sepatu khusus bulutangkis (non-marking shoes), pakaian olahraga, dan air minum. Shuttlecock sudah disediakan oleh klub selama sesi latihan.', urutan: 3 },
-        { id: 'f4', pertanyaan: 'Kapan jadwal latihannya?', jawaban: 'Jadwal latihan reguler kami adalah hari Rabu (08.00 - 12.00 WITA), Jumat (08.00 - 12.00 WITA), dan Ahad (08.00 - 12.00 WITA). Jadwal bisa menyesuaikan jika ada turnamen.', urutan: 4 },
-        { id: 'f5', pertanyaan: 'Apakah ada batasan usia untuk bergabung?', jawaban: 'Kami menerima anggota mulai dari usia dini (pembinaan 7-12 tahun), remaja, hingga dewasa/umum tanpa batasan usia maksimal, asalkan dalam kondisi sehat.', urutan: 5 },
-        { id: 'f6', pertanyaan: 'Apakah PB Bilibili 162 rutin mengikuti turnamen?', jawaban: 'Ya, klub kami rutin mengirimkan atlet untuk mengikuti kejuaraan tingkat kota, provinsi (Kejurprov), hingga nasional (Sirnas) sesuai kategori usia dan kemampuan.', urutan: 6 }
-      ];
-      localStorage.setItem('faq_local_v3', JSON.stringify(defaultData));
-      setFaqs(defaultData);
-    } else {
+    if (local.length > 0) {
       setFaqs(local);
+    } else {
+      setFaqs(defaultData.map((d, i) => ({ ...d, id: `f_${i + 1}` })));
     }
   };
 

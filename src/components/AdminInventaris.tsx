@@ -36,30 +36,48 @@ export default function AdminInventaris() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'inventaris' }, () => fetchItems())
       .subscribe();
 
+    const handleFocus = () => fetchItems();
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('online', handleFocus);
+    document.addEventListener('visibilitychange', handleFocus);
+
     return () => {
       supabase.removeChannel(channel);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('online', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
     };
   }, []);
 
-  const getFallbackItems = () => {
+  const getFallbackAndSeedItems = async () => {
+    const defaultItems = [
+      { nama: 'Shuttlecock Yonex', kategori: 'Perlengkapan Latihan', jumlah_total: 50, jumlah_baik: 40, jumlah_rusak: 10, keterangan: 'Slop baru dan bekas latihan', gambar: 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=500&auto=format&fit=crop&q=60' },
+      { nama: 'Net Bulutangkis', kategori: 'Fasilitas', jumlah_total: 4, jumlah_baik: 3, jumlah_rusak: 1, keterangan: 'Net standar turnamen', gambar: 'https://images.unsplash.com/photo-1599447421416-3414500d18a5?w=500&auto=format&fit=crop&q=60' },
+      { nama: 'Tiang Net Portabel', kategori: 'Fasilitas', jumlah_total: 2, jumlah_baik: 2, jumlah_rusak: 0, keterangan: 'Besi kokoh, roda masih bagus', gambar: 'https://images.unsplash.com/photo-1613918431208-675204423035?w=500&auto=format&fit=crop&q=60' },
+      { nama: 'Raket Latihan', kategori: 'Peralatan', jumlah_total: 10, jumlah_baik: 8, jumlah_rusak: 2, keterangan: 'Raket cadangan untuk anggota yang senar putus', gambar: 'https://images.unsplash.com/photo-1617083934335-e51c8db159db?w=500&auto=format&fit=crop&q=60' },
+      { nama: 'Cone / Marka Lapangan', kategori: 'Peralatan', jumlah_total: 40, jumlah_baik: 38, jumlah_rusak: 2, keterangan: 'Untuk latihan kelincahan kaki / agility', gambar: 'https://images.unsplash.com/photo-1606925797300-0b35e9d1741e?w=500&auto=format&fit=crop&q=60' },
+      { nama: 'Tali Skipping', kategori: 'Peralatan', jumlah_total: 15, jumlah_baik: 12, jumlah_rusak: 3, keterangan: 'Untuk pemanasan dan melatih kardio', gambar: 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=500&auto=format&fit=crop&q=60' },
+      { nama: 'Papan Skor Manual', kategori: 'Fasilitas', jumlah_total: 2, jumlah_baik: 2, jumlah_rusak: 0, keterangan: 'Papan skor meja portabel lipat', gambar: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=500&auto=format&fit=crop&q=60' },
+      { nama: 'Kotak P3K', kategori: 'Lainnya', jumlah_total: 1, jumlah_baik: 1, jumlah_rusak: 0, keterangan: 'Lengkap dengan spray pereda nyeri otot dan obat luka', gambar: 'https://images.unsplash.com/photo-1603398938378-e54eab446dde?w=500&auto=format&fit=crop&q=60' },
+      { nama: 'Keranjang Shuttlecock', kategori: 'Peralatan', jumlah_total: 3, jumlah_baik: 3, jumlah_rusak: 0, keterangan: 'Untuk menampung kock latihan drill', gambar: 'https://images.unsplash.com/photo-1521537634199-67368c740cc3?w=500&auto=format&fit=crop&q=60' },
+      { nama: 'Karpet Lapangan (Vinyl)', kategori: 'Fasilitas', jumlah_total: 2, jumlah_baik: 2, jumlah_rusak: 0, keterangan: 'Karpet lapangan standar PBSI tebal 4.5mm', gambar: 'https://images.unsplash.com/photo-1562074244-401330dba53b?w=500&auto=format&fit=crop&q=60' }
+    ];
+
+    try {
+      const { data: inserted } = await supabase.from('inventaris').insert(defaultItems).select();
+      if (inserted && inserted.length > 0) {
+        setItems(inserted);
+        localStorage.setItem('inventaris_local_v3', JSON.stringify(inserted));
+        return;
+      }
+    } catch (e) {}
+
     const local = JSON.parse(localStorage.getItem('inventaris_local_v3') || '[]');
-    if (local.length === 0) {
-      const defaultItems = [
-        { id: 'inv_1', nama: 'Shuttlecock Yonex', kategori: 'Perlengkapan Latihan', jumlah_total: 50, jumlah_baik: 40, jumlah_rusak: 10, keterangan: 'Slop baru dan bekas latihan', gambar: 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=500&auto=format&fit=crop&q=60' },
-        { id: 'inv_2', nama: 'Net Bulutangkis', kategori: 'Fasilitas', jumlah_total: 4, jumlah_baik: 3, jumlah_rusak: 1, keterangan: 'Net standar turnamen', gambar: 'https://images.unsplash.com/photo-1599447421416-3414500d18a5?w=500&auto=format&fit=crop&q=60' },
-        { id: 'inv_3', nama: 'Tiang Net Portabel', kategori: 'Fasilitas', jumlah_total: 2, jumlah_baik: 2, jumlah_rusak: 0, keterangan: 'Besi kokoh, roda masih bagus', gambar: 'https://images.unsplash.com/photo-1613918431208-675204423035?w=500&auto=format&fit=crop&q=60' },
-        { id: 'inv_4', nama: 'Raket Latihan', kategori: 'Peralatan', jumlah_total: 10, jumlah_baik: 8, jumlah_rusak: 2, keterangan: 'Raket cadangan untuk anggota yang senar putus', gambar: 'https://images.unsplash.com/photo-1617083934335-e51c8db159db?w=500&auto=format&fit=crop&q=60' },
-        { id: 'inv_5', nama: 'Cone / Marka Lapangan', kategori: 'Peralatan', jumlah_total: 40, jumlah_baik: 38, jumlah_rusak: 2, keterangan: 'Untuk latihan kelincahan kaki / agility', gambar: 'https://images.unsplash.com/photo-1606925797300-0b35e9d1741e?w=500&auto=format&fit=crop&q=60' },
-        { id: 'inv_6', nama: 'Tali Skipping', kategori: 'Peralatan', jumlah_total: 15, jumlah_baik: 12, jumlah_rusak: 3, keterangan: 'Untuk pemanasan dan melatih kardio', gambar: 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=500&auto=format&fit=crop&q=60' },
-        { id: 'inv_7', nama: 'Papan Skor Manual', kategori: 'Fasilitas', jumlah_total: 2, jumlah_baik: 2, jumlah_rusak: 0, keterangan: 'Papan skor meja portabel lipat', gambar: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=500&auto=format&fit=crop&q=60' },
-        { id: 'inv_8', nama: 'Kotak P3K', kategori: 'Lainnya', jumlah_total: 1, jumlah_baik: 1, jumlah_rusak: 0, keterangan: 'Lengkap dengan spray pereda nyeri otot dan obat luka', gambar: 'https://images.unsplash.com/photo-1603398938378-e54eab446dde?w=500&auto=format&fit=crop&q=60' },
-        { id: 'inv_9', nama: 'Keranjang Shuttlecock', kategori: 'Peralatan', jumlah_total: 3, jumlah_baik: 3, jumlah_rusak: 0, keterangan: 'Untuk menampung kock latihan drill', gambar: 'https://images.unsplash.com/photo-1521537634199-67368c740cc3?w=500&auto=format&fit=crop&q=60' },
-        { id: 'inv_10', nama: 'Karpet Lapangan (Vinyl)', kategori: 'Fasilitas', jumlah_total: 2, jumlah_baik: 2, jumlah_rusak: 0, keterangan: 'Karpet lapangan standar PBSI tebal 4.5mm', gambar: 'https://images.unsplash.com/photo-1562074244-401330dba53b?w=500&auto=format&fit=crop&q=60' }
-      ];
-      localStorage.setItem('inventaris_local_v3', JSON.stringify(defaultItems));
-      return defaultItems;
+    if (local.length > 0) {
+      setItems(local);
+    } else {
+      setItems(defaultItems.map((item, idx) => ({ ...item, id: `inv_${idx + 1}` })));
     }
-    return local;
   };
 
   const fetchItems = async () => {
@@ -71,10 +89,10 @@ export default function AdminInventaris() {
         setItems(data);
         localStorage.setItem('inventaris_local_v3', JSON.stringify(data));
       } else {
-        setItems(getFallbackItems());
+        await getFallbackAndSeedItems();
       }
     } catch (error: any) {
-      setItems(getFallbackItems());
+      await getFallbackAndSeedItems();
     }
   };
 

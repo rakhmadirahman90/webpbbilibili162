@@ -161,30 +161,29 @@ export default function AdminPopup() {
     setLoading(true);
     try {
       const siteConfig = await getSiteSetting('popup_config');
-      const sitePopups = parsePopupList(siteConfig);
-
-      let dbPopups: PopupConfig[] = [];
-      try {
-        const { data, error } = await supabase
-          .from('konfigurasi_popup')
-          .select('*')
-          .order('urutan', { ascending: true });
-        
-        if (!error && data) dbPopups = data;
-      } catch (e) {}
-
-      if (sitePopups.length >= dbPopups.length && sitePopups.length > 0) {
+      if (siteConfig !== null && siteConfig !== undefined) {
+        const sitePopups = parsePopupList(siteConfig);
         setPopups(sitePopups);
-      } else if (dbPopups.length > 0) {
-        setPopups(dbPopups);
-      } else if (sitePopups.length > 0) {
-        setPopups(sitePopups);
+      } else {
+        let dbPopups: PopupConfig[] = [];
+        try {
+          const { data, error } = await supabase
+            .from('konfigurasi_popup')
+            .select('*')
+            .order('urutan', { ascending: true });
+          
+          if (!error && data && data.length > 0) dbPopups = data;
+        } catch (e) {}
+
+        if (dbPopups.length > 0) {
+          setPopups(dbPopups);
+          saveSiteSetting('popup_config', dbPopups, 'Konfigurasi Popup Promo');
+        } else {
+          setPopups([]);
+        }
       }
     } catch (err) {
       console.warn("fetchPopups error:", err);
-      const siteConfig = await getSiteSetting('popup_config');
-      const sitePopups = parsePopupList(siteConfig);
-      if (sitePopups.length > 0) setPopups(sitePopups);
     } finally {
       setLoading(false);
     }
@@ -196,22 +195,31 @@ export default function AdminPopup() {
     const channel = supabase
       .channel('admin_popup_realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, (payload: any) => {
-        if (payload.new && payload.new.key === 'popup_config') {
-          fetchPopups();
-        } else {
+        if (!payload.new || payload.new.key === 'popup_config' || payload.old?.key === 'popup_config') {
           fetchPopups();
         }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'konfigurasi_popup' }, () => {
+        fetchPopups();
       })
       .subscribe();
 
     const handleCustomEvent = (e: any) => {
       if (e.detail?.key === 'popup_config') fetchPopups();
     };
+    const handleFocus = () => fetchPopups();
+
     window.addEventListener('site_setting_updated', handleCustomEvent);
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('online', handleFocus);
+    document.addEventListener('visibilitychange', handleFocus);
 
     return () => {
       supabase.removeChannel(channel);
       window.removeEventListener('site_setting_updated', handleCustomEvent);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('online', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
     };
   }, []);
 

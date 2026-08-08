@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabase';
+import { saveSiteSetting, getSiteSetting } from '../utils/siteSettingsHelper';
 import { 
   Tv, 
   Volume2, 
@@ -136,20 +137,79 @@ export default function LiveScoreWidget({ isAdmin }: { isAdmin: boolean }) {
     };
   }, []);
 
-  // Load from localstorage
-  useEffect(() => {
-    const saved = localStorage.getItem('pb_bilibili_livescore');
-    if (saved) {
-      setMatches(JSON.parse(saved));
-    } else {
-      setMatches(DEFAULT_LIVESCORES);
-      localStorage.setItem('pb_bilibili_livescore', JSON.stringify(DEFAULT_LIVESCORES));
+  // Load live scores from database and subscribe to real-time changes
+  const fetchLiveScores = useCallback(async () => {
+    try {
+      const dbVal = await getSiteSetting('livescore_matches');
+      if (dbVal && Array.isArray(dbVal) && dbVal.length > 0) {
+        setMatches(dbVal);
+      } else {
+        const saved = localStorage.getItem('pb_bilibili_livescore');
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            setMatches(parsed);
+            await saveSiteSetting('livescore_matches', parsed);
+          } catch {
+            setMatches(DEFAULT_LIVESCORES);
+            await saveSiteSetting('livescore_matches', DEFAULT_LIVESCORES);
+          }
+        } else {
+          setMatches(DEFAULT_LIVESCORES);
+          await saveSiteSetting('livescore_matches', DEFAULT_LIVESCORES);
+        }
+      }
+    } catch (err) {
+      console.warn('Live scores fetch error:', err);
     }
   }, []);
 
-  const saveMatches = (updated: MatchLive[]) => {
+  useEffect(() => {
+    fetchLiveScores();
+
+    const channel = supabase
+      .channel('livescore_matches_realtime_sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, (payload: any) => {
+        if (payload.new && payload.new.key === 'livescore_matches') {
+          fetchLiveScores();
+        }
+      })
+      .subscribe();
+
+    const handleFocus = () => fetchLiveScores();
+    const handleSettingEvent = (e: any) => {
+      if (e.detail?.key === 'livescore_matches') fetchLiveScores();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('online', handleFocus);
+    document.addEventListener('visibilitychange', handleFocus);
+    window.addEventListener('site_setting_updated', handleSettingEvent);
+
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        fetchLiveScores();
+      }
+    }, 5000);
+
+    return () => {
+      supabase.removeChannel(channel);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('online', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
+      window.removeEventListener('site_setting_updated', handleSettingEvent);
+      clearInterval(interval);
+    };
+  }, [fetchLiveScores]);
+
+  const saveMatches = async (updated: MatchLive[]) => {
     setMatches(updated);
-    localStorage.setItem('pb_bilibili_livescore', JSON.stringify(updated));
+    try {
+      localStorage.setItem('pb_bilibili_livescore', JSON.stringify(updated));
+      await saveSiteSetting('livescore_matches', updated);
+    } catch (e) {
+      console.warn('Save matches error:', e);
+    }
   };
 
   // Play referee beep/cheer effect if score changes

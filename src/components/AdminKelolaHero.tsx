@@ -33,6 +33,33 @@ export default function HeroAdmin() {
 
   useEffect(() => {
     fetchHeroData();
+
+    const channel = supabase
+      .channel('admin_kelola_hero_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, (payload: any) => {
+        if (!payload.new || payload.new.key === 'hero_config' || payload.old?.key === 'hero_config') {
+          fetchHeroData();
+        }
+      })
+      .subscribe();
+
+    const handleCustomEvent = (e: any) => {
+      if (e.detail?.key === 'hero_config') fetchHeroData();
+    };
+    const handleFocus = () => fetchHeroData();
+
+    window.addEventListener('site_setting_updated', handleCustomEvent);
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('online', handleFocus);
+    document.addEventListener('visibilitychange', handleFocus);
+
+    return () => {
+      supabase.removeChannel(channel);
+      window.removeEventListener('site_setting_updated', handleCustomEvent);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('online', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
+    };
   }, []);
 
   const fetchHeroData = async () => {

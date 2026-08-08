@@ -31,8 +31,16 @@ export default function AdminPrestasi() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'prestasi_klub' }, () => fetchPrestasi())
       .subscribe();
 
+    const handleFocus = () => fetchPrestasi();
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('online', handleFocus);
+    document.addEventListener('visibilitychange', handleFocus);
+
     return () => {
       supabase.removeChannel(channel);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('online', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
     };
   }, []);
 
@@ -44,27 +52,36 @@ export default function AdminPrestasi() {
         setPrestasi(data);
         localStorage.setItem('prestasi_local_v3', JSON.stringify(data));
       } else {
-        loadFallback();
+        await loadFallbackAndSeed();
       }
     } catch (error: any) {
-      loadFallback();
+      await loadFallbackAndSeed();
     }
   };
 
-  const loadFallback = () => {
+  const loadFallbackAndSeed = async () => {
+    const defaultData = [
+      { nama_kejuaraan: 'Kejurkot Parepare (Tunggal Putra Dewasa)', tingkat: 'Kabupaten/Kota', tahun: 2023, medali_emas: 1, medali_perak: 0, medali_perunggu: 1, atlet_berprestasi: 'Andi (Emas), Budi (Perunggu)' },
+      { nama_kejuaraan: 'Kejuaraan Provinsi (Kejurprov) Sulsel', tingkat: 'Provinsi', tahun: 2023, medali_emas: 0, medali_perak: 1, medali_perunggu: 2, atlet_berprestasi: 'Ganda Putra: Candra/Deni (Perak)' },
+      { nama_kejuaraan: 'Sirkuit Nasional (Sirnas) B Sulawesi', tingkat: 'Nasional', tahun: 2022, medali_emas: 1, medali_perak: 1, medali_perunggu: 1, atlet_berprestasi: 'Eka (Emas - Tunggal Taruna Putri)' },
+      { nama_kejuaraan: 'Walikota Cup Makassar (Ganda Campuran)', tingkat: 'Provinsi', tahun: 2024, medali_emas: 1, medali_perak: 0, medali_perunggu: 0, atlet_berprestasi: 'Fajar/Gita (Emas)' },
+      { nama_kejuaraan: 'O2SN Tingkat SMA se-Sulsel', tingkat: 'Provinsi', tahun: 2023, medali_emas: 2, medali_perak: 1, medali_perunggu: 0, atlet_berprestasi: 'Hadi (Emas - Tunggal), Indah (Emas - Tunggal)' }
+    ];
+
+    try {
+      const { data: inserted } = await supabase.from('prestasi_klub').insert(defaultData).select();
+      if (inserted && inserted.length > 0) {
+        setPrestasi(inserted);
+        localStorage.setItem('prestasi_local_v3', JSON.stringify(inserted));
+        return;
+      }
+    } catch (e) {}
+
     const local = JSON.parse(localStorage.getItem('prestasi_local_v3') || '[]');
-    if (local.length === 0) {
-      const defaultData = [
-        { id: 'p1', nama_kejuaraan: 'Kejurkot Parepare (Tunggal Putra Dewasa)', tingkat: 'Kabupaten/Kota', tahun: 2023, medali_emas: 1, medali_perak: 0, medali_perunggu: 1, atlet_berprestasi: 'Andi (Emas), Budi (Perunggu)' },
-        { id: 'p2', nama_kejuaraan: 'Kejuaraan Provinsi (Kejurprov) Sulsel', tingkat: 'Provinsi', tahun: 2023, medali_emas: 0, medali_perak: 1, medali_perunggu: 2, atlet_berprestasi: 'Ganda Putra: Candra/Deni (Perak)' },
-        { id: 'p3', nama_kejuaraan: 'Sirkuit Nasional (Sirnas) B Sulawesi', tingkat: 'Nasional', tahun: 2022, medali_emas: 1, medali_perak: 1, medali_perunggu: 1, atlet_berprestasi: 'Eka (Emas - Tunggal Taruna Putri)' },
-        { id: 'p4', nama_kejuaraan: 'Walikota Cup Makassar (Ganda Campuran)', tingkat: 'Provinsi', tahun: 2024, medali_emas: 1, medali_perak: 0, medali_perunggu: 0, atlet_berprestasi: 'Fajar/Gita (Emas)' },
-        { id: 'p5', nama_kejuaraan: 'O2SN Tingkat SMA se-Sulsel', tingkat: 'Provinsi', tahun: 2023, medali_emas: 2, medali_perak: 1, medali_perunggu: 0, atlet_berprestasi: 'Hadi (Emas - Tunggal), Indah (Emas - Tunggal)' }
-      ];
-      localStorage.setItem('prestasi_local_v3', JSON.stringify(defaultData));
-      setPrestasi(defaultData);
-    } else {
+    if (local.length > 0) {
       setPrestasi(local);
+    } else {
+      setPrestasi(defaultData.map((d, i) => ({ ...d, id: `p_${i + 1}` })));
     }
   };
 

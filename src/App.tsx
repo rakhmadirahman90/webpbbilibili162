@@ -225,40 +225,33 @@ function ImagePopup() {
         let activeItems: any[] = [];
         
         const siteConfig = await getSiteSetting('popup_config');
-        const sitePopups = parsePopupList(siteConfig);
-        const activeSite = sitePopups.filter((p: any) => p.is_active !== false);
-
-        let dbItems: any[] = [];
-        const { data, error } = await supabase
-          .from('konfigurasi_popup')
-          .select('*')
-          .eq('is_active', true)
-          .order('created_at', { ascending: false });
-        
-        if (!error && data) dbItems = data;
-
-        if (activeSite.length >= dbItems.length && activeSite.length > 0) {
-          activeItems = activeSite;
-        } else if (dbItems.length > 0) {
+        if (siteConfig !== null && siteConfig !== undefined) {
+          const sitePopups = parsePopupList(siteConfig);
+          activeItems = sitePopups.filter((p: any) => p.is_active !== false);
+        } else {
+          let dbItems: any[] = [];
+          const { data, error } = await supabase
+            .from('konfigurasi_popup')
+            .select('*')
+            .eq('is_active', true)
+            .order('urutan', { ascending: true });
+          
+          if (!error && data && data.length > 0) dbItems = data;
           activeItems = dbItems;
-        } else if (activeSite.length > 0) {
-          activeItems = activeSite;
         }
 
         if (activeItems.length > 0) {
           setPromoImages(activeItems);
           setTimeout(() => { setIsImageLoading(true); setIsOpen(true); }, 1000);
         } else {
-          const activeFallbacks = (popupFallback as any[]).filter(p => p.is_active);
-          if (activeFallbacks.length > 0) {
-            setPromoImages(activeFallbacks);
-            setTimeout(() => { setIsImageLoading(true); setIsOpen(true); }, 1000);
-          }
+          setPromoImages([]);
+          setIsOpen(false);
         }
       } catch (err) {
         console.warn("Gagal memuat pop-up:", err);
       }
     };
+
     fetchActivePopups();
 
     const handleUpdate = (e: any) => {
@@ -266,8 +259,32 @@ function ImagePopup() {
         fetchActivePopups();
       }
     };
+    const handleFocus = () => fetchActivePopups();
+
     window.addEventListener('site_setting_updated', handleUpdate);
-    return () => window.removeEventListener('site_setting_updated', handleUpdate);
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('online', handleFocus);
+    document.addEventListener('visibilitychange', handleFocus);
+
+    const channel = supabase
+      .channel('app_popup_realtime_sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, (payload: any) => {
+        if (!payload.new || payload.new.key === 'popup_config' || payload.old?.key === 'popup_config') {
+          fetchActivePopups();
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'konfigurasi_popup' }, () => {
+        fetchActivePopups();
+      })
+      .subscribe();
+
+    return () => {
+      window.removeEventListener('site_setting_updated', handleUpdate);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('online', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   useEffect(() => {

@@ -40,6 +40,7 @@ import {
 } from 'recharts';
 import Swal from 'sweetalert2';
 import { supabase } from '../supabase';
+import { saveSiteSetting, getSiteSetting } from '../utils/siteSettingsHelper';
 
 interface Injury {
   id: string;
@@ -145,19 +146,29 @@ export default function RaporAtlet({ isAdmin }: { isAdmin: boolean }) {
   const [newInjury, setNewInjury] = useState({ tipe: '', tanggal: '', status: 'Cedera Aktif' as any, catatan: '' });
 
   useEffect(() => {
-    const saved = localStorage.getItem('pb_bilibili_rapor_atlet');
-    let initialList: Rapor[] = [];
-    if (saved) {
-      try {
-        initialList = JSON.parse(saved);
-      } catch (e) {
-        initialList = [];
-      }
-    }
-    setRaporList(initialList);
+    let isMounted = true;
 
-    // Try fetching database rankings and sync names. Filter out any non-existent athletes.
-    const syncDatabaseNames = async () => {
+    const loadAndSyncRapor = async () => {
+      let initialList: Rapor[] = [];
+      try {
+        const dbData = await getSiteSetting('rapor_atlet_data');
+        if (dbData && Array.isArray(dbData) && dbData.length > 0) {
+          initialList = dbData;
+        } else {
+          const saved = localStorage.getItem('pb_bilibili_rapor_atlet');
+          if (saved) {
+            try { initialList = JSON.parse(saved); } catch (e) { initialList = []; }
+          }
+        }
+      } catch (e) {
+        console.warn('Error fetching rapor_atlet_data from site_settings:', e);
+      }
+
+      if (isMounted && initialList.length > 0) {
+        setRaporList(initialList);
+      }
+
+      // Sync with database rankings
       try {
         const { data: rankingsData } = await supabase.from('rankings').select('*');
         if (rankingsData && rankingsData.length > 0) {
@@ -175,46 +186,18 @@ export default function RaporAtlet({ isAdmin }: { isAdmin: boolean }) {
               });
               
               if (exists) {
-                // Keep the existing record but ensure ID and Name matches the DB rankings precisely
                 syncedList.push({
                   ...exists,
                   id: r.id || exists.id,
                   nama: rName,
                 });
               } else {
-                // Generate a fresh random but professional rapor for this DB athlete
                 const hash = r.id ? r.id.charCodeAt(0) + r.id.charCodeAt(r.id.length - 1) : Math.floor(Math.random() * 1000);
-                const baseStamina = 70 + (hash % 20);
-                const baseKecepatan = 70 + (hash % 22);
-                const baseKekuatan = 70 + (hash % 18);
-                const baseKelincahan = 70 + (hash % 25);
-                const baseKelenturan = 70 + (hash % 20);
-
-                const baseLob = 70 + (hash % 20);
-                const baseSmash = 70 + (hash % 25);
-                const baseNetting = 70 + (hash % 20);
-                const baseDrop = 70 + (hash % 22);
-                const baseBackhand = 70 + (hash % 18);
-                const baseService = 70 + (hash % 20);
-
                 syncedList.push({
                   id: r.id || String(Math.floor(Math.random() * 1000000)),
                   nama: rName,
-                  fisik: { 
-                    stamina: baseStamina, 
-                    kecepatan: baseKecepatan, 
-                    kekuatan: baseKekuatan, 
-                    kelincahan: baseKelincahan, 
-                    kelenturan: baseKelenturan 
-                  },
-                  teknik: { 
-                    lob: baseLob, 
-                    smash: baseSmash, 
-                    netting: baseNetting, 
-                    dropShot: baseDrop, 
-                    backhand: baseBackhand, 
-                    service: baseService 
-                  },
+                  fisik: { stamina: 70 + (hash % 20), kecepatan: 70 + (hash % 22), kekuatan: 70 + (hash % 18), kelincahan: 70 + (hash % 25), kelenturan: 70 + (hash % 20) },
+                  teknik: { lob: 70 + (hash % 20), smash: 70 + (hash % 25), netting: 70 + (hash % 20), dropShot: 70 + (hash % 22), backhand: 70 + (hash % 18), service: 70 + (hash % 20) },
                   cedera: [],
                   winLossHistory: [
                     { bulan: 'Apr', menang: 2 + (hash % 4), kalah: 1 + (hash % 3) },
@@ -226,7 +209,6 @@ export default function RaporAtlet({ isAdmin }: { isAdmin: boolean }) {
               }
             });
 
-            // Clean up duplicates by name
             const finalCleanedList: Rapor[] = [];
             const namesSeen = new Set();
             syncedList.forEach((item) => {
@@ -238,33 +220,51 @@ export default function RaporAtlet({ isAdmin }: { isAdmin: boolean }) {
             });
 
             localStorage.setItem('pb_bilibili_rapor_atlet', JSON.stringify(finalCleanedList));
+            saveSiteSetting('rapor_atlet_data', finalCleanedList);
             return finalCleanedList;
           });
-        } else {
-          setRaporList([]);
-          localStorage.setItem('pb_bilibili_rapor_atlet', JSON.stringify([]));
         }
       } catch (err) {
         console.warn('DB Sync warning for Rapor Atlet:', err);
       }
     };
-    syncDatabaseNames();
+
+    loadAndSyncRapor();
 
     const channel = supabase
       .channel('rankings-realtime-rapor')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'rankings' }, () => {
-        syncDatabaseNames();
+        loadAndSyncRapor();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, (payload: any) => {
+        if (payload.new && payload.new.key === 'rapor_atlet_data') {
+          loadAndSyncRapor();
+        }
       })
       .subscribe();
 
+    const handleFocus = () => loadAndSyncRapor();
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('online', handleFocus);
+    document.addEventListener('visibilitychange', handleFocus);
+
     return () => {
+      isMounted = false;
       supabase.removeChannel(channel);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('online', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
     };
   }, []);
 
-  const saveRaporList = (updated: Rapor[]) => {
+  const saveRaporList = async (updated: Rapor[]) => {
     setRaporList(updated);
-    localStorage.setItem('pb_bilibili_rapor_atlet', JSON.stringify(updated));
+    try {
+      localStorage.setItem('pb_bilibili_rapor_atlet', JSON.stringify(updated));
+      await saveSiteSetting('rapor_atlet_data', updated);
+    } catch (e) {
+      console.warn('saveRaporList error:', e);
+    }
   };
 
   const selectedRapor = raporList.find(r => r.id === selectedId) || raporList[0];
