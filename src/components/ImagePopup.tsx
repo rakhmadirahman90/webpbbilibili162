@@ -11,32 +11,48 @@ function ImagePopup() {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    let lastHash = '';
+
     const fetchActivePopups = async () => {
       try {
         let activeItems: any[] = [];
         
+        // 1. Fetch from site_settings (via siteSettingsHelper)
         const siteConfig = await getSiteSetting('popup_config');
+        let sitePopups: any[] = [];
         if (siteConfig !== null && siteConfig !== undefined) {
-          const sitePopups = parsePopupList(siteConfig);
-          activeItems = sitePopups.filter((p: any) => p.is_active !== false);
-        } else {
-          let dbItems: any[] = [];
+          sitePopups = parsePopupList(siteConfig).filter((p: any) => p && p.is_active !== false);
+        }
+
+        // 2. Fetch from Supabase direct table konfigurasi_popup
+        let dbItems: any[] = [];
+        try {
           const { data, error } = await supabase
             .from('konfigurasi_popup')
             .select('*')
             .eq('is_active', true)
             .order('urutan', { ascending: true });
           
-          if (!error && data && data.length > 0) dbItems = data;
+          if (!error && data) dbItems = data;
+        } catch (e) {}
+
+        // Combine / prioritize items
+        if (sitePopups.length > 0) {
+          activeItems = sitePopups;
+        } else if (dbItems.length > 0) {
           activeItems = dbItems;
         }
 
-        if (activeItems.length > 0) {
-          setPromoImages(activeItems);
-          setTimeout(() => setIsOpen(true), 1000);
-        } else {
-          setPromoImages([]);
-          setIsOpen(false);
+        const currentHash = JSON.stringify(activeItems.map(item => ({ id: item.id, active: item.is_active, title: item.judul, img: item.url_gambar })));
+        if (currentHash !== lastHash) {
+          lastHash = currentHash;
+          if (activeItems.length > 0) {
+            setPromoImages(activeItems);
+            setIsOpen(true);
+          } else {
+            setPromoImages([]);
+            setIsOpen(false);
+          }
         }
       } catch (err) {
         console.error("Gagal memuat pop-up:", err);
@@ -45,8 +61,11 @@ function ImagePopup() {
 
     fetchActivePopups();
 
+    // Fast 3-second live polling interval for instant cross-device realtime updates
+    const syncInterval = setInterval(fetchActivePopups, 3000);
+
     const handleUpdate = (e: any) => {
-      if (e.detail?.key === 'popup_config') {
+      if (!e.detail?.key || e.detail.key === 'popup_config') {
         fetchActivePopups();
       }
     };
@@ -70,6 +89,7 @@ function ImagePopup() {
       .subscribe();
 
     return () => {
+      clearInterval(syncInterval);
       window.removeEventListener('site_setting_updated', handleUpdate);
       window.removeEventListener('focus', handleFocus);
       window.removeEventListener('online', handleFocus);
@@ -263,3 +283,5 @@ function ImagePopup() {
     </AnimatePresence>
   );
 }
+
+export default ImagePopup;

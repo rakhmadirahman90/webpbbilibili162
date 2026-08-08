@@ -192,6 +192,8 @@ export default function AdminPopup() {
   useEffect(() => { 
     fetchPopups(); 
 
+    const syncInterval = setInterval(fetchPopups, 3000);
+
     const channel = supabase
       .channel('admin_popup_realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, (payload: any) => {
@@ -205,7 +207,7 @@ export default function AdminPopup() {
       .subscribe();
 
     const handleCustomEvent = (e: any) => {
-      if (e.detail?.key === 'popup_config') fetchPopups();
+      if (!e.detail?.key || e.detail.key === 'popup_config') fetchPopups();
     };
     const handleFocus = () => fetchPopups();
 
@@ -215,6 +217,7 @@ export default function AdminPopup() {
     document.addEventListener('visibilitychange', handleFocus);
 
     return () => {
+      clearInterval(syncInterval);
       supabase.removeChannel(channel);
       window.removeEventListener('site_setting_updated', handleCustomEvent);
       window.removeEventListener('focus', handleFocus);
@@ -226,6 +229,7 @@ export default function AdminPopup() {
   const persistPopups = async (updatedList: PopupConfig[]) => {
     setPopups(updatedList);
     await saveSiteSetting('popup_config', updatedList, 'Konfigurasi Popup Promo');
+    window.dispatchEvent(new CustomEvent('site_setting_updated', { detail: { key: 'popup_config', value: updatedList } }));
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
