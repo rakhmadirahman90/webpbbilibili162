@@ -108,7 +108,18 @@ export default function AdminStructure() {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  useEffect(() => { fetchMembers(); }, []);
+  useEffect(() => { 
+    fetchMembers(); 
+
+    const channel = supabase
+      .channel('admin_structure_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'organizational_structure' }, () => fetchMembers())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
   useEffect(() => { if (toast) { const t = setTimeout(() => setToast(null), 4000); return () => clearTimeout(t); } }, [toast]);
 
   const fetchMembers = async () => {

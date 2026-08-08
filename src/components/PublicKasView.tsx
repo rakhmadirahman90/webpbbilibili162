@@ -90,12 +90,18 @@ export default function PublicKasView({ memberOnlyName }: PublicKasViewProps = {
   useEffect(() => {
     fetchData(true);
 
+    const channel = supabase
+      .channel('public_kas_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'kas_pb' }, () => fetchData(true))
+      .subscribe();
+
     const handleKasUpdate = () => {
       fetchData(true);
     };
 
     window.addEventListener('kas-updated', handleKasUpdate);
     return () => {
+      supabase.removeChannel(channel);
       window.removeEventListener('kas-updated', handleKasUpdate);
     };
   }, [memberOnlyName]);

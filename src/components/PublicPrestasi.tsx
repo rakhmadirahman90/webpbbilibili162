@@ -32,6 +32,15 @@ export default function PublicPrestasi() {
       }
     };
     fetchPrestasi();
+
+    const channel = supabase
+      .channel('public_prestasi_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'prestasi_klub' }, () => fetchPrestasi())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   if (prestasi.length === 0) return null;

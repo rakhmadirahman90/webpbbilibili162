@@ -243,12 +243,19 @@ export default function AdminRekapKeuangan({ isAdmin = true, session }: AdminRek
   useEffect(() => {
     fetchData();
 
+    const channel = supabase
+      .channel('admin_rekap_keuangan_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'kas_pb' }, () => fetchData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pendaftaran' }, () => fetchData())
+      .subscribe();
+
     const handleKasUpdate = () => {
       fetchData();
     };
 
     window.addEventListener('kas-updated', handleKasUpdate);
     return () => {
+      supabase.removeChannel(channel);
       window.removeEventListener('kas-updated', handleKasUpdate);
     };
   }, []);

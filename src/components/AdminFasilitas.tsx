@@ -18,6 +18,27 @@ export default function AdminFasilitas() {
 
   useEffect(() => {
     fetchAboutData();
+
+    const channel = supabase
+      .channel('admin_fasilitas_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, (payload: any) => {
+        if (payload.new && payload.new.key === 'about_content') {
+          fetchAboutData();
+        } else {
+          fetchAboutData();
+        }
+      })
+      .subscribe();
+
+    const handleCustomEvent = (e: any) => {
+      if (e.detail?.key === 'about_content') fetchAboutData();
+    };
+    window.addEventListener('site_setting_updated', handleCustomEvent);
+
+    return () => {
+      supabase.removeChannel(channel);
+      window.removeEventListener('site_setting_updated', handleCustomEvent);
+    };
   }, []);
 
   const fetchAboutData = async () => {

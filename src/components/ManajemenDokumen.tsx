@@ -27,6 +27,15 @@ export default function ManajemenDokumen({ session }: { session?: any }) {
 
   useEffect(() => { 
     fetchDocs(); 
+
+    const channel = supabase
+      .channel('manajemen_dokumen_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'documents' }, () => fetchDocs())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchDocs = async () => {

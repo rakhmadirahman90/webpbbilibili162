@@ -29,6 +29,16 @@ export default function AdminAbsensi({ session }: { session: any }) {
   useEffect(() => {
     fetchUsers();
     fetchAbsensi();
+
+    const channel = supabase
+      .channel('admin_absensi_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'users_duplicate' }, () => fetchUsers())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'absensi' }, () => fetchAbsensi())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [selectedDate]);
 
   const fetchUsers = async () => {

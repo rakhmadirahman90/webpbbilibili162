@@ -525,12 +525,19 @@ export default function KasManager() {
   useEffect(() => { 
     fetchData(true); 
 
+    const channel = supabase
+      .channel('kas_manager_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'kas_pb' }, () => fetchData(true))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pendaftaran' }, () => fetchData(true))
+      .subscribe();
+
     const handleKasUpdate = () => {
       fetchData(true);
     };
 
     window.addEventListener('kas-updated', handleKasUpdate);
     return () => {
+      supabase.removeChannel(channel);
       window.removeEventListener('kas-updated', handleKasUpdate);
     };
   }, []);

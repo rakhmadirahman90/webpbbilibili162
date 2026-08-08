@@ -58,6 +58,15 @@ export default function AdminGallery({ session }: { session?: any }) {
 
   useEffect(() => {
     fetchGallery();
+
+    const channel = supabase
+      .channel('admin_gallery_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'gallery' }, () => fetchGallery())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   useEffect(() => {

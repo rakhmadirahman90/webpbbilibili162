@@ -16,7 +16,18 @@ export default function AdminFAQ() {
   const [editingItem, setEditingItem] = useState<FAQ | null>(null);
   const [formData, setFormData] = useState({ pertanyaan: '', jawaban: '', urutan: 1 });
 
-  useEffect(() => { fetchFaqs(); }, []);
+  useEffect(() => { 
+    fetchFaqs(); 
+
+    const channel = supabase
+      .channel('admin_faq_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'faq' }, () => fetchFaqs())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const fetchFaqs = async () => {
     try {

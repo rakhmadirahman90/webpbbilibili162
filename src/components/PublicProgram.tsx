@@ -32,6 +32,15 @@ export default function PublicProgram({ onNavigate }: { onNavigate: (path: strin
       }
     };
     fetchPrograms();
+
+    const channel = supabase
+      .channel('public_program_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'program_latihan' }, () => fetchPrograms())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   if (programs.length === 0) return null;

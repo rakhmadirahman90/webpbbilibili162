@@ -31,6 +31,19 @@ export default function AdminLaporan() {
 
   useEffect(() => {
     fetchRekapData();
+
+    const channel = supabase
+      .channel('admin_laporan_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pendaftaran' }, () => fetchRekapData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pertandingan' }, () => fetchRekapData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'audit_poin' }, () => fetchRekapData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'berita' }, () => fetchRekapData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'gallery' }, () => fetchRekapData())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [filterType, selectedDate]);
 
   const fetchRekapData = async () => {

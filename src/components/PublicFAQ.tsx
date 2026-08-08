@@ -35,6 +35,15 @@ export default function PublicFAQ() {
       }
     };
     fetchFaqs();
+
+    const channel = supabase
+      .channel('public_faq_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'faq' }, () => fetchFaqs())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const filteredFaqs = faqs.filter(faq => 

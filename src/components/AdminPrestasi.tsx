@@ -23,7 +23,18 @@ export default function AdminPrestasi() {
     medali_emas: 0, medali_perak: 0, medali_perunggu: 0, atlet_berprestasi: ''
   });
 
-  useEffect(() => { fetchPrestasi(); }, []);
+  useEffect(() => { 
+    fetchPrestasi(); 
+
+    const channel = supabase
+      .channel('admin_prestasi_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'prestasi_klub' }, () => fetchPrestasi())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const fetchPrestasi = async () => {
     try {

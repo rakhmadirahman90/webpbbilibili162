@@ -19,6 +19,15 @@ export default function PublicInventaris() {
 
   useEffect(() => {
     fetchItems();
+
+    const channel = supabase
+      .channel('public_inventaris_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'inventaris' }, () => fetchItems())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const getFallbackItems = () => {

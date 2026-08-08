@@ -18,7 +18,18 @@ export default function AdminProgram() {
   const [editingItem, setEditingItem] = useState<ProgramLatihan | null>(null);
   const [formData, setFormData] = useState({ nama_program: '', deskripsi: '', hari_latihan: '', jam_latihan: '' });
 
-  useEffect(() => { fetchPrograms(); }, []);
+  useEffect(() => { 
+    fetchPrograms(); 
+
+    const channel = supabase
+      .channel('admin_program_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'program_latihan' }, () => fetchPrograms())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const fetchPrograms = async () => {
     try {

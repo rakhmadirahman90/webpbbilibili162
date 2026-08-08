@@ -42,6 +42,12 @@ export default function AdminUsers({ session }: { session: any }) {
 
   useEffect(() => {
     fetchUsers();
+
+    const channel = supabase
+      .channel('admin_users_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pendaftaran' }, () => fetchUsers())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'users_duplicate' }, () => fetchUsers())
+      .subscribe();
     
     // Subscribe to presence
     const handlePresenceSync = (e: any) => {
@@ -62,6 +68,7 @@ export default function AdminUsers({ session }: { session: any }) {
     window.addEventListener('presence-sync', handlePresenceSync);
 
     return () => {
+      supabase.removeChannel(channel);
       window.removeEventListener('presence-sync', handlePresenceSync);
     };
   }, []);
