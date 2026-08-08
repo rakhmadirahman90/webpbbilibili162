@@ -4,6 +4,16 @@ import { X, Download } from 'lucide-react';
 import { supabase } from '../supabase';
 import { getSiteSetting, parsePopupList } from '../utils/siteSettingsHelper';
 
+const OFFICIAL_LATEST_POPUP = {
+  id: 'popup-1786211047963',
+  judul: 'JADWAL LATIHAN RESMI PB BILIBILI 162 PAREPARE',
+  deskripsi: `🏸📢 JADWAL LATIHAN RESMI PB BILIBILI 162 PAREPARE 📢🏸\n\nAssalamu'alaikum warahmatullahi wabarakatuh.\n\nHalo seluruh keluarga besar PB Bilibili 162 Parepare 👋\n\nBerikut Jadwal Latihan Terbaru yang berlaku saat ini:\n\n🗓️ Rabu\n🕗 08.00 – 12.00 WITA\n📍 GOR SMAN 4 Parepare\n\n🗓️ Jumat\n🕗 08.00 – 12.00 WITA\n📍 GOR SMAN 4 Parepare\n\n🗓️ Ahad\n🕗 08.00 – 12.00 WITA\n📍 GOR A4 Soreang\n\n🎯 Fokus Latihan: 🏸 Teknik Dasar & Lanjutan\n🏸 Pola Permainan & Strategi\n🏸 Fisik, Sparring, Game, dan Evaluasi\n\n💪 Mari hadir tepat waktu, jaga kekompakan, disiplin, dan semangat berlatih demi meraih prestasi bersama.\n\n🌐 Informasi Lengkap & Aplikasi Resmi PB Bilibili 162: https://pbilibili162.99apps.id/\n\n📲 Melalui aplikasi resmi Anda dapat: ✅ Melihat Jadwal Latihan ✅ Pendaftaran Atlet ✅ Informasi Turnamen ✅ Pengumuman Resmi ✅ Informasi Kegiatan PB Bilibili 162\n\n"Disiplin • Kerja Keras • Juara!" 🏆\n\nHormat kami,\n\nH. Wawan\nKetua PB Bilibili 162 Parepare 💙🏸`,
+  url_gambar: 'https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/identitas-atlet/promosi/popup-1786212468282.png',
+  is_active: true,
+  active: true,
+  urutan: 21
+};
+
 function ImagePopup() {
   const [isOpen, setIsOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -49,6 +59,27 @@ function ImagePopup() {
           }
         } else {
           merged = sitePopups;
+        }
+
+        // Deactivate old Aqiqah popups from legacy database entries
+        merged = merged.map(item => {
+          if (!item) return item;
+          if (item.id === 'df3aa22e-5f97-4c05-9f04-700ccba35d08' || (item.judul && item.judul.toUpperCase().includes('AQIQAH')) || (item.url_gambar && item.url_gambar.includes('1784303693873'))) {
+            return { ...item, is_active: false, active: false };
+          }
+          return item;
+        });
+
+        // Ensure official latest Jadwal Latihan popup is active
+        if (!merged.some(m => m && (m.id === OFFICIAL_LATEST_POPUP.id || (m.url_gambar && m.url_gambar.includes('1786212468282'))))) {
+          merged.unshift(OFFICIAL_LATEST_POPUP);
+        } else {
+          merged = merged.map(item => {
+            if (item && (item.id === OFFICIAL_LATEST_POPUP.id || (item.url_gambar && item.url_gambar.includes('1786212468282')))) {
+              return { ...item, ...OFFICIAL_LATEST_POPUP, is_active: true, active: true };
+            }
+            return item;
+          });
         }
 
         const activeItems = merged.filter((p: any) => p && (p.is_active === true || p.active === true));
