@@ -51,7 +51,7 @@ function ImagePopup() {
           merged = sitePopups;
         }
 
-        const activeItems = merged.filter((p: any) => p && p.is_active !== false);
+        const activeItems = merged.filter((p: any) => p && (p.is_active === true || p.active === true));
 
         const currentHash = JSON.stringify(activeItems.map(item => ({ id: item.id, active: item.is_active, title: item.judul, img: item.url_gambar })));
         if (currentHash !== lastHash) {
@@ -78,7 +78,7 @@ function ImagePopup() {
       if (!e.detail?.key || e.detail.key === 'popup_config') {
         if (e.detail?.value) {
           try {
-            const parsed = parsePopupList(e.detail.value).filter((p: any) => p && p.is_active !== false);
+            const parsed = parsePopupList(e.detail.value).filter((p: any) => p && (p.is_active === true || p.active === true));
             const currentHash = JSON.stringify(parsed.map(item => ({ id: item.id, active: item.is_active, title: item.judul, img: item.url_gambar })));
             if (currentHash !== lastHash) {
               lastHash = currentHash;

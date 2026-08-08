@@ -220,28 +220,28 @@ export async function getSiteSetting(key: string) {
   if (key === 'hero_config') {
     if (bestVal && typeof bestVal === 'object') {
       const slides = bestVal.slides || (Array.isArray(bestVal) ? bestVal : []);
-      const hasVideo = slides.some((s: any) => 
-        s.type === 'video' || (s.videoUrl && s.videoUrl.trim() !== '') || (s.image && isVideoUrl(s.image, s.type))
-      );
-
-      // Prepend default main video slide only if config is missing a video slide entirely
-      if (!hasVideo && slides.length > 0) {
-        const videoSlide = {
-          id: 'video-main-1',
-          title: 'PB Bilibili 162 Professional Club',
-          subtitle: 'Klub Bulutangkis Profesional dengan Fasilitas & Pembinaan Standar BWF',
-          image: '/vid-20260206-wa0019.mp4',
-          videoUrl: '/vid-20260206-wa0019.mp4',
-          poster: '/whatsapp_image_2026-02-02_at_08.39.03.jpeg',
+      const activeSlides = slides.filter((s: any) => s && s.active === true);
+      
+      // If no slide is explicitly marked active: true (e.g. legacy DB structure)
+      if (activeSlides.length === 0 && slides.length > 0) {
+        // Find existing video slide or build main video slide as active
+        const existingVideo = slides.find((s: any) => 
+          s.type === 'video' || (s.videoUrl && s.videoUrl.trim() !== '') || (s.image && isVideoUrl(s.image, s.type))
+        );
+        const mainVideo = existingVideo ? { ...existingVideo, active: true } : {
+          id: 1786206064378,
+          title: 'PB Bilibili Video Hero',
+          subtitle: '',
+          image: 'https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/assets/hero-sliders/hero-video-1786206060056.webm',
+          videoUrl: 'https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/assets/hero-sliders/hero-video-1786206060056.webm',
+          poster: 'https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/assets/hero-sliders/hero-poster-1786206060056.webp',
           type: 'video',
-          active: true,
-          titleSize: 28,
-          subtitleSize: 12,
-          fontFamily: 'font-sans'
+          active: true
         };
+        const deactivatedOthers = slides.map((s: any) => ({ ...s, active: false }));
         bestVal = {
           ...bestVal,
-          slides: [videoSlide, ...slides]
+          slides: [mainVideo, ...deactivatedOthers.filter((s: any) => s.id !== mainVideo.id)]
         };
       }
     }

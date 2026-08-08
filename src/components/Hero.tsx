@@ -163,6 +163,16 @@ function HeroVideoBlur({ src, isCurrent }: { src: string; isCurrent: boolean }) 
 
 export const defaultSlides = [
   {
+    id: 1786206064378,
+    title: 'PB Bilibili Video Hero',
+    subtitle: '',
+    image: 'https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/assets/hero-sliders/hero-video-1786206060056.webm',
+    videoUrl: 'https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/assets/hero-sliders/hero-video-1786206060056.webm',
+    poster: 'https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/assets/hero-sliders/hero-poster-1786206060056.webp',
+    type: 'video',
+    active: true
+  },
+  {
     id: 'video-main-1',
     title: 'PB Bilibili 162 Professional Club',
     subtitle: 'Klub Bulutangkis Profesional dengan Fasilitas & Pembinaan Standar BWF',
@@ -170,17 +180,20 @@ export const defaultSlides = [
     videoUrl: '/vid-20260206-wa0019.mp4',
     poster: '/whatsapp_image_2026-02-02_at_08.39.03.jpeg',
     type: 'video',
-    active: true
+    active: false,
+    titleSize: 28,
+    subtitleSize: 12,
+    fontFamily: 'font-sans'
   },
-  { id: 1, image: '/whatsapp_image_2026-02-02_at_08.39.03.jpeg', active: true },
-  { id: 2, image: '/whatsapp_image_2026-02-02_at_09.53.05_(1).jpeg', active: true },
-  { id: 3, image: '/whatsapp_image_2026-02-02_at_09.53.05_(2).jpeg', active: true },
-  { id: 4, image: '/whatsapp_image_2026-02-02_at_09.53.05_(3).jpeg', active: true },
+  { id: 1, image: '/whatsapp_image_2026-02-02_at_08.39.03.jpeg', active: false },
+  { id: 2, image: '/whatsapp_image_2026-02-02_at_09.53.05_(1).jpeg', active: false },
+  { id: 3, image: '/whatsapp_image_2026-02-02_at_09.53.05_(2).jpeg', active: false },
+  { id: 4, image: '/whatsapp_image_2026-02-02_at_09.53.05_(3).jpeg', active: false },
 ];
 
 export default function Hero() {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [slides, setSlides] = useState(defaultSlides);
+  const [slides, setSlides] = useState<any[]>([defaultSlides[0]]);
   const [loading, setLoading] = useState(true);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [settings, setSettings] = useState({ duration: 7 });
@@ -196,14 +209,21 @@ export default function Hero() {
           } catch (e) {}
         }
         const allSlides = config.slides || (Array.isArray(config) ? config : []);
-        const activeSlides = allSlides.filter((s: any) => s.active !== false);
-        setSlides(activeSlides.length > 0 ? activeSlides : defaultSlides);
+        const activeSlides = allSlides.filter((s: any) => s && s.active === true);
+        if (activeSlides.length > 0) {
+          setSlides(activeSlides);
+        } else {
+          setSlides([defaultSlides[0]]);
+        }
         if (config.settings) {
           setSettings(config.settings);
         }
+      } else {
+        setSlides([defaultSlides[0]]);
       }
     } catch (err) {
       console.warn("Error fetching hero data:", err);
+      setSlides([defaultSlides[0]]);
     } finally {
       setLoading(false);
     }
@@ -223,7 +243,7 @@ export default function Hero() {
           try {
             const val = typeof e.detail.value === 'string' ? JSON.parse(e.detail.value) : e.detail.value;
             const allSlides = val.slides || (Array.isArray(val) ? val : []);
-            const activeSlides = allSlides.filter((s: any) => s.active !== false);
+            const activeSlides = allSlides.filter((s: any) => s && s.active === true);
             if (activeSlides.length > 0) setSlides(activeSlides);
             if (val.settings) setSettings(val.settings);
           } catch (err) {}
@@ -369,18 +389,20 @@ export default function Hero() {
         )}
 
         {/* Slide Indicators: Bottom-center Dots */}
-        <div className="absolute bottom-3 sm:bottom-6 left-1/2 -translate-x-1/2 flex gap-1.5 sm:gap-2.5 z-30">
-          {slides.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => !isTransitioning && setCurrentSlide(index)}
-              className={`h-1 sm:h-1.5 rounded-full transition-all duration-300 ${
-                index === currentSlide ? 'w-4 sm:w-6 bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]' : 'w-1 sm:w-1.5 bg-white/40 hover:bg-white/70'
-              }`}
-              aria-label={`Go to slide ${index + 1}`}
-            />
-          ))}
-        </div>
+        {slides.length > 1 && (
+          <div className="absolute bottom-3 sm:bottom-6 left-1/2 -translate-x-1/2 flex gap-1.5 sm:gap-2.5 z-30">
+            {slides.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => !isTransitioning && setCurrentSlide(index)}
+                className={`h-1 sm:h-1.5 rounded-full transition-all duration-300 ${
+                  index === currentSlide ? 'w-4 sm:w-6 bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]' : 'w-1 sm:w-1.5 bg-white/40 hover:bg-white/70'
+                }`}
+                aria-label={`Go to slide ${index + 1}`}
+              />
+            ))}
+          </div>
+        )}
 
         {/* Scoped Loading Overlay (Only inside Hero section) */}
         {loading && (
