@@ -66,6 +66,22 @@ function ImagePopup() {
 
     const handleUpdate = (e: any) => {
       if (!e.detail?.key || e.detail.key === 'popup_config') {
+        if (e.detail?.value) {
+          try {
+            const parsed = parsePopupList(e.detail.value).filter((p: any) => p && p.is_active !== false);
+            const currentHash = JSON.stringify(parsed.map(item => ({ id: item.id, active: item.is_active, title: item.judul, img: item.url_gambar })));
+            if (currentHash !== lastHash) {
+              lastHash = currentHash;
+              if (parsed.length > 0) {
+                setPromoImages(parsed);
+                setIsOpen(true);
+              } else {
+                setPromoImages([]);
+                setIsOpen(false);
+              }
+            }
+          } catch (err) {}
+        }
         fetchActivePopups();
       }
     };

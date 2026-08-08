@@ -172,10 +172,26 @@ async function startServer() {
       updated_at: new Date().toISOString()
     };
 
+    const sseClients: any[] = [];
+
+    app.get("/api/site-settings/stream", (req, res) => {
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      res.flushHeaders();
+
+      sseClients.push(res);
+
+      req.on('close', () => {
+        const idx = sseClients.indexOf(res);
+        if (idx !== -1) sseClients.splice(idx, 1);
+      });
+    });
+
     app.get("/api/site-settings", (req, res) => {
       const key = (req.query.key as string) || 'hero_config';
       const store = loadLocalSettingsStore();
-      if (store[key]) {
+      if (store[key] !== undefined && store[key] !== null) {
         return res.json({ key, value: store[key] });
       }
       if (key === 'hero_config') {
@@ -191,6 +207,15 @@ async function startServer() {
         const store = loadLocalSettingsStore();
         store[key] = value;
         saveLocalSettingsStore(store);
+
+        // Broadcast realtime update to all SSE clients
+        const payloadStr = JSON.stringify({ key, value });
+        for (const client of sseClients) {
+          try {
+            client.write(`data: ${payloadStr}\n\n`);
+          } catch (e) {}
+        }
+
         return res.json({ success: true, key, value });
       } catch (err: any) {
         return res.status(500).json({ error: err.message });

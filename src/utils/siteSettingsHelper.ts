@@ -1,6 +1,24 @@
 import { supabase } from '../supabase';
 import { isVideoUrl } from '../components/Hero';
 
+// Realtime Server-Sent Events subscriber for instant site settings sync across all tabs/devices
+if (typeof window !== 'undefined') {
+  try {
+    const es = new EventSource('/api/site-settings/stream');
+    es.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data && data.key) {
+          try {
+            localStorage.setItem(`site_setting_${data.key}`, typeof data.value === 'string' ? data.value : JSON.stringify(data.value));
+          } catch (e) {}
+          window.dispatchEvent(new CustomEvent('site_setting_updated', { detail: { key: data.key, value: data.value } }));
+        }
+      } catch (e) {}
+    };
+  } catch (e) {}
+}
+
 export function parsePopupList(raw: any): any[] {
   if (!raw) return [];
   if (typeof raw === 'string') {

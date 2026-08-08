@@ -219,6 +219,15 @@ export default function Hero() {
     };
     const handleCustomUpdate = (e: any) => {
       if (e.detail?.key === 'hero_config') {
+        if (e.detail.value) {
+          try {
+            const val = typeof e.detail.value === 'string' ? JSON.parse(e.detail.value) : e.detail.value;
+            const allSlides = val.slides || (Array.isArray(val) ? val : []);
+            const activeSlides = allSlides.filter((s: any) => s.active !== false);
+            if (activeSlides.length > 0) setSlides(activeSlides);
+            if (val.settings) setSettings(val.settings);
+          } catch (err) {}
+        }
         loadHeroConfig();
       }
     };
