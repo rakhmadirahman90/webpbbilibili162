@@ -190,7 +190,30 @@ export default function AdminPopup() {
     }
   };
 
-  useEffect(() => { fetchPopups(); }, []);
+  useEffect(() => { 
+    fetchPopups(); 
+
+    const channel = supabase
+      .channel('admin_popup_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, (payload: any) => {
+        if (payload.new && payload.new.key === 'popup_config') {
+          fetchPopups();
+        } else {
+          fetchPopups();
+        }
+      })
+      .subscribe();
+
+    const handleCustomEvent = (e: any) => {
+      if (e.detail?.key === 'popup_config') fetchPopups();
+    };
+    window.addEventListener('site_setting_updated', handleCustomEvent);
+
+    return () => {
+      supabase.removeChannel(channel);
+      window.removeEventListener('site_setting_updated', handleCustomEvent);
+    };
+  }, []);
 
   const persistPopups = async (updatedList: PopupConfig[]) => {
     setPopups(updatedList);

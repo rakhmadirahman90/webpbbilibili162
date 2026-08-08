@@ -40,6 +40,32 @@ const KelolaNavbar: React.FC = () => {
   useEffect(() => {
     fetchNavbar();
     fetchBrandSettings();
+
+    const channel = supabase
+      .channel('kelola_navbar_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'navbar_settings' }, () => {
+        fetchNavbar();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, (payload: any) => {
+        if (payload.new && payload.new.key === 'navbar_branding') {
+          fetchBrandSettings();
+        } else {
+          fetchBrandSettings();
+        }
+      })
+      .subscribe();
+
+    const handleCustomUpdate = (e: any) => {
+      if (e.detail?.key === 'navbar_branding') {
+        fetchBrandSettings();
+      }
+    };
+    window.addEventListener('site_setting_updated', handleCustomUpdate);
+
+    return () => {
+      supabase.removeChannel(channel);
+      window.removeEventListener('site_setting_updated', handleCustomUpdate);
+    };
   }, []);
 
   const fetchNavbar = async () => {

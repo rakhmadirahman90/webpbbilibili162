@@ -97,6 +97,17 @@ export default function ManajemenAtlet() {
 
   useEffect(() => {
     fetchAtlets();
+
+    const channel = supabase
+      .channel('manajemen_atlet_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pendaftaran' }, () => fetchAtlets())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'atlet_stats' }, () => fetchAtlets())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'rankings' }, () => fetchAtlets())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   useEffect(() => {

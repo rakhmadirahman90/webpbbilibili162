@@ -301,7 +301,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
           fetchBrandingSettings();
         }
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'navbar_items' }, () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'navbar_settings' }, () => {
         fetchNavSettings();
       })
       .subscribe();

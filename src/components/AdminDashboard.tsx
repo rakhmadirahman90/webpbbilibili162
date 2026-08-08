@@ -59,6 +59,17 @@ export default function AdminDashboard() {
 
     fetchStats();
 
+    const channel = supabase
+      .channel('admin_dashboard_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'rankings' }, () => fetchStats())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pendaftaran' }, () => fetchStats())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'atlet_stats' }, () => fetchStats())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+
     const justLoggedIn = sessionStorage.getItem('just_logged_in');
     if (justLoggedIn === 'true') {
       sessionStorage.removeItem('just_logged_in');
