@@ -114,7 +114,6 @@ function HeroVideoPlayer({ src, poster, isCurrent }: { src: string; poster?: str
       autoPlay
       loop
       muted
-      defaultMuted
       playsInline
       controls={false}
       preload="auto"
@@ -155,7 +154,6 @@ function HeroVideoBlur({ src, isCurrent }: { src: string; isCurrent: boolean }) 
       autoPlay
       loop
       muted
-      defaultMuted
       playsInline
       aria-hidden="true"
       className="w-full h-full object-cover blur-3xl opacity-80 scale-110 select-none pointer-events-none"
