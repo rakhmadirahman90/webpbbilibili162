@@ -65,6 +65,34 @@ export default function Login() {
   useEffect(() => {
     fetchMembersFromDb();
     fetchBrandingLogo();
+
+    const channel = supabase
+      .channel('login_branding_realtime_sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, (payload: any) => {
+        if (payload.new && payload.new.key === 'navbar_branding') {
+          const val = typeof payload.new.value === 'string' ? JSON.parse(payload.new.value) : payload.new.value;
+          if (val && val.logo_url) setLogoUrl(val.logo_url);
+        } else {
+          fetchBrandingLogo();
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pendaftaran' }, () => {
+        fetchMembersFromDb();
+      })
+      .subscribe();
+
+    const handleCustomEvent = (e: any) => {
+      if (e.detail?.key === 'navbar_branding' && e.detail.value?.logo_url) {
+        setLogoUrl(e.detail.value.logo_url);
+      }
+    };
+
+    window.addEventListener('site_setting_updated', handleCustomEvent);
+
+    return () => {
+      supabase.removeChannel(channel);
+      window.removeEventListener('site_setting_updated', handleCustomEvent);
+    };
   }, []);
 
   const fetchBrandingLogo = async () => {
@@ -354,11 +382,12 @@ export default function Login() {
         {/* Header Section */}
         <div className="text-center mb-3 sm:mb-4 shrink-0">
           <div className="relative inline-flex mb-2 sm:mb-2.5">
-            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden border-2 border-blue-500/30 p-1 bg-slate-900/50 shadow-[0_0_20px_rgba(59,130,246,0.2)]">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border-2 border-blue-500/30 p-1.5 bg-slate-900/50 shadow-[0_0_25px_rgba(59,130,246,0.25)] flex items-center justify-center">
               <img 
                 src={logoUrl || "/logo_pb_bilibili_162.svg"} 
                 alt="Logo PB Bilibili 162" 
-                className="w-full h-full object-contain"
+                className="w-full h-full object-contain filter drop-shadow"
+                referrerPolicy="no-referrer"
                 onError={(e) => {
                   e.currentTarget.src = "/logo_pb_bilibili_162.svg";
                 }}

@@ -279,6 +279,56 @@ export default function Navbar({ onNavigate }: NavbarProps) {
   useEffect(() => {
     fetchNavSettings();
     fetchBrandingSettings();
+
+    const channel = supabase
+      .channel('navbar_realtime_sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, (payload: any) => {
+        if (payload.new && (payload.new.key === 'navbar_branding' || payload.new.key === 'navbar_items')) {
+          if (payload.new.key === 'navbar_branding' && payload.new.value) {
+            const val = typeof payload.new.value === 'string' ? JSON.parse(payload.new.value) : payload.new.value;
+            setBranding({
+              logo_url: val.logo_url || '/logo_pb_bilibili_162.svg',
+              brand_name_main: val.brand_name_main || 'PB Bilibili',
+              brand_name_accent: val.brand_name_accent || '162',
+              default_lang: val.default_lang || 'ID'
+            });
+            if (val.default_lang) setCurrentLang(val.default_lang);
+          } else {
+            fetchNavSettings();
+          }
+        } else {
+          fetchNavSettings();
+          fetchBrandingSettings();
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'navbar_items' }, () => {
+        fetchNavSettings();
+      })
+      .subscribe();
+
+    const handleCustomEvent = (e: any) => {
+      if (e.detail?.key === 'navbar_branding') {
+        const val = e.detail.value;
+        if (val) {
+          setBranding({
+            logo_url: val.logo_url || '/logo_pb_bilibili_162.svg',
+            brand_name_main: val.brand_name_main || 'PB Bilibili',
+            brand_name_accent: val.brand_name_accent || '162',
+            default_lang: val.default_lang || 'ID'
+          });
+          if (val.default_lang) setCurrentLang(val.default_lang);
+        }
+      } else if (e.detail?.key === 'navbar_items') {
+        fetchNavSettings();
+      }
+    };
+
+    window.addEventListener('site_setting_updated', handleCustomEvent);
+
+    return () => {
+      supabase.removeChannel(channel);
+      window.removeEventListener('site_setting_updated', handleCustomEvent);
+    };
   }, [fetchNavSettings, fetchBrandingSettings]);
 
   const getSubMenus = (parentId: string) => {
@@ -421,13 +471,14 @@ export default function Navbar({ onNavigate }: NavbarProps) {
           <div className="flex items-center gap-2 lg:gap-3 overflow-visible shrink-0">
             {/* LOGO */}
             <div className="flex items-center gap-1.5 sm:gap-2 cursor-pointer group shrink-0" onClick={() => handleNavClick('home')}>
-              <div className="relative w-8 h-8 lg:w-9 lg:h-9 flex items-center justify-center shrink-0">
+              <div className="relative w-9 h-9 sm:w-10 sm:h-10 lg:w-11 lg:h-11 flex items-center justify-center shrink-0">
                 <img 
                   src={branding.logo_url || "/logo_pb_bilibili_162.svg"} 
                   alt="Logo PB Bilibili 162" 
-                  className="w-full h-full object-contain filter drop-shadow-md group-hover:scale-110 transition-transform duration-300" 
+                  className="w-full h-full object-contain filter drop-shadow-lg group-hover:scale-110 transition-transform duration-300" 
                   loading="lazy" 
                   decoding="async" 
+                  referrerPolicy="no-referrer"
                   onError={(e) => {
                     e.currentTarget.src = "/logo_pb_bilibili_162.svg";
                   }}

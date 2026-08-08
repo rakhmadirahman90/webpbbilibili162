@@ -56,14 +56,8 @@ export default function AdminFooter() {
   useEffect(() => {
     async function getFooterData() {
       try {
-        const { data, error } = await supabase
-          .from('site_settings')
-          .select('footer_config')
-          .eq('key', SETTINGS_KEY) 
-          .maybeSingle();
-          
-        if (data?.footer_config) {
-          const config = data.footer_config;
+        const config = await getSiteSetting('footer_settings') || await getSiteSetting('footer_config');
+        if (config) {
           setFooterConfig(prev => ({
             ...prev,
             ...config,
@@ -75,7 +69,30 @@ export default function AdminFooter() {
         console.log("Memulai dengan data default...");
       }
     }
+
     getFooterData();
+
+    const channel = supabase
+      .channel('admin_footer_realtime_sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, (payload: any) => {
+        if (payload.new && (payload.new.key === 'footer_settings' || payload.new.key === 'footer_config')) {
+          getFooterData();
+        }
+      })
+      .subscribe();
+
+    const handleCustomEvent = (e: any) => {
+      if (e.detail?.key === 'footer_settings' || e.detail?.key === 'footer_config') {
+        getFooterData();
+      }
+    };
+
+    window.addEventListener('site_setting_updated', handleCustomEvent);
+
+    return () => {
+      supabase.removeChannel(channel);
+      window.removeEventListener('site_setting_updated', handleCustomEvent);
+    };
   }, []);
 
   // FUNGSI BARU: Upload Logo ke Supabase Storage

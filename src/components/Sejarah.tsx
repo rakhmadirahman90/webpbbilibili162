@@ -32,6 +32,37 @@ export default function Sejarah() {
       }
     };
     fetchData();
+
+    const channel = supabase
+      .channel('sejarah_realtime_sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, (payload: any) => {
+        if (payload.new && payload.new.key === 'about_content') {
+          const val = typeof payload.new.value === 'string' ? JSON.parse(payload.new.value) : payload.new.value;
+          if (val) {
+            setDynamicContent({
+              sejarah_title: val.sejarah_title,
+              sejarah: val.sejarah_desc,
+              sejarah_image: val.sejarah_img,
+            });
+          }
+        } else {
+          fetchData();
+        }
+      })
+      .subscribe();
+
+    const handleCustomEvent = (e: any) => {
+      if (e.detail?.key === 'about_content') {
+        fetchData();
+      }
+    };
+
+    window.addEventListener('site_setting_updated', handleCustomEvent);
+
+    return () => {
+      supabase.removeChannel(channel);
+      window.removeEventListener('site_setting_updated', handleCustomEvent);
+    };
   }, []);
 
   if (loading) {

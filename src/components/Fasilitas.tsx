@@ -50,6 +50,28 @@ export default function Fasilitas() {
       }
     };
     fetchData();
+
+    const channel = supabase
+      .channel('fasilitas_realtime_sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, (payload: any) => {
+        if (payload.new && payload.new.key === 'about_content') {
+          fetchData();
+        }
+      })
+      .subscribe();
+
+    const handleCustomEvent = (e: any) => {
+      if (e.detail?.key === 'about_content') {
+        fetchData();
+      }
+    };
+
+    window.addEventListener('site_setting_updated', handleCustomEvent);
+
+    return () => {
+      supabase.removeChannel(channel);
+      window.removeEventListener('site_setting_updated', handleCustomEvent);
+    };
   }, []);
 
   if (loading) {

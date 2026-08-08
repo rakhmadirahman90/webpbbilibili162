@@ -74,6 +74,28 @@ export default function AdminTampilan() {
 
   useEffect(() => {
     fetchData();
+
+    const channel = supabase
+      .channel('admin_tampilan_realtime_sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, (payload: any) => {
+        if (payload.new && (payload.new.key === 'hero_config' || payload.new.key === 'footer_config')) {
+          fetchData();
+        }
+      })
+      .subscribe();
+
+    const handleCustomEvent = (e: any) => {
+      if (e.detail?.key === 'hero_config' || e.detail?.key === 'footer_config') {
+        fetchData();
+      }
+    };
+
+    window.addEventListener('site_setting_updated', handleCustomEvent);
+
+    return () => {
+      supabase.removeChannel(channel);
+      window.removeEventListener('site_setting_updated', handleCustomEvent);
+    };
   }, []);
 
   const fetchData = async () => {

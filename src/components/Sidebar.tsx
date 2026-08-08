@@ -83,6 +83,31 @@ export default function Sidebar({ email, role = 'admin', isOpen, onClose }: Side
       }
     };
     fetchLogo();
+
+    const channel = supabase
+      .channel('sidebar_branding_realtime_sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, (payload: any) => {
+        if (payload.new && payload.new.key === 'navbar_branding') {
+          const val = typeof payload.new.value === 'string' ? JSON.parse(payload.new.value) : payload.new.value;
+          if (val && val.logo_url) setLogoUrl(val.logo_url);
+        } else {
+          fetchLogo();
+        }
+      })
+      .subscribe();
+
+    const handleCustomEvent = (e: any) => {
+      if (e.detail?.key === 'navbar_branding' && e.detail.value?.logo_url) {
+        setLogoUrl(e.detail.value.logo_url);
+      }
+    };
+
+    window.addEventListener('site_setting_updated', handleCustomEvent);
+
+    return () => {
+      supabase.removeChannel(channel);
+      window.removeEventListener('site_setting_updated', handleCustomEvent);
+    };
   }, []);
 
   useEffect(() => {
@@ -400,7 +425,8 @@ export default function Sidebar({ email, role = 'admin', isOpen, onClose }: Side
                 <img 
                   src={logoUrl || "/logo_pb_bilibili_162.svg"} 
                   alt="Logo PB Bilibili 162" 
-                  className="w-8 h-8 object-contain drop-shadow group-hover:scale-105 transition-transform shrink-0"
+                  className="w-9 h-9 sm:w-10 sm:h-10 object-contain drop-shadow-md group-hover:scale-105 transition-transform shrink-0"
+                  referrerPolicy="no-referrer"
                   onError={(e) => {
                     e.currentTarget.src = "/logo_pb_bilibili_162.svg";
                   }}

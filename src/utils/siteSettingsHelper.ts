@@ -177,8 +177,8 @@ export async function getSiteSetting(key: string) {
     const localTime = localVal?.updated_at ? new Date(localVal.updated_at).getTime() : 0;
     const dbTime = dbVal?.updated_at ? new Date(dbVal.updated_at).getTime() : 0;
 
-    // If local storage is newer or equal, prefer localVal
-    if (localTime >= dbTime && localTime > 0) {
+    // Only prefer localVal if localVal is strictly newer than dbVal
+    if (localTime > dbTime && localTime > 0) {
       return localVal;
     }
 

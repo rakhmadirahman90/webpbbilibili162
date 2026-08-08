@@ -170,6 +170,31 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
       }
     };
     fetchLogo();
+
+    const channel = supabase
+      .channel('profil_branding_realtime_sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, (payload: any) => {
+        if (payload.new && payload.new.key === 'navbar_branding') {
+          const val = typeof payload.new.value === 'string' ? JSON.parse(payload.new.value) : payload.new.value;
+          if (val && val.logo_url) setLogoUrl(val.logo_url);
+        } else {
+          fetchLogo();
+        }
+      })
+      .subscribe();
+
+    const handleCustomEvent = (e: any) => {
+      if (e.detail?.key === 'navbar_branding' && e.detail.value?.logo_url) {
+        setLogoUrl(e.detail.value.logo_url);
+      }
+    };
+
+    window.addEventListener('site_setting_updated', handleCustomEvent);
+
+    return () => {
+      supabase.removeChannel(channel);
+      window.removeEventListener('site_setting_updated', handleCustomEvent);
+    };
   }, []);
 
   const handleLogout = async () => {

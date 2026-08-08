@@ -36,7 +36,38 @@ export default function VisiMisi() {
         setLoading(false);
       }
     };
+
     fetchData();
+
+    const channel = supabase
+      .channel('visimisi_realtime_sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, (payload: any) => {
+        if (payload.new && payload.new.key === 'about_content') {
+          const val = typeof payload.new.value === 'string' ? JSON.parse(payload.new.value) : payload.new.value;
+          if (val) {
+            setDynamicContent({
+              visi: val.vision || val.visi || "Menjadi klub bulutangkis terdepan di Sulawesi Selatan yang mencetak atlet-atlet bertaraf nasional...",
+              misi: Array.isArray(val.missions || val.misi) && (val.missions || val.misi).length > 0 ? (val.missions || val.misi) : []
+            });
+          }
+        } else {
+          fetchData();
+        }
+      })
+      .subscribe();
+
+    const handleCustomEvent = (e: any) => {
+      if (e.detail?.key === 'about_content') {
+        fetchData();
+      }
+    };
+
+    window.addEventListener('site_setting_updated', handleCustomEvent);
+
+    return () => {
+      supabase.removeChannel(channel);
+      window.removeEventListener('site_setting_updated', handleCustomEvent);
+    };
   }, []);
 
   if (loading) {
