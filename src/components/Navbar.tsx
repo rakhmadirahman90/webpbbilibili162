@@ -465,7 +465,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
   return (
     <>
       <nav className="fixed top-0 w-full bg-slate-900/95 backdrop-blur-md text-white border-b border-white/10 shadow-2xl transition-all duration-300 overflow-visible h-14 lg:h-16 z-[10000]">
-        <div className="max-w-7xl mx-auto px-4 lg:px-6 h-14 lg:h-16 flex justify-between items-center overflow-visible">
+        <div className="max-w-7xl mx-auto px-2.5 sm:px-4 md:px-8 h-14 lg:h-16 flex justify-between items-center overflow-visible">
           
           {/* LEFT WING: LOGO, BRAND, & REAL-TIME CLOCK */}
           <div className="flex items-center gap-2 lg:gap-3 overflow-visible shrink-0">

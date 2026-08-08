@@ -1155,12 +1155,12 @@ export default function App() {
       <AnimatePresence mode="wait">
         {!activeView ? (
           <motion.div key="landing" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.3 }} className="w-full flex flex-col min-h-screen">
-            <div className="flex-grow">
+            <div className="flex-grow space-y-4 sm:space-y-6 lg:space-y-8 pb-8">
               <Hero />
               <SambutanKetua />
 
-              {/* Jadwal Sholat Khusus Seluler - Tampil Tepat di Bawah Slider Hero */}
-              <div className="block lg:hidden max-w-xl mx-auto px-4 sm:px-6 md:px-8 mt-6 mb-2">
+              {/* Jadwal Sholat - Tampil Konsisten di Seluler & Desktop */}
+              <div className="max-w-7xl mx-auto px-2.5 sm:px-4 md:px-8 mt-4 sm:mt-6 mb-6 sm:mb-8 w-full">
                 <PrayerTimes />
               </div>
             </div>

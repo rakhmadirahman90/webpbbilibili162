@@ -182,27 +182,22 @@ export async function getSiteSetting(key: string) {
       return localVal;
     }
 
-    // Special check for hero_config: if localVal has video slides or more slides than DB, prefer localVal
-    if (key === 'hero_config' && Array.isArray(localVal?.slides) && localVal.slides.length > 0) {
-      const dbSlides = Array.isArray(dbVal?.slides) ? dbVal.slides : [];
-      if (localVal.slides.length > dbSlides.length) {
-        return localVal;
-      }
-    }
-
-    if (key === 'popup_config') {
-      const localP = parsePopupList(localVal);
-      const dbP = parsePopupList(dbVal);
-      if (localP.length > dbP.length) {
-        return localVal;
-      }
-    }
+    // Update local storage to stay in sync with DB
+    try {
+      localStorage.setItem(`site_setting_${key}`, typeof dbVal === 'string' ? dbVal : JSON.stringify(dbVal));
+    } catch (e) {}
 
     return dbVal;
   }
 
+  if (dbVal !== null) {
+    try {
+      localStorage.setItem(`site_setting_${key}`, typeof dbVal === 'string' ? dbVal : JSON.stringify(dbVal));
+    } catch (e) {}
+    return dbVal;
+  }
+
   if (localVal !== null) return localVal;
-  if (dbVal !== null) return dbVal;
 
   return null;
 }

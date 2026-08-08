@@ -182,12 +182,16 @@ export default function Hero() {
     window.addEventListener('site_setting_updated', handleCustomUpdate);
 
     const channel = supabase
-      .channel('public:site_settings_hero')
+      .channel('public_site_settings_hero')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'site_settings', filter: 'key=eq.hero_config' },
-        () => {
-          loadHeroConfig();
+        { event: '*', schema: 'public', table: 'site_settings' },
+        (payload: any) => {
+          if (payload.new && payload.new.key === 'hero_config') {
+            loadHeroConfig();
+          } else {
+            loadHeroConfig();
+          }
         }
       )
       .subscribe();
@@ -220,56 +224,56 @@ export default function Hero() {
   };
 
   return (
-    <section id="home" className="relative w-full pt-14 lg:pt-16 bg-[#070d1a] overflow-hidden m-0 p-0 border-0">
-      
-      {/* Slider Aspect Ratio Container */}
-      <div className="relative w-full aspect-[16/9] sm:aspect-[2.2/1] md:aspect-[2.6/1] lg:aspect-[3/1] min-h-[200px] sm:min-h-[260px] max-h-[65vh] overflow-hidden m-0 p-0 flex items-center justify-center">
-        
-        {/* Background Visual Layer */}
-        <div className="absolute inset-0 z-0 w-full h-full flex items-center justify-center">
-          {slides.map((slide, index) => {
-            const isVideo = isVideoUrl(slide.image || slide.videoUrl, slide.type);
-            const mediaSrc = slide.videoUrl || slide.image;
-            const isCurrent = index === currentSlide;
+    <section id="home" className="relative w-full pt-16 lg:pt-20 pb-2 sm:pb-4 bg-[#070d1a] overflow-hidden">
+      <div className="max-w-7xl mx-auto px-2.5 sm:px-4 md:px-8 w-full">
+        {/* Slider Aspect Ratio Container */}
+        <div className="relative w-full aspect-[16/9] sm:aspect-[16/9] md:aspect-[2.1/1] lg:aspect-[2.25/1] min-h-[220px] sm:min-h-[280px] max-h-[580px] rounded-2xl lg:rounded-3xl border border-white/10 shadow-2xl overflow-hidden flex items-center justify-center">
+          
+          {/* Background Visual Layer */}
+          <div className="absolute inset-0 z-0 w-full h-full flex items-center justify-center">
+            {slides.map((slide, index) => {
+              const isVideo = isVideoUrl(slide.image || slide.videoUrl, slide.type);
+              const mediaSrc = slide.videoUrl || slide.image;
+              const isCurrent = index === currentSlide;
 
-            return (
-              <div
-                key={slide.id || index}
-                className={`absolute inset-0 w-full h-full flex items-center justify-center transition-opacity duration-[2000ms] ease-in-out ${
-                  isCurrent ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'
-                }`}
-              >
-                {/* Ambient Blurred Background Layer */}
-                <div className="absolute inset-0 overflow-hidden w-full h-full">
+              return (
+                <div
+                  key={slide.id || index}
+                  className={`absolute inset-0 w-full h-full flex items-center justify-center transition-opacity duration-[2000ms] ease-in-out ${
+                    isCurrent ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'
+                  }`}
+                >
+                  {/* Ambient Blurred Background Layer */}
+                  <div className="absolute inset-0 overflow-hidden w-full h-full">
+                    {isVideo ? (
+                      <HeroVideoBlur src={mediaSrc} isCurrent={isCurrent} />
+                    ) : (
+                      <img
+                        src={getOptimizedImageUrl(slide.image, 150, 40)}
+                        alt=""
+                        className="w-full h-full object-cover blur-3xl opacity-80 scale-110 select-none pointer-events-none"
+                        loading={index === 0 ? "eager" : "lazy"}
+                        decoding="async"
+                      />
+                    )}
+                  </div>
+
+                  {/* Main Slide Media */}
                   {isVideo ? (
-                    <HeroVideoBlur src={mediaSrc} isCurrent={isCurrent} />
+                    <div className="relative w-full h-full flex items-center justify-center z-10">
+                      <HeroVideoPlayer src={mediaSrc} poster={slide.poster} isCurrent={isCurrent} />
+                    </div>
                   ) : (
                     <img
-                      src={getOptimizedImageUrl(slide.image, 150, 40)}
-                      alt=""
-                      className="w-full h-full object-cover blur-3xl opacity-80 scale-110 select-none pointer-events-none"
+                      src={getOptimizedImageUrl(slide.image, 1600)}
+                      alt={slide.title || "Slide PB Bilibili 162"}
                       loading={index === 0 ? "eager" : "lazy"}
                       decoding="async"
+                      className={`relative w-full h-full object-cover object-center transition-transform duration-[20000ms] ease-out select-none z-10 ${
+                        isCurrent ? 'scale-102' : 'scale-100'
+                      }`}
                     />
                   )}
-                </div>
-
-                {/* Main Slide Media */}
-                {isVideo ? (
-                  <div className="relative w-full h-full flex items-center justify-center z-10">
-                    <HeroVideoPlayer src={mediaSrc} poster={slide.poster} isCurrent={isCurrent} />
-                  </div>
-                ) : (
-                  <img
-                    src={getOptimizedImageUrl(slide.image, 1600)}
-                    alt={slide.title || "Slide PB Bilibili 162"}
-                    loading={index === 0 ? "eager" : "lazy"}
-                    decoding="async"
-                    className={`relative w-full h-full object-contain object-center transition-transform duration-[20000ms] ease-out select-none z-10 ${
-                      isCurrent ? 'scale-102' : 'scale-100'
-                    }`}
-                  />
-                )}
 
                 {/* Minimal Bottom Overlay Gradient for clean contrast on dots */}
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent via-60% to-black/60 z-20 pointer-events-none" />
@@ -318,6 +322,7 @@ export default function Hero() {
             <div className="w-8 h-8 border-2 border-white/10 border-t-blue-500 rounded-full animate-spin" />
           </div>
         )}
+      </div>
       </div>
 
       <style>{`
