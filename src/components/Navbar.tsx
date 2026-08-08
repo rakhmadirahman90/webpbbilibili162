@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Globe, ChevronDown, Menu, X, MapPin, UserPlus, Wallet, FileText, Trophy, BrainCircuit, ArrowLeft, Youtube, Instagram, Facebook, Twitter, Radio, LogIn, LayoutDashboard, UserCheck, LogOut, Timer, HelpCircle } from 'lucide-react';
+import { Globe, ChevronDown, Menu, X, MapPin, UserPlus, Wallet, FileText, Trophy, BrainCircuit, ArrowLeft, Youtube, Instagram, Facebook, Twitter, Radio, LogIn, LayoutDashboard, UserCheck, LogOut, Timer, HelpCircle, RefreshCw } from 'lucide-react';
 import { supabase } from '../supabase'; 
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
+import { forceRefreshSiteSettings } from '../utils/siteSettingsHelper';
 
 interface NavbarProps {
   onNavigate: (sectionId: string, tabId?: string) => void;
@@ -80,6 +81,31 @@ export default function Navbar({ onNavigate }: NavbarProps) {
       window.dispatchEvent(new Event('local-session-changed'));
       setIsMobileMenuOpen(false);
       navigate('/login', { replace: true });
+    }
+  };
+
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleForceRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      Swal.fire({
+        title: 'Memuat Ulang Data...',
+        text: 'Membersihkan cache lokal dan mengambil konfigurasi Hero, Pop-up & Database terbaru.',
+        icon: 'info',
+        showConfirmButton: false,
+        timer: 1200,
+        background: '#0F172A',
+        color: '#fff',
+        customClass: {
+          container: 'z-[9999999]'
+        }
+      });
+      await forceRefreshSiteSettings();
+    } catch (err) {
+      console.error('Refresh error:', err);
+    } finally {
+      setIsRefreshing(false);
     }
   };
   

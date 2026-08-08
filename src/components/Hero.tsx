@@ -255,6 +255,7 @@ export default function Hero() {
 
     window.addEventListener('storage', handleStorage);
     window.addEventListener('site_setting_updated', handleCustomUpdate);
+    window.addEventListener('force_refresh_data', handleFocus);
     window.addEventListener('focus', handleFocus);
     window.addEventListener('online', handleFocus);
     document.addEventListener('visibilitychange', handleFocus);

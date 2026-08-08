@@ -273,3 +273,36 @@ export async function getSiteSetting(key: string) {
 
   return null;
 }
+
+/**
+ * Clears all local caches and forces a re-fetch of all site configurations
+ */
+export async function forceRefreshSiteSettings() {
+  if (typeof window === 'undefined') return;
+
+  try {
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && (k.startsWith('site_setting_') || k.includes('hero') || k.includes('popup') || k.includes('cache') || k.includes('setting'))) {
+        keysToRemove.push(k);
+      }
+    }
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+    sessionStorage.clear();
+  } catch (e) {
+    console.warn('Cache clear error:', e);
+  }
+
+  try {
+    await fetch('/api/site-settings?refresh=true', { cache: 'no-store' });
+  } catch (e) {}
+
+  window.dispatchEvent(new CustomEvent('site_setting_updated', { detail: { key: 'hero_config', force: true } }));
+  window.dispatchEvent(new CustomEvent('site_setting_updated', { detail: { key: 'popup_config', force: true } }));
+  window.dispatchEvent(new CustomEvent('force_refresh_data'));
+
+  setTimeout(() => {
+    window.location.reload();
+  }, 400);
+}

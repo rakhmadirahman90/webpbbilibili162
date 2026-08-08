@@ -42,9 +42,11 @@ import {
   HeartPulse,
   Tv,
   MessageSquare,
-  Smartphone
+  Smartphone,
+  RefreshCw
 } from 'lucide-react';
 import { supabase } from '../supabase';
+import { forceRefreshSiteSettings } from '../utils/siteSettingsHelper';
 
 // Prop untuk kontrol dari parent (AdminLayout)
 interface SidebarProps {
@@ -213,6 +215,31 @@ export default function Sidebar({ email, role = 'admin', isOpen, onClose }: Side
       window.removeEventListener('storage', handleSessionChange);
     };
   }, [email, role]);
+
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleForceRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      Swal.fire({
+        title: 'Memuat Ulang Data...',
+        text: 'Membersihkan cache lokal dan mengambil data terbaru dari server database.',
+        icon: 'info',
+        showConfirmButton: false,
+        timer: 1200,
+        background: '#0F172A',
+        color: '#fff',
+        customClass: {
+          container: 'z-[9999999]'
+        }
+      });
+      await forceRefreshSiteSettings();
+    } catch (err) {
+      console.error('Refresh error:', err);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   const handleLogout = async () => {
     if (onClose) onClose();
@@ -582,6 +609,17 @@ export default function Sidebar({ email, role = 'admin', isOpen, onClose }: Side
               </div>
             </div>
           </div>
+
+          <button 
+            type="button"
+            onClick={handleForceRefresh}
+            disabled={isRefreshing}
+            className="w-full group flex items-center justify-center gap-2 py-1.5 bg-blue-950/40 text-blue-400 border border-blue-800/40 hover:bg-blue-600 hover:text-white hover:border-blue-500 rounded-xl font-bold text-[10px] uppercase tracking-wider transition-all active:scale-95 shadow-sm cursor-pointer"
+            title="Bersihkan Cache Lokal & Muat Ulang Data Server"
+          >
+            <RefreshCw size={11} className={`group-hover:rotate-180 transition-transform ${isRefreshing ? 'animate-spin' : ''}`} /> 
+            Hapus Cache & Refresh
+          </button>
 
           <button 
             type="button"
