@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
 import { saveSiteSetting, getSiteSetting } from '../utils/siteSettingsHelper';
+import { isVideoUrl } from './Hero';
 import Swal from 'sweetalert2';
 import { 
   Layout, Save, Image as ImageIcon, MousePointer2, Info, Loader2, 
@@ -271,7 +272,7 @@ export default function AdminTampilan() {
     setLoading(true);
     setMessage('Menyimpan ke database...');
     try {
-      const { error: heroErr } = await saveSiteSetting('hero_config', { settings: heroSettings, slides: slides }, 'Pengaturan Hero Slider');
+      const { error: heroErr } = await saveSiteSetting('hero_config', { settings: heroSettings, slides: slides, updated_at: new Date().toISOString() }, 'Pengaturan Hero Slider');
       if (heroErr) throw heroErr;
 
       const { error: footerErr } = await saveSiteSetting('footer_config', footerData, 'Pengaturan Footer');
@@ -506,10 +507,20 @@ export default function AdminTampilan() {
               <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
                 {slides.map((s, i) => (
                   <div key={s.id} className={`relative h-[320px] w-full bg-black rounded-[2.5rem] overflow-hidden flex items-center p-8 border ${s.active === false ? 'border-red-500/20 bg-red-950/5' : 'border-white/5'} shadow-2xl transition-all duration-500`}>
-                    {s.image ? (
+                    {isVideoUrl(s.videoUrl || s.image, s.type) ? (
+                      <video 
+                        src={s.videoUrl || s.image} 
+                        poster={s.poster}
+                        autoPlay 
+                        loop 
+                        muted 
+                        playsInline 
+                        className={`absolute inset-0 w-full h-full object-cover transition-all ${s.active === false ? 'opacity-15 grayscale' : 'opacity-50'}`} 
+                      />
+                    ) : s.image ? (
                       <img src={s.image} key={s.image} className={`absolute inset-0 w-full h-full object-cover object-[center_15%] transition-all ${s.active === false ? 'opacity-15 grayscale' : 'opacity-50'}`} alt={`Slide ${i+1}`} />
                     ) : (
-                       <div className="absolute inset-0 bg-zinc-950 flex items-center justify-center text-slate-800 font-black italic text-4xl">NO IMAGE</div>
+                       <div className="absolute inset-0 bg-zinc-950 flex items-center justify-center text-slate-800 font-black italic text-4xl">NO MEDIA</div>
                     )}
                     
                     <div className="absolute inset-0 bg-gradient-to-r from-black via-black/40 to-transparent z-0" />

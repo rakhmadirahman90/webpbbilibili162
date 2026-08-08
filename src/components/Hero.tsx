@@ -8,6 +8,8 @@ export function isVideoUrl(url?: string, type?: string): boolean {
   if (type === 'video') return true;
   if (!url) return false;
   const clean = url.toLowerCase().split('?')[0];
+  if (clean.startsWith('data:video/')) return true;
+  if (clean.startsWith('blob:')) return true;
   return (
     clean.endsWith('.mp4') ||
     clean.endsWith('.webm') ||
@@ -50,13 +52,25 @@ export function getEmbedVideoUrl(url: string): string | null {
 
 function HeroVideoPlayer({ src, poster, isCurrent }: { src: string; poster?: string; isCurrent: boolean }) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
-    if (!videoRef.current) return;
-    if (isCurrent) {
-      const playPromise = videoRef.current.play();
+    setHasError(false);
+  }, [src]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    video.muted = true;
+    video.defaultMuted = true;
+    video.playsInline = true;
+
+    if (isCurrent && !hasError) {
+      const playPromise = video.play();
       if (playPromise !== undefined) {
-        playPromise.catch(() => {
+        playPromise.catch((err) => {
+          console.warn("Autoplay error on hero video:", err);
           if (videoRef.current) {
             videoRef.current.muted = true;
             videoRef.current.play().catch(() => {});
@@ -64,9 +78,9 @@ function HeroVideoPlayer({ src, poster, isCurrent }: { src: string; poster?: str
         });
       }
     } else {
-      videoRef.current.pause();
+      video.pause();
     }
-  }, [isCurrent]);
+  }, [isCurrent, src, hasError]);
 
   const embedUrl = getEmbedVideoUrl(src);
   if (embedUrl) {
@@ -80,6 +94,18 @@ function HeroVideoPlayer({ src, poster, isCurrent }: { src: string; poster?: str
     );
   }
 
+  if (hasError && poster) {
+    return (
+      <img
+        src={poster}
+        alt="Hero Poster Fallback"
+        className={`w-full h-full object-contain object-center transition-transform duration-[20000ms] ease-out select-none ${
+          isCurrent ? 'scale-102' : 'scale-100'
+        }`}
+      />
+    );
+  }
+
   return (
     <video
       ref={videoRef}
@@ -88,9 +114,14 @@ function HeroVideoPlayer({ src, poster, isCurrent }: { src: string; poster?: str
       autoPlay
       loop
       muted
+      defaultMuted
       playsInline
       controls={false}
       preload="auto"
+      onError={() => {
+        console.warn("Hero video failed to load, switching to poster fallback:", src);
+        setHasError(true);
+      }}
       className={`w-full h-full object-contain object-center transition-transform duration-[20000ms] ease-out select-none ${
         isCurrent ? 'scale-102' : 'scale-100'
       }`}
@@ -102,13 +133,17 @@ function HeroVideoBlur({ src, isCurrent }: { src: string; isCurrent: boolean }) 
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
-    if (!videoRef.current) return;
+    const video = videoRef.current;
+    if (!video) return;
+    video.muted = true;
+    video.defaultMuted = true;
+    video.playsInline = true;
     if (isCurrent) {
-      videoRef.current.play().catch(() => {});
+      video.play().catch(() => {});
     } else {
-      videoRef.current.pause();
+      video.pause();
     }
-  }, [isCurrent]);
+  }, [isCurrent, src]);
 
   const embedUrl = getEmbedVideoUrl(src);
   if (embedUrl) return null;
@@ -120,6 +155,7 @@ function HeroVideoBlur({ src, isCurrent }: { src: string; isCurrent: boolean }) 
       autoPlay
       loop
       muted
+      defaultMuted
       playsInline
       aria-hidden="true"
       className="w-full h-full object-cover blur-3xl opacity-80 scale-110 select-none pointer-events-none"
@@ -238,8 +274,9 @@ export default function Hero() {
           {/* Background Visual Layer */}
           <div className="absolute inset-0 z-0 w-full h-full flex items-center justify-center">
             {slides.map((slide, index) => {
-              const isVideo = isVideoUrl(slide.image || slide.videoUrl, slide.type);
-              const mediaSrc = slide.videoUrl || slide.image;
+              const isVideo = isVideoUrl(slide.videoUrl, slide.type) || isVideoUrl(slide.image, slide.type);
+              const mediaSrc = (isVideoUrl(slide.videoUrl) ? slide.videoUrl : null) || (isVideoUrl(slide.image) ? slide.image : null) || slide.videoUrl || slide.image;
+              const posterSrc = slide.poster || (slide.image !== mediaSrc ? slide.image : undefined);
               const isCurrent = index === currentSlide;
 
               return (
@@ -267,7 +304,7 @@ export default function Hero() {
                   {/* Main Slide Media */}
                   {isVideo ? (
                     <div className="relative w-full h-full flex items-center justify-center z-10">
-                      <HeroVideoPlayer src={mediaSrc} poster={slide.poster} isCurrent={isCurrent} />
+                      <HeroVideoPlayer src={mediaSrc} poster={posterSrc} isCurrent={isCurrent} />
                     </div>
                   ) : (
                     <img

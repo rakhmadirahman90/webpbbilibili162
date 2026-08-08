@@ -173,6 +173,7 @@ const KelolaHero: React.FC = () => {
   const [title, setTitle] = useState('');
   const [subtitle, setSubtitle] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+  const [posterUrl, setPosterUrl] = useState('');
   const [editingId, setEditingId] = useState<number | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -201,7 +202,14 @@ const KelolaHero: React.FC = () => {
       .subscribe();
 
     const handleCustomEvent = (e: any) => {
-      if (e.detail?.key === 'hero_config') fetchHeroData();
+      if (e.detail?.key === 'hero_config') {
+        if (e.detail.value && typeof e.detail.value === 'object' && Array.isArray(e.detail.value.slides)) {
+          setSlides(e.detail.value.slides);
+          if (e.detail.value.settings) setSliderSettings(e.detail.value.settings);
+        } else {
+          fetchHeroData();
+        }
+      }
     };
     const handleFocus = () => fetchHeroData();
 
@@ -355,6 +363,9 @@ const KelolaHero: React.FC = () => {
       }
 
       setImageUrl(publicVideoUrl);
+      if (publicPosterUrl) {
+        setPosterUrl(publicPosterUrl);
+      }
 
       const sizeKb = Math.round(videoBlob.size / 1024);
       const sizeMb = (sizeKb / 1024).toFixed(2);
@@ -544,6 +555,9 @@ const KelolaHero: React.FC = () => {
   };
 
   const saveToDatabase = async (updatedSlides: any[], updatedSettings = sliderSettings) => {
+    setSlides(updatedSlides);
+    setSliderSettings(updatedSettings);
+
     const payload = {
       slides: updatedSlides,
       settings: updatedSettings,
@@ -553,8 +567,6 @@ const KelolaHero: React.FC = () => {
     const { error } = await saveSiteSetting('hero_config', payload, 'Pengaturan Hero Slider');
 
     if (!error) {
-      setSlides(updatedSlides);
-      setSliderSettings(updatedSettings);
       triggerSuccess();
     } else {
       console.error("Database Save Error:", error.message);
@@ -576,8 +588,10 @@ const KelolaHero: React.FC = () => {
       return;
     }
 
-    const isVideo = isVideoUrl(imageUrl);
+    const currentSlide = editingId ? slides.find(s => s.id === editingId) : null;
+    const isVideo = isVideoUrl(imageUrl) || isVideoUrl(currentSlide?.videoUrl) || currentSlide?.type === 'video';
     const finalTitle = title.trim() || (isVideo ? "PB Bilibili Video Hero" : "PB Bilibili 162");
+    const activePoster = posterUrl || currentSlide?.poster;
 
     let updatedSlides;
     if (editingId) {
@@ -586,8 +600,9 @@ const KelolaHero: React.FC = () => {
           ...s, 
           title: finalTitle, 
           subtitle: subtitle.trim(), 
-          image: imageUrl, 
-          videoUrl: isVideo ? imageUrl : s.videoUrl, 
+          image: (isVideo && activePoster) ? activePoster : imageUrl, 
+          videoUrl: isVideo ? imageUrl : undefined, 
+          poster: activePoster || undefined,
           type: isVideo ? 'video' : 'image',
           active: true
         } : s
@@ -597,8 +612,9 @@ const KelolaHero: React.FC = () => {
         id: Date.now(),
         title: finalTitle,
         subtitle: subtitle.trim(),
-        image: imageUrl,
+        image: (isVideo && activePoster) ? activePoster : imageUrl,
         videoUrl: isVideo ? imageUrl : undefined,
+        poster: activePoster || undefined,
         type: isVideo ? 'video' : 'image',
         active: true,
       };
@@ -617,6 +633,7 @@ const KelolaHero: React.FC = () => {
       }
       return s;
     });
+    setSlides(updatedSlides);
     await saveToDatabase(updatedSlides);
   };
 
@@ -654,9 +671,10 @@ const KelolaHero: React.FC = () => {
 
   const startEdit = (slide: any) => {
     setEditingId(slide.id);
-    setTitle(slide.title);
-    setSubtitle(slide.subtitle);
-    setImageUrl(slide.image);
+    setTitle(slide.title || '');
+    setSubtitle(slide.subtitle || '');
+    setImageUrl(slide.videoUrl || slide.image || '');
+    setPosterUrl(slide.poster || '');
     setFormError(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -666,6 +684,7 @@ const KelolaHero: React.FC = () => {
     setTitle('');
     setSubtitle('');
     setImageUrl('');
+    setPosterUrl('');
     setFormError(null);
   };
 
@@ -674,6 +693,7 @@ const KelolaHero: React.FC = () => {
     const targetIndex = direction === 'up' ? index - 1 : index + 1;
     if (targetIndex < 0 || targetIndex >= newSlides.length) return;
     [newSlides[index], newSlides[targetIndex]] = [newSlides[targetIndex], newSlides[index]];
+    setSlides(newSlides);
     await saveToDatabase(newSlides);
   };
 
