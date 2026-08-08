@@ -82,6 +82,121 @@ async function startServer() {
       res.json({ status: "ok" });
     });
 
+    // Persistent Site Settings Store
+    const SETTINGS_FILE = path.join(process.cwd(), 'data', 'site_settings.json');
+    
+    function loadLocalSettingsStore(): Record<string, any> {
+      try {
+        if (!fs.existsSync(path.dirname(SETTINGS_FILE))) {
+          fs.mkdirSync(path.dirname(SETTINGS_FILE), { recursive: true });
+        }
+        if (fs.existsSync(SETTINGS_FILE)) {
+          const raw = fs.readFileSync(SETTINGS_FILE, 'utf-8');
+          return JSON.parse(raw);
+        }
+      } catch (e) {
+        console.warn("Failed to read local settings store:", e);
+      }
+      return {};
+    }
+
+    function saveLocalSettingsStore(store: Record<string, any>) {
+      try {
+        if (!fs.existsSync(path.dirname(SETTINGS_FILE))) {
+          fs.mkdirSync(path.dirname(SETTINGS_FILE), { recursive: true });
+        }
+        fs.writeFileSync(SETTINGS_FILE, JSON.stringify(store, null, 2), 'utf-8');
+      } catch (e) {
+        console.warn("Failed to save local settings store:", e);
+      }
+    }
+
+    // Default hero config with video slide as #1
+    const DEFAULT_HERO_CONFIG = {
+      slides: [
+        {
+          id: 'video-main-1',
+          title: 'PB Bilibili 162 Professional Club',
+          subtitle: 'Klub Bulutangkis Profesional dengan Fasilitas & Pembinaan Standar BWF',
+          image: '/vid-20260206-wa0019.mp4',
+          videoUrl: '/vid-20260206-wa0019.mp4',
+          poster: '/whatsapp_image_2026-02-02_at_08.39.03.jpeg',
+          type: 'video',
+          active: true,
+          titleSize: 28,
+          subtitleSize: 12,
+          fontFamily: 'font-sans'
+        },
+        {
+          id: 1,
+          title: 'Pusat Pelatihan PB Bilibili 162',
+          subtitle: 'Fasilitas lapangan berkualitas internasional dengan standar karpet BWF.',
+          image: '/whatsapp_image_2026-02-02_at_08.39.03.jpeg',
+          active: true,
+          titleSize: 24,
+          subtitleSize: 10,
+          fontFamily: 'font-sans'
+        },
+        {
+          id: 2,
+          title: 'Keluarga Besar Atlet Kami',
+          subtitle: 'Membangun komunitas solid dengan dedikasi tinggi terhadap bulutangkis.',
+          image: '/whatsapp_image_2026-02-02_at_09.53.05_(1).jpeg',
+          active: true,
+          titleSize: 24,
+          subtitleSize: 10,
+          fontFamily: 'font-sans'
+        },
+        {
+          id: 3,
+          title: 'Talenta Muda Terpadu',
+          subtitle: 'Program pembinaan terstruktur untuk mencetak juara masa depan.',
+          image: '/whatsapp_image_2026-02-02_at_09.53.05_(2).jpeg',
+          active: true,
+          titleSize: 24,
+          subtitleSize: 10,
+          fontFamily: 'font-sans'
+        },
+        {
+          id: 4,
+          title: 'Semangat Juara Bersama',
+          subtitle: 'Komitmen menciptakan ekosistem olahraga yang kompetitif dan kekeluargaan.',
+          image: '/whatsapp_image_2026-02-02_at_09.53.05_(3).jpeg',
+          active: true,
+          titleSize: 24,
+          subtitleSize: 10,
+          fontFamily: 'font-sans'
+        }
+      ],
+      settings: { duration: 7 },
+      updated_at: new Date().toISOString()
+    };
+
+    app.get("/api/site-settings", (req, res) => {
+      const key = (req.query.key as string) || 'hero_config';
+      const store = loadLocalSettingsStore();
+      if (store[key]) {
+        return res.json({ key, value: store[key] });
+      }
+      if (key === 'hero_config') {
+        return res.json({ key: 'hero_config', value: DEFAULT_HERO_CONFIG });
+      }
+      return res.json({ key, value: null });
+    });
+
+    app.post("/api/site-settings", (req, res) => {
+      try {
+        const { key, value } = req.body;
+        if (!key) return res.status(400).json({ error: "Key is required" });
+        const store = loadLocalSettingsStore();
+        store[key] = value;
+        saveLocalSettingsStore(store);
+        return res.json({ success: true, key, value });
+      } catch (err: any) {
+        return res.status(500).json({ error: err.message });
+      }
+    });
+
     // Clean image proxy route for WhatsApp / Open Graph crawlers (bypasses Supabase x-robots-tag: none)
     app.get("/api/news-image", async (req, res) => {
       try {

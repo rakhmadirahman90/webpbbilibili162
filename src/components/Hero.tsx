@@ -121,7 +121,7 @@ function HeroVideoPlayer({ src, poster, isCurrent }: { src: string; poster?: str
         console.warn("Hero video failed to load, switching to poster fallback:", src);
         setHasError(true);
       }}
-      className={`w-full h-full object-contain object-center transition-transform duration-[20000ms] ease-out select-none ${
+      className={`w-full h-full object-cover object-center transition-transform duration-[20000ms] ease-out select-none ${
         isCurrent ? 'scale-102' : 'scale-100'
       }`}
     />
@@ -161,11 +161,21 @@ function HeroVideoBlur({ src, isCurrent }: { src: string; isCurrent: boolean }) 
   );
 }
 
-const defaultSlides = [
-  { id: 1, image: '/whatsapp_image_2026-02-02_at_08.39.03.jpeg' },
-  { id: 2, image: '/whatsapp_image_2026-02-02_at_09.53.05_(1).jpeg' },
-  { id: 3, image: '/whatsapp_image_2026-02-02_at_09.53.05_(2).jpeg' },
-  { id: 4, image: '/whatsapp_image_2026-02-02_at_09.53.05_(3).jpeg' },
+export const defaultSlides = [
+  {
+    id: 'video-main-1',
+    title: 'PB Bilibili 162 Professional Club',
+    subtitle: 'Klub Bulutangkis Profesional dengan Fasilitas & Pembinaan Standar BWF',
+    image: '/vid-20260206-wa0019.mp4',
+    videoUrl: '/vid-20260206-wa0019.mp4',
+    poster: '/whatsapp_image_2026-02-02_at_08.39.03.jpeg',
+    type: 'video',
+    active: true
+  },
+  { id: 1, image: '/whatsapp_image_2026-02-02_at_08.39.03.jpeg', active: true },
+  { id: 2, image: '/whatsapp_image_2026-02-02_at_09.53.05_(1).jpeg', active: true },
+  { id: 3, image: '/whatsapp_image_2026-02-02_at_09.53.05_(2).jpeg', active: true },
+  { id: 4, image: '/whatsapp_image_2026-02-02_at_09.53.05_(3).jpeg', active: true },
 ];
 
 export default function Hero() {

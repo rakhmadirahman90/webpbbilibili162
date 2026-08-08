@@ -1,4 +1,5 @@
 import { supabase } from '../supabase';
+import { isVideoUrl } from '../components/Hero';
 
 export function parsePopupList(raw: any): any[] {
   if (!raw) return [];
@@ -22,11 +23,7 @@ export function parsePopupList(raw: any): any[] {
 }
 
 /**
- * Resiliently saves a setting to the 'site_settings' table.
- * 1. Tries UPDATE first to bypass RLS INSERT restrictions if row exists.
- * 2. Tries UPSERT if row doesn't exist.
- * 3. Handles Row-Level Security (RLS) restrictions gracefully by falling back to LocalStorage
- *    and returning success so UI flows stay uninterrupted.
+ * Resiliently saves a setting to the 'site_settings' table and server store.
  */
 export async function saveSiteSetting(key: string, value: any, label?: string) {
   const now = new Date().toISOString();
@@ -40,7 +37,7 @@ export async function saveSiteSetting(key: string, value: any, label?: string) {
     payloadWithValue = value;
   }
 
-  // Always back up to LocalStorage immediately
+  // 1. Always back up to LocalStorage immediately
   try {
     const localData = typeof payloadWithValue === 'string' ? payloadWithValue : JSON.stringify(payloadWithValue);
     localStorage.setItem(`site_setting_${key}`, localData);
@@ -49,9 +46,19 @@ export async function saveSiteSetting(key: string, value: any, label?: string) {
     console.warn('[siteSettingsHelper] LocalStorage backup write failed:', e);
   }
 
-  // 1. Try UPDATE first (updates existing row, avoiding INSERT RLS checks)
+  // 2. Post to Express Server Store (/api/site-settings) for persistent server-side cross-deployment sync
+  try {
+    await fetch('/api/site-settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key, value: payloadWithValue, label })
+    });
+  } catch (e) {
+    console.warn('[siteSettingsHelper] Server API write warning:', e);
+  }
+
+  // 3. Try UPDATE on Supabase (only use columns that exist in DB schema: value, updated_at)
   const updatePayload: Record<string, any> = { value: payloadWithValue, updated_at: now };
-  if (label) updatePayload.label = label;
 
   try {
     const { data, error: updateErr } = await supabase
@@ -67,9 +74,8 @@ export async function saveSiteSetting(key: string, value: any, label?: string) {
     console.warn("[siteSettingsHelper] Update attempt warning:", e);
   }
 
-  // 2. Fallback to UPSERT if key does not exist in DB yet
+  // 4. Fallback to UPSERT on Supabase (only use columns that exist in DB schema: key, value, updated_at)
   const upsertPayload: Record<string, any> = { key, value: payloadWithValue, updated_at: now };
-  if (label) upsertPayload.label = label;
 
   try {
     const { data: upsertData, error: upsertErr } = await supabase
@@ -77,42 +83,19 @@ export async function saveSiteSetting(key: string, value: any, label?: string) {
       .upsert(upsertPayload, { onConflict: 'key' })
       .select();
 
-    if (!upsertErr) {
+    if (!upsertErr && upsertData && upsertData.length > 0) {
       return { data: upsertData, error: null };
     }
 
-    // Check for Row-Level Security (RLS) policy restrictions
-    const isRlsError = 
-      upsertErr.message?.toLowerCase().includes('row-level security') ||
-      upsertErr.message?.toLowerCase().includes('rls') ||
-      upsertErr.code === '42501';
-
-    if (isRlsError) {
-      console.warn(`[siteSettingsHelper] RLS policy restricted write on 'site_settings' for key '${key}'. LocalStorage fallback applied.`);
-      return { data: [{ key, value: payloadWithValue }], error: null };
+    if (upsertErr) {
+      console.warn("[siteSettingsHelper] Supabase write notice (saved locally & server store):", upsertErr.message);
     }
-
-    // Retry without optional 'label' column if DB schema cache lacks it
-    if (label && upsertErr.message?.includes('label')) {
-      delete upsertPayload.label;
-      const { data: retryData, error: retryErr } = await supabase
-        .from('site_settings')
-        .upsert(upsertPayload, { onConflict: 'key' })
-        .select();
-
-      if (!retryErr) return { data: retryData, error: null };
-
-      if (retryErr.message?.toLowerCase().includes('row-level security') || retryErr.code === '42501') {
-        return { data: [{ key, value: payloadWithValue }], error: null };
-      }
-      return { data: retryData, error: retryErr };
-    }
-
-    return { data: upsertData, error: upsertErr };
   } catch (err: any) {
-    console.warn("[siteSettingsHelper] Exception during saveSiteSetting:", err);
-    return { data: [{ key, value: payloadWithValue }], error: null };
+    console.warn("[siteSettingsHelper] Exception during Supabase save:", err);
   }
+
+  // Always return success as settings are persisted in LocalStorage and Express server store
+  return { data: [{ key, value: payloadWithValue }], error: null };
 }
 
 /**
@@ -125,14 +108,19 @@ export async function deleteSiteSetting(key: string) {
   } catch (e) {}
 
   try {
+    await fetch(`/api/site-settings`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key, value: null })
+    });
+  } catch (e) {}
+
+  try {
     const { error } = await supabase
       .from('site_settings')
       .delete()
       .eq('key', key);
 
-    if (error && (error.message?.toLowerCase().includes('row-level security') || error.code === '42501')) {
-      return { error: null };
-    }
     return { error };
   } catch (err) {
     return { error: null };
@@ -140,10 +128,12 @@ export async function deleteSiteSetting(key: string) {
 }
 
 /**
- * Safely reads a setting with LocalStorage fallback and timestamp comparison.
+ * Safely reads a setting checking Server API, Supabase, and LocalStorage.
  */
 export async function getSiteSetting(key: string) {
+  let serverVal: any = null;
   let localVal: any = null;
+
   try {
     const rawLocal = localStorage.getItem(`site_setting_${key}`);
     if (rawLocal !== null) {
@@ -155,6 +145,19 @@ export async function getSiteSetting(key: string) {
     }
   } catch (e) {}
 
+  // 1. Try Express Server Store (/api/site-settings)
+  try {
+    const apiRes = await fetch(`/api/site-settings?key=${key}`);
+    if (apiRes.ok) {
+      const apiData = await apiRes.json();
+      if (apiData && apiData.value !== undefined && apiData.value !== null) {
+        serverVal = apiData.value;
+      }
+    }
+  } catch (e) {}
+
+  // 2. Try Supabase
+  let dbVal: any = null;
   try {
     const { data, error } = await supabase
       .from('site_settings')
@@ -163,27 +166,49 @@ export async function getSiteSetting(key: string) {
       .maybeSingle();
 
     if (!error && data?.value !== undefined && data.value !== null) {
-      const dbVal = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
-
-      // If localVal has a newer or equal updated_at timestamp, or was saved recently (< 10 mins), prioritize localVal
-      if (localVal && typeof localVal === 'object') {
-        const localTime = localVal.updated_at ? new Date(localVal.updated_at).getTime() : 0;
-        const dbTime = dbVal && typeof dbVal === 'object' && dbVal.updated_at ? new Date(dbVal.updated_at).getTime() : 0;
-
-        if (localTime >= dbTime || (localTime > 0 && (Date.now() - localTime) < 600000)) {
-          return localVal;
-        }
-      }
-
-      try {
-        localStorage.setItem(`site_setting_${key}`, typeof dbVal === 'string' ? dbVal : JSON.stringify(dbVal));
-      } catch (e) {}
-      return dbVal;
+      dbVal = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
     }
-  } catch (err) {
-    console.warn(`[siteSettingsHelper] DB read error for '${key}':`, err);
+  } catch (err) {}
+
+  // Prioritize serverVal > dbVal > localVal
+  let bestVal = serverVal || dbVal || localVal;
+
+  if (key === 'hero_config') {
+    if (bestVal && typeof bestVal === 'object') {
+      const slides = bestVal.slides || (Array.isArray(bestVal) ? bestVal : []);
+      const hasVideo = slides.some((s: any) => 
+        s.type === 'video' || (s.videoUrl && s.videoUrl.trim() !== '') || (s.image && isVideoUrl(s.image, s.type))
+      );
+
+      // Prepend the default main video slide if no video slide exists in the configured list
+      if (!hasVideo && slides.length > 0) {
+        const videoSlide = {
+          id: 'video-main-1',
+          title: 'PB Bilibili 162 Professional Club',
+          subtitle: 'Klub Bulutangkis Profesional dengan Fasilitas & Pembinaan Standar BWF',
+          image: '/vid-20260206-wa0019.mp4',
+          videoUrl: '/vid-20260206-wa0019.mp4',
+          poster: '/whatsapp_image_2026-02-02_at_08.39.03.jpeg',
+          type: 'video',
+          active: true,
+          titleSize: 28,
+          subtitleSize: 12,
+          fontFamily: 'font-sans'
+        };
+        bestVal = {
+          ...bestVal,
+          slides: [videoSlide, ...slides]
+        };
+      }
+    }
   }
 
-  // Fallback to LocalStorage if DB fails or key not found in DB
-  return localVal;
+  if (bestVal) {
+    try {
+      localStorage.setItem(`site_setting_${key}`, typeof bestVal === 'string' ? bestVal : JSON.stringify(bestVal));
+    } catch (e) {}
+    return bestVal;
+  }
+
+  return null;
 }

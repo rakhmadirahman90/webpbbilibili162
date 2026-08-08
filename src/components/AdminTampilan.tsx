@@ -11,6 +11,19 @@ import {
 
 const DEFAULT_SLIDES = [
   {
+    id: 'video-main-1',
+    title: 'PB Bilibili 162 Professional Club',
+    subtitle: 'Klub Bulutangkis Profesional dengan Fasilitas & Pembinaan Standar BWF',
+    image: '/vid-20260206-wa0019.mp4',
+    videoUrl: '/vid-20260206-wa0019.mp4',
+    poster: '/whatsapp_image_2026-02-02_at_08.39.03.jpeg',
+    type: 'video',
+    active: true,
+    titleSize: 28,
+    subtitleSize: 12,
+    fontFamily: 'font-sans'
+  },
+  {
     id: 1,
     title: 'Pusat Pelatihan PB Bilibili 162',
     subtitle: 'Fasilitas lapangan berkualitas internasional dengan standar karpet BWF.',
