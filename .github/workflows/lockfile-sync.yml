@@ -1,0 +1,37 @@
+name: Lockfile consistency
+
+on:
+  pull_request:
+    paths:
+      - package.json
+      - package-lock.json
+  push:
+    branches: [main]
+    paths:
+      - package.json
+      - package-lock.json
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Verify package lockfile
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Verify lockfile is reproducible
+        run: |
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          git diff --exit-code -- package-lock.json
+
+      - name: Verify clean install
+        run: npm ci --ignore-scripts --no-audit --no-fund
