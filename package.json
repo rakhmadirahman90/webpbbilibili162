@@ -4,10 +4,10 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "tsx server.ts",
-    "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
+    "dev": "tsx dev-server.ts",
+    "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs && esbuild server-security-preload.ts --bundle --platform=node --format=cjs --packages=external --outfile=dist/security-preload.cjs",
     "lint": "eslint .",
-    "start": "node dist/server.cjs",
+    "start": "node -r ./dist/security-preload.cjs dist/server.cjs",
     "typecheck": "tsc --noEmit -p tsconfig.app.json"
   },
   "dependencies": {
