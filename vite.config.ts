@@ -13,17 +13,11 @@ export default defineConfig({
     exclude: ['lucide-react'],
   },
   build: {
-    chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 1200,
     rollupOptions: {
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
-              return 'vendor-react';
-            }
-            if (id.includes('@supabase') || id.includes('firebase')) {
-              return 'vendor-db';
-            }
             if (id.includes('jspdf') || id.includes('html2canvas') || id.includes('xlsx')) {
               return 'vendor-docs';
             }

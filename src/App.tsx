@@ -633,15 +633,32 @@ export default function App() {
   }, [notifications]);
 
   useEffect(() => {
-    const syncSession = async () => {
-      const { data: { session: supaSession } } = await supabase.auth.getSession();
-      if (supaSession) {
-        setSession(supaSession);
-      } else {
-        const local = localStorage.getItem('local_admin_session');
-        setSession(local ? JSON.parse(local) : null);
-      }
+    // Safety fallback: Force loading = false after 2.5s if Supabase/network is slow
+    const loadingSafetyTimer = setTimeout(() => {
       setLoading(false);
+    }, 2500);
+
+    const syncSession = async () => {
+      try {
+        const { data: { session: supaSession } } = await supabase.auth.getSession();
+        if (supaSession) {
+          setSession(supaSession);
+        } else {
+          const local = localStorage.getItem('local_admin_session');
+          setSession(local ? JSON.parse(local) : null);
+        }
+      } catch (err) {
+        console.error('Session sync error:', err);
+        try {
+          const local = localStorage.getItem('local_admin_session');
+          setSession(local ? JSON.parse(local) : null);
+        } catch {
+          setSession(null);
+        }
+      } finally {
+        setLoading(false);
+        clearTimeout(loadingSafetyTimer);
+      }
     };
 
     syncSession();
@@ -650,8 +667,12 @@ export default function App() {
       if (supaSession) {
         setSession(supaSession);
       } else {
-        const local = localStorage.getItem('local_admin_session');
-        setSession(local ? JSON.parse(local) : null);
+        try {
+          const local = localStorage.getItem('local_admin_session');
+          setSession(local ? JSON.parse(local) : null);
+        } catch {
+          setSession(null);
+        }
       }
     });
 
@@ -665,6 +686,7 @@ export default function App() {
     window.addEventListener('pb-navigate-home', handleNavigateHome);
 
     return () => {
+      clearTimeout(loadingSafetyTimer);
       subscription.unsubscribe();
       window.removeEventListener('local-session-changed', handleCustomAuth);
       window.removeEventListener('pb-navigate-home', handleNavigateHome);
