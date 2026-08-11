@@ -1,7 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
   server: {
@@ -25,7 +24,7 @@ export default defineConfig({
           'supabase-vendor': ['@supabase/supabase-js'],
           'motion-vendor': ['framer-motion'],
           'charts-vendor': ['recharts'],
-          'document-vendor': ['jspdf', 'jspdf-autotable', 'html2canvas', 'xlsx'],
+          'document-vendor': ['jspdf', 'jspdf-autotable', 'html2canvas'],
           'ui-vendor': ['lucide-react', 'swiper', 'sweetalert2'],
         },
       },
