@@ -5,19 +5,77 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    color-scheme: dark;
+    --pb-bg: #070d1a;
+    --pb-panel: rgba(15, 23, 42, 0.78);
+    --pb-border: rgba(148, 163, 184, 0.16);
+  }
+
+  html {
+    scroll-behavior: smooth;
+    text-rendering: optimizeLegibility;
+    -webkit-text-size-adjust: 100%;
+  }
+
   body {
+    min-width: 320px;
+    min-height: 100dvh;
     font-family: "Plus Jakarta Sans", "Inter", sans-serif;
     @apply text-slate-100 bg-[#070d1a] antialiased selection:bg-blue-500/30 selection:text-white;
   }
+
+  button,
+  a,
+  input,
+  textarea,
+  select {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button,
+  [role="button"],
+  a {
+    touch-action: manipulation;
+  }
+
+  :focus-visible {
+    outline: 2px solid rgb(96 165 250);
+    outline-offset: 3px;
+  }
 }
 
-/* Memperbaiki masalah horizontal scroll pada mobile */
+/* Prevent accidental horizontal scrolling on mobile. */
 body {
   overflow-x: hidden;
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Utilitas untuk menyembunyikan scrollbar tapi tetap bisa di-scroll */
+/* Consistent mobile safe-area spacing for fixed/sticky controls. */
+.safe-area-bottom {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
+.safe-area-top {
+  padding-top: max(0.75rem, env(safe-area-inset-top));
+}
+
+/* Reusable glass panel primitive for dashboards/modals. */
+.pb-glass {
+  background: var(--pb-panel);
+  border: 1px solid var(--pb-border);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+/* Better scrolling on touch devices. */
+.pb-scroll-touch {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* Utilitas untuk menyembunyikan scrollbar tapi tetap bisa di-scroll. */
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
 }
@@ -26,8 +84,44 @@ body {
   scrollbar-width: none;
 }
 
-/* Memastikan gambar tidak keluar dari container */
+/* Memastikan gambar tidak keluar dari container. */
 img {
   max-width: 100%;
   height: auto;
+}
+
+/* Prevent layout jumps from media while preserving responsive sizing. */
+img,
+video {
+  content-visibility: auto;
+}
+
+/* Respect users who prefer less motion. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Compact mobile typography and controls without forcing a redesign. */
+@media (max-width: 640px) {
+  .pb-mobile-panel {
+    border-radius: 1rem;
+    margin-inline: 0.75rem;
+  }
+
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
 }
