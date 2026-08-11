@@ -18,17 +18,15 @@ export default defineConfig({
     reportCompressedSize: false,
     chunkSizeWarningLimit: 700,
     cssCodeSplit: true,
-    rolldownOptions: {
+    rollupOptions: {
       output: {
-        codeSplitting: {
-          groups: [
-            { name: 'react-vendor', test: /node_modules[\\/]react(?:-dom)?[\\/]/ },
-            { name: 'supabase-vendor', test: /node_modules[\\/]@supabase[\\/]/ },
-            { name: 'motion-vendor', test: /node_modules[\\/]framer-motion[\\/]/ },
-            { name: 'charts-vendor', test: /node_modules[\\/]recharts[\\/]/ },
-            { name: 'document-vendor', test: /node_modules[\\/](jspdf|html2canvas|xlsx)[\\/]/ },
-            { name: 'ui-vendor', test: /node_modules[\\/](lucide-react|swiper|sweetalert2)[\\/]/ },
-          ],
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'supabase-vendor': ['@supabase/supabase-js'],
+          'motion-vendor': ['framer-motion'],
+          'charts-vendor': ['recharts'],
+          'document-vendor': ['jspdf', 'jspdf-autotable', 'html2canvas', 'xlsx'],
+          'ui-vendor': ['lucide-react', 'swiper', 'sweetalert2'],
         },
       },
     },
