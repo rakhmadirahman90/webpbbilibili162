@@ -1,0 +1,45 @@
+name: Repair package lockfile
+
+on:
+  push:
+    branches:
+      - agent/security-architecture-ci-ux
+
+permissions:
+  contents: write
+
+concurrency:
+  group: repair-lockfile
+  cancel-in-progress: true
+
+jobs:
+  repair:
+    name: Regenerate package-lock.json
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Regenerate lockfile
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+
+      - name: Commit regenerated lockfile
+        run: |
+          if git diff --quiet -- package-lock.json; then
+            echo "package-lock.json is already synchronized."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          git commit -m "ci: synchronize package lockfile"
+          git push origin HEAD:${{ github.ref_name }}
