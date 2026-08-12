@@ -212,7 +212,7 @@ export async function getSiteSetting(key: string) {
     }
   } catch (err) {}
 
-  // Smart timestamp-based prioritization (serverVal, dbVal, localVal)
+  // Smart prioritization: Supabase database is the primary source of truth across environments/browsers.
   const getTimestamp = (val: any) => {
     if (!val) return 0;
     const parsed = typeof val === 'string' ? (() => { try { return JSON.parse(val); } catch { return {}; } })() : val;
@@ -229,16 +229,23 @@ export async function getSiteSetting(key: string) {
 
   let bestVal: any = null;
 
-  if (serverTs > 0 || dbTs > 0 || localTs > 0) {
-    if (serverTs >= dbTs && serverTs >= localTs) {
-      bestVal = serverVal;
-    } else if (dbTs >= serverTs && dbTs >= localTs) {
+  // Supabase DB is the central database shared between AI Studio preview and Live site.
+  if (dbVal !== null && dbVal !== undefined) {
+    if (dbTs >= localTs && dbTs >= serverTs) {
       bestVal = dbVal;
-    } else {
+    } else if (localTs > dbTs && localTs > serverTs) {
       bestVal = localVal;
+    } else if (serverTs > dbTs && serverTs > localTs) {
+      bestVal = serverVal;
+    } else {
+      bestVal = dbVal;
     }
   } else {
-    bestVal = serverVal || dbVal || localVal;
+    if (serverTs > 0 || localTs > 0) {
+      bestVal = serverTs >= localTs ? serverVal : localVal;
+    } else {
+      bestVal = serverVal || localVal;
+    }
   }
 
   if (key === 'hero_config') {
@@ -254,18 +261,7 @@ export async function getSiteSetting(key: string) {
     };
 
     if (bestVal && typeof bestVal === 'object') {
-      let slides = bestVal.slides || (Array.isArray(bestVal) ? bestVal : []);
-      const hasOfficialVideo = slides.some((s: any) => 
-        s && (s.id === 1786206064378 || (s.videoUrl && s.videoUrl.includes('hero-video-1786206060056.webm')))
-      );
-
-      if (!hasOfficialVideo) {
-        slides = [OFFICIAL_VIDEO_SLIDE, ...slides];
-      }
-
-      const videoSlide = slides.find((s: any) => 
-        s && (s.id === 1786206064378 || (s.videoUrl && s.videoUrl.includes('hero-video-1786206060056.webm')) || s.type === 'video')
-      ) || OFFICIAL_VIDEO_SLIDE;
+      const slides = bestVal.slides || (Array.isArray(bestVal) ? bestVal : []);
 
       // Ensure every slide retains its user-configured active status (true/false)
       const sanitizedSlides = slides.map((s: any) => {
@@ -278,7 +274,7 @@ export async function getSiteSetting(key: string) {
 
       bestVal = {
         ...bestVal,
-        slides: sanitizedSlides
+        slides: sanitizedSlides.length > 0 ? sanitizedSlides : [OFFICIAL_VIDEO_SLIDE]
       };
     } else {
       bestVal = {

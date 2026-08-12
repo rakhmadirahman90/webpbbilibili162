@@ -169,7 +169,7 @@ async function startServer() {
         }
       ],
       settings: { duration: 7 },
-      updated_at: new Date().toISOString()
+      updated_at: '2020-01-01T00:00:00.000Z'
     };
 
     const sseClients: any[] = [];
