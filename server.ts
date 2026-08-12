@@ -314,7 +314,7 @@ async function startServer() {
         saveLocalSettingsStore(store);
 
         // Broadcast realtime update to all SSE clients
-        const payloadStr = JSON.stringify({ key, value });
+        const payloadStr = JSON.stringify({ key, value, table: key, eventType: 'UPDATE', data: value });
         for (const client of sseClients) {
           try {
             client.write(`data: ${payloadStr}\n\n`);
@@ -322,6 +322,39 @@ async function startServer() {
         }
 
         return res.json({ success: true, key, value });
+      } catch (err: any) {
+        return res.status(500).json({ error: err.message });
+      }
+    });
+
+    app.post("/api/realtime-broadcast", (req, res) => {
+      try {
+        const { table, eventType, data, key, value } = req.body;
+        const targetKey = key || table;
+        const targetValue = value || data;
+
+        if (targetKey && targetValue && (targetKey.includes('_config') || targetKey.includes('settings') || targetKey.includes('_content'))) {
+          const store = loadLocalSettingsStore();
+          store[targetKey] = targetValue;
+          saveLocalSettingsStore(store);
+        }
+
+        const payloadStr = JSON.stringify({
+          table: targetKey,
+          key: targetKey,
+          eventType: eventType || 'UPDATE',
+          data: targetValue,
+          value: targetValue,
+          timestamp: Date.now()
+        });
+
+        for (const client of sseClients) {
+          try {
+            client.write(`data: ${payloadStr}\n\n`);
+          } catch (e) {}
+        }
+
+        return res.json({ success: true, key: targetKey, data: targetValue });
       } catch (err: any) {
         return res.status(500).json({ error: err.message });
       }

@@ -59,6 +59,23 @@ export default function StrukturOrganisasiPublic() {
       }
     };
     fetchMembers();
+
+    const handleUpdate = () => fetchMembers();
+    window.addEventListener('app_data_changed', handleUpdate);
+    window.addEventListener('table_updated_organizational_structure', handleUpdate);
+    window.addEventListener('site_setting_updated', handleUpdate);
+
+    const channel = supabase
+      .channel('public_structure_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'organizational_structure' }, () => fetchMembers())
+      .subscribe();
+
+    return () => {
+      window.removeEventListener('app_data_changed', handleUpdate);
+      window.removeEventListener('table_updated_organizational_structure', handleUpdate);
+      window.removeEventListener('site_setting_updated', handleUpdate);
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const groupedFields = useMemo(() => {

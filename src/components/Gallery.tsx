@@ -135,7 +135,7 @@ export default function Gallery() {
     return urls;
   };
 
-  // 1. Ambil data dari Supabase
+  // 1. Ambil data dari Supabase dengan Realtime Subscription
   useEffect(() => {
     async function fetchGallery() {
       setLoading(true);
@@ -154,6 +154,23 @@ export default function Gallery() {
       }
     }
     fetchGallery();
+
+    const handleUpdate = () => fetchGallery();
+    window.addEventListener('app_data_changed', handleUpdate);
+    window.addEventListener('table_updated_gallery', handleUpdate);
+    window.addEventListener('site_setting_updated', handleUpdate);
+
+    const channel = supabase
+      .channel('public_gallery_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'gallery' }, () => fetchGallery())
+      .subscribe();
+
+    return () => {
+      window.removeEventListener('app_data_changed', handleUpdate);
+      window.removeEventListener('table_updated_gallery', handleUpdate);
+      window.removeEventListener('site_setting_updated', handleUpdate);
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   // Tutup modal dengan tombol ESC

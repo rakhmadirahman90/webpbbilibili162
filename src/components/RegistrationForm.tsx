@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../supabase'; 
+import { broadcastDataChange } from '../utils/realtimeHelper';
 import Swal from 'sweetalert2';
 import { 
   Loader2, Send, CheckCircle2, User, Phone, 
@@ -179,19 +180,21 @@ export default function RegistrationForm() {
         throw new Error(msg);
       }
 
+      const regPayload = { 
+        nama: cleanNama, 
+        whatsapp: formData.whatsapp.trim(), 
+        jenis_kelamin: formData.jenis_kelamin,
+        kategori: formData.kategori,
+        kategori_atlet: kategori_atlet,
+        domisili: formData.domisili.toUpperCase().trim(),
+        pengalaman: formData.pengalaman || "-", 
+        foto_url: publicUrl,
+        status: 'Pending'
+      };
+
       const { error: dbError } = await supabase
         .from('pendaftaran')
-        .insert([{ 
-          nama: cleanNama, 
-          whatsapp: formData.whatsapp.trim(), 
-          jenis_kelamin: formData.jenis_kelamin,
-          kategori: formData.kategori,
-          kategori_atlet: kategori_atlet,
-          domisili: formData.domisili.toUpperCase().trim(),
-          pengalaman: formData.pengalaman || "-", 
-          foto_url: publicUrl,
-          status: 'Pending'
-        }]);
+        .insert([regPayload]);
 
       if (dbError) {
         if (
@@ -206,6 +209,8 @@ export default function RegistrationForm() {
         }
         throw dbError;
       }
+
+      broadcastDataChange('pendaftaran', 'INSERT', regPayload);
 
       const rawWa = formData.whatsapp.replace(/\D/g, '');
       const userWa = rawWa.startsWith('0') ? '62' + rawWa.slice(1) : rawWa;

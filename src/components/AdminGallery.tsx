@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { supabase } from "../supabase";
+import { broadcastDataChange } from '../utils/realtimeHelper';
 import Swal from 'sweetalert2';
 import { 
   Plus, Trash2, Image as ImageIcon, Video, 
@@ -265,6 +266,7 @@ export default function AdminGallery({ session }: { session?: any }) {
         }
       }
       handleCloseModal();
+      broadcastDataChange('gallery', editingId ? 'UPDATE' : 'INSERT', payload);
       fetchGallery();
     } catch (err: any) {
       Swal.fire({
@@ -303,6 +305,7 @@ export default function AdminGallery({ session }: { session?: any }) {
           await supabase.storage.from('gallery').remove([`uploads/${fileName}`]);
         }
         showToast("Momen dihapus dari galeri");
+        broadcastDataChange('gallery', 'DELETE', { id });
         fetchGallery();
       } catch (err: any) {
         Swal.fire({

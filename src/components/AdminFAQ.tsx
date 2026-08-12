@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { MessageCircleQuestion, Plus, Edit, Trash2, X } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { supabase } from '../supabase';
+import { broadcastDataChange } from '../utils/realtimeHelper';
+import { saveSiteSetting } from '../utils/siteSettingsHelper';
 
 interface FAQ {
   id: string;
@@ -110,10 +112,14 @@ export default function AdminFAQ() {
         const updated = faqs.filter(i => i.id !== id);
         localStorage.setItem('faq_local_v3', JSON.stringify(updated));
         setFaqs(updated);
+        saveSiteSetting('faq_list', updated);
+        broadcastDataChange('faq', 'DELETE', { id });
       } catch (error: any) {
         const updated = faqs.filter(i => i.id !== id);
         localStorage.setItem('faq_local_v3', JSON.stringify(updated));
         setFaqs(updated);
+        saveSiteSetting('faq_list', updated);
+        broadcastDataChange('faq', 'DELETE', { id });
       }
       Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Terhapus', showConfirmButton: false, timer: 1500 });
     }
@@ -139,6 +145,8 @@ export default function AdminFAQ() {
       updated.sort((a, b) => a.urutan - b.urutan);
       localStorage.setItem('faq_local_v3', JSON.stringify(updated));
       setFaqs(updated);
+      saveSiteSetting('faq_list', updated);
+      broadcastDataChange('faq', editingItem ? 'UPDATE' : 'INSERT', formData);
       
       fetchFaqs(); 
       setShowModal(false);
@@ -153,6 +161,8 @@ export default function AdminFAQ() {
       updated.sort((a, b) => a.urutan - b.urutan);
       localStorage.setItem('faq_local_v3', JSON.stringify(updated));
       setFaqs(updated); 
+      saveSiteSetting('faq_list', updated);
+      broadcastDataChange('faq', editingItem ? 'UPDATE' : 'INSERT', formData);
       setShowModal(false);
       Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Tersimpan', showConfirmButton: false, timer: 1500 });
     }

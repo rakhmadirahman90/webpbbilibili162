@@ -36,12 +36,20 @@ export default function PublicFAQ() {
     };
     fetchFaqs();
 
+    const handleUpdate = () => fetchFaqs();
+    window.addEventListener('app_data_changed', handleUpdate);
+    window.addEventListener('table_updated_faq', handleUpdate);
+    window.addEventListener('site_setting_updated', handleUpdate);
+
     const channel = supabase
       .channel('public_faq_realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'faq' }, () => fetchFaqs())
       .subscribe();
 
     return () => {
+      window.removeEventListener('app_data_changed', handleUpdate);
+      window.removeEventListener('table_updated_faq', handleUpdate);
+      window.removeEventListener('site_setting_updated', handleUpdate);
       supabase.removeChannel(channel);
     };
   }, []);

@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { supabase } from '../supabase';
 import Swal from 'sweetalert2';
 import { triggerPushNotification } from '../utils/firebaseMessaging';
+import { broadcastDataChange } from '../utils/realtimeHelper';
 
 // Set to track processed events and prevent double popup triggers (from both postgres_changes and manual broadcast)
 const processedEvents = new Set<string>();
@@ -22,7 +23,8 @@ export const broadcastKasChange = async (eventType: 'INSERT' | 'UPDATE' | 'DELET
     old: eventType !== 'INSERT' ? payloadData : null,
   };
 
-  // 1. Instantly trigger over HTML5 BroadcastChannel for zero-latency local testing
+  // 1. Instantly trigger over HTML5 BroadcastChannel & Universal Realtime Helper for zero-latency local testing
+  broadcastDataChange('kas_pb', eventType, payloadData);
   if (localBroadcastChannel) {
     console.log('[Realtime-Broadcast] Broadcasting instantly via HTML5 BroadcastChannel...');
     localBroadcastChannel.postMessage(payload);

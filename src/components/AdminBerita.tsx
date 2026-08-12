@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from "../supabase";
+import { broadcastDataChange } from '../utils/realtimeHelper';
 import Swal from 'sweetalert2';
 import { triggerPushNotification } from '../utils/firebaseMessaging';
 import { 
@@ -364,6 +365,7 @@ export default function AdminBerita({ session }: { session?: any }) {
           "berita"
         );
       }
+      broadcastDataChange('berita', editingId ? 'UPDATE' : 'INSERT', dbPayload);
       await fetchNews();
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
@@ -393,6 +395,7 @@ export default function AdminBerita({ session }: { session?: any }) {
       try {
         const { error } = await supabase.from('berita').delete().eq('id', id);
         if (error) throw error;
+        broadcastDataChange('berita', 'DELETE', { id });
         await fetchNews();
         Swal.fire({
           toast: true,

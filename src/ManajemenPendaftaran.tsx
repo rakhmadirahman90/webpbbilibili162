@@ -280,6 +280,11 @@ const totalSeniorPutri = registrants.filter(r =>
 
   useEffect(() => {
     fetchData();
+
+    const handleUpdate = () => fetchData();
+    window.addEventListener('app_data_changed', handleUpdate);
+    window.addEventListener('table_updated_pendaftaran', handleUpdate);
+
     const channel = supabase
       .channel('pendaftaran_changes')
       .on('postgres_changes', { event: '*', table: 'pendaftaran', schema: 'public' }, 
@@ -293,7 +298,11 @@ const totalSeniorPutri = registrants.filter(r =>
           }
         }
       ).subscribe();
-    return () => { supabase.removeChannel(channel); };
+    return () => { 
+      window.removeEventListener('app_data_changed', handleUpdate);
+      window.removeEventListener('table_updated_pendaftaran', handleUpdate);
+      supabase.removeChannel(channel); 
+    };
   }, []);
 
   const filteredData = (registrants || []).filter(item => {

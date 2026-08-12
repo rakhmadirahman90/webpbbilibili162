@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { supabase } from '../supabase';
+import { broadcastDataChange } from '../utils/realtimeHelper';
 import Swal from 'sweetalert2';
 import { 
   Plus, Trash2, Shield, Edit3, X, Upload, Loader2, 
@@ -259,6 +260,7 @@ export default function AdminStructure() {
       }
       
       setFormData({ name: '', role: '', category: 'Seksi', level: 1, photo_url: '' });
+      broadcastDataChange('organizational_structure', editingId ? 'UPDATE' : 'INSERT', formData);
       await fetchMembers();
     } catch (err: any) { 
       setToast({ msg: 'DB ERROR: ' + err.message, type: 'error' }); 

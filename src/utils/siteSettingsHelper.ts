@@ -1,5 +1,6 @@
 import { supabase } from '../supabase';
 import { isVideoUrl } from '../components/Hero';
+import { broadcastDataChange } from './realtimeHelper';
 
 // Realtime Server-Sent Events subscriber for instant site settings sync across all tabs/devices
 if (typeof window !== 'undefined') {
@@ -55,11 +56,12 @@ export async function saveSiteSetting(key: string, value: any, label?: string) {
     payloadWithValue = value;
   }
 
-  // 1. Always back up to LocalStorage immediately
+  // 1. Always back up to LocalStorage immediately and broadcast realtime update across all channels
   try {
     const localData = typeof payloadWithValue === 'string' ? payloadWithValue : JSON.stringify(payloadWithValue);
     localStorage.setItem(`site_setting_${key}`, localData);
     window.dispatchEvent(new CustomEvent('site_setting_updated', { detail: { key, value: payloadWithValue } }));
+    broadcastDataChange(key, 'UPDATE', payloadWithValue);
   } catch (e) {
     console.warn('[siteSettingsHelper] LocalStorage backup write failed:', e);
   }
@@ -123,6 +125,7 @@ export async function deleteSiteSetting(key: string) {
   try {
     localStorage.removeItem(`site_setting_${key}`);
     window.dispatchEvent(new CustomEvent('site_setting_updated', { detail: { key, value: null } }));
+    broadcastDataChange(key, 'DELETE', null);
   } catch (e) {}
 
   try {
@@ -164,6 +167,9 @@ export async function deleteAthleteCompletely(id?: string, name?: string) {
     }
 
     await Promise.allSettled(promises);
+    broadcastDataChange('pendaftaran', 'DELETE', { id, name });
+    broadcastDataChange('rankings', 'DELETE', { id, name });
+    broadcastDataChange('atlet_stats', 'DELETE', { id, name });
   } catch (err) {
     console.warn('[deleteAthleteCompletely] Error during cascade athlete deletion:', err);
   }
