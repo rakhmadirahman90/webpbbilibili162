@@ -70,16 +70,10 @@ function ImagePopup() {
           return item;
         });
 
-        // Ensure official latest Jadwal Latihan popup is active
-        if (!merged.some(m => m && (m.id === OFFICIAL_LATEST_POPUP.id || (m.url_gambar && m.url_gambar.includes('1786212468282'))))) {
+        // Ensure official latest Jadwal Latihan popup is present as default if not yet created in settings
+        const hasSchedulePopup = merged.some(m => m && (m.id === OFFICIAL_LATEST_POPUP.id || (m.url_gambar && m.url_gambar.includes('1786212468282')) || (m.judul && m.judul.includes('JADWAL LATIHAN RESMI'))));
+        if (!hasSchedulePopup) {
           merged.unshift(OFFICIAL_LATEST_POPUP);
-        } else {
-          merged = merged.map(item => {
-            if (item && (item.id === OFFICIAL_LATEST_POPUP.id || (item.url_gambar && item.url_gambar.includes('1786212468282')))) {
-              return { ...item, ...OFFICIAL_LATEST_POPUP, is_active: true, active: true };
-            }
-            return item;
-          });
         }
 
         const activeItems = merged.filter((p: any) => p && (p.is_active === true || p.active === true));
@@ -129,6 +123,8 @@ function ImagePopup() {
     const handleFocus = () => fetchActivePopups();
 
     window.addEventListener('site_setting_updated', handleUpdate);
+    window.addEventListener('app_data_changed', handleFocus);
+    window.addEventListener('table_updated_popup_config', handleFocus);
     window.addEventListener('force_refresh_data', handleFocus);
     window.addEventListener('focus', handleFocus);
     window.addEventListener('online', handleFocus);

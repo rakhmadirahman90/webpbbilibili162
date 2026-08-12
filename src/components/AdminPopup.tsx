@@ -1,11 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import { saveSiteSetting, getSiteSetting, parsePopupList } from '../utils/siteSettingsHelper';
+import { broadcastDataChange } from '../utils/realtimeHelper';
 import { 
   Plus, Trash2, Image as ImageIcon, Save, 
   Loader2, Power, PowerOff, Upload, X, Camera, Edit3, GripVertical, FileText, Download, ExternalLink 
 } from 'lucide-react';
 import Swal from 'sweetalert2';
+
+export const OFFICIAL_LATEST_POPUP = {
+  id: 'popup-1786211047963',
+  judul: 'JADWAL LATIHAN RESMI PB BILIBILI 162 PAREPARE',
+  deskripsi: `🏸📢 JADWAL LATIHAN RESMI PB BILIBILI 162 PAREPARE 📢🏸\n\nAssalamu'alaikum warahmatullahi wabarakatuh.\n\nHalo seluruh keluarga besar PB Bilibili 162 Parepare 👋\n\nBerikut Jadwal Latihan Terbaru yang berlaku saat ini:\n\n🗓️ Rabu\n🕗 08.00 – 12.00 WITA\n📍 GOR SMAN 4 Parepare\n\n🗓️ Jumat\n🕗 08.00 – 12.00 WITA\n📍 GOR SMAN 4 Parepare\n\n🗓️ Ahad\n🕗 08.00 – 12.00 WITA\n📍 GOR A4 Soreang\n\n🎯 Fokus Latihan: 🏸 Teknik Dasar & Lanjutan\n🏸 Pola Permainan & Strategi\n🏸 Fisik, Sparring, Game, dan Evaluasi\n\n💪 Mari hadir tepat waktu, jaga kekompakan, disiplin, dan semangat berlatih demi meraih prestasi bersama.\n\n🌐 Informasi Lengkap & Aplikasi Resmi PB Bilibili 162: https://pbilibili162.99apps.id/\n\n📲 Melalui aplikasi resmi Anda dapat: ✅ Melihat Jadwal Latihan ✅ Pendaftaran Atlet ✅ Informasi Turnamen ✅ Pengumuman Resmi ✅ Informasi Kegiatan PB Bilibili 162\n\n"Disiplin • Kerja Keras • Juara!" 🏆\n\nHormat kami,\n\nH. Wawan\nKetua PB Bilibili 162 Parepare 💙🏸`,
+  url_gambar: 'https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/identitas-atlet/promosi/popup-1786212468282.png',
+  is_active: true,
+  urutan: 0
+};
 
 // --- TAMBAHAN IMPORT UNTUK DRAG & DROP ---
 import {
@@ -91,14 +101,14 @@ function SortablePopupItem({ item, toggleStatus, startEdit, handleDelete }: any)
     <div 
       ref={setNodeRef} 
       style={style} 
-      className={`group relative bg-[#0F172A] rounded-[2.5rem] border-2 overflow-hidden transition-all duration-500 ${item.is_active ? 'border-blue-500/30' : 'border-white/5 opacity-60 grayscale hover:grayscale-0'}`}
+      className={`group relative bg-[#0F172A] rounded-2xl sm:rounded-[2.5rem] border-2 overflow-hidden transition-all duration-500 w-full min-w-0 ${item.is_active ? 'border-blue-500/30' : 'border-white/5 opacity-60 grayscale hover:grayscale-0'}`}
     >
-      <div className="aspect-[4/5] overflow-hidden relative bg-black">
+      <div className="aspect-[4/5] overflow-hidden relative bg-black w-full min-w-0">
         <div 
           {...attributes} {...listeners}
-          className="absolute top-5 right-5 z-40 p-2 bg-black/50 backdrop-blur-md rounded-xl cursor-grab active:cursor-grabbing text-white/50 hover:text-blue-500 transition-colors"
+          className="absolute top-3 right-3 sm:top-5 sm:right-5 z-40 p-2 bg-black/50 backdrop-blur-md rounded-xl cursor-grab active:cursor-grabbing text-white/50 hover:text-blue-500 transition-colors"
         >
-          <GripVertical size={20} />
+          <GripVertical size={18} />
         </div>
 
         <img 
@@ -107,34 +117,38 @@ function SortablePopupItem({ item, toggleStatus, startEdit, handleDelete }: any)
             alt={item.judul} 
         />
         <div className="absolute inset-0 z-20 bg-gradient-to-t from-[#0F172A] via-transparent to-transparent opacity-80" />
-        <div className="absolute top-5 left-5 z-30 flex flex-col gap-2">
-          <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest backdrop-blur-md border ${item.is_active ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-slate-900/50 text-white/50 border-white/10'}`}>
+        <div className="absolute top-3 left-3 sm:top-5 sm:left-5 z-30 flex flex-col gap-1.5 sm:gap-2 max-w-[calc(100%-4rem)]">
+          <span className={`px-2.5 sm:px-4 py-1 sm:py-1.5 rounded-full text-[8px] sm:text-[9px] font-black uppercase tracking-wider backdrop-blur-md border w-fit truncate ${item.is_active ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-slate-900/50 text-white/50 border-white/10'}`}>
             {item.is_active ? `• POSISI ${item.urutan + 1}` : 'NON-AKTIF'}
           </span>
+          {(item.id === OFFICIAL_LATEST_POPUP.id || item.judul?.toUpperCase().includes('JADWAL LATIHAN')) && (
+            <span className="px-2.5 py-1 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-full text-[7px] sm:text-[8px] font-black uppercase tracking-wider backdrop-blur-md flex items-center gap-1 w-fit truncate">
+              🏸 Jadwal Latihan
+            </span>
+          )}
           {item.file_url && (
-            <span className="px-3 py-1 bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-full text-[8px] font-black uppercase tracking-widest backdrop-blur-md flex items-center gap-1">
+            <span className="px-2.5 py-1 bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-full text-[7px] sm:text-[8px] font-black uppercase tracking-wider backdrop-blur-md flex items-center gap-1 w-fit truncate">
               <Download size={10} /> File Attached
             </span>
           )}
         </div>
       </div>
 
-      <div className="p-7 relative z-30 -mt-20">
-        <h4 className="text-white font-black uppercase text-sm mb-2 italic line-clamp-1 tracking-tight">{item.judul || 'TANPA JUDUL'}</h4>
-        {/* PERBAIKAN: Menambah break-all pada grid view */}
-        <div className="text-white/50 text-[11px] font-medium mb-6 line-clamp-2 leading-relaxed min-h-[2rem] break-all">
+      <div className="p-4 sm:p-7 relative z-30 -mt-12 sm:-mt-20 min-w-0 w-full">
+        <h4 className="text-white font-black uppercase text-xs sm:text-sm mb-1.5 sm:mb-2 italic line-clamp-1 tracking-tight break-words max-w-full">{item.judul || 'TANPA JUDUL'}</h4>
+        <div className="text-white/50 text-[10px] sm:text-[11px] font-medium mb-4 sm:mb-6 line-clamp-2 leading-relaxed min-h-[2rem] break-words max-w-full overflow-hidden">
             {item.deskripsi}
         </div>
         
-        <div className="grid grid-cols-4 gap-2">
-          <button onClick={() => toggleStatus(item.id, item.is_active)} className={`col-span-1 py-3 rounded-xl flex items-center justify-center transition-all ${item.is_active ? 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white' : 'bg-white/5 text-white/40 hover:bg-blue-600 hover:text-white'}`}>
-            {item.is_active ? <Power size={16}/> : <PowerOff size={16}/>}
+        <div className="grid grid-cols-4 gap-1.5 sm:gap-2 w-full">
+          <button onClick={() => toggleStatus(item.id, item.is_active)} className={`col-span-1 py-2.5 sm:py-3 rounded-xl flex items-center justify-center transition-all ${item.is_active ? 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white' : 'bg-white/5 text-white/40 hover:bg-blue-600 hover:text-white'}`}>
+            {item.is_active ? <Power size={15}/> : <PowerOff size={15}/>}
           </button>
-          <button onClick={() => startEdit(item)} className="col-span-2 py-3 bg-blue-600 text-white hover:bg-blue-500 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-900/20">
-            <Edit3 size={14} /> EDIT
+          <button onClick={() => startEdit(item)} className="col-span-2 py-2.5 sm:py-3 bg-blue-600 text-white hover:bg-blue-500 rounded-xl font-black text-[8px] sm:text-[9px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow-lg shadow-blue-900/20 truncate">
+            <Edit3 size={13} /> EDIT
           </button>
-          <button onClick={() => handleDelete(item.id)} className="col-span-1 py-3 bg-rose-600/10 text-rose-500 hover:bg-rose-600 hover:text-white rounded-xl transition-all flex items-center justify-center">
-            <Trash2 size={16} />
+          <button onClick={() => handleDelete(item.id)} className="col-span-1 py-2.5 sm:py-3 bg-rose-600/10 text-rose-500 hover:bg-rose-600 hover:text-white rounded-xl transition-all flex items-center justify-center">
+            <Trash2 size={15} />
           </button>
         </div>
       </div>
@@ -196,6 +210,21 @@ export default function AdminPopup() {
         merged = sitePopups;
       }
 
+      // Filter out old legacy Aqiqah popups
+      merged = merged.map(item => {
+        if (!item) return item;
+        if (item.id === 'df3aa22e-5f97-4c05-9f04-700ccba35d08' || (item.judul && item.judul.toUpperCase().includes('AQIQAH')) || (item.url_gambar && item.url_gambar.includes('1784303693873'))) {
+          return { ...item, is_active: false };
+        }
+        return item;
+      });
+
+      // Ensure OFFICIAL_LATEST_POPUP exists in list so admin can manage & toggle it
+      const hasSchedulePopup = merged.some(m => m && (m.id === OFFICIAL_LATEST_POPUP.id || (m.url_gambar && m.url_gambar.includes('1786212468282')) || (m.judul && m.judul.includes('JADWAL LATIHAN RESMI'))));
+      if (!hasSchedulePopup) {
+        merged.unshift(OFFICIAL_LATEST_POPUP);
+      }
+
       setPopups(prev => {
         const currentHash = JSON.stringify(prev);
         const newHash = JSON.stringify(merged);
@@ -249,7 +278,25 @@ export default function AdminPopup() {
   const persistPopups = async (updatedList: PopupConfig[]) => {
     setPopups(updatedList);
     await saveSiteSetting('popup_config', updatedList, 'Konfigurasi Popup Promo');
+    broadcastDataChange('popup_config', 'UPDATE', updatedList);
     window.dispatchEvent(new CustomEvent('site_setting_updated', { detail: { key: 'popup_config', value: updatedList } }));
+  };
+
+  const loadJadwalLatihanTemplate = () => {
+    const existing = popups.find(p => p && (p.id === OFFICIAL_LATEST_POPUP.id || (p.judul && p.judul.includes('JADWAL LATIHAN')) || (p.url_gambar && p.url_gambar.includes('1786212468282'))));
+    if (existing) {
+      startEdit(existing);
+    } else {
+      setEditingId(OFFICIAL_LATEST_POPUP.id);
+      setNewPopup({
+        judul: OFFICIAL_LATEST_POPUP.judul,
+        deskripsi: OFFICIAL_LATEST_POPUP.deskripsi,
+        url_gambar: OFFICIAL_LATEST_POPUP.url_gambar,
+        file_url: ''
+      });
+      setPreviewImage(OFFICIAL_LATEST_POPUP.url_gambar);
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
@@ -456,46 +503,55 @@ export default function AdminPopup() {
   };
 
   return (
-    <div className="min-h-screen lg:h-screen bg-[#070d1a] text-white flex flex-col overflow-y-auto lg:overflow-hidden p-3 sm:p-5 md:p-8 font-sans">
-      <div className="max-w-7xl mx-auto w-full flex flex-col h-full">
-        <header className="mb-4 sm:mb-6 flex justify-between items-center shrink-0">
-          <div>
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-white uppercase italic tracking-tighter">
+    <div className="min-h-screen lg:h-screen bg-[#070d1a] text-white flex flex-col overflow-y-auto lg:overflow-hidden p-2 sm:p-5 md:p-8 font-sans w-full max-w-full overflow-x-hidden">
+      <div className="max-w-7xl mx-auto w-full flex flex-col h-full min-w-0">
+        <header className="mb-4 sm:mb-6 flex flex-col sm:flex-row gap-3 sm:gap-4 justify-between items-start sm:items-center shrink-0 w-full overflow-hidden">
+          <div className="min-w-0 max-w-full">
+              <h1 className="text-lg sm:text-2xl md:text-3xl font-black text-white uppercase italic tracking-tighter truncate sm:whitespace-normal">
               Kelola <span className="text-blue-500">Pop-up Promo</span>
               </h1>
-              <p className="text-white/40 font-bold text-[9px] sm:text-[10px] uppercase tracking-[0.25em] sm:tracking-[0.3em] mt-0.5 sm:mt-1">Atur tampilan & lampiran landing page</p>
+              <p className="text-white/40 font-bold text-[8px] sm:text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.3em] mt-0.5 sm:mt-1 truncate">Atur tampilan & lampiran landing page</p>
           </div>
-          {editingId && (
-              <button onClick={cancelEdit} className="px-3.5 sm:px-5 py-1.5 sm:py-2 bg-rose-600/10 text-rose-500 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest border border-rose-500/20 hover:bg-rose-600 hover:text-white transition-all shrink-0">
-                  Batal Edit
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            <button 
+              type="button"
+              onClick={loadJadwalLatihanTemplate} 
+              className="px-3 sm:px-4 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 rounded-xl text-[8px] sm:text-[10px] font-black uppercase tracking-wider border border-amber-500/30 transition-all flex items-center gap-1.5 shadow-lg shadow-amber-950/20 max-w-full truncate"
+            >
+              <span>🏸</span> Edit Jadwal Latihan Terbaru
+            </button>
+            {editingId && (
+              <button onClick={cancelEdit} className="px-3 sm:px-5 py-2 bg-rose-600/10 text-rose-500 rounded-xl text-[8px] sm:text-[10px] font-black uppercase tracking-wider border border-rose-500/20 hover:bg-rose-600 hover:text-white transition-all shrink-0">
+                Batal Edit
               </button>
-          )}
+            )}
+          </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-8 pr-1 custom-scrollbar pb-10">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-6 sm:space-y-8 pr-0 sm:pr-1 custom-scrollbar pb-10 w-full min-w-0">
           {/* FORM INPUT */}
-          <div className={`bg-[#0F172A] rounded-[2.5rem] border transition-all duration-500 ${editingId ? 'border-blue-500/50 shadow-blue-500/10' : 'border-white/5 shadow-2xl'} overflow-hidden`}>
-        <div className="grid grid-cols-1 lg:grid-cols-5">
-          <div className="lg:col-span-2 bg-black/40 flex items-center justify-center relative overflow-hidden">
-            <div className="w-full h-full min-h-[400px] lg:min-h-full relative flex items-center justify-center">
+          <div className={`bg-[#0F172A] rounded-2xl sm:rounded-[2.5rem] border transition-all duration-500 ${editingId ? 'border-blue-500/50 shadow-blue-500/10' : 'border-white/5 shadow-2xl'} overflow-hidden w-full min-w-0`}>
+        <div className="grid grid-cols-1 lg:grid-cols-5 w-full min-w-0">
+          <div className="lg:col-span-2 bg-black/40 flex items-center justify-center relative overflow-hidden min-h-[260px] sm:min-h-[380px]">
+            <div className="w-full h-full relative flex items-center justify-center p-2">
               {previewImage ? (
-                <div className="w-full h-full absolute inset-0 group">
-                  <img src={previewImage} className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-40 scale-110" alt="" />
-                  <img src={previewImage} className="relative z-10 w-full h-full object-cover" alt="Preview" />
+                <div className="w-full h-full relative min-h-[260px] sm:min-h-[380px] flex items-center justify-center group overflow-hidden rounded-xl">
+                  <img src={previewImage} className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-30 scale-110" alt="" />
+                  <img src={previewImage} className="relative z-10 max-h-[320px] sm:max-h-[460px] w-auto max-w-full object-contain mx-auto rounded-lg shadow-2xl" alt="Preview" />
                   <div className="absolute inset-0 z-20 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
-                    <label className="cursor-pointer p-4 bg-white/10 backdrop-blur-md rounded-full border border-white/20 hover:bg-blue-600 transition-colors">
-                      <Camera className="text-white" size={24} />
+                    <label className="cursor-pointer p-3 sm:p-4 bg-white/10 backdrop-blur-md rounded-full border border-white/20 hover:bg-blue-600 transition-colors">
+                      <Camera className="text-white" size={22} />
                       <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={isUploading} />
                     </label>
                   </div>
-                  <button onClick={() => {setPreviewImage(null); setNewPopup({...newPopup, url_gambar: ''})}} className="absolute top-6 right-6 z-30 p-2 bg-rose-600 text-white rounded-full shadow-2xl hover:scale-110 transition-transform">
-                    <X size={18} />
+                  <button onClick={() => {setPreviewImage(null); setNewPopup({...newPopup, url_gambar: ''})}} className="absolute top-3 right-3 z-30 p-2 bg-rose-600 text-white rounded-full shadow-2xl hover:scale-110 transition-transform">
+                    <X size={16} />
                   </button>
                 </div>
               ) : (
-                <label className="w-full h-full cursor-pointer flex flex-col items-center justify-center group gap-4 p-8">
-                  <div className="p-6 bg-blue-600/10 rounded-full text-blue-500 border border-blue-500/20 group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all duration-500">
-                    <Upload size={32} />
+                <label className="w-full h-full cursor-pointer flex flex-col items-center justify-center group gap-3 p-6 sm:p-8">
+                  <div className="p-4 sm:p-6 bg-blue-600/10 rounded-full text-blue-500 border border-blue-500/20 group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all duration-500">
+                    <Upload size={28} />
                   </div>
                   <div className="text-center">
                     <span className="block text-white font-black text-xs uppercase tracking-widest mb-1">Klik Untuk Unggah Poster</span>
@@ -506,7 +562,7 @@ export default function AdminPopup() {
               )}
             </div>
           </div>
-          <form onSubmit={handleSave} className="lg:col-span-3 p-4 sm:p-6 lg:p-10 space-y-5 sm:space-y-6 flex flex-col justify-center border-t lg:border-t-0 lg:border-l border-white/5">
+          <form onSubmit={handleSave} className="lg:col-span-3 p-3 sm:p-6 lg:p-10 space-y-4 sm:space-y-6 flex flex-col justify-center border-t lg:border-t-0 lg:border-l border-white/5 w-full min-w-0">
             <div className="space-y-4">
               <input required className="w-full bg-black/30 border border-white/10 rounded-2xl p-4 text-white font-bold outline-none focus:border-blue-500 transition-all" placeholder="Judul Promosi" value={newPopup.judul} onChange={e => setNewPopup({...newPopup, judul: e.target.value})} />
               
