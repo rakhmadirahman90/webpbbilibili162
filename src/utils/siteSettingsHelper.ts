@@ -1,32 +1,42 @@
 import { supabase } from '../supabase';
 import { isVideoUrl } from '../components/Hero';
 
-// Realtime Server-Sent Events subscriber for instant site settings sync across all tabs/devices
+/**
+ * Site settings are database-backed. LocalStorage and the Express store are
+ * notifications/cache only; they are never authoritative for hero_config.
+ * This prevents two browsers/devices from rendering different hero content.
+ */
 if (typeof window !== 'undefined') {
   try {
     const es = new EventSource('/api/site-settings/stream');
     es.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        if (data && data.key) {
+        if (!data?.key) return;
+
+        // Never persist server-event payloads as the source of truth. The
+        // canonical value is always read from Supabase, especially hero_config.
+        if (data.key !== 'hero_config') {
           try {
-            localStorage.setItem(`site_setting_${data.key}`, typeof data.value === 'string' ? data.value : JSON.stringify(data.value));
-          } catch (e) {}
-          window.dispatchEvent(new CustomEvent('site_setting_updated', { detail: { key: data.key, value: data.value } }));
+            localStorage.setItem(
+              `site_setting_${data.key}`,
+              typeof data.value === 'string' ? data.value : JSON.stringify(data.value)
+            );
+          } catch {}
         }
-      } catch (e) {}
+
+        window.dispatchEvent(new CustomEvent('site_setting_updated', {
+          detail: { key: data.key, value: data.value }
+        }));
+      } catch {}
     };
-  } catch (e) {}
+  } catch {}
 }
 
 export function parsePopupList(raw: any): any[] {
   if (!raw) return [];
   if (typeof raw === 'string') {
-    try {
-      raw = JSON.parse(raw);
-    } catch {
-      return [];
-    }
+    try { raw = JSON.parse(raw); } catch { return []; }
   }
   if (Array.isArray(raw)) return raw;
   if (raw && Array.isArray(raw.items)) return raw.items;
@@ -40,65 +50,112 @@ export function parsePopupList(raw: any): any[] {
   return [];
 }
 
+function normalizeSettingValue(value: any, now: string) {
+  if (Array.isArray(value)) return { items: value, updated_at: now };
+  if (typeof value === 'object' && value !== null) {
+    return { ...value, updated_at: value.updated_at || now };
+  }
+  return value;
+}
+
 /**
- * Resiliently saves a setting to the 'site_settings' table and server store.
+ * Saves a site setting.
+ *
+ * hero_config intentionally uses Supabase as the single authoritative write
+ * target. We do not report success when only LocalStorage/server filesystem
+ * persistence succeeded, because that creates browser/deployment drift.
  */
 export async function saveSiteSetting(key: string, value: any, label?: string) {
   const now = new Date().toISOString();
-  
-  let payloadWithValue: any;
-  if (Array.isArray(value)) {
-    payloadWithValue = { items: value, updated_at: now };
-  } else if (typeof value === 'object' && value !== null) {
-    payloadWithValue = { ...value, updated_at: value.updated_at || now };
-  } else {
-    payloadWithValue = value;
+  const payloadWithValue = normalizeSettingValue(value, now);
+
+  if (key === 'hero_config') {
+    const updatePayload: Record<string, any> = {
+      value: payloadWithValue,
+      updated_at: now,
+    };
+
+    try {
+      const { data, error: updateErr } = await supabase
+        .from('site_settings')
+        .update(updatePayload)
+        .eq('key', key)
+        .select();
+
+      if (!updateErr && data && data.length > 0) {
+        try {
+          localStorage.setItem(`site_setting_${key}`, JSON.stringify(payloadWithValue));
+          window.dispatchEvent(new CustomEvent('site_setting_updated', {
+            detail: { key, value: payloadWithValue }
+          }));
+        } catch {}
+        return { data, error: null };
+      }
+    } catch (error) {
+      console.warn('[siteSettingsHelper] Hero update failed:', error);
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('site_settings')
+        .upsert({ key, ...updatePayload }, { onConflict: 'key' })
+        .select();
+
+      if (!error && data && data.length > 0) {
+        try {
+          localStorage.setItem(`site_setting_${key}`, JSON.stringify(payloadWithValue));
+          window.dispatchEvent(new CustomEvent('site_setting_updated', {
+            detail: { key, value: payloadWithValue }
+          }));
+        } catch {}
+        return { data, error: null };
+      }
+
+      return { data: null, error: error || new Error('Hero configuration could not be persisted to Supabase.') };
+    } catch (error: any) {
+      return { data: null, error };
+    }
   }
 
-  // 1. Always back up to LocalStorage immediately
+  // Existing resilient path for non-hero settings.
   try {
-    const localData = typeof payloadWithValue === 'string' ? payloadWithValue : JSON.stringify(payloadWithValue);
+    const localData = typeof payloadWithValue === 'string'
+      ? payloadWithValue
+      : JSON.stringify(payloadWithValue);
     localStorage.setItem(`site_setting_${key}`, localData);
-    window.dispatchEvent(new CustomEvent('site_setting_updated', { detail: { key, value: payloadWithValue } }));
+    window.dispatchEvent(new CustomEvent('site_setting_updated', {
+      detail: { key, value: payloadWithValue }
+    }));
   } catch (e) {
     console.warn('[siteSettingsHelper] LocalStorage backup write failed:', e);
   }
 
-  // 2. Post to Express Server Store (/api/site-settings) for persistent server-side cross-deployment sync
   try {
     await fetch('/api/site-settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key, value: payloadWithValue, label })
+      body: JSON.stringify({ key, value: payloadWithValue, label }),
     });
   } catch (e) {
     console.warn('[siteSettingsHelper] Server API write warning:', e);
   }
 
-  // 3. Try UPDATE on Supabase (only use columns that exist in DB schema: value, updated_at)
   const updatePayload: Record<string, any> = { value: payloadWithValue, updated_at: now };
-
   try {
     const { data, error: updateErr } = await supabase
       .from('site_settings')
       .update(updatePayload)
       .eq('key', key)
       .select();
-
-    if (!updateErr && data && data.length > 0) {
-      return { data, error: null };
-    }
+    if (!updateErr && data && data.length > 0) return { data, error: null };
   } catch (e) {
-    console.warn("[siteSettingsHelper] Update attempt warning:", e);
+    console.warn('[siteSettingsHelper] Update attempt warning:', e);
   }
-
-  // 4. Fallback to UPSERT on Supabase (only use columns that exist in DB schema: key, value, updated_at)
-  const upsertPayload: Record<string, any> = { key, value: payloadWithValue, updated_at: now };
 
   try {
     const { data: upsertData, error: upsertErr } = await supabase
       .from('site_settings')
-      .upsert(upsertPayload, { onConflict: 'key' })
+      .upsert({ key, ...updatePayload }, { onConflict: 'key' })
       .select();
 
     if (!upsertErr && upsertData && upsertData.length > 0) {
@@ -106,39 +163,49 @@ export async function saveSiteSetting(key: string, value: any, label?: string) {
     }
 
     if (upsertErr) {
-      console.warn("[siteSettingsHelper] Supabase write notice (saved locally & server store):", upsertErr.message);
+      console.warn('[siteSettingsHelper] Supabase write notice:', upsertErr.message);
     }
-  } catch (err: any) {
-    console.warn("[siteSettingsHelper] Exception during Supabase save:", err);
+  } catch (err) {
+    console.warn('[siteSettingsHelper] Exception during Supabase save:', err);
   }
 
-  // Always return success as settings are persisted in LocalStorage and Express server store
   return { data: [{ key, value: payloadWithValue }], error: null };
 }
 
-/**
- * Safely deletes a setting from site_settings with RLS fallback.
- */
 export async function deleteSiteSetting(key: string) {
+  if (key === 'hero_config') {
+    try {
+      const { error } = await supabase
+        .from('site_settings')
+        .delete()
+        .eq('key', key);
+      if (!error) {
+        try { localStorage.removeItem(`site_setting_${key}`); } catch {}
+        window.dispatchEvent(new CustomEvent('site_setting_updated', {
+          detail: { key, value: null }
+        }));
+      }
+      return { error };
+    } catch (error) {
+      return { error };
+    }
+  }
+
   try {
     localStorage.removeItem(`site_setting_${key}`);
     window.dispatchEvent(new CustomEvent('site_setting_updated', { detail: { key, value: null } }));
-  } catch (e) {}
+  } catch {}
 
   try {
-    await fetch(`/api/site-settings`, {
+    await fetch('/api/site-settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key, value: null })
+      body: JSON.stringify({ key, value: null }),
     });
-  } catch (e) {}
+  } catch {}
 
   try {
-    const { error } = await supabase
-      .from('site_settings')
-      .delete()
-      .eq('key', key);
-
+    const { error } = await supabase.from('site_settings').delete().eq('key', key);
     return { error };
   } catch (err) {
     return { error: null };
@@ -146,35 +213,57 @@ export async function deleteSiteSetting(key: string) {
 }
 
 /**
- * Safely reads a setting checking Server API, Supabase, and LocalStorage.
+ * Reads a site setting. hero_config is deliberately read only from Supabase
+ * so every browser/device receives the same canonical configuration.
  */
 export async function getSiteSetting(key: string) {
+  if (key === 'hero_config') {
+    try {
+      const { data, error } = await supabase
+        .from('site_settings')
+        .select('value, updated_at')
+        .eq('key', key)
+        .maybeSingle();
+
+      if (!error && data?.value !== undefined && data?.value !== null) {
+        let value: any = data.value;
+        if (typeof value === 'string') {
+          try { value = JSON.parse(value); } catch {}
+        }
+        if (value && typeof value === 'object' && data.updated_at && !value.updated_at) {
+          value = { ...value, updated_at: data.updated_at };
+        }
+        return value;
+      }
+
+      if (error) console.warn('[siteSettingsHelper] Hero read error:', error.message);
+    } catch (error) {
+      console.warn('[siteSettingsHelper] Hero read exception:', error);
+    }
+
+    // Do not return browser-local or deployment-local hero data. A stale
+    // fallback is exactly what caused different browsers to show different slides.
+    return null;
+  }
+
   let serverVal: any = null;
   let localVal: any = null;
 
   try {
     const rawLocal = localStorage.getItem(`site_setting_${key}`);
     if (rawLocal !== null) {
-      try {
-        localVal = typeof rawLocal === 'string' ? JSON.parse(rawLocal) : rawLocal;
-      } catch {
-        localVal = rawLocal;
-      }
+      try { localVal = JSON.parse(rawLocal); } catch { localVal = rawLocal; }
     }
-  } catch (e) {}
+  } catch {}
 
-  // 1. Try Express Server Store (/api/site-settings)
   try {
-    const apiRes = await fetch(`/api/site-settings?key=${key}`);
+    const apiRes = await fetch(`/api/site-settings?key=${key}`, { cache: 'no-store' });
     if (apiRes.ok) {
       const apiData = await apiRes.json();
-      if (apiData && apiData.value !== undefined && apiData.value !== null) {
-        serverVal = apiData.value;
-      }
+      if (apiData?.value !== undefined && apiData?.value !== null) serverVal = apiData.value;
     }
-  } catch (e) {}
+  } catch {}
 
-  // 2. Try Supabase
   let dbVal: any = null;
   try {
     const { data, error } = await supabase
@@ -182,19 +271,19 @@ export async function getSiteSetting(key: string) {
       .select('value')
       .eq('key', key)
       .maybeSingle();
-
-    if (!error && data?.value !== undefined && data.value !== null) {
+    if (!error && data?.value !== undefined && data?.value !== null) {
       dbVal = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
     }
-  } catch (err) {}
+  } catch {}
 
-  // Smart timestamp-based prioritization (serverVal, dbVal, localVal)
   const getTimestamp = (val: any) => {
     if (!val) return 0;
-    const parsed = typeof val === 'string' ? (() => { try { return JSON.parse(val); } catch { return {}; } })() : val;
-    if (parsed && typeof parsed === 'object' && parsed.updated_at) {
+    const parsed = typeof val === 'string'
+      ? (() => { try { return JSON.parse(val); } catch { return {}; } })()
+      : val;
+    if (parsed?.updated_at) {
       const t = new Date(parsed.updated_at).getTime();
-      if (!isNaN(t)) return t;
+      return Number.isNaN(t) ? 0 : t;
     }
     return 0;
   };
@@ -204,79 +293,27 @@ export async function getSiteSetting(key: string) {
   const localTs = getTimestamp(localVal);
 
   let bestVal: any = null;
-
   if (serverTs > 0 || dbTs > 0 || localTs > 0) {
-    if (serverTs >= dbTs && serverTs >= localTs) {
-      bestVal = serverVal;
-    } else if (dbTs >= serverTs && dbTs >= localTs) {
-      bestVal = dbVal;
-    } else {
-      bestVal = localVal;
-    }
+    if (serverTs >= dbTs && serverTs >= localTs) bestVal = serverVal;
+    else if (dbTs >= serverTs && dbTs >= localTs) bestVal = dbVal;
+    else bestVal = localVal;
   } else {
     bestVal = serverVal || dbVal || localVal;
   }
 
-  if (key === 'hero_config') {
-    const OFFICIAL_VIDEO_SLIDE = {
-      id: 1786206064378,
-      title: 'PB Bilibili Video Hero',
-      subtitle: '',
-      image: 'https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/assets/hero-sliders/hero-video-1786206060056.webm',
-      videoUrl: 'https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/assets/hero-sliders/hero-video-1786206060056.webm',
-      poster: 'https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/assets/hero-sliders/hero-poster-1786206060056.webp',
-      type: 'video',
-      active: true
-    };
-
-    if (bestVal && typeof bestVal === 'object') {
-      let slides = bestVal.slides || (Array.isArray(bestVal) ? bestVal : []);
-      const hasOfficialVideo = slides.some((s: any) => 
-        s && (s.id === 1786206064378 || (s.videoUrl && s.videoUrl.includes('hero-video-1786206060056.webm')))
-      );
-
-      if (!hasOfficialVideo) {
-        slides = [OFFICIAL_VIDEO_SLIDE, ...slides];
-      }
-
-      const videoSlide = slides.find((s: any) => 
-        s && (s.id === 1786206064378 || (s.videoUrl && s.videoUrl.includes('hero-video-1786206060056.webm')) || s.type === 'video')
-      ) || OFFICIAL_VIDEO_SLIDE;
-
-      const sanitizedSlides = slides.map((s: any) => {
-        if (!s) return s;
-        if (s.id === videoSlide.id || s === videoSlide || s.type === 'video' || (s.videoUrl && s.videoUrl.includes('hero-video'))) {
-          return { ...s, active: true };
-        }
-        return { ...s, active: false };
-      });
-
-      bestVal = {
-        ...bestVal,
-        slides: sanitizedSlides
-      };
-    } else {
-      bestVal = {
-        slides: [OFFICIAL_VIDEO_SLIDE],
-        settings: { duration: 7 },
-        updated_at: new Date().toISOString()
-      };
-    }
-  }
-
   if (bestVal) {
     try {
-      localStorage.setItem(`site_setting_${key}`, typeof bestVal === 'string' ? bestVal : JSON.stringify(bestVal));
-    } catch (e) {}
+      localStorage.setItem(
+        `site_setting_${key}`,
+        typeof bestVal === 'string' ? bestVal : JSON.stringify(bestVal)
+      );
+    } catch {}
     return bestVal;
   }
 
   return null;
 }
 
-/**
- * Clears all local caches and forces a re-fetch of all site configurations
- */
 export async function forceRefreshSiteSettings() {
   if (typeof window === 'undefined') return;
 
@@ -296,13 +333,13 @@ export async function forceRefreshSiteSettings() {
 
   try {
     await fetch('/api/site-settings?refresh=true', { cache: 'no-store' });
-  } catch (e) {}
+  } catch {}
 
-  window.dispatchEvent(new CustomEvent('site_setting_updated', { detail: { key: 'hero_config', force: true } }));
-  window.dispatchEvent(new CustomEvent('site_setting_updated', { detail: { key: 'popup_config', force: true } }));
+  window.dispatchEvent(new CustomEvent('site_setting_updated', {
+    detail: { key: 'hero_config', force: true }
+  }));
+  window.dispatchEvent(new CustomEvent('site_setting_updated', {
+    detail: { key: 'popup_config', force: true }
+  }));
   window.dispatchEvent(new CustomEvent('force_refresh_data'));
-
-  setTimeout(() => {
-    window.location.reload();
-  }, 400);
 }
