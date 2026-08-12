@@ -23,7 +23,13 @@ import {
   Clock,
   Calendar,
   Download,
-  Activity
+  Activity,
+  CheckCircle2,
+  XCircle,
+  MessageSquare,
+  Send,
+  ShieldCheck,
+  Check
 } from 'lucide-react';
 
 import * as XLSX from 'xlsx';
@@ -36,18 +42,29 @@ interface Registrant {
   created_at: string;
   nama: string;
   whatsapp: string;
+  email?: string;
   kategori: string;
   domisili: string;
   pengalaman: string;
   foto_url: string;
   jenis_kelamin: string;
-  kategori_atlet: string; // NEW: Kolom kategori atlet sesuai DB
+  kategori_atlet: string; // Kolom kategori atlet sesuai DB
+  status?: string; // 'Pending' | 'Diterima' | 'Ditolak'
 }
+
+const Toast = Swal.mixin({
+  toast: true,
+  position: 'top-end',
+  showConfirmButton: false,
+  timer: 3000,
+  timerProgressBar: true
+});
 
 export default function ManajemenPendaftaran() {
   const [registrants, setRegistrants] = useState<Registrant[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'semua' | 'pending' | 'diterima' | 'ditolak'>('semua');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Registrant | null>(null);
@@ -58,7 +75,8 @@ export default function ManajemenPendaftaran() {
     domisili: '',
     jenis_kelamin: 'Putra',
     foto_url: '',
-    kategori_atlet: 'Muda' // Default value
+    kategori_atlet: 'Muda',
+    status: 'Pending'
   });
   const [uploading, setUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -75,6 +93,11 @@ export default function ManajemenPendaftaran() {
 
 // --- MENGHITUNG JUMLAH PENDAFTAR (STATISTIK LENGKAP) ---
 const totalPendaftar = registrants.length;
+
+// Filter Status
+const totalPending = registrants.filter(r => !r.status || r.status === 'Pending' || r.status === 'Menunggu').length;
+const totalDiterima = registrants.filter(r => r.status === 'Diterima' || r.status === 'Verified').length;
+const totalDitolak = registrants.filter(r => r.status === 'Ditolak' || r.status === 'Rejected').length;
 
 // Filter Jenis Kelamin Umum (Dipaksa Uppercase untuk keamanan)
 const totalPutra = registrants.filter(r => (r.jenis_kelamin || '').toUpperCase().trim() === 'PUTRA').length;
@@ -260,15 +283,185 @@ const totalSeniorPutri = registrants.filter(r =>
     return () => { supabase.removeChannel(channel); };
   }, []);
 
-  const filteredData = (registrants || []).filter(item => 
-    (item?.nama || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (item?.domisili || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (item?.kategori || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (item?.kategori_atlet || '').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredData = (registrants || []).filter(item => {
+    const matchesSearch = 
+      (item?.nama || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (item?.domisili || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (item?.kategori || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (item?.kategori_atlet || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (item?.whatsapp || '').toLowerCase().includes(searchTerm.toLowerCase());
+
+    const itemStatus = (item?.status || 'Pending').toLowerCase();
+    
+    if (statusFilter === 'pending') {
+      return matchesSearch && (itemStatus === 'pending' || itemStatus === 'menunggu');
+    }
+    if (statusFilter === 'diterima') {
+      return matchesSearch && (itemStatus === 'diterima' || itemStatus === 'verified');
+    }
+    if (statusFilter === 'ditolak') {
+      return matchesSearch && (itemStatus === 'ditolak' || itemStatus === 'rejected');
+    }
+
+    return matchesSearch;
+  });
 
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
   const currentItems = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  // --- VERIFIKASI & WHATSAPP FUNCTIONS ---
+  const handleVerifyStatus = async (item: Registrant, newStatus: 'Diterima' | 'Ditolak') => {
+    let catatan = '';
+
+    if (newStatus === 'Ditolak') {
+      const { value: reason, isConfirmed } = await Swal.fire({
+        title: '<span class="text-rose-500 font-black uppercase">Tolak Pendaftaran Atlet</span>',
+        text: `Masukkan alasan penolakan untuk atlet ${item.nama}:`,
+        input: 'textarea',
+        inputPlaceholder: 'Contoh: Persyaratan berkas belum lengkap / Kuota kategori penuh...',
+        showCancelButton: true,
+        confirmButtonText: 'Tolak & Simpan Status',
+        cancelButtonText: 'Batal',
+        confirmButtonColor: '#EF4444',
+        cancelButtonColor: '#64748B',
+        inputValidator: (value) => {
+          if (!value) {
+            return 'Alasan penolakan wajib diisi untuk pemberitahuan ke atlet!';
+          }
+        }
+      });
+
+      if (!isConfirmed) return;
+      catatan = reason || 'Persyaratan tidak memenuhi kriteria.';
+    } else {
+      const confirm = await Swal.fire({
+        title: '<span class="text-emerald-500 font-black uppercase">Verifikasi & Terima Atlet</span>',
+        html: `Apakah Anda yakin ingin menyetujui pendaftaran atlet <b>${item.nama}</b> sebagai anggota/atlet resmi PB BILIBILI 162?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Ya, Terima & Verifikasi',
+        cancelButtonText: 'Batal',
+        confirmButtonColor: '#10B981',
+        cancelButtonColor: '#64748B'
+      });
+
+      if (!confirm.isConfirmed) return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('pendaftaran')
+        .update({ status: newStatus })
+        .eq('id', item.id);
+
+      if (error) throw error;
+
+      setRegistrants(prev => prev.map(r => r.id === item.id ? { ...r, status: newStatus } : r));
+
+      Toast.fire({
+        icon: newStatus === 'Diterima' ? 'success' : 'info',
+        title: `Pendaftaran ${item.nama} diubah ke status: ${newStatus.toUpperCase()}`
+      });
+
+      sendWaStatusNotification(item, newStatus, catatan);
+    } catch (err: any) {
+      Swal.fire('Gagal Update Status', err.message, 'error');
+    }
+  };
+
+  const sendWaStatusNotification = (item: Registrant, status: 'Diterima' | 'Ditolak', reason: string = '') => {
+    const rawWa = (item.whatsapp || '').replace(/\D/g, '');
+    const phone = rawWa.startsWith('0') ? '62' + rawWa.slice(1) : rawWa;
+
+    if (!phone) {
+      Swal.fire('No WhatsApp Tidak Valid', 'Nomor WhatsApp atlet ini tidak lengkap.', 'warning');
+      return;
+    }
+
+    let message = '';
+    if (status === 'Diterima') {
+      message = 
+        `*PEMBERITAHUAN VERIFIKASI PENDAFTARAN ATLET*\n` +
+        `*PB BILIBILI 162 PAREPARE*\n\n` +
+        `Halo *${item.nama.toUpperCase()}*,\n` +
+        `Selamat! Pendaftaran Anda sebagai atlet/anggota baru di *PB BILIBILI 162* telah *DITERIMA & DIVERIFIKASI RESMI* oleh Admin.\n\n` +
+        `📋 *INFORMASI ATLET VERIFIED:*\n` +
+        `• Nama Atlet: ${item.nama.toUpperCase()}\n` +
+        `• Status Verifikasi: ✅ *DITERIMA (AKTIF)*\n` +
+        `• Kelompok Usia: ${item.kategori || '-'}\n` +
+        `• Kategori Atlet: ${item.kategori_atlet || 'MUDA'}\n` +
+        `• Domisili: ${item.domisili || '-'}\n\n` +
+        `🌐 *AKSES LOGIN SISTEM:*\n` +
+        `Silakan login untuk mengecek profil atlet Anda di:\n` +
+        `https://pbilibili162.99apps.id/login\n\n` +
+        `Selamat bergabung dan salam olahraga!\n` +
+        `*Pengurus PB BILIBILI 162*`;
+    } else {
+      message = 
+        `*PEMBERITAHUAN STATUS PENDAFTARAN ATLET*\n` +
+        `*PB BILIBILI 162 PAREPARE*\n\n` +
+        `Halo *${item.nama.toUpperCase()}*,\n` +
+        `Mohon maaf, berdasarkan hasil verifikasi berkas, pendaftaran Anda di *PB BILIBILI 162* saat ini *BELUM DAPAT DITERIMA / DITOLAK*.\n\n` +
+        `📋 *DETAIL PENDAFTARAN:*\n` +
+        `• Nama: ${item.nama.toUpperCase()}\n` +
+        `• Status: ❌ *DITOLAK*\n` +
+        `• Catatan/Alasan: ${reason || 'Persyaratan pendaftaran belum terpenuhi.'}\n\n` +
+        `Apabila ada pertanyaan lebih lanjut, silakan hubungi Pengurus PB BILIBILI 162. Terima kasih.\n\n` +
+        `*Pengurus PB BILIBILI 162*`;
+    }
+
+    const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+
+    Swal.fire({
+      title: 'Kirim Notifikasi WA?',
+      html: `Ingin membuka WhatsApp untuk mengirim konfirmasi status <b>${status.toUpperCase()}</b> ke <b>${item.nama}</b> (${phone})?`,
+      icon: 'info',
+      showCancelButton: true,
+      confirmButtonText: '📱 Kirim Ke WhatsApp',
+      cancelButtonText: 'Nanti Saja',
+      confirmButtonColor: '#10B981',
+      cancelButtonColor: '#64748B'
+    }).then((res) => {
+      if (res.isConfirmed) {
+        window.open(waUrl, '_blank');
+      }
+    });
+  };
+
+  const handleSendAccountHistory = (item: Registrant) => {
+    const rawWa = (item.whatsapp || '').replace(/\D/g, '');
+    const phone = rawWa.startsWith('0') ? '62' + rawWa.slice(1) : rawWa;
+
+    if (!phone) {
+      Swal.fire('No WhatsApp Tidak Ada', 'Nomor WhatsApp atlet ini tidak tersedia.', 'warning');
+      return;
+    }
+
+    const statusLabel = (!item.status || item.status === 'Pending' || item.status === 'Menunggu') 
+      ? '⏳ MENUNGGU VERIFIKASI' 
+      : item.status === 'Diterima' ? '✅ DITERIMA (VERIFIED)' : '❌ DITOLAK';
+
+    const message = 
+      `*RINCIAN DOKUMEN & HISTORY PENDAFTARAN ATLET*\n` +
+      `*PB BILIBILI 162 PAREPARE*\n\n` +
+      `Halo *${item.nama.toUpperCase()}*,\n` +
+      `Berikut rincian dokumen pendaftaran dan status histori akun Anda di sistem PB BILIBILI 162:\n\n` +
+      `📋 *DETAIL PROFILE ATLET:*\n` +
+      `• *ID Atlet:* ${item.id}\n` +
+      `• *Nama Lengkap:* ${item.nama.toUpperCase()}\n` +
+      `• *No. WhatsApp:* ${item.whatsapp}\n` +
+      `• *Jenis Kelamin:* ${item.jenis_kelamin || '-'}\n` +
+      `• *Kategori Umur:* ${item.kategori || '-'}\n` +
+      `• *Kategori Atlet:* ${item.kategori_atlet || 'MUDA'}\n` +
+      `• *Domisili:* ${item.domisili || '-'}\n` +
+      `• *Status Verifikasi:* ${statusLabel}\n` +
+      `• *Tgl Registrasi:* ${item.created_at ? new Date(item.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}\n\n` +
+      `🌐 *LINK LOGIN SISTEM:*\nhttps://pbilibili162.99apps.id/login\n\n` +
+      `⚠️ *PENTING:* Gunakan Email & Password yang Anda masukkan saat pendaftaran untuk login. Apabila lupa password, silakan minta reset ke Admin PB Bilibili 162.`;
+
+    const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+    window.open(waUrl, '_blank');
+  };
 
   const deleteOldFile = async (url: string) => {
     if (!url || !url.includes('identitas-atlet')) return;
@@ -509,14 +702,46 @@ const totalSeniorPutri = registrants.filter(r =>
           </div>
         </section>
 
-        {/* SEARCH BAR */}
-        <section className="mb-6">
+        {/* SEARCH BAR & STATUS FILTER */}
+        <section className="mb-6 space-y-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => { setStatusFilter('semua'); setCurrentPage(1); }}
+              className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${statusFilter === 'semua' ? 'bg-slate-900 text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
+            >
+              Semua Pendaftar <span className="px-2 py-0.5 rounded-full text-[9px] bg-slate-200 text-slate-800 ml-1">{totalPendaftar}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => { setStatusFilter('pending'); setCurrentPage(1); }}
+              className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${statusFilter === 'pending' ? 'bg-amber-500 text-white shadow-md' : 'bg-white text-amber-600 hover:bg-amber-50 border border-amber-200'}`}
+            >
+              <Clock size={12} /> Menunggu Verifikasi <span className={`px-2 py-0.5 rounded-full text-[9px] ${statusFilter === 'pending' ? 'bg-amber-600 text-white' : 'bg-amber-100 text-amber-800'} ml-1`}>{totalPending}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => { setStatusFilter('diterima'); setCurrentPage(1); }}
+              className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${statusFilter === 'diterima' ? 'bg-emerald-600 text-white shadow-md' : 'bg-white text-emerald-600 hover:bg-emerald-50 border border-emerald-200'}`}
+            >
+              <CheckCircle2 size={12} /> Diterima <span className={`px-2 py-0.5 rounded-full text-[9px] ${statusFilter === 'diterima' ? 'bg-emerald-700 text-white' : 'bg-emerald-100 text-emerald-800'} ml-1`}>{totalDiterima}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => { setStatusFilter('ditolak'); setCurrentPage(1); }}
+              className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${statusFilter === 'ditolak' ? 'bg-rose-600 text-white shadow-md' : 'bg-white text-rose-600 hover:bg-rose-50 border border-rose-200'}`}
+            >
+              <XCircle size={12} /> Ditolak <span className={`px-2 py-0.5 rounded-full text-[9px] ${statusFilter === 'ditolak' ? 'bg-rose-700 text-white' : 'bg-rose-100 text-rose-800'} ml-1`}>{totalDitolak}</span>
+            </button>
+          </div>
+
           <div className="relative rounded-2xl bg-white border border-slate-200 shadow-sm transition-all focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-50">
             <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <input 
               type="text"
-              placeholder="Cari berdasarkan nama, kategori umur, atau kota domisili..."
+              placeholder="Cari berdasarkan nama, kategori umur, nomor WA, atau kota domisili..."
               className="w-full pl-12 pr-6 py-3 bg-transparent outline-none font-bold text-sm placeholder:text-slate-300"
+              value={searchTerm}
               onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
             />
           </div>
@@ -531,13 +756,13 @@ const totalSeniorPutri = registrants.filter(r =>
                 <tr className="bg-slate-900 text-white whitespace-nowrap sticky top-0 z-10">
                   <th className="px-3 py-4 font-bold uppercase text-[9px] tracking-widest text-center w-10">No</th>
                   <th className="px-3 py-4 font-bold uppercase text-[9px] tracking-widest">Profil Atlet</th>
+                  <th className="px-2 py-4 font-bold uppercase text-[9px] tracking-widest">Status Verifikasi</th>
                   <th className="px-2 py-4 font-bold uppercase text-[9px] tracking-widest">Gender</th>
                   <th className="px-2 py-4 font-bold uppercase text-[9px] tracking-widest">Kategori Umur</th>
                   <th className="px-2 py-4 font-bold uppercase text-[9px] tracking-widest">Kategori Atlet</th>
-                  <th className="px-2 py-4 font-bold uppercase text-[9px] tracking-widest">Kontak</th>
+                  <th className="px-2 py-4 font-bold uppercase text-[9px] tracking-widest">Kontak WA</th>
                   <th className="px-2 py-4 font-bold uppercase text-[9px] tracking-widest">Lokasi</th>
                   <th className="px-2 py-4 font-bold uppercase text-[9px] tracking-widest">Tgl Registrasi</th>
-                  <th className="px-2 py-4 font-bold uppercase text-[9px] tracking-widest">Waktu Registrasi</th>
                   <th className="px-4 py-4 font-bold uppercase text-[9px] tracking-widest text-right">Aksi</th>
                 </tr>
               </thead>
@@ -572,6 +797,25 @@ const totalSeniorPutri = registrants.filter(r =>
                           <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">UID: {item.id.split('-')[0]}</span>
                         </div>
                       </div>
+                    </td>
+
+                    {/* STATUS VERIFIKASI */}
+                    <td className="px-2 py-3 whitespace-nowrap">
+                      {(!item.status || item.status === 'Pending' || item.status === 'Menunggu') && (
+                        <span className="px-2.5 py-1 rounded-md text-[8px] font-black uppercase tracking-widest bg-amber-100 text-amber-700 border border-amber-300 animate-pulse inline-flex items-center gap-1">
+                          <Clock size={10} /> MENUNGGU
+                        </span>
+                      )}
+                      {item.status === 'Diterima' && (
+                        <span className="px-2.5 py-1 rounded-md text-[8px] font-black uppercase tracking-widest bg-emerald-100 text-emerald-700 border border-emerald-300 inline-flex items-center gap-1">
+                          <CheckCircle2 size={10} /> DITERIMA
+                        </span>
+                      )}
+                      {item.status === 'Ditolak' && (
+                        <span className="px-2.5 py-1 rounded-md text-[8px] font-black uppercase tracking-widest bg-rose-100 text-rose-700 border border-rose-300 inline-flex items-center gap-1">
+                          <XCircle size={10} /> DITOLAK
+                        </span>
+                      )}
                     </td>
 
                     <td className="px-2 py-3 whitespace-nowrap">
@@ -611,19 +855,42 @@ const totalSeniorPutri = registrants.filter(r =>
                       </div>
                     </td>
 
-                    <td className="px-2 py-3 whitespace-nowrap">
-                      <div className="inline-flex items-center gap-1.5 text-slate-400 font-bold text-[9px] uppercase tracking-wider">
-                        <Clock size={10} /> {new Date(item.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB
-                      </div>
-                    </td>
-
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <div className="flex justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => { setEditingItem(item); setIsEditModalOpen(true); }} className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all shadow-sm">
-                          <Edit3 size={14} />
+                    <td className="px-3 py-3 whitespace-nowrap">
+                      <div className="flex justify-end items-center gap-1">
+                        <button 
+                          onClick={() => handleVerifyStatus(item, 'Diterima')} 
+                          className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-600 hover:text-white transition-all shadow-sm border border-emerald-200"
+                          title="Verifikasi & Terima Atlet"
+                        >
+                          <CheckCircle2 size={13} />
                         </button>
-                        <button onClick={() => handleDelete(item.id, item.nama, item.foto_url)} className="p-2 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-600 hover:text-white transition-all shadow-sm">
-                          <Trash2 size={14} />
+                        <button 
+                          onClick={() => handleVerifyStatus(item, 'Ditolak')} 
+                          className="p-1.5 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-600 hover:text-white transition-all shadow-sm border border-rose-200"
+                          title="Tolak Pendaftaran"
+                        >
+                          <XCircle size={13} />
+                        </button>
+                        <button 
+                          onClick={() => handleSendAccountHistory(item)} 
+                          className="p-1.5 bg-green-50 text-green-600 rounded-lg hover:bg-green-600 hover:text-white transition-all shadow-sm border border-green-200"
+                          title="Kirim Rincian Akun Ke WA Atlet"
+                        >
+                          <MessageSquare size={13} />
+                        </button>
+                        <button 
+                          onClick={() => { setEditingItem(item); setIsEditModalOpen(true); }} 
+                          className="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+                          title="Edit Data"
+                        >
+                          <Edit3 size={13} />
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(item.id, item.nama, item.foto_url)} 
+                          className="p-1.5 bg-slate-100 text-slate-600 rounded-lg hover:bg-rose-600 hover:text-white transition-all shadow-sm"
+                          title="Hapus Data"
+                        >
+                          <Trash2 size={13} />
                         </button>
                       </div>
                     </td>
@@ -651,11 +918,23 @@ const totalSeniorPutri = registrants.filter(r =>
                       #{String((currentPage - 1) * itemsPerPage + index + 1).padStart(2, '0')}
                     </span>
                     <div className="flex items-center gap-1.5">
+                      {(!item.status || item.status === 'Pending' || item.status === 'Menunggu') && (
+                        <span className="px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-amber-100 text-amber-700 border border-amber-300 animate-pulse inline-flex items-center gap-1">
+                          <Clock size={9} /> MENUNGGU
+                        </span>
+                      )}
+                      {item.status === 'Diterima' && (
+                        <span className="px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-emerald-100 text-emerald-700 border border-emerald-300 inline-flex items-center gap-1">
+                          <CheckCircle2 size={9} /> DITERIMA
+                        </span>
+                      )}
+                      {item.status === 'Ditolak' && (
+                        <span className="px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-rose-100 text-rose-700 border border-rose-300 inline-flex items-center gap-1">
+                          <XCircle size={9} /> DITOLAK
+                        </span>
+                      )}
                       <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${item.jenis_kelamin === 'Putra' ? 'bg-blue-100 text-blue-700' : 'bg-rose-100 text-rose-700'}`}>
                         {item.jenis_kelamin || '-'}
-                      </span>
-                      <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${item.kategori_atlet === 'Muda' ? 'bg-indigo-100 text-indigo-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                        {item.kategori_atlet || 'MUDA'}
                       </span>
                     </div>
                   </div>
@@ -694,16 +973,34 @@ const totalSeniorPutri = registrants.filter(r =>
                   </div>
 
                   {/* ACTION BUTTONS */}
-                  <div className="flex justify-end gap-2 pt-2 border-t border-dashed border-slate-100">
+                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-dashed border-slate-100">
+                    <button 
+                      onClick={() => handleVerifyStatus(item, 'Diterima')} 
+                      className="py-1.5 bg-emerald-50 hover:bg-emerald-600 text-emerald-600 hover:text-white rounded-lg transition-all font-bold text-[9px] uppercase tracking-widest border border-emerald-200 flex items-center justify-center gap-1"
+                    >
+                      <CheckCircle2 size={11} /> Terima
+                    </button>
+                    <button 
+                      onClick={() => handleVerifyStatus(item, 'Ditolak')} 
+                      className="py-1.5 bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white rounded-lg transition-all font-bold text-[9px] uppercase tracking-widest border border-rose-200 flex items-center justify-center gap-1"
+                    >
+                      <XCircle size={11} /> Tolak
+                    </button>
+                    <button 
+                      onClick={() => handleSendAccountHistory(item)} 
+                      className="py-1.5 bg-green-50 hover:bg-green-600 text-green-600 hover:text-white rounded-lg transition-all font-bold text-[9px] uppercase tracking-widest border border-green-200 flex items-center justify-center gap-1 col-span-2"
+                    >
+                      <MessageSquare size={11} /> Kirim Akun Ke WA Atlet
+                    </button>
                     <button 
                       onClick={() => { setEditingItem(item); setIsEditModalOpen(true); }} 
-                      className="flex-1 py-1.5 bg-blue-50 hover:bg-blue-600 text-blue-600 hover:text-white rounded-lg transition-all font-bold text-[9px] uppercase tracking-widest border border-blue-100 flex items-center justify-center gap-1"
+                      className="py-1.5 bg-blue-50 hover:bg-blue-600 text-blue-600 hover:text-white rounded-lg transition-all font-bold text-[9px] uppercase tracking-widest border border-blue-100 flex items-center justify-center gap-1"
                     >
                       <Edit3 size={11} /> Edit
                     </button>
                     <button 
                       onClick={() => handleDelete(item.id, item.nama, item.foto_url)} 
-                      className="flex-1 py-1.5 bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white rounded-lg transition-all font-bold text-[9px] uppercase tracking-widest border border-rose-100 flex items-center justify-center gap-1"
+                      className="py-1.5 bg-slate-100 hover:bg-rose-600 text-slate-600 hover:text-white rounded-lg transition-all font-bold text-[9px] uppercase tracking-widest border border-slate-200 flex items-center justify-center gap-1"
                     >
                       <Trash2 size={11} /> Hapus
                     </button>

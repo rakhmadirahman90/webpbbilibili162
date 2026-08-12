@@ -189,7 +189,8 @@ export default function RegistrationForm() {
           kategori_atlet: kategori_atlet,
           domisili: formData.domisili.toUpperCase().trim(),
           pengalaman: formData.pengalaman || "-", 
-          foto_url: publicUrl 
+          foto_url: publicUrl,
+          status: 'Pending'
         }]);
 
       if (dbError) {
@@ -206,41 +207,72 @@ export default function RegistrationForm() {
         throw dbError;
       }
 
+      const rawWa = formData.whatsapp.replace(/\D/g, '');
+      const userWa = rawWa.startsWith('0') ? '62' + rawWa.slice(1) : rawWa;
       const adminPhoneNumber = "6281219027234";
-      const waMessage = window.encodeURIComponent(
-        `*PENDAFTARAN ATLET BARU*\n\n` +
-        `*Nama:* ${formData.nama.toUpperCase()}\n` +
-        `*Gender:* ${formData.jenis_kelamin}\n` +
-        `*Kategori:* ${formData.kategori}\n` +
-        `*Kelompok:* ${kategori_atlet}\n` +
-        `*Domisili:* ${formData.domisili.toUpperCase()}\n` +
-        `*Pengalaman:* ${formData.pengalaman || '-'}\n` +
-        `*Link Foto:* ${publicUrl || 'Tidak ada foto'}`
-      );
-      
-      window.open(`https://wa.me/${adminPhoneNumber}?text=${waMessage}`, '_blank');
+
+      const waSummaryText = 
+        `*PENDAFTARAN ATLET BARU PB BILIBILI 162*\n\n` +
+        `Halo *${cleanNama}*, pendaftaran Anda telah berhasil diproses!\n\n` +
+        `📋 *DETAIL AKUN & DOKUMEN PENDAFTARAN:*\n` +
+        `• *Nama Lengkap:* ${cleanNama}\n` +
+        `• *Email / Username:* ${cleanEmail}\n` +
+        `• *Password Login:* ${formData.password}\n` +
+        `• *No. WhatsApp:* ${formData.whatsapp}\n` +
+        `• *Jenis Kelamin:* ${formData.jenis_kelamin}\n` +
+        `• *Kategori Umur:* ${formData.kategori}\n` +
+        `• *Kategori Atlet:* ${kategori_atlet}\n` +
+        `• *Domisili:* ${formData.domisili.toUpperCase()}\n` +
+        `• *Status Pendaftaran:* ⏳ *MENUNGGU VERIFIKASI ADMIN*\n` +
+        `• *Link Foto:* ${publicUrl || 'Tidak ada foto'}\n\n` +
+        `🌐 *LINK LOGIN SISTEM:*\nhttps://pbilibili162.99apps.id/login\n\n` +
+        `⚠️ *PENTING:* Simpan pesan ini sebagai histori bukti akun pendaftaran Anda. Terimakasih!`;
+
+      const encodedMsg = encodeURIComponent(waSummaryText);
+
       setSubmitted(true);
 
-      const Toast = Swal.mixin({
-        toast: true,
-        position: 'top-end',
-        showConfirmButton: false,
-        timer: 5000,
-        timerProgressBar: true,
+      // SweetAlert confirmation modal with choices to send WA to Athlete / Admin
+      Swal.fire({
+        icon: 'success',
+        title: '<span class="text-emerald-400 font-black italic">PENDAFTARAN BERHASIL!</span>',
+        html: `
+          <div class="text-left space-y-3 text-xs text-slate-200 mt-2">
+            <p className="font-medium text-slate-300">Data pendaftaran dan akun login Anda telah berhasil dibuat dalam sistem PB BILIBILI 162 Parepare.</p>
+
+            <div class="bg-slate-900/80 p-3.5 rounded-xl border border-emerald-500/30 space-y-1.5 font-mono">
+              <div class="text-[10px] text-emerald-400 font-bold uppercase tracking-widest border-b border-slate-800 pb-1">🔑 credentials akun login Anda:</div>
+              <div><span class="text-slate-400">Email:</span> <b class="text-white">${cleanEmail}</b></div>
+              <div><span class="text-slate-400">Password:</span> <b class="text-amber-300">${formData.password}</b></div>
+              <div><span class="text-slate-400">Status:</span> <span class="text-amber-400 font-bold">⏳ MENUNGGU VERIFIKASI ADMIN</span></div>
+            </div>
+
+            <p class="text-[11px] text-slate-400 italic">Silakan simpan rincian akun Anda dan kirim konfirmasi bukti pendaftaran melalui WhatsApp di bawah ini:</p>
+          </div>
+        `,
+        showCancelButton: true,
+        showDenyButton: true,
+        confirmButtonText: '📱 Kirim Ke WA Atlet',
+        denyButtonText: '💬 Kirim Ke WA Admin',
+        cancelButtonText: 'Tutup',
+        confirmButtonColor: '#10B981',
+        denyButtonColor: '#2563EB',
+        cancelButtonColor: '#64748B',
         background: '#0b1224',
         color: '#ffffff',
-        iconColor: '#10b981',
         customClass: {
-          popup: 'rounded-2xl border border-emerald-500/30 shadow-2xl backdrop-blur-xl font-sans',
-          title: 'font-bold text-sm text-emerald-400',
-          htmlContainer: 'text-xs text-slate-300'
+          popup: 'rounded-3xl border border-emerald-500/40 shadow-2xl backdrop-blur-xl',
+          title: 'text-lg',
+          confirmButton: 'rounded-xl text-xs font-bold px-4 py-2.5',
+          denyButton: 'rounded-xl text-xs font-bold px-4 py-2.5',
+          cancelButton: 'rounded-xl text-xs font-bold px-4 py-2.5'
         }
-      });
-
-      Toast.fire({
-        icon: 'success',
-        title: 'Pendaftaran Berhasil!',
-        text: 'Data atlet telah diterima sistem PB Bilibili 162.'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          window.open(`https://wa.me/${userWa}?text=${encodedMsg}`, '_blank');
+        } else if (result.isDenied) {
+          window.open(`https://wa.me/${adminPhoneNumber}?text=${encodedMsg}`, '_blank');
+        }
       });
       
     } catch (err: any) {
