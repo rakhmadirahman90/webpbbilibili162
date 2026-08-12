@@ -23,8 +23,26 @@ function ImagePopup() {
   useEffect(() => {
     let lastHash = '';
 
+    const computeHash = (items: any[]) => JSON.stringify((items || []).map(item => ({
+      id: item.id || '',
+      active: item.is_active ?? item.active ?? true,
+      title: item.judul || '',
+      img: item.url_gambar || '',
+      desc: item.deskripsi || '',
+      file: item.file_url || '',
+      order: item.urutan ?? 0
+    })));
+
     const fetchActivePopups = async () => {
       try {
+        let sitePopups: any[] = [];
+        try {
+          const siteConfig = await getSiteSetting('popup_config');
+          if (siteConfig !== null && siteConfig !== undefined) {
+            sitePopups = parsePopupList(siteConfig);
+          }
+        } catch (e) {}
+
         let dbItems: any[] = [];
         try {
           const { data, error } = await supabase
@@ -35,30 +53,17 @@ function ImagePopup() {
           if (!error && data) dbItems = data;
         } catch (e) {}
 
-        let sitePopups: any[] = [];
-        try {
-          const siteConfig = await getSiteSetting('popup_config');
-          if (siteConfig !== null && siteConfig !== undefined) {
-            sitePopups = parsePopupList(siteConfig);
-          }
-        } catch (e) {}
-
         let merged: any[] = [];
-        if (dbItems.length > 0) {
-          const siteMap = new Map(sitePopups.map((p: any) => [p.id, p]));
-          merged = dbItems.map(dbItem => {
-            if (siteMap.has(dbItem.id)) {
-              return { ...dbItem, ...siteMap.get(dbItem.id) };
-            }
-            return dbItem;
-          });
-          for (const siteItem of sitePopups) {
-            if (!merged.some(m => m.id === siteItem.id)) {
-              merged.push(siteItem);
+        if (sitePopups.length > 0) {
+          merged = [...sitePopups];
+          const siteIds = new Set(sitePopups.map((p: any) => p.id));
+          for (const dbItem of dbItems) {
+            if (!siteIds.has(dbItem.id)) {
+              merged.push(dbItem);
             }
           }
         } else {
-          merged = sitePopups;
+          merged = dbItems;
         }
 
         // Deactivate old Aqiqah popups from legacy database entries
@@ -78,7 +83,7 @@ function ImagePopup() {
 
         const activeItems = merged.filter((p: any) => p && (p.is_active === true || p.active === true));
 
-        const currentHash = JSON.stringify(activeItems.map(item => ({ id: item.id, active: item.is_active, title: item.judul, img: item.url_gambar })));
+        const currentHash = computeHash(activeItems);
         if (currentHash !== lastHash) {
           lastHash = currentHash;
           if (activeItems.length > 0) {
@@ -96,15 +101,15 @@ function ImagePopup() {
 
     fetchActivePopups();
 
-    // Fast 3-second live polling interval for instant cross-device realtime updates
-    const syncInterval = setInterval(fetchActivePopups, 3000);
+    // Live 2-second polling interval for instant cross-device realtime updates
+    const syncInterval = setInterval(fetchActivePopups, 2000);
 
     const handleUpdate = (e: any) => {
       if (!e.detail?.key || e.detail.key === 'popup_config') {
         if (e.detail?.value) {
           try {
             const parsed = parsePopupList(e.detail.value).filter((p: any) => p && (p.is_active === true || p.active === true));
-            const currentHash = JSON.stringify(parsed.map(item => ({ id: item.id, active: item.is_active, title: item.judul, img: item.url_gambar })));
+            const currentHash = computeHash(parsed);
             if (currentHash !== lastHash) {
               lastHash = currentHash;
               if (parsed.length > 0) {
@@ -125,13 +130,14 @@ function ImagePopup() {
     window.addEventListener('site_setting_updated', handleUpdate);
     window.addEventListener('app_data_changed', handleFocus);
     window.addEventListener('table_updated_popup_config', handleFocus);
+    window.addEventListener('table_updated_konfigurasi_popup', handleFocus);
     window.addEventListener('force_refresh_data', handleFocus);
     window.addEventListener('focus', handleFocus);
     window.addEventListener('online', handleFocus);
     document.addEventListener('visibilitychange', handleFocus);
 
     const channel = supabase
-      .channel('image_popup_realtime_sync')
+      .channel(`image_popup_realtime_sync_${Date.now()}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, (payload: any) => {
         if (!payload.new || payload.new.key === 'popup_config' || payload.old?.key === 'popup_config') {
           fetchActivePopups();
@@ -145,6 +151,10 @@ function ImagePopup() {
     return () => {
       clearInterval(syncInterval);
       window.removeEventListener('site_setting_updated', handleUpdate);
+      window.removeEventListener('app_data_changed', handleFocus);
+      window.removeEventListener('table_updated_popup_config', handleFocus);
+      window.removeEventListener('table_updated_konfigurasi_popup', handleFocus);
+      window.removeEventListener('force_refresh_data', handleFocus);
       window.removeEventListener('focus', handleFocus);
       window.removeEventListener('online', handleFocus);
       document.removeEventListener('visibilitychange', handleFocus);

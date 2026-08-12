@@ -192,6 +192,14 @@ export default function AdminPopup() {
   const fetchPopups = async (isSilent = false) => {
     if (!isSilent && popups.length === 0) setLoading(true);
     try {
+      let sitePopups: PopupConfig[] = [];
+      try {
+        const siteConfig = await getSiteSetting('popup_config');
+        if (siteConfig !== null && siteConfig !== undefined) {
+          sitePopups = parsePopupList(siteConfig);
+        }
+      } catch (e) {}
+
       let dbPopups: PopupConfig[] = [];
       try {
         const { data, error } = await supabase
@@ -202,30 +210,17 @@ export default function AdminPopup() {
         if (!error && data && data.length > 0) dbPopups = data;
       } catch (e) {}
 
-      let sitePopups: PopupConfig[] = [];
-      try {
-        const siteConfig = await getSiteSetting('popup_config');
-        if (siteConfig !== null && siteConfig !== undefined) {
-          sitePopups = parsePopupList(siteConfig);
-        }
-      } catch (e) {}
-
       let merged: PopupConfig[] = [];
-      if (dbPopups.length > 0) {
-        const siteMap = new Map(sitePopups.map(p => [p.id, p]));
-        merged = dbPopups.map(dbItem => {
-          if (siteMap.has(dbItem.id)) {
-            return { ...dbItem, ...siteMap.get(dbItem.id) };
-          }
-          return dbItem;
-        });
-        for (const siteItem of sitePopups) {
-          if (!merged.some(m => m.id === siteItem.id)) {
-            merged.push(siteItem);
+      if (sitePopups.length > 0) {
+        merged = [...sitePopups];
+        const siteIds = new Set(sitePopups.map(p => p.id));
+        for (const dbItem of dbPopups) {
+          if (!siteIds.has(dbItem.id)) {
+            merged.push(dbItem);
           }
         }
       } else {
-        merged = sitePopups;
+        merged = dbPopups;
       }
 
       // Filter out old legacy Aqiqah popups
@@ -259,10 +254,10 @@ export default function AdminPopup() {
   useEffect(() => { 
     fetchPopups(false); 
 
-    const syncInterval = setInterval(() => fetchPopups(true), 5000);
+    const syncInterval = setInterval(() => fetchPopups(true), 3000);
 
     const channel = supabase
-      .channel('admin_popup_realtime')
+      .channel(`admin_popup_realtime_${Date.now()}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, (payload: any) => {
         if (!payload.new || payload.new.key === 'popup_config' || payload.old?.key === 'popup_config') {
           fetchPopups(true);
@@ -279,6 +274,9 @@ export default function AdminPopup() {
     const handleFocus = () => fetchPopups(true);
 
     window.addEventListener('site_setting_updated', handleCustomEvent);
+    window.addEventListener('app_data_changed', handleFocus);
+    window.addEventListener('table_updated_popup_config', handleFocus);
+    window.addEventListener('table_updated_konfigurasi_popup', handleFocus);
     window.addEventListener('focus', handleFocus);
     window.addEventListener('online', handleFocus);
     document.addEventListener('visibilitychange', handleFocus);
@@ -287,6 +285,9 @@ export default function AdminPopup() {
       clearInterval(syncInterval);
       supabase.removeChannel(channel);
       window.removeEventListener('site_setting_updated', handleCustomEvent);
+      window.removeEventListener('app_data_changed', handleFocus);
+      window.removeEventListener('table_updated_popup_config', handleFocus);
+      window.removeEventListener('table_updated_konfigurasi_popup', handleFocus);
       window.removeEventListener('focus', handleFocus);
       window.removeEventListener('online', handleFocus);
       document.removeEventListener('visibilitychange', handleFocus);
@@ -297,7 +298,10 @@ export default function AdminPopup() {
     setPopups(updatedList);
     await saveSiteSetting('popup_config', updatedList, 'Konfigurasi Popup Promo');
     broadcastDataChange('popup_config', 'UPDATE', updatedList);
+    broadcastDataChange('konfigurasi_popup', 'UPDATE', updatedList);
     window.dispatchEvent(new CustomEvent('site_setting_updated', { detail: { key: 'popup_config', value: updatedList } }));
+    window.dispatchEvent(new CustomEvent('table_updated_popup_config'));
+    window.dispatchEvent(new CustomEvent('table_updated_konfigurasi_popup'));
   };
 
   const loadJadwalLatihanTemplate = () => {
