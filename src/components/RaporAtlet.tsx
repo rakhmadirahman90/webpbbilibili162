@@ -170,13 +170,30 @@ export default function RaporAtlet({ isAdmin }: { isAdmin: boolean }) {
 
       // Sync with database rankings
       try {
-        const { data: rankingsData } = await supabase.from('rankings').select('*');
+        const [rankingsRes, pendaftaranRes] = await Promise.all([
+          supabase.from('rankings').select('*'),
+          supabase.from('pendaftaran').select('id, nama')
+        ]);
+        const rankingsData = rankingsRes.data || [];
+        const pendaftaranData = pendaftaranRes.data || [];
+
         if (rankingsData && rankingsData.length > 0) {
+          const filteredRankings = pendaftaranData.length > 0
+            ? rankingsData.filter((r) => {
+                const rName = (r.player_name || r.nama || '').trim().toLowerCase();
+                return pendaftaranData.some(
+                  (p) =>
+                    (r.pendaftaran_id && p.id === r.pendaftaran_id) ||
+                    (p.nama && p.nama.trim().toLowerCase() === rName)
+                );
+              })
+            : rankingsData;
+
           setRaporList((prev) => {
             const currentList = prev.length > 0 ? [...prev] : initialList;
             const syncedList: Rapor[] = [];
 
-            rankingsData.forEach((r) => {
+            filteredRankings.forEach((r) => {
               const rName = r.player_name || r.nama || '';
               if (!rName) return;
               

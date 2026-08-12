@@ -4,6 +4,7 @@ import {
   Trash2, Edit3, CheckCircle, XCircle, AlertTriangle, Sparkles, Lock, Mail, Phone, Calendar
 } from 'lucide-react';
 import { supabase } from '../supabase';
+import { deleteAthleteCompletely } from '../utils/siteSettingsHelper';
 import Swal from 'sweetalert2';
 
 interface UserRecord {
@@ -261,8 +262,7 @@ export default function AdminUsers({ session }: { session: any }) {
 
     if (res.isConfirmed) {
       try {
-        const { error } = await supabase.from('pendaftaran').delete().eq('id', user.id);
-        if (error) throw error;
+        await deleteAthleteCompletely(user.id, user.nama);
 
         Swal.fire({ title: 'Terhapus!', text: 'User berhasil dihapus.', icon: 'success', timer: 1200, showConfirmButton: false, background: '#0F172A', color: '#fff' });
         fetchUsers();

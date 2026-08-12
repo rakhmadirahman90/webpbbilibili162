@@ -79,13 +79,27 @@ export default function AnalisisPerforma() {
     const fetchRealData = async () => {
       setLoading(true);
       try {
-        const { data: rankingsData } = await supabase
-          .from('rankings')
-          .select('*')
-          .order('total_points', { ascending: false });
+        const [rankingsRes, pendaftaranRes] = await Promise.all([
+          supabase.from('rankings').select('*').order('total_points', { ascending: false }),
+          supabase.from('pendaftaran').select('id, nama')
+        ]);
+
+        const rankingsData = rankingsRes.data || [];
+        const pendaftaranData = pendaftaranRes.data || [];
 
         if (rankingsData && rankingsData.length > 0) {
-          const mapped: PlayerStats[] = rankingsData.map((r, index) => {
+          const filteredRankings = pendaftaranData.length > 0
+            ? rankingsData.filter((r) => {
+                const nameKey = (r.player_name || r.nama || '').trim().toLowerCase();
+                return pendaftaranData.some(
+                  (p) =>
+                    (r.pendaftaran_id && p.id === r.pendaftaran_id) ||
+                    (p.nama && p.nama.trim().toLowerCase() === nameKey)
+                );
+              })
+            : rankingsData;
+
+          const mapped: PlayerStats[] = filteredRankings.map((r, index) => {
             const hash = r.id ? r.id.charCodeAt(0) + r.id.charCodeAt(r.id.length - 1) : index;
             const matchesPlayed = 20 + (hash % 25);
             const winRate = 60 + (hash % 30);

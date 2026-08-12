@@ -144,6 +144,32 @@ export async function deleteSiteSetting(key: string) {
 }
 
 /**
+ * Completely removes an athlete from all database tables (pendaftaran, rankings, atlet_stats).
+ */
+export async function deleteAthleteCompletely(id?: string, name?: string) {
+  try {
+    const promises: Promise<any>[] = [];
+
+    if (id) {
+      promises.push(supabase.from('pendaftaran').delete().eq('id', id));
+      promises.push(supabase.from('rankings').delete().eq('pendaftaran_id', id));
+      promises.push(supabase.from('atlet_stats').delete().eq('pendaftaran_id', id));
+    }
+
+    if (name && name.trim()) {
+      const cleanName = name.trim();
+      promises.push(supabase.from('pendaftaran').delete().ilike('nama', cleanName));
+      promises.push(supabase.from('rankings').delete().ilike('player_name', cleanName));
+      promises.push(supabase.from('atlet_stats').delete().ilike('player_name', cleanName));
+    }
+
+    await Promise.allSettled(promises);
+  } catch (err) {
+    console.warn('[deleteAthleteCompletely] Error during cascade athlete deletion:', err);
+  }
+}
+
+/**
  * Safely reads a setting checking Server API, Supabase, and LocalStorage.
  */
 export async function getSiteSetting(key: string) {

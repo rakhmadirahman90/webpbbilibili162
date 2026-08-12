@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from "./supabase";
+import { deleteAthleteCompletely } from "./utils/siteSettingsHelper";
 import { 
   Trash2, 
   RefreshCcw, 
@@ -327,8 +328,7 @@ const totalSeniorPutri = registrants.filter(r =>
     if (result.isConfirmed) {
       try {
         if (foto_url) await deleteOldFile(foto_url);
-        const { error } = await supabase.from('pendaftaran').delete().eq('id', id);
-        if (error) throw error;
+        await deleteAthleteCompletely(id, nama);
         Toast.fire({ icon: 'success', title: 'Data berhasil dihapus' });
       } catch (error: any) { 
         Swal.fire('Gagal', error.message, 'error');

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { supabase } from '../supabase';
+import { deleteAthleteCompletely } from '../utils/siteSettingsHelper';
 import {
   TrendingUp,
   TrendingDown,
@@ -404,6 +405,20 @@ const Rankings: React.FC = () => {
         const nameKey = rawName.trim().toLowerCase();
         if (!nameKey || playerMap.has(nameKey)) return;
 
+        // Filter out orphan ranking rows if pendaftaran master list exists
+        if (pendaftaranData.length > 0) {
+          const matchedByPendaftaran = pendaftaranData.some(
+            (p) =>
+              (rankItem.pendaftaran_id && p.id === rankItem.pendaftaran_id) ||
+              (p.nama && p.nama.trim().toLowerCase() === nameKey)
+          );
+          if (!matchedByPendaftaran) {
+            // Orphaned ranking record from an athlete deleted from admin! Purge and skip.
+            deleteAthleteCompletely(rankItem.pendaftaran_id, rankItem.player_name);
+            return;
+          }
+        }
+
         const stat = statsData.find(
           (s) => (s.pendaftaran_id && s.pendaftaran_id === rankItem.pendaftaran_id) || (s.player_name && s.player_name.trim().toLowerCase() === nameKey)
         );
@@ -439,6 +454,19 @@ const Rankings: React.FC = () => {
         const rawName = stat.player_name || '';
         const nameKey = rawName.trim().toLowerCase();
         if (!nameKey || playerMap.has(nameKey)) return;
+
+        // Filter out orphan stat rows if pendaftaran master list exists
+        if (pendaftaranData.length > 0) {
+          const matchedByPendaftaran = pendaftaranData.some(
+            (p) =>
+              (stat.pendaftaran_id && p.id === stat.pendaftaran_id) ||
+              (p.nama && p.nama.trim().toLowerCase() === nameKey)
+          );
+          if (!matchedByPendaftaran) {
+            deleteAthleteCompletely(stat.pendaftaran_id, stat.player_name);
+            return;
+          }
+        }
 
         const basePoints = Number(stat.points) || 0;
         const addedPoints = Number(stat.total_points) || 0;

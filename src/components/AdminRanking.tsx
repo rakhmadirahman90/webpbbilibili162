@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../supabase';
+import { deleteAthleteCompletely } from '../utils/siteSettingsHelper';
 import Swal from 'sweetalert2';
 import {
   Plus,
@@ -329,9 +330,10 @@ const paginatedRankings = filteredRankings.slice(startIndex, startIndex + itemsP
   };
 
   const handleDelete = async (id: string) => {
+    const target = rankings.find(r => r.id === id);
     const result = await Swal.fire({
       title: 'Hapus dari Ranking?',
-      text: "Tindakan ini tidak menghapus data pendaftaran asli atlet.",
+      text: target ? `Hapus atlet "${target.player_name}" dari ranking dan sistem?` : "Tindakan ini akan menghapus data atlet.",
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#EF4444',
@@ -344,8 +346,10 @@ const paginatedRankings = filteredRankings.slice(startIndex, startIndex + itemsP
 
     if (result.isConfirmed) {
       try {
-        const { error } = await supabase.from('rankings').delete().eq('id', id);
-        if (error) throw error;
+        if (target) {
+          await deleteAthleteCompletely(target.pendaftaran_id, target.player_name);
+        }
+        await supabase.from('rankings').delete().eq('id', id);
         
         Swal.fire({
           toast: true,
