@@ -169,6 +169,57 @@ export async function deleteAthleteCompletely(id?: string, name?: string) {
   }
 }
 
+export const DEFAULT_HERO_CONFIG = {
+  settings: { duration: 7 },
+  slides: [
+    {
+      id: 1786206064378,
+      title: 'PB Bilibili Video Hero',
+      subtitle: 'PB BILIBILI 162 PROFESSIONAL CLUB',
+      image: 'https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/assets/hero-sliders/hero-video-1786206060056.webm',
+      videoUrl: 'https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/assets/hero-sliders/hero-video-1786206060056.webm',
+      poster: 'https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/assets/hero-sliders/hero-poster-1786206060056.webp',
+      type: 'video',
+      active: true,
+      titleSize: 28,
+      subtitleSize: 12,
+      fontFamily: 'font-sans'
+    },
+    {
+      id: 1786206064379,
+      title: 'Ketua & Pembina PB Bilibili 162',
+      subtitle: 'Pusat Pembinaan Bulutangkis Standar BWF',
+      image: 'https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/logos/ketua.png',
+      type: 'image',
+      active: true,
+      titleSize: 24,
+      subtitleSize: 10,
+      fontFamily: 'font-sans'
+    },
+    {
+      id: 1,
+      image: '/whatsapp_image_2026-02-02_at_08.39.03.jpeg',
+      title: 'Pusat Pelatihan PB Bilibili 162',
+      active: true,
+      subtitle: 'Fasilitas lapangan berkualitas internasional dengan standar karpet BWF.',
+      titleSize: 24,
+      fontFamily: 'font-sans',
+      subtitleSize: 10
+    },
+    {
+      id: 2,
+      image: '/whatsapp_image_2026-02-02_at_09.53.05_(1).jpeg',
+      title: 'Keluarga Besar Atlet Kami',
+      subtitle: 'Membangun komunitas solid dengan dedikasi tinggi terhadap bulutangkis.',
+      titleSize: 24,
+      fontFamily: 'font-sans',
+      subtitleSize: 10,
+      active: true
+    }
+  ],
+  updated_at: '2026-08-12T20:30:00.000Z'
+};
+
 /**
  * Safely reads a setting checking Server API, Supabase, and LocalStorage.
  */
@@ -251,6 +302,32 @@ export async function getSiteSetting(key: string) {
     bestVal = dbVal !== null && dbVal !== undefined ? dbVal : (serverVal !== null && serverVal !== undefined ? serverVal : localVal);
   }
 
+  // --- SPECIAL HANDLING FOR hero_config TO ENSURE LATEST VIDEO HERO SLIDE IS ALWAYS PRESENT ---
+  if (key === 'hero_config') {
+    let parsedBest = bestVal ? (typeof bestVal === 'string' ? JSON.parse(bestVal) : bestVal) : null;
+    let slides = parsedBest?.slides || (Array.isArray(parsedBest) ? parsedBest : []);
+
+    const hasVideoSlide = Array.isArray(slides) && slides.some((s: any) => s && (s.type === 'video' || s.videoUrl || (typeof s.image === 'string' && (s.image.endsWith('.webm') || s.image.endsWith('.mp4')))));
+    const isStaleData = !parsedBest?.updated_at || new Date(parsedBest.updated_at).getTime() < new Date('2026-08-12T12:00:00.000Z').getTime();
+
+    if (!parsedBest || !Array.isArray(slides) || slides.length === 0 || !hasVideoSlide || isStaleData) {
+      const videoSlide = DEFAULT_HERO_CONFIG.slides[0];
+      const ketuaSlide = DEFAULT_HERO_CONFIG.slides[1];
+
+      const otherSlides = Array.isArray(slides)
+        ? slides.filter((s: any) => s && s.id !== 1786206064378 && s.id !== 1786206064379 && s.id !== 'video-main-1')
+        : [];
+
+      const mergedSlides = [videoSlide, ketuaSlide, ...otherSlides];
+
+      bestVal = {
+        settings: parsedBest?.settings || DEFAULT_HERO_CONFIG.settings,
+        slides: mergedSlides,
+        updated_at: new Date().toISOString()
+      };
+    }
+  }
+
   if (bestVal) {
     try {
       localStorage.setItem(`site_setting_${key}`, typeof bestVal === 'string' ? bestVal : JSON.stringify(bestVal));
@@ -258,7 +335,7 @@ export async function getSiteSetting(key: string) {
     return bestVal;
   }
 
-  return null;
+  return key === 'hero_config' ? DEFAULT_HERO_CONFIG : null;
 }
 
 /**

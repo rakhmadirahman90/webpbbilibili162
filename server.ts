@@ -204,13 +204,31 @@ async function startServer() {
             const localTs = getTs(localVal);
             const dbTs = getTs(dbVal);
 
+            let finalVal = dbVal;
+            if (key === 'hero_config') {
+              const slides = dbVal?.slides || (Array.isArray(dbVal) ? dbVal : []);
+              const hasVideo = Array.isArray(slides) && slides.some((s: any) => s && (s.type === 'video' || s.videoUrl || (typeof s.image === 'string' && (s.image.endsWith('.webm') || s.image.endsWith('.mp4')))));
+              const isStale = !dbVal?.updated_at || new Date(dbVal.updated_at).getTime() < new Date('2026-08-12T12:00:00.000Z').getTime();
+              
+              if (!hasVideo || isStale) {
+                const otherSlides = Array.isArray(slides)
+                  ? slides.filter((s: any) => s && s.id !== 1786206064378 && s.id !== 1786206064379 && s.id !== 'video-main-1')
+                  : [];
+                finalVal = {
+                  settings: dbVal?.settings || DEFAULT_HERO_CONFIG.settings,
+                  slides: [DEFAULT_HERO_CONFIG.slides[0], DEFAULT_HERO_CONFIG.slides[1], ...otherSlides],
+                  updated_at: new Date().toISOString()
+                };
+              }
+            }
+
             if (localVal && localTs > dbTs) {
               return res.json({ key, value: localVal });
             }
 
-            store[key] = dbVal;
+            store[key] = finalVal;
             saveLocalSettingsStore(store);
-            return res.json({ key, value: dbVal });
+            return res.json({ key, value: finalVal });
           }
         }
       } catch (e) {
