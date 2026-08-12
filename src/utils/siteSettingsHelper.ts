@@ -267,12 +267,13 @@ export async function getSiteSetting(key: string) {
         s && (s.id === 1786206064378 || (s.videoUrl && s.videoUrl.includes('hero-video-1786206060056.webm')) || s.type === 'video')
       ) || OFFICIAL_VIDEO_SLIDE;
 
+      // Ensure every slide retains its user-configured active status (true/false)
       const sanitizedSlides = slides.map((s: any) => {
         if (!s) return s;
-        if (s.id === videoSlide.id || s === videoSlide || s.type === 'video' || (s.videoUrl && s.videoUrl.includes('hero-video'))) {
-          return { ...s, active: true };
-        }
-        return { ...s, active: false };
+        return {
+          ...s,
+          active: s.active !== undefined ? Boolean(s.active) : true
+        };
       });
 
       bestVal = {
