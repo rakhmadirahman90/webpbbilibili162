@@ -381,7 +381,15 @@ export async function getSiteSetting(key: string) {
     }
 
     const configTs = parsedBest?.updated_at || new Date().toISOString();
-    const cacheBustedSlides = applyCacheBustingToHeroSlides(finalSlides, configTs);
+    const sanitizedSlides = (Array.isArray(finalSlides) ? finalSlides : []).map((s: any) => {
+      if (!s || typeof s !== 'object') return s;
+      const isVid = s.type === 'video' || s.videoUrl || (typeof s.image === 'string' && (s.image.endsWith('.webm') || s.image.endsWith('.mp4')));
+      if (!isVid) {
+        return { ...s, active: false };
+      }
+      return { ...s, active: s.active !== false };
+    });
+    const cacheBustedSlides = applyCacheBustingToHeroSlides(sanitizedSlides, configTs);
 
     bestVal = {
       settings: parsedBest?.settings || DEFAULT_HERO_CONFIG.settings,

@@ -256,7 +256,15 @@ async function startServer() {
               }
 
               const configTs = dbVal?.updated_at || new Date().toISOString();
-              const cacheBustedSlides = (Array.isArray(finalSlides) ? finalSlides : []).map((s: any) => {
+              const sanitizedSlides = (Array.isArray(finalSlides) ? finalSlides : []).map((s: any) => {
+                if (!s || typeof s !== 'object') return s;
+                const isVid = s.type === 'video' || s.videoUrl || (typeof s.image === 'string' && (s.image.endsWith('.webm') || s.image.endsWith('.mp4')));
+                if (!isVid) {
+                  return { ...s, active: false };
+                }
+                return { ...s, active: s.active !== false };
+              });
+              const cacheBustedSlides = sanitizedSlides.map((s: any) => {
                 if (!s || typeof s !== 'object') return s;
                 const slideTs = s.updated_at || s.timestamp || s.id || configTs;
                 return {

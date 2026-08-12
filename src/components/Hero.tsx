@@ -202,17 +202,22 @@ export default function Hero() {
           } catch (e) {}
         }
         const allSlides = config.slides || (Array.isArray(config) ? config : []);
-        const activeSlides = allSlides.filter((s: any) => s && s.active !== false);
-        setSlides(activeSlides);
+        const isVid = (s: any) => s && (s.type === 'video' || isVideoUrl(s.videoUrl, s.type) || isVideoUrl(s.image, s.type));
+        const activeSlides = allSlides.filter((s: any) => s && s.active !== false && isVid(s));
+        if (activeSlides.length > 0) {
+          setSlides(activeSlides);
+        } else {
+          setSlides([defaultSlides[0]]);
+        }
         if (config.settings) {
           setSettings(config.settings);
         }
       } else {
-        setSlides(defaultSlides.filter((s: any) => s && s.active !== false));
+        setSlides([defaultSlides[0]]);
       }
     } catch (err) {
       console.warn("Error fetching hero data:", err);
-      setSlides(defaultSlides.filter((s: any) => s && s.active !== false));
+      setSlides([defaultSlides[0]]);
     } finally {
       setLoading(false);
     }
@@ -232,8 +237,9 @@ export default function Hero() {
           try {
             const val = typeof e.detail.value === 'string' ? JSON.parse(e.detail.value) : e.detail.value;
             const allSlides = val.slides || (Array.isArray(val) ? val : []);
-            const activeSlides = allSlides.filter((s: any) => s && s.active !== false);
-            setSlides(activeSlides);
+            const isVid = (s: any) => s && (s.type === 'video' || isVideoUrl(s.videoUrl, s.type) || isVideoUrl(s.image, s.type));
+            const activeSlides = allSlides.filter((s: any) => s && s.active !== false && isVid(s));
+            if (activeSlides.length > 0) setSlides(activeSlides);
             if (val.settings) setSettings(val.settings);
           } catch (err) {}
         }
