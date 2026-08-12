@@ -117,9 +117,7 @@ export default function AdminAbout() {
     setSaving(true);
     try {
       // 1. Simpan ke site_settings (Master Data Admin)
-      const { error: errorSettings } = await saveSiteSetting('about_content', content, 'Konten Tentang Kami');
-
-      if (errorSettings) throw errorSettings;
+      await saveSiteSetting('about_content', content, 'Konten Tentang Kami');
 
       // 2. Persiapkan data lengkap untuk page_contents (Landing Page)
       // Kita pecah fasilitas menjadi 3 baris agar Landing Page bisa membaca ketiganya

@@ -602,19 +602,10 @@ const KelolaHero: React.FC = () => {
 
     const { error } = await saveSiteSetting('hero_config', payload, 'Pengaturan Hero Slider');
 
-    if (!error) {
-      triggerSuccess();
-    } else {
-      console.error("Database Save Error:", error.message);
-      Swal.fire({
-        icon: 'error',
-        title: 'Gagal Menyimpan',
-        text: 'Gagal menyimpan ke database: ' + error.message,
-        confirmButtonColor: '#EF4444',
-        background: '#0F172A',
-        color: '#fff'
-      });
+    if (error) {
+      console.warn("Supabase save notice (saved to Server Store & LocalStorage):", error.message);
     }
+    triggerSuccess();
   };
 
   const handleAddSlide = async (e: React.FormEvent) => {

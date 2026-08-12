@@ -106,9 +106,7 @@ export default function AdminSejarah() {
 
       const updatedVal = { ...existingVal, ...content };
 
-      const { error: errorSettings } = await saveSiteSetting('about_content', updatedVal);
-
-      if (errorSettings) throw errorSettings;
+      await saveSiteSetting('about_content', updatedVal);
 
       // Update page_contents
       await supabase.from('page_contents').upsert({

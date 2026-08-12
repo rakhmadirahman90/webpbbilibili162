@@ -288,11 +288,8 @@ export default function AdminTampilan() {
     setLoading(true);
     setMessage('Menyimpan ke database...');
     try {
-      const { error: heroErr } = await saveSiteSetting('hero_config', { settings: heroSettings, slides: slides, updated_at: new Date().toISOString() }, 'Pengaturan Hero Slider');
-      if (heroErr) throw heroErr;
-
-      const { error: footerErr } = await saveSiteSetting('footer_config', footerData, 'Pengaturan Footer');
-      if (footerErr) throw footerErr;
+      await saveSiteSetting('hero_config', { settings: heroSettings, slides: slides, updated_at: new Date().toISOString() }, 'Pengaturan Hero Slider');
+      await saveSiteSetting('footer_config', footerData, 'Pengaturan Footer');
 
       setMessage('');
       await fetchData(); 

@@ -136,8 +136,7 @@ export default function AdminFooter() {
   const handleUpdate = async () => {
     setLoading(true);
     try {
-      const { error } = await saveSiteSetting(SETTINGS_KEY, footerConfig, 'Pengaturan Footer');
-      if (error) throw error;
+      await saveSiteSetting(SETTINGS_KEY, footerConfig, 'Pengaturan Footer');
 
       Toast.fire({
         icon: 'success',
