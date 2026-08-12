@@ -36,10 +36,12 @@ function ImagePopup() {
     const fetchActivePopups = async () => {
       try {
         let sitePopups: any[] = [];
+        let siteLoaded = false;
         try {
           const siteConfig = await getSiteSetting('popup_config');
           if (siteConfig !== null && siteConfig !== undefined) {
             sitePopups = parsePopupList(siteConfig);
+            siteLoaded = true;
           }
         } catch (e) {}
 
@@ -54,16 +56,12 @@ function ImagePopup() {
         } catch (e) {}
 
         let merged: any[] = [];
-        if (sitePopups.length > 0) {
+        if (siteLoaded) {
           merged = [...sitePopups];
-          const siteIds = new Set(sitePopups.map((p: any) => p.id));
-          for (const dbItem of dbItems) {
-            if (!siteIds.has(dbItem.id)) {
-              merged.push(dbItem);
-            }
-          }
+        } else if (dbItems.length > 0) {
+          merged = [...dbItems];
         } else {
-          merged = dbItems;
+          merged = [OFFICIAL_LATEST_POPUP];
         }
 
         // Deactivate old Aqiqah popups from legacy database entries
@@ -75,11 +73,8 @@ function ImagePopup() {
           return item;
         });
 
-        // Ensure official latest Jadwal Latihan popup is present as default if not yet created in settings
-        const hasSchedulePopup = merged.some(m => m && (m.id === OFFICIAL_LATEST_POPUP.id || (m.url_gambar && m.url_gambar.includes('1786212468282')) || (m.judul && m.judul.includes('JADWAL LATIHAN RESMI'))));
-        if (!hasSchedulePopup) {
-          merged.unshift(OFFICIAL_LATEST_POPUP);
-        }
+        // Ensure proper order sorting
+        merged.sort((a, b) => (a.urutan ?? 0) - (b.urutan ?? 0));
 
         const activeItems = merged.filter((p: any) => p && (p.is_active === true || p.active === true));
 

@@ -193,10 +193,12 @@ export default function AdminPopup() {
     if (!isSilent && popups.length === 0) setLoading(true);
     try {
       let sitePopups: PopupConfig[] = [];
+      let siteLoaded = false;
       try {
         const siteConfig = await getSiteSetting('popup_config');
         if (siteConfig !== null && siteConfig !== undefined) {
           sitePopups = parsePopupList(siteConfig);
+          siteLoaded = true;
         }
       } catch (e) {}
 
@@ -207,20 +209,16 @@ export default function AdminPopup() {
           .select('*')
           .order('urutan', { ascending: true });
         
-        if (!error && data && data.length > 0) dbPopups = data;
+        if (!error && data) dbPopups = data;
       } catch (e) {}
 
       let merged: PopupConfig[] = [];
-      if (sitePopups.length > 0) {
+      if (siteLoaded) {
         merged = [...sitePopups];
-        const siteIds = new Set(sitePopups.map(p => p.id));
-        for (const dbItem of dbPopups) {
-          if (!siteIds.has(dbItem.id)) {
-            merged.push(dbItem);
-          }
-        }
+      } else if (dbPopups.length > 0) {
+        merged = [...dbPopups];
       } else {
-        merged = dbPopups;
+        merged = [OFFICIAL_LATEST_POPUP];
       }
 
       // Filter out old legacy Aqiqah popups
@@ -232,11 +230,8 @@ export default function AdminPopup() {
         return item;
       });
 
-      // Ensure OFFICIAL_LATEST_POPUP exists in list so admin can manage & toggle it
-      const hasSchedulePopup = merged.some(m => m && (m.id === OFFICIAL_LATEST_POPUP.id || (m.url_gambar && m.url_gambar.includes('1786212468282')) || (m.judul && m.judul.includes('JADWAL LATIHAN RESMI'))));
-      if (!hasSchedulePopup) {
-        merged.unshift(OFFICIAL_LATEST_POPUP);
-      }
+      // Ensure proper sorting by urutan
+      merged.sort((a, b) => (a.urutan ?? 0) - (b.urutan ?? 0));
 
       setPopups(prev => {
         const currentHash = JSON.stringify(prev);
@@ -295,11 +290,48 @@ export default function AdminPopup() {
   }, []);
 
   const persistPopups = async (updatedList: PopupConfig[]) => {
-    setPopups(updatedList);
-    await saveSiteSetting('popup_config', updatedList, 'Konfigurasi Popup Promo');
-    broadcastDataChange('popup_config', 'UPDATE', updatedList);
-    broadcastDataChange('konfigurasi_popup', 'UPDATE', updatedList);
-    window.dispatchEvent(new CustomEvent('site_setting_updated', { detail: { key: 'popup_config', value: updatedList } }));
+    const standardizedList = updatedList.map((item, idx) => ({
+      ...item,
+      urutan: idx
+    }));
+
+    setPopups(standardizedList);
+
+    // 1. Save to site_settings JSON store (Primary source of truth across deployments & devices)
+    await saveSiteSetting('popup_config', standardizedList, 'Konfigurasi Popup Promo');
+
+    // 2. Sync completely to Supabase `konfigurasi_popup` table
+    try {
+      if (standardizedList.length > 0) {
+        const dbUpdates = standardizedList.map(({ id, urutan, judul, deskripsi, url_gambar, is_active, file_url }) => ({
+          id,
+          urutan: urutan ?? 0,
+          judul: judul || '',
+          deskripsi: deskripsi || '',
+          url_gambar: url_gambar || '',
+          is_active: is_active ?? true,
+          file_url: file_url || null
+        }));
+        await supabase.from('konfigurasi_popup').upsert(dbUpdates, { onConflict: 'id' });
+      }
+
+      // Delete items in database table that are no longer in standardizedList
+      const currentIds = standardizedList.map(p => p.id);
+      const { data: existingDb } = await supabase.from('konfigurasi_popup').select('id');
+      if (existingDb && existingDb.length > 0) {
+        const idsToDelete = existingDb.map((row: any) => row.id).filter((id: string) => !currentIds.includes(id));
+        if (idsToDelete.length > 0) {
+          await supabase.from('konfigurasi_popup').delete().in('id', idsToDelete);
+        }
+      }
+    } catch (err) {
+      console.warn("Database sync warning (handled via siteSettingsHelper):", err);
+    }
+
+    // 3. Broadcast updates
+    broadcastDataChange('popup_config', 'UPDATE', standardizedList);
+    broadcastDataChange('konfigurasi_popup', 'UPDATE', standardizedList);
+    window.dispatchEvent(new CustomEvent('site_setting_updated', { detail: { key: 'popup_config', value: standardizedList } }));
     window.dispatchEvent(new CustomEvent('table_updated_popup_config'));
     window.dispatchEvent(new CustomEvent('table_updated_konfigurasi_popup'));
   };
