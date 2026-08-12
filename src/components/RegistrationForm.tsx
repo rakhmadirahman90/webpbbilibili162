@@ -112,6 +112,29 @@ export default function RegistrationForm() {
     setLoading(true);
 
     try {
+      const cleanNama = formData.nama.toUpperCase().trim();
+      const cleanEmail = formData.email.trim().toLowerCase();
+
+      // 1. Pre-check if athlete name already exists in pendaftaran to avoid duplicate constraint error
+      const { data: existingAthlete } = await supabase
+        .from('pendaftaran')
+        .select('id, nama')
+        .ilike('nama', cleanNama)
+        .maybeSingle();
+
+      if (existingAthlete) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Nama Atlet Sudah Terdaftar!',
+          html: `Nama atlet <b class="text-amber-400 font-bold">${cleanNama}</b> sudah terdaftar dalam sistem PB Bilibili 162.<br/><br/><span class="text-xs text-slate-300">Mohon tambahkan pembeda (misalnya nama belakang/inisial) agar nama atlet tidak bentrok dengan data yang sudah ada.<br/>Jika Anda sudah pernah mendaftar, silakan lakukan Login.</span>`,
+          confirmButtonColor: '#2563EB',
+          background: '#0b1224',
+          color: '#fff'
+        });
+        setLoading(false);
+        return;
+      }
+
       const listMuda = [
         "Pra Dini (U-9)", "Usia Dini (U-11)", "Anak-anak (U-13)", 
         "Pemula (U-15)", "Remaja (U-17)", "Taruna (U-19)"
@@ -139,21 +162,27 @@ export default function RegistrationForm() {
       }
 
       const { error: authError } = await supabase.auth.signUp({
-        email: formData.email,
+        email: cleanEmail,
         password: formData.password,
         options: {
           data: {
             role: 'anggota',
-            full_name: formData.nama.toUpperCase().trim()
+            full_name: cleanNama
           }
         }
       });
-      if (authError) throw new Error("Gagal membuat akun: " + authError.message);
+      if (authError) {
+        let msg = authError.message;
+        if (msg.includes("User already registered") || msg.includes("already registered") || msg.includes("user_already_exists")) {
+          msg = `Email "${cleanEmail}" sudah terdaftar pada sistem. Silakan gunakan email lain atau langsung Login.`;
+        }
+        throw new Error(msg);
+      }
 
       const { error: dbError } = await supabase
         .from('pendaftaran')
         .insert([{ 
-          nama: formData.nama.toUpperCase().trim(), 
+          nama: cleanNama, 
           whatsapp: formData.whatsapp.trim(), 
           jenis_kelamin: formData.jenis_kelamin,
           kategori: formData.kategori,
@@ -164,6 +193,13 @@ export default function RegistrationForm() {
         }]);
 
       if (dbError) {
+        if (
+          dbError.message.includes("pendaftaran_nama_key") ||
+          dbError.message.includes("duplicate key value violates unique constraint") ||
+          (dbError as any).code === "23505"
+        ) {
+          throw new Error(`Nama atlet "${cleanNama}" sudah terdaftar di sistem. Silakan tambahkan pembeda (misalnya nama belakang/inisial).`);
+        }
         if (dbError.message.includes("pengalaman")) {
           throw new Error("Kolom 'pengalaman' belum ada di database. Silakan hubungi Admin.");
         }
@@ -209,10 +245,21 @@ export default function RegistrationForm() {
       
     } catch (err: any) {
       console.error("Registration Error:", err);
+      let errorMsg = err?.message || "Terjadi kesalahan pada sistem.";
+      if (
+        errorMsg.includes("pendaftaran_nama_key") ||
+        errorMsg.includes("duplicate key value violates unique constraint") ||
+        err?.code === "23505"
+      ) {
+        errorMsg = `Nama atlet "${formData.nama.toUpperCase().trim()}" sudah terdaftar di sistem PB Bilibili 162. Silakan tambahkan nama belakang atau inisial sebagai pembeda.`;
+      } else if (errorMsg.includes("User already registered") || errorMsg.includes("user_already_exists")) {
+        errorMsg = `Email "${formData.email}" sudah terdaftar. Silakan gunakan email lain atau langsung Login.`;
+      }
+
       Swal.fire({
         icon: 'error',
         title: 'Gagal Mendaftar',
-        text: "Kesalahan: " + err.message,
+        text: errorMsg,
         confirmButtonColor: '#EF4444',
         background: '#0b1224',
         color: '#fff'

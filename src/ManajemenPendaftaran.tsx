@@ -340,13 +340,23 @@ const totalSeniorPutri = registrants.filter(r =>
     e.preventDefault();
     setIsSaving(true);
     try {
+      const cleanNama = (newItem.nama || '').toUpperCase().trim();
       const { error } = await supabase.from('pendaftaran').insert([{
         ...newItem,
-        nama: (newItem.nama || '').toUpperCase(),
-        domisili: (newItem.domisili || '').toUpperCase()
+        nama: cleanNama,
+        domisili: (newItem.domisili || '').toUpperCase().trim()
       }]);
       
-      if (error) throw error;
+      if (error) {
+        if (
+          error.message.includes("pendaftaran_nama_key") ||
+          error.message.includes("duplicate key value violates unique constraint") ||
+          (error as any).code === "23505"
+        ) {
+          throw new Error(`Nama atlet "${cleanNama}" sudah ada di database pendaftaran. Silakan gunakan nama lain atau tambahkan pembeda.`);
+        }
+        throw error;
+      }
       
       setIsAddModalOpen(false);
       setNewItem({ nama: '', whatsapp: '', kategori: 'Pra Dini (U-9)', domisili: '', jenis_kelamin: 'Putra', foto_url: '', kategori_atlet: 'Muda' });
