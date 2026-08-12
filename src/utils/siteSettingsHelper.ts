@@ -221,6 +221,63 @@ export const DEFAULT_HERO_CONFIG = {
 };
 
 /**
+ * Appends or updates a dynamic cache-busting query parameter (e.g. ?v=1786566600000)
+ * on media asset URLs (images, videos, posters) to bypass browser & CDN caching instantly.
+ */
+export function appendCacheBustParam(url?: string, timestamp?: string | number): string {
+  if (!url || typeof url !== 'string') return '';
+  const trimmed = url.trim();
+  if (!trimmed || trimmed.startsWith('data:') || trimmed.startsWith('blob:')) return trimmed;
+
+  let ts: number;
+  if (typeof timestamp === 'number') {
+    ts = timestamp;
+  } else if (typeof timestamp === 'string' && timestamp.trim().length > 0) {
+    const parsed = new Date(timestamp).getTime();
+    ts = !isNaN(parsed) && parsed > 0 ? parsed : (Number(timestamp) || Date.now());
+  } else {
+    ts = Date.now();
+  }
+
+  try {
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      const u = new URL(trimmed);
+      u.searchParams.set('v', String(ts));
+      return u.toString();
+    } else {
+      const [base, search] = trimmed.split('?');
+      const params = new URLSearchParams(search || '');
+      params.set('v', String(ts));
+      return `${base}?${params.toString()}`;
+    }
+  } catch {
+    const delim = trimmed.includes('?') ? '&' : '?';
+    return `${trimmed}${delim}v=${ts}`;
+  }
+}
+
+/**
+ * Transforms an array of hero slides by appending cache-busting timestamp
+ * parameters to all media URLs (image, videoUrl, poster).
+ */
+export function applyCacheBustingToHeroSlides(slides: any[], configTimestamp?: string | number): any[] {
+  if (!Array.isArray(slides)) return [];
+
+  return slides.map((slide) => {
+    if (!slide || typeof slide !== 'object') return slide;
+
+    const slideTs = slide.updated_at || slide.timestamp || slide.id || configTimestamp || Date.now();
+
+    return {
+      ...slide,
+      image: slide.image ? appendCacheBustParam(slide.image, slideTs) : slide.image,
+      videoUrl: slide.videoUrl ? appendCacheBustParam(slide.videoUrl, slideTs) : slide.videoUrl,
+      poster: slide.poster ? appendCacheBustParam(slide.poster, slideTs) : slide.poster,
+    };
+  });
+}
+
+/**
  * Safely reads a setting checking Server API, Supabase, and LocalStorage.
  */
 export async function getSiteSetting(key: string) {
@@ -302,7 +359,7 @@ export async function getSiteSetting(key: string) {
     bestVal = dbVal !== null && dbVal !== undefined ? dbVal : (serverVal !== null && serverVal !== undefined ? serverVal : localVal);
   }
 
-  // --- SPECIAL HANDLING FOR hero_config TO ENSURE LATEST VIDEO HERO SLIDE IS ALWAYS PRESENT ---
+// --- SPECIAL HANDLING FOR hero_config TO ENSURE LATEST VIDEO HERO SLIDE IS ALWAYS PRESENT ---
   if (key === 'hero_config') {
     let parsedBest = bestVal ? (typeof bestVal === 'string' ? JSON.parse(bestVal) : bestVal) : null;
     let slides = parsedBest?.slides || (Array.isArray(parsedBest) ? parsedBest : []);
@@ -310,6 +367,7 @@ export async function getSiteSetting(key: string) {
     const hasVideoSlide = Array.isArray(slides) && slides.some((s: any) => s && (s.type === 'video' || s.videoUrl || (typeof s.image === 'string' && (s.image.endsWith('.webm') || s.image.endsWith('.mp4')))));
     const isStaleData = !parsedBest?.updated_at || new Date(parsedBest.updated_at).getTime() < new Date('2026-08-12T12:00:00.000Z').getTime();
 
+    let finalSlides = slides;
     if (!parsedBest || !Array.isArray(slides) || slides.length === 0 || !hasVideoSlide || isStaleData) {
       const videoSlide = DEFAULT_HERO_CONFIG.slides[0];
       const ketuaSlide = DEFAULT_HERO_CONFIG.slides[1];
@@ -318,14 +376,17 @@ export async function getSiteSetting(key: string) {
         ? slides.filter((s: any) => s && s.id !== 1786206064378 && s.id !== 1786206064379 && s.id !== 'video-main-1')
         : [];
 
-      const mergedSlides = [videoSlide, ketuaSlide, ...otherSlides];
-
-      bestVal = {
-        settings: parsedBest?.settings || DEFAULT_HERO_CONFIG.settings,
-        slides: mergedSlides,
-        updated_at: new Date().toISOString()
-      };
+      finalSlides = [videoSlide, ketuaSlide, ...otherSlides];
     }
+
+    const configTs = parsedBest?.updated_at || new Date().toISOString();
+    const cacheBustedSlides = applyCacheBustingToHeroSlides(finalSlides, configTs);
+
+    bestVal = {
+      settings: parsedBest?.settings || DEFAULT_HERO_CONFIG.settings,
+      slides: cacheBustedSlides,
+      updated_at: configTs
+    };
   }
 
   if (bestVal) {

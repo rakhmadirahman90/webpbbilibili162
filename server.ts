@@ -111,6 +111,38 @@ async function startServer() {
       }
     }
 
+    function appendCacheBustParam(url?: string, timestamp?: string | number): string {
+      if (!url || typeof url !== 'string') return '';
+      const trimmed = url.trim();
+      if (!trimmed || trimmed.startsWith('data:') || trimmed.startsWith('blob:')) return trimmed;
+
+      let ts: number;
+      if (typeof timestamp === 'number') {
+        ts = timestamp;
+      } else if (typeof timestamp === 'string' && timestamp.trim().length > 0) {
+        const parsed = new Date(timestamp).getTime();
+        ts = !isNaN(parsed) && parsed > 0 ? parsed : (Number(timestamp) || Date.now());
+      } else {
+        ts = Date.now();
+      }
+
+      try {
+        if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+          const u = new URL(trimmed);
+          u.searchParams.set('v', String(ts));
+          return u.toString();
+        } else {
+          const [base, search] = trimmed.split('?');
+          const params = new URLSearchParams(search || '');
+          params.set('v', String(ts));
+          return `${base}?${params.toString()}`;
+        }
+      } catch {
+        const delim = trimmed.includes('?') ? '&' : '?';
+        return `${trimmed}${delim}v=${ts}`;
+      }
+    }
+
     // Default hero config with video slide as #1 and ketua photo as #2
     const DEFAULT_HERO_CONFIG = {
       slides: [
@@ -210,16 +242,31 @@ async function startServer() {
               const hasVideo = Array.isArray(slides) && slides.some((s: any) => s && (s.type === 'video' || s.videoUrl || (typeof s.image === 'string' && (s.image.endsWith('.webm') || s.image.endsWith('.mp4')))));
               const isStale = !dbVal?.updated_at || new Date(dbVal.updated_at).getTime() < new Date('2026-08-12T12:00:00.000Z').getTime();
               
+              let finalSlides = slides;
               if (!hasVideo || isStale) {
                 const otherSlides = Array.isArray(slides)
                   ? slides.filter((s: any) => s && s.id !== 1786206064378 && s.id !== 1786206064379 && s.id !== 'video-main-1')
                   : [];
-                finalVal = {
-                  settings: dbVal?.settings || DEFAULT_HERO_CONFIG.settings,
-                  slides: [DEFAULT_HERO_CONFIG.slides[0], DEFAULT_HERO_CONFIG.slides[1], ...otherSlides],
-                  updated_at: new Date().toISOString()
-                };
+                finalSlides = [DEFAULT_HERO_CONFIG.slides[0], DEFAULT_HERO_CONFIG.slides[1], ...otherSlides];
               }
+
+              const configTs = dbVal?.updated_at || new Date().toISOString();
+              const cacheBustedSlides = (Array.isArray(finalSlides) ? finalSlides : []).map((s: any) => {
+                if (!s || typeof s !== 'object') return s;
+                const slideTs = s.updated_at || s.timestamp || s.id || configTs;
+                return {
+                  ...s,
+                  image: s.image ? appendCacheBustParam(s.image, slideTs) : s.image,
+                  videoUrl: s.videoUrl ? appendCacheBustParam(s.videoUrl, slideTs) : s.videoUrl,
+                  poster: s.poster ? appendCacheBustParam(s.poster, slideTs) : s.poster,
+                };
+              });
+
+              finalVal = {
+                settings: dbVal?.settings || DEFAULT_HERO_CONFIG.settings,
+                slides: cacheBustedSlides,
+                updated_at: configTs
+              };
             }
 
             if (localVal && localTs > dbTs) {

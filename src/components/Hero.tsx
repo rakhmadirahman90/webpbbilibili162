@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '../supabase'; 
 import { getOptimizedImageUrl } from '../utils/imageOptimizer'; 
-import { getSiteSetting } from '../utils/siteSettingsHelper';
+import { getSiteSetting, appendCacheBustParam } from '../utils/siteSettingsHelper';
 
 export function isVideoUrl(url?: string, type?: string): boolean {
   if (type === 'video') return true;
@@ -203,24 +203,16 @@ export default function Hero() {
         }
         const allSlides = config.slides || (Array.isArray(config) ? config : []);
         const activeSlides = allSlides.filter((s: any) => s && s.active !== false);
-        if (activeSlides.length > 0) {
-          setSlides(activeSlides);
-        } else if (allSlides.length > 0) {
-          setSlides(allSlides);
-        } else if (config.slides) {
-          setSlides([]);
-        } else {
-          setSlides([defaultSlides[0]]);
-        }
+        setSlides(activeSlides);
         if (config.settings) {
           setSettings(config.settings);
         }
       } else {
-        setSlides([defaultSlides[0]]);
+        setSlides(defaultSlides.filter((s: any) => s && s.active !== false));
       }
     } catch (err) {
       console.warn("Error fetching hero data:", err);
-      setSlides([defaultSlides[0]]);
+      setSlides(defaultSlides.filter((s: any) => s && s.active !== false));
     } finally {
       setLoading(false);
     }
@@ -241,7 +233,7 @@ export default function Hero() {
             const val = typeof e.detail.value === 'string' ? JSON.parse(e.detail.value) : e.detail.value;
             const allSlides = val.slides || (Array.isArray(val) ? val : []);
             const activeSlides = allSlides.filter((s: any) => s && s.active !== false);
-            if (activeSlides.length > 0) setSlides(activeSlides);
+            setSlides(activeSlides);
             if (val.settings) setSettings(val.settings);
           } catch (err) {}
         }
@@ -287,24 +279,34 @@ export default function Hero() {
   }, []);
 
   useEffect(() => {
+    if (slides.length > 0 && currentSlide >= slides.length) {
+      setCurrentSlide(0);
+    }
+  }, [slides, currentSlide]);
+
+  useEffect(() => {
     if (slides.length <= 1) return;
     const timer = setInterval(() => handleNext(), settings.duration * 1000);
     return () => clearInterval(timer);
   }, [slides, currentSlide, settings.duration]);
 
   const handleNext = () => {
-    if (isTransitioning) return;
+    if (isTransitioning || slides.length === 0) return;
     setIsTransitioning(true);
     setCurrentSlide((prev) => (prev + 1) % slides.length);
     setTimeout(() => setIsTransitioning(false), 1500);
   };
 
   const handlePrev = () => {
-    if (isTransitioning) return;
+    if (isTransitioning || slides.length === 0) return;
     setIsTransitioning(true);
     setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
     setTimeout(() => setIsTransitioning(false), 1500);
   };
+
+  if (!loading && slides.length === 0) {
+    return null;
+  }
 
   return (
     <section id="home" className="relative w-full pt-16 lg:pt-20 pb-2 sm:pb-4 bg-[#070d1a] overflow-hidden">
@@ -315,9 +317,15 @@ export default function Hero() {
           {/* Background Visual Layer */}
           <div className="absolute inset-0 z-0 w-full h-full flex items-center justify-center">
             {slides.map((slide, index) => {
-              const isVideo = slide.type === 'video' || isVideoUrl(slide.videoUrl, slide.type) || isVideoUrl(slide.image, slide.type);
-              const mediaSrc = slide.videoUrl || (isVideoUrl(slide.image, slide.type) ? slide.image : null) || slide.image;
-              const posterSrc = slide.poster || (slide.image && slide.image !== mediaSrc ? slide.image : undefined);
+              const slideTs = slide.updated_at || slide.timestamp || slide.id;
+              const rawMediaSrc = slide.videoUrl || (isVideoUrl(slide.image, slide.type) ? slide.image : null) || slide.image;
+              const rawPosterSrc = slide.poster || (slide.image && slide.image !== rawMediaSrc ? slide.image : undefined);
+
+              const mediaSrc = appendCacheBustParam(rawMediaSrc, slideTs);
+              const posterSrc = appendCacheBustParam(rawPosterSrc, slideTs);
+              const imageSrc = appendCacheBustParam(slide.image, slideTs);
+
+              const isVideo = slide.type === 'video' || isVideoUrl(rawMediaSrc, slide.type) || isVideoUrl(slide.image, slide.type);
               const isCurrent = index === currentSlide;
 
               return (
@@ -333,7 +341,7 @@ export default function Hero() {
                       <HeroVideoBlur src={mediaSrc} isCurrent={isCurrent} />
                     ) : (
                       <img
-                        src={getOptimizedImageUrl(slide.image, 150, 40)}
+                        src={getOptimizedImageUrl(imageSrc, 150, 40)}
                         alt=""
                         className="w-full h-full object-cover blur-3xl opacity-80 scale-110 select-none pointer-events-none"
                         loading={index === 0 ? "eager" : "lazy"}
@@ -349,7 +357,7 @@ export default function Hero() {
                     </div>
                   ) : (
                     <img
-                      src={getOptimizedImageUrl(slide.image, 1600)}
+                      src={getOptimizedImageUrl(imageSrc, 1600)}
                       alt={slide.title || "Slide PB Bilibili 162"}
                       loading={index === 0 ? "eager" : "lazy"}
                       decoding="async"
