@@ -214,6 +214,8 @@ export default function Hero() {
           setSlides(activeSlides);
         } else if (allSlides.length > 0) {
           setSlides(allSlides);
+        } else if (config.slides) {
+          setSlides([]);
         } else {
           setSlides([defaultSlides[0]]);
         }

@@ -233,21 +233,22 @@ export async function getSiteSetting(key: string) {
   const dbTs = getTimestamp(dbVal);
   const localTs = getTimestamp(localVal);
 
+  const maxTs = Math.max(dbTs, serverTs, localTs);
+
   let bestVal: any = null;
 
-  // Prefer Supabase DB whenever available as central store
-  if (dbVal !== null && dbVal !== undefined) {
-    if (localTs > dbTs && localTs > serverTs) {
+  if (maxTs > 0) {
+    if (serverTs === maxTs && serverVal !== null && serverVal !== undefined) {
+      bestVal = serverVal;
+    } else if (localTs === maxTs && localVal !== null && localVal !== undefined) {
       bestVal = localVal;
-    } else {
+    } else if (dbTs === maxTs && dbVal !== null && dbVal !== undefined) {
       bestVal = dbVal;
+    } else {
+      bestVal = serverVal || localVal || dbVal;
     }
   } else {
-    if (serverTs > 0 || localTs > 0) {
-      bestVal = serverTs >= localTs ? serverVal : localVal;
-    } else {
-      bestVal = serverVal || localVal;
-    }
+    bestVal = dbVal !== null && dbVal !== undefined ? dbVal : (serverVal !== null && serverVal !== undefined ? serverVal : localVal);
   }
 
   if (bestVal) {

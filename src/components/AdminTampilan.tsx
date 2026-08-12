@@ -127,8 +127,12 @@ export default function AdminTampilan() {
 
       if (heroVal) {
         const val = typeof heroVal === 'string' ? JSON.parse(heroVal) : heroVal;
-        setSlides(val.slides && val.slides.length > 0 ? val.slides : DEFAULT_SLIDES);
-        setHeroSettings(val.settings || { duration: 7 });
+        if (val && Array.isArray(val.slides)) {
+          setSlides(val.slides);
+        } else {
+          setSlides(DEFAULT_SLIDES);
+        }
+        if (val.settings) setHeroSettings(val.settings);
       } else {
         setSlides(DEFAULT_SLIDES);
       }

@@ -190,12 +190,14 @@ async function startServer() {
 
     app.get("/api/site-settings", async (req, res) => {
       const key = (req.query.key as string) || 'hero_config';
-      const isRefresh = req.query.refresh === 'true';
       const store = loadLocalSettingsStore();
+      const localVal = store[key];
 
-      if (!isRefresh && store[key] !== undefined && store[key] !== null) {
-        return res.json({ key, value: store[key] });
-      }
+      const getTs = (v: any) => {
+        if (!v) return 0;
+        const p = typeof v === 'string' ? (() => { try { return JSON.parse(v); } catch { return {}; } })() : v;
+        return p?.updated_at ? new Date(p.updated_at).getTime() || 0 : 0;
+      };
 
       // Try fetching live setting from Supabase REST API
       try {
@@ -208,6 +210,13 @@ async function startServer() {
           const data = await response.json();
           if (Array.isArray(data) && data.length > 0 && data[0].value !== undefined && data[0].value !== null) {
             const dbVal = typeof data[0].value === 'string' ? JSON.parse(data[0].value) : data[0].value;
+            const localTs = getTs(localVal);
+            const dbTs = getTs(dbVal);
+
+            if (localVal && localTs > dbTs) {
+              return res.json({ key, value: localVal });
+            }
+
             store[key] = dbVal;
             saveLocalSettingsStore(store);
             return res.json({ key, value: dbVal });
