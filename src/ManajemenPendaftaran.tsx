@@ -91,13 +91,26 @@ export default function ManajemenPendaftaran() {
     "Dewasa / Umum", "Veteran (35+ / 40+)"
   ];
 
-// --- MENGHITUNG JUMLAH PENDAFTAR (STATISTIK LENGKAP) ---
+// Helper untuk normalisasi status agar konsisten dengan DB
+const getStatusCategory = (st?: string): 'pending' | 'diterima' | 'ditolak' => {
+  if (!st) return 'pending';
+  const clean = st.trim().toLowerCase();
+  if (['diterima', 'verified', 'active', 'approved', 'terima', 'disetujui'].includes(clean)) {
+    return 'diterima';
+  }
+  if (['ditolak', 'rejected', 'tolak', 'disapproved'].includes(clean)) {
+    return 'ditolak';
+  }
+  return 'pending';
+};
+
+// --- MENGHITUNG JUMLAH PENDAFTAR (STATISTIK LENGKAP REALTIME) ---
 const totalPendaftar = registrants.length;
 
-// Filter Status
-const totalPending = registrants.filter(r => !r.status || r.status === 'Pending' || r.status === 'Menunggu').length;
-const totalDiterima = registrants.filter(r => r.status === 'Diterima' || r.status === 'Verified').length;
-const totalDitolak = registrants.filter(r => r.status === 'Ditolak' || r.status === 'Rejected').length;
+// Filter Status Verifikasi
+const totalPending = registrants.filter(r => getStatusCategory(r.status) === 'pending').length;
+const totalDiterima = registrants.filter(r => getStatusCategory(r.status) === 'diterima').length;
+const totalDitolak = registrants.filter(r => getStatusCategory(r.status) === 'ditolak').length;
 
 // Filter Jenis Kelamin Umum (Dipaksa Uppercase untuk keamanan)
 const totalPutra = registrants.filter(r => (r.jenis_kelamin || '').toUpperCase().trim() === 'PUTRA').length;
@@ -113,12 +126,12 @@ const totalMudaPutri = registrants.filter(r =>
 ).length;
 
 // --- STATISTIK ATLET SENIOR ---
-const totalSenior = registrants.filter(r => (r.kategori_atlet || '').toUpperCase().trim() === 'SENIOR').length;
+const totalSenior = registrants.filter(r => (r.kategori_atlet || '').toUpperCase().trim() !== 'MUDA').length;
 const totalSeniorPutra = registrants.filter(r => 
-  (r.kategori_atlet || '').toUpperCase().trim() === 'SENIOR' && (r.jenis_kelamin || '').toUpperCase().trim() === 'PUTRA'
+  (r.kategori_atlet || '').toUpperCase().trim() !== 'MUDA' && (r.jenis_kelamin || '').toUpperCase().trim() === 'PUTRA'
 ).length;
 const totalSeniorPutri = registrants.filter(r => 
-  (r.kategori_atlet || '').toUpperCase().trim() === 'SENIOR' && (r.jenis_kelamin || '').toUpperCase().trim() === 'PUTRI'
+  (r.kategori_atlet || '').toUpperCase().trim() !== 'MUDA' && (r.jenis_kelamin || '').toUpperCase().trim() === 'PUTRI'
 ).length;
 
   // --- UTILS ---
@@ -291,16 +304,16 @@ const totalSeniorPutri = registrants.filter(r =>
       (item?.kategori_atlet || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (item?.whatsapp || '').toLowerCase().includes(searchTerm.toLowerCase());
 
-    const itemStatus = (item?.status || 'Pending').toLowerCase();
+    const cat = getStatusCategory(item?.status);
     
     if (statusFilter === 'pending') {
-      return matchesSearch && (itemStatus === 'pending' || itemStatus === 'menunggu');
+      return matchesSearch && cat === 'pending';
     }
     if (statusFilter === 'diterima') {
-      return matchesSearch && (itemStatus === 'diterima' || itemStatus === 'verified');
+      return matchesSearch && cat === 'diterima';
     }
     if (statusFilter === 'ditolak') {
-      return matchesSearch && (itemStatus === 'ditolak' || itemStatus === 'rejected');
+      return matchesSearch && cat === 'ditolak';
     }
 
     return matchesSearch;

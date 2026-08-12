@@ -188,12 +188,39 @@ async function startServer() {
       });
     });
 
-    app.get("/api/site-settings", (req, res) => {
+    app.get("/api/site-settings", async (req, res) => {
       const key = (req.query.key as string) || 'hero_config';
+      const isRefresh = req.query.refresh === 'true';
       const store = loadLocalSettingsStore();
+
+      if (!isRefresh && store[key] !== undefined && store[key] !== null) {
+        return res.json({ key, value: store[key] });
+      }
+
+      // Try fetching live setting from Supabase REST API
+      try {
+        const response = await fetch(`https://missjyvqfehamtpyodjr.supabase.co/rest/v1/site_settings?key=eq.${key}&select=*`, {
+          headers: {
+            'apikey': 'sb_publishable_trhfpzLX50WdkdaItRPFMQ_ewqF0fgn'
+          }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (Array.isArray(data) && data.length > 0 && data[0].value !== undefined && data[0].value !== null) {
+            const dbVal = typeof data[0].value === 'string' ? JSON.parse(data[0].value) : data[0].value;
+            store[key] = dbVal;
+            saveLocalSettingsStore(store);
+            return res.json({ key, value: dbVal });
+          }
+        }
+      } catch (e) {
+        console.warn("[server.ts] Supabase fetch error for site-settings:", e);
+      }
+
       if (store[key] !== undefined && store[key] !== null) {
         return res.json({ key, value: store[key] });
       }
+
       if (key === 'hero_config') {
         return res.json({ key: 'hero_config', value: DEFAULT_HERO_CONFIG });
       }

@@ -28,17 +28,33 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     async function fetchStats() {
-      const { count: atletCount } = await supabase.from('rankings').select('id', { count: 'exact', head: true });
-      const { count: daftarCount } = await supabase.from('pendaftaran').select('id', { count: 'exact', head: true });
-      const { data: muda } = await supabase.from('atlet_stats').select('id').eq('kategori', 'MUDA');
-      const { data: senior } = await supabase.from('atlet_stats').select('id').eq('kategori', 'SENIOR');
-      
-      setStats({
-        totalAtlets: atletCount || 0,
-        totalPendaftaran: daftarCount || 0,
-        totalMuda: muda?.length || 0,
-        totalSenior: senior?.length || 0
-      });
+      try {
+        const { data: pendaftaran } = await supabase.from('pendaftaran').select('kategori_atlet');
+        const { count: rankCount } = await supabase.from('rankings').select('id', { count: 'exact', head: true });
+        
+        const totalDaftar = pendaftaran?.length || 0;
+        let totalMuda = 0;
+        let totalSenior = 0;
+
+        if (pendaftaran && pendaftaran.length > 0) {
+          totalMuda = pendaftaran.filter(r => (r.kategori_atlet || '').toUpperCase().trim() === 'MUDA').length;
+          totalSenior = pendaftaran.filter(r => (r.kategori_atlet || '').toUpperCase().trim() !== 'MUDA').length;
+        } else {
+          const { data: muda } = await supabase.from('atlet_stats').select('id').eq('kategori', 'MUDA');
+          const { data: senior } = await supabase.from('atlet_stats').select('id').eq('kategori', 'SENIOR');
+          totalMuda = muda?.length || 0;
+          totalSenior = senior?.length || 0;
+        }
+
+        setStats({
+          totalAtlets: rankCount || totalDaftar,
+          totalPendaftaran: totalDaftar,
+          totalMuda: totalMuda,
+          totalSenior: totalSenior
+        });
+      } catch (err) {
+        console.error('Error fetching stats:', err);
+      }
     }
 
     // Read local active session

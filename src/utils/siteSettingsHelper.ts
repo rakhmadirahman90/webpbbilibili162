@@ -173,6 +173,28 @@ export async function deleteAthleteCompletely(id?: string, name?: string) {
  * Safely reads a setting checking Server API, Supabase, and LocalStorage.
  */
 export async function getSiteSetting(key: string) {
+  let dbVal: any = null;
+  let dbUpdatedAt: string | null = null;
+
+  // 1. Primary Source of Truth: Supabase Database (Shared between AI Studio preview and Live Site)
+  try {
+    const { data, error } = await supabase
+      .from('site_settings')
+      .select('value, updated_at')
+      .eq('key', key)
+      .maybeSingle();
+
+    if (!error && data?.value !== undefined && data.value !== null) {
+      dbVal = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
+      dbUpdatedAt = data.updated_at || null;
+      if (dbVal && typeof dbVal === 'object') {
+        dbVal = { ...dbVal, updated_at: dbVal.updated_at || dbUpdatedAt || new Date().toISOString() };
+      }
+    }
+  } catch (err) {
+    console.warn("[siteSettingsHelper] Error querying Supabase for key " + key, err);
+  }
+
   let serverVal: any = null;
   let localVal: any = null;
 
@@ -187,7 +209,6 @@ export async function getSiteSetting(key: string) {
     }
   } catch (e) {}
 
-  // 1. Try Express Server Store (/api/site-settings)
   try {
     const apiRes = await fetch(`/api/site-settings?key=${key}`);
     if (apiRes.ok) {
@@ -198,21 +219,6 @@ export async function getSiteSetting(key: string) {
     }
   } catch (e) {}
 
-  // 2. Try Supabase
-  let dbVal: any = null;
-  try {
-    const { data, error } = await supabase
-      .from('site_settings')
-      .select('value')
-      .eq('key', key)
-      .maybeSingle();
-
-    if (!error && data?.value !== undefined && data.value !== null) {
-      dbVal = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
-    }
-  } catch (err) {}
-
-  // Smart prioritization: Supabase database is the primary source of truth across environments/browsers.
   const getTimestamp = (val: any) => {
     if (!val) return 0;
     const parsed = typeof val === 'string' ? (() => { try { return JSON.parse(val); } catch { return {}; } })() : val;
@@ -229,14 +235,10 @@ export async function getSiteSetting(key: string) {
 
   let bestVal: any = null;
 
-  // Supabase DB is the central database shared between AI Studio preview and Live site.
+  // Prefer Supabase DB whenever available as central store
   if (dbVal !== null && dbVal !== undefined) {
-    if (dbTs >= localTs && dbTs >= serverTs) {
-      bestVal = dbVal;
-    } else if (localTs > dbTs && localTs > serverTs) {
+    if (localTs > dbTs && localTs > serverTs) {
       bestVal = localVal;
-    } else if (serverTs > dbTs && serverTs > localTs) {
-      bestVal = serverVal;
     } else {
       bestVal = dbVal;
     }
@@ -245,43 +247,6 @@ export async function getSiteSetting(key: string) {
       bestVal = serverTs >= localTs ? serverVal : localVal;
     } else {
       bestVal = serverVal || localVal;
-    }
-  }
-
-  if (key === 'hero_config') {
-    const OFFICIAL_VIDEO_SLIDE = {
-      id: 1786206064378,
-      title: 'PB Bilibili Video Hero',
-      subtitle: '',
-      image: 'https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/assets/hero-sliders/hero-video-1786206060056.webm',
-      videoUrl: 'https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/assets/hero-sliders/hero-video-1786206060056.webm',
-      poster: 'https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/assets/hero-sliders/hero-poster-1786206060056.webp',
-      type: 'video',
-      active: true
-    };
-
-    if (bestVal && typeof bestVal === 'object') {
-      const slides = bestVal.slides || (Array.isArray(bestVal) ? bestVal : []);
-
-      // Ensure every slide retains its user-configured active status (true/false)
-      const sanitizedSlides = slides.map((s: any) => {
-        if (!s) return s;
-        return {
-          ...s,
-          active: s.active !== undefined ? Boolean(s.active) : true
-        };
-      });
-
-      bestVal = {
-        ...bestVal,
-        slides: sanitizedSlides.length > 0 ? sanitizedSlides : [OFFICIAL_VIDEO_SLIDE]
-      };
-    } else {
-      bestVal = {
-        slides: [OFFICIAL_VIDEO_SLIDE],
-        settings: { duration: 7 },
-        updated_at: new Date().toISOString()
-      };
     }
   }
 
