@@ -80,7 +80,7 @@ const renderDescriptionWithLinks = (text: string) => {
 };
 
 // --- KOMPONEN: SORTABLE ITEM ---
-function SortablePopupItem({ item, toggleStatus, startEdit, handleDelete }: any) {
+function SortablePopupItem({ item, toggleStatus, startEdit, handleDelete, movePosition, totalCount }: any) {
   const {
     attributes,
     listeners,
@@ -107,6 +107,7 @@ function SortablePopupItem({ item, toggleStatus, startEdit, handleDelete }: any)
         <div 
           {...attributes} {...listeners}
           className="absolute top-3 right-3 sm:top-5 sm:right-5 z-40 p-2 bg-black/50 backdrop-blur-md rounded-xl cursor-grab active:cursor-grabbing text-white/50 hover:text-blue-500 transition-colors"
+          title="Tahan & geser untuk mengubah urutan"
         >
           <GripVertical size={18} />
         </div>
@@ -121,6 +122,23 @@ function SortablePopupItem({ item, toggleStatus, startEdit, handleDelete }: any)
           <span className={`px-2.5 sm:px-4 py-1 sm:py-1.5 rounded-full text-[8px] sm:text-[9px] font-black uppercase tracking-wider backdrop-blur-md border w-fit truncate ${item.is_active ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-slate-900/50 text-white/50 border-white/10'}`}>
             {item.is_active ? `• POSISI ${item.urutan + 1}` : 'NON-AKTIF'}
           </span>
+
+          {/* PILIHAN POSISI INSTAN */}
+          <div className="flex items-center gap-1.5 bg-black/80 backdrop-blur-md border border-blue-500/30 rounded-full px-2.5 py-1 text-white w-fit shadow-lg shadow-black/50">
+            <span className="text-[8px] sm:text-[9px] font-black text-amber-400 uppercase tracking-wider whitespace-nowrap">Urutan:</span>
+            <select
+              value={item.urutan + 1}
+              onChange={(e) => movePosition(item.id, Number(e.target.value) - 1)}
+              className="bg-blue-600 hover:bg-blue-500 text-white font-black text-[9px] sm:text-[10px] rounded-lg px-2 py-0.5 outline-none cursor-pointer transition-all border border-blue-400/30"
+            >
+              {Array.from({ length: totalCount || 1 }).map((_, idx) => (
+                <option key={idx + 1} value={idx + 1} className="bg-[#0F172A] text-white font-bold">
+                  {idx + 1} {idx === item.urutan ? '(Saat ini)' : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+
           {(item.id === OFFICIAL_LATEST_POPUP.id || item.judul?.toUpperCase().includes('JADWAL LATIHAN')) && (
             <span className="px-2.5 py-1 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-full text-[7px] sm:text-[8px] font-black uppercase tracking-wider backdrop-blur-md flex items-center gap-1 w-fit truncate">
               🏸 Jadwal Latihan
@@ -322,6 +340,37 @@ export default function AdminPopup() {
     } catch (err) {
       console.warn("Supabase reorder sync error (handled via fallback):", err);
     }
+  };
+
+  const movePosition = async (itemId: string, targetIndex: number) => {
+    const currentIndex = popups.findIndex(p => p.id === itemId);
+    if (currentIndex === -1 || targetIndex < 0 || targetIndex >= popups.length || currentIndex === targetIndex) return;
+
+    const newOrder = arrayMove(popups, currentIndex, targetIndex);
+    const updates = newOrder.map((popup, index) => ({
+      ...popup,
+      urutan: index
+    }));
+
+    await persistPopups(updates);
+
+    try {
+      const dbUpdates = updates.map(({ id, urutan, judul, deskripsi, url_gambar, is_active, file_url }) => ({
+        id, urutan, judul, deskripsi, url_gambar, is_active, file_url
+      }));
+      await supabase.from('konfigurasi_popup').upsert(dbUpdates);
+    } catch (err) {
+      console.warn("Supabase reorder sync error (handled via fallback):", err);
+    }
+
+    Swal.fire({
+      toast: true,
+      position: 'top-end',
+      icon: 'success',
+      title: `Dipindah ke Urutan ${targetIndex + 1}`,
+      showConfirmButton: false,
+      timer: 1500
+    });
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -616,7 +665,7 @@ export default function AdminPopup() {
 
       <div className="flex items-center gap-4 mb-8">
         <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-white/10"></div>
-        <h2 className="text-white/40 font-black text-[10px] uppercase tracking-[0.5em] whitespace-nowrap">Tahan & Geser Ikon Grip Untuk Urutan</h2>
+        <h2 className="text-white/40 font-black text-[9px] sm:text-[10px] uppercase tracking-[0.3em] sm:tracking-[0.5em] text-center">Pilih Urutan Posisi Instan (1, 2, dst) atau Tahan & Geser Grip</h2>
         <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-white/10"></div>
       </div>
 
@@ -633,6 +682,8 @@ export default function AdminPopup() {
                   toggleStatus={toggleStatus} 
                   startEdit={startEdit} 
                   handleDelete={handleDelete} 
+                  movePosition={movePosition}
+                  totalCount={popups.length}
                 />
               ))}
             </div>
