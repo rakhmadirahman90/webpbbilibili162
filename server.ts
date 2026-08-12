@@ -165,7 +165,7 @@ async function startServer() {
           subtitle: 'Pusat Pembinaan Bulutangkis Standar BWF',
           image: 'https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/logos/ketua.png',
           type: 'image',
-          active: true,
+          active: false,
           titleSize: 24,
           subtitleSize: 10,
           fontFamily: 'font-sans'
@@ -175,7 +175,7 @@ async function startServer() {
           title: 'Pusat Pelatihan PB Bilibili 162',
           subtitle: 'Fasilitas lapangan berkualitas internasional dengan standar karpet BWF.',
           image: '/whatsapp_image_2026-02-02_at_08.39.03.jpeg',
-          active: true,
+          active: false,
           titleSize: 24,
           subtitleSize: 10,
           fontFamily: 'font-sans'
@@ -185,14 +185,14 @@ async function startServer() {
           title: 'Keluarga Besar Atlet Kami',
           subtitle: 'Membangun komunitas solid dengan dedikasi tinggi terhadap bulutangkis.',
           image: '/whatsapp_image_2026-02-02_at_09.53.05_(1).jpeg',
-          active: true,
+          active: false,
           titleSize: 24,
           subtitleSize: 10,
           fontFamily: 'font-sans'
         }
       ],
       settings: { duration: 7 },
-      updated_at: '2026-08-12T20:00:00.000Z'
+      updated_at: '2026-08-12T23:59:59.000Z'
     };
 
     const sseClients: any[] = [];
@@ -240,14 +240,19 @@ async function startServer() {
             if (key === 'hero_config') {
               const slides = dbVal?.slides || (Array.isArray(dbVal) ? dbVal : []);
               const hasVideo = Array.isArray(slides) && slides.some((s: any) => s && (s.type === 'video' || s.videoUrl || (typeof s.image === 'string' && (s.image.endsWith('.webm') || s.image.endsWith('.mp4')))));
-              const isStale = !dbVal?.updated_at || new Date(dbVal.updated_at).getTime() < new Date('2026-08-12T12:00:00.000Z').getTime();
+              const isStale = !dbVal?.updated_at || new Date(dbVal.updated_at).getTime() < new Date('2026-08-12T23:50:00.000Z').getTime();
               
               let finalSlides = slides;
               if (!hasVideo || isStale) {
-                const otherSlides = Array.isArray(slides)
-                  ? slides.filter((s: any) => s && s.id !== 1786206064378 && s.id !== 1786206064379 && s.id !== 'video-main-1')
-                  : [];
-                finalSlides = [DEFAULT_HERO_CONFIG.slides[0], DEFAULT_HERO_CONFIG.slides[1], ...otherSlides];
+                const defaultVideoSlide = DEFAULT_HERO_CONFIG.slides[0];
+                const existingVideoSlide = Array.isArray(slides) ? slides.find((s: any) => s && (s.id === 1786206064378 || s.type === 'video' || s.videoUrl)) : null;
+                const videoSlide = existingVideoSlide ? { ...defaultVideoSlide, ...existingVideoSlide, active: true } : defaultVideoSlide;
+
+                const otherSlides = Array.isArray(slides) && slides.length > 0
+                  ? slides.filter((s: any) => s && s.id !== 1786206064378 && s.type !== 'video' && !s.videoUrl)
+                  : DEFAULT_HERO_CONFIG.slides.slice(1);
+
+                finalSlides = [videoSlide, ...otherSlides];
               }
 
               const configTs = dbVal?.updated_at || new Date().toISOString();

@@ -178,10 +178,10 @@ export const defaultSlides = [
     subtitle: 'Pusat Pembinaan Bulutangkis Standar BWF',
     image: 'https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/logos/ketua.png',
     type: 'image',
-    active: true
+    active: false
   },
-  { id: 1, title: 'Pusat Pelatihan PB Bilibili 162', subtitle: 'Fasilitas lapangan berkualitas internasional dengan standar karpet BWF', image: '/whatsapp_image_2026-02-02_at_08.39.03.jpeg', active: true },
-  { id: 2, title: 'Keluarga Besar Atlet Kami', subtitle: 'Membangun komunitas solid dengan dedikasi tinggi terhadap bulutangkis', image: '/whatsapp_image_2026-02-02_at_09.53.05_(1).jpeg', active: true }
+  { id: 1, title: 'Pusat Pelatihan PB Bilibili 162', subtitle: 'Fasilitas lapangan berkualitas internasional dengan standar karpet BWF', image: '/whatsapp_image_2026-02-02_at_08.39.03.jpeg', active: false },
+  { id: 2, title: 'Keluarga Besar Atlet Kami', subtitle: 'Membangun komunitas solid dengan dedikasi tinggi terhadap bulutangkis', image: '/whatsapp_image_2026-02-02_at_09.53.05_(1).jpeg', active: false }
 ];
 
 export default function Hero() {
