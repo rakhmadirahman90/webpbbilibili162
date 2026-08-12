@@ -11,12 +11,12 @@ import {
 
 const DEFAULT_SLIDES = [
   {
-    id: 'video-main-1',
-    title: 'PB Bilibili 162 Professional Club',
-    subtitle: 'Klub Bulutangkis Profesional dengan Fasilitas & Pembinaan Standar BWF',
-    image: '/vid-20260206-wa0019.mp4',
-    videoUrl: '/vid-20260206-wa0019.mp4',
-    poster: '/whatsapp_image_2026-02-02_at_08.39.03.jpeg',
+    id: 1786206064378,
+    title: 'PB Bilibili Video Hero',
+    subtitle: 'PB BILIBILI 162 PROFESSIONAL CLUB',
+    image: 'https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/assets/hero-sliders/hero-video-1786206060056.webm',
+    videoUrl: 'https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/assets/hero-sliders/hero-video-1786206060056.webm',
+    poster: 'https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/assets/hero-sliders/hero-poster-1786206060056.webp',
     type: 'video',
     active: true,
     titleSize: 28,
@@ -24,10 +24,22 @@ const DEFAULT_SLIDES = [
     fontFamily: 'font-sans'
   },
   {
+    id: 1786206064379,
+    title: 'Ketua & Pembina PB Bilibili 162',
+    subtitle: 'Pusat Pembinaan Bulutangkis Standar BWF',
+    image: 'https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/logos/ketua.png',
+    type: 'image',
+    active: true,
+    titleSize: 24,
+    subtitleSize: 10,
+    fontFamily: 'font-sans'
+  },
+  {
     id: 1,
     title: 'Pusat Pelatihan PB Bilibili 162',
     subtitle: 'Fasilitas lapangan berkualitas internasional dengan standar karpet BWF.',
     image: '/whatsapp_image_2026-02-02_at_08.39.03.jpeg',
+    active: true,
     titleSize: 24,
     subtitleSize: 10,
     fontFamily: 'font-sans'
@@ -37,28 +49,11 @@ const DEFAULT_SLIDES = [
     title: 'Keluarga Besar Atlet Kami',
     subtitle: 'Membangun komunitas solid dengan dedikasi tinggi terhadap bulutangkis.',
     image: '/whatsapp_image_2026-02-02_at_09.53.05_(1).jpeg',
+    active: true,
     titleSize: 24,
     subtitleSize: 10,
     fontFamily: 'font-sans'
-  },
-  {
-    id: 3,
-    title: 'Talenta Muda Terpadu',
-    subtitle: 'Program pembinaan terstruktur untuk mencetak juara masa depan.',
-    image: '/whatsapp_image_2026-02-02_at_09.53.05_(2).jpeg',
-    titleSize: 24,
-    subtitleSize: 10,
-    fontFamily: 'font-sans'
-  },
-  {
-    id: 4,
-    title: 'Semangat Juara Bersama',
-    subtitle: 'Komitmen menciptakan ekosistem olahraga yang kompetitif dan kekeluargaan.',
-    image: '/whatsapp_image_2026-02-02_at_09.53.05_(3).jpeg',
-    titleSize: 24,
-    subtitleSize: 10,
-    fontFamily: 'font-sans'
-  },
+  }
 ];
 
 interface HeroSlide {

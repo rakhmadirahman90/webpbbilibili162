@@ -1,59 +1,32 @@
 {
   "hero_config": {
+    "settings": {
+      "duration": 7
+    },
     "slides": [
       {
-        "id": 1784293900169,
-        "image": "https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/assets/hero/hero-1784293900169-1784294693622.jpg",
-        "title": "Judul Baru",
-        "active": true,
-        "subtitle": "Deskripsi...",
-        "titleSize": 24,
-        "fontFamily": "font-sans",
-        "subtitleSize": 10
+        "id": 1786206064378,
+        "title": "PB Bilibili Video Hero",
+        "subtitle": "PB BILIBILI 162 PROFESSIONAL CLUB",
+        "image": "https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/assets/hero-sliders/hero-video-1786206060056.webm",
+        "videoUrl": "https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/assets/hero-sliders/hero-video-1786206060056.webm",
+        "poster": "https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/assets/hero-sliders/hero-poster-1786206060056.webp",
+        "type": "video",
+        "active": true
       },
       {
-        "id": 1783140061023,
-        "image": "https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/assets/hero-sliders/hero-1783140053485.jpg",
-        "title": "-",
-        "subtitle": "-"
-      },
-      {
-        "id": 1779796182501,
-        "image": "https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/assets/hero/hero-1779796182501-1779796196252.png",
-        "title": "-",
-        "active": true,
-        "subtitle": "-",
-        "titleSize": 24,
-        "fontFamily": "font-sans",
-        "subtitleSize": 10
-      },
-      {
-        "id": 1777303638224,
-        "image": "https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/assets/hero/hero-1777303638224-1777303688137.jpg",
-        "title": "Judul Baru",
-        "subtitle": "Deskripsi...",
-        "titleSize": 24,
-        "fontFamily": "font-sans",
-        "subtitleSize": 10
-      },
-      {
-        "id": 1776144422182,
-        "image": "https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/assets/hero-sliders/hero-1776144416332.jpg",
-        "title": "-",
-        "subtitle": "-"
-      },
-      {
-        "id": 1776141271935,
-        "image": "https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/assets/hero-sliders/hero-1776141398204.jpg",
-        "title": "-",
-        "active": false,
-        "subtitle": "-"
+        "id": 1786206064379,
+        "title": "Ketua & Pembina PB Bilibili 162",
+        "subtitle": "Pusat Pembinaan Bulutangkis Standar BWF",
+        "image": "https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/logos/ketua.png",
+        "type": "image",
+        "active": true
       },
       {
         "id": 1,
         "image": "/whatsapp_image_2026-02-02_at_08.39.03.jpeg",
-        "title": "Pusat Pelatihan PB US 162 Bilibili",
-        "active": false,
+        "title": "Pusat Pelatihan PB Bilibili 162",
+        "active": true,
         "subtitle": "Fasilitas lapangan berkualitas internasional dengan standar karpet BWF.",
         "titleSize": 24,
         "fontFamily": "font-sans",
@@ -66,30 +39,22 @@
         "subtitle": "Membangun komunitas solid dengan dedikasi tinggi terhadap bulutangkis.",
         "titleSize": 24,
         "fontFamily": "font-sans",
-        "subtitleSize": 10
-      },
-      {
-        "id": 4,
-        "image": "https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/assets/hero/hero-4-1775402986118.jpeg",
-        "title": "Semangat Juara Bersama",
-        "subtitle": "Komitmen menciptakan ekosistem olahraga yang kompetitif dan kekeluargaan.",
-        "titleSize": 24,
-        "fontFamily": "font-sans",
-        "subtitleSize": 10
-      },
-      {
-        "id": 3,
-        "image": "https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/assets/hero-sliders/hero-1775403813335.jpg",
-        "title": "Talenta Muda Terpadu",
-        "active": false,
-        "subtitle": "Program pembinaan terstruktur untuk mencetak juara masa depan.",
-        "titleSize": 24,
-        "fontFamily": "font-sans",
-        "subtitleSize": 10
+        "subtitleSize": 10,
+        "active": true
       }
     ],
-    "settings": {
-      "duration": 7
-    }
+    "updated_at": "2026-08-12T20:30:00.000Z"
+  },
+  "footer_config": {
+    "address": "Bilibili, Parepare, Sulawesi Selatan",
+    "copyright": "© 2026 PB Bilibili 162. All Rights Reserved.",
+    "description": "PB  Bilibili 162 adalah klub bulutangkis profesional yang berfokus pada pembinaan atlet muda berbakat."
+  },
+  "navbar_branding": {
+    "logo_url": "https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/assets/branding/logo-1775228962198.png",
+    "sub_text": "Professional Badminton",
+    "default_lang": "ID",
+    "brand_name_main": "PB BILIBILI",
+    "brand_name_accent": "162"
   }
 }

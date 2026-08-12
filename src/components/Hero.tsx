@@ -165,7 +165,7 @@ export const defaultSlides = [
   {
     id: 1786206064378,
     title: 'PB Bilibili Video Hero',
-    subtitle: '',
+    subtitle: 'PB BILIBILI 162 PROFESSIONAL CLUB',
     image: 'https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/assets/hero-sliders/hero-video-1786206060056.webm',
     videoUrl: 'https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/assets/hero-sliders/hero-video-1786206060056.webm',
     poster: 'https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/assets/hero-sliders/hero-poster-1786206060056.webp',
@@ -173,22 +173,15 @@ export const defaultSlides = [
     active: true
   },
   {
-    id: 'video-main-1',
-    title: 'PB Bilibili 162 Professional Club',
-    subtitle: 'Klub Bulutangkis Profesional dengan Fasilitas & Pembinaan Standar BWF',
-    image: '/vid-20260206-wa0019.mp4',
-    videoUrl: '/vid-20260206-wa0019.mp4',
-    poster: '/whatsapp_image_2026-02-02_at_08.39.03.jpeg',
-    type: 'video',
-    active: false,
-    titleSize: 28,
-    subtitleSize: 12,
-    fontFamily: 'font-sans'
+    id: 1786206064379,
+    title: 'Ketua & Pembina PB Bilibili 162',
+    subtitle: 'Pusat Pembinaan Bulutangkis Standar BWF',
+    image: 'https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/logos/ketua.png',
+    type: 'image',
+    active: true
   },
-  { id: 1, image: '/whatsapp_image_2026-02-02_at_08.39.03.jpeg', active: false },
-  { id: 2, image: '/whatsapp_image_2026-02-02_at_09.53.05_(1).jpeg', active: false },
-  { id: 3, image: '/whatsapp_image_2026-02-02_at_09.53.05_(2).jpeg', active: false },
-  { id: 4, image: '/whatsapp_image_2026-02-02_at_09.53.05_(3).jpeg', active: false },
+  { id: 1, title: 'Pusat Pelatihan PB Bilibili 162', subtitle: 'Fasilitas lapangan berkualitas internasional dengan standar karpet BWF', image: '/whatsapp_image_2026-02-02_at_08.39.03.jpeg', active: true },
+  { id: 2, title: 'Keluarga Besar Atlet Kami', subtitle: 'Membangun komunitas solid dengan dedikasi tinggi terhadap bulutangkis', image: '/whatsapp_image_2026-02-02_at_09.53.05_(1).jpeg', active: true }
 ];
 
 export default function Hero() {
