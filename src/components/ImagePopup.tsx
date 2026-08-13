@@ -88,6 +88,15 @@ function ImagePopup() {
         merged.unshift(OFFICIAL_LATEST_POPUP);
       }
 
+      // Deduplicate merged by id to prevent duplicate keys
+      const mergedMap = new Map();
+      for (const item of merged) {
+        if (item && item.id) {
+          mergedMap.set(item.id, item);
+        }
+      }
+      merged = Array.from(mergedMap.values());
+
       merged.sort((a, b) => (a.urutan ?? 0) - (b.urutan ?? 0));
 
       const activeItems = merged.filter((p: any) => p && (p.is_active === true || p.active === true));

@@ -259,6 +259,15 @@ export default function AdminPopup() {
         merged.unshift(OFFICIAL_LATEST_POPUP);
       }
 
+      // Deduplicate merged by id to prevent duplicate keys
+      const mergedMap = new Map();
+      for (const item of merged) {
+        if (item && item.id) {
+          mergedMap.set(item.id, item);
+        }
+      }
+      merged = Array.from(mergedMap.values());
+
       // Ensure proper sorting by urutan
       merged.sort((a, b) => (a.urutan ?? 0) - (b.urutan ?? 0));
 
