@@ -323,6 +323,15 @@ export default function AdminPopup() {
     // 1. Save to site_settings JSON store (Primary source of truth across deployments & devices)
     await saveSiteSetting('popup_config', standardizedList, 'Konfigurasi Popup Promo');
 
+    // 1.5. Save to server /api/konfigurasi-popup store
+    try {
+      await fetch('/api/konfigurasi-popup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(standardizedList)
+      });
+    } catch (e) {}
+
     // 2. Sync to Supabase `konfigurasi_popup` table
     try {
       if (standardizedList.length > 0) {

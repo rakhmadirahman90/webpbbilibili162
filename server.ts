@@ -327,6 +327,96 @@ async function startServer() {
       }
     });
 
+    // Persistent JSON Store for Arsip Surat and Konfigurasi Popup
+    const SURAT_FILE = path.join(process.cwd(), 'data', 'arsip_surat.json');
+    const POPUP_FILE = path.join(process.cwd(), 'data', 'konfigurasi_popup.json');
+
+    function loadJsonFile(filePath: string, defaultVal: any = []) {
+      try {
+        if (!fs.existsSync(path.dirname(filePath))) {
+          fs.mkdirSync(path.dirname(filePath), { recursive: true });
+        }
+        if (fs.existsSync(filePath)) {
+          return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+        }
+      } catch (e) {}
+      return defaultVal;
+    }
+
+    function saveJsonFile(filePath: string, data: any) {
+      try {
+        if (!fs.existsSync(path.dirname(filePath))) {
+          fs.mkdirSync(path.dirname(filePath), { recursive: true });
+        }
+        fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
+      } catch (e) {}
+    }
+
+    app.get("/api/arsip-surat", (req, res) => {
+      const data = loadJsonFile(SURAT_FILE, []);
+      res.json(data);
+    });
+
+    app.post("/api/arsip-surat", (req, res) => {
+      try {
+        const item = req.body;
+        const current = loadJsonFile(SURAT_FILE, []);
+        const idx = current.findIndex((i: any) => i.id === item.id || (item.nomor_surat && i.nomor_surat === item.nomor_surat));
+        let updated;
+        if (idx >= 0) {
+          updated = current.map((i: any, index: number) => index === idx ? { ...i, ...item } : i);
+        } else {
+          updated = [item, ...current];
+        }
+        saveJsonFile(SURAT_FILE, updated);
+
+        const payloadStr = JSON.stringify({ table: 'arsip_surat', eventType: 'UPSERT', data: item, value: updated });
+        for (const client of sseClients) {
+          try { client.write(`data: ${payloadStr}\n\n`); } catch (e) {}
+        }
+        res.json({ success: true, data: updated });
+      } catch (err: any) {
+        res.status(500).json({ error: err.message });
+      }
+    });
+
+    app.delete("/api/arsip-surat", (req, res) => {
+      try {
+        const { id } = req.body;
+        const current = loadJsonFile(SURAT_FILE, []);
+        const updated = current.filter((i: any) => i.id !== id && i.nomor_surat !== id);
+        saveJsonFile(SURAT_FILE, updated);
+
+        const payloadStr = JSON.stringify({ table: 'arsip_surat', eventType: 'DELETE', data: { id }, value: updated });
+        for (const client of sseClients) {
+          try { client.write(`data: ${payloadStr}\n\n`); } catch (e) {}
+        }
+        res.json({ success: true, data: updated });
+      } catch (err: any) {
+        res.status(500).json({ error: err.message });
+      }
+    });
+
+    app.get("/api/konfigurasi-popup", (req, res) => {
+      const data = loadJsonFile(POPUP_FILE, []);
+      res.json(data);
+    });
+
+    app.post("/api/konfigurasi-popup", (req, res) => {
+      try {
+        const items = req.body;
+        saveJsonFile(POPUP_FILE, items);
+
+        const payloadStr = JSON.stringify({ table: 'konfigurasi_popup', eventType: 'UPSERT', data: items, value: items });
+        for (const client of sseClients) {
+          try { client.write(`data: ${payloadStr}\n\n`); } catch (e) {}
+        }
+        res.json({ success: true, data: items });
+      } catch (err: any) {
+        res.status(500).json({ error: err.message });
+      }
+    });
+
     app.post("/api/realtime-broadcast", (req, res) => {
       try {
         const { table, eventType, data, key, value } = req.body;
