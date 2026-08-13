@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { supabase } from "../supabase";
 import { broadcastDataChange } from '../utils/realtimeHelper';
+import { saveSiteSetting, getSiteSetting } from '../utils/siteSettingsHelper';
 import Swal from 'sweetalert2';
 import { 
   Plus, Trash2, Image as ImageIcon, Video, 
@@ -77,13 +78,19 @@ export default function AdminGallery({ session }: { session?: any }) {
   async function fetchGallery() {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('gallery')
-        .select('*')
-        .order('created_at', { ascending: false });
-      const localData = JSON.parse(localStorage.getItem('gallery_local') || '[]');
-      const combined = [...(data || []), ...localData];
-      setItems(combined);
+      const data = await getSiteSetting('gallery_list');
+      if (data && Array.isArray(data)) {
+        setItems(data);
+        localStorage.setItem('gallery_local', JSON.stringify(data));
+      } else {
+        const { data: sbData } = await supabase
+          .from('gallery')
+          .select('*')
+          .order('created_at', { ascending: false });
+        const localData = JSON.parse(localStorage.getItem('gallery_local') || '[]');
+        const combined = [...(sbData || []), ...localData];
+        setItems(combined);
+      }
     } catch (err: any) {
       console.error(err.message);
       const localData = JSON.parse(localStorage.getItem('gallery_local') || '[]');
@@ -229,45 +236,21 @@ export default function AdminGallery({ session }: { session?: any }) {
     };
 
     try {
+      let updated;
       if (editingId) {
-        if (typeof editingId === 'string' && editingId.startsWith('local_')) {
-          const localData = JSON.parse(localStorage.getItem('gallery_local') || '[]');
-          const updated = localData.map((item: any) => item.id === editingId ? { ...item, ...payload } : item);
-          localStorage.setItem('gallery_local', JSON.stringify(updated));
-          showToast("Data galeri diperbarui secara lokal!");
-        } else {
-          const { error } = await supabase.from('gallery').update(payload).eq('id', editingId);
-          if (error) {
-            if (error.message.includes('row-level security') || error.code === '42501') {
-              const localData = JSON.parse(localStorage.getItem('gallery_local') || '[]');
-              const updated = localData.map((item: any) => item.id === editingId ? { ...item, ...payload } : item);
-              localStorage.setItem('gallery_local', JSON.stringify(updated));
-              showToast("Disimpan Lokal: Diperbarui secara lokal karena RLS database.");
-            } else {
-              throw error;
-            }
-          } else {
-            showToast("Data galeri diperbarui!");
-          }
-        }
+        updated = items.map((item: any) => item.id === editingId ? { ...item, ...payload } : item);
+        showToast("Data galeri diperbarui!");
       } else {
-        const newLocalItem = { ...payload, id: 'local_' + Date.now(), created_at: new Date().toISOString() };
-        const { error } = await supabase.from('gallery').insert([payload]);
-        if (error) {
-          if (error.message.includes('row-level security') || error.code === '42501') {
-            const localData = JSON.parse(localStorage.getItem('gallery_local') || '[]');
-            localStorage.setItem('gallery_local', JSON.stringify([newLocalItem, ...localData]));
-            showToast("Disimpan Lokal: Momen baru disimpan ke arsip lokal (RLS aktif).");
-          } else {
-            throw error;
-          }
-        } else {
-          showToast("Momen baru berhasil dipublikasi!");
-        }
+        const newLocalItem = { ...payload, id: 'gal_' + Date.now(), created_at: new Date().toISOString() };
+        updated = [newLocalItem, ...items];
+        showToast("Momen baru berhasil dipublikasi!");
       }
+      
+      setItems(updated);
+      localStorage.setItem('gallery_local', JSON.stringify(updated));
+      await saveSiteSetting('gallery_list', updated);
       handleCloseModal();
       broadcastDataChange('gallery', editingId ? 'UPDATE' : 'INSERT', payload);
-      fetchGallery();
     } catch (err: any) {
       Swal.fire({
         icon: 'error',
@@ -296,9 +279,11 @@ export default function AdminGallery({ session }: { session?: any }) {
 
     if (result.isConfirmed) {
       try {
-        const { error } = await supabase.from('gallery').delete().eq('id', id);
-        if (error) throw error;
-        
+        const updated = items.filter(i => i.id !== id);
+        setItems(updated);
+        localStorage.setItem('gallery_local', JSON.stringify(updated));
+        await saveSiteSetting('gallery_list', updated);
+
         if (url.includes('supabase.co')) {
           const pathParts = url.split('/');
           const fileName = pathParts[pathParts.length - 1];
@@ -306,7 +291,6 @@ export default function AdminGallery({ session }: { session?: any }) {
         }
         showToast("Momen dihapus dari galeri");
         broadcastDataChange('gallery', 'DELETE', { id });
-        fetchGallery();
       } catch (err: any) {
         Swal.fire({
           icon: 'error',

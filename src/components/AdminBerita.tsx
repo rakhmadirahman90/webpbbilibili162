@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from "../supabase";
 import { broadcastDataChange } from '../utils/realtimeHelper';
+import { saveSiteSetting, getSiteSetting } from '../utils/siteSettingsHelper';
 import Swal from 'sweetalert2';
 import { triggerPushNotification } from '../utils/firebaseMessaging';
 import { 
@@ -102,19 +103,25 @@ export default function AdminBerita({ session }: { session?: any }) {
   const fetchNews = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('berita')
-        .select(`*, comments_count:komentar(count)`)
-        .order('tanggal', { ascending: false });
+      const data = await getSiteSetting('berita_list');
+      if (data && Array.isArray(data)) {
+        setNews(data);
+        localStorage.setItem('berita_local', JSON.stringify(data));
+      } else {
+        const { data: sbData } = await supabase
+          .from('berita')
+          .select(`*, comments_count:komentar(count)`)
+          .order('tanggal', { ascending: false });
 
-      const localData = JSON.parse(localStorage.getItem('berita_local') || '[]');
-      const supabaseData = data ? data.map(item => ({
-        ...item,
-        comments_count: item.comments_count?.[0]?.count || 0,
-        likes: item.likes || 0
-      })) : [];
+        const localData = JSON.parse(localStorage.getItem('berita_local') || '[]');
+        const supabaseData = sbData ? sbData.map(item => ({
+          ...item,
+          comments_count: item.comments_count?.[0]?.count || 0,
+          likes: item.likes || 0
+        })) : [];
 
-      setNews([...supabaseData, ...localData]);
+        setNews([...supabaseData, ...localData]);
+      }
     } catch (err) {
       const localData = JSON.parse(localStorage.getItem('berita_local') || '[]');
       setNews(localData);
@@ -330,34 +337,12 @@ export default function AdminBerita({ session }: { session?: any }) {
         tanggal: formData.tanggal || new Date().toISOString().split('T')[0]
       };
 
+      let updated;
       if (editingId) {
-        if (typeof editingId === 'string' && editingId.startsWith('local_')) {
-          const localData = JSON.parse(localStorage.getItem('berita_local') || '[]');
-          const updated = localData.map((item: any) => item.id === editingId ? { ...item, ...formData, ...dbPayload } : item);
-          localStorage.setItem('berita_local', JSON.stringify(updated));
-        } else {
-          const { error } = await supabase.from('berita').update(dbPayload).eq('id', editingId);
-          if (error) {
-            if (error.message.includes('row-level security') || error.code === '42501') {
-              const localData = JSON.parse(localStorage.getItem('berita_local') || '[]');
-              const updated = localData.map((item: any) => item.id === editingId ? { ...item, ...formData, ...dbPayload } : item);
-              localStorage.setItem('berita_local', JSON.stringify(updated));
-            } else {
-              throw error;
-            }
-          }
-        }
+        updated = news.map((item: any) => item.id === editingId ? { ...item, ...formData, ...dbPayload } : item);
       } else {
-        const newLocalItem = { ...formData, ...dbPayload, id: 'local_' + Date.now(), comments_count: 0, likes: 0 };
-        const { error } = await supabase.from('berita').insert([dbPayload]);
-        if (error) {
-          if (error.message.includes('row-level security') || error.code === '42501') {
-            const localData = JSON.parse(localStorage.getItem('berita_local') || '[]');
-            localStorage.setItem('berita_local', JSON.stringify([newLocalItem, ...localData]));
-          } else {
-            throw error;
-          }
-        }
+        const newLocalItem = { ...formData, ...dbPayload, id: 'news_' + Date.now(), comments_count: 0, likes: 0, views: 0 };
+        updated = [newLocalItem, ...news];
         // Dispatch real-time push notification
         triggerPushNotification(
           "Pengumuman Berita Baru!",
@@ -365,8 +350,11 @@ export default function AdminBerita({ session }: { session?: any }) {
           "berita"
         );
       }
+
+      setNews(updated);
+      localStorage.setItem('berita_local', JSON.stringify(updated));
+      await saveSiteSetting('berita_list', updated);
       broadcastDataChange('berita', editingId ? 'UPDATE' : 'INSERT', dbPayload);
-      await fetchNews();
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
       closeModal();
@@ -393,10 +381,11 @@ export default function AdminBerita({ session }: { session?: any }) {
 
     if (result.isConfirmed) {
       try {
-        const { error } = await supabase.from('berita').delete().eq('id', id);
-        if (error) throw error;
+        const updated = news.filter(i => i.id !== id);
+        setNews(updated);
+        localStorage.setItem('berita_local', JSON.stringify(updated));
+        await saveSiteSetting('berita_list', updated);
         broadcastDataChange('berita', 'DELETE', { id });
-        await fetchNews();
         Swal.fire({
           toast: true,
           position: 'top-end',

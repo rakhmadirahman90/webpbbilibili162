@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { PackageOpen, Box } from 'lucide-react';
 import { supabase } from '../supabase';
 import LazyImage from './LazyImage';
+import { getSiteSetting } from '../utils/siteSettingsHelper';
 
 interface Item {
   id: string;
@@ -19,15 +20,6 @@ export default function PublicInventaris() {
 
   useEffect(() => {
     fetchItems();
-
-    const channel = supabase
-      .channel('public_inventaris_realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'inventaris' }, () => fetchItems())
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, []);
 
   const getFallbackItems = () => {
@@ -53,15 +45,18 @@ export default function PublicInventaris() {
 
   const fetchItems = async () => {
     try {
-      const { data, error } = await supabase.from('inventaris').select('*').order('nama', { ascending: true });
-      if (error) throw error;
-      
-      if (data && data.length > 0) {
+      const data = await getSiteSetting('inventaris_list');
+      if (data && Array.isArray(data) && data.length > 0) {
         setItems(data);
         localStorage.setItem('inventaris_local_v3', JSON.stringify(data));
       } else {
-        // Fallback if table exists but has 0 rows (e.g. empty or restricted by RLS)
-        setItems(getFallbackItems());
+        const { data: sbData } = await supabase.from('inventaris').select('*').order('nama', { ascending: true });
+        if (sbData && sbData.length > 0) {
+          setItems(sbData);
+          localStorage.setItem('inventaris_local_v3', JSON.stringify(sbData));
+        } else {
+          setItems(getFallbackItems());
+        }
       }
     } catch (error: any) {
       setItems(getFallbackItems());

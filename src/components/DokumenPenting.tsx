@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
+import { getSiteSetting } from '../utils/siteSettingsHelper';
 import { Search, Eye, FileText, Clock, DownloadCloud, X, Loader2, AlertCircle, FileCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -15,12 +16,19 @@ export default function DokumenPenting() {
     const getDocs = async () => {
       setLoading(true);
       try {
-        const { data, error } = await supabase
-          .from('documents')
-          .select('*')
-          .order('created_at', { ascending: false });
-        
-        if (!error) setDocs(data || []);
+        const data = await getSiteSetting('documents_list');
+        if (data && Array.isArray(data)) {
+          setDocs(data);
+        } else {
+          const { data: sbData, error } = await supabase
+            .from('documents')
+            .select('*')
+            .order('created_at', { ascending: false });
+          
+          if (!error && sbData) {
+            setDocs(sbData);
+          }
+        }
       } catch (e) {
         console.error(e);
       } finally {

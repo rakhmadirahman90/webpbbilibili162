@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Medal, Plus, Edit, Trash2, Trophy, X } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { supabase } from '../supabase';
+import { saveSiteSetting, getSiteSetting } from '../utils/siteSettingsHelper';
 
 interface Prestasi {
   id: string;
@@ -46,13 +47,19 @@ export default function AdminPrestasi() {
 
   const fetchPrestasi = async () => {
     try {
-      const { data, error } = await supabase.from('prestasi_klub').select('*').order('tahun', { ascending: false });
-      if (error) throw error;
-      if (data && data.length > 0) {
+      const data = await getSiteSetting('prestasi_list');
+      if (data && Array.isArray(data) && data.length > 0) {
         setPrestasi(data);
         localStorage.setItem('prestasi_local_v3', JSON.stringify(data));
       } else {
-        await loadFallbackAndSeed();
+        const { data: sbData } = await supabase.from('prestasi_klub').select('*').order('tahun', { ascending: false });
+        if (sbData && sbData.length > 0) {
+          setPrestasi(sbData);
+          localStorage.setItem('prestasi_local_v3', JSON.stringify(sbData));
+          await saveSiteSetting('prestasi_list', sbData);
+        } else {
+          await loadFallbackAndSeed();
+        }
       }
     } catch (error: any) {
       await loadFallbackAndSeed();
@@ -61,28 +68,16 @@ export default function AdminPrestasi() {
 
   const loadFallbackAndSeed = async () => {
     const defaultData = [
-      { nama_kejuaraan: 'Kejurkot Parepare (Tunggal Putra Dewasa)', tingkat: 'Kabupaten/Kota', tahun: 2023, medali_emas: 1, medali_perak: 0, medali_perunggu: 1, atlet_berprestasi: 'Andi (Emas), Budi (Perunggu)' },
-      { nama_kejuaraan: 'Kejuaraan Provinsi (Kejurprov) Sulsel', tingkat: 'Provinsi', tahun: 2023, medali_emas: 0, medali_perak: 1, medali_perunggu: 2, atlet_berprestasi: 'Ganda Putra: Candra/Deni (Perak)' },
-      { nama_kejuaraan: 'Sirkuit Nasional (Sirnas) B Sulawesi', tingkat: 'Nasional', tahun: 2022, medali_emas: 1, medali_perak: 1, medali_perunggu: 1, atlet_berprestasi: 'Eka (Emas - Tunggal Taruna Putri)' },
-      { nama_kejuaraan: 'Walikota Cup Makassar (Ganda Campuran)', tingkat: 'Provinsi', tahun: 2024, medali_emas: 1, medali_perak: 0, medali_perunggu: 0, atlet_berprestasi: 'Fajar/Gita (Emas)' },
-      { nama_kejuaraan: 'O2SN Tingkat SMA se-Sulsel', tingkat: 'Provinsi', tahun: 2023, medali_emas: 2, medali_perak: 1, medali_perunggu: 0, atlet_berprestasi: 'Hadi (Emas - Tunggal), Indah (Emas - Tunggal)' }
+      { id: 'p_1', nama_kejuaraan: 'Kejurkot Parepare (Tunggal Putra Dewasa)', tingkat: 'Kabupaten/Kota', tahun: 2023, medali_emas: 1, medali_perak: 0, medali_perunggu: 1, atlet_berprestasi: 'Andi (Emas), Budi (Perunggu)' },
+      { id: 'p_2', nama_kejuaraan: 'Kejuaraan Provinsi (Kejurprov) Sulsel', tingkat: 'Provinsi', tahun: 2023, medali_emas: 0, medali_perak: 1, medali_perunggu: 2, atlet_berprestasi: 'Ganda Putra: Candra/Deni (Perak)' },
+      { id: 'p_3', nama_kejuaraan: 'Sirkuit Nasional (Sirnas) B Sulawesi', tingkat: 'Nasional', tahun: 2022, medali_emas: 1, medali_perak: 1, medali_perunggu: 1, atlet_berprestasi: 'Eka (Emas - Tunggal Taruna Putri)' },
+      { id: 'p_4', nama_kejuaraan: 'Walikota Cup Makassar (Ganda Campuran)', tingkat: 'Provinsi', tahun: 2024, medali_emas: 1, medali_perak: 0, medali_perunggu: 0, atlet_berprestasi: 'Fajar/Gita (Emas)' },
+      { id: 'p_5', nama_kejuaraan: 'O2SN Tingkat SMA se-Sulsel', tingkat: 'Provinsi', tahun: 2023, medali_emas: 2, medali_perak: 1, medali_perunggu: 0, atlet_berprestasi: 'Hadi (Emas - Tunggal), Indah (Emas - Tunggal)' }
     ];
 
-    try {
-      const { data: inserted } = await supabase.from('prestasi_klub').insert(defaultData).select();
-      if (inserted && inserted.length > 0) {
-        setPrestasi(inserted);
-        localStorage.setItem('prestasi_local_v3', JSON.stringify(inserted));
-        return;
-      }
-    } catch (e) {}
-
-    const local = JSON.parse(localStorage.getItem('prestasi_local_v3') || '[]');
-    if (local.length > 0) {
-      setPrestasi(local);
-    } else {
-      setPrestasi(defaultData.map((d, i) => ({ ...d, id: `p_${i + 1}` })));
-    }
+    await saveSiteSetting('prestasi_list', defaultData);
+    setPrestasi(defaultData);
+    localStorage.setItem('prestasi_local_v3', JSON.stringify(defaultData));
   };
 
   const handleOpenAdd = () => {
@@ -110,56 +105,27 @@ export default function AdminPrestasi() {
       color: '#fff'
     });
     if (result.isConfirmed) {
-      try {
-        const { error } = await supabase.from('prestasi_klub').delete().eq('id', id);
-        if (error) throw error;
-        const updated = prestasi.filter(i => i.id !== id);
-        localStorage.setItem('prestasi_local_v3', JSON.stringify(updated));
-        setPrestasi(updated);
-      } catch (error: any) {
-        const updated = prestasi.filter(i => i.id !== id);
-        localStorage.setItem('prestasi_local_v3', JSON.stringify(updated));
-        setPrestasi(updated);
-      }
+      const updated = prestasi.filter(i => i.id !== id);
+      localStorage.setItem('prestasi_local_v3', JSON.stringify(updated));
+      setPrestasi(updated);
+      await saveSiteSetting('prestasi_list', updated);
       Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Terhapus', showConfirmButton: false, timer: 1500 });
     }
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      if (editingItem) {
-        const { error } = await supabase.from('prestasi_klub').update(formData).eq('id', editingItem.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from('prestasi_klub').insert([formData]);
-        if (error) throw error;
-      }
-      
-      let updated;
-      if (editingItem) {
-        updated = prestasi.map(i => i.id === editingItem.id ? { ...i, ...formData } : i);
-      } else {
-        updated = [{ ...formData, id: 'p_' + Date.now() }, ...prestasi];
-      }
-      localStorage.setItem('prestasi_local_v3', JSON.stringify(updated));
-      setPrestasi(updated);
-      
-      fetchPrestasi(); 
-      setShowModal(false);
-      Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Tersimpan', showConfirmButton: false, timer: 1500 });
-    } catch (error: any) {
-      let updated;
-      if (editingItem) {
-        updated = prestasi.map(i => i.id === editingItem.id ? { ...i, ...formData } : i);
-      } else {
-        updated = [{ ...formData, id: 'p_' + Date.now() }, ...prestasi];
-      }
-      localStorage.setItem('prestasi_local_v3', JSON.stringify(updated));
-      setPrestasi(updated); 
-      setShowModal(false);
-      Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Tersimpan', showConfirmButton: false, timer: 1500 });
+    let updated;
+    if (editingItem) {
+      updated = prestasi.map(i => i.id === editingItem.id ? { ...i, ...formData } : i);
+    } else {
+      updated = [{ ...formData, id: 'p_' + Date.now() }, ...prestasi];
     }
+    localStorage.setItem('prestasi_local_v3', JSON.stringify(updated));
+    setPrestasi(updated); 
+    await saveSiteSetting('prestasi_list', updated);
+    setShowModal(false);
+    Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Tersimpan', showConfirmButton: false, timer: 1500 });
   };
 
   return (

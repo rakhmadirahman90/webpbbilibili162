@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
+import { saveSiteSetting, getSiteSetting } from '../utils/siteSettingsHelper';
 import Swal from 'sweetalert2';
 import { FileText, Plus, Trash2, Download, Search, Loader2, UploadCloud, Eye, X, AlertCircle, Edit3, Save } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -41,14 +42,21 @@ export default function ManajemenDokumen({ session }: { session?: any }) {
   const fetchDocs = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('documents')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      const localData = JSON.parse(localStorage.getItem('documents_local') || '[]');
-      const combined = [...(data || []), ...localData];
-      setDocs(combined);
+      const data = await getSiteSetting('documents_list');
+      if (data && Array.isArray(data)) {
+        setDocs(data);
+        localStorage.setItem('documents_local', JSON.stringify(data));
+      } else {
+        const { data: sbData } = await supabase
+          .from('documents')
+          .select('*')
+          .order('created_at', { ascending: false });
+        
+        const localData = JSON.parse(localStorage.getItem('documents_local') || '[]');
+        const combined = [...(sbData || []), ...localData];
+        setDocs(combined);
+        await saveSiteSetting('documents_list', combined);
+      }
     } catch (error: any) {
       console.error("Error fetching docs:", error.message);
       const localData = JSON.parse(localStorage.getItem('documents_local') || '[]');
@@ -108,6 +116,7 @@ export default function ManajemenDokumen({ session }: { session?: any }) {
       }
 
       const newDocPayload = {
+        id: 'doc_' + Date.now(),
         title: formData.title,
         description: formData.description,
         file_url: publicUrl,
@@ -116,39 +125,22 @@ export default function ManajemenDokumen({ session }: { session?: any }) {
         created_at: new Date().toISOString()
       };
 
-      // 3. Simpan Metadata
-      const { error: dbError } = await supabase.from('documents').insert([newDocPayload]);
+      const updatedDocs = [newDocPayload, ...docs];
+      setDocs(updatedDocs);
+      localStorage.setItem('documents_local', JSON.stringify(updatedDocs));
+      await saveSiteSetting('documents_list', updatedDocs);
 
-      if (dbError) {
-        if (dbError.message.includes('row-level security') || dbError.code === '42501') {
-          const localData = JSON.parse(localStorage.getItem('documents_local') || '[]');
-          const localItem = { ...newDocPayload, id: 'local_' + Date.now() };
-          localStorage.setItem('documents_local', JSON.stringify([localItem, ...localData]));
-          Swal.fire({
-            icon: 'success',
-            title: 'Disimpan Lokal',
-            text: 'Dokumen disimpan secara lokal (localStorage) karena tabel Supabase mengaktifkan RLS.',
-            confirmButtonColor: '#3B82F6',
-            background: '#0F172A',
-            color: '#fff'
-          });
-        } else {
-          throw dbError;
-        }
-      } else {
-        Swal.fire({
-          icon: 'success',
-          title: 'Berhasil Unggah',
-          text: 'Dokumen berhasil dikompres & diunggah!',
-          confirmButtonColor: '#3B82F6',
-          background: '#0F172A',
-          color: '#fff'
-        });
-      }
+      Swal.fire({
+        icon: 'success',
+        title: 'Berhasil Unggah',
+        text: 'Dokumen berhasil dikompres & diunggah!',
+        confirmButtonColor: '#3B82F6',
+        background: '#0F172A',
+        color: '#fff'
+      });
 
       setFormData({ title: '', description: '' });
-      e.target.value = ''; 
-      fetchDocs();
+      e.target.value = '';
     } catch (error: any) {
       Swal.fire({
         icon: 'error',
@@ -167,19 +159,23 @@ export default function ManajemenDokumen({ session }: { session?: any }) {
   const handleUpdate = async () => {
     if (!editingId) return;
     try {
-      const { error } = await supabase
-        .from('documents')
-        .update({
-          title: formData.title,
-          description: formData.description
-        })
-        .eq('id', editingId);
+      const updatedDocs = docs.map(doc => {
+        if (doc.id === editingId) {
+          return {
+            ...doc,
+            title: formData.title,
+            description: formData.description
+          };
+        }
+        return doc;
+      });
 
-      if (error) throw error;
+      setDocs(updatedDocs);
+      localStorage.setItem('documents_local', JSON.stringify(updatedDocs));
+      await saveSiteSetting('documents_list', updatedDocs);
       
       setEditingId(null);
       setFormData({ title: '', description: '' });
-      fetchDocs();
       Swal.fire({
         toast: true,
         position: 'top-end',
@@ -224,8 +220,16 @@ export default function ManajemenDokumen({ session }: { session?: any }) {
       try {
         const urlParts = fileUrl.split('/');
         const fileName = urlParts[urlParts.length - 1];
-        await supabase.storage.from('assets').remove([`docs/${fileName}`]);
-        await supabase.from('documents').delete().eq('id', id);
+        try {
+          await supabase.storage.from('assets').remove([`docs/${fileName}`]);
+        } catch (storageErr) {
+          console.warn("Could not delete from storage bucket", storageErr);
+        }
+
+        const updatedDocs = docs.filter(doc => doc.id !== id);
+        setDocs(updatedDocs);
+        localStorage.setItem('documents_local', JSON.stringify(updatedDocs));
+        await saveSiteSetting('documents_list', updatedDocs);
         
         Swal.fire({
           toast: true,
@@ -235,7 +239,6 @@ export default function ManajemenDokumen({ session }: { session?: any }) {
           showConfirmButton: false,
           timer: 3000
         });
-        fetchDocs();
       } catch (error: any) {
         Swal.fire({
           icon: 'error',

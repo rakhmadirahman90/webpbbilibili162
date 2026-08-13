@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircleQuestion, Plus, Minus, Search, X, HelpCircle, Sparkles } from 'lucide-react';
 import { supabase } from '../supabase';
+import { getSiteSetting } from '../utils/siteSettingsHelper';
 
 export default function PublicFAQ() {
   const [faqs, setFaqs] = useState<any[]>([]);
@@ -11,9 +12,8 @@ export default function PublicFAQ() {
   useEffect(() => {
     const fetchFaqs = async () => {
       try {
-        const { data, error } = await supabase.from('faq').select('*').order('urutan', { ascending: true });
-        if (error) throw error;
-        if (data && data.length > 0) {
+        const data = await getSiteSetting('faq_list');
+        if (data && Array.isArray(data) && data.length > 0) {
             setFaqs(data);
         } else {
             throw new Error("No data");

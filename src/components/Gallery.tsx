@@ -5,6 +5,7 @@ import { X, Camera, Info, ChevronDown, ChevronUp, PlayCircle, Image as ImageIcon
 import { motion, AnimatePresence } from 'framer-motion';
 import LazyImage from './LazyImage';
 import { getOptimizedImageUrl } from '../utils/imageOptimizer';
+import { getSiteSetting } from '../utils/siteSettingsHelper';
 
 export default function Gallery() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -140,13 +141,16 @@ export default function Gallery() {
     async function fetchGallery() {
       setLoading(true);
       try {
-        const { data, error } = await supabase
-          .from('gallery')
-          .select('*')
-          .order('created_at', { ascending: false });
-        
-        if (error) throw error;
-        setGalleryItems(data || []);
+        const data = await getSiteSetting('gallery_list');
+        if (data && Array.isArray(data)) {
+          setGalleryItems(data);
+        } else {
+          const { data: sbData } = await supabase
+            .from('gallery')
+            .select('*')
+            .order('created_at', { ascending: false });
+          setGalleryItems(sbData || []);
+        }
       } catch (err: any) {
         console.error("Error fetching gallery:", err.message);
       } finally {

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Trophy, Medal, Star } from 'lucide-react';
 import { supabase } from '../supabase';
+import { getSiteSetting } from '../utils/siteSettingsHelper';
 
 export default function PublicPrestasi() {
   const [prestasi, setPrestasi] = useState<any[]>([]);
@@ -9,17 +10,21 @@ export default function PublicPrestasi() {
   useEffect(() => {
     const fetchPrestasi = async () => {
       try {
-        const { data, error } = await supabase.from('prestasi_klub').select('*').order('tahun', { ascending: false }).limit(6);
-        if (error) throw error;
-        if (data && data.length > 0) {
-            setPrestasi(data);
+        const data = await getSiteSetting('prestasi_list');
+        if (data && Array.isArray(data) && data.length > 0) {
+          setPrestasi(data.slice(0, 6));
         } else {
+          const { data: sbData } = await supabase.from('prestasi_klub').select('*').order('tahun', { ascending: false }).limit(6);
+          if (sbData && sbData.length > 0) {
+            setPrestasi(sbData);
+          } else {
             throw new Error("No data");
+          }
         }
       } catch (e) {
         const local = JSON.parse(localStorage.getItem('prestasi_local_v3') || '[]');
         if (local.length > 0) {
-            setPrestasi(local);
+            setPrestasi(local.slice(0, 6));
         } else {
             setPrestasi([
               { id: 'p1', nama_kejuaraan: 'Kejurkot Parepare (Tunggal Putra Dewasa)', tingkat: 'Kabupaten/Kota', tahun: 2023, medali_emas: 1, medali_perak: 0, medali_perunggu: 1, atlet_berprestasi: 'Andi (Emas), Budi (Perunggu)' },
@@ -32,15 +37,6 @@ export default function PublicPrestasi() {
       }
     };
     fetchPrestasi();
-
-    const channel = supabase
-      .channel('public_prestasi_realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'prestasi_klub' }, () => fetchPrestasi())
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, []);
 
   if (prestasi.length === 0) return null;

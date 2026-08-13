@@ -3,7 +3,7 @@ import { MessageCircleQuestion, Plus, Edit, Trash2, X } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { supabase } from '../supabase';
 import { broadcastDataChange } from '../utils/realtimeHelper';
-import { saveSiteSetting } from '../utils/siteSettingsHelper';
+import { saveSiteSetting, getSiteSetting } from '../utils/siteSettingsHelper';
 
 interface FAQ {
   id: string;
@@ -41,9 +41,8 @@ export default function AdminFAQ() {
 
   const fetchFaqs = async () => {
     try {
-      const { data, error } = await supabase.from('faq').select('*').order('urutan', { ascending: true });
-      if (error) throw error;
-      if (data && data.length > 0) {
+      const data = await getSiteSetting('faq_list');
+      if (data && Array.isArray(data) && data.length > 0) {
         setFaqs(data);
         localStorage.setItem('faq_local_v3', JSON.stringify(data));
       } else {
@@ -56,29 +55,17 @@ export default function AdminFAQ() {
 
   const loadFallbackAndSeed = async () => {
     const defaultData = [
-      { pertanyaan: 'Apakah pemula yang tidak punya pengalaman bermain bulutangkis boleh bergabung?', jawaban: 'Tentu saja! Kami memiliki program reguler khusus untuk pemula. Pelatih kami akan membimbing mulai dari cara memegang raket (grip), langkah kaki (footwork), hingga teknik pukulan dasar.', urutan: 1 },
-      { pertanyaan: 'Berapa biaya pendaftaran dan iuran bulanan?', jawaban: 'Biaya pendaftaran awal adalah Rp 150.000 (sudah termasuk administrasi dan kaos latihan). Untuk iuran bulanan sebesar Rp 100.000 untuk kelas reguler, dan Rp 250.000 untuk kelas prestasi (intensif).', urutan: 2 },
-      { pertanyaan: 'Apa saja perlengkapan yang perlu disiapkan saat latihan?', jawaban: 'Anggota wajib membawa raket sendiri, sepatu khusus bulutangkis (non-marking shoes), pakaian olahraga, dan air minum. Shuttlecock sudah disediakan oleh klub selama sesi latihan.', urutan: 3 },
-      { pertanyaan: 'Kapan jadwal latihannya?', jawaban: 'Jadwal latihan reguler kami adalah hari Rabu (08.00 - 12.00 WITA), Jumat (08.00 - 12.00 WITA), dan Ahad (08.00 - 12.00 WITA). Jadwal bisa menyesuaikan jika ada turnamen.', urutan: 4 },
-      { pertanyaan: 'Apakah ada batasan usia untuk bergabung?', jawaban: 'Kami menerima anggota mulai dari usia dini (pembinaan 7-12 tahun), remaja, hingga dewasa/umum tanpa batasan usia maksimal, asalkan dalam kondisi sehat.', urutan: 5 },
-      { pertanyaan: 'Apakah PB Bilibili 162 rutin mengikuti turnamen?', jawaban: 'Ya, klub kami rutin mengirimkan atlet untuk mengikuti kejuaraan tingkat kota, provinsi (Kejurprov), hingga nasional (Sirnas) sesuai kategori usia dan kemampuan.', urutan: 6 }
+      { id: 'f_1', pertanyaan: 'Apakah pemula yang tidak punya pengalaman bermain bulutangkis boleh bergabung?', jawaban: 'Tentu saja! Kami memiliki program reguler khusus untuk pemula. Pelatih kami akan membimbing mulai dari cara memegang raket (grip), langkah kaki (footwork), hingga teknik pukulan dasar.', urutan: 1 },
+      { id: 'f_2', pertanyaan: 'Berapa biaya pendaftaran dan iuran bulanan?', jawaban: 'Biaya pendaftaran awal adalah Rp 150.000 (sudah termasuk administrasi dan kaos latihan). Untuk iuran bulanan sebesar Rp 100.000 untuk kelas reguler, dan Rp 250.000 untuk kelas prestasi (intensif).', urutan: 2 },
+      { id: 'f_3', pertanyaan: 'Apa saja perlengkapan yang perlu disiapkan saat latihan?', jawaban: 'Anggota wajib membawa raket sendiri, sepatu khusus bulutangkis (non-marking shoes), pakaian olahraga, dan air minum. Shuttlecock sudah disediakan oleh klub selama sesi latihan.', urutan: 3 },
+      { id: 'f_4', pertanyaan: 'Kapan jadwal latihannya?', jawaban: 'Jadwal latihan reguler kami adalah hari Rabu (08.00 - 12.00 WITA), Jumat (08.00 - 12.00 WITA), dan Ahad (08.00 - 12.00 WITA). Jadwal bisa menyesuaikan jika ada turnamen.', urutan: 4 },
+      { id: 'f_5', pertanyaan: 'Apakah ada batasan usia untuk bergabung?', jawaban: 'Kami menerima anggota mulai dari usia dini (pembinaan 7-12 tahun), remaja, hingga dewasa/umum tanpa batasan usia maksimal, asalkan dalam kondisi sehat.', urutan: 5 },
+      { id: 'f_6', pertanyaan: 'Apakah PB Bilibili 162 rutin mengikuti turnamen?', jawaban: 'Ya, klub kami rutin mengirimkan atlet untuk mengikuti kejuaraan tingkat kota, provinsi (Kejurprov), hingga nasional (Sirnas) sesuai kategori usia dan kemampuan.', urutan: 6 }
     ];
 
-    try {
-      const { data: inserted } = await supabase.from('faq').insert(defaultData).select();
-      if (inserted && inserted.length > 0) {
-        setFaqs(inserted);
-        localStorage.setItem('faq_local_v3', JSON.stringify(inserted));
-        return;
-      }
-    } catch (e) {}
-
-    const local = JSON.parse(localStorage.getItem('faq_local_v3') || '[]');
-    if (local.length > 0) {
-      setFaqs(local);
-    } else {
-      setFaqs(defaultData.map((d, i) => ({ ...d, id: `f_${i + 1}` })));
-    }
+    await saveSiteSetting('faq_list', defaultData);
+    setFaqs(defaultData);
+    localStorage.setItem('faq_local_v3', JSON.stringify(defaultData));
   };
 
   const handleOpenAdd = () => {
@@ -106,66 +93,30 @@ export default function AdminFAQ() {
       color: '#fff'
     });
     if (result.isConfirmed) {
-      try {
-        const { error } = await supabase.from('faq').delete().eq('id', id);
-        if (error) throw error;
-        const updated = faqs.filter(i => i.id !== id);
-        localStorage.setItem('faq_local_v3', JSON.stringify(updated));
-        setFaqs(updated);
-        saveSiteSetting('faq_list', updated);
-        broadcastDataChange('faq', 'DELETE', { id });
-      } catch (error: any) {
-        const updated = faqs.filter(i => i.id !== id);
-        localStorage.setItem('faq_local_v3', JSON.stringify(updated));
-        setFaqs(updated);
-        saveSiteSetting('faq_list', updated);
-        broadcastDataChange('faq', 'DELETE', { id });
-      }
+      const updated = faqs.filter(i => i.id !== id);
+      localStorage.setItem('faq_local_v3', JSON.stringify(updated));
+      setFaqs(updated);
+      await saveSiteSetting('faq_list', updated);
+      broadcastDataChange('faq', 'DELETE', { id });
       Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Terhapus', showConfirmButton: false, timer: 1500 });
     }
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      if (editingItem) {
-        const { error } = await supabase.from('faq').update(formData).eq('id', editingItem.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from('faq').insert([formData]);
-        if (error) throw error;
-      }
-      
-      let updated;
-      if (editingItem) {
-        updated = faqs.map(i => i.id === editingItem.id ? { ...i, ...formData } : i);
-      } else {
-        updated = [...faqs, { ...formData, id: 'f_' + Date.now() }];
-      }
-      updated.sort((a, b) => a.urutan - b.urutan);
-      localStorage.setItem('faq_local_v3', JSON.stringify(updated));
-      setFaqs(updated);
-      saveSiteSetting('faq_list', updated);
-      broadcastDataChange('faq', editingItem ? 'UPDATE' : 'INSERT', formData);
-      
-      fetchFaqs(); 
-      setShowModal(false);
-      Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Tersimpan', showConfirmButton: false, timer: 1500 });
-    } catch (error: any) {
-      let updated;
-      if (editingItem) {
-        updated = faqs.map(i => i.id === editingItem.id ? { ...i, ...formData } : i);
-      } else {
-        updated = [...faqs, { ...formData, id: 'f_' + Date.now() }];
-      }
-      updated.sort((a, b) => a.urutan - b.urutan);
-      localStorage.setItem('faq_local_v3', JSON.stringify(updated));
-      setFaqs(updated); 
-      saveSiteSetting('faq_list', updated);
-      broadcastDataChange('faq', editingItem ? 'UPDATE' : 'INSERT', formData);
-      setShowModal(false);
-      Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Tersimpan', showConfirmButton: false, timer: 1500 });
+    let updated;
+    if (editingItem) {
+      updated = faqs.map(i => i.id === editingItem.id ? { ...i, ...formData } : i);
+    } else {
+      updated = [...faqs, { ...formData, id: 'f_' + Date.now() }];
     }
+    updated.sort((a, b) => a.urutan - b.urutan);
+    localStorage.setItem('faq_local_v3', JSON.stringify(updated));
+    setFaqs(updated);
+    await saveSiteSetting('faq_list', updated);
+    broadcastDataChange('faq', editingItem ? 'UPDATE' : 'INSERT', formData);
+    setShowModal(false);
+    Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Tersimpan', showConfirmButton: false, timer: 1500 });
   };
 
   return (

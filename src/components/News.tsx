@@ -2,6 +2,7 @@ import { Calendar, ArrowRight, X, ChevronDown, ChevronUp, Loader2, User, Eye, He
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from "../supabase";
+import { getSiteSetting } from '../utils/siteSettingsHelper';
 import { motion, AnimatePresence } from 'framer-motion';
 import Swal from 'sweetalert2';
 import LazyImage from './LazyImage';
@@ -337,21 +338,30 @@ export default function News() {
   const fetchNews = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('berita')
-        .select('*')
-        .order('tanggal', { ascending: false });
-
-      if (error) throw error;
-      
-      if (data) {
+      const data = await getSiteSetting('berita_list');
+      if (data && Array.isArray(data)) {
         const formattedData = data.map(item => ({
           ...item,
-          comments_count: 0, // Fallback since we aren't joining komentar
+          comments_count: Number(item.comments_count) || 0,
           likes: Number(item.likes) || 0,
           views: Number(item.views) || 0
         }));
         setBeritaList(formattedData as Berita[]);
+      } else {
+        const { data: sbData } = await supabase
+          .from('berita')
+          .select('*')
+          .order('tanggal', { ascending: false });
+        
+        if (sbData) {
+          const formattedData = sbData.map(item => ({
+            ...item,
+            comments_count: 0, // Fallback since we aren't joining komentar
+            likes: Number(item.likes) || 0,
+            views: Number(item.views) || 0
+          }));
+          setBeritaList(formattedData as Berita[]);
+        }
       }
     } catch (err) {
       console.error("Gagal memuat berita:", err);
