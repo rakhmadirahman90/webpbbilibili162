@@ -25,7 +25,6 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
   const [promoImages, setPromoImages] = useState<any[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const isDismissedRef = useRef<boolean>(false);
-  const prevActiveViewRef = useRef<string | null>(activeView);
 
   const fetchActivePopups = async (forceShow = false) => {
     try {
@@ -77,7 +76,17 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
           .select('*')
           .order('urutan', { ascending: true });
         
-        if (!error && data) dbItems = data;
+        if (!error && data && data.length > 0) {
+          dbItems = data;
+        } else {
+          const { data: popupsData, error: popupsError } = await supabase
+            .from('popups')
+            .select('*')
+            .order('urutan', { ascending: true });
+          if (!popupsError && popupsData) {
+            dbItems = popupsData;
+          }
+        }
       } catch (e) {}
 
       let sitePopups = parsePopupList(siteConfigRaw);
@@ -154,27 +163,51 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
     }
   };
 
+  const prevActiveViewRef = useRef<string | null>(activeView);
+
   useEffect(() => {
     if (activeView !== null) {
       setIsOpen(false);
     } else if (prevActiveViewRef.current !== null && activeView === null) {
-      sessionStorage.removeItem('popup_dismissed_session');
       isDismissedRef.current = false;
-      fetchActivePopups(true);
+      sessionStorage.removeItem('popup_dismissed_session');
+      fetchActivePopups(false);
     }
     prevActiveViewRef.current = activeView;
   }, [activeView]);
 
+  // Realtime subscription listening directly for database changes on 'popups' table via Supabase
   useEffect(() => {
-    // On fresh page load / refresh, clear session dismissal so popup can show once on refresh
-    sessionStorage.removeItem('popup_dismissed_session');
-    isDismissedRef.current = false;
+    const popupsChannel = supabase
+      .channel('popups-db-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'popups' },
+        () => {
+          fetchActivePopups(false);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'konfigurasi_popup' },
+        () => {
+          fetchActivePopups(false);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(popupsChannel);
+    };
+  }, []);
+
+  useEffect(() => {
     fetchActivePopups(false);
 
     const handleTriggerHome = () => {
-      sessionStorage.removeItem('popup_dismissed_session');
       isDismissedRef.current = false;
-      fetchActivePopups(true);
+      sessionStorage.removeItem('popup_dismissed_session');
+      fetchActivePopups(false);
     };
 
     const handleUpdate = () => {
