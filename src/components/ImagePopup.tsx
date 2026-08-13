@@ -21,8 +21,14 @@ function ImagePopup() {
   const [promoImages, setPromoImages] = useState<any[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const fetchActivePopups = async (forceShow = false) => {
+  const fetchActivePopups = async (forceShow = true) => {
     try {
+      if (typeof window !== 'undefined' && (window.location.pathname.startsWith('/admin') || window.location.pathname.startsWith('/login'))) {
+        setPromoImages([]);
+        setIsOpen(false);
+        return;
+      }
+
       let siteConfigRaw: any = null;
       let siteLoaded = false;
       try {
@@ -220,10 +226,6 @@ function ImagePopup() {
 
   const [isExpanded, setIsExpanded] = useState(false);
   const closePopup = () => {
-    if (promoImages[currentIndex]?.id) {
-      sessionStorage.setItem(`popup_dismissed_${promoImages[currentIndex].id}`, 'true');
-      localStorage.setItem(`popup_dismissed_${promoImages[currentIndex].id}`, 'true');
-    }
     setIsOpen(false);
   };
 
