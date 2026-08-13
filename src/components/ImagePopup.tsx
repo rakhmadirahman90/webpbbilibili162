@@ -101,8 +101,11 @@ function ImagePopup() {
 
       const activeItems = merged.filter((p: any) => p && (p.is_active === true || p.active === true));
       
-      // Check if dismissed in session
-      const dismissed = activeItems.length > 0 && sessionStorage.getItem(`popup_dismissed_${activeItems[0].id}`) === 'true';
+      // Check if dismissed in session or localStorage
+      const dismissed = activeItems.length > 0 && (
+        sessionStorage.getItem(`popup_dismissed_${activeItems[0].id}`) === 'true' ||
+        localStorage.getItem(`popup_dismissed_${activeItems[0].id}`) === 'true'
+      );
 
       if (activeItems.length > 0 && !dismissed) {
         setPromoImages(activeItems);
@@ -195,6 +198,7 @@ function ImagePopup() {
   const closePopup = () => {
     if (promoImages[currentIndex]?.id) {
       sessionStorage.setItem(`popup_dismissed_${promoImages[currentIndex].id}`, 'true');
+      localStorage.setItem(`popup_dismissed_${promoImages[currentIndex].id}`, 'true');
     }
     setIsOpen(false);
   };
