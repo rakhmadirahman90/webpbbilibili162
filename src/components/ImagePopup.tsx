@@ -40,13 +40,8 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
         return;
       }
 
-      // Check if user already dismissed popup in this view/session
-      const isDismissedEarly = !forceShow && (
-        isDismissedRef.current ||
-        sessionStorage.getItem('popup_dismissed_session') === 'true'
-      );
-
-      if (isDismissedEarly) {
+      // Check if user already dismissed popup in this home visit
+      if (!forceShow && isDismissedRef.current) {
         setIsOpen(false);
         return;
       }
@@ -142,15 +137,9 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
 
       const activeItems = merged.filter((p: any) => p && (p.is_active === true || p.active === true));
       
-      // Check if dismissed in session or localStorage
-      const dismissed = !forceShow && activeItems.length > 0 && (
-        isDismissedRef.current ||
-        sessionStorage.getItem('popup_dismissed_session') === 'true' ||
-        sessionStorage.getItem(`popup_dismissed_${activeItems[0].id}`) === 'true' ||
-        localStorage.getItem(`popup_dismissed_${activeItems[0].id}`) === 'true'
-      );
+      const shouldShow = activeItems.length > 0 && (forceShow || !isDismissedRef.current);
 
-      if (activeItems.length > 0 && !dismissed) {
+      if (shouldShow) {
         setPromoImages(activeItems);
         setCurrentIndex(0);
         setIsOpen(true);
@@ -168,10 +157,10 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
   useEffect(() => {
     if (activeView !== null) {
       setIsOpen(false);
-    } else if (prevActiveViewRef.current !== null && activeView === null) {
       isDismissedRef.current = false;
-      sessionStorage.removeItem('popup_dismissed_session');
-      fetchActivePopups(false);
+    } else {
+      isDismissedRef.current = false;
+      fetchActivePopups(true);
     }
     prevActiveViewRef.current = activeView;
   }, [activeView]);
@@ -202,12 +191,24 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
   }, []);
 
   useEffect(() => {
-    fetchActivePopups(false);
+    // Clear any stale local/session storage keys from earlier builds
+    try {
+      sessionStorage.removeItem('popup_dismissed_session');
+      Object.keys(sessionStorage).forEach(k => {
+        if (k.startsWith('popup_dismissed_')) sessionStorage.removeItem(k);
+      });
+      Object.keys(localStorage).forEach(k => {
+        if (k.startsWith('popup_dismissed_')) localStorage.removeItem(k);
+      });
+    } catch (e) {}
+
+    if (activeView === null) {
+      fetchActivePopups(true);
+    }
 
     const handleTriggerHome = () => {
       isDismissedRef.current = false;
-      sessionStorage.removeItem('popup_dismissed_session');
-      fetchActivePopups(false);
+      fetchActivePopups(true);
     };
 
     const handleUpdate = () => {
@@ -303,10 +304,6 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
   const [isExpanded, setIsExpanded] = useState(false);
   const closePopup = () => {
     isDismissedRef.current = true;
-    sessionStorage.setItem('popup_dismissed_session', 'true');
-    if (promoImages[currentIndex]?.id) {
-      sessionStorage.setItem(`popup_dismissed_${promoImages[currentIndex].id}`, 'true');
-    }
     setIsOpen(false);
   };
 
