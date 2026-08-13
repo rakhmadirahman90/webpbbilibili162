@@ -3,6 +3,7 @@ import { Target, Plus, Edit, Trash2, X } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { supabase } from '../supabase';
 import { triggerPushNotification } from '../utils/firebaseMessaging';
+import { saveSiteSetting, getSiteSetting } from '../utils/siteSettingsHelper';
 
 interface ProgramLatihan {
   id: string;
@@ -20,47 +21,40 @@ export default function AdminProgram() {
 
   useEffect(() => { 
     fetchPrograms(); 
-
-    const channel = supabase
-      .channel('admin_program_realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'program_latihan' }, () => fetchPrograms())
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, []);
 
   const fetchPrograms = async () => {
     try {
-      const { data, error } = await supabase.from('program_latihan').select('*').order('nama_program', { ascending: true });
-      if (error) throw error;
-      if (data && data.length > 0) {
+      const data = await getSiteSetting('program_list');
+      if (data && Array.isArray(data) && data.length > 0) {
         setPrograms(data);
         localStorage.setItem('program_local_v3', JSON.stringify(data));
       } else {
-        loadFallback();
+        const { data: sbData } = await supabase.from('program_latihan').select('*').order('nama_program', { ascending: true });
+        if (sbData && sbData.length > 0) {
+          setPrograms(sbData);
+          localStorage.setItem('program_local_v3', JSON.stringify(sbData));
+          await saveSiteSetting('program_list', sbData);
+        } else {
+          await loadFallback();
+        }
       }
     } catch (error: any) {
-      loadFallback();
+      await loadFallback();
     }
   };
 
-  const loadFallback = () => {
-    const local = JSON.parse(localStorage.getItem('program_local_v3') || '[]');
-    if (local.length === 0) {
-      const defaultData = [
-        { id: 'prog_1', nama_program: 'Kelas Reguler (Hobi & Pemula)', deskripsi: 'Program untuk pemula dan umum yang ingin berolahraga bulutangkis. Fokus pada kebugaran, pengenalan teknik dasar, dan sparring santai.', hari_latihan: 'Rabu & Ahad', jam_latihan: '08:00 - 12:00 WITA' },
-        { id: 'prog_2', nama_program: 'Kelas Prestasi (Pemusatan Atlet)', deskripsi: 'Latihan intensif bagi atlet yang dipersiapkan untuk turnamen/kejuaraan. Fokus pada drill teknik, ketahanan fisik, agility, dan strategi pertandingan.', hari_latihan: 'Jumat & Ahad', jam_latihan: '08:00 - 12:00 WITA' },
-        { id: 'prog_3', nama_program: 'Kelas Pembinaan Usia Dini', deskripsi: 'Program khusus pembinaan anak-anak (7-12 tahun). Melatih koordinasi motorik, teknik dasar bulutangkis yang benar, dan kedisiplinan sejak dini.', hari_latihan: 'Rabu & Jumat', jam_latihan: '08:00 - 10:00 WITA' },
-        { id: 'prog_4', nama_program: 'Private Training (1 on 1)', deskripsi: 'Latihan eksklusif dengan pelatih untuk fokus memperbaiki teknik spesifik dan mempercepat progres secara individual.', hari_latihan: 'Sesuai Kesepakatan', jam_latihan: 'Fleksibel' },
-        { id: 'prog_5', nama_program: 'Mabar Klub (Sparring Day)', deskripsi: 'Sesi pertandingan internal atau mengundang klub lain untuk mengasah mental bertanding seluruh anggota dalam suasana kompetitif namun bersahabat.', hari_latihan: 'Ahad (Akhir Bulan)', jam_latihan: '08:00 - 14:00 WITA' }
-      ];
-      localStorage.setItem('program_local_v3', JSON.stringify(defaultData));
-      setPrograms(defaultData);
-    } else {
-      setPrograms(local);
-    }
+  const loadFallback = async () => {
+    const defaultData = [
+      { id: 'prog_1', nama_program: 'Kelas Reguler (Hobi & Pemula)', deskripsi: 'Program untuk pemula dan umum yang ingin berolahraga bulutangkis. Fokus pada kebugaran, pengenalan teknik dasar, dan sparring santai.', hari_latihan: 'Rabu & Ahad', jam_latihan: '08:00 - 12:00 WITA' },
+      { id: 'prog_2', nama_program: 'Kelas Prestasi (Pemusatan Atlet)', deskripsi: 'Latihan intensif bagi atlet yang dipersiapkan untuk turnamen/kejuaraan. Fokus pada drill teknik, ketahanan fisik, agility, dan strategi pertandingan.', hari_latihan: 'Jumat & Ahad', jam_latihan: '08:00 - 12:00 WITA' },
+      { id: 'prog_3', nama_program: 'Kelas Pembinaan Usia Dini', deskripsi: 'Program khusus pembinaan anak-anak (7-12 tahun). Melatih koordinasi motorik, teknik dasar bulutangkis yang benar, dan kedisiplinan sejak dini.', hari_latihan: 'Rabu & Jumat', jam_latihan: '08:00 - 10:00 WITA' },
+      { id: 'prog_4', nama_program: 'Private Training (1 on 1)', deskripsi: 'Latihan eksklusif dengan pelatih untuk fokus memperbaiki teknik spesifik dan mempercepat progres secara individual.', hari_latihan: 'Sesuai Kesepakatan', jam_latihan: 'Fleksibel' },
+      { id: 'prog_5', nama_program: 'Mabar Klub (Sparring Day)', deskripsi: 'Sesi pertandingan internal atau mengundang klub lain untuk mengasah mental bertanding seluruh anggota dalam suasana kompetitif namun bersahabat.', hari_latihan: 'Ahad (Akhir Bulan)', jam_latihan: '08:00 - 14:00 WITA' }
+    ];
+    await saveSiteSetting('program_list', defaultData);
+    setPrograms(defaultData);
+    localStorage.setItem('program_local_v3', JSON.stringify(defaultData));
   };
 
   const handleOpenAdd = () => {
@@ -88,73 +82,36 @@ export default function AdminProgram() {
       color: '#fff'
     });
     if (result.isConfirmed) {
-      try {
-        const { error } = await supabase.from('program_latihan').delete().eq('id', id);
-        if (error) throw error;
-        const updated = programs.filter(i => i.id !== id);
-        localStorage.setItem('program_local_v3', JSON.stringify(updated));
-        setPrograms(updated);
-      } catch (error: any) {
-        const updated = programs.filter(i => i.id !== id);
-        localStorage.setItem('program_local_v3', JSON.stringify(updated));
-        setPrograms(updated);
-      }
+      const updated = programs.filter(i => i.id !== id);
+      localStorage.setItem('program_local_v3', JSON.stringify(updated));
+      setPrograms(updated);
+      await saveSiteSetting('program_list', updated);
       Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Terhapus', showConfirmButton: false, timer: 1500 });
     }
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      if (editingItem) {
-        const { error } = await supabase.from('program_latihan').update(formData).eq('id', editingItem.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from('program_latihan').insert([formData]);
-        if (error) throw error;
-      }
-      
-      let updated;
-      if (editingItem) {
-        updated = programs.map(i => i.id === editingItem.id ? { ...i, ...formData } : i);
-      } else {
-        updated = [...programs, { ...formData, id: 'prog_' + Date.now() }];
-      }
-      localStorage.setItem('program_local_v3', JSON.stringify(updated));
-      setPrograms(updated);
-      
-      if (!editingItem) {
-        triggerPushNotification(
-          "Jadwal Latihan Baru!",
-          `Program Baru: ${formData.nama_program} (${formData.hari_latihan}, ${formData.jam_latihan})`,
-          "jadwal"
-        );
-      }
-
-      fetchPrograms(); 
-      setShowModal(false);
-      Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Tersimpan', showConfirmButton: false, timer: 1500 });
-    } catch (error: any) {
-      let updated;
-      if (editingItem) {
-        updated = programs.map(i => i.id === editingItem.id ? { ...i, ...formData } : i);
-      } else {
-        updated = [...programs, { ...formData, id: 'prog_' + Date.now() }];
-      }
-      localStorage.setItem('program_local_v3', JSON.stringify(updated));
-      setPrograms(updated); 
-      
-      if (!editingItem) {
-        triggerPushNotification(
-          "Jadwal Latihan Baru!",
-          `Program Baru: ${formData.nama_program} (${formData.hari_latihan}, ${formData.jam_latihan})`,
-          "jadwal"
-        );
-      }
-
-      setShowModal(false);
-      Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Tersimpan', showConfirmButton: false, timer: 1500 });
+    let updated;
+    if (editingItem) {
+      updated = programs.map(i => i.id === editingItem.id ? { ...i, ...formData } : i);
+    } else {
+      updated = [...programs, { ...formData, id: 'prog_' + Date.now() }];
     }
+    localStorage.setItem('program_local_v3', JSON.stringify(updated));
+    setPrograms(updated); 
+    await saveSiteSetting('program_list', updated);
+    
+    if (!editingItem) {
+      triggerPushNotification(
+        "Jadwal Latihan Baru!",
+        `Program Baru: ${formData.nama_program} (${formData.hari_latihan}, ${formData.jam_latihan})`,
+        "jadwal"
+      );
+    }
+
+    setShowModal(false);
+    Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Tersimpan', showConfirmButton: false, timer: 1500 });
   };
 
   return (

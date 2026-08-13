@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Target, Clock, CalendarDays, ArrowRight } from 'lucide-react';
 import { supabase } from '../supabase';
+import { getSiteSetting } from '../utils/siteSettingsHelper';
 
 export default function PublicProgram({ onNavigate }: { onNavigate: (path: string) => void }) {
   const [programs, setPrograms] = useState<any[]>([]);
@@ -9,38 +10,33 @@ export default function PublicProgram({ onNavigate }: { onNavigate: (path: strin
   useEffect(() => {
     const fetchPrograms = async () => {
       try {
-        const { data, error } = await supabase.from('program_latihan').select('*').order('nama_program', { ascending: true });
-        if (error) throw error;
-        if (data && data.length > 0) {
-            setPrograms(data);
+        const data = await getSiteSetting('program_list');
+        if (data && Array.isArray(data) && data.length > 0) {
+          setPrograms(data);
         } else {
+          const { data: sbData } = await supabase.from('program_latihan').select('*').order('nama_program', { ascending: true });
+          if (sbData && sbData.length > 0) {
+            setPrograms(sbData);
+          } else {
             throw new Error("No data");
+          }
         }
       } catch (e) {
         const local = JSON.parse(localStorage.getItem('program_local_v3') || '[]');
         if (local.length > 0) {
-            setPrograms(local);
+          setPrograms(local);
         } else {
-            setPrograms([
-              { id: 'prog_1', nama_program: 'Kelas Reguler (Hobi & Pemula)', deskripsi: 'Program untuk pemula dan umum yang ingin berolahraga bulutangkis. Fokus pada kebugaran, pengenalan teknik dasar, dan sparring santai.', hari_latihan: 'Rabu & Ahad', jam_latihan: '08:00 - 12:00 WITA' },
-              { id: 'prog_2', nama_program: 'Kelas Prestasi (Pemusatan Atlet)', deskripsi: 'Latihan intensif bagi atlet yang dipersiapkan untuk turnamen/kejuaraan. Fokus pada drill teknik, ketahanan fisik, agility, dan strategi pertandingan.', hari_latihan: 'Jumat & Ahad', jam_latihan: '08:00 - 12:00 WITA' },
-              { id: 'prog_3', nama_program: 'Kelas Pembinaan Usia Dini', deskripsi: 'Program khusus pembinaan anak-anak (7-12 tahun). Melatih koordinasi motorik, teknik dasar bulutangkis yang benar, dan kedisiplinan sejak dini.', hari_latihan: 'Rabu & Jumat', jam_latihan: '08:00 - 10:00 WITA' },
-              { id: 'prog_4', nama_program: 'Private Training (1 on 1)', deskripsi: 'Latihan eksklusif dengan pelatih untuk fokus memperbaiki teknik spesifik dan mempercepat progres secara individual.', hari_latihan: 'Sesuai Kesepakatan', jam_latihan: 'Fleksibel' },
-              { id: 'prog_5', nama_program: 'Mabar Klub (Sparring Day)', deskripsi: 'Sesi pertandingan internal atau mengundang klub lain untuk mengasah mental bertanding seluruh anggota dalam suasana kompetitif namun bersahabat.', hari_latihan: 'Ahad (Akhir Bulan)', jam_latihan: '08:00 - 14:00 WITA' }
-            ]);
+          setPrograms([
+            { id: 'prog_1', nama_program: 'Kelas Reguler (Hobi & Pemula)', deskripsi: 'Program untuk pemula dan umum yang ingin berolahraga bulutangkis. Fokus pada kebugaran, pengenalan teknik dasar, dan sparring santai.', hari_latihan: 'Rabu & Ahad', jam_latihan: '08:00 - 12:00 WITA' },
+            { id: 'prog_2', nama_program: 'Kelas Prestasi (Pemusatan Atlet)', deskripsi: 'Latihan intensif bagi atlet yang dipersiapkan untuk turnamen/kejuaraan. Fokus pada drill teknik, ketahanan fisik, agility, dan strategi pertandingan.', hari_latihan: 'Jumat & Ahad', jam_latihan: '08:00 - 12:00 WITA' },
+            { id: 'prog_3', nama_program: 'Kelas Pembinaan Usia Dini', deskripsi: 'Program khusus pembinaan anak-anak (7-12 tahun). Melatih koordinasi motorik, teknik dasar bulutangkis yang benar, dan kedisiplinan sejak dini.', hari_latihan: 'Rabu & Jumat', jam_latihan: '08:00 - 10:00 WITA' },
+            { id: 'prog_4', nama_program: 'Private Training (1 on 1)', deskripsi: 'Latihan eksklusif dengan pelatih untuk fokus memperbaiki teknik spesifik dan mempercepat progres secara individual.', hari_latihan: 'Sesuai Kesepakatan', jam_latihan: 'Fleksibel' },
+            { id: 'prog_5', nama_program: 'Mabar Klub (Sparring Day)', deskripsi: 'Sesi pertandingan internal atau mengundang klub lain untuk mengasah mental bertanding seluruh anggota dalam suasana kompetitif namun bersahabat.', hari_latihan: 'Ahad (Akhir Bulan)', jam_latihan: '08:00 - 14:00 WITA' }
+          ]);
         }
       }
     };
     fetchPrograms();
-
-    const channel = supabase
-      .channel('public_program_realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'program_latihan' }, () => fetchPrograms())
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, []);
 
   if (programs.length === 0) return null;

@@ -5,6 +5,7 @@ import Swal from 'sweetalert2';
 import { motion } from 'framer-motion';
 import { computeScheduleInfo, ScheduleInfo } from '../utils/schedule';
 import { Timer, Zap } from 'lucide-react';
+import { saveSiteSetting, getSiteSetting } from '../utils/siteSettingsHelper';
 
 export default function AdminAbsensi({ session }: { session: any }) {
   const [users, setUsers] = useState<any[]>([]);
@@ -29,59 +30,97 @@ export default function AdminAbsensi({ session }: { session: any }) {
   useEffect(() => {
     fetchUsers();
     fetchAbsensi();
-
-    const channel = supabase
-      .channel('admin_absensi_realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'users_duplicate' }, () => fetchUsers())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'absensi' }, () => fetchAbsensi())
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, [selectedDate]);
 
   const fetchUsers = async () => {
     try {
-      const { data, error } = await supabase.from('users_duplicate').select('*');
-      if (error) {
-         if (error.message.includes('row-level security') || error.code === '42501' || error.code === '42P01') {
-            const localUsers = JSON.parse(localStorage.getItem('users_local') || '[]');
-            setUsers(localUsers);
-         }
-      } else if (data) {
-        setUsers(data);
+      const dbUsers = await getSiteSetting('users_list');
+      if (dbUsers && Array.isArray(dbUsers) && dbUsers.length > 0) {
+        setUsers(dbUsers);
+        localStorage.setItem('users_local', JSON.stringify(dbUsers));
+      } else {
+        // Fallback to pendaftaran table (registered athletes)
+        const { data: pendaftar, error } = await supabase.from('pendaftaran').select('id, nama, email, kategori_atlet');
+        if (pendaftar && pendaftar.length > 0) {
+          const mappedUsers = pendaftar.map(p => ({
+            id: p.id,
+            nama: p.nama,
+            email: p.email || `${p.nama.toLowerCase().replace(/\s+/g, '')}@pb-bilibili.com`,
+            role: 'member'
+          }));
+          setUsers(mappedUsers);
+          localStorage.setItem('users_local', JSON.stringify(mappedUsers));
+          await saveSiteSetting('users_list', mappedUsers);
+        } else {
+          // Dummy data fallback
+          const dummyUsers = [
+            { id: 'admin_1', nama: 'Coach Aris', email: 'aris@pb-bilibili.com', role: 'admin' },
+            { id: 'member_1', nama: 'Andi Pratama', email: 'andi@pb-bilibili.com', role: 'member' },
+            { id: 'member_2', nama: 'Budi Santoso', email: 'budi@pb-bilibili.com', role: 'member' },
+            { id: 'member_3', nama: 'Candra Wijaya', email: 'candra@pb-bilibili.com', role: 'member' },
+            { id: 'member_4', nama: 'Deni Kurniawan', email: 'deni@pb-bilibili.com', role: 'member' },
+          ];
+          setUsers(dummyUsers);
+          localStorage.setItem('users_local', JSON.stringify(dummyUsers));
+          await saveSiteSetting('users_list', dummyUsers);
+        }
       }
     } catch (err) {
       console.error(err);
+      const localUsers = JSON.parse(localStorage.getItem('users_local') || '[]');
+      setUsers(localUsers);
     }
   };
 
   const fetchAbsensi = async () => {
-    let localAbsensi = JSON.parse(localStorage.getItem('absensi_local_v2') || '[]');
-    if (localAbsensi.length === 0) {
-      const today = selectedDate;
-      const dummyAbsensi = [
-        { id: 'abs_1', user_id: 'admin_1', tanggal: today, status: 'hadir', created_at: new Date().toISOString() },
-        { id: 'abs_2', user_id: 'member_1', tanggal: today, status: 'hadir', created_at: new Date().toISOString() },
-        { id: 'abs_3', user_id: 'member_2', tanggal: today, status: 'izin', created_at: new Date().toISOString() },
-        { id: 'abs_4', user_id: 'member_3', tanggal: today, status: 'alfa', created_at: new Date().toISOString() },
-      ];
-      localStorage.setItem('absensi_local_v2', JSON.stringify(dummyAbsensi));
-      localAbsensi = dummyAbsensi;
+    try {
+      const dbAbsensi = await getSiteSetting('absensi_list');
+      if (dbAbsensi && Array.isArray(dbAbsensi)) {
+        setAbsensi(dbAbsensi.filter((a: any) => a.tanggal === selectedDate));
+        localStorage.setItem('absensi_local_v2', JSON.stringify(dbAbsensi));
+      } else {
+        const localAbsensi = JSON.parse(localStorage.getItem('absensi_local_v2') || '[]');
+        if (localAbsensi.length === 0) {
+          const today = selectedDate;
+          const dummyAbsensi = [
+            { id: 'abs_1', user_id: 'admin_1', tanggal: today, status: 'hadir', created_at: new Date().toISOString() },
+            { id: 'abs_2', user_id: 'member_1', tanggal: today, status: 'hadir', created_at: new Date().toISOString() },
+            { id: 'abs_3', user_id: 'member_2', tanggal: today, status: 'izin', created_at: new Date().toISOString() },
+            { id: 'abs_4', user_id: 'member_3', tanggal: today, status: 'alfa', created_at: new Date().toISOString() },
+          ];
+          localStorage.setItem('absensi_local_v2', JSON.stringify(dummyAbsensi));
+          await saveSiteSetting('absensi_list', dummyAbsensi);
+          setAbsensi(dummyAbsensi.filter((a: any) => a.tanggal === selectedDate));
+        } else {
+          setAbsensi(localAbsensi.filter((a: any) => a.tanggal === selectedDate));
+        }
+      }
+    } catch (e) {
+      const localAbsensi = JSON.parse(localStorage.getItem('absensi_local_v2') || '[]');
+      setAbsensi(localAbsensi.filter((a: any) => a.tanggal === selectedDate));
     }
-    setAbsensi(localAbsensi.filter((a: any) => a.tanggal === selectedDate));
   };
 
-  const handleAttendance = (userId: string, status: 'hadir' | 'izin' | 'alfa') => {
-    const localAbsensi = JSON.parse(localStorage.getItem('absensi_local_v2') || '[]');
-    const existingIndex = localAbsensi.findIndex((a: any) => a.user_id === userId && a.tanggal === selectedDate);
+  const handleAttendance = async (userId: string, status: 'hadir' | 'izin' | 'alfa') => {
+    let allAbsensi = [];
+    try {
+      const dbAbsensi = await getSiteSetting('absensi_list');
+      if (dbAbsensi && Array.isArray(dbAbsensi)) {
+        allAbsensi = dbAbsensi;
+      } else {
+        allAbsensi = JSON.parse(localStorage.getItem('absensi_local_v2') || '[]');
+      }
+    } catch (e) {
+      allAbsensi = JSON.parse(localStorage.getItem('absensi_local_v2') || '[]');
+    }
+
+    const existingIndex = allAbsensi.findIndex((a: any) => a.user_id === userId && a.tanggal === selectedDate);
     
     if (existingIndex >= 0) {
-      localAbsensi[existingIndex].status = status;
+      allAbsensi[existingIndex].status = status;
     } else {
-      localAbsensi.push({
-        id: 'abs_' + Date.now() + Math.random(),
+      allAbsensi.push({
+        id: 'abs_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
         user_id: userId,
         tanggal: selectedDate,
         status: status,
@@ -89,8 +128,9 @@ export default function AdminAbsensi({ session }: { session: any }) {
       });
     }
     
-    localStorage.setItem('absensi_local_v2', JSON.stringify(localAbsensi));
-    fetchAbsensi();
+    localStorage.setItem('absensi_local_v2', JSON.stringify(allAbsensi));
+    await saveSiteSetting('absensi_list', allAbsensi);
+    setAbsensi(allAbsensi.filter((a: any) => a.tanggal === selectedDate));
     
     Swal.fire({
       toast: true,
