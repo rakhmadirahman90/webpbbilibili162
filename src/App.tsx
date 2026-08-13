@@ -751,7 +751,7 @@ export default function App() {
 
   const renderPublicHome = () => (
     <div className="min-h-screen bg-[#0b0e14] w-full overflow-x-hidden">
-      <ImagePopup />
+      <ImagePopup activeView={activeView} />
       <Navbar onNavigate={handleNavigate} />
       
       {/* REAL-TIME PRAYER NOTIFICATION PANEL */}
@@ -827,7 +827,7 @@ export default function App() {
             className="fixed bottom-3 sm:bottom-6 left-1/2 z-[99999] max-w-[calc(100vw-6rem)]"
           >
             <button 
-              onClick={() => { setActiveView(null); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+              onClick={() => { setActiveView(null); window.scrollTo({ top: 0, behavior: 'smooth' }); window.dispatchEvent(new CustomEvent('trigger-home-popup')); }}
               className="flex items-center gap-1.5 sm:gap-2 px-3.5 py-2 sm:px-5 sm:py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-full font-black text-[10px] sm:text-[11px] uppercase tracking-wider sm:tracking-[0.15em] transition-all duration-200 active:scale-95 cursor-pointer border border-white/20 shadow-[0_10px_25px_rgba(37,99,235,0.45)] hover:shadow-blue-600/50 backdrop-blur-xl shrink-0"
             >
               <ArrowLeft size={13} className="shrink-0" />

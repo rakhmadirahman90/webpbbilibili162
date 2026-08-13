@@ -15,16 +15,39 @@ const OFFICIAL_LATEST_POPUP = {
   urutan: 21
 };
 
-function ImagePopup() {
+interface ImagePopupProps {
+  activeView?: string | null;
+}
+
+function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
   const [isOpen, setIsOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [promoImages, setPromoImages] = useState<any[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const isDismissedRef = useRef<boolean>(false);
+  const prevActiveViewRef = useRef<string | null>(activeView);
 
-  const fetchActivePopups = async (forceShow = true) => {
+  const fetchActivePopups = async (forceShow = false) => {
     try {
       if (typeof window !== 'undefined' && (window.location.pathname.startsWith('/admin') || window.location.pathname.startsWith('/login'))) {
         setPromoImages([]);
+        setIsOpen(false);
+        return;
+      }
+
+      // If user is currently on a full subpage view (not home session), don't show popup
+      if (activeView !== null) {
+        setIsOpen(false);
+        return;
+      }
+
+      // Check if user already dismissed popup in this view/session
+      const isDismissedEarly = !forceShow && (
+        isDismissedRef.current ||
+        sessionStorage.getItem('popup_dismissed_session') === 'true'
+      );
+
+      if (isDismissedEarly) {
         setIsOpen(false);
         return;
       }
@@ -112,6 +135,7 @@ function ImagePopup() {
       
       // Check if dismissed in session or localStorage
       const dismissed = !forceShow && activeItems.length > 0 && (
+        isDismissedRef.current ||
         sessionStorage.getItem('popup_dismissed_session') === 'true' ||
         sessionStorage.getItem(`popup_dismissed_${activeItems[0].id}`) === 'true' ||
         localStorage.getItem(`popup_dismissed_${activeItems[0].id}`) === 'true'
@@ -122,7 +146,7 @@ function ImagePopup() {
         setCurrentIndex(0);
         setIsOpen(true);
       } else {
-        setPromoImages([]);
+        setPromoImages(activeItems);
         setIsOpen(false);
       }
     } catch (err) {
@@ -131,13 +155,26 @@ function ImagePopup() {
   };
 
   useEffect(() => {
+    if (activeView !== null) {
+      setIsOpen(false);
+    } else if (prevActiveViewRef.current !== null && activeView === null) {
+      sessionStorage.removeItem('popup_dismissed_session');
+      isDismissedRef.current = false;
+      fetchActivePopups(true);
+    }
+    prevActiveViewRef.current = activeView;
+  }, [activeView]);
+
+  useEffect(() => {
     // On fresh page load / refresh, clear session dismissal so popup can show once on refresh
     sessionStorage.removeItem('popup_dismissed_session');
+    isDismissedRef.current = false;
     fetchActivePopups(false);
 
     const handleTriggerHome = () => {
       sessionStorage.removeItem('popup_dismissed_session');
-      fetchActivePopups(false);
+      isDismissedRef.current = false;
+      fetchActivePopups(true);
     };
 
     const handleUpdate = () => {
@@ -163,7 +200,7 @@ function ImagePopup() {
     tables: ['konfigurasi_popup', 'site_settings'],
     settingKeys: ['popup_config'],
     onUpdate: () => {
-      fetchActivePopups();
+      fetchActivePopups(false);
     }
   });
 
@@ -232,6 +269,7 @@ function ImagePopup() {
 
   const [isExpanded, setIsExpanded] = useState(false);
   const closePopup = () => {
+    isDismissedRef.current = true;
     sessionStorage.setItem('popup_dismissed_session', 'true');
     if (promoImages[currentIndex]?.id) {
       sessionStorage.setItem(`popup_dismissed_${promoImages[currentIndex].id}`, 'true');
