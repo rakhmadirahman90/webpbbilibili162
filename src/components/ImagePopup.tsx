@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Download } from 'lucide-react';
 import { supabase } from '../supabase';
 import { getSiteSetting, parsePopupList } from '../utils/siteSettingsHelper';
+import { useRealtimeSync } from '../utils/realtimeSync';
 
 const OFFICIAL_LATEST_POPUP = {
   id: 'popup-1786211047963',
@@ -20,168 +21,94 @@ function ImagePopup() {
   const [promoImages, setPromoImages] = useState<any[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    let lastHash = '';
-
-    const computeHash = (items: any[]) => JSON.stringify((items || []).map(item => ({
-      id: item.id || '',
-      active: item.is_active ?? item.active ?? true,
-      title: item.judul || '',
-      img: item.url_gambar || '',
-      desc: item.deskripsi || '',
-      file: item.file_url || '',
-      order: item.urutan ?? 0
-    })));
-
-    const fetchActivePopups = async () => {
+  const fetchActivePopups = async () => {
+    try {
+      let sitePopups: any[] = [];
       try {
-        let sitePopups: any[] = [];
-        let siteLoaded = false;
-        try {
-          const siteConfig = await getSiteSetting('popup_config');
-          if (siteConfig !== null && siteConfig !== undefined) {
-            sitePopups = parsePopupList(siteConfig);
-            siteLoaded = true;
-          }
-        } catch (e) {}
-
-        let dbItems: any[] = [];
-        try {
-          const { data, error } = await supabase
-            .from('konfigurasi_popup')
-            .select('*')
-            .order('urutan', { ascending: true });
-          
-          if (!error && data) dbItems = data;
-        } catch (e) {}
-
-        const dbMap = new Map(dbItems.map((p: any) => [p.id, p]));
-        const siteMap = new Map(sitePopups.map((p: any) => [p.id, p]));
-        const allIds = new Set([...dbItems.map((p: any) => p.id), ...sitePopups.map((p: any) => p.id)]);
-
-        let merged: any[] = [];
-        for (const id of allIds) {
-          const dbItem = dbMap.get(id);
-          const siteItem = siteMap.get(id);
-          if (dbItem && siteItem) {
-            merged.push({
-              ...siteItem,
-              ...dbItem,
-              judul: dbItem.judul || siteItem.judul || '',
-              deskripsi: dbItem.deskripsi || siteItem.deskripsi || '',
-              url_gambar: dbItem.url_gambar || siteItem.url_gambar || '',
-              file_url: dbItem.file_url || siteItem.file_url || null,
-              is_active: dbItem.is_active ?? siteItem.is_active ?? true,
-              urutan: dbItem.urutan ?? siteItem.urutan ?? 0
-            });
-          } else if (dbItem) {
-            merged.push(dbItem);
-          } else if (siteItem) {
-            merged.push(siteItem);
-          }
+        const siteConfig = await getSiteSetting('popup_config');
+        if (siteConfig !== null && siteConfig !== undefined) {
+          sitePopups = parsePopupList(siteConfig);
         }
+      } catch (e) {}
 
-        // Deactivate old Aqiqah popups from legacy database entries and ensure OFFICIAL_LATEST_POPUP is active
-        merged = merged.map(item => {
-          if (!item) return item;
-          if (item.id === 'df3aa22e-5f97-4c05-9f04-700ccba35d08' || (item.judul && item.judul.toUpperCase().includes('AQIQAH')) || (item.url_gambar && item.url_gambar.includes('1784303693873'))) {
-            return { ...item, is_active: false, active: false };
-          }
-          if (item.id === OFFICIAL_LATEST_POPUP.id || (item.url_gambar && item.url_gambar.includes('1786212468282')) || (item.judul && item.judul.includes('JADWAL LATIHAN RESMI'))) {
-            return { ...item, ...OFFICIAL_LATEST_POPUP, is_active: true, active: true };
-          }
-          return item;
-        });
+      let dbItems: any[] = [];
+      try {
+        const { data, error } = await supabase
+          .from('konfigurasi_popup')
+          .select('*')
+          .order('urutan', { ascending: true });
+        
+        if (!error && data) dbItems = data;
+      } catch (e) {}
 
-        // Ensure official latest Jadwal Latihan popup is present as default if not yet created in settings
-        const hasSchedulePopup = merged.some(m => m && (m.id === OFFICIAL_LATEST_POPUP.id || (m.url_gambar && m.url_gambar.includes('1786212468282')) || (m.judul && m.judul.includes('JADWAL LATIHAN RESMI'))));
-        if (!hasSchedulePopup) {
-          merged.unshift(OFFICIAL_LATEST_POPUP);
+      const dbMap = new Map(dbItems.map((p: any) => [p.id, p]));
+      const siteMap = new Map(sitePopups.map((p: any) => [p.id, p]));
+      const allIds = new Set([...dbItems.map((p: any) => p.id), ...sitePopups.map((p: any) => p.id)]);
+
+      let merged: any[] = [];
+      for (const id of allIds) {
+        const dbItem = dbMap.get(id);
+        const siteItem = siteMap.get(id);
+        if (dbItem && siteItem) {
+          merged.push({
+            ...siteItem,
+            ...dbItem,
+            judul: dbItem.judul || siteItem.judul || '',
+            deskripsi: dbItem.deskripsi || siteItem.deskripsi || '',
+            url_gambar: dbItem.url_gambar || siteItem.url_gambar || '',
+            file_url: dbItem.file_url || siteItem.file_url || null,
+            is_active: dbItem.is_active ?? siteItem.is_active ?? true,
+            urutan: dbItem.urutan ?? siteItem.urutan ?? 0
+          });
+        } else if (dbItem) {
+          merged.push(dbItem);
+        } else if (siteItem) {
+          merged.push(siteItem);
         }
-
-        // Ensure proper order sorting
-        merged.sort((a, b) => (a.urutan ?? 0) - (b.urutan ?? 0));
-
-        const activeItems = merged.filter((p: any) => p && (p.is_active === true || p.active === true));
-
-        const currentHash = computeHash(activeItems);
-        if (currentHash !== lastHash) {
-          lastHash = currentHash;
-          if (activeItems.length > 0) {
-            setPromoImages(activeItems);
-            setIsOpen(true);
-          } else {
-            setPromoImages([]);
-            setIsOpen(false);
-          }
-        }
-      } catch (err) {
-        console.error("Gagal memuat pop-up:", err);
       }
-    };
 
+      merged = merged.map(item => {
+        if (!item) return item;
+        if (item.id === 'df3aa22e-5f97-4c05-9f04-700ccba35d08' || (item.judul && item.judul.toUpperCase().includes('AQIQAH')) || (item.url_gambar && item.url_gambar.includes('1784303693873'))) {
+          return { ...item, is_active: false, active: false };
+        }
+        if (item.id === OFFICIAL_LATEST_POPUP.id || (item.url_gambar && item.url_gambar.includes('1786212468282')) || (item.judul && item.judul.includes('JADWAL LATIHAN RESMI'))) {
+          return { ...item, ...OFFICIAL_LATEST_POPUP, is_active: true, active: true };
+        }
+        return item;
+      });
+
+      const hasSchedulePopup = merged.some(m => m && (m.id === OFFICIAL_LATEST_POPUP.id || (m.url_gambar && m.url_gambar.includes('1786212468282')) || (m.judul && m.judul.includes('JADWAL LATIHAN RESMI'))));
+      if (!hasSchedulePopup) {
+        merged.unshift(OFFICIAL_LATEST_POPUP);
+      }
+
+      merged.sort((a, b) => (a.urutan ?? 0) - (b.urutan ?? 0));
+
+      const activeItems = merged.filter((p: any) => p && (p.is_active === true || p.active === true));
+      if (activeItems.length > 0) {
+        setPromoImages(activeItems);
+        setIsOpen(true);
+      } else {
+        setPromoImages([]);
+        setIsOpen(false);
+      }
+    } catch (err) {
+      console.error("Gagal memuat pop-up:", err);
+    }
+  };
+
+  useEffect(() => {
     fetchActivePopups();
-
-    // Live 2-second polling interval for instant cross-device realtime updates
-    const syncInterval = setInterval(fetchActivePopups, 2000);
-
-    const handleUpdate = (e: any) => {
-      if (!e.detail?.key || e.detail.key === 'popup_config') {
-        if (e.detail?.value) {
-          try {
-            const parsed = parsePopupList(e.detail.value).filter((p: any) => p && (p.is_active === true || p.active === true));
-            const currentHash = computeHash(parsed);
-            if (currentHash !== lastHash) {
-              lastHash = currentHash;
-              if (parsed.length > 0) {
-                setPromoImages(parsed);
-                setIsOpen(true);
-              } else {
-                setPromoImages([]);
-                setIsOpen(false);
-              }
-            }
-          } catch (err) {}
-        }
-        fetchActivePopups();
-      }
-    };
-    const handleFocus = () => fetchActivePopups();
-
-    window.addEventListener('site_setting_updated', handleUpdate);
-    window.addEventListener('app_data_changed', handleFocus);
-    window.addEventListener('table_updated_popup_config', handleFocus);
-    window.addEventListener('table_updated_konfigurasi_popup', handleFocus);
-    window.addEventListener('force_refresh_data', handleFocus);
-    window.addEventListener('focus', handleFocus);
-    window.addEventListener('online', handleFocus);
-    document.addEventListener('visibilitychange', handleFocus);
-
-    const channel = supabase
-      .channel(`image_popup_realtime_sync_${Date.now()}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, (payload: any) => {
-        if (!payload.new || payload.new.key === 'popup_config' || payload.old?.key === 'popup_config') {
-          fetchActivePopups();
-        }
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'konfigurasi_popup' }, () => {
-        fetchActivePopups();
-      })
-      .subscribe();
-
-    return () => {
-      clearInterval(syncInterval);
-      window.removeEventListener('site_setting_updated', handleUpdate);
-      window.removeEventListener('app_data_changed', handleFocus);
-      window.removeEventListener('table_updated_popup_config', handleFocus);
-      window.removeEventListener('table_updated_konfigurasi_popup', handleFocus);
-      window.removeEventListener('force_refresh_data', handleFocus);
-      window.removeEventListener('focus', handleFocus);
-      window.removeEventListener('online', handleFocus);
-      document.removeEventListener('visibilitychange', handleFocus);
-      supabase.removeChannel(channel);
-    };
   }, []);
+
+  useRealtimeSync({
+    tables: ['konfigurasi_popup', 'site_settings'],
+    settingKeys: ['popup_config'],
+    onUpdate: () => {
+      fetchActivePopups();
+    }
+  });
 
   useEffect(() => {
     let scrollInterval: any;

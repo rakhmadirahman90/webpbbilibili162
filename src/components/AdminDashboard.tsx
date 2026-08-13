@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../supabase';
 import { useNavigate } from 'react-router-dom';
+import { useRealtimeSync } from '../utils/realtimeSync';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -26,37 +27,37 @@ export default function AdminDashboard() {
   const [pinSuccessMsg, setPinSuccessMsg] = useState<string | null>(null);
   const [pinErrorMsg, setPinErrorMsg] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function fetchStats() {
-      try {
-        const { data: pendaftaran } = await supabase.from('pendaftaran').select('kategori_atlet');
-        const { count: rankCount } = await supabase.from('rankings').select('id', { count: 'exact', head: true });
-        
-        const totalDaftar = pendaftaran?.length || 0;
-        let totalMuda = 0;
-        let totalSenior = 0;
+  async function fetchStats() {
+    try {
+      const { data: pendaftaran } = await supabase.from('pendaftaran').select('kategori_atlet');
+      const { count: rankCount } = await supabase.from('rankings').select('id', { count: 'exact', head: true });
+      
+      const totalDaftar = pendaftaran?.length || 0;
+      let totalMuda = 0;
+      let totalSenior = 0;
 
-        if (pendaftaran && pendaftaran.length > 0) {
-          totalMuda = pendaftaran.filter(r => (r.kategori_atlet || '').toUpperCase().trim() === 'MUDA').length;
-          totalSenior = pendaftaran.filter(r => (r.kategori_atlet || '').toUpperCase().trim() !== 'MUDA').length;
-        } else {
-          const { data: muda } = await supabase.from('atlet_stats').select('id').eq('kategori', 'MUDA');
-          const { data: senior } = await supabase.from('atlet_stats').select('id').eq('kategori', 'SENIOR');
-          totalMuda = muda?.length || 0;
-          totalSenior = senior?.length || 0;
-        }
-
-        setStats({
-          totalAtlets: rankCount || totalDaftar,
-          totalPendaftaran: totalDaftar,
-          totalMuda: totalMuda,
-          totalSenior: totalSenior
-        });
-      } catch (err) {
-        console.error('Error fetching stats:', err);
+      if (pendaftaran && pendaftaran.length > 0) {
+        totalMuda = pendaftaran.filter(r => (r.kategori_atlet || '').toUpperCase().trim() === 'MUDA').length;
+        totalSenior = pendaftaran.filter(r => (r.kategori_atlet || '').toUpperCase().trim() !== 'MUDA').length;
+      } else {
+        const { data: muda } = await supabase.from('atlet_stats').select('id').eq('kategori', 'MUDA');
+        const { data: senior } = await supabase.from('atlet_stats').select('id').eq('kategori', 'SENIOR');
+        totalMuda = muda?.length || 0;
+        totalSenior = senior?.length || 0;
       }
-    }
 
+      setStats({
+        totalAtlets: rankCount || totalDaftar,
+        totalPendaftaran: totalDaftar,
+        totalMuda: totalMuda,
+        totalSenior: totalSenior
+      });
+    } catch (err) {
+      console.error('Error fetching stats:', err);
+    }
+  }
+
+  useEffect(() => {
     // Read local active session
     try {
       const raw = localStorage.getItem('local_admin_session');
@@ -75,17 +76,6 @@ export default function AdminDashboard() {
 
     fetchStats();
 
-    const channel = supabase
-      .channel('admin_dashboard_realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'rankings' }, () => fetchStats())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'pendaftaran' }, () => fetchStats())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'atlet_stats' }, () => fetchStats())
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-
     const justLoggedIn = sessionStorage.getItem('just_logged_in');
     if (justLoggedIn === 'true') {
       sessionStorage.removeItem('just_logged_in');
@@ -94,6 +84,13 @@ export default function AdminDashboard() {
       }, 800);
     }
   }, []);
+
+  useRealtimeSync({
+    tables: ['rankings', 'pendaftaran', 'atlet_stats'],
+    onUpdate: () => {
+      fetchStats();
+    }
+  });
 
   const isAdmin = userRole === 'admin';
 

@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { supabase } from '../supabase'; 
 import { getOptimizedImageUrl } from '../utils/imageOptimizer'; 
 import { getSiteSetting, appendCacheBustParam } from '../utils/siteSettingsHelper';
+import { useRealtimeSync } from '../utils/realtimeSync';
 
 export function isVideoUrl(url?: string, type?: string): boolean {
   if (type === 'video') return true;
@@ -225,64 +225,25 @@ export default function Hero() {
 
   useEffect(() => {
     loadHeroConfig();
-
-    const handleStorage = (e: StorageEvent) => {
-      if (e.key === 'site_setting_hero_config' || e.key === 'hero_config') {
-        loadHeroConfig();
-      }
-    };
-    const handleCustomUpdate = (e: any) => {
-      if (e.detail?.key === 'hero_config') {
-        if (e.detail.value) {
-          try {
-            const val = typeof e.detail.value === 'string' ? JSON.parse(e.detail.value) : e.detail.value;
-            const allSlides = val.slides || (Array.isArray(val) ? val : []);
-            const isVid = (s: any) => s && (s.type === 'video' || isVideoUrl(s.videoUrl, s.type) || isVideoUrl(s.image, s.type));
-            const activeSlides = allSlides.filter((s: any) => s && s.active !== false && isVid(s));
-            if (activeSlides.length > 0) setSlides(activeSlides);
-            if (val.settings) setSettings(val.settings);
-          } catch (err) {}
-        }
-        loadHeroConfig();
-      }
-    };
-    const handleFocus = () => loadHeroConfig();
-
-    window.addEventListener('storage', handleStorage);
-    window.addEventListener('site_setting_updated', handleCustomUpdate);
-    window.addEventListener('force_refresh_data', handleFocus);
-    window.addEventListener('focus', handleFocus);
-    window.addEventListener('online', handleFocus);
-    document.addEventListener('visibilitychange', handleFocus);
-
-    const channel = supabase
-      .channel('public_site_settings_hero')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'site_settings' },
-        (payload: any) => {
-          if (!payload.new || payload.new.key === 'hero_config' || payload.old?.key === 'hero_config') {
-            loadHeroConfig();
-          }
-        }
-      )
-      .subscribe();
-
-    // Polling interval for fast live sync across tabs/devices
-    const syncInterval = setInterval(() => {
-      loadHeroConfig();
-    }, 4000);
-
-    return () => {
-      clearInterval(syncInterval);
-      window.removeEventListener('storage', handleStorage);
-      window.removeEventListener('site_setting_updated', handleCustomUpdate);
-      window.removeEventListener('focus', handleFocus);
-      window.removeEventListener('online', handleFocus);
-      document.removeEventListener('visibilitychange', handleFocus);
-      supabase.removeChannel(channel);
-    };
   }, []);
+
+  useRealtimeSync({
+    tables: ['site_settings'],
+    settingKeys: ['hero_config'],
+    onUpdate: (detail) => {
+      if (detail && detail.key === 'hero_config' && detail.value) {
+        try {
+          const val = typeof detail.value === 'string' ? JSON.parse(detail.value) : detail.value;
+          const allSlides = val.slides || (Array.isArray(val) ? val : []);
+          const isVid = (s: any) => s && (s.type === 'video' || isVideoUrl(s.videoUrl, s.type) || isVideoUrl(s.image, s.type));
+          const activeSlides = allSlides.filter((s: any) => s && s.active !== false && isVid(s));
+          if (activeSlides.length > 0) setSlides(activeSlides);
+          if (val.settings) setSettings(val.settings);
+        } catch (err) {}
+      }
+      loadHeroConfig();
+    }
+  });
 
   useEffect(() => {
     if (slides.length > 0 && currentSlide >= slides.length) {
