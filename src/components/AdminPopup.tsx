@@ -261,8 +261,14 @@ export default function AdminPopup() {
       }
       merged = Array.from(mergedMap.values());
 
-      // Ensure proper sorting by urutan
-      merged.sort((a, b) => (a.urutan ?? 0) - (b.urutan ?? 0));
+      // Ensure proper sorting: active popups first (real-time active), then inactive ones, sorted by urutan within each group
+      merged.sort((a, b) => {
+        const aActive = a.is_active ?? false;
+        const bActive = b.is_active ?? false;
+        if (aActive && !bActive) return -1;
+        if (!aActive && bActive) return 1;
+        return (a.urutan ?? 0) - (b.urutan ?? 0);
+      });
 
       setPopups(prev => {
         const currentHash = JSON.stringify(prev);
