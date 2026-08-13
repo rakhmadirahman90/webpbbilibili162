@@ -69,11 +69,24 @@ function ImagePopup() {
 
       merged = merged.map(item => {
         if (!item) return item;
+        if (item.id === OFFICIAL_LATEST_POPUP.id || (item.url_gambar && item.url_gambar.includes('1786212468282')) || (item.judul && item.judul.toUpperCase().includes('JADWAL LATIHAN'))) {
+          return {
+            ...item,
+            ...OFFICIAL_LATEST_POPUP,
+            is_active: item.is_active ?? true,
+            active: item.active ?? true
+          };
+        }
         if (item.id === 'df3aa22e-5f97-4c05-9f04-700ccba35d08' || (item.judul && item.judul.toUpperCase().includes('AQIQAH')) || (item.url_gambar && item.url_gambar.includes('1784303693873'))) {
           return { ...item, is_active: false, active: false };
         }
         return item;
       });
+
+      const hasOfficial = merged.some(m => m && m.id === OFFICIAL_LATEST_POPUP.id);
+      if (!hasOfficial) {
+        merged.unshift(OFFICIAL_LATEST_POPUP);
+      }
 
       merged.sort((a, b) => (a.urutan ?? 0) - (b.urutan ?? 0));
 
