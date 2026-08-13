@@ -72,21 +72,17 @@ function ImagePopup() {
         if (item.id === 'df3aa22e-5f97-4c05-9f04-700ccba35d08' || (item.judul && item.judul.toUpperCase().includes('AQIQAH')) || (item.url_gambar && item.url_gambar.includes('1784303693873'))) {
           return { ...item, is_active: false, active: false };
         }
-        if (item.id === OFFICIAL_LATEST_POPUP.id || (item.url_gambar && item.url_gambar.includes('1786212468282')) || (item.judul && item.judul.includes('JADWAL LATIHAN RESMI'))) {
-          return { ...item, ...OFFICIAL_LATEST_POPUP, is_active: true, active: true };
-        }
         return item;
       });
-
-      const hasSchedulePopup = merged.some(m => m && (m.id === OFFICIAL_LATEST_POPUP.id || (m.url_gambar && m.url_gambar.includes('1786212468282')) || (m.judul && m.judul.includes('JADWAL LATIHAN RESMI'))));
-      if (!hasSchedulePopup) {
-        merged.unshift(OFFICIAL_LATEST_POPUP);
-      }
 
       merged.sort((a, b) => (a.urutan ?? 0) - (b.urutan ?? 0));
 
       const activeItems = merged.filter((p: any) => p && (p.is_active === true || p.active === true));
-      if (activeItems.length > 0) {
+      
+      // Check if dismissed in session
+      const dismissed = activeItems.length > 0 && sessionStorage.getItem(`popup_dismissed_${activeItems[0].id}`) === 'true';
+
+      if (activeItems.length > 0 && !dismissed) {
         setPromoImages(activeItems);
         setIsOpen(true);
       } else {
@@ -174,7 +170,12 @@ function ImagePopup() {
   // ------------------------------------
 
   const [isExpanded, setIsExpanded] = useState(false);
-  const closePopup = () => setIsOpen(false);
+  const closePopup = () => {
+    if (promoImages[currentIndex]?.id) {
+      sessionStorage.setItem(`popup_dismissed_${promoImages[currentIndex].id}`, 'true');
+    }
+    setIsOpen(false);
+  };
 
   const handleDragEnd = (e: any, { offset, velocity }: any) => {
     const swipe = Math.abs(offset.x) > 50; 
