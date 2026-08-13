@@ -81,11 +81,14 @@ function ImagePopup() {
           }
         }
 
-        // Deactivate old Aqiqah popups from legacy database entries
+        // Deactivate old Aqiqah popups from legacy database entries and ensure OFFICIAL_LATEST_POPUP is active
         merged = merged.map(item => {
           if (!item) return item;
           if (item.id === 'df3aa22e-5f97-4c05-9f04-700ccba35d08' || (item.judul && item.judul.toUpperCase().includes('AQIQAH')) || (item.url_gambar && item.url_gambar.includes('1784303693873'))) {
             return { ...item, is_active: false, active: false };
+          }
+          if (item.id === OFFICIAL_LATEST_POPUP.id || (item.url_gambar && item.url_gambar.includes('1786212468282')) || (item.judul && item.judul.includes('JADWAL LATIHAN RESMI'))) {
+            return { ...item, ...OFFICIAL_LATEST_POPUP, is_active: true, active: true };
           }
           return item;
         });
