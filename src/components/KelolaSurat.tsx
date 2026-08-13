@@ -727,27 +727,36 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
   const fetchSurat = async () => {
     setLoading(true);
     try {
+      // Force refresh stale seed local storage on deployment
+      if (!localStorage.getItem('pb_bilibili_seed_v4')) {
+        localStorage.setItem('pb_bilibili_seed_v4', 'true');
+        // Remove stale seed local items so latest SEED_SURAT applies
+        const existingLocal = JSON.parse(localStorage.getItem('arsip_surat_local') || '[]');
+        const cleanedLocal = existingLocal.filter((i: any) => !i.id || !i.id.toString().startsWith('seed_surat_'));
+        localStorage.setItem('arsip_surat_local', JSON.stringify(cleanedLocal));
+      }
+
       const { data } = await supabase.from('arsip_surat').select('*').order('created_at', { ascending: false });
       const localData = JSON.parse(localStorage.getItem('arsip_surat_local') || '[]');
       const deletedIds: string[] = JSON.parse(localStorage.getItem('arsip_surat_deleted') || '[]');
 
       const map = new Map();
 
-      // Seed default letters first
-      SEED_SURAT.forEach(item => {
-        if (!deletedIds.includes(item.id) && !deletedIds.includes(item.nomor_surat)) {
-          map.set(item.id, item);
-        }
-      });
-
-      // Override with localData
+      // 1. User local custom data
       localData.forEach((item: any) => {
         if (item && !deletedIds.includes(item.id) && !deletedIds.includes(item.nomor_surat)) {
           map.set(item.id || item.nomor_surat, item);
         }
       });
 
-      // Database data takes precedence for real-time synchronization
+      // 2. Latest code SEED_SURAT overrides default seed IDs so all deployed browsers get updated templates
+      SEED_SURAT.forEach(item => {
+        if (!deletedIds.includes(item.id) && !deletedIds.includes(item.nomor_surat)) {
+          map.set(item.id, item);
+        }
+      });
+
+      // 3. Database data takes ultimate precedence for real-time synchronization
       (data || []).forEach(item => {
         if (item && !deletedIds.includes(item.id) && !deletedIds.includes(item.nomor_surat)) {
           map.set(item.id || item.nomor_surat, item);
@@ -790,11 +799,11 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       const localData = JSON.parse(localStorage.getItem('arsip_surat_local') || '[]');
       const deletedIds: string[] = JSON.parse(localStorage.getItem('arsip_surat_deleted') || '[]');
       const map = new Map();
-      SEED_SURAT.forEach(item => {
-        if (!deletedIds.includes(item.id)) map.set(item.id, item);
-      });
       localData.forEach((item: any) => {
         if (item && !deletedIds.includes(item.id)) map.set(item.id || item.nomor_surat, item);
+      });
+      SEED_SURAT.forEach(item => {
+        if (!deletedIds.includes(item.id)) map.set(item.id, item);
       });
       const fallbackItems = Array.from(map.values());
       const fallbackRef = fallbackItems.find((i: any) => i.nomor_surat && i.nomor_surat.includes('002')) || fallbackItems[0];
