@@ -243,7 +243,7 @@ export default function News() {
       try { setUserReactions(JSON.parse(savedReactions)); } catch (e) {}
     }
 
-    // Subscribe to realtime database changes for live likes & reactions sync
+    // Subscribe to realtime database changes for live likes, reactions, and news updates sync
     const channel = supabase
       .channel('public:berita-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'berita' }, (payload) => {
@@ -253,21 +253,29 @@ export default function News() {
             item.id === updated.id 
               ? { 
                   ...item, 
+                  ...updated,
                   likes: Number(updated.likes) || 0, 
                   views: Number(updated.views) || 0
                 } 
               : item
           ));
           
-          setSelectedNews(prev => prev?.id === updated.id ? { ...prev, likes: Number(updated.likes) || 0, views: Number(updated.views) || 0 } : prev);
-        } else if (payload.eventType === 'INSERT') {
+          setSelectedNews(prev => prev?.id === updated.id ? { ...prev, ...updated, likes: Number(updated.likes) || 0, views: Number(updated.views) || 0 } : prev);
+        } else if (payload.eventType === 'INSERT' || payload.eventType === 'DELETE') {
           fetchNews();
         }
       })
       .subscribe();
 
+    const handleTableUpdate = () => {
+      fetchNews();
+    };
+
+    window.addEventListener('table_updated_berita', handleTableUpdate);
+
     return () => {
       supabase.removeChannel(channel);
+      window.removeEventListener('table_updated_berita', handleTableUpdate);
     };
   }, []);
 
@@ -338,30 +346,25 @@ export default function News() {
   const fetchNews = async () => {
     try {
       setLoading(true);
-      const data = await getSiteSetting('berita_list');
-      if (data && Array.isArray(data)) {
-        const formattedData = data.map(item => ({
+      const { data: sbData, error } = await supabase
+        .from('berita')
+        .select(`*, comments_count:komentar(count)`)
+        .order('tanggal', { ascending: false });
+      
+      if (error) {
+        console.error("Gagal query berita Supabase:", error);
+      }
+
+      if (sbData) {
+        const formattedData = sbData.map(item => ({
           ...item,
-          comments_count: Number(item.comments_count) || 0,
+          comments_count: Array.isArray(item.comments_count)
+            ? (item.comments_count[0]?.count || 0)
+            : (Number(item.comments_count) || 0),
           likes: Number(item.likes) || 0,
           views: Number(item.views) || 0
         }));
         setBeritaList(formattedData as Berita[]);
-      } else {
-        const { data: sbData } = await supabase
-          .from('berita')
-          .select('*')
-          .order('tanggal', { ascending: false });
-        
-        if (sbData) {
-          const formattedData = sbData.map(item => ({
-            ...item,
-            comments_count: 0, // Fallback since we aren't joining komentar
-            likes: Number(item.likes) || 0,
-            views: Number(item.views) || 0
-          }));
-          setBeritaList(formattedData as Berita[]);
-        }
       }
     } catch (err) {
       console.error("Gagal memuat berita:", err);

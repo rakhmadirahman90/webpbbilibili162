@@ -91,40 +91,54 @@ export default function AdminBerita({ session }: { session?: any }) {
 
   useEffect(() => {
     fetchNews();
+    
+    // Clear stale local storage backup that causes duplication
+    localStorage.removeItem('berita_local');
+
     const subscription = supabase
       .channel('public:berita')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'berita' }, () => {
         fetchNews();
       })
       .subscribe();
-    return () => { supabase.removeChannel(subscription); };
+
+    const handleTableUpdate = () => {
+      fetchNews();
+    };
+
+    window.addEventListener('table_updated_berita', handleTableUpdate);
+
+    return () => { 
+      supabase.removeChannel(subscription); 
+      window.removeEventListener('table_updated_berita', handleTableUpdate);
+    };
   }, []);
 
   const fetchNews = async () => {
     setLoading(true);
     try {
-      const data = await getSiteSetting('berita_list');
-      if (data && Array.isArray(data)) {
-        setNews(data);
-        localStorage.setItem('berita_local', JSON.stringify(data));
-      } else {
-        const { data: sbData } = await supabase
-          .from('berita')
-          .select(`*, comments_count:komentar(count)`)
-          .order('tanggal', { ascending: false });
+      const { data: sbData, error } = await supabase
+        .from('berita')
+        .select(`*, comments_count:komentar(count)`)
+        .order('tanggal', { ascending: false });
 
-        const localData = JSON.parse(localStorage.getItem('berita_local') || '[]');
-        const supabaseData = sbData ? sbData.map(item => ({
+      if (error) {
+        console.error('Error fetching berita from Supabase:', error);
+      }
+
+      if (sbData) {
+        const formattedData = sbData.map(item => ({
           ...item,
-          comments_count: item.comments_count?.[0]?.count || 0,
-          likes: item.likes || 0
-        })) : [];
-
-        setNews([...supabaseData, ...localData]);
+          comments_count: Array.isArray(item.comments_count)
+            ? (item.comments_count[0]?.count || 0)
+            : (Number(item.comments_count) || 0),
+          likes: Number(item.likes) || 0,
+          views: Number(item.views) || 0
+        }));
+        setNews(formattedData as Berita[]);
       }
     } catch (err) {
-      const localData = JSON.parse(localStorage.getItem('berita_local') || '[]');
-      setNews(localData);
+      console.error('Error in fetchNews:', err);
     } finally {
       setLoading(false);
     }
@@ -319,6 +333,7 @@ export default function AdminBerita({ session }: { session?: any }) {
     e.preventDefault();
     if (!formData.gambar_url) return setFormError("Wajib upload gambar.");
     setIsSaving(true);
+    setFormError(null);
     try {
       const allImages = [
         formData.gambar_url,
@@ -326,7 +341,7 @@ export default function AdminBerita({ session }: { session?: any }) {
         formData.gambar_url_3,
         formData.gambar_url_4,
         formData.gambar_url_5
-      ].map(u => u.trim()).filter(Boolean).join(' ');
+      ].map(u => (u || '').trim()).filter(Boolean).join(' ');
 
       const dbPayload = {
         judul: formData.judul,
@@ -337,12 +352,20 @@ export default function AdminBerita({ session }: { session?: any }) {
         tanggal: formData.tanggal || new Date().toISOString().split('T')[0]
       };
 
-      let updated;
       if (editingId) {
-        updated = news.map((item: any) => item.id === editingId ? { ...item, ...formData, ...dbPayload } : item);
+        const { error } = await supabase
+          .from('berita')
+          .update(dbPayload)
+          .eq('id', editingId);
+
+        if (error) throw error;
       } else {
-        const newLocalItem = { ...formData, ...dbPayload, id: 'news_' + Date.now(), comments_count: 0, likes: 0, views: 0 };
-        updated = [newLocalItem, ...news];
+        const { error } = await supabase
+          .from('berita')
+          .insert([dbPayload]);
+
+        if (error) throw error;
+
         // Dispatch real-time push notification
         triggerPushNotification(
           "Pengumuman Berita Baru!",
@@ -351,9 +374,7 @@ export default function AdminBerita({ session }: { session?: any }) {
         );
       }
 
-      setNews(updated);
-      localStorage.setItem('berita_local', JSON.stringify(updated));
-      await saveSiteSetting('berita_list', updated);
+      await fetchNews();
       broadcastDataChange('berita', editingId ? 'UPDATE' : 'INSERT', dbPayload);
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
@@ -381,10 +402,14 @@ export default function AdminBerita({ session }: { session?: any }) {
 
     if (result.isConfirmed) {
       try {
-        const updated = news.filter(i => i.id !== id);
-        setNews(updated);
-        localStorage.setItem('berita_local', JSON.stringify(updated));
-        await saveSiteSetting('berita_list', updated);
+        const { error } = await supabase
+          .from('berita')
+          .delete()
+          .eq('id', id);
+
+        if (error) throw error;
+
+        await fetchNews();
         broadcastDataChange('berita', 'DELETE', { id });
         Swal.fire({
           toast: true,
