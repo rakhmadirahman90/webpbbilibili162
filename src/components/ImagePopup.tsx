@@ -21,7 +21,7 @@ function ImagePopup() {
   const [promoImages, setPromoImages] = useState<any[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const fetchActivePopups = async () => {
+  const fetchActivePopups = async (forceShow = false) => {
     try {
       let sitePopups: any[] = [];
       try {
@@ -93,14 +93,15 @@ function ImagePopup() {
 
       const activeItems = merged.filter((p: any) => p && (p.is_active === true || p.active === true));
       
-      // Check if dismissed in session or localStorage
-      const dismissed = activeItems.length > 0 && (
+      // Check if dismissed in session or localStorage (bypass if forceShow === true)
+      const dismissed = !forceShow && activeItems.length > 0 && (
         sessionStorage.getItem(`popup_dismissed_${activeItems[0].id}`) === 'true' ||
         localStorage.getItem(`popup_dismissed_${activeItems[0].id}`) === 'true'
       );
 
-      if (activeItems.length > 0 && !dismissed) {
+      if (activeItems.length > 0 && (!dismissed || forceShow)) {
         setPromoImages(activeItems);
+        setCurrentIndex(0);
         setIsOpen(true);
       } else {
         setPromoImages([]);
@@ -113,6 +114,15 @@ function ImagePopup() {
 
   useEffect(() => {
     fetchActivePopups();
+
+    const handleTriggerHomePopup = () => {
+      fetchActivePopups(true);
+    };
+
+    window.addEventListener('trigger-home-popup', handleTriggerHomePopup);
+    return () => {
+      window.removeEventListener('trigger-home-popup', handleTriggerHomePopup);
+    };
   }, []);
 
   useRealtimeSync({

@@ -736,6 +736,9 @@ export default function App() {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
         setActiveView(null);
+        if (rawTarget === 'beranda' || rawTarget === 'home' || rawTarget === 'hero' || rawTarget === '' || !rawTarget) {
+            window.dispatchEvent(new CustomEvent('trigger-home-popup'));
+        }
         setTimeout(() => {
             const element = document.getElementById(rawTarget);
             if (element) {

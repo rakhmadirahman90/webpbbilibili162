@@ -4,7 +4,7 @@ import { saveSiteSetting, getSiteSetting, parsePopupList } from '../utils/siteSe
 import { broadcastDataChange } from '../utils/realtimeHelper';
 import { 
   Plus, Trash2, Image as ImageIcon, Save, 
-  Loader2, Power, PowerOff, Upload, X, Camera, Edit3, GripVertical, FileText, Download, ExternalLink 
+  Loader2, Power, PowerOff, Upload, X, Camera, Edit3, GripVertical, FileText, Download, ExternalLink, Eye
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 
@@ -80,7 +80,7 @@ const renderDescriptionWithLinks = (text: string) => {
 };
 
 // --- KOMPONEN: SORTABLE ITEM ---
-function SortablePopupItem({ item, toggleStatus, startEdit, handleDelete, movePosition, totalCount }: any) {
+function SortablePopupItem({ item, toggleStatus, startEdit, handleDelete, movePosition, totalCount, onPreview }: any) {
   const {
     attributes,
     listeners,
@@ -158,7 +158,10 @@ function SortablePopupItem({ item, toggleStatus, startEdit, handleDelete, movePo
             {item.deskripsi}
         </div>
         
-        <div className="grid grid-cols-4 gap-1.5 sm:gap-2 w-full">
+        <div className="grid grid-cols-5 gap-1.5 sm:gap-2 w-full">
+          <button onClick={() => onPreview(item)} className="col-span-1 py-2.5 sm:py-3 bg-indigo-500/10 text-indigo-400 hover:bg-indigo-600 hover:text-white rounded-xl transition-all flex items-center justify-center" title="Pratinjau Tampilan Live App">
+            <Eye size={15}/>
+          </button>
           <button onClick={() => toggleStatus(item.id, item.is_active)} className={`col-span-1 py-2.5 sm:py-3 rounded-xl flex items-center justify-center transition-all ${item.is_active ? 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white' : 'bg-white/5 text-white/40 hover:bg-blue-600 hover:text-white'}`}>
             {item.is_active ? <Power size={15}/> : <PowerOff size={15}/>}
           </button>
@@ -183,6 +186,8 @@ export default function AdminPopup() {
   const [newPopup, setNewPopup] = useState({ url_gambar: '', judul: '', deskripsi: '', file_url: '' });
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [previewModalData, setPreviewModalData] = useState<PopupConfig | null>(null);
+  const [isPreviewExpanded, setIsPreviewExpanded] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -726,6 +731,27 @@ export default function AdminPopup() {
                   </button>
                 )}
               </div>
+              {/* TOMBOL PRATINJAU LIVE FORM */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (!newPopup.url_gambar && !previewImage) {
+                    return Swal.fire('Perhatian', 'Harap unggah atau masukkan URL gambar terlebih dahulu untuk melihat pratinjau.', 'warning');
+                  }
+                  setPreviewModalData({
+                    id: editingId || 'preview-temp',
+                    judul: newPopup.judul || 'JUDUL PROMOSI (PRATINJAU)',
+                    deskripsi: newPopup.deskripsi || 'Deskripsi informasi promosi akan muncul secara rapi di sini.',
+                    url_gambar: previewImage || newPopup.url_gambar || 'https://via.placeholder.com/600x750?text=Preview+Gambar',
+                    file_url: newPopup.file_url || '',
+                    is_active: true,
+                    urutan: 0
+                  });
+                }}
+                className="w-full py-3.5 bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all flex items-center justify-center gap-2 shadow-lg"
+              >
+                <Eye size={16} /> PRATINJAU TAMPILAN LIVE (PREVIEW)
+              </button>
             </div>
 
             <button type="submit" disabled={isSaving || isUploading || isFileUploading} className={`w-full py-5 rounded-2xl font-black uppercase text-[11px] tracking-[0.3em] transition-all shadow-2xl flex items-center justify-center gap-3 text-white ${editingId ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-blue-600 hover:bg-blue-700'}`}>
@@ -756,6 +782,7 @@ export default function AdminPopup() {
                   handleDelete={handleDelete} 
                   movePosition={movePosition}
                   totalCount={popups.length}
+                  onPreview={(previewItem: any) => setPreviewModalData(previewItem)}
                 />
               ))}
             </div>
@@ -764,6 +791,95 @@ export default function AdminPopup() {
       )}
         </div>
       </div>
+
+      {/* MODAL PRATINJAU TAMPILAN LIVE (ADMIN PREVIEW) */}
+      {previewModalData && (
+        <div className="fixed inset-0 z-[999999] flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-md">
+          <div className="absolute inset-0" onClick={() => { setPreviewModalData(null); setIsPreviewExpanded(false); }} />
+
+          <div className="relative w-full max-w-[calc(100vw-2rem)] sm:max-w-[420px] max-h-[88vh] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden z-10 border-2 border-indigo-500/50">
+            {/* Top Banner Bar for Admin Context */}
+            <div className="bg-gradient-to-r from-indigo-900 via-blue-900 to-slate-900 text-white px-4 py-2.5 flex items-center justify-between text-[10px] font-black uppercase tracking-wider shrink-0 border-b border-indigo-500/30">
+              <span className="flex items-center gap-1.5 text-indigo-300">
+                <Eye size={14} className="animate-pulse text-indigo-400" />
+                PRATINJAU LIVE APP
+              </span>
+              <button 
+                onClick={() => { setPreviewModalData(null); setIsPreviewExpanded(false); }}
+                className="p-1 hover:bg-white/10 rounded-full text-white/70 hover:text-white transition-all"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Main Popup Content matching ImagePopup */}
+            <div className="overflow-y-auto hide-scrollbar scroll-smooth flex-1 bg-white">
+              {/* Banner Image */}
+              <div className="relative w-full bg-slate-950 shrink-0 overflow-hidden flex items-center justify-center">
+                <img 
+                  src={previewModalData.url_gambar} 
+                  className="w-full h-auto block select-none pointer-events-none" 
+                  alt="Banner Preview" 
+                  onError={(e: any) => { e.target.src = 'https://via.placeholder.com/600x750?text=Gambar+Tidak+Ditemukan'; }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/20 via-transparent to-black/10 pointer-events-none" />
+              </div>
+
+              {/* Content Body */}
+              <div className="px-6 pt-3 pb-8 bg-white">
+                <div className="flex justify-center mb-4">
+                  <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-bold uppercase tracking-widest border border-blue-100">
+                    Pengumuman
+                  </span>
+                </div>
+
+                <h3 className="text-xl sm:text-2xl font-black text-blue-700 leading-tight text-center mb-6 px-2 uppercase tracking-tighter">
+                  {previewModalData.judul || 'TANPA JUDUL'}
+                </h3>
+
+                <div className="bg-slate-50 border border-slate-100 rounded-3xl p-5 mb-6 shadow-inner">
+                  <div className={`transition-all duration-300 ${isPreviewExpanded ? '' : 'line-clamp-3'}`}>
+                    {renderDescriptionWithLinks(previewModalData.deskripsi)}
+                  </div>
+                  <button 
+                    type="button"
+                    onClick={() => setIsPreviewExpanded(!isPreviewExpanded)}
+                    className="text-blue-600 text-xs font-bold mt-2 hover:underline inline-block"
+                  >
+                    {isPreviewExpanded ? 'Read Less' : 'Read More'}
+                  </button>
+                </div>
+
+                <div className="space-y-3 px-1">
+                  {previewModalData.file_url && previewModalData.file_url.length > 5 && (
+                    <a 
+                      href={previewModalData.file_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2 w-full py-3.5 bg-slate-900 text-white rounded-xl font-bold text-[12px] tracking-wider shadow-lg hover:bg-slate-800 transition-all"
+                    >
+                      <Download size={14} /> LIHAT LAMPIRAN DOKUMEN
+                    </a>
+                  )}
+
+                  <button 
+                    type="button"
+                    onClick={() => { setPreviewModalData(null); setIsPreviewExpanded(false); }}
+                    className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-[12px] tracking-wider transition-all shadow-md uppercase"
+                  >
+                    MENGERTI (TUTUP PRATINJAU)
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Admin Notice Footer */}
+            <div className="bg-slate-900 text-slate-300 text-[9px] px-4 py-2 text-center font-semibold border-t border-slate-800 shrink-0">
+              ✨ Ini adalah tampilan simulasi presisi tinggi persis seperti yang akan dilihat pengunjung di aplikasi live.
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
