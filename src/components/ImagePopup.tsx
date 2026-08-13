@@ -110,13 +110,14 @@ function ImagePopup() {
 
       const activeItems = merged.filter((p: any) => p && (p.is_active === true || p.active === true));
       
-      // Check if dismissed in session or localStorage (bypass if forceShow === true)
+      // Check if dismissed in session or localStorage
       const dismissed = !forceShow && activeItems.length > 0 && (
+        sessionStorage.getItem('popup_dismissed_session') === 'true' ||
         sessionStorage.getItem(`popup_dismissed_${activeItems[0].id}`) === 'true' ||
         localStorage.getItem(`popup_dismissed_${activeItems[0].id}`) === 'true'
       );
 
-      if (activeItems.length > 0 && (!dismissed || forceShow)) {
+      if (activeItems.length > 0 && !dismissed) {
         setPromoImages(activeItems);
         setCurrentIndex(0);
         setIsOpen(true);
@@ -130,26 +131,31 @@ function ImagePopup() {
   };
 
   useEffect(() => {
-    fetchActivePopups();
+    // On fresh page load / refresh, clear session dismissal so popup can show once on refresh
+    sessionStorage.removeItem('popup_dismissed_session');
+    fetchActivePopups(false);
 
-    const handleUpdate = () => {
-      fetchActivePopups(true);
+    const handleTriggerHome = () => {
+      sessionStorage.removeItem('popup_dismissed_session');
+      fetchActivePopups(false);
     };
 
-    window.addEventListener('trigger-home-popup', handleUpdate);
+    const handleUpdate = () => {
+      fetchActivePopups(false);
+    };
+
+    window.addEventListener('trigger-home-popup', handleTriggerHome);
     window.addEventListener('site_setting_updated', handleUpdate);
     window.addEventListener('table_updated_popup_config', handleUpdate);
     window.addEventListener('table_updated_konfigurasi_popup', handleUpdate);
     window.addEventListener('app_data_changed', handleUpdate);
-    window.addEventListener('focus', handleUpdate);
 
     return () => {
-      window.removeEventListener('trigger-home-popup', handleUpdate);
+      window.removeEventListener('trigger-home-popup', handleTriggerHome);
       window.removeEventListener('site_setting_updated', handleUpdate);
       window.removeEventListener('table_updated_popup_config', handleUpdate);
       window.removeEventListener('table_updated_konfigurasi_popup', handleUpdate);
       window.removeEventListener('app_data_changed', handleUpdate);
-      window.removeEventListener('focus', handleUpdate);
     };
   }, []);
 
@@ -226,6 +232,10 @@ function ImagePopup() {
 
   const [isExpanded, setIsExpanded] = useState(false);
   const closePopup = () => {
+    sessionStorage.setItem('popup_dismissed_session', 'true');
+    if (promoImages[currentIndex]?.id) {
+      sessionStorage.setItem(`popup_dismissed_${promoImages[currentIndex].id}`, 'true');
+    }
     setIsOpen(false);
   };
 
