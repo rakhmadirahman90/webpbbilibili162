@@ -212,19 +212,30 @@ export default function AdminPopup() {
         if (!error && data) dbPopups = data;
       } catch (e) {}
 
+      const dbMap = new Map(dbPopups.map((p: any) => [p.id, p]));
+      const siteMap = new Map(sitePopups.map((p: any) => [p.id, p]));
+      const allIds = new Set([...dbPopups.map((p: any) => p.id), ...sitePopups.map((p: any) => p.id)]);
+
       let merged: PopupConfig[] = [];
-      if (sitePopups.length > 0) {
-        const siteMap = new Map(sitePopups.map((p: any) => [p.id, p]));
-        merged = sitePopups.map((sItem: any) => ({ ...sItem }));
-        for (const dbItem of dbPopups) {
-          if (!siteMap.has(dbItem.id)) {
-            merged.push(dbItem);
-          }
+      for (const id of allIds) {
+        const dbItem = dbMap.get(id);
+        const siteItem = siteMap.get(id);
+        if (dbItem && siteItem) {
+          merged.push({
+            ...siteItem,
+            ...dbItem,
+            judul: dbItem.judul || siteItem.judul || '',
+            deskripsi: dbItem.deskripsi || siteItem.deskripsi || '',
+            url_gambar: dbItem.url_gambar || siteItem.url_gambar || '',
+            file_url: dbItem.file_url || siteItem.file_url || null,
+            is_active: dbItem.is_active ?? siteItem.is_active ?? true,
+            urutan: dbItem.urutan ?? siteItem.urutan ?? 0
+          });
+        } else if (dbItem) {
+          merged.push(dbItem);
+        } else if (siteItem) {
+          merged.push(siteItem);
         }
-      } else if (dbPopups.length > 0) {
-        merged = [...dbPopups];
-      } else {
-        merged = [];
       }
 
       // Filter out old legacy Aqiqah popups
@@ -312,7 +323,7 @@ export default function AdminPopup() {
     // 1. Save to site_settings JSON store (Primary source of truth across deployments & devices)
     await saveSiteSetting('popup_config', standardizedList, 'Konfigurasi Popup Promo');
 
-    // 2. Sync completely to Supabase `konfigurasi_popup` table
+    // 2. Sync to Supabase `konfigurasi_popup` table
     try {
       if (standardizedList.length > 0) {
         const dbUpdates = standardizedList.map(({ id, urutan, judul, deskripsi, url_gambar, is_active, file_url }) => ({
@@ -325,16 +336,6 @@ export default function AdminPopup() {
           file_url: file_url || null
         }));
         await supabase.from('konfigurasi_popup').upsert(dbUpdates, { onConflict: 'id' });
-      }
-
-      // Delete items in database table that are no longer in standardizedList
-      const currentIds = standardizedList.map(p => p.id);
-      const { data: existingDb } = await supabase.from('konfigurasi_popup').select('id');
-      if (existingDb && existingDb.length > 0) {
-        const idsToDelete = existingDb.map((row: any) => row.id).filter((id: string) => !currentIds.includes(id));
-        if (idsToDelete.length > 0) {
-          await supabase.from('konfigurasi_popup').delete().in('id', idsToDelete);
-        }
       }
     } catch (err) {
       console.warn("Database sync warning (handled via siteSettingsHelper):", err);

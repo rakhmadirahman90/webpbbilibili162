@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../supabase';
 import { Mail, Plus, Search, Eye, Edit, Trash2, Printer, X, Upload, Sparkles, Send, ImageIcon, MessageCircle, Move, Loader2, FileText, CheckCircle2, Clock, AlertCircle, Filter, Building, UserCheck, ShieldAlert, ListOrdered, ZoomIn, ZoomOut, RotateCcw, Maximize2, Download } from 'lucide-react';
 import Swal from 'sweetalert2';
@@ -285,9 +285,57 @@ export function KelolaSurat() {
   const [ttdKetuaPos, setTtdKetuaPos] = useState({ x: 0, y: 0 });
   const [ttdSekretarisPos, setTtdSekretarisPos] = useState({ x: 0, y: 0 });
 
+  const defaultForm = {
+    nomor_surat: '',
+    lampiran: '-',
+    perihal: 'Permohonan Menjadi Narasumber (Penceramah) Kajian Ramadan Online',
+    tempat_tanggal: `Parepare, ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`,
+    tujuan_yth: 'Al Hafidz Ustadz Prof. Dr. KH. Muamar Bakry, Lc., M.A',
+    jabatan_tujuan: 'Rektor UIM Al-Ghazali Makassar',
+    isi_surat: `Segala puji bagi Allah SWT atas segala nikmat dan karunia-Nya yang senantiasa menyertai aktivitas kita. Shalawat serta salam semoga tetap tercurah kepada teladan kita Nabi Muhammad SAW, keluarga, serta para sahabatnya.
+
+Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bulan suci Ramadan 1447 H, kami dari PB Bilibili 162 bermaksud menyelenggarakan kegiatan kajian rutin secara daring. Mengingat kapasitas keilmuan dan ketokohan Bapak, kami dengan kerendahan hati memohon kesediaan Bapak untuk menjadi narasumber pada kegiatan tersebut.`,
+    hari_tanggal: 'Jumat, 27 Februari 2026',
+    waktu: '05.30 - 06.30 WITA',
+    tempat_kegiatan: 'Virtual Meeting Zoom',
+    tema: 'Ramadan sebagai Madrasah Integritas dan Spiritual',
+    nama_ketua: 'H. Wawan',
+    nama_sekretaris: 'H. Barhaman Muin S.Ag',
+    logo_url: '/logo_pb_bilibili_162.svg', 
+    ttd_ketua_url: DEFAULT_TTD_KETUA_URL, 
+    ttd_sekretaris_url: DEFAULT_TTD_SEKRETARIS_URL,
+    cap_stempel_url: DEFAULT_CAP_STEMPEL_URL,
+    logo_scale: 100,
+    ttd_ketua_scale: 100,
+    ttd_sekretaris_scale: 100,
+    stempel_scale: 100,
+    show_recipient: true,
+    show_greetings: true,
+    title_override: '',
+    include_lampiran_peserta: false,
+    judul_lampiran: 'Daftar Lampiran Peserta',
+    lampiran_peserta: ''
+  };
+
+  const [formData, setFormData] = useState(defaultForm);
+
   const [draggingAsset, setDraggingAsset] = useState<'logo' | 'stempel' | 'ttd_ketua' | 'ttd_sekretaris' | null>(null);
   const [zoomScale, setZoomScale] = useState<number>(0.85);
+  const [paperHeight, setPaperHeight] = useState<number>(1123);
   const [selectedAsset, setSelectedAsset] = useState<'logo' | 'stempel' | 'ttd_ketua' | 'ttd_sekretaris' | null>(null);
+
+  useEffect(() => {
+    if (!printRef.current) return;
+    const updateHeight = () => {
+      if (printRef.current) {
+        setPaperHeight(printRef.current.offsetHeight || 1123);
+      }
+    };
+    updateHeight();
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(printRef.current);
+    return () => observer.disconnect();
+  }, [formData, isModalOpen, activeModalTab]);
 
   const handleResizePointerDown = (
     e: React.PointerEvent,
@@ -370,40 +418,6 @@ export function KelolaSurat() {
   };
 
   const [suratMasukForm, setSuratMasukForm] = useState(defaultSuratMasuk);
-
-  const defaultForm = {
-    nomor_surat: '',
-    lampiran: '-',
-    perihal: 'Permohonan Menjadi Narasumber (Penceramah) Kajian Ramadan Online',
-    tempat_tanggal: `Parepare, ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`,
-    tujuan_yth: 'Al Hafidz Ustadz Prof. Dr. KH. Muamar Bakry, Lc., M.A',
-    jabatan_tujuan: 'Rektor UIM Al-Ghazali Makassar',
-    isi_surat: `Segala puji bagi Allah SWT atas segala nikmat dan karunia-Nya yang senantiasa menyertai aktivitas kita. Shalawat serta salam semoga tetap tercurah kepada teladan kita Nabi Muhammad SAW, keluarga, serta para sahabatnya.
-
-Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bulan suci Ramadan 1447 H, kami dari PB Bilibili 162 bermaksud menyelenggarakan kegiatan kajian rutin secara daring. Mengingat kapasitas keilmuan dan ketokohan Bapak, kami dengan kerendahan hati memohon kesediaan Bapak untuk menjadi narasumber pada kegiatan tersebut.`,
-    hari_tanggal: 'Jumat, 27 Februari 2026',
-    waktu: '05.30 - 06.30 WITA',
-    tempat_kegiatan: 'Virtual Meeting Zoom',
-    tema: 'Ramadan sebagai Madrasah Integritas dan Spiritual',
-    nama_ketua: 'H. Wawan',
-    nama_sekretaris: 'H. Barhaman Muin S.Ag',
-    logo_url: '/logo_pb_bilibili_162.svg', 
-    ttd_ketua_url: DEFAULT_TTD_KETUA_URL, 
-    ttd_sekretaris_url: DEFAULT_TTD_SEKRETARIS_URL,
-    cap_stempel_url: DEFAULT_CAP_STEMPEL_URL,
-    logo_scale: 100,
-    ttd_ketua_scale: 100,
-    ttd_sekretaris_scale: 100,
-    stempel_scale: 100,
-    show_recipient: true,
-    show_greetings: true,
-    title_override: '',
-    include_lampiran_peserta: false,
-    judul_lampiran: 'Daftar Lampiran Peserta',
-    lampiran_peserta: ''
-  };
-
-  const [formData, setFormData] = useState(defaultForm);
 
   const getRomanMonth = (monthIndex: number) => {
     const romanMonths = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
@@ -669,23 +683,28 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
 
     let resultId = currentEditId;
 
-    if (currentEditId && !currentEditId.toString().startsWith('local_')) {
-      const { error } = await supabase.from('arsip_surat').update(payload).eq('id', currentEditId);
-      if (error) {
-        console.warn("Supabase update warning (fallback safe payload):", error.message);
-        const { logo_pos, stempel_pos, ttd_ketua_pos, ttd_sekretaris_pos, ...safePayload } = payload;
-        await supabase.from('arsip_surat').update(safePayload).eq('id', currentEditId);
+    try {
+      if (currentEditId && !currentEditId.toString().startsWith('local_')) {
+        const upsertPayload = { ...payload, id: currentEditId };
+        const { error } = await supabase.from('arsip_surat').upsert([upsertPayload]);
+        if (error) {
+          console.warn("Supabase upsert warning (fallback safe payload):", error.message);
+          const { logo_pos, stempel_pos, ttd_ketua_pos, ttd_sekretaris_pos, ...safePayload } = upsertPayload;
+          await supabase.from('arsip_surat').upsert([safePayload]);
+        }
+      } else {
+        const { data, error } = await supabase.from('arsip_surat').insert([payload]).select().single();
+        if (error) {
+          console.warn("Supabase insert warning (fallback safe payload):", error.message);
+          const { logo_pos, stempel_pos, ttd_ketua_pos, ttd_sekretaris_pos, ...safePayload } = payload;
+          const { data: safeData } = await supabase.from('arsip_surat').insert([safePayload]).select().single();
+          if (safeData?.id) resultId = safeData.id;
+        } else if (data?.id) {
+          resultId = data.id;
+        }
       }
-    } else {
-      const { data, error } = await supabase.from('arsip_surat').insert([payload]).select().single();
-      if (error) {
-        console.warn("Supabase insert warning (fallback safe payload):", error.message);
-        const { logo_pos, stempel_pos, ttd_ketua_pos, ttd_sekretaris_pos, ...safePayload } = payload;
-        const { data: safeData } = await supabase.from('arsip_surat').insert([safePayload]).select().single();
-        if (safeData?.id) resultId = safeData.id;
-      } else if (data?.id) {
-        resultId = data.id;
-      }
+    } catch (dbErr) {
+      console.warn("Database sync warning:", dbErr);
     }
 
     try {
@@ -1265,6 +1284,30 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     setIsModalOpen(true);
   };
 
+  const handleAutoFitMobile = useCallback(() => {
+    const container = document.getElementById('preview-paper-container');
+    const containerWidth = container ? container.clientWidth : (window.innerWidth - 32);
+    const availableWidth = Math.max(240, containerWidth - 28);
+    const fitScale = parseFloat((availableWidth / 794).toFixed(2));
+    const targetScale = Math.max(0.25, Math.min(1.0, fitScale));
+    setZoomScale(targetScale);
+  }, []);
+
+  useEffect(() => {
+    if (isModalOpen) {
+      handleAutoFitMobile();
+      const handleResize = () => handleAutoFitMobile();
+      window.addEventListener('resize', handleResize);
+      const timer1 = setTimeout(handleAutoFitMobile, 50);
+      const timer2 = setTimeout(handleAutoFitMobile, 200);
+      return () => {
+        window.removeEventListener('resize', handleResize);
+        clearTimeout(timer1);
+        clearTimeout(timer2);
+      };
+    }
+  }, [isModalOpen, activeModalTab, isPreviewOnly, handleAutoFitMobile]);
+
   const handleSave = async () => {
     setIsSubmitting(true);
     try {
@@ -1501,6 +1544,44 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     }
   };
 
+  const getCanvasFromElement = async (element: HTMLElement) => {
+    const html2canvas = (await import('html2canvas')).default;
+    
+    // Create a clean offscreen clone container to avoid scale/transform artifacts
+    const container = document.createElement('div');
+    container.style.position = 'fixed';
+    container.style.top = '-99999px';
+    container.style.left = '-99999px';
+    container.style.width = '794px';
+    container.style.backgroundColor = '#ffffff';
+    container.style.zIndex = '999999';
+    
+    const clone = element.cloneNode(true) as HTMLElement;
+    clone.style.width = '794px';
+    clone.style.minHeight = '1123px';
+    clone.style.transform = 'none';
+    clone.style.zoom = '1';
+    clone.style.margin = '0';
+    clone.style.boxShadow = 'none';
+    
+    container.appendChild(clone);
+    document.body.appendChild(container);
+
+    try {
+      const canvas = await html2canvas(clone, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        windowWidth: 794,
+      });
+      return canvas;
+    } finally {
+      document.body.removeChild(container);
+    }
+  };
+
   const handleDownloadPDF = async () => {
     const element = printRef.current;
     if (!element) {
@@ -1519,16 +1600,8 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       setSelectedAsset(null);
       await new Promise(r => setTimeout(r, 100));
 
-      const html2canvas = (await import('html2canvas')).default;
       const { jsPDF } = await import('jspdf');
-
-      const canvas = await html2canvas(element, {
-        scale: 2.5,
-        useCORS: true,
-        allowTaint: true,
-        logging: false,
-        backgroundColor: '#ffffff'
-      });
+      const canvas = await getCanvasFromElement(element);
 
       const imgData = canvas.toDataURL('image/png', 1.0);
       const pdf = new jsPDF('p', 'mm', 'a4');
@@ -1599,15 +1672,7 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       setSelectedAsset(null);
       await new Promise(r => setTimeout(r, 100));
 
-      const html2canvas = (await import('html2canvas')).default;
-
-      const canvas = await html2canvas(element, {
-        scale: 2.5,
-        useCORS: true,
-        allowTaint: true,
-        logging: false,
-        backgroundColor: '#ffffff'
-      });
+      const canvas = await getCanvasFromElement(element);
 
       const mimeType = format === 'jpg' ? 'image/jpeg' : 'image/png';
       const ext = format === 'jpg' ? 'jpg' : 'png';
@@ -2258,81 +2323,102 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
             <div className={`flex-1 bg-slate-800 p-2 sm:p-6 md:p-8 overflow-y-auto custom-scrollbar relative flex flex-col items-center ${!isPreviewOnly && activeModalTab === 'form' ? 'hidden md:flex' : 'flex'}`}>
               
               {/* Preview Header Toolbar with Action Buttons & Zoom Controls */}
-              <div className="w-full max-w-4xl flex flex-wrap items-center justify-between gap-2 mb-4 pt-1 sm:pt-0 z-50 no-print">
-                {/* Zoom In / Out Controls */}
-                <div className="flex items-center gap-1 bg-slate-900/90 border border-white/10 rounded-xl p-1.5 text-white shadow-xl">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1 hidden sm:inline">Zoom:</span>
-                  <button 
-                    onClick={() => setZoomScale(prev => Math.max(0.3, parseFloat((prev - 0.1).toFixed(2))))} 
-                    className="p-1.5 hover:bg-white/10 active:bg-blue-600 rounded-lg text-slate-300 hover:text-white transition-all cursor-pointer"
-                    title="Zoom Out (-10%)"
-                  >
-                    <ZoomOut size={15} />
-                  </button>
-                  <span className="text-xs font-mono font-bold px-2 py-0.5 bg-black/60 border border-white/10 rounded-md text-blue-400 min-w-[50px] text-center">
-                    {Math.round(zoomScale * 100)}%
-                  </span>
-                  <button 
-                    onClick={() => setZoomScale(prev => Math.min(2.0, parseFloat((prev + 0.1).toFixed(2))))} 
-                    className="p-1.5 hover:bg-white/10 active:bg-blue-600 rounded-lg text-slate-300 hover:text-white transition-all cursor-pointer"
-                    title="Zoom In (+10%)"
-                  >
-                    <ZoomIn size={15} />
-                  </button>
-                  <button 
-                    onClick={() => setZoomScale(1.0)} 
-                    className="p-1.5 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-all cursor-pointer"
-                    title="Reset (100%)"
-                  >
-                    <RotateCcw size={13} />
-                  </button>
-                  
-                  {/* Zoom Presets */}
-                  <div className="hidden xs:flex items-center gap-1 border-l border-white/10 pl-1.5 ml-1">
-                    {[0.5, 0.75, 1.0, 1.25].map(p => (
-                      <button
-                        key={p}
-                        onClick={() => setZoomScale(p)}
-                        className={`px-1.5 py-0.5 rounded text-[9px] font-bold transition-all cursor-pointer ${
-                          Math.abs(zoomScale - p) < 0.05
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white'
-                        }`}
-                      >
-                        {Math.round(p * 100)}%
-                      </button>
-                    ))}
+              <div className="w-full max-w-4xl flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-4 pt-1 sm:pt-0 z-50 no-print">
+                {/* Zoom & Screen Fit Controls */}
+                <div className="flex items-center justify-between sm:justify-start gap-1.5 w-full sm:w-auto overflow-x-auto custom-scrollbar py-0.5">
+                  <div className="flex items-center gap-1 bg-slate-900/95 border border-white/10 rounded-xl p-1 text-white shadow-xl shrink-0">
+                    <button 
+                      onClick={() => setZoomScale(prev => Math.max(0.3, parseFloat((prev - 0.1).toFixed(2))))} 
+                      className="p-1.5 hover:bg-white/10 active:bg-blue-600 rounded-lg text-slate-300 hover:text-white transition-all cursor-pointer"
+                      title="Zoom Out (-10%)"
+                    >
+                      <ZoomOut size={14} />
+                    </button>
+                    <span className="text-[11px] font-mono font-bold px-1.5 py-0.5 bg-black/60 border border-white/10 rounded-md text-blue-400 min-w-[44px] text-center">
+                      {Math.round(zoomScale * 100)}%
+                    </span>
+                    <button 
+                      onClick={() => setZoomScale(prev => Math.min(2.0, parseFloat((prev + 0.1).toFixed(2))))} 
+                      className="p-1.5 hover:bg-white/10 active:bg-blue-600 rounded-lg text-slate-300 hover:text-white transition-all cursor-pointer"
+                      title="Zoom In (+10%)"
+                    >
+                      <ZoomIn size={14} />
+                    </button>
+
+                    {/* Auto-Fit Mobile Screen Button */}
+                    <button 
+                      onClick={handleAutoFitMobile}
+                      className="px-2 py-1 bg-blue-600/30 hover:bg-blue-600 text-blue-300 hover:text-white border border-blue-500/30 rounded-lg text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1 ml-0.5 shrink-0"
+                      title="Sesuaikan Ukuran Layar HP"
+                    >
+                      <Maximize2 size={12} />
+                      <span>Fit Layar</span>
+                    </button>
+
+                    <button 
+                      onClick={() => setZoomScale(1.0)} 
+                      className="p-1.5 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-all cursor-pointer"
+                      title="Reset 100%"
+                    >
+                      <RotateCcw size={13} />
+                    </button>
+
+                    {/* Zoom Presets */}
+                    <div className="hidden md:flex items-center gap-1 border-l border-white/10 pl-1.5 ml-1">
+                      {[0.5, 0.75, 1.0, 1.25].map(p => (
+                        <button
+                          key={p}
+                          onClick={() => setZoomScale(p)}
+                          className={`px-1.5 py-0.5 rounded text-[9px] font-bold transition-all cursor-pointer ${
+                            Math.abs(zoomScale - p) < 0.05
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white'
+                          }`}
+                        >
+                          {Math.round(p * 100)}%
+                        </button>
+                      ))}
+                    </div>
                   </div>
+
+                  {/* Realtime DB Sync Status Indicator Badge */}
+                  <div className="flex items-center gap-1 px-2.5 py-1.5 bg-slate-900/95 border border-white/10 rounded-xl text-white shadow-xl text-[10px] font-bold shrink-0">
+                    {realtimeSyncStatus === 'saving' && (
+                      <span className="flex items-center gap-1 text-amber-300 animate-pulse">
+                        <Loader2 size={12} className="animate-spin text-amber-400" />
+                        <span className="hidden xs:inline">Saving...</span>
+                      </span>
+                    )}
+                    {(realtimeSyncStatus === 'synced' || realtimeSyncStatus === 'idle') && (
+                      <span className="flex items-center gap-1 text-emerald-400">
+                        <CheckCircle2 size={12} className="text-emerald-400" />
+                        <span className="hidden xs:inline">Synced</span>
+                      </span>
+                    )}
+                    {realtimeSyncStatus === 'offline' && (
+                      <span className="flex items-center gap-1 text-slate-400">
+                        <span className="w-2 h-2 rounded-full bg-slate-500" />
+                        <span className="hidden xs:inline">Offline</span>
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Mobile Close Button */}
+                  <button 
+                    onClick={() => setIsModalOpen(false)} 
+                    className="sm:hidden p-1.5 bg-white/10 hover:bg-white/20 rounded-xl transition-all cursor-pointer text-white shrink-0"
+                    title="Tutup Pratinjau"
+                  >
+                    <X size={18}/>
+                  </button>
                 </div>
 
-                {/* Realtime DB Sync Status Indicator Badge */}
-                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900/90 border border-white/10 rounded-xl text-white shadow-xl">
-                  {realtimeSyncStatus === 'saving' && (
-                    <span className="flex items-center gap-1.5 text-amber-300 text-xs font-bold animate-pulse">
-                      <Loader2 size={13} className="animate-spin text-amber-400" />
-                      <span>Menyimpan Posisi & Skala...</span>
-                    </span>
-                  )}
-                  {(realtimeSyncStatus === 'synced' || realtimeSyncStatus === 'idle') && (
-                    <span className="flex items-center gap-1.5 text-emerald-400 text-xs font-bold">
-                      <CheckCircle2 size={13} className="text-emerald-400" />
-                      <span>Realtime DB Synced</span>
-                    </span>
-                  )}
-                  {realtimeSyncStatus === 'offline' && (
-                    <span className="flex items-center gap-1.5 text-slate-400 text-xs font-bold">
-                      <span className="w-2 h-2 rounded-full bg-slate-500" />
-                      <span>Local Offline Mode</span>
-                    </span>
-                  )}
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                {/* Action Buttons Row */}
+                <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto custom-scrollbar w-full sm:w-auto py-0.5 shrink-0">
                   <button 
                     onClick={handleDownloadPDF} 
                     disabled={isDownloading !== null} 
-                    className="px-2.5 py-1.5 sm:px-3 sm:py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg font-bold text-[10px] sm:text-xs flex items-center gap-1.5 shadow-xl hover:shadow-rose-900/30 transition-all disabled:opacity-50 cursor-pointer active:scale-95"
+                    className="px-2.5 py-1.5 sm:px-3 sm:py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl font-bold text-[10px] sm:text-xs flex items-center gap-1.5 shadow-lg shrink-0 transition-all cursor-pointer active:scale-95"
                     title="Unduh Surat sebagai Dokumen PDF (A4)"
                   >
                     {isDownloading === 'pdf' ? <Loader2 size={12} className="animate-spin"/> : <FileText size={12}/>} 
@@ -2342,7 +2428,7 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                   <button 
                     onClick={() => handleDownloadImage('jpg')} 
                     disabled={isDownloading !== null} 
-                    className="px-2.5 py-1.5 sm:px-3 sm:py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg font-bold text-[10px] sm:text-xs flex items-center gap-1.5 shadow-xl hover:shadow-amber-900/30 transition-all disabled:opacity-50 cursor-pointer active:scale-95"
+                    className="px-2.5 py-1.5 sm:px-3 sm:py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl font-bold text-[10px] sm:text-xs flex items-center gap-1.5 shadow-lg shrink-0 transition-all cursor-pointer active:scale-95"
                     title="Unduh Surat sebagai Gambar JPG"
                   >
                     {isDownloading === 'jpg' ? <Loader2 size={12} className="animate-spin"/> : <ImageIcon size={12}/>} 
@@ -2352,8 +2438,8 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                   <button 
                     onClick={() => handleDownloadImage('png')} 
                     disabled={isDownloading !== null} 
-                    className="px-2.5 py-1.5 sm:px-3 sm:py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg font-bold text-[10px] sm:text-xs flex items-center gap-1.5 shadow-xl hover:shadow-purple-900/30 transition-all disabled:opacity-50 cursor-pointer active:scale-95"
-                    title="Unduh Surat sebagai Gambar PNG Transparan/High Quality"
+                    className="px-2.5 py-1.5 sm:px-3 sm:py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-bold text-[10px] sm:text-xs flex items-center gap-1.5 shadow-lg shrink-0 transition-all cursor-pointer active:scale-95"
+                    title="Unduh Surat sebagai Gambar PNG"
                   >
                     {isDownloading === 'png' ? <Loader2 size={12} className="animate-spin"/> : <ImageIcon size={12}/>} 
                     <span>PNG</span>
@@ -2362,26 +2448,26 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                   <button 
                     onClick={() => handleSendWhatsApp(formData)} 
                     disabled={isSubmitting || isDownloading !== null} 
-                    className="px-2.5 py-1.5 sm:px-3 sm:py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg font-bold text-[10px] sm:text-xs flex items-center gap-1.5 shadow-xl hover:shadow-green-900/30 transition-all disabled:opacity-50 cursor-pointer active:scale-95"
+                    className="px-2.5 py-1.5 sm:px-3 sm:py-2 bg-green-600 hover:bg-green-500 text-white rounded-xl font-bold text-[10px] sm:text-xs flex items-center gap-1.5 shadow-lg shrink-0 transition-all cursor-pointer active:scale-95"
                     title="Kirim Link PDF ke WhatsApp"
                   >
                     {isSubmitting ? <Loader2 size={12} className="animate-spin"/> : <MessageCircle size={12}/>} 
-                    <span className="hidden xs:inline">WA</span>
+                    <span>WA</span>
                   </button>
 
                   <button 
                     onClick={handlePrint} 
                     disabled={isDownloading !== null}
-                    className="px-2.5 py-1.5 sm:px-3 sm:py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold text-[10px] sm:text-xs flex items-center gap-1.5 shadow-xl hover:shadow-blue-900/30 transition-all cursor-pointer active:scale-95"
+                    className="px-2.5 py-1.5 sm:px-3 sm:py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-[10px] sm:text-xs flex items-center gap-1.5 shadow-lg shrink-0 transition-all cursor-pointer active:scale-95"
                     title="Cetak Surat Langsung"
                   >
                     <Printer size={12}/> 
-                    <span className="hidden xs:inline">Cetak</span>
+                    <span>Cetak</span>
                   </button>
 
                   <button 
                     onClick={() => setIsModalOpen(false)} 
-                    className="p-1.5 sm:p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-all cursor-pointer text-white"
+                    className="hidden sm:flex p-2 bg-white/10 hover:bg-white/20 rounded-xl transition-all cursor-pointer text-white shrink-0"
                     title="Tutup Pratinjau"
                   >
                     <X size={16}/>
@@ -2539,22 +2625,32 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                 </div>
               )}
 
-              {/* Preview Paper wrapper with smooth zoom scale */}
-              <div className="w-full flex justify-center items-start overflow-x-auto pb-16 min-h-[500px]">
+              {/* Preview Paper wrapper with smooth zoom scale & exact layout bounds */}
+              <div id="preview-paper-container" className="w-full flex justify-center items-start overflow-x-auto overflow-y-auto p-2 sm:p-6 pb-20 min-h-[500px] flex-1">
                 <div 
                   style={{ 
-                    transform: `scale(${zoomScale})`, 
-                    transformOrigin: 'top center',
-                    transition: 'transform 0.15s ease-out',
-                    marginBottom: zoomScale < 1 ? `-${(1 - zoomScale) * 1100}px` : '0px'
+                    width: `${Math.round(794 * zoomScale)}px`,
+                    height: `${Math.round(1350 * zoomScale)}px`,
+                    position: 'relative'
                   }}
-                  className="shrink-0"
+                  className="shrink-0 transition-all duration-150 ease-out mx-auto my-2"
                 >
                   <div 
-                    ref={printRef} 
-                    onClick={() => setSelectedAsset(null)}
-                    className="bg-white text-black p-[1.5cm] w-[21cm] min-h-[29.7cm] shadow-2xl font-serif text-[11pt] leading-relaxed relative overflow-hidden shrink-0"
+                    style={{ 
+                      transform: `scale(${zoomScale})`, 
+                      transformOrigin: 'top left',
+                      width: '794px',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0
+                    }}
+                    className="shrink-0"
                   >
+                    <div 
+                      ref={printRef} 
+                      onClick={() => setSelectedAsset(null)}
+                      className="bg-white text-black p-[1.5cm] w-[794px] min-h-[1123px] shadow-2xl font-serif text-[11pt] leading-relaxed relative overflow-hidden shrink-0 select-text"
+                    >
                   <div className="flex items-center border-b-[4px] border-black pb-2 mb-6">
                     <div 
                       onPointerDown={(e) => handleAssetPointerDown(e, 'logo')}
@@ -2798,42 +2894,7 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                   )}
                 </div>
               </div>
-
-              {/* Floating Bottom Action Bar for Quick Download Options */}
-              <div className="sticky bottom-2 z-40 mt-3 px-4 py-2 bg-slate-900/95 border border-white/15 rounded-2xl shadow-2xl flex items-center justify-between gap-3 text-white no-print">
-                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 hidden xs:inline flex items-center gap-1.5">
-                  <Download size={13} className="text-blue-400" /> Unduh Format:
-                </span>
-                <div className="flex items-center gap-2 w-full xs:w-auto justify-end">
-                  <button
-                    type="button"
-                    onClick={handleDownloadPDF}
-                    disabled={isDownloading !== null}
-                    className="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1.5 shadow-md transition-all active:scale-95 cursor-pointer disabled:opacity-50"
-                  >
-                    {isDownloading === 'pdf' ? <Loader2 size={12} className="animate-spin" /> : <FileText size={12} />}
-                    PDF
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDownloadImage('jpg')}
-                    disabled={isDownloading !== null}
-                    className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1.5 shadow-md transition-all active:scale-95 cursor-pointer disabled:opacity-50"
-                  >
-                    {isDownloading === 'jpg' ? <Loader2 size={12} className="animate-spin" /> : <ImageIcon size={12} />}
-                    JPG
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDownloadImage('png')}
-                    disabled={isDownloading !== null}
-                    className="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1.5 shadow-md transition-all active:scale-95 cursor-pointer disabled:opacity-50"
-                  >
-                    {isDownloading === 'png' ? <Loader2 size={12} className="animate-spin" /> : <ImageIcon size={12} />}
-                    PNG
-                  </button>
-                </div>
-              </div>
+            </div>
             </div>
           </div>
         </div>

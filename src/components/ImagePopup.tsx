@@ -55,19 +55,30 @@ function ImagePopup() {
           if (!error && data) dbItems = data;
         } catch (e) {}
 
+        const dbMap = new Map(dbItems.map((p: any) => [p.id, p]));
+        const siteMap = new Map(sitePopups.map((p: any) => [p.id, p]));
+        const allIds = new Set([...dbItems.map((p: any) => p.id), ...sitePopups.map((p: any) => p.id)]);
+
         let merged: any[] = [];
-        if (sitePopups.length > 0) {
-          const siteMap = new Map(sitePopups.map((p: any) => [p.id, p]));
-          merged = sitePopups.map((sItem: any) => ({ ...sItem }));
-          for (const dbItem of dbItems) {
-            if (!siteMap.has(dbItem.id)) {
-              merged.push(dbItem);
-            }
+        for (const id of allIds) {
+          const dbItem = dbMap.get(id);
+          const siteItem = siteMap.get(id);
+          if (dbItem && siteItem) {
+            merged.push({
+              ...siteItem,
+              ...dbItem,
+              judul: dbItem.judul || siteItem.judul || '',
+              deskripsi: dbItem.deskripsi || siteItem.deskripsi || '',
+              url_gambar: dbItem.url_gambar || siteItem.url_gambar || '',
+              file_url: dbItem.file_url || siteItem.file_url || null,
+              is_active: dbItem.is_active ?? siteItem.is_active ?? true,
+              urutan: dbItem.urutan ?? siteItem.urutan ?? 0
+            });
+          } else if (dbItem) {
+            merged.push(dbItem);
+          } else if (siteItem) {
+            merged.push(siteItem);
           }
-        } else if (dbItems.length > 0) {
-          merged = [...dbItems];
-        } else {
-          merged = [];
         }
 
         // Deactivate old Aqiqah popups from legacy database entries
