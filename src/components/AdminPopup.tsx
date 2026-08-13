@@ -247,12 +247,6 @@ export default function AdminPopup() {
         return item;
       });
 
-      // ALWAYS ensure OFFICIAL_LATEST_POPUP exists in list so admin can manage & toggle it
-      const hasSchedulePopup = merged.some(m => m && (m.id === OFFICIAL_LATEST_POPUP.id || (m.url_gambar && m.url_gambar.includes('1786212468282')) || (m.judul && m.judul.includes('JADWAL LATIHAN RESMI'))));
-      if (!hasSchedulePopup) {
-        merged.unshift(OFFICIAL_LATEST_POPUP);
-      }
-
       // Ensure proper sorting by urutan
       merged.sort((a, b) => (a.urutan ?? 0) - (b.urutan ?? 0));
 
