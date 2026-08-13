@@ -197,13 +197,21 @@ export default function AdminPopup() {
   const fetchPopups = async (isSilent = false) => {
     if (!isSilent && popups.length === 0) setLoading(true);
     try {
-      let sitePopups: PopupConfig[] = [];
+      let siteConfigRaw: any = null;
       let siteLoaded = false;
       try {
-        const siteConfig = await getSiteSetting('popup_config');
-        if (siteConfig !== null && siteConfig !== undefined) {
-          sitePopups = parsePopupList(siteConfig);
+        siteConfigRaw = await getSiteSetting('popup_config');
+        if (siteConfigRaw !== null && siteConfigRaw !== undefined) {
           siteLoaded = true;
+        }
+      } catch (e) {}
+
+      let apiItems: any[] = [];
+      try {
+        const res = await fetch('/api/konfigurasi-popup');
+        if (res.ok) {
+          const json = await res.json();
+          if (Array.isArray(json)) apiItems = json;
         }
       } catch (e) {}
 
@@ -217,33 +225,41 @@ export default function AdminPopup() {
         if (!error && data) dbPopups = data;
       } catch (e) {}
 
-      const dbMap = new Map(dbPopups.map((p: any) => [p.id, p]));
-      const siteMap = new Map(sitePopups.map((p: any) => [p.id, p]));
-      const allIds = new Set([...dbPopups.map((p: any) => p.id), ...sitePopups.map((p: any) => p.id)]);
+      let sitePopups = parsePopupList(siteConfigRaw);
 
-      let merged: PopupConfig[] = [];
-      for (const id of allIds) {
-        const dbItem = dbMap.get(id);
-        const siteItem = siteMap.get(id);
-        if (dbItem && siteItem) {
-          merged.push({
-            ...siteItem,
-            ...dbItem,
-            judul: dbItem.judul || siteItem.judul || '',
-            deskripsi: dbItem.deskripsi || siteItem.deskripsi || '',
-            url_gambar: dbItem.url_gambar || siteItem.url_gambar || '',
-            file_url: dbItem.file_url || siteItem.file_url || null,
-            is_active: dbItem.is_active ?? siteItem.is_active ?? true,
-            urutan: dbItem.urutan ?? siteItem.urutan ?? 0
-          });
-        } else if (dbItem) {
-          merged.push(dbItem);
-        } else if (siteItem) {
-          merged.push(siteItem);
-        }
+      let canonicalList: PopupConfig[] = [];
+
+      if (siteLoaded) {
+        canonicalList = sitePopups;
+      } else if (apiItems.length > 0) {
+        canonicalList = apiItems;
+      } else if (dbPopups.length > 0) {
+        canonicalList = dbPopups;
+      } else {
+        canonicalList = [OFFICIAL_LATEST_POPUP];
       }
 
-      // Filter out old legacy Aqiqah popups
+      // Enrich canonical items with any dbPopups missing properties if present
+      const dbMap = new Map(dbPopups.map((p: any) => [p.id, p]));
+      let merged: PopupConfig[] = canonicalList.map(item => {
+        if (!item || !item.id) return item;
+        const dbItem = dbMap.get(item.id);
+        if (dbItem) {
+          return {
+            ...dbItem,
+            ...item,
+            judul: item.judul !== undefined && item.judul !== '' ? item.judul : (dbItem.judul || ''),
+            deskripsi: item.deskripsi !== undefined && item.deskripsi !== '' ? item.deskripsi : (dbItem.deskripsi || ''),
+            url_gambar: item.url_gambar || dbItem.url_gambar || '',
+            file_url: item.file_url !== undefined && item.file_url !== null ? item.file_url : (dbItem.file_url || null),
+            is_active: item.is_active ?? dbItem.is_active ?? true,
+            urutan: item.urutan ?? dbItem.urutan ?? 0
+          };
+        }
+        return item;
+      }).filter(Boolean);
+
+      // Filter out old legacy Aqiqah popups if explicitly disabled
       merged = merged.map(item => {
         if (!item) return item;
         if (item.id === 'df3aa22e-5f97-4c05-9f04-700ccba35d08' || (item.judul && item.judul.toUpperCase().includes('AQIQAH')) || (item.url_gambar && item.url_gambar.includes('1784303693873'))) {
@@ -251,11 +267,6 @@ export default function AdminPopup() {
         }
         return item;
       });
-
-      const hasOfficial = merged.some(m => m && m.id === OFFICIAL_LATEST_POPUP.id);
-      if (!hasOfficial) {
-        merged.unshift(OFFICIAL_LATEST_POPUP);
-      }
 
       // Deduplicate merged by id to prevent duplicate keys
       const mergedMap = new Map();
@@ -532,10 +543,11 @@ export default function AdminPopup() {
     };
 
     let updatedList = [...popups];
+    const newId = editingId || ('popup-' + Date.now());
+
     if (editingId) {
       updatedList = updatedList.map(p => p.id === editingId ? { ...p, ...payload } : p);
     } else {
-      const newId = 'popup-' + Date.now();
       updatedList.push({
         id: newId,
         ...payload,
@@ -554,6 +566,7 @@ export default function AdminPopup() {
         await supabase
           .from('konfigurasi_popup')
           .insert([{
+            id: newId,
             ...payload,
             urutan: popups.length
           }]);

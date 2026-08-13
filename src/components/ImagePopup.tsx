@@ -23,11 +23,21 @@ function ImagePopup() {
 
   const fetchActivePopups = async (forceShow = false) => {
     try {
-      let sitePopups: any[] = [];
+      let siteConfigRaw: any = null;
+      let siteLoaded = false;
       try {
-        const siteConfig = await getSiteSetting('popup_config');
-        if (siteConfig !== null && siteConfig !== undefined) {
-          sitePopups = parsePopupList(siteConfig);
+        siteConfigRaw = await getSiteSetting('popup_config');
+        if (siteConfigRaw !== null && siteConfigRaw !== undefined) {
+          siteLoaded = true;
+        }
+      } catch (e) {}
+
+      let apiItems: any[] = [];
+      try {
+        const res = await fetch('/api/konfigurasi-popup');
+        if (res.ok) {
+          const json = await res.json();
+          if (Array.isArray(json)) apiItems = json;
         }
       } catch (e) {}
 
@@ -41,31 +51,37 @@ function ImagePopup() {
         if (!error && data) dbItems = data;
       } catch (e) {}
 
-      const dbMap = new Map(dbItems.map((p: any) => [p.id, p]));
-      const siteMap = new Map(sitePopups.map((p: any) => [p.id, p]));
-      const allIds = new Set([...dbItems.map((p: any) => p.id), ...sitePopups.map((p: any) => p.id)]);
+      let sitePopups = parsePopupList(siteConfigRaw);
 
-      let merged: any[] = [];
-      for (const id of allIds) {
-        const dbItem = dbMap.get(id);
-        const siteItem = siteMap.get(id);
-        if (dbItem && siteItem) {
-          merged.push({
-            ...siteItem,
-            ...dbItem,
-            judul: dbItem.judul || siteItem.judul || '',
-            deskripsi: dbItem.deskripsi || siteItem.deskripsi || '',
-            url_gambar: dbItem.url_gambar || siteItem.url_gambar || '',
-            file_url: dbItem.file_url || siteItem.file_url || null,
-            is_active: dbItem.is_active ?? siteItem.is_active ?? true,
-            urutan: dbItem.urutan ?? siteItem.urutan ?? 0
-          });
-        } else if (dbItem) {
-          merged.push(dbItem);
-        } else if (siteItem) {
-          merged.push(siteItem);
-        }
+      let canonicalList: any[] = [];
+      if (siteLoaded) {
+        canonicalList = sitePopups;
+      } else if (apiItems.length > 0) {
+        canonicalList = apiItems;
+      } else if (dbItems.length > 0) {
+        canonicalList = dbItems;
+      } else {
+        canonicalList = [OFFICIAL_LATEST_POPUP];
       }
+
+      const dbMap = new Map(dbItems.map((p: any) => [p.id, p]));
+      let merged: any[] = canonicalList.map(item => {
+        if (!item || !item.id) return item;
+        const dbItem = dbMap.get(item.id);
+        if (dbItem) {
+          return {
+            ...dbItem,
+            ...item,
+            judul: item.judul !== undefined && item.judul !== '' ? item.judul : (dbItem.judul || ''),
+            deskripsi: item.deskripsi !== undefined && item.deskripsi !== '' ? item.deskripsi : (dbItem.deskripsi || ''),
+            url_gambar: item.url_gambar || dbItem.url_gambar || '',
+            file_url: item.file_url !== undefined && item.file_url !== null ? item.file_url : (dbItem.file_url || null),
+            is_active: item.is_active ?? dbItem.is_active ?? true,
+            urutan: item.urutan ?? dbItem.urutan ?? 0
+          };
+        }
+        return item;
+      }).filter(Boolean);
 
       merged = merged.map(item => {
         if (!item) return item;
@@ -74,11 +90,6 @@ function ImagePopup() {
         }
         return item;
       });
-
-      const hasOfficial = merged.some(m => m && m.id === OFFICIAL_LATEST_POPUP.id);
-      if (!hasOfficial) {
-        merged.unshift(OFFICIAL_LATEST_POPUP);
-      }
 
       // Deduplicate merged by id to prevent duplicate keys
       const mergedMap = new Map();
@@ -115,13 +126,24 @@ function ImagePopup() {
   useEffect(() => {
     fetchActivePopups();
 
-    const handleTriggerHomePopup = () => {
+    const handleUpdate = () => {
       fetchActivePopups(true);
     };
 
-    window.addEventListener('trigger-home-popup', handleTriggerHomePopup);
+    window.addEventListener('trigger-home-popup', handleUpdate);
+    window.addEventListener('site_setting_updated', handleUpdate);
+    window.addEventListener('table_updated_popup_config', handleUpdate);
+    window.addEventListener('table_updated_konfigurasi_popup', handleUpdate);
+    window.addEventListener('app_data_changed', handleUpdate);
+    window.addEventListener('focus', handleUpdate);
+
     return () => {
-      window.removeEventListener('trigger-home-popup', handleTriggerHomePopup);
+      window.removeEventListener('trigger-home-popup', handleUpdate);
+      window.removeEventListener('site_setting_updated', handleUpdate);
+      window.removeEventListener('table_updated_popup_config', handleUpdate);
+      window.removeEventListener('table_updated_konfigurasi_popup', handleUpdate);
+      window.removeEventListener('app_data_changed', handleUpdate);
+      window.removeEventListener('focus', handleUpdate);
     };
   }, []);
 
