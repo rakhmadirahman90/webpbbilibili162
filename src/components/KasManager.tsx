@@ -71,10 +71,28 @@ interface KasEntry {
 }
 
 export default function KasManager() {
-  const [loading, setLoading] = useState(true);
+  const getInitialKas = (): KasEntry[] => {
+    try {
+      const cached = localStorage.getItem('cached_kas_pb');
+      return cached ? JSON.parse(cached) : [];
+    } catch (e) {
+      return [];
+    }
+  };
+
+  const getInitialAtlets = (): Atlet[] => {
+    try {
+      const cached = localStorage.getItem('cached_kas_atlets');
+      return cached ? JSON.parse(cached) : [];
+    } catch (e) {
+      return [];
+    }
+  };
+
+  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [kasData, setKasData] = useState<KasEntry[]>([]);
-  const [atlets, setAtlets] = useState<Atlet[]>([]);
+  const [kasData, setKasData] = useState<KasEntry[]>(getInitialKas);
+  const [atlets, setAtlets] = useState<Atlet[]>(getInitialAtlets);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState(''); 
   const [activeMobileTab, setActiveMobileTab] = useState<'list' | 'form'>('list');
@@ -495,14 +513,16 @@ export default function KasManager() {
   }, [formData.jumlah_bola, formData.tipe_anggota, formData.kategori, formData.jenis_transaksi]);
 
   const fetchData = async (forceResetDates = false) => {
-    setLoading(true);
     try {
       const [kasRes, pendaftaranRes] = await Promise.all([
         supabase.from('kas_pb').select('*').order('tanggal_transaksi', { ascending: false }),
         supabase.from('pendaftaran').select(`id, nama, atlet_stats (player_name)`).order('nama', { ascending: true })
       ]);
       const fetchedKas = kasRes.data || [];
-      setKasData(fetchedKas);
+      if (fetchedKas.length > 0) {
+        setKasData(fetchedKas);
+        try { localStorage.setItem('cached_kas_pb', JSON.stringify(fetchedKas)); } catch (e) {}
+      }
       
       if (fetchedKas.length > 0 && (!hasSetInitialDates || forceResetDates)) {
         const sorted = [...fetchedKas].sort((a, b) => a.tanggal_transaksi.localeCompare(b.tanggal_transaksi));
@@ -518,8 +538,13 @@ export default function KasManager() {
           player_name: item.nama || (Array.isArray(item.atlet_stats) ? item.atlet_stats[0]?.player_name : (item.atlet_stats as any)?.player_name) || 'Unknown'
         }));
         setAtlets(formattedAtlets);
+        try { localStorage.setItem('cached_kas_atlets', JSON.stringify(formattedAtlets)); } catch (e) {}
       }
-    } catch (error) { console.error(error); } finally { setLoading(false); }
+    } catch (error) { 
+      console.error(error); 
+    } finally { 
+      setLoading(false); 
+    }
   };
 
   useEffect(() => { 

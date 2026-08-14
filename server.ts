@@ -417,11 +417,16 @@ async function startServer() {
     app.get("/api/arsip-surat", async (req, res) => {
       const localData = loadJsonFile(SURAT_FILE, []);
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 1500);
+
         const response = await fetch(`https://missjyvqfehamtpyodjr.supabase.co/rest/v1/arsip_surat?select=*&order=created_at.desc`, {
           headers: {
             'apikey': 'sb_publishable_trhfpzLX50WdkdaItRPFMQ_ewqF0fgn'
-          }
-        });
+          },
+          signal: controller.signal
+        }).finally(() => clearTimeout(timeoutId));
+
         if (response.ok) {
           const dbData = await response.json();
           if (Array.isArray(dbData)) {
@@ -451,7 +456,7 @@ async function startServer() {
           }
         }
       } catch (e) {
-        console.warn("[server.ts] Supabase fetch error for arsip-surat:", e);
+        // Fast graceful fallback
       }
       res.json(localData);
     });

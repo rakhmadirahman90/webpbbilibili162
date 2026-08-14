@@ -374,9 +374,106 @@ const SEED_SURAT = [
   }
 ];
 
+export const getInitialSuratList = (): any[] => {
+  try {
+    const localData = JSON.parse(localStorage.getItem('arsip_surat_local') || '[]');
+    const deletedIds: string[] = JSON.parse(localStorage.getItem('arsip_surat_deleted') || '[]');
+    const storedAssets = getStoredDigitalAssets();
+    const map = new Map<string, any>();
+
+    const addOrMerge = (item: any) => {
+      if (!item) return;
+      const rawNomor = (item.nomor_surat || '').trim().toUpperCase();
+      if (rawNomor === '__MASTER_DIGITAL_ASSETS__' || rawNomor.includes('TEST') || item.jenis_surat === 'MASUK') return;
+      const normNomor = normalizeSuratNomor(item.nomor_surat);
+      if (deletedIds.includes(item.id) || (normNomor && deletedIds.includes(normNomor)) || (item.nomor_surat && deletedIds.includes(item.nomor_surat))) return;
+      const key = getSuratDeduplicationKey(item);
+      if (!key) return;
+
+      let extra: any = {};
+      if (item.isi_surat && typeof item.isi_surat === 'string' && item.isi_surat.trim().startsWith('{')) {
+        try { extra = JSON.parse(item.isi_surat); } catch (e) {}
+      }
+
+      const parsed = {
+        ...item,
+        ...extra,
+        isi_ringkas: extra.isi_ringkas || item.isi_ringkas || (item.isi_surat && !item.isi_surat.startsWith('{') ? item.isi_surat : '') || '',
+        paragraf_2: extra.paragraf_2 || item.paragraf_2 || '',
+        paragraf_3: extra.paragraf_3 || item.paragraf_3 || '',
+        alamat_tujuan: extra.alamat_tujuan || item.alamat_tujuan || item.tujuan_instansi || 'di Tempat',
+        tujuan_yth: item.tujuan_yth || extra.tujuan_yth || item.tujuan_instansi || '',
+        nama_ketua: item.nama_ketua || extra.nama_ketua || storedAssets.nama_ketua || "H. WAWAN",
+        nama_sekretaris: item.nama_sekretaris || extra.nama_sekretaris || storedAssets.nama_sekretaris || "H. BARHAMAN MUIN S.AG",
+        logo_url: getValidAssetUrl(item.logo_url || extra.logo_url, storedAssets.logo_url || DEFAULT_LOGO_URL),
+        logo_scale: extra.logo_scale || item.logo_scale || storedAssets.logo_scale || 100,
+        logo_pos: extra.logo_pos || item.logo_pos || storedAssets.logo_pos || { x: 0, y: 0 },
+        ttd_ketua_url: getValidAssetUrl(item.ttd_ketua_url || extra.ttd_ketua_url, storedAssets.ttd_ketua_url),
+        ttd_sekretaris_url: getValidAssetUrl(item.ttd_sekretaris_url || extra.ttd_sekretaris_url, storedAssets.ttd_sekretaris_url),
+        cap_stempel_url: getValidAssetUrl(item.cap_stempel_url || extra.cap_stempel_url, storedAssets.cap_stempel_url),
+        ttd_ketua_scale: extra.ttd_ketua_scale || item.ttd_ketua_scale || storedAssets.ttd_ketua_scale || 100,
+        ttd_sekretaris_scale: extra.ttd_sekretaris_scale || item.ttd_sekretaris_scale || storedAssets.ttd_sekretaris_scale || 100,
+        stempel_scale: extra.stempel_scale || item.stempel_scale || storedAssets.stempel_scale || 100,
+        ttd_ketua_pos: extra.ttd_ketua_pos || item.ttd_ketua_pos || storedAssets.ttd_ketua_pos || { x: 0, y: 0 },
+        ttd_sekretaris_pos: extra.ttd_sekretaris_pos || item.ttd_sekretaris_pos || storedAssets.ttd_sekretaris_pos || { x: 0, y: 0 },
+        stempel_pos: extra.stempel_pos || item.stempel_pos || storedAssets.stempel_pos || { x: -35, y: 0 },
+        show_recipient: extra.show_recipient !== undefined ? extra.show_recipient : (item.show_recipient !== undefined ? item.show_recipient : true),
+        show_greetings: extra.show_greetings !== undefined ? extra.show_greetings : (item.show_greetings !== undefined ? item.show_greetings : true),
+        title_override: extra.title_override || item.title_override || '',
+        include_lampiran_peserta: extra.include_lampiran_peserta !== undefined ? extra.include_lampiran_peserta : Boolean(item.include_lampiran_peserta),
+        judul_lampiran: extra.judul_lampiran || item.judul_lampiran || 'Daftar Lampiran Peserta',
+        lampiran_peserta: extra.lampiran_peserta || item.lampiran_peserta || ''
+      };
+
+      if (!map.has(key)) {
+        map.set(key, parsed);
+      } else {
+        const existing = map.get(key);
+        map.set(key, { ...existing, ...parsed });
+      }
+    };
+
+    SEED_SURAT.forEach(addOrMerge);
+    if (Array.isArray(localData)) {
+      localData.forEach(addOrMerge);
+    }
+
+    const seenIds = new Set<string>();
+    const seenNomor = new Set<string>();
+    const strictlyUnique: any[] = [];
+    for (const item of Array.from(map.values())) {
+      if (!item) continue;
+      const normNom = normalizeSuratNomor(item.nomor_surat);
+      const itemId = String(item.id || '');
+      if (itemId && seenIds.has(itemId)) continue;
+      if (normNom && seenNomor.has(normNom)) continue;
+      if (itemId) seenIds.add(itemId);
+      if (normNom) seenNomor.add(normNom);
+      strictlyUnique.push(item);
+    }
+
+    return strictlyUnique.sort((a, b) => {
+      const timeA = new Date(a.created_at || a.created_at_time || 0).getTime();
+      const timeB = new Date(b.created_at || b.created_at_time || 0).getTime();
+      return timeB - timeA;
+    });
+  } catch (e) {
+    return SEED_SURAT;
+  }
+};
+
+export const getInitialSuratMasukList = (): any[] => {
+  try {
+    const localData = JSON.parse(localStorage.getItem('arsip_surat_masuk_local') || '[]');
+    return Array.isArray(localData) ? localData : [];
+  } catch (e) {
+    return [];
+  }
+};
+
 export function KelolaSurat() {
-  const [suratList, setSuratList] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [suratList, setSuratList] = useState<any[]>(getInitialSuratList);
+  const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -632,7 +729,7 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
 
   // Surat Masuk States
   const [activeTab, setActiveTab] = useState<'keluar' | 'masuk'>('keluar');
-  const [suratMasukList, setSuratMasukList] = useState<any[]>([]);
+  const [suratMasukList, setSuratMasukList] = useState<any[]>(getInitialSuratMasukList);
   const [isMasukModalOpen, setIsMasukModalOpen] = useState(false);
   const [editMasukId, setEditMasukId] = useState<string | null>(null);
   const [searchMasuk, setSearchMasuk] = useState('');
@@ -1185,13 +1282,15 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     return resultId || targetId;
   };
 
-  const fetchSurat = async () => {
-    setLoading(true);
+  const fetchSurat = async (showSpinner = false) => {
+    if (showSpinner) {
+      setLoading(true);
+    }
     try {
       // Sync master digital assets from database in background
       syncDigitalAssetsFromDatabase().catch(() => {});
 
-      // Parallel fetch from Server API and Supabase with 2.5s timeout
+      // Parallel fetch from Server API and Supabase with 1.5s timeout
       const serverFetchPromise = fetch('/api/arsip-surat')
         .then(r => r.ok ? r.json() : [])
         .catch(() => []);
@@ -1204,9 +1303,18 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
         .then(r => r.data || [])
         .catch(() => []);
 
-      const [serverRes, supabaseRes] = await Promise.allSettled([serverFetchPromise, supabaseFetchPromise]);
-      const serverData: any[] = serverRes.status === 'fulfilled' ? serverRes.value : [];
-      const data: any[] = supabaseRes.status === 'fulfilled' ? supabaseRes.value : [];
+      const timeoutPromise = new Promise((resolve) => setTimeout(resolve, 1500));
+
+      const [serverRes, supabaseRes] = await Promise.race([
+        Promise.allSettled([serverFetchPromise, supabaseFetchPromise]),
+        timeoutPromise.then(() => [
+          { status: 'rejected', reason: 'timeout' },
+          { status: 'rejected', reason: 'timeout' }
+        ])
+      ]) as any;
+
+      const serverData: any[] = serverRes?.status === 'fulfilled' ? serverRes.value : [];
+      const data: any[] = supabaseRes?.status === 'fulfilled' ? supabaseRes.value : [];
 
       const localData = JSON.parse(localStorage.getItem('arsip_surat_local') || '[]');
       const deletedIds: string[] = JSON.parse(localStorage.getItem('arsip_surat_deleted') || '[]');
@@ -1339,6 +1447,9 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       });
 
       setSuratList(unique);
+      try {
+        localStorage.setItem('arsip_surat_local', JSON.stringify(unique));
+      } catch (e) {}
     } catch (err: any) { 
       console.error(err);
       const localData = JSON.parse(localStorage.getItem('arsip_surat_local') || '[]');
@@ -1401,16 +1512,22 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       });
 
       setSuratList(fallbackItems.map(sanitizeFallback));
-    } finally { setLoading(false); }
+    } finally { 
+      setLoading(false); 
+    }
   };
 
   const fetchSuratMasuk = async () => {
     try {
-      const { data } = await supabase
+      const timeoutPromise = new Promise((resolve) => setTimeout(resolve, 1500));
+      const supabaseFetchPromise = supabase
         .from('arsip_surat')
         .select('*')
         .eq('jenis_surat', 'MASUK')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .then(r => r.data || []);
+
+      const data: any = await Promise.race([supabaseFetchPromise, timeoutPromise]) || [];
 
       const localData = JSON.parse(localStorage.getItem('arsip_surat_masuk_local') || '[]');
       const map = new Map();
@@ -1450,6 +1567,9 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       }
 
       setSuratMasukList(strictlyUniqueMasuk);
+      try {
+        localStorage.setItem('arsip_surat_masuk_local', JSON.stringify(strictlyUniqueMasuk));
+      } catch (e) {}
     } catch (err) {
       const localData = JSON.parse(localStorage.getItem('arsip_surat_masuk_local') || '[]');
       setSuratMasukList(localData);
