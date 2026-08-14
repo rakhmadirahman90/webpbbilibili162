@@ -364,8 +364,10 @@ async function startServer() {
       }
     });
 
-    // Persistent JSON Store for Arsip Surat and Konfigurasi Popup
+    // Persistent JSON Store for Arsip Surat, Surat Masuk, Digital Assets, and Konfigurasi Popup
     const SURAT_FILE = path.join(process.cwd(), 'data', 'arsip_surat.json');
+    const SURAT_MASUK_FILE = path.join(process.cwd(), 'data', 'surat_masuk.json');
+    const DIGITAL_ASSETS_FILE = path.join(process.cwd(), 'data', 'digital_assets.json');
     const POPUP_FILE = path.join(process.cwd(), 'data', 'konfigurasi_popup.json');
 
     function loadJsonFile(filePath: string, defaultVal: any = []) {
@@ -388,6 +390,157 @@ async function startServer() {
         fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
       } catch (e) {}
     }
+
+    const SUPABASE_URL = "https://missjyvqfehamtpyodjr.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_trhfpzLX50WdkdaItRPFMQ_ewqF0fgn";
+
+    async function syncArsipSuratToSupabase(item: any) {
+      try {
+        if (!item) return;
+        const nomor = item.nomor_surat;
+        const validCols = [
+          'created_at', 'nomor_surat', 'jenis_surat', 'perihal', 
+          'tujuan_instansi', 'isi_surat', 'tanggal_surat', 'file_lampiran', 
+          'nama_ketua', 'nama_sekretaris', 'status', 'logo_url', 'ttd_ketua_url', 
+          'ttd_sekretaris_url', 'cap_stempel_url', 'lampiran', 'tempat_tanggal', 
+          'jabatan_tujuan', 'hari_tanggal', 'waktu', 'tempat_kegiatan', 'tema', 'tujuan_yth'
+        ];
+        const payload: any = {};
+        validCols.forEach(col => {
+          if (item[col] !== undefined) payload[col] = item[col];
+        });
+        if (item.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.id)) {
+          payload.id = item.id;
+        }
+
+        if (nomor && nomor !== '__MASTER_DIGITAL_ASSETS__') {
+          await fetch(`${SUPABASE_URL}/rest/v1/arsip_surat?nomor_surat=eq.${encodeURIComponent(nomor)}`, {
+            method: 'DELETE',
+            headers: { 'apikey': SUPABASE_KEY }
+          });
+        } else if (payload.id) {
+          await fetch(`${SUPABASE_URL}/rest/v1/arsip_surat?id=eq.${payload.id}`, {
+            method: 'DELETE',
+            headers: { 'apikey': SUPABASE_KEY }
+          });
+        }
+
+        await fetch(`${SUPABASE_URL}/rest/v1/arsip_surat`, {
+          method: 'POST',
+          headers: {
+            'apikey': SUPABASE_KEY,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=minimal'
+          },
+          body: JSON.stringify(payload)
+        });
+      } catch (e) {
+        console.warn("Supabase sync warning:", e);
+      }
+    }
+
+    async function deleteArsipSuratFromSupabase(queryId: string, nomorSurat: string) {
+      try {
+        if (nomorSurat) {
+          await fetch(`${SUPABASE_URL}/rest/v1/arsip_surat?nomor_surat=eq.${encodeURIComponent(nomorSurat)}`, {
+            method: 'DELETE',
+            headers: { 'apikey': SUPABASE_KEY }
+          });
+        }
+        if (queryId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(queryId)) {
+          await fetch(`${SUPABASE_URL}/rest/v1/arsip_surat?id=eq.${queryId}`, {
+            method: 'DELETE',
+            headers: { 'apikey': SUPABASE_KEY }
+          });
+        }
+      } catch (e) {}
+    }
+
+    async function syncMasterAssetsToSupabase(assets: any) {
+      try {
+        const masterRecord = {
+          nomor_surat: '__MASTER_DIGITAL_ASSETS__',
+          jenis_surat: 'MASTER_CONFIG',
+          perihal: 'Master Aset Digital Kop Surat & TTD PB Bilibili',
+          nama_ketua: assets.nama_ketua || 'H. WAWAN',
+          nama_sekretaris: assets.nama_sekretaris || 'H. BARHAMAN MUIN S.AG',
+          logo_url: assets.logo_url || '/logo_pb_bilibili_162.svg',
+          ttd_ketua_url: assets.ttd_ketua_url || '',
+          ttd_sekretaris_url: assets.ttd_sekretaris_url || '',
+          cap_stempel_url: assets.cap_stempel_url || '',
+          isi_surat: JSON.stringify(assets),
+          status: 'CONFIG'
+        };
+        await fetch(`${SUPABASE_URL}/rest/v1/arsip_surat?nomor_surat=eq.__MASTER_DIGITAL_ASSETS__`, {
+          method: 'DELETE',
+          headers: { 'apikey': SUPABASE_KEY }
+        });
+        await fetch(`${SUPABASE_URL}/rest/v1/arsip_surat`, {
+          method: 'POST',
+          headers: {
+            'apikey': SUPABASE_KEY,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=minimal'
+          },
+          body: JSON.stringify(masterRecord)
+        });
+      } catch (e) {}
+    }
+
+    // Digital Assets API
+    app.get("/api/digital-assets", async (req, res) => {
+      let assets = loadJsonFile(DIGITAL_ASSETS_FILE, null);
+      if (!assets || !assets.logo_url) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 1500);
+          const response = await fetch(`${SUPABASE_URL}/rest/v1/arsip_surat?nomor_surat=eq.__MASTER_DIGITAL_ASSETS__&select=*`, {
+            headers: {
+              'apikey': SUPABASE_KEY
+            },
+            signal: controller.signal
+          }).finally(() => clearTimeout(timeoutId));
+
+          if (response.ok) {
+            const dbData = await response.json();
+            if (Array.isArray(dbData) && dbData.length > 0) {
+              const row = dbData[0];
+              let extra: any = {};
+              if (row.isi_surat) {
+                try { extra = JSON.parse(row.isi_surat); } catch (e) {}
+              }
+              assets = {
+                logo_url: row.logo_url || '/logo_pb_bilibili_162.svg',
+                ttd_ketua_url: row.ttd_ketua_url || '',
+                ttd_sekretaris_url: row.ttd_sekretaris_url || '',
+                cap_stempel_url: row.cap_stempel_url || '',
+                nama_ketua: row.nama_ketua || extra.nama_ketua || 'H. WAWAN',
+                nama_sekretaris: row.nama_sekretaris || extra.nama_sekretaris || 'H. BARHAMAN MUIN S.AG',
+                ...extra
+              };
+              saveJsonFile(DIGITAL_ASSETS_FILE, assets);
+            }
+          }
+        } catch (e) {}
+      }
+      return res.json(assets || {});
+    });
+
+    app.post("/api/digital-assets", async (req, res) => {
+      try {
+        const assets = req.body;
+        saveJsonFile(DIGITAL_ASSETS_FILE, assets);
+        await syncMasterAssetsToSupabase(assets);
+
+        const payloadStr = JSON.stringify({ table: 'digital_assets_surat', eventType: 'UPSERT', data: assets, value: assets });
+        for (const client of sseClients) {
+          try { client.write(`data: ${payloadStr}\n\n`); } catch (e) {}
+        }
+        res.json({ success: true, data: assets });
+      } catch (err: any) {
+        res.status(500).json({ error: err.message });
+      }
+    });
 
     const sanitizeSuratItem = (item: any) => {
       if (!item) return item;
@@ -420,9 +573,9 @@ async function startServer() {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 1500);
 
-        const response = await fetch(`https://missjyvqfehamtpyodjr.supabase.co/rest/v1/arsip_surat?select=*&order=created_at.desc`, {
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/arsip_surat?select=*&order=created_at.desc`, {
           headers: {
-            'apikey': 'sb_publishable_trhfpzLX50WdkdaItRPFMQ_ewqF0fgn'
+            'apikey': SUPABASE_KEY
           },
           signal: controller.signal
         }).finally(() => clearTimeout(timeoutId));
@@ -431,7 +584,6 @@ async function startServer() {
           const dbData = await response.json();
           if (Array.isArray(dbData)) {
             const map = new Map();
-            // Process local items
             localData.forEach((i: any) => {
               if (i && i.nomor_surat !== '__MASTER_DIGITAL_ASSETS__' && !i.nomor_surat?.includes('TEST') && i.jenis_surat !== 'MASUK') {
                 const sanitized = sanitizeSuratItem(i);
@@ -439,7 +591,6 @@ async function startServer() {
                 if (key) map.set(key, sanitized);
               }
             });
-            // Supabase items merge or override
             dbData.forEach((i: any) => {
               if (i && i.nomor_surat !== '__MASTER_DIGITAL_ASSETS__' && !i.nomor_surat?.includes('TEST') && i.jenis_surat !== 'MASUK') {
                 const sanitized = sanitizeSuratItem(i);
@@ -455,13 +606,11 @@ async function startServer() {
             return res.json(merged);
           }
         }
-      } catch (e) {
-        // Fast graceful fallback
-      }
+      } catch (e) {}
       res.json(localData);
     });
 
-    app.post("/api/arsip-surat", (req, res) => {
+    app.post("/api/arsip-surat", async (req, res) => {
       try {
         const item = req.body;
         const current = loadJsonFile(SURAT_FILE, []);
@@ -478,6 +627,7 @@ async function startServer() {
 
         const finalData = found ? updated : [item, ...updated];
         saveJsonFile(SURAT_FILE, finalData);
+        await syncArsipSuratToSupabase(item);
 
         const payloadStr = JSON.stringify({ table: 'arsip_surat', eventType: 'UPSERT', data: item, value: finalData });
         for (const client of sseClients) {
@@ -489,7 +639,7 @@ async function startServer() {
       }
     });
 
-    app.delete("/api/arsip-surat", (req, res) => {
+    app.delete("/api/arsip-surat", async (req, res) => {
       try {
         const { id, nomor_surat } = req.body;
         const targetNomor = (nomor_surat || id || '').trim().toUpperCase().replace(/PB[-_]BILIBILI[-_]?162/i, 'PB-BILIBILI162').replace(/\s+/g, '');
@@ -503,8 +653,101 @@ async function startServer() {
           return true;
         });
         saveJsonFile(SURAT_FILE, updated);
+        await deleteArsipSuratFromSupabase(id, nomor_surat);
 
         const payloadStr = JSON.stringify({ table: 'arsip_surat', eventType: 'DELETE', data: { id, nomor_surat }, value: updated });
+        for (const client of sseClients) {
+          try { client.write(`data: ${payloadStr}\n\n`); } catch (e) {}
+        }
+        res.json({ success: true, data: updated });
+      } catch (err: any) {
+        res.status(500).json({ error: err.message });
+      }
+    });
+
+    // Surat Masuk API
+    app.get("/api/surat-masuk", async (req, res) => {
+      const localData = loadJsonFile(SURAT_MASUK_FILE, []);
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 1500);
+
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/arsip_surat?jenis_surat=eq.MASUK&select=*&order=created_at.desc`, {
+          headers: {
+            'apikey': SUPABASE_KEY
+          },
+          signal: controller.signal
+        }).finally(() => clearTimeout(timeoutId));
+
+        if (response.ok) {
+          const dbData = await response.json();
+          if (Array.isArray(dbData)) {
+            const map = new Map();
+            localData.forEach((i: any) => {
+              if (i && i.nomor_surat) map.set(i.nomor_surat, i);
+            });
+            dbData.forEach((i: any) => {
+              let extra: any = {};
+              if (i.isi_surat) {
+                try { extra = JSON.parse(i.isi_surat); } catch (e) {}
+              }
+              const parsed = {
+                ...i,
+                ...extra,
+                pengirim: extra.pengirim || i.tujuan_instansi || '',
+                file_url: extra.file_url || i.file_lampiran || '',
+                status_tindak_lanjut: extra.status_tindak_lanjut || i.status || 'Belum Ditindaklanjuti',
+                sifat_surat: extra.sifat_surat || 'Biasa',
+                disposisi_kepada: extra.disposisi_kepada || 'Ketua PB Bilibili 162',
+                catatan_disposisi: extra.catatan_disposisi || '',
+                tanggal_diterima: extra.tanggal_diterima || i.tanggal_surat || new Date().toISOString().split('T')[0]
+              };
+              if (parsed.nomor_surat) map.set(parsed.nomor_surat, parsed);
+            });
+            const merged = Array.from(map.values());
+            saveJsonFile(SURAT_MASUK_FILE, merged);
+            return res.json(merged);
+          }
+        }
+      } catch (e) {}
+      res.json(localData);
+    });
+
+    app.post("/api/surat-masuk", async (req, res) => {
+      try {
+        const item = req.body;
+        const current = loadJsonFile(SURAT_MASUK_FILE, []);
+        let found = false;
+        const updated = current.map((i: any) => {
+          if (i.id === item.id || (item.nomor_surat && i.nomor_surat === item.nomor_surat)) {
+            found = true;
+            return { ...i, ...item };
+          }
+          return i;
+        });
+        const finalData = found ? updated : [item, ...updated];
+        saveJsonFile(SURAT_MASUK_FILE, finalData);
+        await syncArsipSuratToSupabase({ ...item, jenis_surat: 'MASUK' });
+
+        const payloadStr = JSON.stringify({ table: 'arsip_surat_masuk', eventType: 'UPSERT', data: item, value: finalData });
+        for (const client of sseClients) {
+          try { client.write(`data: ${payloadStr}\n\n`); } catch (e) {}
+        }
+        res.json({ success: true, data: finalData });
+      } catch (err: any) {
+        res.status(500).json({ error: err.message });
+      }
+    });
+
+    app.delete("/api/surat-masuk", async (req, res) => {
+      try {
+        const { id, nomor_surat } = req.body;
+        const current = loadJsonFile(SURAT_MASUK_FILE, []);
+        const updated = current.filter((i: any) => i.id !== id && (!nomor_surat || i.nomor_surat !== nomor_surat));
+        saveJsonFile(SURAT_MASUK_FILE, updated);
+        await deleteArsipSuratFromSupabase(id, nomor_surat);
+
+        const payloadStr = JSON.stringify({ table: 'arsip_surat_masuk', eventType: 'DELETE', data: { id, nomor_surat }, value: updated });
         for (const client of sseClients) {
           try { client.write(`data: ${payloadStr}\n\n`); } catch (e) {}
         }
