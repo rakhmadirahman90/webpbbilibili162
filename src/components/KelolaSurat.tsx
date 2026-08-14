@@ -429,12 +429,9 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       const element = printRef.current;
       if (!element) throw new Error("Element print tidak ditemukan");
 
-      // Dynamically import html2pdf.js / jspdf
-      const html2canvas = (await import('html2canvas')).default;
       const { jsPDF } = await import('jspdf');
-
-      const canvas = await html2canvas(element, { scale: 2, useCORS: true });
-      const imgData = canvas.toDataURL('image/png');
+      const canvas = await getCanvasFromElement(element);
+      const imgData = canvas.toDataURL('image/png', 1.0);
 
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -1620,38 +1617,85 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
   const getCanvasFromElement = async (element: HTMLElement) => {
     const html2canvas = (await import('html2canvas')).default;
     
-    // Create a clean offscreen clone container to avoid scale/transform artifacts
+    // Pastikan web fonts selesai dimuat secara sempurna
+    if (document.fonts) {
+      try {
+        await document.fonts.ready;
+      } catch (e) {
+        console.warn("Fonts ready check ignored:", e);
+      }
+    }
+
+    // Create a clean offscreen container with explicit rendering standards
     const container = document.createElement('div');
-    container.style.position = 'fixed';
-    container.style.top = '-99999px';
+    container.style.position = 'absolute';
+    container.style.top = '0px';
     container.style.left = '-99999px';
     container.style.width = '794px';
     container.style.backgroundColor = '#ffffff';
-    container.style.zIndex = '999999';
+    container.style.zIndex = '-9999';
+    container.style.pointerEvents = 'none';
+    container.style.opacity = '1';
+    container.style.visibility = 'visible';
     
     const clone = element.cloneNode(true) as HTMLElement;
     clone.style.width = '794px';
+    clone.style.height = 'auto';
     clone.style.minHeight = '1123px';
     clone.style.transform = 'none';
     clone.style.zoom = '1';
     clone.style.margin = '0';
     clone.style.boxShadow = 'none';
+    clone.style.letterSpacing = 'normal';
+    clone.style.textRendering = 'geometricPrecision';
+    (clone.style as any).webkitFontSmoothing = 'antialiased';
+    (clone.style as any).mozOsxFontSmoothing = 'grayscale';
+
+    // Hilangkan tombol/handle manipulasi interaktif di clone
+    const interactiveHandles = clone.querySelectorAll('.no-print, [title*="Tarik"], [title*="Geser"]');
+    interactiveHandles.forEach(h => (h as HTMLElement).style.display = 'none');
     
     container.appendChild(clone);
     document.body.appendChild(container);
 
+    // Tunggu semua gambar (logo, ttd, stempel) selesai didecode
+    const images = Array.from(clone.querySelectorAll('img'));
+    await Promise.all(
+      images.map(img => {
+        if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+        return new Promise(resolve => {
+          img.onload = resolve;
+          img.onerror = resolve;
+        });
+      })
+    );
+
+    // Beri jeda sejenak untuk rendering layout engine
+    await new Promise(resolve => setTimeout(resolve, 80));
+
     try {
       const canvas = await html2canvas(clone, {
-        scale: 2,
+        scale: 3.5, // 3.5x scale (~2779px width) untuk ketajaman teks standar cetak resolusi tinggi (Ultra Sharp HD)
         useCORS: true,
         allowTaint: true,
         logging: false,
         backgroundColor: '#ffffff',
         windowWidth: 794,
+        imageTimeout: 15000,
+        onclone: (clonedDoc) => {
+          const allTexts = clonedDoc.querySelectorAll('p, h1, h2, h3, span, td, th, strong');
+          allTexts.forEach(el => {
+            (el as HTMLElement).style.textRendering = 'geometricPrecision';
+            ((el as HTMLElement).style as any).webkitFontSmoothing = 'antialiased';
+            ((el as HTMLElement).style as any).mozOsxFontSmoothing = 'grayscale';
+          });
+        }
       });
       return canvas;
     } finally {
-      document.body.removeChild(container);
+      if (document.body.contains(container)) {
+        document.body.removeChild(container);
+      }
     }
   };
 
@@ -1749,7 +1793,7 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
 
       const mimeType = format === 'jpg' ? 'image/jpeg' : 'image/png';
       const ext = format === 'jpg' ? 'jpg' : 'png';
-      const imgData = canvas.toDataURL(mimeType, format === 'jpg' ? 0.95 : 1.0);
+      const imgData = canvas.toDataURL(mimeType, format === 'jpg' ? 0.98 : 1.0);
 
       const now = new Date();
       const ddmmyy = `${String(now.getDate()).padStart(2, '0')}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getFullYear()).slice(-2)}`;
