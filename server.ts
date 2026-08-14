@@ -389,6 +389,31 @@ async function startServer() {
       } catch (e) {}
     }
 
+    const sanitizeSuratItem = (item: any) => {
+      if (!item) return item;
+      const copy = { ...item };
+      // Standardize Sidrap letter numbering if mislabeled
+      if (copy.perihal?.includes('Tiga Lima Sidrap') || copy.perihal?.includes('Sidrap')) {
+        copy.nomor_surat = '003/PB-BILIBILI162/V/2026';
+      }
+      return copy;
+    };
+
+    const normalizeSuratKey = (item: any): string => {
+      if (!item) return '';
+      const sanitized = sanitizeSuratItem(item);
+      const rawNomor = (sanitized.nomor_surat || '').trim().toUpperCase().replace(/PB[-_]BILIBILI[-_]?162/i, 'PB-BILIBILI162').replace(/\s+/g, '');
+      if (rawNomor && rawNomor !== '__MASTER_DIGITAL_ASSETS__') {
+        return `nomor_${rawNomor}`;
+      }
+      const perihal = (sanitized.perihal || '').trim().toLowerCase();
+      const tanggal = (sanitized.tanggal_surat || sanitized.tempat_tanggal || '').trim().toLowerCase();
+      if (perihal) {
+        return `perihal_${perihal}_${tanggal}`;
+      }
+      return `id_${sanitized.id || ''}`;
+    };
+
     app.get("/api/arsip-surat", async (req, res) => {
       const localData = loadJsonFile(SURAT_FILE, []);
       try {
@@ -401,11 +426,24 @@ async function startServer() {
           const dbData = await response.json();
           if (Array.isArray(dbData)) {
             const map = new Map();
+            // Process local items
             localData.forEach((i: any) => {
-              if (i && i.nomor_surat !== '__MASTER_DIGITAL_ASSETS__') map.set(i.id || i.nomor_surat, i);
+              if (i && i.nomor_surat !== '__MASTER_DIGITAL_ASSETS__' && !i.nomor_surat?.includes('TEST') && i.jenis_surat !== 'MASUK') {
+                const sanitized = sanitizeSuratItem(i);
+                const key = normalizeSuratKey(sanitized);
+                if (key) map.set(key, sanitized);
+              }
             });
+            // Supabase items merge or override
             dbData.forEach((i: any) => {
-              if (i && i.nomor_surat !== '__MASTER_DIGITAL_ASSETS__') map.set(i.id || i.nomor_surat, i);
+              if (i && i.nomor_surat !== '__MASTER_DIGITAL_ASSETS__' && !i.nomor_surat?.includes('TEST') && i.jenis_surat !== 'MASUK') {
+                const sanitized = sanitizeSuratItem(i);
+                const key = normalizeSuratKey(sanitized);
+                if (key) {
+                  const existing = map.get(key);
+                  map.set(key, { ...(existing || {}), ...sanitized });
+                }
+              }
             });
             const merged = Array.from(map.values());
             saveJsonFile(SURAT_FILE, merged);
@@ -422,20 +460,25 @@ async function startServer() {
       try {
         const item = req.body;
         const current = loadJsonFile(SURAT_FILE, []);
-        const idx = current.findIndex((i: any) => i.id === item.id || (item.nomor_surat && i.nomor_surat === item.nomor_surat));
-        let updated;
-        if (idx >= 0) {
-          updated = current.map((i: any, index: number) => index === idx ? { ...i, ...item } : i);
-        } else {
-          updated = [item, ...current];
-        }
-        saveJsonFile(SURAT_FILE, updated);
+        const itemKey = normalizeSuratKey(item);
 
-        const payloadStr = JSON.stringify({ table: 'arsip_surat', eventType: 'UPSERT', data: item, value: updated });
+        let found = false;
+        const updated = current.map((i: any) => {
+          if (i.id === item.id || (itemKey && normalizeSuratKey(i) === itemKey)) {
+            found = true;
+            return { ...i, ...item };
+          }
+          return i;
+        });
+
+        const finalData = found ? updated : [item, ...updated];
+        saveJsonFile(SURAT_FILE, finalData);
+
+        const payloadStr = JSON.stringify({ table: 'arsip_surat', eventType: 'UPSERT', data: item, value: finalData });
         for (const client of sseClients) {
           try { client.write(`data: ${payloadStr}\n\n`); } catch (e) {}
         }
-        res.json({ success: true, data: updated });
+        res.json({ success: true, data: finalData });
       } catch (err: any) {
         res.status(500).json({ error: err.message });
       }
@@ -443,12 +486,20 @@ async function startServer() {
 
     app.delete("/api/arsip-surat", (req, res) => {
       try {
-        const { id } = req.body;
+        const { id, nomor_surat } = req.body;
+        const targetNomor = (nomor_surat || id || '').trim().toUpperCase().replace(/PB[-_]BILIBILI[-_]?162/i, 'PB-BILIBILI162').replace(/\s+/g, '');
         const current = loadJsonFile(SURAT_FILE, []);
-        const updated = current.filter((i: any) => i.id !== id && i.nomor_surat !== id);
+        const updated = current.filter((i: any) => {
+          if (i.id === id || i.nomor_surat === id) return false;
+          if (targetNomor && i.nomor_surat) {
+            const itemNomor = i.nomor_surat.trim().toUpperCase().replace(/PB[-_]BILIBILI[-_]?162/i, 'PB-BILIBILI162').replace(/\s+/g, '');
+            if (itemNomor === targetNomor) return false;
+          }
+          return true;
+        });
         saveJsonFile(SURAT_FILE, updated);
 
-        const payloadStr = JSON.stringify({ table: 'arsip_surat', eventType: 'DELETE', data: { id }, value: updated });
+        const payloadStr = JSON.stringify({ table: 'arsip_surat', eventType: 'DELETE', data: { id, nomor_surat }, value: updated });
         for (const client of sseClients) {
           try { client.write(`data: ${payloadStr}\n\n`); } catch (e) {}
         }

@@ -117,6 +117,30 @@ const parseLampiranRow = (rawLine: string) => {
   return { nama, keterangan };
 };
 
+export const normalizeSuratNomor = (num?: string): string => {
+  if (!num) return '';
+  return num
+    .trim()
+    .toUpperCase()
+    .replace(/PB[-_]BILIBILI[-_]?162/i, 'PB-BILIBILI162')
+    .replace(/\s+/g, '')
+    .replace(/\/+/g, '/');
+};
+
+export const getSuratDeduplicationKey = (item: any): string => {
+  if (!item) return '';
+  const nomor = normalizeSuratNomor(item.nomor_surat);
+  if (nomor && nomor !== '__MASTER_DIGITAL_ASSETS__') {
+    return `nomor_${nomor}`;
+  }
+  const perihal = (item.perihal || '').trim().toLowerCase();
+  const tanggal = (item.tanggal_surat || item.tempat_tanggal || '').trim().toLowerCase();
+  if (perihal) {
+    return `perihal_${perihal}_${tanggal}`;
+  }
+  return `id_${item.id || ''}`;
+};
+
 export const DEFAULT_TTD_KETUA_URL = "";
 export const DEFAULT_TTD_SEKRETARIS_URL = "";
 export const DEFAULT_CAP_STEMPEL_URL = "";
@@ -1085,16 +1109,17 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       });
     } catch (e) {}
 
-    // 2. Save to LocalStorage
+    // 2. Save to LocalStorage without duplicates
     try {
       const localData = JSON.parse(localStorage.getItem('arsip_surat_local') || '[]');
-      const idx = localData.findIndex((i: any) => i.id === targetId || (currentEditId && i.id === currentEditId) || (localItem.nomor_surat && i.nomor_surat === localItem.nomor_surat));
-      let updated;
-      if (idx >= 0) {
-        updated = localData.map((item: any, i: number) => i === idx ? localItem : item);
-      } else {
-        updated = [localItem, ...localData];
-      }
+      const normTarget = normalizeSuratNomor(localItem.nomor_surat);
+      const filteredLocal = localData.filter((i: any) => {
+        if (!i) return false;
+        if (i.id === targetId || (currentEditId && i.id === currentEditId)) return false;
+        if (normTarget && normalizeSuratNomor(i.nomor_surat) === normTarget) return false;
+        return true;
+      });
+      const updated = [localItem, ...filteredLocal];
       safeLocalStorageSet('arsip_surat_local', JSON.stringify(updated));
     } catch (e) {}
 
@@ -1138,20 +1163,22 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       // Sync master digital assets from database first
       await syncDigitalAssetsFromDatabase();
 
-      // Force refresh stale seed local storage on deployment
-      if (!localStorage.getItem('pb_bilibili_seed_v7')) {
-        localStorage.setItem('pb_bilibili_seed_v7', 'true');
+      // Clean local storage of any duplicates and test letters
+      if (!localStorage.getItem('pb_bilibili_dedup_v3')) {
+        localStorage.setItem('pb_bilibili_dedup_v3', 'true');
         const existingLocal = JSON.parse(localStorage.getItem('arsip_surat_local') || '[]');
-        const cleanedLocal = existingLocal.map((i: any) => ({
-          ...i,
-          ttd_ketua_url: getValidAssetUrl(i.ttd_ketua_url, ""),
-          ttd_sekretaris_url: getValidAssetUrl(i.ttd_sekretaris_url, ""),
-          cap_stempel_url: getValidAssetUrl(i.cap_stempel_url, "")
-        }));
-        localStorage.setItem('arsip_surat_local', JSON.stringify(cleanedLocal));
+        const cleanMap = new Map<string, any>();
+        existingLocal.forEach((i: any) => {
+          if (!i) return;
+          const rawNomor = (i.nomor_surat || '').trim().toUpperCase();
+          if (rawNomor === '__MASTER_DIGITAL_ASSETS__' || rawNomor.includes('TEST') || i.jenis_surat === 'MASUK') return;
+          const k = getSuratDeduplicationKey(i);
+          if (k && !cleanMap.has(k)) cleanMap.set(k, i);
+        });
+        localStorage.setItem('arsip_surat_local', JSON.stringify(Array.from(cleanMap.values())));
       }
 
-      let serverData = [];
+      let serverData: any[] = [];
       try {
         const res = await fetch('/api/arsip-surat');
         if (res.ok) serverData = await res.json();
@@ -1206,35 +1233,64 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
         };
       };
 
-      const map = new Map();
+      const map = new Map<string, any>();
+
+      const addOrMergeSurat = (item: any) => {
+        if (!item) return;
+        const rawNomor = (item.nomor_surat || '').trim().toUpperCase();
+        if (rawNomor === '__MASTER_DIGITAL_ASSETS__' || rawNomor.includes('TEST') || item.jenis_surat === 'MASUK') {
+          return;
+        }
+
+        const normNomor = normalizeSuratNomor(item.nomor_surat);
+        if (
+          deletedIds.includes(item.id) || 
+          (normNomor && deletedIds.includes(normNomor)) || 
+          (item.nomor_surat && deletedIds.includes(item.nomor_surat))
+        ) {
+          return;
+        }
+
+        const key = getSuratDeduplicationKey(item);
+        if (!key) return;
+
+        const parsed = parseSuratFromDb(item);
+
+        if (!map.has(key)) {
+          map.set(key, parsed);
+        } else {
+          // Merge best values: keep database UUID if available, keep latest edits
+          const existing = map.get(key);
+          const isExistingDb = existing.id && !existing.id.toString().startsWith('seed_') && !existing.id.toString().startsWith('local_');
+          const isItemDb = parsed.id && !parsed.id.toString().startsWith('seed_') && !parsed.id.toString().startsWith('local_');
+          const chosenId = isItemDb ? parsed.id : (isExistingDb ? existing.id : (parsed.id || existing.id));
+
+          map.set(key, {
+            ...existing,
+            ...parsed,
+            id: chosenId,
+            isi_ringkas: parsed.isi_ringkas || existing.isi_ringkas || '',
+            paragraf_2: parsed.paragraf_2 || existing.paragraf_2 || '',
+            paragraf_3: parsed.paragraf_3 || existing.paragraf_3 || '',
+            lampiran_peserta: parsed.lampiran_peserta || existing.lampiran_peserta || '',
+            ttd_ketua_url: getValidAssetUrl(parsed.ttd_ketua_url || existing.ttd_ketua_url, storedAssets.ttd_ketua_url),
+            ttd_sekretaris_url: getValidAssetUrl(parsed.ttd_sekretaris_url || existing.ttd_sekretaris_url, storedAssets.ttd_sekretaris_url),
+            cap_stempel_url: getValidAssetUrl(parsed.cap_stempel_url || existing.cap_stempel_url, storedAssets.cap_stempel_url)
+          });
+        }
+      };
 
       // 1. Base seed templates
-      SEED_SURAT.forEach(item => {
-        if (!deletedIds.includes(item.id) && !deletedIds.includes(item.nomor_surat)) {
-          map.set(item.id, parseSuratFromDb(item));
-        }
-      });
+      SEED_SURAT.forEach(addOrMergeSurat);
 
       // 2. Server API JSON store data
-      (serverData || []).forEach((item: any) => {
-        if (item && item.nomor_surat !== '__MASTER_DIGITAL_ASSETS__' && item.jenis_surat !== 'MASUK' && !deletedIds.includes(item.id) && !deletedIds.includes(item.nomor_surat)) {
-          map.set(item.id || item.nomor_surat, parseSuratFromDb(item));
-        }
-      });
+      (serverData || []).forEach(addOrMergeSurat);
 
       // 3. User local custom data
-      localData.forEach((item: any) => {
-        if (item && item.nomor_surat !== '__MASTER_DIGITAL_ASSETS__' && item.jenis_surat !== 'MASUK' && !deletedIds.includes(item.id) && !deletedIds.includes(item.nomor_surat)) {
-          map.set(item.id || item.nomor_surat, parseSuratFromDb(item));
-        }
-      });
+      localData.forEach(addOrMergeSurat);
 
       // 4. Supabase database data takes ultimate precedence
-      (data || []).forEach(item => {
-        if (item && item.nomor_surat !== '__MASTER_DIGITAL_ASSETS__' && item.jenis_surat !== 'MASUK' && !deletedIds.includes(item.id) && !deletedIds.includes(item.nomor_surat)) {
-          map.set(item.id || item.nomor_surat, parseSuratFromDb(item));
-        }
-      });
+      (data || []).forEach(addOrMergeSurat);
 
       const allItems = Array.from(map.values());
 
@@ -1249,13 +1305,19 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       console.error(err);
       const localData = JSON.parse(localStorage.getItem('arsip_surat_local') || '[]');
       const deletedIds: string[] = JSON.parse(localStorage.getItem('arsip_surat_deleted') || '[]');
-      const map = new Map();
-      SEED_SURAT.forEach(item => {
-        if (!deletedIds.includes(item.id)) map.set(item.id, item);
-      });
-      localData.forEach((item: any) => {
-        if (item && !deletedIds.includes(item.id)) map.set(item.id || item.nomor_surat, item);
-      });
+      const map = new Map<string, any>();
+      
+      const addFallback = (item: any) => {
+        if (!item) return;
+        const normNomor = normalizeSuratNomor(item.nomor_surat);
+        if (deletedIds.includes(item.id) || (normNomor && deletedIds.includes(normNomor))) return;
+        const key = getSuratDeduplicationKey(item);
+        if (key && !map.has(key)) map.set(key, item);
+      };
+
+      SEED_SURAT.forEach(addFallback);
+      localData.forEach(addFallback);
+
       const fallbackItems = Array.from(map.values()).sort((a, b) => {
         const timeA = new Date(a.created_at || a.created_at_time || 0).getTime();
         const timeB = new Date(b.created_at || b.created_at_time || 0).getTime();
@@ -1301,30 +1363,29 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       const localData = JSON.parse(localStorage.getItem('arsip_surat_masuk_local') || '[]');
       const map = new Map();
 
-      localData.forEach((item: any) => {
-        if (item) map.set(item.id || item.nomor_surat, item);
-      });
-
-      (data || []).forEach((item: any) => {
-        if (item) {
-          let extra: any = {};
-          if (item.isi_surat && typeof item.isi_surat === 'string' && item.isi_surat.startsWith('{')) {
-            try { extra = JSON.parse(item.isi_surat); } catch (e) {}
-          }
-          const parsed = {
-            ...item,
-            ...extra,
-            pengirim: extra.pengirim || item.tujuan_instansi || '',
-            file_url: extra.file_url || item.file_lampiran || '',
-            status_tindak_lanjut: extra.status_tindak_lanjut || item.status || 'Belum Ditindaklanjuti',
-            sifat_surat: extra.sifat_surat || 'Biasa',
-            disposisi_kepada: extra.disposisi_kepada || 'Ketua PB Bilibili 162',
-            catatan_disposisi: extra.catatan_disposisi || '',
-            tanggal_diterima: extra.tanggal_diterima || item.tanggal_surat || new Date().toISOString().split('T')[0]
-          };
-          map.set(item.id || item.nomor_surat, parsed);
+      const addMasuk = (item: any) => {
+        if (!item) return;
+        let extra: any = {};
+        if (item.isi_surat && typeof item.isi_surat === 'string' && item.isi_surat.startsWith('{')) {
+          try { extra = JSON.parse(item.isi_surat); } catch (e) {}
         }
-      });
+        const parsed = {
+          ...item,
+          ...extra,
+          pengirim: extra.pengirim || item.tujuan_instansi || '',
+          file_url: extra.file_url || item.file_lampiran || '',
+          status_tindak_lanjut: extra.status_tindak_lanjut || item.status || 'Belum Ditindaklanjuti',
+          sifat_surat: extra.sifat_surat || 'Biasa',
+          disposisi_kepada: extra.disposisi_kepada || 'Ketua PB Bilibili 162',
+          catatan_disposisi: extra.catatan_disposisi || '',
+          tanggal_diterima: extra.tanggal_diterima || item.tanggal_surat || new Date().toISOString().split('T')[0]
+        };
+        const key = parsed.nomor_surat ? normalizeSuratNomor(parsed.nomor_surat) : (parsed.id || `${parsed.perihal}_${parsed.pengirim}`);
+        if (key) map.set(key, parsed);
+      };
+
+      localData.forEach(addMasuk);
+      (data || []).forEach(addMasuk);
 
       const unique = Array.from(map.values());
       setSuratMasukList(unique);
@@ -1974,6 +2035,10 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
   };
 
   const handleDelete = async (id: string) => {
+    const targetSurat = suratList.find(s => s.id === id);
+    const targetNomor = targetSurat?.nomor_surat;
+    const normNomor = normalizeSuratNomor(targetNomor);
+
     const result = await Swal.fire({
       title: 'Hapus Surat?',
       text: "Data yang dihapus tidak bisa dikembalikan!",
@@ -1986,23 +2051,35 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     if (result.isConfirmed) {
       try {
         await supabase.from('arsip_surat').delete().eq('id', id);
+        if (targetNomor) {
+          await supabase.from('arsip_surat').delete().eq('nomor_surat', targetNomor);
+        }
       } catch (e) {}
       try {
         await fetch('/api/arsip-surat', {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id })
+          body: JSON.stringify({ id, nomor_surat: targetNomor })
         });
       } catch (e) {}
+
       const deletedIds: string[] = JSON.parse(localStorage.getItem('arsip_surat_deleted') || '[]');
-      if (!deletedIds.includes(id)) {
-        deletedIds.push(id);
-        safeLocalStorageSet('arsip_surat_deleted', JSON.stringify(deletedIds));
-      }
+      if (!deletedIds.includes(id)) deletedIds.push(id);
+      if (targetNomor && !deletedIds.includes(targetNomor)) deletedIds.push(targetNomor);
+      if (normNomor && !deletedIds.includes(normNomor)) deletedIds.push(normNomor);
+      safeLocalStorageSet('arsip_surat_deleted', JSON.stringify(deletedIds));
+
       const localData = JSON.parse(localStorage.getItem('arsip_surat_local') || '[]');
-      safeLocalStorageSet('arsip_surat_local', JSON.stringify(localData.filter((i: any) => i.id !== id)));
+      const filteredLocal = localData.filter((i: any) => {
+        if (!i) return false;
+        if (i.id === id) return false;
+        if (normNomor && normalizeSuratNomor(i.nomor_surat) === normNomor) return false;
+        return true;
+      });
+      safeLocalStorageSet('arsip_surat_local', JSON.stringify(filteredLocal));
+
       fetchSurat();
-      Swal.fire('Terhapus', 'Surat berhasil dihapus.', 'success');
+      Swal.fire('Terhapus', 'Surat berhasil dihapus permanen.', 'success');
     }
   };
 
