@@ -296,6 +296,42 @@ async function startServer() {
         console.warn("[server.ts] Supabase fetch error for site-settings:", e);
       }
 
+      // Check master digital assets from arsip_surat table if requested
+      if (key === 'digital_assets_surat') {
+        try {
+          const masterRes = await fetch(`https://missjyvqfehamtpyodjr.supabase.co/rest/v1/arsip_surat?nomor_surat=eq.__MASTER_DIGITAL_ASSETS__&select=*`, {
+            headers: { 'apikey': 'sb_publishable_trhfpzLX50WdkdaItRPFMQ_ewqF0fgn' }
+          });
+          if (masterRes.ok) {
+            const masterData = await masterRes.json();
+            if (Array.isArray(masterData) && masterData.length > 0) {
+              const m = masterData[0];
+              let extra: any = {};
+              try { extra = typeof m.isi_surat === 'string' ? JSON.parse(m.isi_surat) : m.isi_surat; } catch (e) {}
+              const resolvedAssets = {
+                logo_url: m.logo_url || '/logo_pb_bilibili_162.svg',
+                ttd_ketua_url: m.ttd_ketua_url || '',
+                ttd_sekretaris_url: m.ttd_sekretaris_url || '',
+                cap_stempel_url: m.cap_stempel_url || '',
+                nama_ketua: m.nama_ketua || extra.nama_ketua || 'H. WAWAN',
+                nama_sekretaris: m.nama_sekretaris || extra.nama_sekretaris || 'H. BARHAMAN MUIN S.AG',
+                logo_scale: extra.logo_scale || 100,
+                ttd_ketua_scale: extra.ttd_ketua_scale || 100,
+                ttd_sekretaris_scale: extra.ttd_sekretaris_scale || 100,
+                stempel_scale: extra.stempel_scale || 100,
+                logo_pos: extra.logo_pos || { x: 0, y: 0 },
+                stempel_pos: extra.stempel_pos || { x: -35, y: 0 },
+                ttd_ketua_pos: extra.ttd_ketua_pos || { x: 0, y: 0 },
+                ttd_sekretaris_pos: extra.ttd_sekretaris_pos || { x: 0, y: 0 },
+              };
+              store[key] = resolvedAssets;
+              saveLocalSettingsStore(store);
+              return res.json({ key, value: resolvedAssets });
+            }
+          }
+        } catch (e) {}
+      }
+
       if (store[key] !== undefined && store[key] !== null) {
         return res.json({ key, value: store[key] });
       }
@@ -353,9 +389,33 @@ async function startServer() {
       } catch (e) {}
     }
 
-    app.get("/api/arsip-surat", (req, res) => {
-      const data = loadJsonFile(SURAT_FILE, []);
-      res.json(data);
+    app.get("/api/arsip-surat", async (req, res) => {
+      const localData = loadJsonFile(SURAT_FILE, []);
+      try {
+        const response = await fetch(`https://missjyvqfehamtpyodjr.supabase.co/rest/v1/arsip_surat?select=*&order=created_at.desc`, {
+          headers: {
+            'apikey': 'sb_publishable_trhfpzLX50WdkdaItRPFMQ_ewqF0fgn'
+          }
+        });
+        if (response.ok) {
+          const dbData = await response.json();
+          if (Array.isArray(dbData)) {
+            const map = new Map();
+            localData.forEach((i: any) => {
+              if (i && i.nomor_surat !== '__MASTER_DIGITAL_ASSETS__') map.set(i.id || i.nomor_surat, i);
+            });
+            dbData.forEach((i: any) => {
+              if (i && i.nomor_surat !== '__MASTER_DIGITAL_ASSETS__') map.set(i.id || i.nomor_surat, i);
+            });
+            const merged = Array.from(map.values());
+            saveJsonFile(SURAT_FILE, merged);
+            return res.json(merged);
+          }
+        }
+      } catch (e) {
+        console.warn("[server.ts] Supabase fetch error for arsip-surat:", e);
+      }
+      res.json(localData);
     });
 
     app.post("/api/arsip-surat", (req, res) => {

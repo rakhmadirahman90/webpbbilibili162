@@ -437,7 +437,36 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
 
   const syncDigitalAssetsFromDatabase = async () => {
     try {
-      const dbAssets = await getSiteSetting('digital_assets_surat');
+      let masterFromDb: any = null;
+      try {
+        const { data } = await supabase
+          .from('arsip_surat')
+          .select('*')
+          .eq('nomor_surat', '__MASTER_DIGITAL_ASSETS__')
+          .maybeSingle();
+
+        if (data) {
+          let extra: any = {};
+          if (data.isi_surat) {
+            try {
+              extra = typeof data.isi_surat === 'string' ? JSON.parse(data.isi_surat) : data.isi_surat;
+            } catch (e) {}
+          }
+          masterFromDb = {
+            logo_url: data.logo_url,
+            ttd_ketua_url: data.ttd_ketua_url,
+            ttd_sekretaris_url: data.ttd_sekretaris_url,
+            cap_stempel_url: data.cap_stempel_url,
+            nama_ketua: data.nama_ketua || extra.nama_ketua,
+            nama_sekretaris: data.nama_sekretaris || extra.nama_sekretaris,
+            ...extra
+          };
+        }
+      } catch (e) {
+        console.warn('Error fetching master assets from arsip_surat:', e);
+      }
+
+      const dbAssets = masterFromDb || (await getSiteSetting('digital_assets_surat'));
       if (dbAssets && typeof dbAssets === 'object') {
         const parsed = typeof dbAssets === 'string' ? JSON.parse(dbAssets) : dbAssets;
         const validAssets = {
@@ -484,7 +513,7 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       nama_sekretaris: formData.nama_sekretaris || 'H. BARHAMAN MUIN S.AG',
     };
 
-    // 1. Simpan ke site_settings (Supabase + Express + LocalStorage + SSE)
+    // 1. Simpan ke LocalStorage & site_settings
     safeLocalStorageSet('pb_bilibili_digital_assets', JSON.stringify(assetsToSave));
     safeLocalStorageSet('site_setting_digital_assets_surat', JSON.stringify(assetsToSave));
     try {
@@ -493,42 +522,53 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       console.warn('saveSiteSetting digital_assets_surat warning:', err);
     }
 
-    // 2. Broadcast realtime
+    // 2. Simpan master config ke table arsip_surat di Supabase
+    try {
+      const masterRecord = {
+        nomor_surat: '__MASTER_DIGITAL_ASSETS__',
+        jenis_surat: 'MASTER_CONFIG',
+        perihal: 'Master Aset Digital Kop Surat & TTD PB Bilibili',
+        nama_ketua: assetsToSave.nama_ketua || 'H. WAWAN',
+        nama_sekretaris: assetsToSave.nama_sekretaris || 'H. BARHAMAN MUIN S.AG',
+        logo_url: assetsToSave.logo_url || '/logo_pb_bilibili_162.svg',
+        ttd_ketua_url: assetsToSave.ttd_ketua_url || '',
+        ttd_sekretaris_url: assetsToSave.ttd_sekretaris_url || '',
+        cap_stempel_url: assetsToSave.cap_stempel_url || '',
+        isi_surat: JSON.stringify({
+          logo_scale: assetsToSave.logo_scale || 100,
+          ttd_ketua_scale: assetsToSave.ttd_ketua_scale || 100,
+          ttd_sekretaris_scale: assetsToSave.ttd_sekretaris_scale || 100,
+          stempel_scale: assetsToSave.stempel_scale || 100,
+          logo_pos: assetsToSave.logo_pos || { x: 0, y: 0 },
+          stempel_pos: assetsToSave.stempel_pos || { x: -35, y: 0 },
+          ttd_ketua_pos: assetsToSave.ttd_ketua_pos || { x: 0, y: 0 },
+          ttd_sekretaris_pos: assetsToSave.ttd_sekretaris_pos || { x: 0, y: 0 },
+          nama_ketua: assetsToSave.nama_ketua || 'H. WAWAN',
+          nama_sekretaris: assetsToSave.nama_sekretaris || 'H. BARHAMAN MUIN S.AG'
+        }),
+        status: 'CONFIG'
+      };
+
+      await supabase.from('arsip_surat').delete().eq('nomor_surat', '__MASTER_DIGITAL_ASSETS__');
+      await supabase.from('arsip_surat').insert([masterRecord]);
+    } catch (dbErr) {
+      console.warn('Error saving master assets to arsip_surat table:', dbErr);
+    }
+
+    // 3. Broadcast realtime
     broadcastDataChange('digital_assets_surat', 'UPDATE', assetsToSave);
     broadcastDataChange('site_settings', 'UPDATE', { key: 'digital_assets_surat', value: assetsToSave });
+    broadcastDataChange('arsip_surat', 'UPDATE', { is_master_config: true, ...assetsToSave });
     window.dispatchEvent(new CustomEvent('site_setting_updated', { detail: { key: 'digital_assets_surat', value: assetsToSave } }));
-
-    // 3. Update all existing letters in Supabase DB
-    try {
-      const { data: allSurat } = await supabase.from('arsip_surat').select('id');
-      if (allSurat && allSurat.length > 0) {
-        for (const row of allSurat) {
-          if (row.id && !row.id.toString().startsWith('local_')) {
-            await supabase.from('arsip_surat').update({
-              logo_url: assetsToSave.logo_url,
-              ttd_ketua_url: assetsToSave.ttd_ketua_url,
-              ttd_sekretaris_url: assetsToSave.ttd_sekretaris_url,
-              cap_stempel_url: assetsToSave.cap_stempel_url,
-              logo_scale: assetsToSave.logo_scale,
-              ttd_ketua_scale: assetsToSave.ttd_ketua_scale,
-              ttd_sekretaris_scale: assetsToSave.ttd_sekretaris_scale,
-              stempel_scale: assetsToSave.stempel_scale,
-              logo_pos: assetsToSave.logo_pos,
-              stempel_pos: assetsToSave.stempel_pos,
-              ttd_ketua_pos: assetsToSave.ttd_ketua_pos,
-              ttd_sekretaris_pos: assetsToSave.ttd_sekretaris_pos,
-            }).eq('id', row.id);
-          }
-        }
-      }
-    } catch (e) {
-      console.warn('Sync database arsip_surat error:', e);
-    }
+    window.dispatchEvent(new CustomEvent('table_updated_arsip_surat'));
 
     // 4. Update local surat list
     setSuratList(prev => prev.map(item => ({
       ...item,
-      ...assetsToSave,
+      logo_url: getValidAssetUrl(item.logo_url, assetsToSave.logo_url),
+      ttd_ketua_url: getValidAssetUrl(item.ttd_ketua_url, assetsToSave.ttd_ketua_url),
+      ttd_sekretaris_url: getValidAssetUrl(item.ttd_sekretaris_url, assetsToSave.ttd_sekretaris_url),
+      cap_stempel_url: getValidAssetUrl(item.cap_stempel_url, assetsToSave.cap_stempel_url),
     })));
 
     if (showToast) {
@@ -949,46 +989,92 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     const { id, ...rawPayload } = currentFormData as any;
     const isoDateFromText = parseIndonesianDateToIso(rawPayload.tempat_tanggal);
     const resolvedCreatedAt = rawPayload.created_at || (isoDateFromText ? new Date(isoDateFromText + 'T12:00:00.000Z').toISOString() : new Date().toISOString());
+    const stored = getStoredDigitalAssets();
 
-    const payload: any = {
+    const resolvedLogoUrl = getValidAssetUrl(rawPayload.logo_url, stored.logo_url || DEFAULT_LOGO_URL);
+    const resolvedTtdKetuaUrl = getValidAssetUrl(rawPayload.ttd_ketua_url, stored.ttd_ketua_url);
+    const resolvedTtdSekreUrl = getValidAssetUrl(rawPayload.ttd_sekretaris_url, stored.ttd_sekretaris_url);
+    const resolvedStempelUrl = getValidAssetUrl(rawPayload.cap_stempel_url, stored.cap_stempel_url);
+
+    const extraMetadata = {
+      isi_ringkas: rawPayload.isi_ringkas || '',
+      paragraf_2: rawPayload.paragraf_2 || '',
+      paragraf_3: rawPayload.paragraf_3 || '',
+      alamat_tujuan: rawPayload.alamat_tujuan || 'di Tempat',
+      logo_pos: currentPositions.logoPos || stored.logo_pos || { x: 0, y: 0 },
+      stempel_pos: currentPositions.stempelPos || stored.stempel_pos || { x: -35, y: 0 },
+      ttd_ketua_pos: currentPositions.ttdKetuaPos || stored.ttd_ketua_pos || { x: 0, y: 0 },
+      ttd_sekretaris_pos: currentPositions.ttdSekretarisPos || stored.ttd_sekretaris_pos || { x: 0, y: 0 },
+      logo_scale: rawPayload.logo_scale || stored.logo_scale || 100,
+      ttd_ketua_scale: rawPayload.ttd_ketua_scale || stored.ttd_ketua_scale || 100,
+      ttd_sekretaris_scale: rawPayload.ttd_sekretaris_scale || stored.ttd_sekretaris_scale || 100,
+      stempel_scale: rawPayload.stempel_scale || stored.stempel_scale || 100,
+      show_recipient: rawPayload.show_recipient !== false,
+      show_greetings: rawPayload.show_greetings !== false,
+      title_override: rawPayload.title_override || '',
+      include_lampiran_peserta: Boolean(rawPayload.include_lampiran_peserta),
+      judul_lampiran: rawPayload.judul_lampiran || 'Daftar Lampiran Peserta',
+      lampiran_peserta: rawPayload.lampiran_peserta || '',
+      nama_ketua: rawPayload.nama_ketua || stored.nama_ketua || 'H. WAWAN',
+      nama_sekretaris: rawPayload.nama_sekretaris || stored.nama_sekretaris || 'H. BARHAMAN MUIN S.AG'
+    };
+
+    const fullPayload: any = {
       ...rawPayload,
       created_at: resolvedCreatedAt,
-      logo_url: getValidAssetUrl(rawPayload.logo_url, DEFAULT_LOGO_URL),
-      ttd_ketua_url: getValidAssetUrl(rawPayload.ttd_ketua_url, ""),
-      ttd_sekretaris_url: getValidAssetUrl(rawPayload.ttd_sekretaris_url, ""),
-      cap_stempel_url: getValidAssetUrl(rawPayload.cap_stempel_url, ""),
-      logo_pos: currentPositions.logoPos,
-      stempel_pos: currentPositions.stempelPos,
-      ttd_ketua_pos: currentPositions.ttdKetuaPos,
-      ttd_sekretaris_pos: currentPositions.ttdSekretarisPos
+      logo_url: resolvedLogoUrl,
+      ttd_ketua_url: resolvedTtdKetuaUrl,
+      ttd_sekretaris_url: resolvedTtdSekreUrl,
+      cap_stempel_url: resolvedStempelUrl,
+      tujuan_instansi: rawPayload.alamat_tujuan || rawPayload.tujuan_instansi || 'di Tempat',
+      isi_surat: JSON.stringify(extraMetadata),
+      ...extraMetadata
     };
+
+    // Columns that strictly exist in Supabase DB schema for arsip_surat
+    const VALID_DB_COLS = [
+      'id', 'created_at', 'nomor_surat', 'jenis_surat', 'perihal', 
+      'tujuan_instansi', 'isi_surat', 'tanggal_surat', 'file_lampiran', 
+      'nama_ketua', 'nama_sekretaris', 'status', 'logo_url', 'ttd_ketua_url', 
+      'ttd_sekretaris_url', 'cap_stempel_url', 'lampiran', 'tempat_tanggal', 
+      'jabatan_tujuan', 'hari_tanggal', 'waktu', 'tempat_kegiatan', 'tema', 'tujuan_yth'
+    ];
+
+    const dbPayload: any = {};
+    VALID_DB_COLS.forEach(col => {
+      if (fullPayload[col] !== undefined) {
+        dbPayload[col] = fullPayload[col];
+      }
+    });
 
     let resultId = currentEditId;
 
     try {
-      if (currentEditId && !currentEditId.toString().startsWith('local_')) {
-        const upsertPayload = { ...payload, id: currentEditId, created_at: resolvedCreatedAt };
-        const { error } = await supabase.from('arsip_surat').upsert([upsertPayload]);
-        if (error) {
-          const { logo_pos, stempel_pos, ttd_ketua_pos, ttd_sekretaris_pos, ...safePayload } = upsertPayload;
-          await supabase.from('arsip_surat').upsert([safePayload]);
+      if (currentEditId && !currentEditId.toString().startsWith('local_') && !currentEditId.toString().startsWith('seed_')) {
+        await supabase.from('arsip_surat').delete().eq('id', currentEditId);
+        const insertWithId = { ...dbPayload, id: currentEditId };
+        const { data, error } = await supabase.from('arsip_surat').insert([insertWithId]).select().single();
+        if (!error && data?.id) {
+          resultId = data.id;
+        } else {
+          const { data: newRow } = await supabase.from('arsip_surat').insert([dbPayload]).select().single();
+          if (newRow?.id) resultId = newRow.id;
         }
       } else {
-        const { data, error } = await supabase.from('arsip_surat').insert([payload]).select().single();
-        if (error) {
-          const { logo_pos, stempel_pos, ttd_ketua_pos, ttd_sekretaris_pos, ...safePayload } = payload;
-          const { data: safeData } = await supabase.from('arsip_surat').insert([safePayload]).select().single();
-          if (safeData?.id) resultId = safeData.id;
-        } else if (data?.id) {
+        if (dbPayload.nomor_surat) {
+          await supabase.from('arsip_surat').delete().eq('nomor_surat', dbPayload.nomor_surat);
+        }
+        const { data, error } = await supabase.from('arsip_surat').insert([dbPayload]).select().single();
+        if (!error && data?.id) {
           resultId = data.id;
         }
       }
     } catch (dbErr) {
-      console.warn("Database sync warning:", dbErr);
+      console.warn("Database sync warning for arsip_surat:", dbErr);
     }
 
     const targetId = resultId || currentEditId || 'local_' + Date.now();
-    const localItem = { ...payload, id: targetId, created_at: resolvedCreatedAt };
+    const localItem = { ...fullPayload, id: targetId, created_at: resolvedCreatedAt };
 
     // 1. Post to Express Server API store for real-time cross-deployment persistence & SSE
     try {
@@ -1002,7 +1088,7 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     // 2. Save to LocalStorage
     try {
       const localData = JSON.parse(localStorage.getItem('arsip_surat_local') || '[]');
-      const idx = localData.findIndex((i: any) => i.id === targetId || (currentEditId && i.id === currentEditId));
+      const idx = localData.findIndex((i: any) => i.id === targetId || (currentEditId && i.id === currentEditId) || (localItem.nomor_surat && i.nomor_surat === localItem.nomor_surat));
       let updated;
       if (idx >= 0) {
         updated = localData.map((item: any, i: number) => i === idx ? localItem : item);
@@ -1020,25 +1106,27 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
 
     // 4. Update global persistent digital assets so new letters automatically use the latest updated assets
     try {
-      const latestAssets = {
-        logo_url: getValidAssetUrl(rawPayload.logo_url, DEFAULT_LOGO_URL),
-        ttd_ketua_url: getValidAssetUrl(rawPayload.ttd_ketua_url, ""),
-        ttd_sekretaris_url: getValidAssetUrl(rawPayload.ttd_sekretaris_url, ""),
-        cap_stempel_url: getValidAssetUrl(rawPayload.cap_stempel_url, ""),
-        logo_scale: rawPayload.logo_scale || 100,
-        ttd_ketua_scale: rawPayload.ttd_ketua_scale || 100,
-        ttd_sekretaris_scale: rawPayload.ttd_sekretaris_scale || 100,
-        stempel_scale: rawPayload.stempel_scale || 100,
-        logo_pos: currentPositions.logoPos || { x: 0, y: 0 },
-        stempel_pos: currentPositions.stempelPos || { x: -35, y: 0 },
-        ttd_ketua_pos: currentPositions.ttdKetuaPos || { x: 0, y: 0 },
-        ttd_sekretaris_pos: currentPositions.ttdSekretarisPos || { x: 0, y: 0 },
-        nama_ketua: rawPayload.nama_ketua || 'H. WAWAN',
-        nama_sekretaris: rawPayload.nama_sekretaris || 'H. BARHAMAN MUIN S.AG'
-      };
-      safeLocalStorageSet('pb_bilibili_digital_assets', JSON.stringify(latestAssets));
-      safeLocalStorageSet('site_setting_digital_assets_surat', JSON.stringify(latestAssets));
-      saveSiteSetting('digital_assets_surat', latestAssets, 'Aset Digital Kop Surat & TTD PB Bilibili').catch(() => {});
+      if (rawPayload.ttd_ketua_url || rawPayload.ttd_sekretaris_url || rawPayload.cap_stempel_url) {
+        const latestAssets = {
+          logo_url: resolvedLogoUrl,
+          ttd_ketua_url: resolvedTtdKetuaUrl,
+          ttd_sekretaris_url: resolvedTtdSekreUrl,
+          cap_stempel_url: resolvedStempelUrl,
+          logo_scale: extraMetadata.logo_scale,
+          ttd_ketua_scale: extraMetadata.ttd_ketua_scale,
+          ttd_sekretaris_scale: extraMetadata.ttd_sekretaris_scale,
+          stempel_scale: extraMetadata.stempel_scale,
+          logo_pos: extraMetadata.logo_pos,
+          stempel_pos: extraMetadata.stempel_pos,
+          ttd_ketua_pos: extraMetadata.ttd_ketua_pos,
+          ttd_sekretaris_pos: extraMetadata.ttd_sekretaris_pos,
+          nama_ketua: extraMetadata.nama_ketua,
+          nama_sekretaris: extraMetadata.nama_sekretaris
+        };
+        safeLocalStorageSet('pb_bilibili_digital_assets', JSON.stringify(latestAssets));
+        safeLocalStorageSet('site_setting_digital_assets_surat', JSON.stringify(latestAssets));
+        saveSiteSetting('digital_assets_surat', latestAssets, 'Aset Digital Kop Surat & TTD PB Bilibili').catch(() => {});
+      }
     } catch (e) {}
 
     return resultId;
@@ -1069,89 +1157,88 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
         if (res.ok) serverData = await res.json();
       } catch (e) {}
 
-      const { data } = await supabase.from('arsip_surat').select('*').order('created_at', { ascending: false });
+      const { data } = await supabase
+        .from('arsip_surat')
+        .select('*')
+        .neq('nomor_surat', '__MASTER_DIGITAL_ASSETS__')
+        .order('created_at', { ascending: false });
+
       const localData = JSON.parse(localStorage.getItem('arsip_surat_local') || '[]');
       const deletedIds: string[] = JSON.parse(localStorage.getItem('arsip_surat_deleted') || '[]');
+      const storedAssets = getStoredDigitalAssets();
+
+      const parseSuratFromDb = (item: any) => {
+        if (!item) return item;
+        let extra: any = {};
+        if (item.isi_surat && typeof item.isi_surat === 'string' && item.isi_surat.trim().startsWith('{')) {
+          try {
+            extra = JSON.parse(item.isi_surat);
+          } catch (e) {}
+        }
+        return {
+          ...item,
+          ...extra,
+          isi_ringkas: extra.isi_ringkas || item.isi_ringkas || (item.isi_surat && !item.isi_surat.startsWith('{') ? item.isi_surat : '') || '',
+          paragraf_2: extra.paragraf_2 || item.paragraf_2 || '',
+          paragraf_3: extra.paragraf_3 || item.paragraf_3 || '',
+          alamat_tujuan: extra.alamat_tujuan || item.alamat_tujuan || item.tujuan_instansi || 'di Tempat',
+          tujuan_yth: item.tujuan_yth || extra.tujuan_yth || item.tujuan_instansi || '',
+          nama_ketua: item.nama_ketua || extra.nama_ketua || storedAssets.nama_ketua || "H. WAWAN",
+          nama_sekretaris: item.nama_sekretaris || extra.nama_sekretaris || storedAssets.nama_sekretaris || "H. BARHAMAN MUIN S.AG",
+          logo_url: getValidAssetUrl(item.logo_url || extra.logo_url, storedAssets.logo_url || DEFAULT_LOGO_URL),
+          logo_scale: extra.logo_scale || item.logo_scale || storedAssets.logo_scale || 100,
+          logo_pos: extra.logo_pos || item.logo_pos || storedAssets.logo_pos || { x: 0, y: 0 },
+          ttd_ketua_url: getValidAssetUrl(item.ttd_ketua_url || extra.ttd_ketua_url, storedAssets.ttd_ketua_url),
+          ttd_sekretaris_url: getValidAssetUrl(item.ttd_sekretaris_url || extra.ttd_sekretaris_url, storedAssets.ttd_sekretaris_url),
+          cap_stempel_url: getValidAssetUrl(item.cap_stempel_url || extra.cap_stempel_url, storedAssets.cap_stempel_url),
+          ttd_ketua_scale: extra.ttd_ketua_scale || item.ttd_ketua_scale || storedAssets.ttd_ketua_scale || 100,
+          ttd_sekretaris_scale: extra.ttd_sekretaris_scale || item.ttd_sekretaris_scale || storedAssets.ttd_sekretaris_scale || 100,
+          stempel_scale: extra.stempel_scale || item.stempel_scale || storedAssets.stempel_scale || 100,
+          ttd_ketua_pos: extra.ttd_ketua_pos || item.ttd_ketua_pos || storedAssets.ttd_ketua_pos || { x: 0, y: 0 },
+          ttd_sekretaris_pos: extra.ttd_sekretaris_pos || item.ttd_sekretaris_pos || storedAssets.ttd_sekretaris_pos || { x: 0, y: 0 },
+          stempel_pos: extra.stempel_pos || item.stempel_pos || storedAssets.stempel_pos || { x: -35, y: 0 },
+          show_recipient: extra.show_recipient !== undefined ? extra.show_recipient : (item.show_recipient !== undefined ? item.show_recipient : true),
+          show_greetings: extra.show_greetings !== undefined ? extra.show_greetings : (item.show_greetings !== undefined ? item.show_greetings : true),
+          title_override: extra.title_override || item.title_override || '',
+          include_lampiran_peserta: extra.include_lampiran_peserta !== undefined ? extra.include_lampiran_peserta : Boolean(item.include_lampiran_peserta),
+          judul_lampiran: extra.judul_lampiran || item.judul_lampiran || 'Daftar Lampiran Peserta',
+          lampiran_peserta: extra.lampiran_peserta || item.lampiran_peserta || ''
+        };
+      };
 
       const map = new Map();
 
       // 1. Base seed templates
       SEED_SURAT.forEach(item => {
         if (!deletedIds.includes(item.id) && !deletedIds.includes(item.nomor_surat)) {
-          map.set(item.id, item);
+          map.set(item.id, parseSuratFromDb(item));
         }
       });
 
       // 2. Server API JSON store data
       (serverData || []).forEach((item: any) => {
-        if (item && !deletedIds.includes(item.id) && !deletedIds.includes(item.nomor_surat)) {
-          map.set(item.id || item.nomor_surat, item);
+        if (item && item.nomor_surat !== '__MASTER_DIGITAL_ASSETS__' && item.jenis_surat !== 'MASUK' && !deletedIds.includes(item.id) && !deletedIds.includes(item.nomor_surat)) {
+          map.set(item.id || item.nomor_surat, parseSuratFromDb(item));
         }
       });
 
       // 3. User local custom data
       localData.forEach((item: any) => {
-        if (item && !deletedIds.includes(item.id) && !deletedIds.includes(item.nomor_surat)) {
-          map.set(item.id || item.nomor_surat, item);
+        if (item && item.nomor_surat !== '__MASTER_DIGITAL_ASSETS__' && item.jenis_surat !== 'MASUK' && !deletedIds.includes(item.id) && !deletedIds.includes(item.nomor_surat)) {
+          map.set(item.id || item.nomor_surat, parseSuratFromDb(item));
         }
       });
 
       // 4. Supabase database data takes ultimate precedence
       (data || []).forEach(item => {
-        if (item && !deletedIds.includes(item.id) && !deletedIds.includes(item.nomor_surat)) {
-          map.set(item.id || item.nomor_surat, item);
+        if (item && item.nomor_surat !== '__MASTER_DIGITAL_ASSETS__' && item.jenis_surat !== 'MASUK' && !deletedIds.includes(item.id) && !deletedIds.includes(item.nomor_surat)) {
+          map.set(item.id || item.nomor_surat, parseSuratFromDb(item));
         }
       });
 
       const allItems = Array.from(map.values());
-      const storedAssets = getStoredDigitalAssets();
 
-      // Asynchronously clean any dummy SVGs in Supabase database
-      if (data && data.length > 0) {
-        const itemsToClean = data.filter((item: any) => {
-          const rawKetua = item.ttd_ketua_url || '';
-          const rawSekre = item.ttd_sekretaris_url || '';
-          const rawStempel = item.cap_stempel_url || '';
-          return (
-            (rawKetua && (rawKetua.includes('data:image/svg+xml') || !getValidAssetUrl(rawKetua, ''))) ||
-            (rawSekre && (rawSekre.includes('data:image/svg+xml') || !getValidAssetUrl(rawSekre, ''))) ||
-            (rawStempel && (rawStempel.includes('data:image/svg+xml') || !getValidAssetUrl(rawStempel, '')))
-          );
-        });
-
-        if (itemsToClean.length > 0) {
-          Promise.all(itemsToClean.map((it: any) => 
-            supabase.from('arsip_surat').update({
-              ttd_ketua_url: getValidAssetUrl(it.ttd_ketua_url, ''),
-              ttd_sekretaris_url: getValidAssetUrl(it.ttd_sekretaris_url, ''),
-              cap_stempel_url: getValidAssetUrl(it.cap_stempel_url, '')
-            }).eq('id', it.id)
-          )).catch(err => console.warn('Background cleanup error:', err));
-        }
-      }
-
-      const sanitizeSurat = (item: any) => {
-        if (!item) return item;
-        return {
-          ...item,
-          nama_ketua: item.nama_ketua || storedAssets.nama_ketua || "H. WAWAN",
-          nama_sekretaris: item.nama_sekretaris || storedAssets.nama_sekretaris || "H. BARHAMAN MUIN S.AG",
-          logo_url: getValidAssetUrl(item.logo_url, DEFAULT_LOGO_URL),
-          logo_scale: item.logo_scale || storedAssets.logo_scale || 100,
-          logo_pos: item.logo_pos || storedAssets.logo_pos || { x: 0, y: 0 },
-          ttd_ketua_url: getValidAssetUrl(item.ttd_ketua_url, ""),
-          ttd_sekretaris_url: getValidAssetUrl(item.ttd_sekretaris_url, ""),
-          cap_stempel_url: getValidAssetUrl(item.cap_stempel_url, ""),
-          ttd_ketua_scale: item.ttd_ketua_scale || storedAssets.ttd_ketua_scale || 100,
-          ttd_sekretaris_scale: item.ttd_sekretaris_scale || storedAssets.ttd_sekretaris_scale || 100,
-          stempel_scale: item.stempel_scale || storedAssets.stempel_scale || 100,
-          ttd_ketua_pos: item.ttd_ketua_pos || storedAssets.ttd_ketua_pos || { x: 0, y: 0 },
-          ttd_sekretaris_pos: item.ttd_sekretaris_pos || storedAssets.ttd_sekretaris_pos || { x: 0, y: 0 },
-          stempel_pos: item.stempel_pos || storedAssets.stempel_pos || { x: -35, y: 0 }
-        };
-      };
-
-      const unique = allItems.map(sanitizeSurat).sort((a, b) => {
+      const unique = allItems.sort((a, b) => {
         const timeA = new Date(a.created_at || a.created_at_time || 0).getTime();
         const timeB = new Date(b.created_at || b.created_at_time || 0).getTime();
         return timeB - timeA;
@@ -1205,15 +1292,40 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
 
   const fetchSuratMasuk = async () => {
     try {
-      const { data } = await supabase.from('arsip_surat_masuk').select('*').order('created_at', { ascending: false });
+      const { data } = await supabase
+        .from('arsip_surat')
+        .select('*')
+        .eq('jenis_surat', 'MASUK')
+        .order('created_at', { ascending: false });
+
       const localData = JSON.parse(localStorage.getItem('arsip_surat_masuk_local') || '[]');
       const map = new Map();
+
       localData.forEach((item: any) => {
         if (item) map.set(item.id || item.nomor_surat, item);
       });
-      (data || []).forEach(item => {
-        if (item) map.set(item.id || item.nomor_surat, item);
+
+      (data || []).forEach((item: any) => {
+        if (item) {
+          let extra: any = {};
+          if (item.isi_surat && typeof item.isi_surat === 'string' && item.isi_surat.startsWith('{')) {
+            try { extra = JSON.parse(item.isi_surat); } catch (e) {}
+          }
+          const parsed = {
+            ...item,
+            ...extra,
+            pengirim: extra.pengirim || item.tujuan_instansi || '',
+            file_url: extra.file_url || item.file_lampiran || '',
+            status_tindak_lanjut: extra.status_tindak_lanjut || item.status || 'Belum Ditindaklanjuti',
+            sifat_surat: extra.sifat_surat || 'Biasa',
+            disposisi_kepada: extra.disposisi_kepada || 'Ketua PB Bilibili 162',
+            catatan_disposisi: extra.catatan_disposisi || '',
+            tanggal_diterima: extra.tanggal_diterima || item.tanggal_surat || new Date().toISOString().split('T')[0]
+          };
+          map.set(item.id || item.nomor_surat, parsed);
+        }
       });
+
       const unique = Array.from(map.values());
       setSuratMasukList(unique);
     } catch (err) {
@@ -1354,10 +1466,26 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
         const { id, created_at, ...payload } = suratMasukForm as any;
         if (!payload.nomor_surat && !payload.pengirim && !payload.perihal) return;
 
+        const dbRecord = {
+          nomor_surat: payload.nomor_surat,
+          jenis_surat: 'MASUK',
+          perihal: payload.perihal,
+          tujuan_instansi: payload.pengirim,
+          tanggal_surat: payload.tanggal_surat,
+          file_lampiran: payload.file_url || null,
+          status: payload.status_tindak_lanjut || 'MASUK',
+          isi_surat: JSON.stringify(payload)
+        };
+
         if (editMasukId && !editMasukId.toString().startsWith('local_')) {
-          await supabase.from('arsip_surat_masuk').update(payload).eq('id', editMasukId);
+          await supabase.from('arsip_surat').delete().eq('id', editMasukId);
+          const { data } = await supabase.from('arsip_surat').insert([{ ...dbRecord, id: editMasukId }]).select().single();
+          if (data?.id) setEditMasukId(data.id);
         } else {
-          const { data } = await supabase.from('arsip_surat_masuk').insert([payload]).select().single();
+          if (dbRecord.nomor_surat) {
+            await supabase.from('arsip_surat').delete().eq('nomor_surat', dbRecord.nomor_surat).eq('jenis_surat', 'MASUK');
+          }
+          const { data } = await supabase.from('arsip_surat').insert([dbRecord]).select().single();
           if (data?.id) {
             setEditMasukId(data.id);
           }
@@ -1397,20 +1525,35 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     setIsSubmitting(true);
     const { id, created_at, ...payload } = suratMasukForm as any;
 
+    const dbRecord = {
+      nomor_surat: payload.nomor_surat,
+      jenis_surat: 'MASUK',
+      perihal: payload.perihal,
+      tujuan_instansi: payload.pengirim,
+      tanggal_surat: payload.tanggal_surat,
+      file_lampiran: payload.file_url || null,
+      status: payload.status_tindak_lanjut || 'MASUK',
+      isi_surat: JSON.stringify(payload)
+    };
+
     try {
       const localData = JSON.parse(localStorage.getItem('arsip_surat_masuk_local') || '[]');
       if (editMasukId) {
         const updated = localData.map((item: any) => item.id === editMasukId ? { ...item, ...payload } : item);
         safeLocalStorageSet('arsip_surat_masuk_local', JSON.stringify(updated));
         try {
-          await supabase.from('arsip_surat_masuk').update(payload).eq('id', editMasukId);
+          await supabase.from('arsip_surat').delete().eq('id', editMasukId);
+          await supabase.from('arsip_surat').insert([{ ...dbRecord, id: editMasukId }]);
         } catch (e) {}
         Swal.fire('Berhasil', 'Surat masuk berhasil diperbarui!', 'success');
       } else {
         const newItem = { ...payload, id: 'local_' + Date.now(), created_at: new Date().toISOString() };
         safeLocalStorageSet('arsip_surat_masuk_local', JSON.stringify([newItem, ...localData]));
         try {
-          await supabase.from('arsip_surat_masuk').insert([payload]);
+          if (dbRecord.nomor_surat) {
+            await supabase.from('arsip_surat').delete().eq('nomor_surat', dbRecord.nomor_surat).eq('jenis_surat', 'MASUK');
+          }
+          await supabase.from('arsip_surat').insert([dbRecord]);
         } catch (e) {}
         Swal.fire('Berhasil', 'Surat masuk berhasil dicatat!', 'success');
       }
@@ -1434,7 +1577,7 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     });
     if (res.isConfirmed) {
       try {
-        await supabase.from('arsip_surat_masuk').delete().eq('id', id);
+        await supabase.from('arsip_surat').delete().eq('id', id);
         const localData = JSON.parse(localStorage.getItem('arsip_surat_masuk_local') || '[]');
         safeLocalStorageSet('arsip_surat_masuk_local', JSON.stringify(localData.filter((i: any) => i.id !== id)));
         fetchSuratMasuk();
@@ -1844,6 +1987,13 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       try {
         await supabase.from('arsip_surat').delete().eq('id', id);
       } catch (e) {}
+      try {
+        await fetch('/api/arsip-surat', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id })
+        });
+      } catch (e) {}
       const deletedIds: string[] = JSON.parse(localStorage.getItem('arsip_surat_deleted') || '[]');
       if (!deletedIds.includes(id)) {
         deletedIds.push(id);
@@ -1860,27 +2010,29 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     if (isPreviewOnly) return;
     const file = e.target.files?.[0];
     if (file) {
+      const stored = getStoredDigitalAssets();
       try {
         const compressed = await compressImage(file, 600, 600, 0.85);
         if (compressed) {
           setFormData(prev => {
             const updated = { ...prev, [field]: compressed };
-            saveMasterDigitalAssetsToDatabase({
-              logo_url: getValidAssetUrl(updated.logo_url, DEFAULT_LOGO_URL),
-              ttd_ketua_url: getValidAssetUrl(updated.ttd_ketua_url, ""),
-              ttd_sekretaris_url: getValidAssetUrl(updated.ttd_sekretaris_url, ""),
-              cap_stempel_url: getValidAssetUrl(updated.cap_stempel_url, ""),
-              logo_scale: updated.logo_scale || 100,
-              ttd_ketua_scale: updated.ttd_ketua_scale || 100,
-              ttd_sekretaris_scale: updated.ttd_sekretaris_scale || 100,
-              stempel_scale: updated.stempel_scale || 100,
-              logo_pos: logoPos || { x: 0, y: 0 },
-              stempel_pos: stempelPos || { x: -35, y: 0 },
-              ttd_ketua_pos: ttdKetuaPos || { x: 0, y: 0 },
-              ttd_sekretaris_pos: ttdSekretarisPos || { x: 0, y: 0 },
-              nama_ketua: updated.nama_ketua || 'H. WAWAN',
-              nama_sekretaris: updated.nama_sekretaris || 'H. BARHAMAN MUIN S.AG',
-            }, false);
+            const mergedAssets = {
+              logo_url: field === 'logo_url' ? compressed : getValidAssetUrl(updated.logo_url, stored.logo_url || DEFAULT_LOGO_URL),
+              ttd_ketua_url: field === 'ttd_ketua_url' ? compressed : getValidAssetUrl(updated.ttd_ketua_url, stored.ttd_ketua_url),
+              ttd_sekretaris_url: field === 'ttd_sekretaris_url' ? compressed : getValidAssetUrl(updated.ttd_sekretaris_url, stored.ttd_sekretaris_url),
+              cap_stempel_url: field === 'cap_stempel_url' ? compressed : getValidAssetUrl(updated.cap_stempel_url, stored.cap_stempel_url),
+              logo_scale: updated.logo_scale || stored.logo_scale || 100,
+              ttd_ketua_scale: updated.ttd_ketua_scale || stored.ttd_ketua_scale || 100,
+              ttd_sekretaris_scale: updated.ttd_sekretaris_scale || stored.ttd_sekretaris_scale || 100,
+              stempel_scale: updated.stempel_scale || stored.stempel_scale || 100,
+              logo_pos: logoPos || stored.logo_pos || { x: 0, y: 0 },
+              stempel_pos: stempelPos || stored.stempel_pos || { x: -35, y: 0 },
+              ttd_ketua_pos: ttdKetuaPos || stored.ttd_ketua_pos || { x: 0, y: 0 },
+              ttd_sekretaris_pos: ttdSekretarisPos || stored.ttd_sekretaris_pos || { x: 0, y: 0 },
+              nama_ketua: updated.nama_ketua || stored.nama_ketua || 'H. WAWAN',
+              nama_sekretaris: updated.nama_sekretaris || stored.nama_sekretaris || 'H. BARHAMAN MUIN S.AG',
+            };
+            saveMasterDigitalAssetsToDatabase(mergedAssets, false);
             return updated;
           });
           Swal.fire({
@@ -1899,22 +2051,23 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
           const res = reader.result as string;
           setFormData(prev => {
             const updated = { ...prev, [field]: res };
-            saveMasterDigitalAssetsToDatabase({
-              logo_url: getValidAssetUrl(updated.logo_url, DEFAULT_LOGO_URL),
-              ttd_ketua_url: getValidAssetUrl(updated.ttd_ketua_url, ""),
-              ttd_sekretaris_url: getValidAssetUrl(updated.ttd_sekretaris_url, ""),
-              cap_stempel_url: getValidAssetUrl(updated.cap_stempel_url, ""),
-              logo_scale: updated.logo_scale || 100,
-              ttd_ketua_scale: updated.ttd_ketua_scale || 100,
-              ttd_sekretaris_scale: updated.ttd_sekretaris_scale || 100,
-              stempel_scale: updated.stempel_scale || 100,
-              logo_pos: logoPos || { x: 0, y: 0 },
-              stempel_pos: stempelPos || { x: -35, y: 0 },
-              ttd_ketua_pos: ttdKetuaPos || { x: 0, y: 0 },
-              ttd_sekretaris_pos: ttdSekretarisPos || { x: 0, y: 0 },
-              nama_ketua: updated.nama_ketua || 'H. WAWAN',
-              nama_sekretaris: updated.nama_sekretaris || 'H. BARHAMAN MUIN S.AG',
-            }, false);
+            const mergedAssets = {
+              logo_url: field === 'logo_url' ? res : getValidAssetUrl(updated.logo_url, stored.logo_url || DEFAULT_LOGO_URL),
+              ttd_ketua_url: field === 'ttd_ketua_url' ? res : getValidAssetUrl(updated.ttd_ketua_url, stored.ttd_ketua_url),
+              ttd_sekretaris_url: field === 'ttd_sekretaris_url' ? res : getValidAssetUrl(updated.ttd_sekretaris_url, stored.ttd_sekretaris_url),
+              cap_stempel_url: field === 'cap_stempel_url' ? res : getValidAssetUrl(updated.cap_stempel_url, stored.cap_stempel_url),
+              logo_scale: updated.logo_scale || stored.logo_scale || 100,
+              ttd_ketua_scale: updated.ttd_ketua_scale || stored.ttd_ketua_scale || 100,
+              ttd_sekretaris_scale: updated.ttd_sekretaris_scale || stored.ttd_sekretaris_scale || 100,
+              stempel_scale: updated.stempel_scale || stored.stempel_scale || 100,
+              logo_pos: logoPos || stored.logo_pos || { x: 0, y: 0 },
+              stempel_pos: stempelPos || stored.stempel_pos || { x: -35, y: 0 },
+              ttd_ketua_pos: ttdKetuaPos || stored.ttd_ketua_pos || { x: 0, y: 0 },
+              ttd_sekretaris_pos: ttdSekretarisPos || stored.ttd_sekretaris_pos || { x: 0, y: 0 },
+              nama_ketua: updated.nama_ketua || stored.nama_ketua || 'H. WAWAN',
+              nama_sekretaris: updated.nama_sekretaris || stored.nama_sekretaris || 'H. BARHAMAN MUIN S.AG',
+            };
+            saveMasterDigitalAssetsToDatabase(mergedAssets, false);
             return updated;
           });
         };
@@ -1925,24 +2078,26 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
 
   const handleRemoveAsset = (field: 'logo_url' | 'ttd_ketua_url' | 'ttd_sekretaris_url' | 'cap_stempel_url') => {
     if (isPreviewOnly) return;
+    const stored = getStoredDigitalAssets();
     setFormData(prev => {
       const updated = { ...prev, [field]: '' };
-      saveMasterDigitalAssetsToDatabase({
-        logo_url: getValidAssetUrl(updated.logo_url, DEFAULT_LOGO_URL),
-        ttd_ketua_url: getValidAssetUrl(updated.ttd_ketua_url, ""),
-        ttd_sekretaris_url: getValidAssetUrl(updated.ttd_sekretaris_url, ""),
-        cap_stempel_url: getValidAssetUrl(updated.cap_stempel_url, ""),
-        logo_scale: updated.logo_scale || 100,
-        ttd_ketua_scale: updated.ttd_ketua_scale || 100,
-        ttd_sekretaris_scale: updated.ttd_sekretaris_scale || 100,
-        stempel_scale: updated.stempel_scale || 100,
-        logo_pos: logoPos || { x: 0, y: 0 },
-        stempel_pos: stempelPos || { x: -35, y: 0 },
-        ttd_ketua_pos: ttdKetuaPos || { x: 0, y: 0 },
-        ttd_sekretaris_pos: ttdSekretarisPos || { x: 0, y: 0 },
-        nama_ketua: updated.nama_ketua || 'H. WAWAN',
-        nama_sekretaris: updated.nama_sekretaris || 'H. BARHAMAN MUIN S.AG',
-      }, false);
+      const mergedAssets = {
+        logo_url: field === 'logo_url' ? DEFAULT_LOGO_URL : getValidAssetUrl(updated.logo_url, stored.logo_url || DEFAULT_LOGO_URL),
+        ttd_ketua_url: field === 'ttd_ketua_url' ? '' : getValidAssetUrl(updated.ttd_ketua_url, stored.ttd_ketua_url),
+        ttd_sekretaris_url: field === 'ttd_sekretaris_url' ? '' : getValidAssetUrl(updated.ttd_sekretaris_url, stored.ttd_sekretaris_url),
+        cap_stempel_url: field === 'cap_stempel_url' ? '' : getValidAssetUrl(updated.cap_stempel_url, stored.cap_stempel_url),
+        logo_scale: updated.logo_scale || stored.logo_scale || 100,
+        ttd_ketua_scale: updated.ttd_ketua_scale || stored.ttd_ketua_scale || 100,
+        ttd_sekretaris_scale: updated.ttd_sekretaris_scale || stored.ttd_sekretaris_scale || 100,
+        stempel_scale: updated.stempel_scale || stored.stempel_scale || 100,
+        logo_pos: logoPos || stored.logo_pos || { x: 0, y: 0 },
+        stempel_pos: stempelPos || stored.stempel_pos || { x: -35, y: 0 },
+        ttd_ketua_pos: ttdKetuaPos || stored.ttd_ketua_pos || { x: 0, y: 0 },
+        ttd_sekretaris_pos: ttdSekretarisPos || stored.ttd_sekretaris_pos || { x: 0, y: 0 },
+        nama_ketua: updated.nama_ketua || stored.nama_ketua || 'H. WAWAN',
+        nama_sekretaris: updated.nama_sekretaris || stored.nama_sekretaris || 'H. BARHAMAN MUIN S.AG',
+      };
+      saveMasterDigitalAssetsToDatabase(mergedAssets, false);
       return updated;
     });
     Swal.fire({
