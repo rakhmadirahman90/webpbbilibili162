@@ -173,35 +173,35 @@ export default function KasRealtimeNotifier() {
       const isMasuk = newTx ? checkIsMasuk(newTx) : null;
 
       if (newTx) {
-        const badgeBg = isMasuk ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20';
+        const badgeBg = isMasuk ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/10 text-rose-400 border border-rose-500/30';
         const badgeText = isMasuk ? 'Pemasukan' : 'Pengeluaran';
         
         txDetailText = `
-          <div class="p-2.5 bg-black/40 rounded-xl border border-white/5 space-y-1 mb-2">
-            <div class="flex items-center justify-between text-[9px] text-slate-400">
-              <span>Detail Transaksi:</span>
-              <span class="px-1.5 py-0.5 rounded-[4px] text-[7px] font-black uppercase ${badgeBg}">${badgeText}</span>
+          <div class="p-2.5 bg-slate-900/90 rounded-xl border border-slate-800/80 space-y-1.5 mb-2">
+            <div class="flex items-center justify-between text-[9px] text-slate-400 pb-1 border-b border-white/5">
+              <span class="font-bold uppercase tracking-wider text-slate-400">Detail Transaksi</span>
+              <span class="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wide ${badgeBg}">${badgeText}</span>
             </div>
-            <div class="flex items-start justify-between gap-3 text-[10px]">
-              <span class="text-slate-500">Keterangan:</span>
-              <span class="font-bold text-white text-right break-words max-w-[150px]">${newTx.nama_pembayar || '-'}</span>
+            <div class="flex items-start justify-between gap-2 text-[10px]">
+              <span class="text-slate-400 shrink-0">Keterangan:</span>
+              <span class="font-bold text-white text-right break-words max-w-[180px]">${newTx.nama_pembayar || '-'}</span>
             </div>
-            <div class="flex items-center justify-between gap-3 text-[10px]">
-              <span class="text-slate-500">Kategori:</span>
+            <div class="flex items-center justify-between gap-2 text-[10px]">
+              <span class="text-slate-400 shrink-0">Kategori:</span>
               <span class="font-semibold text-cyan-400 text-right">${newTx.kategori || '-'}</span>
             </div>
-            <div class="flex items-center justify-between gap-3 text-[10px]">
-              <span class="text-slate-500">Jumlah:</span>
-              <span class="font-black ${isMasuk ? 'text-emerald-400' : 'text-rose-400'}">${formatRupiah(newTx.jumlah_bayar || 0)}</span>
+            <div class="flex items-center justify-between gap-2 text-[10px]">
+              <span class="text-slate-400 shrink-0">Nominal:</span>
+              <span class="font-black text-xs ${isMasuk ? 'text-emerald-400' : 'text-rose-400'} tabular-nums text-right">${formatRupiah(newTx.jumlah_bayar || 0)}</span>
             </div>
             ${newTx.keterangan ? `
-            <div class="flex items-start justify-between gap-3 text-[10px]">
-              <span class="text-slate-500">Catatan:</span>
-              <span class="font-medium text-slate-300 italic text-right break-words max-w-[150px]">${newTx.keterangan}</span>
+            <div class="flex items-start justify-between gap-2 text-[10px]">
+              <span class="text-slate-400 shrink-0">Catatan:</span>
+              <span class="font-medium text-slate-300 italic text-right break-words max-w-[180px]">${newTx.keterangan}</span>
             </div>
             ` : ''}
-            <div class="flex items-center justify-between gap-3 text-[10px] pt-1 border-t border-white/5">
-              <span class="text-slate-500">Waktu:</span>
+            <div class="flex items-center justify-between gap-2 text-[9px] pt-1 border-t border-white/5 text-slate-400">
+              <span>Waktu:</span>
               <span class="font-medium text-slate-300 text-right">${formatDateTime(newTx.created_at || newTx.tanggal_transaksi)}</span>
             </div>
           </div>
@@ -210,40 +210,50 @@ export default function KasRealtimeNotifier() {
 
       // SHOW SWAL NOTIFICATION IMMEDIATELY (0ms DELAY)
       const initialHtml = `
-        <div class="text-left font-sans text-[11px] text-slate-300 mt-1.5 space-y-2">
+        <div class="text-left font-sans text-[11px] text-slate-300 mt-1 space-y-2">
           ${txDetailText}
-          <div class="space-y-2 bg-[#0b1224] p-4 rounded-xl border border-white/5 shadow-inner flex flex-col items-center justify-center min-h-[90px]">
-            <div class="w-5 h-5 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
-            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest animate-pulse">Menghitung Saldo...</span>
+          <div class="space-y-2 bg-[#0b1220] p-4 rounded-xl border border-slate-800/80 shadow-inner flex flex-col items-center justify-center min-h-[140px]">
+            <div class="w-5 h-5 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin"></div>
+            <span class="text-[9px] font-bold text-cyan-400/80 uppercase tracking-widest animate-pulse">Menghitung Saldo Kas...</span>
           </div>
         </div>
       `;
 
       let titleHtml = '';
-      let borderClass = 'border-cyan-500/20';
+      let borderClass = 'border-cyan-500/30';
 
       if (isMasuk !== null) {
-        const colorName = isMasuk ? 'emerald' : 'rose';
-        const colorBg = isMasuk ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20';
-        const dotColor = isMasuk ? 'bg-emerald-500' : 'bg-rose-500';
-        borderClass = isMasuk ? 'border-emerald-500/40 shadow-emerald-950/20' : 'border-rose-500/40 shadow-rose-950/20';
+        const colorBg = isMasuk ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/10 text-rose-400 border border-rose-500/30';
+        const dotColor = isMasuk ? 'bg-emerald-400' : 'bg-rose-400';
+        borderClass = isMasuk ? 'border-emerald-500/40 shadow-emerald-950/30' : 'border-rose-500/40 shadow-rose-950/30';
 
         titleHtml = `
-          <div class="flex items-center justify-between w-full pr-1.5 gap-2">
-            <div class="flex items-center gap-2 text-white font-black uppercase tracking-wider italic text-[11px] sm:text-xs">
-              <span class="w-2.5 h-2.5 rounded-full ${dotColor} animate-pulse shrink-0"></span>
+          <div class="flex items-center justify-between w-full pr-1 gap-2">
+            <div class="flex items-center gap-2 text-white font-black uppercase tracking-wider text-[11px] sm:text-xs">
+              <span class="relative flex h-2 w-2 shrink-0">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full ${isMasuk ? 'bg-emerald-400 opacity-75' : 'bg-rose-400 opacity-75'}"></span>
+                <span class="relative inline-flex rounded-full h-2 w-2 ${dotColor}"></span>
+              </span>
               ${titleText}
             </div>
-            <span class="px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider ${colorBg} border shrink-0">
+            <span class="px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${colorBg} border shrink-0">
               ${isMasuk ? '📥 Pemasukan' : '📤 Pengeluaran'}
             </span>
           </div>
         `;
       } else {
         titleHtml = `
-          <div class="flex items-center gap-2 text-white font-black uppercase tracking-wider italic text-[11px] sm:text-xs">
-            <span class="w-2.5 h-2.5 rounded-full bg-cyan-500 animate-pulse shrink-0"></span>
-            ${titleText}
+          <div class="flex items-center justify-between w-full pr-1 gap-2">
+            <div class="flex items-center gap-2 text-white font-black uppercase tracking-wider text-[11px] sm:text-xs">
+              <span class="relative flex h-2 w-2 shrink-0">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2 w-2 bg-cyan-400"></span>
+              </span>
+              ${titleText}
+            </div>
+            <span class="px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 shrink-0">
+              LIVE SYNC
+            </span>
           </div>
         `;
       }
@@ -259,7 +269,7 @@ export default function KasRealtimeNotifier() {
         color: '#fff',
         toast: true,
         customClass: {
-          popup: `border ${borderClass} rounded-2xl shadow-2xl shadow-black/80 p-3.5 !max-w-[350px]`,
+          popup: `border ${borderClass} rounded-2xl shadow-2xl shadow-black/90 p-3 sm:p-3.5 !max-w-[360px] w-[94vw] sm:w-[360px]`,
           container: 'z-[9999999]'
         },
         didOpen: (toast) => {
@@ -380,7 +390,7 @@ export default function KasRealtimeNotifier() {
               `• Pemasukan Terbaru: ${formatRupiah(pemasukanBulanIni)}\n` +
               `• Pengeluaran Terbaru: ${formatRupiah(pengeluaranBulanIni)}\n` +
               `• *Sisa Saldo Akhir: ${formatRupiah(sisaSaldoAkhir)}*\n` +
-              `  - Modal Tetap: ${formatRupiah(modalTetap)}\n` +
+              `  - Modal Tetap (Pengelola Bola): ${formatRupiah(modalTetap)}\n` +
               `  - Kas Bendahara: ${formatRupiah(saldoBendahara)}\n\n` +
               `🔗 *Akses Kas Klub:* ${window.location.origin}/kas\n\n` +
               `Admin PB Bilibili 162`;
@@ -392,7 +402,7 @@ export default function KasRealtimeNotifier() {
               `• Pemasukan Terbaru: ${formatRupiah(pemasukanBulanIni)}\n` +
               `• Pengeluaran Terbaru: ${formatRupiah(pengeluaranBulanIni)}\n` +
               `• *Sisa Saldo Akhir: ${formatRupiah(sisaSaldoAkhir)}*\n` +
-              `  - Modal Tetap: ${formatRupiah(modalTetap)}\n` +
+              `  - Modal Tetap (Pengelola Bola): ${formatRupiah(modalTetap)}\n` +
               `  - Kas Bendahara: ${formatRupiah(saldoBendahara)}\n\n` +
               `🔗 *Akses Kas Klub:* ${window.location.origin}/kas\n\n` +
               `Admin PB Bilibili 162`;
@@ -400,51 +410,68 @@ export default function KasRealtimeNotifier() {
           const waHref = `https://api.whatsapp.com/send?text=${encodeURIComponent(waText)}`;
 
           const loadedHtml = `
-            <div class="text-left font-sans text-[11px] text-slate-300 mt-1.5 space-y-2 animate-[fadeIn_0.25s_ease-out]">
+            <div class="text-left font-sans text-[11px] text-slate-300 mt-1 space-y-2 animate-[fadeIn_0.2s_ease-out]">
               ${txDetailText}
-              <div class="space-y-1.5 bg-[#0b1224] p-3 rounded-xl border border-white/5 shadow-inner">
-                <div class="flex items-center justify-between text-[8px] text-slate-400 mb-2 pb-1 border-b border-white/5">
-                  <span class="font-black uppercase tracking-wider text-cyan-500">Status Keuangan PB Bilibili</span>
-                  <span class="font-semibold text-slate-400">${formatDateTime()}</span>
+              <div class="space-y-2 bg-[#0b1220] p-3 rounded-xl border border-slate-800/80 shadow-lg">
+                <!-- Header Box -->
+                <div class="flex items-center justify-between text-[9px] text-slate-400 pb-1.5 border-b border-white/5">
+                  <div class="flex items-center gap-1.5 font-bold uppercase tracking-wider text-cyan-400">
+                    <svg class="w-3 h-3 text-cyan-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                    <span>Status Keuangan PB Bilibili</span>
+                  </div>
+                  <span class="font-medium text-slate-400 tabular-nums">${formatDateTime()}</span>
                 </div>
                 
-                <!-- Dashboard Bento Cards inside Popup -->
-                <div class="grid grid-cols-2 gap-1.5 mb-1.5">
+                <!-- Dashboard Bento Cards (Tight & Balanced) -->
+                <div class="grid grid-cols-2 gap-1.5">
                   <!-- Saldo Sebelumnya -->
-                  <div class="p-2 rounded-lg bg-white/5 border border-white/5">
-                    <div class="text-[7px] font-black uppercase text-slate-400 tracking-wider">Saldo Sebelumnya</div>
-                    <div class="text-[10px] font-bold text-slate-200 mt-0.5">${formatRupiah(saldoSebelumnya)}</div>
+                  <div class="p-2 rounded-lg bg-slate-900/80 border border-slate-800 flex flex-col justify-between">
+                    <div class="text-[8px] font-bold uppercase text-slate-400 tracking-wider">Saldo Awal</div>
+                    <div class="text-[11px] font-bold text-slate-200 mt-0.5 tabular-nums tracking-tight">${formatRupiah(saldoSebelumnya)}</div>
                   </div>
-                  <!-- Pemasukan Bulan Ini -->
-                  <div class="p-2 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
-                    <div class="text-[7px] font-black uppercase text-emerald-500 tracking-wider">Pemasukan</div>
-                    <div class="text-[10px] font-extrabold text-emerald-400 mt-0.5">${formatRupiah(pemasukanBulanIni)}</div>
+                  <!-- Pemasukan -->
+                  <div class="p-2 rounded-lg bg-emerald-950/30 border border-emerald-500/20 flex flex-col justify-between">
+                    <div class="text-[8px] font-bold uppercase text-emerald-400 tracking-wider">Pemasukan</div>
+                    <div class="text-[11px] font-extrabold text-emerald-400 mt-0.5 tabular-nums tracking-tight">${formatRupiah(pemasukanBulanIni)}</div>
                   </div>
-                  <!-- Pengeluaran Bulan Ini -->
-                  <div class="p-2 rounded-lg bg-rose-500/5 border border-rose-500/10">
-                    <div class="text-[7px] font-black uppercase text-rose-500 tracking-wider">Pengeluaran</div>
-                    <div class="text-[10px] font-extrabold text-rose-400 mt-0.5">${formatRupiah(pengeluaranBulanIni)}</div>
+                  <!-- Pengeluaran -->
+                  <div class="p-2 rounded-lg bg-rose-950/30 border border-rose-500/20 flex flex-col justify-between">
+                    <div class="text-[8px] font-bold uppercase text-rose-400 tracking-wider">Pengeluaran</div>
+                    <div class="text-[11px] font-extrabold text-rose-400 mt-0.5 tabular-nums tracking-tight">${formatRupiah(pengeluaranBulanIni)}</div>
                   </div>
-                  <!-- Saldo Akhir -->
-                  <div class="p-2 rounded-lg bg-cyan-500/5 border border-cyan-500/10">
-                    <div class="text-[7px] font-black uppercase text-cyan-400 tracking-wider">Saldo Akhir Kas</div>
-                    <div class="text-[10px] font-black text-cyan-400 mt-0.5">${formatRupiah(sisaSaldoAkhir)}</div>
+                  <!-- Saldo Akhir Kas -->
+                  <div class="p-2 rounded-lg bg-gradient-to-br from-cyan-950/40 to-blue-950/40 border border-cyan-500/30 flex flex-col justify-between">
+                    <div class="text-[8px] font-extrabold uppercase text-cyan-300 tracking-wider">Saldo Akhir Kas</div>
+                    <div class="text-[11px] font-black text-cyan-300 mt-0.5 tabular-nums tracking-tight">${formatRupiah(sisaSaldoAkhir)}</div>
                   </div>
                 </div>
 
-                <div class="flex flex-col gap-1 pl-2.5 border-l border-cyan-500/20 text-[8px] text-slate-400 pt-0.5 mt-1.5">
-                  <div class="flex items-center justify-between gap-4">
-                    <span>Modal Tetap (Pengelola Bola):</span>
-                    <span class="font-medium text-slate-300">${formatRupiah(modalTetap)}</span>
+                <!-- Breakdown Alokasi -->
+                <div class="bg-slate-950/60 rounded-lg p-2 border border-slate-800/80 text-[9px] space-y-1">
+                  <div class="flex items-center justify-between text-slate-400">
+                    <span class="flex items-center gap-1.5">
+                      <span class="w-1.5 h-1.5 rounded-full bg-slate-500 shrink-0"></span>
+                      <span>Modal Tetap (Pengelola Bola):</span>
+                    </span>
+                    <span class="font-semibold text-slate-200 tabular-nums">${formatRupiah(modalTetap)}</span>
                   </div>
-                  <div class="flex items-center justify-between gap-4">
-                    <span>Kas Bendahara:</span>
-                    <span class="font-bold text-cyan-400">${formatRupiah(saldoBendahara)}</span>
+                  <div class="flex items-center justify-between text-slate-300 pt-1 border-t border-white/5">
+                    <span class="flex items-center gap-1.5">
+                      <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0"></span>
+                      <span class="font-medium">Kas Bendahara:</span>
+                    </span>
+                    <span class="font-bold text-cyan-400 tabular-nums">${formatRupiah(saldoBendahara)}</span>
                   </div>
                 </div>
               </div>
-              <a href="${waHref}" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center gap-1.5 w-full mt-2.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-[10px] font-black text-white uppercase tracking-wider text-center no-underline border border-emerald-500/20 shadow-lg transition-all duration-150 active:scale-[0.98] hover:scale-[1.01]">
-                <svg class="w-3.5 h-3.5 fill-current shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.717-1.455L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.37 9.864-9.799.002-2.63-1.023-5.101-2.885-6.966C16.59 1.975 14.11 1.01 11.477 1.01 6.041 1.01 1.62 5.379 1.615 10.807c-.001 1.702.453 3.361 1.314 4.815L1.96 21.02l5.687-1.488z"/></svg>
+
+              <!-- Action Button WhatsApp -->
+              <a href="${waHref}" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center gap-2 w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 active:from-emerald-700 active:to-emerald-600 text-[11px] font-extrabold text-white uppercase tracking-wider text-center no-underline border border-emerald-400/30 shadow-lg shadow-emerald-950/50 transition-all duration-150 active:scale-[0.98]">
+                <svg class="w-3.5 h-3.5 fill-current shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.717-1.455L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.37 9.864-9.799.002-2.63-1.023-5.101-2.885-6.966C16.59 1.975 14.11 1.01 11.477 1.01 6.041 1.01 1.62 5.379 1.615 10.807c-.001 1.702.453 3.361 1.314 4.815L1.96 21.02l5.687-1.488z"/>
+                </svg>
                 <span>Kirim Laporan ke WhatsApp</span>
               </a>
             </div>
