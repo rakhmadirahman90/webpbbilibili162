@@ -1,8 +1,42 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../supabase';
 import { broadcastDataChange } from '../utils/realtimeHelper';
-import { Mail, Plus, Search, Eye, Edit, Trash2, Printer, X, Upload, Sparkles, Send, ImageIcon, MessageCircle, Move, Loader2, FileText, CheckCircle2, Clock, AlertCircle, Filter, Building, UserCheck, ShieldAlert, ListOrdered, ZoomIn, ZoomOut, RotateCcw, Maximize2, Download } from 'lucide-react';
+import { Mail, Plus, Search, Eye, Edit, Trash2, Printer, X, Upload, Sparkles, Send, ImageIcon, MessageCircle, Move, Loader2, FileText, CheckCircle2, Clock, AlertCircle, Filter, Building, UserCheck, ShieldAlert, ListOrdered, ZoomIn, ZoomOut, RotateCcw, Maximize2, Download, Calendar } from 'lucide-react';
 import Swal from 'sweetalert2';
+
+export const BULAN_INDONESIA = [
+  'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+];
+
+export const parseIndonesianDateToIso = (text?: string): string => {
+  if (!text) return '';
+  const match = text.match(/(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})/);
+  if (match) {
+    const day = parseInt(match[1], 10);
+    const monthName = match[2].toLowerCase();
+    const year = parseInt(match[3], 10);
+    const monthIdx = BULAN_INDONESIA.findIndex(b => b.toLowerCase() === monthName);
+    if (monthIdx >= 0) {
+      const dStr = String(day).padStart(2, '0');
+      const mStr = String(monthIdx + 1).padStart(2, '0');
+      return `${year}-${mStr}-${dStr}`;
+    }
+  }
+  return '';
+};
+
+export const getSafeIsoDate = (createdAt?: string, tempatTanggal?: string): string => {
+  if (createdAt) {
+    const d = new Date(createdAt);
+    if (!isNaN(d.getTime())) {
+      return d.toISOString().split('T')[0];
+    }
+  }
+  const fromText = parseIndonesianDateToIso(tempatTanggal);
+  if (fromText) return fromText;
+  return new Date().toISOString().split('T')[0];
+};
 
 const JENIS_SURAT_TEMPLATES = [
   { 
@@ -282,6 +316,7 @@ export function KelolaSurat() {
     lampiran: '-',
     perihal: 'Permohonan Menjadi Narasumber (Penceramah) Kajian Ramadan Online',
     tempat_tanggal: `Parepare, ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`,
+    created_at: new Date().toISOString(),
     tujuan_yth: 'Al Hafidz Ustadz Prof. Dr. KH. Muamar Bakry, Lc., M.A',
     jabatan_tujuan: 'Rektor UIM Al-Ghazali Makassar',
     isi_surat: `Segala puji bagi Allah SWT atas segala nikmat dan karunia-Nya yang senantiasa menyertai aktivitas kita. Shalawat serta salam semoga tetap tercurah kepada teladan kita Nabi Muhammad SAW, keluarga, serta para sahabatnya.
@@ -665,9 +700,13 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       ttdSekretarisPos: { x: number; y: number };
     }
   ) => {
-    const { id, created_at, ...rawPayload } = currentFormData as any;
+    const { id, ...rawPayload } = currentFormData as any;
+    const isoDateFromText = parseIndonesianDateToIso(rawPayload.tempat_tanggal);
+    const resolvedCreatedAt = rawPayload.created_at || (isoDateFromText ? new Date(isoDateFromText + 'T12:00:00.000Z').toISOString() : new Date().toISOString());
+
     const payload: any = {
       ...rawPayload,
+      created_at: resolvedCreatedAt,
       logo_url: getValidAssetUrl(rawPayload.logo_url, DEFAULT_LOGO_URL),
       ttd_ketua_url: getValidAssetUrl(rawPayload.ttd_ketua_url, DEFAULT_TTD_KETUA_URL),
       ttd_sekretaris_url: getValidAssetUrl(rawPayload.ttd_sekretaris_url, DEFAULT_TTD_SEKRETARIS_URL),
@@ -682,7 +721,7 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
 
     try {
       if (currentEditId && !currentEditId.toString().startsWith('local_')) {
-        const upsertPayload = { ...payload, id: currentEditId };
+        const upsertPayload = { ...payload, id: currentEditId, created_at: resolvedCreatedAt };
         const { error } = await supabase.from('arsip_surat').upsert([upsertPayload]);
         if (error) {
           const { logo_pos, stempel_pos, ttd_ketua_pos, ttd_sekretaris_pos, ...safePayload } = upsertPayload;
@@ -703,7 +742,7 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     }
 
     const targetId = resultId || currentEditId || 'local_' + Date.now();
-    const localItem = { ...payload, id: targetId, created_at: created_at || new Date().toISOString() };
+    const localItem = { ...payload, id: targetId, created_at: resolvedCreatedAt };
 
     // 1. Post to Express Server API store for real-time cross-deployment persistence & SSE
     try {
@@ -1298,9 +1337,12 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     setTtdKetuaPos(surat.ttd_ketua_pos || { x: 0, y: 0 });
     setTtdSekretarisPos(surat.ttd_sekretaris_pos || { x: 0, y: 0 });
 
+    const initialCreatedAt = surat.created_at || (parseIndonesianDateToIso(surat.tempat_tanggal) ? new Date(parseIndonesianDateToIso(surat.tempat_tanggal) + 'T12:00:00.000Z').toISOString() : new Date().toISOString());
+
     setFormData({
       ...defaultForm,
       ...surat,
+      created_at: initialCreatedAt,
       ttd_ketua_url: getValidAssetUrl(surat.ttd_ketua_url, DEFAULT_TTD_KETUA_URL),
       ttd_sekretaris_url: getValidAssetUrl(surat.ttd_sekretaris_url, DEFAULT_TTD_SEKRETARIS_URL),
       cap_stempel_url: getValidAssetUrl(surat.cap_stempel_url, DEFAULT_CAP_STEMPEL_URL),
@@ -1327,9 +1369,12 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     setTtdKetuaPos(surat.ttd_ketua_pos || { x: 0, y: 0 });
     setTtdSekretarisPos(surat.ttd_sekretaris_pos || { x: 0, y: 0 });
 
+    const initialCreatedAt = surat.created_at || (parseIndonesianDateToIso(surat.tempat_tanggal) ? new Date(parseIndonesianDateToIso(surat.tempat_tanggal) + 'T12:00:00.000Z').toISOString() : new Date().toISOString());
+
     setFormData({
       ...defaultForm,
       ...surat,
+      created_at: initialCreatedAt,
       ttd_ketua_url: getValidAssetUrl(surat.ttd_ketua_url, DEFAULT_TTD_KETUA_URL),
       ttd_sekretaris_url: getValidAssetUrl(surat.ttd_sekretaris_url, DEFAULT_TTD_SEKRETARIS_URL),
       cap_stempel_url: getValidAssetUrl(surat.cap_stempel_url, DEFAULT_CAP_STEMPEL_URL),
@@ -2243,7 +2288,7 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="font-bold text-xs sm:text-sm text-blue-400 uppercase tracking-tight">{s.nomor_surat}</p>
                   <span className="px-2 py-0.5 rounded-full text-[8px] sm:text-[9px] font-black uppercase border border-blue-500/20 bg-blue-500/10 text-blue-300 inline-block">
-                    {new Date(s.created_at).toLocaleDateString('id-ID')}
+                    {s.tempat_tanggal ? (s.tempat_tanggal.split(', ')[1] || s.tempat_tanggal) : (s.created_at ? new Date(s.created_at).toLocaleDateString('id-ID') : '-')}
                   </span>
                 </div>
                 <p className="text-slate-300 text-xs sm:text-sm font-medium mt-1 break-words line-clamp-2">{s.perihal}</p>
@@ -2459,8 +2504,8 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                   </div>
 
                   {/* SECTION 3: Detail Utama Surat (Hal. 1) */}
-                  <div className="p-3 bg-white/5 border border-white/10 rounded-2xl space-y-2">
-                    <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">Detail Dokumen (Hal. 1)</p>
+                  <div className="p-3 bg-white/5 border border-white/10 rounded-2xl space-y-3">
+                    <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">Detail Dokumen & Tanggal Surat (Hal. 1)</p>
                     <div>
                       <div className="flex items-center justify-between mb-1">
                         <label className="text-[10px] font-bold text-slate-400 uppercase">Nomor Surat</label>
@@ -2472,23 +2517,79 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                           Generate Otomatis Berikutnya
                         </button>
                       </div>
-                      <input type="text" className="w-full p-2.5 bg-black/40 border border-white/10 rounded-lg text-xs font-mono text-blue-400" value={formData.nomor_surat || ''} onChange={(e)=>setFormData({...formData, nomor_surat: e.target.value})} />
+                      <input type="text" className="w-full p-2.5 bg-black/40 border border-white/10 rounded-lg text-xs font-mono text-blue-400 font-bold" value={formData.nomor_surat || ''} onChange={(e)=>setFormData({...formData, nomor_surat: e.target.value})} />
+                    </div>
+
+                    {/* Tanggal Pembuatan Surat (Kalender & Teks Format Resmi) */}
+                    <div className="p-2.5 bg-blue-950/30 border border-blue-500/20 rounded-xl space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[10px] font-black text-blue-300 uppercase tracking-wider flex items-center gap-1.5">
+                          <Calendar size={13} className="text-blue-400" />
+                          Tanggal Pembuatan Surat
+                        </label>
+                        <span className="text-[9px] text-slate-400 font-medium">Kalender &amp; Format Teks</span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-[9px] font-bold text-slate-400 uppercase block mb-1">Pilih Tanggal (Kalender)</label>
+                          <input 
+                            type="date" 
+                            className="w-full p-2 bg-black/60 border border-white/15 rounded-lg text-xs text-blue-300 font-bold outline-none cursor-pointer focus:border-blue-500"
+                            value={getSafeIsoDate(formData.created_at, formData.tempat_tanggal)}
+                            onChange={(e) => {
+                              const newIso = e.target.value;
+                              if (newIso) {
+                                const [y, m, d] = newIso.split('-').map(Number);
+                                const dateObj = new Date(y, m - 1, d, 12, 0, 0);
+                                const bulan = BULAN_INDONESIA[m - 1] || '';
+                                
+                                const existingCity = formData.tempat_tanggal?.includes(',') 
+                                  ? formData.tempat_tanggal.split(',')[0].trim() 
+                                  : 'Parepare';
+                                
+                                const newTempatTanggal = `${existingCity}, ${d} ${bulan} ${y}`;
+                                
+                                setFormData(prev => ({
+                                  ...prev,
+                                  created_at: dateObj.toISOString(),
+                                  tempat_tanggal: newTempatTanggal
+                                }));
+                              }
+                            }}
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[9px] font-bold text-slate-400 uppercase block mb-1">Tempat & Tanggal Surat (Teks)</label>
+                          <input 
+                            type="text" 
+                            className="w-full p-2 bg-black/60 border border-white/15 rounded-lg text-xs text-white font-bold outline-none focus:border-blue-500" 
+                            value={formData.tempat_tanggal || ''} 
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              const parsedIso = parseIndonesianDateToIso(val);
+                              setFormData(prev => ({
+                                ...prev,
+                                tempat_tanggal: val,
+                                ...(parsedIso ? { created_at: new Date(parsedIso + 'T12:00:00.000Z').toISOString() } : {})
+                              }));
+                            }} 
+                            placeholder="Parepare, 27 Februari 2026" 
+                          />
+                        </div>
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="text-[10px] font-bold text-slate-400 uppercase">Tempat & Tanggal</label>
-                        <input type="text" className="w-full p-2.5 bg-black/40 border border-white/10 rounded-lg text-xs text-white" value={formData.tempat_tanggal || ''} onChange={(e)=>setFormData({...formData, tempat_tanggal: e.target.value})} placeholder="Parepare, 27 Februari 2026" />
-                      </div>
-                      <div>
                         <label className="text-[10px] font-bold text-slate-400 uppercase">Lampiran</label>
                         <input type="text" className="w-full p-2.5 bg-black/40 border border-white/10 rounded-lg text-xs text-white" value={formData.lampiran || ''} onChange={(e)=>setFormData({...formData, lampiran: e.target.value})} placeholder="1 Lembar / -" />
                       </div>
-                    </div>
-
-                    <div>
-                      <label className="text-[10px] font-bold text-slate-400 uppercase">Perihal</label>
-                      <textarea className="w-full p-2.5 bg-black/40 border border-white/10 rounded-lg text-xs h-16 text-white" value={formData.perihal || ''} onChange={(e)=>setFormData({...formData, perihal: e.target.value})} />
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase">Perihal</label>
+                        <textarea className="w-full p-2.5 bg-black/40 border border-white/10 rounded-lg text-xs h-10 text-white resize-none" value={formData.perihal || ''} onChange={(e)=>setFormData({...formData, perihal: e.target.value})} />
+                      </div>
                     </div>
 
                     {formData.show_recipient && (
@@ -3194,9 +3295,75 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                             </tbody>
                           </table>
 
-                          <div className="mt-10 text-right text-[11pt] font-serif text-black">
-                            <p>Parepare, {formData.tempat_tanggal.split(', ')[1] || formData.tempat_tanggal}</p>
-                            <p className="font-bold mt-1">Pengurus PB Bilibili 162</p>
+                          {/* Formal Authorization Footer for Lampiran (Page 2) */}
+                          <div className="mt-8 pt-4 border-t border-slate-300">
+                            <div className="text-right text-[11pt] font-serif text-black mb-4">
+                              <p>{formData.tempat_tanggal}</p>
+                              <p className="font-bold text-sm tracking-wide mt-0.5 uppercase">PENGURUS PB BILIBILI 162 PAREPARE</p>
+                            </div>
+
+                            <div className="flex justify-between px-10 relative text-black">
+                              {/* Ketua */}
+                              <div className="text-center w-48 relative">
+                                <p className="mb-16 font-medium">Ketua,</p>
+                                <div 
+                                  style={{
+                                    transform: `translate(${ttdKetuaPos.x}px, ${ttdKetuaPos.y}px)`,
+                                    height: `${80 * ((formData.ttd_ketua_scale || 100) / 100)}px`,
+                                    minWidth: `${120 * ((formData.ttd_ketua_scale || 100) / 100)}px`,
+                                  }}
+                                  className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center justify-center pointer-events-none z-10"
+                                >
+                                  <img 
+                                    src={getValidAssetUrl(formData.ttd_ketua_url, DEFAULT_TTD_KETUA_URL)} 
+                                    alt="TTD Ketua" 
+                                    crossOrigin="anonymous"
+                                    onError={(e) => { e.currentTarget.src = DEFAULT_TTD_KETUA_URL; }}
+                                    className="h-full object-contain mix-blend-multiply" 
+                                  />
+                                </div>
+                                
+                                <div 
+                                  style={{ 
+                                    transform: `translate(${stempelPos.x}px, ${stempelPos.y}px)`,
+                                    width: `${112 * ((formData.stempel_scale || 100) / 100)}px`,
+                                    height: `${112 * ((formData.stempel_scale || 100) / 100)}px`,
+                                  }}
+                                  className="absolute top-4 left-1/2 pointer-events-none z-20"
+                                >
+                                  <img 
+                                    src={getValidAssetUrl(formData.cap_stempel_url, DEFAULT_CAP_STEMPEL_URL)} 
+                                    alt="Cap Stempel" 
+                                    crossOrigin="anonymous"
+                                    onError={(e) => { e.currentTarget.src = DEFAULT_CAP_STEMPEL_URL; }}
+                                    className="w-full h-full object-contain opacity-80 mix-blend-darken" 
+                                  />
+                                </div>
+                                <p className="font-bold underline uppercase whitespace-nowrap">{formData.nama_ketua}</p>
+                              </div>
+
+                              {/* Sekretaris */}
+                              <div className="text-center w-48 relative">
+                                <p className="mb-16 font-medium">Sekretaris,</p>
+                                <div 
+                                  style={{
+                                    transform: `translate(${ttdSekretarisPos.x}px, ${ttdSekretarisPos.y}px)`,
+                                    height: `${80 * ((formData.ttd_sekretaris_scale || 100) / 100)}px`,
+                                    minWidth: `${120 * ((formData.ttd_sekretaris_scale || 100) / 100)}px`,
+                                  }}
+                                  className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center justify-center pointer-events-none z-10"
+                                >
+                                  <img 
+                                    src={getValidAssetUrl(formData.ttd_sekretaris_url, DEFAULT_TTD_SEKRETARIS_URL)} 
+                                    alt="TTD Sekretaris" 
+                                    crossOrigin="anonymous"
+                                    onError={(e) => { e.currentTarget.src = DEFAULT_TTD_SEKRETARIS_URL; }}
+                                    className="h-full object-contain mix-blend-multiply" 
+                                  />
+                                </div>
+                                <p className="font-bold underline uppercase whitespace-nowrap">{formData.nama_sekretaris}</p>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       )}
