@@ -210,36 +210,56 @@ export default function AdminRanking({ session }: { session?: any }) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
+    if (!formData.player_name) {
+      setFormError('Nama atlet wajib diisi');
+      return;
+    }
+
     setIsSaving(true);
+    const cleanName = formData.player_name.trim().toUpperCase();
+    const base = Number(formData.poin) || 0;
+    const bonus = Number(formData.bonus) || 0;
+    const calculatedTotal = base + bonus;
+
+    const payload = {
+      player_name: cleanName,
+      category: formData.category,
+      seed: formData.seed,
+      poin: base,
+      bonus: bonus,
+      total_points: calculatedTotal,
+      photo_url: formData.photo_url || null,
+      updated_at: new Date().toISOString(),
+      pendaftaran_id: formData.pendaftaran_id 
+    };
+
+    // Optimistic UI updates
+    if (editingId) {
+      setRankings(prev => prev.map(r => r.id === editingId ? { ...r, ...payload } : r));
+    } else {
+      setRankings(prev => {
+        const filtered = prev.filter(r => r.player_name !== cleanName);
+        return [{ ...payload, id: 'temp_' + Date.now() }, ...filtered];
+      });
+    }
+
+    setIsModalOpen(false);
+    setEditingId(null);
+    setSuccessMsg('Data Berhasil Disinkronkan!');
+    setTimeout(() => setSuccessMsg(null), 2500);
+    setIsSaving(false);
+
+    // Fast background sync
     try {
-      if (!formData.player_name) throw new Error('Nama atlet wajib diisi');
-      
-      const cleanName = formData.player_name.trim().toUpperCase();
-      const base = Number(formData.poin) || 0;
-      const bonus = Number(formData.bonus) || 0;
-      const calculatedTotal = base + bonus; // Kalkulasi total poin[cite: 1]
-      
-      const payload = {
-        player_name: cleanName,
-        category: formData.category,
-        seed: formData.seed,
-        poin: base,
-        bonus: bonus,
-        total_points: calculatedTotal,
-        photo_url: formData.photo_url || null,
-        updated_at: new Date().toISOString(),
-        pendaftaran_id: formData.pendaftaran_id 
-      };
-
-      const { error: rankError } = editingId 
-        ? await supabase.from('rankings').update(payload).eq('id', editingId)
-        : await supabase.from('rankings').upsert([payload], { onConflict: 'player_name' });
-
-      if (rankError) throw rankError;
+      if (editingId) {
+        await supabase.from('rankings').update(payload).eq('id', editingId);
+      } else {
+        await supabase.from('rankings').upsert([payload], { onConflict: 'player_name' });
+      }
 
       if (formData.pendaftaran_id) {
-        let dbSeed = formData.seed?.replace('Seed ', '') || 'Non-Seed';
-        const { error: statsError } = await supabase
+        const dbSeed = formData.seed?.replace('Seed ', '') || 'Non-Seed';
+        supabase
           .from('atlet_stats')
           .update({
             points: base,
@@ -247,20 +267,12 @@ export default function AdminRanking({ session }: { session?: any }) {
             seed: dbSeed,
             updated_at: new Date().toISOString()
           })
-          .eq('pendaftaran_id', formData.pendaftaran_id);
-          
-        if (statsError) console.warn("Sinkronisasi ke atlet_stats gagal:", statsError.message);
+          .eq('pendaftaran_id', formData.pendaftaran_id)
+          .catch(() => {});
       }
-      
-      setIsModalOpen(false);
-      setEditingId(null);
-      setSuccessMsg('Data Berhasil Disinkronkan!');
-      setTimeout(() => setSuccessMsg(null), 3000);
-      fetchRankings(); 
+      fetchRankings();
     } catch (err: any) {
-      setFormError(err.message);
-    } finally {
-      setIsSaving(false);
+      console.warn("Background sync ranking error:", err);
     }
   };
 

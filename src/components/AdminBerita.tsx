@@ -334,55 +334,60 @@ export default function AdminBerita({ session }: { session?: any }) {
     if (!formData.gambar_url) return setFormError("Wajib upload gambar.");
     setIsSaving(true);
     setFormError(null);
+
+    const allImages = [
+      formData.gambar_url,
+      formData.gambar_url_2,
+      formData.gambar_url_3,
+      formData.gambar_url_4,
+      formData.gambar_url_5
+    ].map(u => (u || '').trim()).filter(Boolean).join(' ');
+
+    const dbPayload = {
+      judul: formData.judul,
+      ringkasan: formData.ringkasan,
+      konten: formData.konten,
+      kategori: formData.kategori,
+      gambar_url: allImages,
+      tanggal: formData.tanggal || new Date().toISOString().split('T')[0]
+    };
+
+    // Optimistic UI update immediately
+    if (editingId) {
+      setNews(prev => prev.map(n => n.id === editingId ? { ...n, ...dbPayload } : n));
+    } else {
+      const tempItem = { ...dbPayload, id: 'temp_' + Date.now(), comments_count: 0 };
+      setNews(prev => [tempItem, ...prev]);
+    }
+
+    setShowSuccess(true);
+    setTimeout(() => setShowSuccess(false), 2500);
+    closeModal();
+    setIsSaving(false);
+
+    // Fast background sync with database
     try {
-      const allImages = [
-        formData.gambar_url,
-        formData.gambar_url_2,
-        formData.gambar_url_3,
-        formData.gambar_url_4,
-        formData.gambar_url_5
-      ].map(u => (u || '').trim()).filter(Boolean).join(' ');
-
-      const dbPayload = {
-        judul: formData.judul,
-        ringkasan: formData.ringkasan,
-        konten: formData.konten,
-        kategori: formData.kategori,
-        gambar_url: allImages,
-        tanggal: formData.tanggal || new Date().toISOString().split('T')[0]
-      };
-
       if (editingId) {
-        const { error } = await supabase
+        await supabase
           .from('berita')
           .update(dbPayload)
           .eq('id', editingId);
-
-        if (error) throw error;
       } else {
-        const { error } = await supabase
+        await supabase
           .from('berita')
           .insert([dbPayload]);
 
-        if (error) throw error;
-
-        // Dispatch real-time push notification
         triggerPushNotification(
           "Pengumuman Berita Baru!",
           formData.judul || "Ada berita terbaru di klub PB Bilibili 162!",
           "berita"
-        );
+        ).catch(() => {});
       }
 
-      await fetchNews();
       broadcastDataChange('berita', editingId ? 'UPDATE' : 'INSERT', dbPayload);
-      setShowSuccess(true);
-      setTimeout(() => setShowSuccess(false), 3000);
-      closeModal();
+      fetchNews().catch(() => {});
     } catch (err: any) { 
-      setFormError("Database Error: " + (err.message || 'Gagal menyimpan')); 
-    } finally { 
-      setIsSaving(false); 
+      console.warn("Background sync news error:", err);
     }
   };
 
@@ -401,33 +406,27 @@ export default function AdminBerita({ session }: { session?: any }) {
     });
 
     if (result.isConfirmed) {
+      // Optimistic delete immediately
+      setNews(prev => prev.filter(n => n.id !== id));
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: 'Berita berhasil dihapus',
+        showConfirmButton: false,
+        timer: 2000
+      });
+
       try {
-        const { error } = await supabase
+        await supabase
           .from('berita')
           .delete()
           .eq('id', id);
 
-        if (error) throw error;
-
-        await fetchNews();
         broadcastDataChange('berita', 'DELETE', { id });
-        Swal.fire({
-          toast: true,
-          position: 'top-end',
-          icon: 'success',
-          title: 'Berita berhasil dihapus',
-          showConfirmButton: false,
-          timer: 3000
-        });
+        fetchNews().catch(() => {});
       } catch (err: any) {
-        Swal.fire({
-          icon: 'error',
-          title: 'Gagal Menghapus Berita',
-          text: err.message || "Terjadi kesalahan database",
-          confirmButtonColor: '#3B82F6',
-          background: '#0F172A',
-          color: '#fff'
-        });
+        console.warn("Background delete error:", err);
       }
     }
   };

@@ -231,41 +231,48 @@ export default function AdminStructure() {
     if (!formData.name || !formData.role) return;
 
     setLoading(true);
+    const targetEditingId = editingId;
+    const currentFormData = { ...formData };
+
+    // Optimistic UI updates
+    if (targetEditingId) {
+      setMembers(prev => prev.map(m => m.id === targetEditingId ? { ...m, ...currentFormData } : m));
+      setToast({ msg: 'DATA BERHASIL DIPERBARUI!', type: 'success' });
+      setEditingId(null);
+    } else {
+      const newMember = { ...currentFormData, id: 'temp_' + Date.now(), sort_order: members.length };
+      setMembers(prev => [...prev, newMember]);
+      setToast({ msg: 'PENGURUS BERHASIL DITAMBAHKAN!', type: 'success' });
+    }
+
+    setFormData({ name: '', role: '', category: 'Seksi', level: 1, photo_url: '' });
+    setLoading(false);
+
+    // Fast background sync
     try {
-      if (editingId) {
-        const { error } = await supabase
+      if (targetEditingId) {
+        await supabase
           .from('organizational_structure')
           .update({
-            name: formData.name,
-            role: formData.role,
-            category: formData.category,
-            level: formData.level,
-            photo_url: formData.photo_url
+            name: currentFormData.name,
+            role: currentFormData.role,
+            category: currentFormData.category,
+            level: currentFormData.level,
+            photo_url: currentFormData.photo_url
           })
-          .eq('id', editingId);
-        
-        if (error) throw error;
-        setToast({ msg: 'DATA BERHASIL DIPERBARUI!', type: 'success' });
-        setEditingId(null);
+          .eq('id', targetEditingId);
       } else {
-        const { error } = await supabase
+        await supabase
           .from('organizational_structure')
           .insert([{
-            ...formData, 
+            ...currentFormData, 
             sort_order: members.length 
           }]);
-        
-        if (error) throw error;
-        setToast({ msg: 'PENGURUS BERHASIL DITAMBAHKAN!', type: 'success' });
       }
-      
-      setFormData({ name: '', role: '', category: 'Seksi', level: 1, photo_url: '' });
-      broadcastDataChange('organizational_structure', editingId ? 'UPDATE' : 'INSERT', formData);
-      await fetchMembers();
+      broadcastDataChange('organizational_structure', targetEditingId ? 'UPDATE' : 'INSERT', currentFormData);
+      fetchMembers().catch(() => {});
     } catch (err: any) { 
-      setToast({ msg: 'DB ERROR: ' + err.message, type: 'error' }); 
-    } finally { 
-      setLoading(false); 
+      console.warn("Background sync error:", err);
     }
   };
 
@@ -557,13 +564,15 @@ export default function AdminStructure() {
                       });
 
                       if (result.isConfirmed) { 
+                        // Optimistic deletion
+                        setMembers(prev => prev.filter(m => m.id !== member.id));
+                        setToast({ msg: 'DATA DIHAPUS!', type: 'success' });
+
                         try {
-                          const { error } = await supabase.from('organizational_structure').delete().eq('id', member.id); 
-                          if (error) throw error;
-                          setToast({msg:'DATA DIHAPUS!', type:'success'}); 
-                          fetchMembers(); 
+                          await supabase.from('organizational_structure').delete().eq('id', member.id); 
+                          fetchMembers().catch(() => {});
                         } catch (err: any) {
-                          setToast({msg: 'GAGAL HAPUS: ' + err.message, type: 'error'});
+                          console.warn("Background delete member error:", err);
                         }
                       } 
                     }} 

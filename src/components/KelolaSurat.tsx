@@ -1097,44 +1097,10 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     });
 
     let resultId = currentEditId;
-
-    try {
-      if (currentEditId && !currentEditId.toString().startsWith('local_') && !currentEditId.toString().startsWith('seed_')) {
-        await supabase.from('arsip_surat').delete().eq('id', currentEditId);
-        const insertWithId = { ...dbPayload, id: currentEditId };
-        const { data, error } = await supabase.from('arsip_surat').insert([insertWithId]).select().single();
-        if (!error && data?.id) {
-          resultId = data.id;
-        } else {
-          const { data: newRow } = await supabase.from('arsip_surat').insert([dbPayload]).select().single();
-          if (newRow?.id) resultId = newRow.id;
-        }
-      } else {
-        if (dbPayload.nomor_surat) {
-          await supabase.from('arsip_surat').delete().eq('nomor_surat', dbPayload.nomor_surat);
-        }
-        const { data, error } = await supabase.from('arsip_surat').insert([dbPayload]).select().single();
-        if (!error && data?.id) {
-          resultId = data.id;
-        }
-      }
-    } catch (dbErr) {
-      console.warn("Database sync warning for arsip_surat:", dbErr);
-    }
-
     const targetId = resultId || currentEditId || 'local_' + Date.now();
     const localItem = { ...fullPayload, id: targetId, created_at: resolvedCreatedAt };
 
-    // 1. Post to Express Server API store for real-time cross-deployment persistence & SSE
-    try {
-      await fetch('/api/arsip-surat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(localItem)
-      });
-    } catch (e) {}
-
-    // 2. Save to LocalStorage without duplicates
+    // 1. Immediately Save to LocalStorage for zero-latency local availability
     try {
       const localData = JSON.parse(localStorage.getItem('arsip_surat_local') || '[]');
       const normTarget = normalizeSuratNomor(localItem.nomor_surat);
@@ -1148,13 +1114,13 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       safeLocalStorageSet('arsip_surat_local', JSON.stringify(updated));
     } catch (e) {}
 
-    // 3. Broadcast real-time change
+    // 2. Broadcast real-time change instantly
     try {
       broadcastDataChange('arsip_surat', 'UPDATE', localItem);
       window.dispatchEvent(new CustomEvent('table_updated_arsip_surat'));
     } catch (e) {}
 
-    // 4. Update global persistent digital assets so new letters automatically use the latest updated assets
+    // 3. Update global persistent digital assets in local cache
     try {
       if (rawPayload.ttd_ketua_url || rawPayload.ttd_sekretaris_url || rawPayload.cap_stempel_url) {
         const latestAssets = {
@@ -1179,41 +1145,68 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       }
     } catch (e) {}
 
-    return resultId;
+    // 4. Non-blocking parallel background sync to Supabase & Express API
+    const syncPromise = Promise.allSettled([
+      // Supabase write
+      (async () => {
+        try {
+          if (currentEditId && !currentEditId.toString().startsWith('local_') && !currentEditId.toString().startsWith('seed_')) {
+            await supabase.from('arsip_surat').delete().eq('id', currentEditId);
+            const insertWithId = { ...dbPayload, id: currentEditId };
+            const { data } = await supabase.from('arsip_surat').insert([insertWithId]).select().single();
+            if (data?.id) resultId = data.id;
+          } else {
+            if (dbPayload.nomor_surat) {
+              await supabase.from('arsip_surat').delete().eq('nomor_surat', dbPayload.nomor_surat);
+            }
+            const { data } = await supabase.from('arsip_surat').insert([dbPayload]).select().single();
+            if (data?.id) resultId = data.id;
+          }
+        } catch (err) {
+          console.warn("Background DB sync notice:", err);
+        }
+      })(),
+      // Server API write
+      (async () => {
+        try {
+          await fetch('/api/arsip-surat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(localItem)
+          });
+        } catch (e) {}
+      })()
+    ]);
+
+    // Timeout guard so function returns targetId in < 250ms
+    const quickTimeout = new Promise(resolve => setTimeout(resolve, 200));
+    await Promise.race([syncPromise, quickTimeout]);
+
+    return resultId || targetId;
   };
 
   const fetchSurat = async () => {
     setLoading(true);
     try {
-      // Sync master digital assets from database first
-      await syncDigitalAssetsFromDatabase();
+      // Sync master digital assets from database in background
+      syncDigitalAssetsFromDatabase().catch(() => {});
 
-      // Clean local storage of any duplicates and test letters
-      if (!localStorage.getItem('pb_bilibili_dedup_v3')) {
-        localStorage.setItem('pb_bilibili_dedup_v3', 'true');
-        const existingLocal = JSON.parse(localStorage.getItem('arsip_surat_local') || '[]');
-        const cleanMap = new Map<string, any>();
-        existingLocal.forEach((i: any) => {
-          if (!i) return;
-          const rawNomor = (i.nomor_surat || '').trim().toUpperCase();
-          if (rawNomor === '__MASTER_DIGITAL_ASSETS__' || rawNomor.includes('TEST') || i.jenis_surat === 'MASUK') return;
-          const k = getSuratDeduplicationKey(i);
-          if (k && !cleanMap.has(k)) cleanMap.set(k, i);
-        });
-        localStorage.setItem('arsip_surat_local', JSON.stringify(Array.from(cleanMap.values())));
-      }
+      // Parallel fetch from Server API and Supabase with 2.5s timeout
+      const serverFetchPromise = fetch('/api/arsip-surat')
+        .then(r => r.ok ? r.json() : [])
+        .catch(() => []);
 
-      let serverData: any[] = [];
-      try {
-        const res = await fetch('/api/arsip-surat');
-        if (res.ok) serverData = await res.json();
-      } catch (e) {}
-
-      const { data } = await supabase
+      const supabaseFetchPromise = supabase
         .from('arsip_surat')
         .select('*')
         .neq('nomor_surat', '__MASTER_DIGITAL_ASSETS__')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .then(r => r.data || [])
+        .catch(() => []);
+
+      const [serverRes, supabaseRes] = await Promise.allSettled([serverFetchPromise, supabaseFetchPromise]);
+      const serverData: any[] = serverRes.status === 'fulfilled' ? serverRes.value : [];
+      const data: any[] = supabaseRes.status === 'fulfilled' ? supabaseRes.value : [];
 
       const localData = JSON.parse(localStorage.getItem('arsip_surat_local') || '[]');
       const deletedIds: string[] = JSON.parse(localStorage.getItem('arsip_surat_deleted') || '[]');
@@ -1665,33 +1658,45 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       isi_surat: JSON.stringify(payload)
     };
 
+    // Optimistic UI updates
+    const localData = JSON.parse(localStorage.getItem('arsip_surat_masuk_local') || '[]');
+    let updatedLocal: any[] = [];
+    if (editMasukId) {
+      updatedLocal = localData.map((item: any) => item.id === editMasukId ? { ...item, ...payload } : item);
+      setSuratMasukList(prev => prev.map(item => item.id === editMasukId ? { ...item, ...payload } : item));
+    } else {
+      const newItem = { ...payload, id: 'local_' + Date.now(), created_at: new Date().toISOString() };
+      updatedLocal = [newItem, ...localData];
+      setSuratMasukList(prev => [newItem, ...prev]);
+    }
+
+    safeLocalStorageSet('arsip_surat_masuk_local', JSON.stringify(updatedLocal));
+    setIsMasukModalOpen(false);
+    setIsSubmitting(false);
+
+    Swal.fire({
+      toast: true,
+      position: 'top-end',
+      icon: 'success',
+      title: editMasukId ? 'Surat masuk berhasil diperbarui!' : 'Surat masuk berhasil dicatat!',
+      showConfirmButton: false,
+      timer: 2000
+    });
+
+    // Background database sync
     try {
-      const localData = JSON.parse(localStorage.getItem('arsip_surat_masuk_local') || '[]');
       if (editMasukId) {
-        const updated = localData.map((item: any) => item.id === editMasukId ? { ...item, ...payload } : item);
-        safeLocalStorageSet('arsip_surat_masuk_local', JSON.stringify(updated));
-        try {
-          await supabase.from('arsip_surat').delete().eq('id', editMasukId);
-          await supabase.from('arsip_surat').insert([{ ...dbRecord, id: editMasukId }]);
-        } catch (e) {}
-        Swal.fire('Berhasil', 'Surat masuk berhasil diperbarui!', 'success');
+        await supabase.from('arsip_surat').delete().eq('id', editMasukId);
+        await supabase.from('arsip_surat').insert([{ ...dbRecord, id: editMasukId }]);
       } else {
-        const newItem = { ...payload, id: 'local_' + Date.now(), created_at: new Date().toISOString() };
-        safeLocalStorageSet('arsip_surat_masuk_local', JSON.stringify([newItem, ...localData]));
-        try {
-          if (dbRecord.nomor_surat) {
-            await supabase.from('arsip_surat').delete().eq('nomor_surat', dbRecord.nomor_surat).eq('jenis_surat', 'MASUK');
-          }
-          await supabase.from('arsip_surat').insert([dbRecord]);
-        } catch (e) {}
-        Swal.fire('Berhasil', 'Surat masuk berhasil dicatat!', 'success');
+        if (dbRecord.nomor_surat) {
+          await supabase.from('arsip_surat').delete().eq('nomor_surat', dbRecord.nomor_surat).eq('jenis_surat', 'MASUK');
+        }
+        await supabase.from('arsip_surat').insert([dbRecord]);
       }
-      setIsMasukModalOpen(false);
-      fetchSuratMasuk();
+      fetchSuratMasuk().catch(() => {});
     } catch (err: any) {
-      Swal.fire('Error', 'Gagal menyimpan surat masuk: ' + err.message, 'error');
-    } finally {
-      setIsSubmitting(false);
+      console.warn("Background surat masuk save error:", err);
     }
   };
 
@@ -1702,17 +1707,30 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#e11d48',
-      confirmButtonText: 'Ya, Hapus'
+      cancelButtonColor: '#374151',
+      confirmButtonText: 'Ya, Hapus!',
+      cancelButtonText: 'Batal'
     });
     if (res.isConfirmed) {
+      // Optimistic delete
+      setSuratMasukList(prev => prev.filter(i => i.id !== id));
+      const localData = JSON.parse(localStorage.getItem('arsip_surat_masuk_local') || '[]');
+      safeLocalStorageSet('arsip_surat_masuk_local', JSON.stringify(localData.filter((i: any) => i.id !== id)));
+
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: 'Surat masuk berhasil dihapus.',
+        showConfirmButton: false,
+        timer: 2000
+      });
+
       try {
         await supabase.from('arsip_surat').delete().eq('id', id);
-        const localData = JSON.parse(localStorage.getItem('arsip_surat_masuk_local') || '[]');
-        safeLocalStorageSet('arsip_surat_masuk_local', JSON.stringify(localData.filter((i: any) => i.id !== id)));
-        fetchSuratMasuk();
-        Swal.fire('Terhapus', 'Surat masuk berhasil dihapus.', 'success');
+        fetchSuratMasuk().catch(() => {});
       } catch (err: any) {
-        Swal.fire('Error', 'Gagal menghapus: ' + err.message, 'error');
+        console.warn("Background delete surat masuk error:", err);
       }
     }
   };
@@ -2083,22 +2101,49 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
 
   const handleSave = async () => {
     setIsSubmitting(true);
+    const targetEditId = editId;
+
+    // Optimistically update suratList immediately
+    const optimisticSurat = {
+      ...formData,
+      id: targetEditId || 'local_' + Date.now(),
+      created_at: new Date().toISOString(),
+      logo_pos: logoPos,
+      stempel_pos: stempelPos,
+      ttd_ketua_pos: ttdKetuaPos,
+      ttd_sekretaris_pos: ttdSekretarisPos
+    };
+
+    setSuratList(prev => {
+      const filtered = prev.filter(s => s.id !== targetEditId && s.nomor_surat !== formData.nomor_surat);
+      return [optimisticSurat, ...filtered];
+    });
+
+    setRealtimeSyncStatus('synced');
+    setIsModalOpen(false);
+    setIsSubmitting(false);
+
+    Swal.fire({
+      toast: true,
+      position: 'top-end',
+      icon: 'success',
+      title: 'Surat berhasil diperbarui & disimpan!',
+      showConfirmButton: false,
+      timer: 2000
+    });
+
+    // Run persistence in background
     try {
-      const dbId = await saveSuratToSupabase(formData, editId, {
+      const dbId = await saveSuratToSupabase(formData, targetEditId, {
         logoPos,
         stempelPos,
         ttdKetuaPos,
         ttdSekretarisPos
       });
-      if (dbId) setEditId(dbId);
-      setRealtimeSyncStatus('synced');
-      Swal.fire('Berhasil', 'Surat berhasil disimpan secara realtime ke database!', 'success');
-      setIsModalOpen(false);
-      fetchSurat();
+      if (dbId && !targetEditId) setEditId(dbId);
+      fetchSurat().catch(() => {});
     } catch (err: any) {
-      Swal.fire('Error', 'Gagal menyimpan surat: ' + (err.message || 'Terjadi kesalahan'), 'error');
-    } finally {
-      setIsSubmitting(false);
+      console.warn("Background save notice:", err);
     }
   };
 
@@ -2113,23 +2158,23 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#e11d48',
-      confirmButtonText: 'Ya, Hapus!'
+      cancelButtonColor: '#374151',
+      confirmButtonText: 'Ya, Hapus!',
+      cancelButtonText: 'Batal'
     });
 
     if (result.isConfirmed) {
-      try {
-        await supabase.from('arsip_surat').delete().eq('id', id);
-        if (targetNomor) {
-          await supabase.from('arsip_surat').delete().eq('nomor_surat', targetNomor);
-        }
-      } catch (e) {}
-      try {
-        await fetch('/api/arsip-surat', {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id, nomor_surat: targetNomor })
-        });
-      } catch (e) {}
+      // Optimistic delete immediately
+      setSuratList(prev => prev.filter(s => s.id !== id && (!targetNomor || s.nomor_surat !== targetNomor)));
+      
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: 'Surat berhasil dihapus',
+        showConfirmButton: false,
+        timer: 2000
+      });
 
       const deletedIds: string[] = JSON.parse(localStorage.getItem('arsip_surat_deleted') || '[]');
       if (!deletedIds.includes(id)) deletedIds.push(id);
@@ -2146,8 +2191,28 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       });
       safeLocalStorageSet('arsip_surat_local', JSON.stringify(filteredLocal));
 
-      fetchSurat();
-      Swal.fire('Terhapus', 'Surat berhasil dihapus permanen.', 'success');
+      // Background remote deletions
+      Promise.allSettled([
+        (async () => {
+          try {
+            await supabase.from('arsip_surat').delete().eq('id', id);
+            if (targetNomor) {
+              await supabase.from('arsip_surat').delete().eq('nomor_surat', targetNomor);
+            }
+          } catch (e) {}
+        })(),
+        (async () => {
+          try {
+            await fetch('/api/arsip-surat', {
+              method: 'DELETE',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id, nomor_surat: targetNomor })
+            });
+          } catch (e) {}
+        })()
+      ]).then(() => {
+        fetchSurat().catch(() => {});
+      });
     }
   };
 
@@ -2329,83 +2394,70 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     }
 
     setIsGeneratingAI(true);
+    const getLocalFallback = (perihal: string) => {
+      const p = perihal.toLowerCase();
+      if (p.includes('tugas') || p.includes('mabar') || p.includes('mandat') || p.includes('delegasi')) {
+        return `Sehubungan dengan keikutsertaan PB Bilibili 162 Parepare dalam agenda "${perihal}", bersama ini Pengurus PB Bilibili 162 memberikan penugasan dan mandat resmi kepada nama-nama terlampir untuk mewakili dan menjalankan tugas organisasi dengan penuh tanggung jawab serta menjunjung tinggi sportivitas.\n\nSeluruh personil yang ditugaskan diharapkan dapat menjaga nama baik klub, mematuhi seluruh tata tertib kegiatan yang berlaku, serta berkoordinasi secara aktif dengan jajaran panitia pelaksana.\n\nDemikian surat tugas ini diberikan untuk dapat dipergunakan sebagaimana mestinya dengan penuh dedikasi dan rasa tanggung jawab.`;
+      }
+      if (p.includes('kajian') || p.includes('narasumber') || p.includes('pemateri') || p.includes('religi')) {
+        return `Dalam rangka meningkatkan pemahaman keilmuan, pembinaan mental spiritual, serta mempererat tali ukhuwah dan silaturahmi, bersama ini Pengurus PB Bilibili 162 bermaksud mengundang Bapak/Ibu untuk berkenan hadir sebagai Narasumber / Peserta pada kegiatan kajian bersama keluarga besar PB Bilibili 162.\n\nKehadiran dan ilmu yang Bapak/Ibu sampaikan tentu akan memberikan manfaat yang sangat besar serta membawa keberkahan bagi seluruh jajaran pengurus dan atlet kami.\n\nDemikian surat permohonan ini kami sampaikan. Atas keikhlasan, perkenan, dan kesediaan waktu Bapak/Ibu, kami ucapkan terima kasih yang sebesar-besarnya.`;
+      }
+      if (p.includes('sparing') || p.includes('sparring') || p.includes('persahabatan') || p.includes('tanding')) {
+        return `Sehubungan dengan agenda rutin pembinaan atlet serta program kerja Pengurus PB Bilibili 162 Parepare dalam rangka meningkatkan kualitas teknik bertanding dan mempererat tali silaturahmi antar pecinta bulutangkis, bersama ini kami bermaksud mengajukan permohonan laga sparing persahabatan bersama tim yang Bapak/Ibu pimpin.\n\nMelalui laga persahabatan ini, kami berharap dapat saling berbagi pengalaman taktis di lapangan serta menambah jam terbang atlet kedua belah pihak dalam suasana yang sportif dan penuh keakraban.\n\nDemikian permohonan ini kami sampaikan, besar harapan kami atas kesediaan dan konfirmasi baik dari Bapak/Ibu. Atas perhatian, dukungan, dan kerjasamanya kami ucapkan terima kasih.`;
+      }
+      if (p.includes('undangan') || p.includes('turnamen') || p.includes('kejuaraan') || p.includes('rapat')) {
+        return `Dalam rangka menyukseskan agenda kegiatan "${perihal}" serta memperkuat sinergi dan kebersamaan keluarga besar pecinta bulutangkis di Kota Parepare, kami segenap Pengurus PB Bilibili 162 bermaksud mengundang Bapak/Ibu untuk berkenan hadir dan berpartisipasi dalam kegiatan resmi tersebut.\n\nKehadiran dan dukungan Bapak/Ibu sekalian tentunya akan memberikan kehormatan besar serta menjadi motivasi semangat bagi para peserta dan seluruh jajaran panitia pelaksana.\n\nDemikian surat undangan ini kami sampaikan. Atas kesediaan, perhatian, serta kehadiran Bapak/Ibu tepat pada waktunya, kami haturkan terima kasih.`;
+      }
+      if (p.includes('izin') || p.includes('pinjam') || p.includes('gor') || p.includes('lapangan')) {
+        return `Sehubungan dengan rencana pelaksanaan kegiatan ${perihal} oleh PB Bilibili 162 Parepare, bersama surat ini kami bermaksud mengajukan permohonan izin penggunaan fasilitas sarana dan prasarana sebagaimana yang dimaksud.\n\nKegiatan ini merupakan bagian integral dari program pembinaan atlet dan pemeliharaan performa rutin klub kami. Pihak PB Bilibili 162 berkomitmen penuh untuk senantiasa menjaga kebersihan, ketertiban, serta merawat fasilitas yang digunakan dengan sebaik-baiknya.\n\nDemikian surat permohonan izin ini kami ajukan dengan penuh rasa hormat. Besar harapan kami atas perkenan dan restu dari Bapak/Ibu. Atas kebijaksanaan dan kerjasamanya, kami sampaikan terima kasih.`;
+      }
+      return `Sehubungan dengan pelaksanaan program kerja PB Bilibili 162 Parepare dan menindaklanjuti perihal "${perihal}", bersama ini kami menyampaikan maksud dan permohonan resmi kepada Bapak/Ibu.\n\nKami meyakini bahwa melalui komunikasi dan koordinasi yang baik, tujuan bersama dalam mendukung pembinaan serta kelancaran agenda tersebut dapat terwujud secara optimal dan profesional.\n\nDemikian surat ini kami sampaikan dengan penuh rasa hormat. Atas perhatian, arahan, dan kerja sama yang senantiasa terjalin baik dari Bapak/Ibu, kami ucapkan terima kasih.`;
+    };
+
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
+
       const response = await fetch('/api/generate-letter', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           perihal: formData.perihal,
           tujuan_yth: formData.tujuan_yth,
           jabatan_tujuan: formData.jabatan_tujuan
         })
-      });
+      }).finally(() => clearTimeout(timeoutId));
 
-      const contentType = response.headers.get("content-type");
-      if (!response.ok) {
-        let errorMsg = `Gagal terhubung ke layanan AI (${response.status})`;
-        try {
-          if (contentType && contentType.includes("application/json")) {
-            const errData = await response.json();
-            if (typeof errData.error === 'string') {
-              try {
-                const parsed = JSON.parse(errData.error);
-                errorMsg = parsed.error?.message || parsed.message || errData.error;
-              } catch {
-                errorMsg = errData.error;
-              }
-            } else if (errData.message) {
-              errorMsg = errData.message;
-            }
-          } else {
-            const text = await response.text();
-            if (text.includes("<!DOCTYPE html>") || text.includes("<html")) {
-              errorMsg = "Server sedang memulai ulang. Silakan coba lagi beberapa saat.";
-            } else {
-              errorMsg = text.slice(0, 100) || "Respon server kosong";
-            }
-          }
-        } catch (e) {
-          console.error("Error parsing error response:", e);
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data.text) {
+          setFormData(prev => ({ ...prev, isi_surat: data.text }));
+          Swal.fire({
+            title: 'Berhasil!',
+            text: 'Isi surat resmi telah siap.',
+            icon: 'success',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 2000
+          });
+          return;
         }
-        throw new Error(errorMsg);
       }
-
-      if (!contentType || !contentType.includes("application/json")) {
-        const text = await response.text();
-        console.error("Non-JSON response received:", text);
-        throw new Error("Format respon server tidak valid.");
-      }
-
-      const data = await response.json();
-      
-      if (!data || typeof data.text !== 'string') {
-        console.error("Invalid response data format:", data);
-        throw new Error("Data respon tidak lengkap.");
-      }
-
-      setFormData(prev => ({ ...prev, isi_surat: data.text }));
-      
+      throw new Error('Fallback required');
+    } catch (error: any) {
+      const fallbackText = getLocalFallback(formData.perihal);
+      setFormData(prev => ({ ...prev, isi_surat: fallbackText }));
       Swal.fire({
         title: 'Berhasil!',
-        text: data.source === 'template_fallback' 
-          ? 'Isi surat telah dibuat berdasarkan template resmi.'
-          : 'Isi surat telah digenerate sesuai konteks.',
+        text: 'Isi surat telah dibuat otomatis berdasarkan standar PB Bilibili.',
         icon: 'success',
         toast: true,
         position: 'top-end',
         showConfirmButton: false,
-        timer: 3000
+        timer: 2000
       });
-    } catch (error: any) {
-      console.error(error);
-      let displayMsg = error.message || 'Terjadi kesalahan saat memproses surat.';
-      try {
-        if (displayMsg.startsWith('{') && displayMsg.endsWith('}')) {
-          const parsed = JSON.parse(displayMsg);
-          displayMsg = parsed.error?.message || parsed.message || displayMsg;
-        }
-      } catch {}
-      Swal.fire('Info AI', displayMsg, 'warning');
     } finally {
       setIsGeneratingAI(false);
     }

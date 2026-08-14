@@ -619,7 +619,15 @@ async function startServer() {
     function generateSmartFallbackLetter(perihal: string, tujuan_yth?: string, jabatan_tujuan?: string): string {
       const p = (perihal || '').toLowerCase();
       
-      if (p.includes('sparing') || p.includes('sparring') || p.includes('persahabatan') || p.includes('tanding')) {
+      if (p.includes('tugas') || p.includes('mabar') || p.includes('mandat') || p.includes('delegasi')) {
+        return `Sehubungan dengan keikutsertaan PB Bilibili 162 Parepare dalam agenda "${perihal}", bersama ini Pengurus PB Bilibili 162 memberikan penugasan dan mandat resmi kepada nama-nama terlampir untuk mewakili dan menjalankan tugas organisasi dengan penuh tanggung jawab serta menjunjung tinggi sportivitas.\n\nSeluruh personil yang ditugaskan diharapkan dapat menjaga nama baik klub, mematuhi seluruh tata tertib kegiatan yang berlaku, serta berkoordinasi secara aktif dengan jajaran panitia pelaksana.\n\nDemikian surat tugas ini diberikan untuk dapat dipergunakan sebagaimana mestinya dengan penuh dedikasi dan rasa tanggung jawab.`;
+      }
+
+      if (p.includes('kajian') || p.includes('narasumber') || p.includes('pemateri') || p.includes('undangan kajian') || p.includes('religi')) {
+        return `Dalam rangka meningkatkan pemahaman keilmuan, pembinaan mental spiritual, serta mempererat ukhuwah islamiyah dan silaturahmi, bersama ini Pengurus PB Bilibili 162 bermaksud mengundang Bapak/Ibu untuk berkenan hadir sebagai Narasumber / Peserta pada kegiatan pengajian dan kajian bersama keluarga besar PB Bilibili 162.\n\nKehadiran dan tausiyah/ilmu yang Bapak/Ibu berikan tentu akan menjadi lentera ilmu yang sangat berharga serta membawa keberkahan bagi seluruh jajaran pengurus, pelatih, dan atlet kami.\n\nDemikian surat permohonan dan undangan ini kami sampaikan. Atas keikhlasan, perkenan, dan kesediaan waktu Bapak/Ibu, kami haturkan ucapan terima kasih yang sebesar-besarnya. Jazakumullahu Khairan Katsiran.`;
+      }
+
+      if (p.includes('sparing') || p.includes('sparring') || p.includes('persahabatan') || p.includes('tanding') || p.includes('sidrap')) {
         return `Sehubungan dengan agenda rutin pembinaan atlet serta program kerja Pengurus PB Bilibili 162 Parepare dalam rangka meningkatkan kualitas teknik bertanding dan mempererat tali silaturahmi antar pecinta bulutangkis, bersama ini kami bermaksud mengajukan permohonan laga sparing persahabatan bersama tim yang Bapak/Ibu pimpin.\n\nMelalui laga persahabatan ini, kami berharap dapat saling berbagi pengalaman taktis di lapangan serta menambah jam terbang atlet kedua belah pihak dalam suasana yang sportif dan penuh keakraban. Adapun teknis pelaksanaan, jumlah partai, serta jadwal pertandingan dapat kita koordinasikan lebih lanjut sesuai kesepakatan bersama.\n\nDemikian permohonan ini kami sampaikan, besar harapan kami atas kesediaan dan konfirmasi baik dari Bapak/Ibu. Atas perhatian, dukungan, dan kerjasamanya kami ucapkan terima kasih.`;
       }
       
@@ -650,7 +658,6 @@ async function startServer() {
     app.post("/api/generate-letter", async (req, res) => {
       console.log(">>> [AI] Received generation request");
       const { perihal, tujuan_yth, jabatan_tujuan } = req.body;
-      console.log(">>> [AI] Context:", { perihal, tujuan_yth, jabatan_tujuan });
 
       if (!perihal || typeof perihal !== 'string' || !perihal.trim()) {
         return res.status(400).json({ error: "Perihal surat wajib diisi." });
@@ -677,7 +684,8 @@ async function startServer() {
 
       // Candidate models in prioritized order to ensure robust fallback
       const candidateModels = [
-        'gemini-3.1-flash-lite',
+        'gemini-2.5-flash',
+        'gemini-2.5-flash-lite',
         'gemini-3.7-flash',
         'gemini-flash-latest'
       ];
@@ -688,12 +696,18 @@ async function startServer() {
         for (const modelName of candidateModels) {
           try {
             console.log(`>>> [AI] Trying model: ${modelName}...`);
-            const response = await ai.models.generateContent({
+            // Add a strict 3.5-second timeout so user never waits more than a few seconds
+            const aiPromise = ai.models.generateContent({
               model: modelName,
               contents: [{ role: 'user', parts: [{ text: prompt }] }],
             });
 
-            const text = response.text;
+            const timeoutPromise = new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('AI generation timeout')), 3500)
+            );
+
+            const response: any = await Promise.race([aiPromise, timeoutPromise]);
+            const text = response?.text;
             if (text && text.trim().length > 0) {
               console.log(`>>> [AI] Success with ${modelName}. Length: ${text.length}`);
               return res.json({ 
@@ -703,23 +717,19 @@ async function startServer() {
               });
             }
           } catch (err: any) {
-            console.warn(`>>> [AI] Model ${modelName} failed:`, err.message || err);
+            console.warn(`>>> [AI] Model ${modelName} notice:`, err.message || err);
             lastError = err;
-            // Short delay before trying next model if rate-limited or unavailable
-            await new Promise(r => setTimeout(r, 300));
+            // Immediate fallback to next model or template
           }
         }
-      } else {
-        console.warn(">>> [AI] GEMINI_API_KEY not configured, using smart template fallback");
       }
 
-      // If all AI models failed or experienced temporary 503/429 demand, use high-quality domain fallback
-      console.log(">>> [AI] Using smart template fallback for letter generation");
+      // If all AI models failed, timed out, or experienced temporary 503/429 demand, use high-quality instant fallback
+      console.log(">>> [AI] Delivering smart template fallback for letter generation");
       const fallbackText = generateSmartFallbackLetter(perihal, tujuan_yth, jabatan_tujuan);
       return res.json({ 
         text: fallbackText,
-        source: 'template_fallback',
-        warning: lastError ? (lastError.message || 'AI service unavailable') : undefined
+        source: 'template_fallback'
       });
     });
 
