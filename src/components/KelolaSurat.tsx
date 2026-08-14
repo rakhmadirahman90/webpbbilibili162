@@ -1489,7 +1489,7 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
   };
 
   const handleGenerateAI = async () => {
-    if (!formData.perihal) {
+    if (!formData.perihal || !formData.perihal.trim()) {
       Swal.fire('Info', 'Mohon isi perihal surat terlebih dahulu agar AI bisa memahami konteksnya.', 'info');
       return;
     }
@@ -1508,17 +1508,26 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
 
       const contentType = response.headers.get("content-type");
       if (!response.ok) {
-        let errorMsg = `Server error (${response.status})`;
+        let errorMsg = `Gagal terhubung ke layanan AI (${response.status})`;
         try {
           if (contentType && contentType.includes("application/json")) {
             const errData = await response.json();
-            errorMsg = errData.error || errData.message || errorMsg;
+            if (typeof errData.error === 'string') {
+              try {
+                const parsed = JSON.parse(errData.error);
+                errorMsg = parsed.error?.message || parsed.message || errData.error;
+              } catch {
+                errorMsg = errData.error;
+              }
+            } else if (errData.message) {
+              errorMsg = errData.message;
+            }
           } else {
             const text = await response.text();
             if (text.includes("<!DOCTYPE html>") || text.includes("<html")) {
-              errorMsg = "API route not found (404). Server might be restarting.";
+              errorMsg = "Server sedang memulai ulang. Silakan coba lagi beberapa saat.";
             } else {
-              errorMsg = text.slice(0, 100) || "Empty server response";
+              errorMsg = text.slice(0, 100) || "Respon server kosong";
             }
           }
         } catch (e) {
@@ -1529,22 +1538,24 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
 
       if (!contentType || !contentType.includes("application/json")) {
         const text = await response.text();
-        console.error("Non-JSON success response received:", text);
-        throw new Error("Server returned an unexpected success format (not JSON).");
+        console.error("Non-JSON response received:", text);
+        throw new Error("Format respon server tidak valid.");
       }
 
       const data = await response.json();
       
       if (!data || typeof data.text !== 'string') {
         console.error("Invalid response data format:", data);
-        throw new Error("Server returned invalid data format (missing 'text' field).");
+        throw new Error("Data respon tidak lengkap.");
       }
 
       setFormData(prev => ({ ...prev, isi_surat: data.text }));
       
       Swal.fire({
         title: 'Berhasil!',
-        text: 'Isi surat telah digenerate sesuai konteks.',
+        text: data.source === 'template_fallback' 
+          ? 'Isi surat telah dibuat berdasarkan template resmi.'
+          : 'Isi surat telah digenerate sesuai konteks.',
         icon: 'success',
         toast: true,
         position: 'top-end',
@@ -1553,7 +1564,14 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       });
     } catch (error: any) {
       console.error(error);
-      Swal.fire('AI Error', 'Gagal generate konten: ' + error.message, 'error');
+      let displayMsg = error.message || 'Terjadi kesalahan saat memproses surat.';
+      try {
+        if (displayMsg.startsWith('{') && displayMsg.endsWith('}')) {
+          const parsed = JSON.parse(displayMsg);
+          displayMsg = parsed.error?.message || parsed.message || displayMsg;
+        }
+      } catch {}
+      Swal.fire('Info AI', displayMsg, 'warning');
     } finally {
       setIsGeneratingAI(false);
     }

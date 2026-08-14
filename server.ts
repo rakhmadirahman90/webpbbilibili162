@@ -505,6 +505,28 @@ async function startServer() {
       }
     });
 
+    function generateSmartFallbackLetter(perihal: string, tujuan_yth?: string, jabatan_tujuan?: string): string {
+      const p = (perihal || '').toLowerCase();
+      
+      if (p.includes('sparing') || p.includes('sparring') || p.includes('persahabatan') || p.includes('tanding')) {
+        return `Sehubungan dengan agenda rutin pembinaan atlet serta program kerja Pengurus PB Bilibili 162 Parepare dalam rangka meningkatkan kualitas teknik bertanding dan mempererat tali silaturahmi antar pecinta bulutangkis, bersama ini kami bermaksud mengajukan permohonan laga sparing persahabatan bersama tim yang Bapak/Ibu pimpin.\n\nMelalui laga persahabatan ini, kami berharap dapat saling berbagi pengalaman taktis di lapangan serta menambah jam terbang atlet kedua belah pihak dalam suasana yang sportif dan penuh keakraban. Adapun teknis pelaksanaan, jumlah partai, serta jadwal pertandingan dapat kita koordinasikan lebih lanjut sesuai kesepakatan bersama.\n\nDemikian permohonan ini kami sampaikan, besar harapan kami atas kesediaan dan konfirmasi baik dari Bapak/Ibu. Atas perhatian, dukungan, dan kerjasamanya kami ucapkan terima kasih.`;
+      }
+      
+      if (p.includes('undangan') || p.includes('kejuaraan') || p.includes('turnamen') || p.includes('internal cup') || p.includes('muskot') || p.includes('rapat')) {
+        return `Dalam rangka menyukseskan agenda kegiatan "${perihal}" serta memperkuat sinergi dan kebersamaan keluarga besar pecinta bulutangkis di Kota Parepare, kami segenap Pengurus PB Bilibili 162 bermaksud mengundang Bapak/Ibu untuk berkenan hadir dan berpartisipasi dalam kegiatan resmi tersebut.\n\nKehadiran dan dukungan Bapak/Ibu sekalian tentunya akan memberikan kehormatan besar serta menjadi motivasi dan dorongan semangat bagi para peserta dan seluruh jajaran panitia pelaksana.\n\nDemikian surat undangan ini kami sampaikan. Atas kesediaan, perhatian, serta kehadiran Bapak/Ibu tepat pada waktunya, kami haturkan terima kasih yang sebesar-besarnya.`;
+      }
+
+      if (p.includes('izin') || p.includes('pinjam') || p.includes('gor') || p.includes('lapangan') || p.includes('fasilitas') || p.includes('tempat')) {
+        return `Sehubungan dengan rencana pelaksanaan kegiatan ${perihal} oleh PB Bilibili 162 Parepare, bersama surat ini kami bermaksud mengajukan permohonan izin penggunaan fasilitas sarana dan prasarana sebagaimana yang dimaksud.\n\nKegiatan ini merupakan bagian integral dari program pembinaan atlet dan pemeliharaan performa rutin klub kami. Pihak PB Bilibili 162 berkomitmen penuh untuk senantiasa menjaga kebersihan, ketertiban, serta merawat sarana fasilitas yang digunakan dengan sebaik-baiknya.\n\nDemikian surat permohonan izin ini kami ajukan dengan penuh rasa hormat. Besar harapan kami atas perkenan dan restu dari Bapak/Ibu. Atas kebijaksanaan dan kerjasamanya, kami sampaikan terima kasih.`;
+      }
+
+      if (p.includes('bantuan') || p.includes('sponsor') || p.includes('dana') || p.includes('proposal')) {
+        return `Sehubungan dengan diselenggarakannya agenda kegiatan ${perihal} oleh PB Bilibili 162 Parepare, bersama surat ini kami bermaksud mengajukan permohonan dukungan dan kemitraan strategis kepada instansi yang Bapak/Ibu pimpin.\n\nMelalui sinergi ini, kami meyakini potensi pembinaan generasi muda dan prestasi olahraga bulutangkis di daerah dapat terus berkembang pesat secara berkelanjutan. Rincian proposal serta bentuk timbal balik kemitraan siap kami paparkan lebih lanjut.\n\nDemikian permohonan ini kami sampaikan, besar harapan kami untuk dapat menjalin kerja sama yang saling menguntungkan. Atas perhatian dan perkenan Bapak/Ibu, kami ucapkan terima kasih.`;
+      }
+
+      return `Sehubungan dengan pelaksanaan program kerja PB Bilibili 162 Parepare dan menindaklanjuti perihal "${perihal}", bersama ini kami menyampaikan maksud dan permohonan resmi kepada Bapak/Ibu.\n\nKami meyakini bahwa melalui komunikasi dan koordinasi yang baik, tujuan bersama dalam mendukung pembinaan serta kelancaran agenda tersebut dapat terwujud secara optimal dan profesional.\n\nDemikian surat ini kami sampaikan dengan penuh rasa hormat. Atas perhatian, arahan, dan kerja sama yang senantiasa terjalin baik dari Bapak/Ibu, kami ucapkan terima kasih.`;
+    }
+
     const ai = new GoogleGenAI({
       apiKey: process.env.GEMINI_API_KEY,
       httpOptions: {
@@ -516,67 +538,78 @@ async function startServer() {
 
     app.post("/api/generate-letter", async (req, res) => {
       console.log(">>> [AI] Received generation request");
-      try {
-        const { perihal, tujuan_yth, jabatan_tujuan } = req.body;
-        console.log(">>> [AI] Context:", { perihal, tujuan_yth, jabatan_tujuan });
-        
-        if (!process.env.GEMINI_API_KEY) {
-          console.error(">>> [AI] Error: GEMINI_API_KEY is missing");
-          return res.status(500).json({ 
-            error: "GEMINI_API_KEY is not configured." 
-          });
-        }
+      const { perihal, tujuan_yth, jabatan_tujuan } = req.body;
+      console.log(">>> [AI] Context:", { perihal, tujuan_yth, jabatan_tujuan });
 
-        const prompt = `
-          Anda adalah sekretaris profesional untuk klub bulutangkis "PB Bilibili 162" di Parepare.
-          Tugas Anda adalah menulis isi surat resmi berdasarkan perihal berikut:
-          
-          PERIHAL: ${perihal}
-          TUJUAN: ${tujuan_yth}
-          JABATAN TUJUAN: ${jabatan_tujuan}
-          
-          INSTRUKSI KHUSUS:
-          1. Tuliskan HANYA isi surat (paragraf utama).
-          2. JANGAN sertakan: kepala surat, nomor surat, tanggal, salam pembuka, salam penutup, atau bagian tanda tangan.
-          3. Gunakan Bahasa Indonesia yang sangat formal, baku, dan sopan.
-          4. Isi surat harus terdiri dari 2 sampai 3 paragraf yang padat.
-          5. Paragraf pertama harus langsung merujuk pada perihal "${perihal}".
-          6. Paragraf kedua berisi detail atau maksud utama dari surat tersebut.
-          7. Paragraf ketiga berisi harapan atau tindak lanjut yang diinginkan.
-          8. Gunakan istilah bulutangkis jika relevan (misal: pembinaan atlet, sparring, turnamen, dll).
-        `;
-
-        console.log(">>> [AI] Sending request to Gemini (gemini-flash-latest)...");
-        const response = await ai.models.generateContent({
-          model: 'gemini-flash-latest',
-          contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        });
-        
-        const text = response.text;
-        
-        if (!text) {
-          console.error(">>> [AI] Error: Empty text returned", response);
-          throw new Error("AI returned empty response. Please try again.");
-        }
-
-        console.log(">>> [AI] Success. Length:", text.length);
-        res.json({ text: text.trim() });
-      } catch (error: any) {
-        console.error(">>> [AI] Catch Error:", error);
-        
-        let statusCode = 500;
-        if (typeof error.status === 'number') {
-          statusCode = error.status;
-        } else if (error.status && typeof error.status === 'string') {
-          // Some errors might have string status like "RESOURCE_EXHAUSTED"
-          statusCode = 500;
-        }
-
-        res.status(statusCode).json({ 
-          error: error.message || "Unexpected error during AI generation",
-          details: error.toString()
-        });
+      if (!perihal || typeof perihal !== 'string' || !perihal.trim()) {
+        return res.status(400).json({ error: "Perihal surat wajib diisi." });
       }
+
+      const prompt = `
+        Anda adalah sekretaris profesional untuk klub bulutangkis "PB Bilibili 162" di Parepare.
+        Tugas Anda adalah menulis isi surat resmi berdasarkan perihal berikut:
+        
+        PERIHAL: ${perihal}
+        TUJUAN: ${tujuan_yth || '-'}
+        JABATAN TUJUAN: ${jabatan_tujuan || '-'}
+        
+        INSTRUKSI KHUSUS:
+        1. Tuliskan HANYA isi surat (paragraf utama).
+        2. JANGAN sertakan: kepala surat, nomor surat, tanggal, salam pembuka, salam penutup, atau bagian tanda tangan.
+        3. Gunakan Bahasa Indonesia yang sangat formal, baku, dan sopan.
+        4. Isi surat harus terdiri dari 2 sampai 3 paragraf yang padat.
+        5. Paragraf pertama harus langsung merujuk pada perihal "${perihal}".
+        6. Paragraf kedua berisi detail atau maksud utama dari surat tersebut.
+        7. Paragraf ketiga berisi harapan atau tindak lanjut yang diinginkan.
+        8. Gunakan istilah bulutangkis jika relevan (misal: pembinaan atlet, sparring, turnamen, dll).
+      `;
+
+      // Candidate models in prioritized order to ensure robust fallback
+      const candidateModels = [
+        'gemini-3.1-flash-lite',
+        'gemini-3.7-flash',
+        'gemini-flash-latest'
+      ];
+
+      let lastError: any = null;
+
+      if (process.env.GEMINI_API_KEY) {
+        for (const modelName of candidateModels) {
+          try {
+            console.log(`>>> [AI] Trying model: ${modelName}...`);
+            const response = await ai.models.generateContent({
+              model: modelName,
+              contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            });
+
+            const text = response.text;
+            if (text && text.trim().length > 0) {
+              console.log(`>>> [AI] Success with ${modelName}. Length: ${text.length}`);
+              return res.json({ 
+                text: text.trim(),
+                model: modelName,
+                source: 'ai'
+              });
+            }
+          } catch (err: any) {
+            console.warn(`>>> [AI] Model ${modelName} failed:`, err.message || err);
+            lastError = err;
+            // Short delay before trying next model if rate-limited or unavailable
+            await new Promise(r => setTimeout(r, 300));
+          }
+        }
+      } else {
+        console.warn(">>> [AI] GEMINI_API_KEY not configured, using smart template fallback");
+      }
+
+      // If all AI models failed or experienced temporary 503/429 demand, use high-quality domain fallback
+      console.log(">>> [AI] Using smart template fallback for letter generation");
+      const fallbackText = generateSmartFallbackLetter(perihal, tujuan_yth, jabatan_tujuan);
+      return res.json({ 
+        text: fallbackText,
+        source: 'template_fallback',
+        warning: lastError ? (lastError.message || 'AI service unavailable') : undefined
+      });
     });
 
     app.post("/api/send-push-notification", async (req, res) => {
