@@ -538,149 +538,276 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
         `Berikut kami sampaikan surat resmi (Nomor: ${suratNomor}) terkait *${suratPerihal}*.\n\n` +
         `Terima kasih.\n*Admin PB Bilibili 162*`;
 
-      // Mobile-friendly SweetAlert2 dialog for direct PDF file attachment + text message sharing
+      // Mobile-friendly SweetAlert2 dialog for direct PDF / Image file attachment + text message sharing
+      const hasLampiran = Boolean(surat.include_lampiran_peserta);
       const { value: actionType } = await Swal.fire({
-        title: '📱 Kirim File PDF & Teks ke WhatsApp',
+        title: '📱 Kirim Surat ke WhatsApp (Anti-Buram)',
         html: `
           <div class="text-left text-xs space-y-3 font-sans">
-            <div class="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl space-y-2">
-              <div class="flex items-center justify-between">
-                <div>
-                  <p class="font-bold text-emerald-600 dark:text-emerald-400">PDF Terkompresi & Teks Siap Dikirim!</p>
-                  <p class="text-[10px] text-slate-500 dark:text-slate-400">Di HP/Ponsel, gunakan tombol <b>"Bagikan File PDF + Teks"</b>. Jika WhatsApp tidak otomatis menyertakan teks saat melampirkan PDF, teks telah disalin otomatis ke clipboard Anda untuk langsung ditempel (paste).</p>
+            <!-- Penjelasan Solusi Anti Buram -->
+            <div class="p-3 bg-blue-500/10 border border-blue-500/30 rounded-xl space-y-1.5">
+              <p class="font-bold text-blue-400 flex items-center gap-1.5 text-[11px]">
+                <span>💡 Pilihan Pengiriman Dokumen Resmi</span>
+              </p>
+              <p class="text-[10px] text-slate-300 leading-relaxed">
+                Pilih format dokumen yang ingin dibagikan ke WhatsApp. Semua opsi gambar & PDF telah ditingkatkan ke <b>Resolusi Ultra HD (300+ DPI)</b> agar tulisan tetap tajam & jernih:
+              </p>
+            </div>
+
+            <!-- Pilihan Opsi Pengiriman -->
+            <div class="space-y-2">
+              <button id="swal-wa-share-pdf" class="w-full text-left p-3 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/35 border border-emerald-500/40 transition-all cursor-pointer">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-emerald-300">📄 1. Bagikan File Dokumen PDF (Paling Direkomendasikan ⭐)</span>
+                  <span class="text-[9px] px-1.5 py-0.5 bg-emerald-500/30 text-emerald-200 rounded font-black">100% BEBAS KOMPRESI</span>
                 </div>
-                <div class="flex gap-1.5">
-                  <a href="${localPdfUrl}" target="_blank" class="px-2.5 py-1.5 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-bold text-[10px] flex items-center gap-1 transition-all cursor-pointer">
-                    👁️ Lihat
-                  </a>
-                  <a href="${localPdfUrl}" download="${fileName}" class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold text-[10px] flex items-center gap-1 transition-all cursor-pointer">
-                    📥 Unduh
-                  </a>
+                <p class="text-[10px] text-slate-400 mt-1">Format file dokumen PDF asli. Sangat tajam, resmi, dan mudah dicetak di semua jenis HP penerima.</p>
+              </button>
+
+              <!-- Opsi Gabungan Dokumen Gambar JPG / PNG -->
+              <div class="p-2.5 rounded-xl bg-slate-800/80 border border-white/10 space-y-1.5">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-amber-300 text-[11px]">🖼️ 2. Bagikan Dokumen Gambar Gabungan (Utuh 2 Halaman)</span>
+                  <span class="text-[9px] px-1.5 py-0.5 bg-amber-500/20 text-amber-300 rounded font-bold">GABUNGAN</span>
+                </div>
+                <p class="text-[10px] text-slate-400">Seluruh halaman surat & lampiran disambung memanjang ke bawah dalam 1 file resolusi tinggi:</p>
+                <div class="grid grid-cols-2 gap-2 pt-1">
+                  <button id="swal-wa-share-comb-jpg" class="py-2 px-2.5 rounded-lg bg-amber-600/25 hover:bg-amber-600/40 border border-amber-500/40 text-amber-200 font-bold text-[10px] flex items-center justify-center gap-1 cursor-pointer transition-all">
+                    <span>🖼️ Format JPG HD</span>
+                  </button>
+                  <button id="swal-wa-share-comb-png" class="py-2 px-2.5 rounded-lg bg-purple-600/25 hover:bg-purple-600/40 border border-purple-500/40 text-purple-200 font-bold text-[10px] flex items-center justify-center gap-1 cursor-pointer transition-all">
+                    <span>✨ Format PNG Master</span>
+                  </button>
                 </div>
               </div>
+
+              <!-- Opsi Per Halaman Satuan A4 -->
+              <div class="grid ${hasLampiran ? 'grid-cols-2' : 'grid-cols-1'} gap-2">
+                <button id="swal-wa-share-img1" class="text-left p-2.5 rounded-xl bg-blue-600/20 hover:bg-blue-600/35 border border-blue-500/40 transition-all cursor-pointer">
+                  <div class="flex items-center justify-between">
+                    <span class="font-bold text-blue-300 text-[11px]">📄 Hal 1 (Surat Utama)</span>
+                  </div>
+                  <p class="text-[9px] text-slate-400 mt-0.5">Format A4 satuan proporsional.</p>
+                </button>
+
+                ${hasLampiran ? `
+                  <button id="swal-wa-share-img2" class="text-left p-2.5 rounded-xl bg-purple-600/20 hover:bg-purple-600/35 border border-purple-500/40 transition-all cursor-pointer">
+                    <div class="flex items-center justify-between">
+                      <span class="font-bold text-purple-300 text-[11px]">📋 Hal 2 (Lampiran)</span>
+                    </div>
+                    <p class="text-[9px] text-slate-400 mt-0.5">Tabel peserta & TTD mandiri.</p>
+                  </button>
+                ` : ''}
+              </div>
             </div>
-            <div>
-              <label class="font-black text-slate-400 uppercase tracking-wider block mb-1">Nomor WhatsApp Tujuan (Opsional)</label>
-              <input id="swal-wa-number" class="swal2-input !m-0 !w-full !text-xs !rounded-xl !bg-slate-100 !text-slate-900 !font-bold" placeholder="Contoh: 08123456789 atau 62812..." value="${surat.whatsapp || ''}">
+
+            <!-- Form Nomor & Pesan -->
+            <div class="pt-1 border-t border-white/10 space-y-2">
+              <div>
+                <label class="font-black text-slate-400 uppercase tracking-wider block mb-1 text-[10px]">Nomor WhatsApp Tujuan (Opsional)</label>
+                <input id="swal-wa-number" class="swal2-input !m-0 !w-full !text-xs !rounded-xl !bg-slate-900 !border-white/20 !text-white !font-bold" placeholder="Contoh: 08123456789 atau 62812..." value="${surat.whatsapp || ''}">
+              </div>
+              <div>
+                <label class="font-black text-slate-400 uppercase tracking-wider block mb-1 text-[10px]">Pesan Pengantar WhatsApp</label>
+                <textarea id="swal-wa-message" class="swal2-textarea !m-0 !w-full !text-xs !h-24 !rounded-xl !bg-slate-900 !border-white/20 !text-white">${defaultMessage}</textarea>
+              </div>
             </div>
-            <div>
-              <label class="font-black text-slate-400 uppercase tracking-wider block mb-1">Pesan Teks Pengantar</label>
-              <textarea id="swal-wa-message" class="swal2-textarea !m-0 !w-full !text-xs !h-32 !rounded-xl !bg-slate-100 !text-slate-900">${defaultMessage}</textarea>
+
+            <!-- Petunjuk Manual WA -->
+            <div class="p-2.5 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-300 text-[10px] space-y-1">
+              <p class="font-bold flex items-center gap-1">📌 Tips Mengirim dari Galeri HP:</p>
+              <p class="text-slate-300 leading-tight">Jika mengirim gambar lewat WhatsApp, gunakan menu <b>Dokumen</b> (ikon klip kertas 📎 lalu Dokumen) atau tekan tombol <b>HD</b> di pojok atas WhatsApp agar tulisan tidak buram.</p>
             </div>
           </div>
         `,
         focusConfirm: false,
         showDenyButton: true,
         showCancelButton: true,
-        confirmButtonText: '📤 Bagikan File PDF + Teks (Satu Pesan)',
-        denyButtonText: '💬 Buka WhatsApp (Teks Saja via Web)',
-        cancelButtonText: 'Batal',
-        confirmButtonColor: '#25D366',
+        confirmButtonText: '📤 Bagikan PDF Langsung',
+        denyButtonText: '💬 Buka Chat WA Saja',
+        cancelButtonText: 'Tutup',
+        confirmButtonColor: '#10B981',
         denyButtonColor: '#3B82F6',
+        background: '#0F172A',
+        color: '#fff',
+        didOpen: () => {
+          const getInputs = () => ({
+            phone: (document.getElementById('swal-wa-number') as HTMLInputElement)?.value || '',
+            msg: (document.getElementById('swal-wa-message') as HTMLTextAreaElement)?.value || defaultMessage
+          });
+
+          document.getElementById('swal-wa-share-pdf')?.addEventListener('click', () => {
+            const { phone, msg } = getInputs();
+            Swal.close();
+            executeWhatsAppAction('share_pdf', phone, msg);
+          });
+          document.getElementById('swal-wa-share-comb-jpg')?.addEventListener('click', () => {
+            const { phone, msg } = getInputs();
+            Swal.close();
+            executeWhatsAppAction('share_comb_jpg', phone, msg);
+          });
+          document.getElementById('swal-wa-share-comb-png')?.addEventListener('click', () => {
+            const { phone, msg } = getInputs();
+            Swal.close();
+            executeWhatsAppAction('share_comb_png', phone, msg);
+          });
+          document.getElementById('swal-wa-share-img1')?.addEventListener('click', () => {
+            const { phone, msg } = getInputs();
+            Swal.close();
+            executeWhatsAppAction('share_img1', phone, msg);
+          });
+          document.getElementById('swal-wa-share-img2')?.addEventListener('click', () => {
+            const { phone, msg } = getInputs();
+            Swal.close();
+            executeWhatsAppAction('share_img2', phone, msg);
+          });
+        },
         preConfirm: () => {
           return {
-            type: 'share',
+            type: 'share_pdf',
             phone: (document.getElementById('swal-wa-number') as HTMLInputElement)?.value || '',
             message: (document.getElementById('swal-wa-message') as HTMLTextAreaElement)?.value || defaultMessage
           };
         },
         preDeny: () => {
           return {
-            type: 'wa',
+            type: 'wa_text_only',
             phone: (document.getElementById('swal-wa-number') as HTMLInputElement)?.value || '',
             message: (document.getElementById('swal-wa-message') as HTMLTextAreaElement)?.value || defaultMessage
           };
         }
       });
 
-      if (actionType) {
-        const phoneInput = (actionType as any).phone || '';
-        const msgInput = (actionType as any).message || defaultMessage;
+      const executeWhatsAppAction = async (actionTypeStr: string, phoneInput: string, msgInput: string) => {
+        try {
+          await navigator.clipboard.writeText(msgInput);
+        } catch (e) {}
 
-        if ((actionType as any).type === 'share') {
-          // Copy message to clipboard automatically so user can easily paste in WhatsApp (since WhatsApp mobile share target strips text for PDF files)
-          try {
-            await navigator.clipboard.writeText(msgInput);
-          } catch (clipErr) {
-            console.warn("Clipboard copy warning:", clipErr);
-          }
+        let cleanPhone = phoneInput.replace(/\D/g, '');
+        if (cleanPhone.startsWith('0')) {
+          cleanPhone = '62' + cleanPhone.substring(1);
+        }
+        const encodedMsg = encodeURIComponent(msgInput);
+        const waUrl = cleanPhone ? `https://wa.me/${cleanPhone}?text=${encodedMsg}` : `https://wa.me/?text=${encodedMsg}`;
 
-          // Native share with file attachment support (PDF + Text)
-          if (navigator.share && navigator.canShare) {
+        if (actionTypeStr === 'share_pdf') {
+          const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
+          if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
             try {
-              const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
-              if (navigator.canShare({ files: [file] })) {
-                await navigator.share({
-                  title: suratPerihal,
-                  text: msgInput,
-                  files: [file]
-                });
-                
-                // Show notification that text was copied so user can paste if WhatsApp app omitted it
-                Swal.fire({
-                  icon: 'success',
-                  title: 'File PDF Dibagikan!',
-                  html: '<p class="text-xs">Teks pesan telah disalin otomatis ke Clipboard. Jika WhatsApp belum menyertakan teks saat melampirkan file, cukup <b>Paste (Tempel)</b> di kolom chat WhatsApp.</p>',
-                  confirmButtonColor: '#25D366'
-                });
-                return;
-              }
-            } catch (shareErr: any) {
-              if (shareErr.name !== 'AbortError') {
-                console.warn("Native share error:", shareErr);
-              } else {
-                return; // User cancelled share
-              }
+              await navigator.share({
+                title: suratPerihal,
+                text: msgInput,
+                files: [file]
+              });
+              return;
+            } catch (err: any) {
+              if (err.name === 'AbortError') return;
             }
           }
 
-          // Fallback if native share not supported (e.g. desktop browser): download PDF + copy text + open WhatsApp
-          Swal.fire({
-            icon: 'success',
-            title: 'PDF Diunduh & Teks Disalin',
-            text: 'File PDF diunduh otomatis dan teks pesan telah disalin ke Clipboard. Cukup paste (tempel) teks di kolom pesan WhatsApp setelah melampirkan file PDF.',
-            confirmButtonColor: '#25D366'
-          });
-
+          // Fallback download PDF + open WA
           const a = document.createElement('a');
           a.href = localPdfUrl;
           a.download = fileName;
           a.click();
-
-          let cleanPhone = phoneInput.replace(/\D/g, '');
-          if (cleanPhone.startsWith('0')) {
-            cleanPhone = '62' + cleanPhone.substring(1);
-          }
-          const encodedMsg = encodeURIComponent(msgInput);
-          const waUrl = cleanPhone 
-            ? `https://wa.me/${cleanPhone}?text=${encodedMsg}`
-            : `https://wa.me/?text=${encodedMsg}`;
           window.open(waUrl, '_blank');
-        } else {
-          // Standard WhatsApp Web / App redirection with text & link
-          let cleanPhone = phoneInput.replace(/\D/g, '');
-          if (cleanPhone.startsWith('0')) {
-            cleanPhone = '62' + cleanPhone.substring(1);
-          }
-
-          const encodedMsg = encodeURIComponent(msgInput);
-          const waUrl = cleanPhone 
-            ? `https://wa.me/${cleanPhone}?text=${encodedMsg}`
-            : `https://wa.me/?text=${encodedMsg}`;
-
-          const newWindow = window.open(waUrl, '_blank');
-          if (!newWindow) {
-            window.location.href = waUrl;
-          }
-
           Swal.fire({
             icon: 'success',
-            title: 'Berhasil Membuka WhatsApp',
-            text: 'Pesan teks siap dikirim.',
-            timer: 2000,
-            showConfirmButton: false
+            title: 'File PDF Diunduh & Chat WA Terbuka',
+            html: '<p class="text-xs">Lampirkan file PDF yang baru saja diunduh ke chat WhatsApp. Teks pengantar sudah otomatis tersalin ke Clipboard.</p>',
+            confirmButtonColor: '#25D366',
+            background: '#0F172A',
+            color: '#fff'
           });
+        } else if (actionTypeStr.startsWith('share_comb') || actionTypeStr === 'share_img1' || actionTypeStr === 'share_img2') {
+          const isComb = actionTypeStr.startsWith('share_comb');
+          const isJpg = actionTypeStr.endsWith('jpg');
+          const format = isJpg ? 'jpg' : 'png';
+          const mimeType = isJpg ? 'image/jpeg' : 'image/png';
+          const ext = isJpg ? 'jpg' : 'png';
+
+          let targetEl: HTMLElement | null = null;
+          let suffix = '';
+          if (actionTypeStr === 'share_img2') {
+            targetEl = page2Ref.current;
+            suffix = '_Hal2';
+          } else if (actionTypeStr === 'share_img1') {
+            targetEl = page1Ref.current || printRef.current;
+            suffix = '_Hal1';
+          } else {
+            // Combined document
+            targetEl = printRef.current;
+            suffix = '_Gabungan';
+          }
+
+          if (!targetEl) throw new Error("Halaman surat tidak ditemukan.");
+
+          const canvas = await getCanvasFromElement(targetEl);
+          const imgName = `Surat_PB162_${cleanNomor}${suffix}_${ddmmyy}.${ext}`;
+          
+          const processBlob = async (blob: Blob | null) => {
+            if (!blob) throw new Error("Gagal memproses gambar.");
+            const imgFile = new File([blob], imgName, { type: mimeType });
+
+            if (navigator.share && navigator.canShare && navigator.canShare({ files: [imgFile] })) {
+              try {
+                await navigator.share({
+                  title: suratPerihal,
+                  text: msgInput,
+                  files: [imgFile]
+                });
+                return;
+              } catch (err: any) {
+                if (err.name === 'AbortError') return;
+              }
+            }
+
+            // Fallback download image + open WA
+            const imgUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = imgUrl;
+            a.download = imgName;
+            a.click();
+            window.open(waUrl, '_blank');
+            Swal.fire({
+              icon: 'success',
+              title: `Dokumen Gambar ${ext.toUpperCase()} Tersimpan!`,
+              html: `<p class="text-xs">Gambar <b>${imgName}</b> telah diunduh. Kirim gambar ini via WhatsApp (pilih <b>Dokumen</b> atau aktifkan tombol <b>HD</b> di WhatsApp) agar teks tidak buram.</p>`,
+              confirmButtonColor: '#25D366',
+              background: '#0F172A',
+              color: '#fff'
+            });
+          };
+
+          if (isJpg) {
+            // Render to white background canvas for high quality JPEG
+            const outCanvas = document.createElement('canvas');
+            outCanvas.width = canvas.width;
+            outCanvas.height = canvas.height;
+            const ctx = outCanvas.getContext('2d', { alpha: false });
+            if (ctx) {
+              ctx.imageSmoothingEnabled = true;
+              ctx.imageSmoothingQuality = 'high';
+              ctx.fillStyle = '#FFFFFF';
+              ctx.fillRect(0, 0, outCanvas.width, outCanvas.height);
+              ctx.drawImage(canvas, 0, 0);
+              outCanvas.toBlob(processBlob, 'image/jpeg', 0.98);
+            } else {
+              canvas.toBlob(processBlob, 'image/jpeg', 0.98);
+            }
+          } else {
+            canvas.toBlob(processBlob, 'image/png', 1.0);
+          }
+        } else {
+          // wa_text_only
+          window.open(waUrl, '_blank');
         }
+      };
+
+      if (actionType) {
+        const phone = (actionType as any).phone || '';
+        const msg = (actionType as any).message || defaultMessage;
+        executeWhatsAppAction((actionType as any).type, phone, msg);
       }
     } catch (error: any) {
       console.error("Gagal mengirim WhatsApp:", error);
@@ -1806,9 +1933,64 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     return canvas.toDataURL('image/jpeg', 0.98);
   };
 
-  const handleCopyImageToClipboard = async (pageTarget: 'page1' | 'page2' | 'single') => {
+  const handleCopyImageToClipboard = async (pageTarget?: 'page1' | 'page2' | 'single' | 'combined') => {
     try {
-      const target = pageTarget === 'page2' ? page2Ref.current : (page1Ref.current || printRef.current);
+      if (formData.include_lampiran_peserta && !pageTarget) {
+        await Swal.fire({
+          title: '📋 Salin Gambar ke Clipboard',
+          html: `
+            <div class="text-left text-xs space-y-2.5 font-sans">
+              <p class="text-slate-300">Pilih halaman yang ingin disalin ke Clipboard (bisa langsung Ctrl+V / Paste di WhatsApp Web):</p>
+              <div class="space-y-2">
+                <button id="swal-copy-comb" class="w-full text-left p-3 rounded-xl bg-amber-600/20 hover:bg-amber-600/35 border border-amber-500/40 transition-all cursor-pointer">
+                  <p class="font-bold text-amber-300">🖼️ Salin Dokumen Gabungan (Halaman 1 + 2 Bersambung)</p>
+                  <p class="text-[10px] text-slate-400 mt-0.5">Kedua halaman utuh dalam 1 gambar resolusi tinggi.</p>
+                </button>
+                <button id="swal-copy-hal1" class="w-full text-left p-2.5 rounded-xl bg-blue-600/20 hover:bg-blue-600/35 border border-blue-500/40 transition-all cursor-pointer">
+                  <p class="font-bold text-blue-300">📄 Salin Halaman 1 (Surat Utama - A4 HD)</p>
+                  <p class="text-[10px] text-slate-400 mt-0.5">Hanya halaman pertama.</p>
+                </button>
+                <button id="swal-copy-hal2" class="w-full text-left p-2.5 rounded-xl bg-purple-600/20 hover:bg-purple-600/35 border border-purple-500/40 transition-all cursor-pointer">
+                  <p class="font-bold text-purple-300">📋 Salin Halaman 2 (Lampiran Peserta - A4 HD)</p>
+                  <p class="text-[10px] text-slate-400 mt-0.5">Tabel peserta dan otorisasi stempel.</p>
+                </button>
+              </div>
+            </div>
+          `,
+          showConfirmButton: false,
+          showCancelButton: true,
+          cancelButtonText: 'Batal',
+          background: '#0F172A',
+          color: '#fff',
+          didOpen: () => {
+            document.getElementById('swal-copy-comb')?.addEventListener('click', () => {
+              Swal.close();
+              handleCopyImageToClipboard('combined');
+            });
+            document.getElementById('swal-copy-hal1')?.addEventListener('click', () => {
+              Swal.close();
+              handleCopyImageToClipboard('page1');
+            });
+            document.getElementById('swal-copy-hal2')?.addEventListener('click', () => {
+              Swal.close();
+              handleCopyImageToClipboard('page2');
+            });
+          }
+        });
+        return;
+      }
+
+      let target: HTMLElement | null = null;
+      if (pageTarget === 'page2') {
+        target = page2Ref.current;
+      } else if (pageTarget === 'page1') {
+        target = page1Ref.current || printRef.current;
+      } else if (pageTarget === 'combined') {
+        target = printRef.current;
+      } else {
+        target = page1Ref.current || printRef.current;
+      }
+
       if (!target) {
         Swal.fire({ title: 'Error', text: 'Halaman surat tidak ditemukan.', icon: 'error', background: '#0F172A', color: '#fff' });
         return;
@@ -1823,7 +2005,7 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
           ]);
           Swal.fire({
             title: 'Gambar Berhasil Disalin! 📋',
-            text: 'Gambar resolusi Ultra HD (A4) telah disalin ke Clipboard. Anda bisa langsung paste (Ctrl+V / Tempel) di WhatsApp Web, Telegram, atau Word!',
+            text: 'Gambar resolusi Ultra HD telah disalin ke Clipboard. Anda bisa langsung paste (Ctrl+V / Tempel) di WhatsApp Web, Telegram, atau Word!',
             icon: 'success',
             background: '#0F172A',
             color: '#fff'
@@ -1943,45 +2125,48 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       return;
     }
 
-    // Jika ada lampiran dan opsi belum ditentukan, tampilkan pilihan cerdas agar hasil kirim WA tidak buram
+    // Jika ada lampiran dan opsi belum ditentukan, tampilkan pilihan cerdas
     if (formData.include_lampiran_peserta && !targetPageOption) {
       const extUpper = format.toUpperCase();
       await Swal.fire({
-        title: `📸 Unduh Gambar ${extUpper} (Ultra HD A4)`,
+        title: `📸 Unduh Gambar ${extUpper} (Ultra HD)`,
         html: `
           <div class="text-left text-xs space-y-3 font-sans">
-            <p class="text-slate-300">Surat ini memiliki <b>2 Halaman</b> (Surat Utama & Lampiran). Pilih opsi unduhan agar teks 100% tajam & jernih saat dishare ke WhatsApp / Medsos:</p>
+            <p class="text-slate-300">Surat ini memiliki <b>2 Halaman</b> (Surat Utama & Lampiran). Pilih opsi unduhan gambar sesuai kebutuhan Anda:</p>
             <div class="space-y-2">
-              <button id="swal-btn-dl-hal1" class="w-full text-left p-3 rounded-xl bg-blue-600/20 hover:bg-blue-600/35 border border-blue-500/40 transition-all cursor-pointer">
-                <p class="font-bold text-blue-300 flex items-center justify-between">
-                  <span>📄 Halaman 1 (Surat Utama - A4 Ultra HD)</span>
-                  <span class="text-[9px] px-1.5 py-0.5 bg-blue-500/30 text-blue-200 rounded font-black">REKOMENDASI WA ⭐</span>
-                </p>
-                <p class="text-[10px] text-slate-400 mt-1">Format A4 pas standar (300+ DPI). Teks surat, tanda tangan & stempel dijamin sangat tajam & jelas saat dibuka di WhatsApp.</p>
+              <button id="swal-btn-dl-comb" class="w-full text-left p-3 rounded-xl bg-amber-600/20 hover:bg-amber-600/35 border border-amber-500/40 transition-all cursor-pointer">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-amber-300">🖼️ 1. Unduh Dokumen Gambar Gabungan (Utuh 2 Halaman)</span>
+                  <span class="text-[9px] px-1.5 py-0.5 bg-amber-500/30 text-amber-200 rounded font-black">GABUNGAN</span>
+                </div>
+                <p class="text-[10px] text-slate-400 mt-1">Kedua halaman disambung memanjang ke bawah dalam 1 file resolusi tinggi (300+ DPI).</p>
+              </button>
+
+              <button id="swal-btn-dl-hal1" class="w-full text-left p-2.5 rounded-xl bg-blue-600/20 hover:bg-blue-600/35 border border-blue-500/40 transition-all cursor-pointer">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-blue-300">📄 2. Halaman 1 (Surat Utama - A4 Ultra HD)</span>
+                  <span class="text-[9px] px-1.5 py-0.5 bg-blue-500/30 text-blue-200 rounded font-black">A4 HD</span>
+                </div>
+                <p class="text-[10px] text-slate-400 mt-0.5">Format A4 pas standar (300+ DPI). Teks surat, tanda tangan & stempel sangat tajam.</p>
               </button>
               
-              <button id="swal-btn-dl-hal2" class="w-full text-left p-3 rounded-xl bg-purple-600/20 hover:bg-purple-600/35 border border-purple-500/40 transition-all cursor-pointer">
-                <p class="font-bold text-purple-300 flex items-center justify-between">
-                  <span>📋 Halaman 2 (Lampiran Peserta - A4 Ultra HD)</span>
-                  <span class="text-[9px] px-1.5 py-0.5 bg-purple-500/30 text-purple-200 rounded font-black">REKOMENDASI WA ⭐</span>
-                </p>
-                <p class="text-[10px] text-slate-400 mt-1">Tabel peserta dan kolom keterangan dalam format A4 HD mandiri.</p>
+              <button id="swal-btn-dl-hal2" class="w-full text-left p-2.5 rounded-xl bg-purple-600/20 hover:bg-purple-600/35 border border-purple-500/40 transition-all cursor-pointer">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-purple-300">📋 3. Halaman 2 (Lampiran Peserta - A4 Ultra HD)</span>
+                  <span class="text-[9px] px-1.5 py-0.5 bg-purple-500/30 text-purple-200 rounded font-black">A4 HD</span>
+                </div>
+                <p class="text-[10px] text-slate-400 mt-0.5">Tabel peserta dan kolom keterangan dalam format A4 HD mandiri.</p>
               </button>
 
-              <button id="swal-btn-dl-all" class="w-full text-left p-3 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/35 border border-emerald-500/40 transition-all cursor-pointer">
-                <p class="font-bold text-emerald-300">📦 Unduh Semua Halaman (2 File Gambar A4)</p>
-                <p class="text-[10px] text-slate-400 mt-1">Otomatis mengunduh Halaman 1 dan Halaman 2 terpisah secara berurutan.</p>
-              </button>
-
-              <button id="swal-btn-dl-comb" class="w-full text-left p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-white/10 transition-all cursor-pointer">
-                <p class="font-bold text-slate-300 text-[11px]">🖼️ Unduh 1 Gambar Panjang (Gabungan)</p>
-                <p class="text-[9px] text-slate-400">Kedua halaman disambung memanjang ke bawah dalam 1 file resolusi tinggi.</p>
+              <button id="swal-btn-dl-all" class="w-full text-left p-2.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/35 border border-emerald-500/40 transition-all cursor-pointer">
+                <p class="font-bold text-emerald-300">📦 4. Unduh Semua Halaman (2 File Gambar Terpisah A4)</p>
+                <p class="text-[10px] text-slate-400 mt-0.5">Otomatis mengunduh Halaman 1 dan Halaman 2 terpisah secara berurutan.</p>
               </button>
             </div>
             
             <div class="p-2.5 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-300 text-[10px] space-y-1">
               <p class="font-bold flex items-center gap-1">💡 Tips WhatsApp agar Tulisan Tidak Buram:</p>
-              <p class="text-slate-300">Saat mengirim foto di WhatsApp, tekan tombol <b>HD</b> di bagian atas WhatsApp atau kirim lewat menu <b>Dokumen</b> agar WhatsApp tidak mengkompres resolusi tulisan.</p>
+              <p class="text-slate-300">Saat mengirim foto di WhatsApp, pilih menu <b>Dokumen</b> (ikon klip kertas 📎 lalu Dokumen) atau tekan tombol <b>HD</b> di WhatsApp sebelum kirim.</p>
             </div>
           </div>
         `,
@@ -1991,6 +2176,10 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
         background: '#0F172A',
         color: '#fff',
         didOpen: () => {
+          document.getElementById('swal-btn-dl-comb')?.addEventListener('click', () => {
+            Swal.close();
+            handleDownloadImage(format, 'combined');
+          });
           document.getElementById('swal-btn-dl-hal1')?.addEventListener('click', () => {
             Swal.close();
             handleDownloadImage(format, 'page1');
@@ -2002,10 +2191,6 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
           document.getElementById('swal-btn-dl-all')?.addEventListener('click', () => {
             Swal.close();
             handleDownloadImage(format, 'all');
-          });
-          document.getElementById('swal-btn-dl-comb')?.addEventListener('click', () => {
-            Swal.close();
-            handleDownloadImage(format, 'combined');
           });
         }
       });
@@ -2055,9 +2240,10 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
         savedFileNames.push(name2);
       } else {
         const target = targetPageOption === 'combined' ? printRef.current : (page1Ref.current || printRef.current);
+        const suffix = targetPageOption === 'combined' ? '_Gabungan' : '';
         if (target) {
           const canvas = await getCanvasFromElement(target);
-          const name = triggerDownload(canvas, '');
+          const name = triggerDownload(canvas, suffix);
           savedFileNames.push(name);
         }
       }
