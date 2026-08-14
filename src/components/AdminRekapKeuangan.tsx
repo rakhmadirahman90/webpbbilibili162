@@ -955,7 +955,7 @@ export default function AdminRekapKeuangan({ isAdmin = true, session }: AdminRek
                 Rp {actualSaldoAkhirKumulatif.toLocaleString()}
               </h2>
               <div className="mt-1 text-[8px] sm:text-[9px] text-blue-300 font-bold space-y-0.5 border-t border-white/10 pt-1">
-                <div>• Modal Tetap: Rp {(600000).toLocaleString()}</div>
+                <div>• Modal Tetap (Pengelola Bola): Rp {(600000).toLocaleString()}</div>
                 <div>• Bendahara: Rp {actualSaldoBendahara.toLocaleString()}</div>
               </div>
             </div>

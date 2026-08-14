@@ -325,7 +325,7 @@ export default function KasManager() {
       doc.text(`Rp ${saldoAkhirKumulatif.toLocaleString()}`, 190, finalY + 27, { align: 'right' });
 
       doc.setFontSize(8).setFont("helvetica", "normal").setTextColor(80);
-      doc.text(`• Modal Kas Tetap Pemegang Bola:`, 105, finalY + 34);
+      doc.text(`• Modal Tetap (Pengelola Bola):`, 105, finalY + 34);
       doc.text(`Rp 600.000`, 190, finalY + 34, { align: 'right' });
 
       doc.text(`• Saldo Kas Bendahara:`, 105, finalY + 41);
@@ -359,7 +359,7 @@ export default function KasManager() {
         `• Total Pemasukan: Rp ${stats.masuk.toLocaleString()}\n` +
         `• Total Pengeluaran: Rp ${stats.keluar.toLocaleString()}\n` +
         `• *Saldo Akhir Kas: Rp ${saldoAkhirKumulatif.toLocaleString()}*\n` +
-        `  - Modal Kas Tetap Pemegang Bola: Rp 600.000\n` +
+        `  - Modal Tetap (Pengelola Bola): Rp ${modalTetap.toLocaleString()}\n` +
         `  - Saldo Kas Bendahara: Rp ${saldoBendahara.toLocaleString()}\n\n` +
         `Laporan keuangan lengkap terlampir dalam file PDF.\n\n` +
         `🔗 *Akses Kas Klub:* ${window.location.origin}/kas\n\n` +
@@ -785,7 +785,7 @@ export default function KasManager() {
           <p className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-blue-400 mb-1 flex items-center gap-1 truncate"><Wallet size={12}/> Saldo Akhir Kas</p>
           <h2 className="text-xs sm:text-lg md:text-xl font-black italic text-white truncate">Rp {saldoAkhirKumulatif.toLocaleString()}</h2>
           <div className="mt-1 text-[9px] text-blue-300 font-medium space-y-0.5">
-            <div>• Modal Tetap: Rp {modalTetap.toLocaleString()}</div>
+            <div>• Modal Tetap (Pengelola Bola): Rp {modalTetap.toLocaleString()}</div>
             <div>• Bendahara: Rp {saldoBendahara.toLocaleString()}</div>
           </div>
         </div>

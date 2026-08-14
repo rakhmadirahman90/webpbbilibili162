@@ -363,8 +363,8 @@ export default function PublicKasView({ memberOnlyName }: PublicKasViewProps = {
         doc.text(`Rp ${saldoAkhirPeriode.toLocaleString()}`, 190, finalY + 27, { align: 'right' });
 
         doc.setFontSize(8).setFont("helvetica", "normal").setTextColor(100);
-        doc.text(`• Modal Kas Tetap Pemegang Bola:`, 105, finalY + 34);
-        doc.text(`Rp 600.000`, 190, finalY + 34, { align: 'right' });
+        doc.text(`• Modal Tetap (Pengelola Bola):`, 105, finalY + 34);
+        doc.text(`Rp ${modalTetap.toLocaleString()}`, 190, finalY + 34, { align: 'right' });
 
         doc.text(`• Saldo Kas Bendahara:`, 105, finalY + 41);
         doc.setFont("helvetica", "bold").setTextColor(30, 64, 175);
@@ -411,7 +411,7 @@ export default function PublicKasView({ memberOnlyName }: PublicKasViewProps = {
           `• Total Pemasukan: Rp ${stats.masuk.toLocaleString()}\n` +
           `• Total Pengeluaran: Rp ${stats.keluar.toLocaleString()}\n` +
           `• *Saldo Akhir Kas: Rp ${saldoAkhirPeriode.toLocaleString()}*\n` +
-          `  - Modal Kas Tetap Pemegang Bola: Rp 600.000\n` +
+          `  - Modal Tetap (Pengelola Bola): Rp ${modalTetap.toLocaleString()}\n` +
           `  - Saldo Kas Bendahara: Rp ${saldoBendahara.toLocaleString()}\n\n` +
           `Laporan keuangan lengkap terlampir dalam file PDF.\n\n` +
           `🔗 *Akses Kas Klub:* ${window.location.origin}/kas\n\n` +
@@ -672,7 +672,7 @@ export default function PublicKasView({ memberOnlyName }: PublicKasViewProps = {
             <div className="text-[8px] md:text-[10px] font-black text-blue-100 uppercase tracking-[0.15em] md:tracking-[0.3em] mb-1">Saldo Akhir Kas</div>
             <div className="text-sm xs:text-base md:text-2xl font-black text-white tracking-tighter">Rp {saldoAkhirPeriode.toLocaleString()}</div>
             <div className="mt-1 text-[7px] xs:text-[9px] text-blue-100 font-bold space-y-0.5 border-t border-white/10 pt-1 md:mt-2 md:text-[10px] md:pt-2">
-              <div>• Modal: Rp 600.000</div>
+              <div>• Modal Tetap (Pengelola Bola): Rp {modalTetap.toLocaleString()}</div>
               <div>• Bendahara: Rp {saldoBendahara.toLocaleString()}</div>
             </div>
           </div>
