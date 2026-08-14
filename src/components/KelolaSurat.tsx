@@ -127,18 +127,43 @@ export const normalizeSuratNomor = (num?: string): string => {
     .replace(/\/+/g, '/');
 };
 
+export const sanitizeSuratItem = (item: any): any => {
+  if (!item) return item;
+  const copy = { ...item };
+  const perihal = (copy.perihal || '').toLowerCase();
+  const rawNomor = (copy.nomor_surat || '').toUpperCase();
+  // Standardize Sidrap letter numbering if mislabeled
+  if (perihal.includes('tiga lima sidrap') || perihal.includes('sidrap') || (rawNomor.includes('/V/2026') && (rawNomor.includes('002') || rawNomor.includes('003')))) {
+    copy.nomor_surat = '003/PB-BILIBILI162/V/2026';
+  }
+  return copy;
+};
+
 export const getSuratDeduplicationKey = (item: any): string => {
   if (!item) return '';
-  const nomor = normalizeSuratNomor(item.nomor_surat);
+  const sanitized = sanitizeSuratItem(item);
+  const perihal = (sanitized.perihal || '').trim().toLowerCase();
+  if (perihal.includes('tiga lima sidrap') || perihal.includes('sidrap')) {
+    return 'surat_persahabatan_sidrap_003';
+  }
+  if (perihal.includes('narasumber') || (sanitized.nomor_surat && sanitized.nomor_surat.includes('001/'))) {
+    return 'surat_narasumber_kajian_001';
+  }
+  if (perihal.includes('mengikuti kajian') || (sanitized.nomor_surat && sanitized.nomor_surat.includes('002/PB') && sanitized.nomor_surat.includes('/II/'))) {
+    return 'surat_mengikuti_kajian_002';
+  }
+  if (perihal.includes('mabar arsy') || perihal.includes('surat tugas') || (sanitized.nomor_surat && sanitized.nomor_surat.includes('004/'))) {
+    return 'surat_tugas_mabar_004';
+  }
+  const nomor = normalizeSuratNomor(sanitized.nomor_surat);
   if (nomor && nomor !== '__MASTER_DIGITAL_ASSETS__') {
     return `nomor_${nomor}`;
   }
-  const perihal = (item.perihal || '').trim().toLowerCase();
-  const tanggal = (item.tanggal_surat || item.tempat_tanggal || '').trim().toLowerCase();
+  const tanggal = (sanitized.tanggal_surat || sanitized.tempat_tanggal || '').trim().toLowerCase();
   if (perihal) {
     return `perihal_${perihal}_${tanggal}`;
   }
-  return `id_${item.id || ''}`;
+  return `id_${sanitized.id || ''}`;
 };
 
 export const DEFAULT_TTD_KETUA_URL = "";
@@ -1294,7 +1319,27 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
 
       const allItems = Array.from(map.values());
 
-      const unique = allItems.sort((a, b) => {
+      // Ensure STRICT uniqueness of both ID and Nomor Surat
+      const seenIds = new Set<string>();
+      const seenNomor = new Set<string>();
+      const strictlyUnique: any[] = [];
+
+      for (const item of allItems) {
+        if (!item) continue;
+        const normNom = normalizeSuratNomor(item.nomor_surat);
+        const itemId = String(item.id || '');
+        if (itemId && seenIds.has(itemId)) {
+          continue;
+        }
+        if (normNom && seenNomor.has(normNom)) {
+          continue;
+        }
+        if (itemId) seenIds.add(itemId);
+        if (normNom) seenNomor.add(normNom);
+        strictlyUnique.push(item);
+      }
+
+      const unique = strictlyUnique.sort((a, b) => {
         const timeA = new Date(a.created_at || a.created_at_time || 0).getTime();
         const timeB = new Date(b.created_at || b.created_at_time || 0).getTime();
         return timeB - timeA;
@@ -1318,7 +1363,21 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       SEED_SURAT.forEach(addFallback);
       localData.forEach(addFallback);
 
-      const fallbackItems = Array.from(map.values()).sort((a, b) => {
+      const seenIds = new Set<string>();
+      const seenNomor = new Set<string>();
+      const fallbackList: any[] = [];
+      for (const item of Array.from(map.values())) {
+        if (!item) continue;
+        const normNom = normalizeSuratNomor(item.nomor_surat);
+        const itemId = String(item.id || '');
+        if (itemId && seenIds.has(itemId)) continue;
+        if (normNom && seenNomor.has(normNom)) continue;
+        if (itemId) seenIds.add(itemId);
+        if (normNom) seenNomor.add(normNom);
+        fallbackList.push(item);
+      }
+
+      const fallbackItems = fallbackList.sort((a, b) => {
         const timeA = new Date(a.created_at || a.created_at_time || 0).getTime();
         const timeB = new Date(b.created_at || b.created_at_time || 0).getTime();
         return timeB - timeA;
@@ -1387,8 +1446,17 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       localData.forEach(addMasuk);
       (data || []).forEach(addMasuk);
 
-      const unique = Array.from(map.values());
-      setSuratMasukList(unique);
+      const seenMasukIds = new Set<string>();
+      const strictlyUniqueMasuk: any[] = [];
+      for (const item of Array.from(map.values())) {
+        if (!item) continue;
+        const idStr = String(item.id || item.nomor_surat || '');
+        if (idStr && seenMasukIds.has(idStr)) continue;
+        if (idStr) seenMasukIds.add(idStr);
+        strictlyUniqueMasuk.push(item);
+      }
+
+      setSuratMasukList(strictlyUniqueMasuk);
     } catch (err) {
       const localData = JSON.parse(localStorage.getItem('arsip_surat_masuk_local') || '[]');
       setSuratMasukList(localData);
@@ -3035,8 +3103,8 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                   </p>
                 </div>
               ) : (
-                filteredSuratMasuk.map((s) => (
-                  <div key={s.id} className="p-4 hover:bg-white/[0.02] transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4 group">
+                filteredSuratMasuk.map((s, idx) => (
+                  <div key={s.id ? `masuk_${s.id}` : `masuk_idx_${idx}_${s.nomor_surat || ''}`} className="p-4 hover:bg-white/[0.02] transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4 group">
                     <div className="min-w-0 flex-1 space-y-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="font-mono text-xs sm:text-sm font-bold text-purple-400">{s.nomor_surat}</span>
@@ -3132,8 +3200,8 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                 {searchTerm ? `Tidak ditemukan hasil untuk "${searchTerm}"` : 'Belum Ada Arsip Surat'}
               </p>
             </div>
-          ) : filteredSurat.map((s) => (
-            <div key={s.id} className="p-3 sm:p-4 hover:bg-white/[0.02] transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4 group">
+          ) : filteredSurat.map((s, idx) => (
+            <div key={s.id ? `surat_${s.id}` : `surat_idx_${idx}_${s.nomor_surat || ''}`} className="p-3 sm:p-4 hover:bg-white/[0.02] transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4 group">
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="font-bold text-xs sm:text-sm text-blue-400 uppercase tracking-tight">{s.nomor_surat}</p>
