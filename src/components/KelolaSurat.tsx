@@ -1651,21 +1651,33 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     (clone.style as any).webkitFontSmoothing = 'antialiased';
     (clone.style as any).mozOsxFontSmoothing = 'grayscale';
 
-    // Hilangkan tombol/handle manipulasi interaktif di clone
-    const interactiveHandles = clone.querySelectorAll('.no-print, [title*="Tarik"], [title*="Geser"]');
-    interactiveHandles.forEach(h => (h as HTMLElement).style.display = 'none');
+    // Hilangkan hanya elemen kontrol editor & tombol resize interaktif di clone (JANGAN sembunyikan TTD & Stempel)
+    const editorControls = clone.querySelectorAll('.no-print, .no-export, [title*="Tarik untuk mengubah"]');
+    editorControls.forEach(h => (h as HTMLElement).style.display = 'none');
+
+    // Bersihkan highlight/ring seleksi editor di dalam clone
+    const highlightedElements = clone.querySelectorAll('.ring-2, .ring-blue-500, .border-dashed, [class*="ring-"]');
+    highlightedElements.forEach(el => {
+      el.classList.remove('ring-2', 'ring-blue-500', 'ring-offset-2', 'hover:ring-1', 'hover:ring-blue-300', 'border-dashed');
+    });
     
     container.appendChild(clone);
     document.body.appendChild(container);
 
-    // Tunggu semua gambar (logo, ttd, stempel) selesai didecode
+    // Tunggu dan pastikan semua gambar (logo, ttd, stempel) selesai dimuat dan disiapkan dengan CORS
     const images = Array.from(clone.querySelectorAll('img'));
     await Promise.all(
       images.map(img => {
+        if (!img.src.startsWith('data:')) {
+          img.crossOrigin = 'anonymous';
+        }
         if (img.complete && img.naturalWidth > 0) return Promise.resolve();
         return new Promise(resolve => {
           img.onload = resolve;
-          img.onerror = resolve;
+          img.onerror = () => {
+            console.warn("Gambar gagal dimuat di clone canvas:", img.src);
+            resolve(null);
+          };
         });
       })
     );
@@ -2786,6 +2798,7 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                       <img 
                         src={getValidAssetUrl(formData.logo_url, DEFAULT_LOGO_URL)} 
                         alt="Logo PB Bilibili 162" 
+                        crossOrigin="anonymous"
                         onError={(e) => { e.currentTarget.src = DEFAULT_LOGO_URL; }}
                         className="w-full h-full object-contain pointer-events-none" 
                       />
@@ -2870,6 +2883,7 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                               <img 
                                   src={getValidAssetUrl(formData.ttd_ketua_url, DEFAULT_TTD_KETUA_URL)} 
                                   alt="TTD Ketua" 
+                                  crossOrigin="anonymous"
                                   onError={(e) => { e.currentTarget.src = DEFAULT_TTD_KETUA_URL; }}
                                   className="h-full object-contain mix-blend-multiply pointer-events-none" 
                               />
@@ -2909,6 +2923,7 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                               <img 
                                   src={getValidAssetUrl(formData.cap_stempel_url, DEFAULT_CAP_STEMPEL_URL)} 
                                   alt="Cap Stempel" 
+                                  crossOrigin="anonymous"
                                   onError={(e) => { e.currentTarget.src = DEFAULT_CAP_STEMPEL_URL; }}
                                   className="w-full h-full object-contain opacity-80 mix-blend-darken pointer-events-none" 
                               />
@@ -2952,6 +2967,7 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                               <img 
                                   src={getValidAssetUrl(formData.ttd_sekretaris_url, DEFAULT_TTD_SEKRETARIS_URL)} 
                                   alt="TTD Sekretaris" 
+                                  crossOrigin="anonymous"
                                   onError={(e) => { e.currentTarget.src = DEFAULT_TTD_SEKRETARIS_URL; }}
                                   className="h-full object-contain mix-blend-multiply pointer-events-none" 
                               />
