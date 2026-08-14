@@ -307,7 +307,7 @@ export function KelolaSurat() {
   const isMasukInitialRef = useRef<boolean>(true);
 
   const [logoPos, setLogoPos] = useState({ x: 0, y: 0 });
-  const [stempelPos, setStempelPos] = useState({ x: -40, y: 0 });
+  const [stempelPos, setStempelPos] = useState({ x: -35, y: 0 });
   const [ttdKetuaPos, setTtdKetuaPos] = useState({ x: 0, y: 0 });
   const [ttdSekretarisPos, setTtdSekretarisPos] = useState({ x: 0, y: 0 });
 
@@ -1357,7 +1357,7 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     setIsPreviewOnly(false);
     setActiveModalTab('form');
     setLogoPos({ x: 0, y: 0 });
-    setStempelPos({ x: -40, y: 0 });
+    setStempelPos({ x: -35, y: 0 });
     setTtdKetuaPos({ x: 0, y: 0 });
     setTtdSekretarisPos({ x: 0, y: 0 });
 
@@ -1608,7 +1608,8 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     }
   };
 
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [dragStartClient, setDragStartClient] = useState({ x: 0, y: 0 });
+  const [dragStartPos, setDragStartPos] = useState({ x: 0, y: 0 });
 
   const handleAssetPointerDown = (
     e: React.PointerEvent,
@@ -1625,10 +1626,11 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     else if (asset === 'ttd_ketua') currentPos = ttdKetuaPos;
     else if (asset === 'ttd_sekretaris') currentPos = ttdSekretarisPos;
 
-    setDragStart({
-      x: e.clientX - currentPos.x,
-      y: e.clientY - currentPos.y
+    setDragStartClient({
+      x: e.clientX,
+      y: e.clientY
     });
+    setDragStartPos(currentPos);
 
     try {
       (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
@@ -1639,10 +1641,15 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     if (!draggingAsset) return;
     e.preventDefault();
     e.stopPropagation();
+    const effectiveZoom = zoomScale > 0 ? zoomScale : 1;
+    const deltaX = (e.clientX - dragStartClient.x) / effectiveZoom;
+    const deltaY = (e.clientY - dragStartClient.y) / effectiveZoom;
+
     const newPos = {
-      x: e.clientX - dragStart.x,
-      y: e.clientY - dragStart.y
+      x: Math.round(dragStartPos.x + deltaX),
+      y: Math.round(dragStartPos.y + deltaY)
     };
+
     if (draggingAsset === 'logo') {
       setLogoPos(newPos);
       setFormData(prev => ({ ...prev, logo_pos: newPos }));
@@ -3233,7 +3240,7 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                       type="button"
                       onClick={() => {
                         if (selectedAsset === 'logo') setLogoPos({ x: 0, y: 0 });
-                        else if (selectedAsset === 'stempel') setStempelPos({ x: -40, y: 0 });
+                        else if (selectedAsset === 'stempel') setStempelPos({ x: -35, y: 0 });
                         else if (selectedAsset === 'ttd_ketua') setTtdKetuaPos({ x: 0, y: 0 });
                         else if (selectedAsset === 'ttd_sekretaris') setTtdSekretarisPos({ x: 0, y: 0 });
                       }}
@@ -3376,17 +3383,19 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
 
                         <div className="mt-12 flex justify-between px-10 relative text-black">
                             <div className="text-center w-48 relative">
-                                <p className="mb-16 font-medium">Ketua,</p>
+                                <p className="mb-20 font-medium">Ketua,</p>
                                 <div 
                                     onPointerDown={(e) => handleAssetPointerDown(e, 'ttd_ketua')}
                                     onPointerMove={handleAssetPointerMove}
                                     onPointerUp={handleAssetPointerUp}
                                     style={{
-                                      transform: `translate(${ttdKetuaPos.x}px, ${ttdKetuaPos.y}px)`,
+                                      left: '50%',
+                                      top: '32px',
+                                      transform: `translate(calc(-50% + ${ttdKetuaPos.x}px), ${ttdKetuaPos.y}px)`,
                                       height: `${80 * ((formData.ttd_ketua_scale || 100) / 100)}px`,
                                       minWidth: `${120 * ((formData.ttd_ketua_scale || 100) / 100)}px`,
                                     }}
-                                    className={`absolute top-6 left-1/2 -translate-x-1/2 flex items-center justify-center cursor-grab active:cursor-grabbing group transition-all z-10 select-none touch-none ${
+                                    className={`absolute flex items-center justify-center cursor-grab active:cursor-grabbing group transition-all z-10 select-none touch-none ${
                                       selectedAsset === 'ttd_ketua' ? 'ring-2 ring-blue-500 ring-offset-2 rounded-lg' : 'hover:ring-1 hover:ring-blue-300 rounded-lg'
                                     }`}
                                     title="Klik / Tarik untuk menggeser & ubah ukuran TTD Ketua"
@@ -3422,11 +3431,13 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                                     onPointerMove={handleAssetPointerMove}
                                     onPointerUp={handleAssetPointerUp}
                                     style={{ 
-                                      transform: `translate(${stempelPos.x}px, ${stempelPos.y}px)`,
+                                      left: '50%',
+                                      top: '20px',
+                                      transform: `translate(calc(-50% + ${stempelPos.x}px), ${stempelPos.y}px)`,
                                       width: `${112 * ((formData.stempel_scale || 100) / 100)}px`,
                                       height: `${112 * ((formData.stempel_scale || 100) / 100)}px`,
                                     }}
-                                    className={`absolute top-4 left-1/2 cursor-grab active:cursor-grabbing z-20 group select-none touch-none transition-all ${
+                                    className={`absolute cursor-grab active:cursor-grabbing z-20 group select-none touch-none transition-all ${
                                       selectedAsset === 'stempel' ? 'ring-2 ring-blue-500 ring-offset-2 rounded-full' : 'hover:ring-1 hover:ring-blue-300 rounded-full'
                                     }`}
                                     title="Klik / Tarik untuk menggeser & ubah ukuran Cap Stempel"
@@ -3460,17 +3471,19 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                             </div>
 
                             <div className="text-center w-48 relative">
-                                <p className="mb-16 font-medium">Sekretaris,</p>
+                                <p className="mb-20 font-medium">Sekretaris,</p>
                                 <div 
                                     onPointerDown={(e) => handleAssetPointerDown(e, 'ttd_sekretaris')}
                                     onPointerMove={handleAssetPointerMove}
                                     onPointerUp={handleAssetPointerUp}
                                     style={{
-                                      transform: `translate(${ttdSekretarisPos.x}px, ${ttdSekretarisPos.y}px)`,
+                                      left: '50%',
+                                      top: '32px',
+                                      transform: `translate(calc(-50% + ${ttdSekretarisPos.x}px), ${ttdSekretarisPos.y}px)`,
                                       height: `${80 * ((formData.ttd_sekretaris_scale || 100) / 100)}px`,
                                       minWidth: `${120 * ((formData.ttd_sekretaris_scale || 100) / 100)}px`,
                                     }}
-                                    className={`absolute top-6 left-1/2 -translate-x-1/2 flex items-center justify-center cursor-grab active:cursor-grabbing group transition-all z-10 select-none touch-none ${
+                                    className={`absolute flex items-center justify-center cursor-grab active:cursor-grabbing group transition-all z-10 select-none touch-none ${
                                       selectedAsset === 'ttd_sekretaris' ? 'ring-2 ring-blue-500 ring-offset-2 rounded-lg' : 'hover:ring-1 hover:ring-blue-300 rounded-lg'
                                     }`}
                                     title="Klik / Tarik untuk menggeser & ubah ukuran TTD Sekretaris"
@@ -3568,14 +3581,16 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                             <div className="flex justify-between px-10 relative text-black">
                               {/* Ketua */}
                               <div className="text-center w-48 relative">
-                                <p className="mb-16 font-medium">Ketua,</p>
+                                <p className="mb-20 font-medium">Ketua,</p>
                                 <div 
                                   style={{
-                                    transform: `translate(${ttdKetuaPos.x}px, ${ttdKetuaPos.y}px)`,
+                                    left: '50%',
+                                    top: '32px',
+                                    transform: `translate(calc(-50% + ${ttdKetuaPos.x}px), ${ttdKetuaPos.y}px)`,
                                     height: `${80 * ((formData.ttd_ketua_scale || 100) / 100)}px`,
                                     minWidth: `${120 * ((formData.ttd_ketua_scale || 100) / 100)}px`,
                                   }}
-                                  className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center justify-center pointer-events-none z-10"
+                                  className="absolute flex items-center justify-center pointer-events-none z-10"
                                 >
                                   <img 
                                     src={getValidAssetUrl(formData.ttd_ketua_url, DEFAULT_TTD_KETUA_URL)} 
@@ -3588,11 +3603,13 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                                 
                                 <div 
                                   style={{ 
-                                    transform: `translate(${stempelPos.x}px, ${stempelPos.y}px)`,
+                                    left: '50%',
+                                    top: '20px',
+                                    transform: `translate(calc(-50% + ${stempelPos.x}px), ${stempelPos.y}px)`,
                                     width: `${112 * ((formData.stempel_scale || 100) / 100)}px`,
                                     height: `${112 * ((formData.stempel_scale || 100) / 100)}px`,
                                   }}
-                                  className="absolute top-4 left-1/2 pointer-events-none z-20"
+                                  className="absolute pointer-events-none z-20"
                                 >
                                   <img 
                                     src={getValidAssetUrl(formData.cap_stempel_url, DEFAULT_CAP_STEMPEL_URL)} 
@@ -3607,14 +3624,16 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
 
                               {/* Sekretaris */}
                               <div className="text-center w-48 relative">
-                                <p className="mb-16 font-medium">Sekretaris,</p>
+                                <p className="mb-20 font-medium">Sekretaris,</p>
                                 <div 
                                   style={{
-                                    transform: `translate(${ttdSekretarisPos.x}px, ${ttdSekretarisPos.y}px)`,
+                                    left: '50%',
+                                    top: '32px',
+                                    transform: `translate(calc(-50% + ${ttdSekretarisPos.x}px), ${ttdSekretarisPos.y}px)`,
                                     height: `${80 * ((formData.ttd_sekretaris_scale || 100) / 100)}px`,
                                     minWidth: `${120 * ((formData.ttd_sekretaris_scale || 100) / 100)}px`,
                                   }}
-                                  className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center justify-center pointer-events-none z-10"
+                                  className="absolute flex items-center justify-center pointer-events-none z-10"
                                 >
                                   <img 
                                     src={getValidAssetUrl(formData.ttd_sekretaris_url, DEFAULT_TTD_SEKRETARIS_URL)} 
