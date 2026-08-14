@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../supabase';
 import { broadcastDataChange } from '../utils/realtimeHelper';
-import { Mail, Plus, Search, Eye, Edit, Trash2, Printer, X, Upload, Sparkles, Send, ImageIcon, MessageCircle, Move, Loader2, FileText, CheckCircle2, Clock, AlertCircle, Filter, Building, UserCheck, ShieldAlert, ListOrdered, ZoomIn, ZoomOut, RotateCcw, Maximize2, Download, Calendar } from 'lucide-react';
+import { Mail, Plus, Search, Eye, Edit, Trash2, Printer, X, Upload, Sparkles, Send, ImageIcon, MessageCircle, Move, Loader2, FileText, CheckCircle2, Clock, AlertCircle, Filter, Building, UserCheck, ShieldAlert, ListOrdered, ZoomIn, ZoomOut, RotateCcw, Maximize2, Download, Calendar, Copy } from 'lucide-react';
 import Swal from 'sweetalert2';
 
 export const BULAN_INDONESIA = [
@@ -1683,7 +1683,7 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
 
     // Create a clean offscreen container with explicit rendering standards
     const container = document.createElement('div');
-    container.style.position = 'absolute';
+    container.style.position = 'fixed';
     container.style.top = '0px';
     container.style.left = '-99999px';
     container.style.width = '794px';
@@ -1702,6 +1702,8 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     clone.style.margin = '0';
     clone.style.boxShadow = 'none';
     clone.style.border = 'none';
+    clone.style.backgroundColor = '#ffffff';
+    clone.style.color = '#000000';
     clone.style.letterSpacing = 'normal';
     clone.style.textRendering = 'geometricPrecision';
     (clone.style as any).webkitFontSmoothing = 'antialiased';
@@ -1723,9 +1725,10 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     });
 
     // Pastikan semua teks di dalam clone berwarna hitam pekat & tajam
-    const allTexts = clone.querySelectorAll('p, h1, h2, h3, h4, span, td, th, strong, div');
+    const allTexts = clone.querySelectorAll('p, h1, h2, h3, h4, span, td, th, strong, div, b');
     allTexts.forEach(el => {
       const htmlEl = el as HTMLElement;
+      htmlEl.style.color = '#000000';
       htmlEl.style.textRendering = 'geometricPrecision';
       (htmlEl.style as any).webkitFontSmoothing = 'antialiased';
       (htmlEl.style as any).mozOsxFontSmoothing = 'grayscale';
@@ -1753,11 +1756,11 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     );
 
     // Beri jeda sejenak untuk rendering layout engine
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise(resolve => setTimeout(resolve, 120));
 
     try {
       const canvas = await html2canvas(clone, {
-        scale: 4.0, // 4.0x scale (~3176px width) menghasilkan kerapatan 300+ DPI standar percetakan Ultra HD
+        scale: 4.0, // 4.0x scale (3176px width) menghasilkan kerapatan 300+ DPI standar percetakan Ultra HD
         useCORS: true,
         allowTaint: true,
         logging: false,
@@ -1767,6 +1770,7 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
         onclone: (clonedDoc) => {
           const texts = clonedDoc.querySelectorAll('p, h1, h2, h3, span, td, th, strong');
           texts.forEach(el => {
+            (el as HTMLElement).style.color = '#000000';
             (el as HTMLElement).style.textRendering = 'geometricPrecision';
             ((el as HTMLElement).style as any).webkitFontSmoothing = 'antialiased';
             ((el as HTMLElement).style as any).mozOsxFontSmoothing = 'grayscale';
@@ -1778,6 +1782,67 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       if (document.body.contains(container)) {
         document.body.removeChild(container);
       }
+    }
+  };
+
+  // Helper untuk mengubah canvas menjadi Blob atau DataURL berkualitas tinggi tanpa distorsi kompresi
+  const getHighQualityImageDataUrl = (canvas: HTMLCanvasElement, format: 'png' | 'jpg'): string => {
+    if (format === 'png') {
+      return canvas.toDataURL('image/png', 1.0);
+    }
+    // Untuk JPG: render ke canvas berlatar belakang putih murni untuk mencegah artefak kompresi hitam di sudut
+    const outCanvas = document.createElement('canvas');
+    outCanvas.width = canvas.width;
+    outCanvas.height = canvas.height;
+    const ctx = outCanvas.getContext('2d', { alpha: false });
+    if (ctx) {
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, outCanvas.width, outCanvas.height);
+      ctx.drawImage(canvas, 0, 0);
+      return outCanvas.toDataURL('image/jpeg', 0.98);
+    }
+    return canvas.toDataURL('image/jpeg', 0.98);
+  };
+
+  const handleCopyImageToClipboard = async (pageTarget: 'page1' | 'page2' | 'single') => {
+    try {
+      const target = pageTarget === 'page2' ? page2Ref.current : (page1Ref.current || printRef.current);
+      if (!target) {
+        Swal.fire({ title: 'Error', text: 'Halaman surat tidak ditemukan.', icon: 'error', background: '#0F172A', color: '#fff' });
+        return;
+      }
+      setIsDownloading('png');
+      const canvas = await getCanvasFromElement(target);
+      canvas.toBlob(async (blob) => {
+        if (!blob) throw new Error('Gagal membuat blob gambar.');
+        if (navigator.clipboard && (window as any).ClipboardItem) {
+          await navigator.clipboard.write([
+            new (window as any).ClipboardItem({ 'image/png': blob })
+          ]);
+          Swal.fire({
+            title: 'Gambar Berhasil Disalin! 📋',
+            text: 'Gambar resolusi Ultra HD (A4) telah disalin ke Clipboard. Anda bisa langsung paste (Ctrl+V / Tempel) di WhatsApp Web, Telegram, atau Word!',
+            icon: 'success',
+            background: '#0F172A',
+            color: '#fff'
+          });
+        } else {
+          throw new Error('Fitur salin clipboard gambar tidak didukung di browser ini.');
+        }
+        setIsDownloading(null);
+      }, 'image/png');
+    } catch (err: any) {
+      console.warn("Clipboard copy failed:", err);
+      Swal.fire({
+        title: 'Info Salin',
+        text: 'Browser Anda tidak mengizinkan akses salin gambar otomatis. Silakan gunakan tombol "Unduh PNG / JPG" untuk menyimpan file.',
+        icon: 'info',
+        background: '#0F172A',
+        color: '#fff'
+      });
+      setIsDownloading(null);
     }
   };
 
@@ -1885,19 +1950,22 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
         title: `📸 Unduh Gambar ${extUpper} (Ultra HD A4)`,
         html: `
           <div class="text-left text-xs space-y-3 font-sans">
-            <p class="text-slate-300">Surat ini memiliki <b>2 Halaman</b> (Surat Utama & Lampiran). Pilih opsi unduhan agar teks 100% tajam saat dikirim ke WhatsApp:</p>
+            <p class="text-slate-300">Surat ini memiliki <b>2 Halaman</b> (Surat Utama & Lampiran). Pilih opsi unduhan agar teks 100% tajam & jernih saat dishare ke WhatsApp / Medsos:</p>
             <div class="space-y-2">
               <button id="swal-btn-dl-hal1" class="w-full text-left p-3 rounded-xl bg-blue-600/20 hover:bg-blue-600/35 border border-blue-500/40 transition-all cursor-pointer">
                 <p class="font-bold text-blue-300 flex items-center justify-between">
-                  <span>📄 Halaman 1 (Surat Utama)</span>
+                  <span>📄 Halaman 1 (Surat Utama - A4 Ultra HD)</span>
                   <span class="text-[9px] px-1.5 py-0.5 bg-blue-500/30 text-blue-200 rounded font-black">REKOMENDASI WA ⭐</span>
                 </p>
-                <p class="text-[10px] text-slate-400 mt-1">Ukuran A4 pas untuk WhatsApp & media sosial. Teks, tanda tangan & stempel dijamin sangat tajam & jelas.</p>
+                <p class="text-[10px] text-slate-400 mt-1">Format A4 pas standar (300+ DPI). Teks surat, tanda tangan & stempel dijamin sangat tajam & jelas saat dibuka di WhatsApp.</p>
               </button>
               
               <button id="swal-btn-dl-hal2" class="w-full text-left p-3 rounded-xl bg-purple-600/20 hover:bg-purple-600/35 border border-purple-500/40 transition-all cursor-pointer">
-                <p class="font-bold text-purple-300">📋 Halaman 2 (Daftar Lampiran Peserta)</p>
-                <p class="text-[10px] text-slate-400 mt-1">Tabel peserta dan keterangan dalam format A4 HD mandiri.</p>
+                <p class="font-bold text-purple-300 flex items-center justify-between">
+                  <span>📋 Halaman 2 (Lampiran Peserta - A4 Ultra HD)</span>
+                  <span class="text-[9px] px-1.5 py-0.5 bg-purple-500/30 text-purple-200 rounded font-black">REKOMENDASI WA ⭐</span>
+                </p>
+                <p class="text-[10px] text-slate-400 mt-1">Tabel peserta dan kolom keterangan dalam format A4 HD mandiri.</p>
               </button>
 
               <button id="swal-btn-dl-all" class="w-full text-left p-3 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/35 border border-emerald-500/40 transition-all cursor-pointer">
@@ -1907,13 +1975,13 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
 
               <button id="swal-btn-dl-comb" class="w-full text-left p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-white/10 transition-all cursor-pointer">
                 <p class="font-bold text-slate-300 text-[11px]">🖼️ Unduh 1 Gambar Panjang (Gabungan)</p>
-                <p class="text-[9px] text-slate-400">Kedua halaman disambung memanjang ke bawah dalam 1 file.</p>
+                <p class="text-[9px] text-slate-400">Kedua halaman disambung memanjang ke bawah dalam 1 file resolusi tinggi.</p>
               </button>
             </div>
             
             <div class="p-2.5 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-300 text-[10px] space-y-1">
-              <p class="font-bold flex items-center gap-1">💡 Tips WhatsApp agar Gambar Tidak Pecah:</p>
-              <p class="text-slate-300">Saat mengirim di WhatsApp, pilih menu <b>Dokumen</b> atau tekan ikon <b>HD</b> di WhatsApp sebelum kirim agar kompresi otomatis WhatsApp tidak memburamkan tulisan.</p>
+              <p class="font-bold flex items-center gap-1">💡 Tips WhatsApp agar Tulisan Tidak Buram:</p>
+              <p class="text-slate-300">Saat mengirim foto di WhatsApp, tekan tombol <b>HD</b> di bagian atas WhatsApp atau kirim lewat menu <b>Dokumen</b> agar WhatsApp tidak mengkompres resolusi tulisan.</p>
             </div>
           </div>
         `,
@@ -1956,8 +2024,7 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       const cleanNomor = (formData.nomor_surat || 'surat').replace(/[/\\?%*:|"<>]/g, '-').replace(/\s+/g, '_');
 
       const triggerDownload = (canvas: HTMLCanvasElement, suffix: string) => {
-        const quality = format === 'jpg' ? 0.99 : 1.0;
-        const imgData = canvas.toDataURL(mimeType, quality);
+        const imgData = getHighQualityImageDataUrl(canvas, format);
         const fileName = `Surat_PB162_${cleanNomor}${suffix}_${ddmmyy}.${ext}`;
         const link = document.createElement('a');
         link.href = imgData;
@@ -2796,20 +2863,30 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                     onClick={() => handleDownloadImage('jpg')} 
                     disabled={isDownloading !== null} 
                     className="px-2.5 py-1.5 sm:px-3 sm:py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl font-bold text-[10px] sm:text-xs flex items-center gap-1.5 shadow-lg shrink-0 transition-all cursor-pointer active:scale-95"
-                    title="Unduh Surat sebagai Gambar JPG"
+                    title="Unduh Surat sebagai Gambar JPG (Ultra HD)"
                   >
                     {isDownloading === 'jpg' ? <Loader2 size={12} className="animate-spin"/> : <ImageIcon size={12}/>} 
-                    <span>JPG</span>
+                    <span>JPG HD</span>
                   </button>
 
                   <button 
                     onClick={() => handleDownloadImage('png')} 
                     disabled={isDownloading !== null} 
                     className="px-2.5 py-1.5 sm:px-3 sm:py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-bold text-[10px] sm:text-xs flex items-center gap-1.5 shadow-lg shrink-0 transition-all cursor-pointer active:scale-95"
-                    title="Unduh Surat sebagai Gambar PNG"
+                    title="Unduh Surat sebagai Gambar PNG (Lossless Master HD)"
                   >
                     {isDownloading === 'png' ? <Loader2 size={12} className="animate-spin"/> : <ImageIcon size={12}/>} 
-                    <span>PNG</span>
+                    <span>PNG HD</span>
+                  </button>
+
+                  <button 
+                    onClick={() => handleCopyImageToClipboard('page1')} 
+                    disabled={isDownloading !== null} 
+                    className="px-2.5 py-1.5 sm:px-3 sm:py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-bold text-[10px] sm:text-xs flex items-center gap-1.5 shadow-lg shrink-0 transition-all cursor-pointer active:scale-95"
+                    title="Salin Gambar Halaman 1 ke Clipboard (Bisa langsung Paste / Ctrl+V di WA Web)"
+                  >
+                    <Copy size={12}/> 
+                    <span className="hidden xs:inline">Salin WA</span>
                   </button>
 
                   <button 
@@ -3069,9 +3146,9 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
                             )}
                           </div>
                           <div className="text-center flex-1">
-                            <h1 className="text-2xl font-black uppercase leading-tight tracking-tighter text-black">PB BILIBILI 162</h1>
-                            <p className="text-[8.5pt] leading-tight font-sans font-medium text-black">Sekertariat: Jl. Andi Makkasau No.171, Ujung Lare, Kec. Soreang, Kota Parepare, Sulawesi Selatan 91131</p>
-                            <p className="text-[8.5pt] font-sans font-medium text-black">Telepon: 081219027234 | Email: pbilibili162@gmail.com</p>
+                            <h1 className="text-2xl sm:text-[26px] font-black uppercase leading-tight tracking-tight text-black">PB BILIBILI 162</h1>
+                            <p className="text-[9pt] leading-tight font-sans font-semibold text-black mt-0.5">Sekretariat: Jl. Andi Makkasau No.171, Ujung Lare, Kec. Soreang, Kota Parepare, Sulawesi Selatan 91131</p>
+                            <p className="text-[9pt] font-sans font-semibold text-black">Telepon: 081219027234 | Email: pbilibili162@gmail.com</p>
                           </div>
                         </div>
 
