@@ -545,6 +545,20 @@ async function startServer() {
     const sanitizeSuratItem = (item: any) => {
       if (!item) return item;
       const copy = { ...item };
+      let extra: any = {};
+      const rawLampiran = copy.lampiran || '';
+      const rawIsi = copy.isi_surat || '';
+      if (rawLampiran && typeof rawLampiran === 'string' && rawLampiran.trim().startsWith('{')) {
+        try { extra = JSON.parse(rawLampiran); } catch (e) {}
+      } else if (rawIsi && typeof rawIsi === 'string' && rawIsi.trim().startsWith('{')) {
+        try { extra = JSON.parse(rawIsi); } catch (e) {}
+      }
+      const cleanIsi = extra.isi_ringkas || copy.isi_ringkas || (rawIsi && !rawIsi.startsWith('{') ? rawIsi : '') || '';
+      copy.isi_surat = cleanIsi;
+      copy.isi_ringkas = cleanIsi;
+      if (extra.paragraf_2) copy.paragraf_2 = extra.paragraf_2;
+      if (extra.paragraf_3) copy.paragraf_3 = extra.paragraf_3;
+
       // Standardize Sidrap letter numbering if mislabeled
       if (copy.perihal?.includes('Tiga Lima Sidrap') || copy.perihal?.includes('Sidrap')) {
         copy.nomor_surat = '003/PB-BILIBILI162/V/2026';

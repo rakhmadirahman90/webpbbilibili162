@@ -391,14 +391,20 @@ export const getInitialSuratList = (): any[] => {
       if (!key) return;
 
       let extra: any = {};
-      if (item.isi_surat && typeof item.isi_surat === 'string' && item.isi_surat.trim().startsWith('{')) {
-        try { extra = JSON.parse(item.isi_surat); } catch (e) {}
+      const rawLampiran = item.lampiran || '';
+      const rawIsi = item.isi_surat || '';
+      if (rawLampiran && typeof rawLampiran === 'string' && rawLampiran.trim().startsWith('{')) {
+        try { extra = JSON.parse(rawLampiran); } catch (e) {}
+      } else if (rawIsi && typeof rawIsi === 'string' && rawIsi.trim().startsWith('{')) {
+        try { extra = JSON.parse(rawIsi); } catch (e) {}
       }
+      const resolvedIsi = extra.isi_ringkas || item.isi_ringkas || (rawIsi && !rawIsi.startsWith('{') ? rawIsi : '') || '';
 
       const parsed = {
         ...item,
         ...extra,
-        isi_ringkas: extra.isi_ringkas || item.isi_ringkas || (item.isi_surat && !item.isi_surat.startsWith('{') ? item.isi_surat : '') || '',
+        isi_surat: resolvedIsi,
+        isi_ringkas: resolvedIsi,
         paragraf_2: extra.paragraf_2 || item.paragraf_2 || '',
         paragraf_3: extra.paragraf_3 || item.paragraf_3 || '',
         alamat_tujuan: extra.alamat_tujuan || item.alamat_tujuan || item.tujuan_instansi || 'di Tempat',
@@ -1173,7 +1179,8 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       ttd_sekretaris_url: resolvedTtdSekreUrl,
       cap_stempel_url: resolvedStempelUrl,
       tujuan_instansi: rawPayload.alamat_tujuan || rawPayload.tujuan_instansi || 'di Tempat',
-      isi_surat: JSON.stringify(extraMetadata),
+      isi_surat: rawPayload.isi_ringkas || rawPayload.isi_surat || '',
+      lampiran: JSON.stringify(extraMetadata),
       ...extraMetadata
     };
 
@@ -1323,15 +1330,19 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       const parseSuratFromDb = (item: any) => {
         if (!item) return item;
         let extra: any = {};
-        if (item.isi_surat && typeof item.isi_surat === 'string' && item.isi_surat.trim().startsWith('{')) {
-          try {
-            extra = JSON.parse(item.isi_surat);
-          } catch (e) {}
+        const rawLampiran = item.lampiran || '';
+        const rawIsi = item.isi_surat || '';
+        if (rawLampiran && typeof rawLampiran === 'string' && rawLampiran.trim().startsWith('{')) {
+          try { extra = JSON.parse(rawLampiran); } catch (e) {}
+        } else if (rawIsi && typeof rawIsi === 'string' && rawIsi.trim().startsWith('{')) {
+          try { extra = JSON.parse(rawIsi); } catch (e) {}
         }
+        const resolvedIsi = extra.isi_ringkas || item.isi_ringkas || (rawIsi && !rawIsi.startsWith('{') ? rawIsi : '') || '';
         return {
           ...item,
           ...extra,
-          isi_ringkas: extra.isi_ringkas || item.isi_ringkas || (item.isi_surat && !item.isi_surat.startsWith('{') ? item.isi_surat : '') || '',
+          isi_surat: resolvedIsi,
+          isi_ringkas: resolvedIsi,
           paragraf_2: extra.paragraf_2 || item.paragraf_2 || '',
           paragraf_3: extra.paragraf_3 || item.paragraf_3 || '',
           alamat_tujuan: extra.alamat_tujuan || item.alamat_tujuan || item.tujuan_instansi || 'di Tempat',
