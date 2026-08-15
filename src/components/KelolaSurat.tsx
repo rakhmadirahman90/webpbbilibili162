@@ -496,8 +496,8 @@ export const getInitialSuratList = (): any[] => {
         ...extra,
         isi_surat: resolvedIsi,
         isi_ringkas: resolvedIsi,
-        paragraf_2: extra.paragraf_2 || item.paragraf_2 || '',
-        paragraf_3: extra.paragraf_3 || item.paragraf_3 || '',
+        paragraf_2: extra.paragraf_2 !== undefined ? extra.paragraf_2 : (item.paragraf_2 || ''),
+        paragraf_3: extra.paragraf_3 !== undefined ? extra.paragraf_3 : (item.paragraf_3 || ''),
         alamat_tujuan: extra.alamat_tujuan || item.alamat_tujuan || item.tujuan_instansi || 'di Tempat',
         tujuan_yth: item.tujuan_yth || extra.tujuan_yth || item.tujuan_instansi || '',
         nama_ketua: item.nama_ketua || extra.nama_ketua || storedAssets.nama_ketua || "H. WAWAN",
@@ -516,10 +516,10 @@ export const getInitialSuratList = (): any[] => {
         stempel_pos: extra.stempel_pos || item.stempel_pos || storedAssets.stempel_pos || { x: -35, y: 0 },
         show_recipient: extra.show_recipient !== undefined ? extra.show_recipient : (item.show_recipient !== undefined ? item.show_recipient : true),
         show_greetings: extra.show_greetings !== undefined ? extra.show_greetings : (item.show_greetings !== undefined ? item.show_greetings : true),
-        title_override: extra.title_override || item.title_override || '',
+        title_override: extra.title_override !== undefined ? extra.title_override : (item.title_override || ''),
         include_lampiran_peserta: extra.include_lampiran_peserta !== undefined ? extra.include_lampiran_peserta : Boolean(item.include_lampiran_peserta),
-        judul_lampiran: extra.judul_lampiran || item.judul_lampiran || 'Daftar Lampiran Peserta',
-        lampiran_peserta: extra.lampiran_peserta || item.lampiran_peserta || '',
+        judul_lampiran: extra.judul_lampiran !== undefined ? extra.judul_lampiran : (item.judul_lampiran || 'Daftar Lampiran Peserta'),
+        lampiran_peserta: extra.lampiran_peserta !== undefined ? extra.lampiran_peserta : (item.lampiran_peserta || ''),
         lampiran: extra.lampiran_text || (rawLampiran && typeof rawLampiran === 'string' && !rawLampiran.trim().startsWith('{') ? rawLampiran : '-') || '-'
       };
 
@@ -1447,8 +1447,8 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
           ...extra,
           isi_surat: resolvedIsi,
           isi_ringkas: resolvedIsi,
-          paragraf_2: extra.paragraf_2 || item.paragraf_2 || '',
-          paragraf_3: extra.paragraf_3 || item.paragraf_3 || '',
+          paragraf_2: extra.paragraf_2 !== undefined ? extra.paragraf_2 : (item.paragraf_2 || ''),
+          paragraf_3: extra.paragraf_3 !== undefined ? extra.paragraf_3 : (item.paragraf_3 || ''),
           alamat_tujuan: extra.alamat_tujuan || item.alamat_tujuan || item.tujuan_instansi || 'di Tempat',
           tujuan_yth: item.tujuan_yth || extra.tujuan_yth || item.tujuan_instansi || '',
           nama_ketua: item.nama_ketua || extra.nama_ketua || storedAssets.nama_ketua || "H. WAWAN",
@@ -1467,10 +1467,10 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
           stempel_pos: extra.stempel_pos || item.stempel_pos || storedAssets.stempel_pos || { x: -35, y: 0 },
           show_recipient: extra.show_recipient !== undefined ? extra.show_recipient : (item.show_recipient !== undefined ? item.show_recipient : true),
           show_greetings: extra.show_greetings !== undefined ? extra.show_greetings : (item.show_greetings !== undefined ? item.show_greetings : true),
-          title_override: extra.title_override || item.title_override || '',
+          title_override: extra.title_override !== undefined ? extra.title_override : (item.title_override || ''),
           include_lampiran_peserta: extra.include_lampiran_peserta !== undefined ? extra.include_lampiran_peserta : Boolean(item.include_lampiran_peserta),
-          judul_lampiran: extra.judul_lampiran || item.judul_lampiran || 'Daftar Lampiran Peserta',
-          lampiran_peserta: extra.lampiran_peserta || item.lampiran_peserta || '',
+          judul_lampiran: extra.judul_lampiran !== undefined ? extra.judul_lampiran : (item.judul_lampiran || 'Daftar Lampiran Peserta'),
+          lampiran_peserta: extra.lampiran_peserta !== undefined ? extra.lampiran_peserta : (item.lampiran_peserta || ''),
           lampiran: extra.lampiran_text || (rawLampiran && typeof rawLampiran === 'string' && !rawLampiran.trim().startsWith('{') ? rawLampiran : '-') || '-'
         };
       };
@@ -1513,9 +1513,9 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
             id: chosenId,
             isi_surat: parsed.isi_surat || parsed.isi_ringkas || existing.isi_surat || existing.isi_ringkas || '',
             isi_ringkas: parsed.isi_surat || parsed.isi_ringkas || existing.isi_surat || existing.isi_ringkas || '',
-            paragraf_2: parsed.paragraf_2 || existing.paragraf_2 || '',
-            paragraf_3: parsed.paragraf_3 || existing.paragraf_3 || '',
-            lampiran_peserta: parsed.lampiran_peserta || existing.lampiran_peserta || '',
+            paragraf_2: (parsed.paragraf_2 !== undefined && parsed.paragraf_2 !== null) ? parsed.paragraf_2 : (existing.paragraf_2 || ''),
+            paragraf_3: (parsed.paragraf_3 !== undefined && parsed.paragraf_3 !== null) ? parsed.paragraf_3 : (existing.paragraf_3 || ''),
+            lampiran_peserta: (parsed.lampiran_peserta !== undefined && parsed.lampiran_peserta !== null) ? parsed.lampiran_peserta : (existing.lampiran_peserta || ''),
             ttd_ketua_url: getValidAssetUrl(parsed.ttd_ketua_url || existing.ttd_ketua_url, storedAssets.ttd_ketua_url),
             ttd_sekretaris_url: getValidAssetUrl(parsed.ttd_sekretaris_url || existing.ttd_sekretaris_url, storedAssets.ttd_sekretaris_url),
             cap_stempel_url: getValidAssetUrl(parsed.cap_stempel_url || existing.cap_stempel_url, storedAssets.cap_stempel_url)

@@ -420,6 +420,40 @@ async function startServer() {
           payload.id = item.id;
         }
 
+        // Guarantee lampiran contains JSON metadata if extra fields exist or if not valid JSON
+        if (!payload.lampiran || typeof payload.lampiran !== 'string' || !payload.lampiran.trim().startsWith('{')) {
+          const extraMetadata = {
+            isi_surat: item.isi_surat || item.isi_ringkas || '',
+            isi_ringkas: item.isi_surat || item.isi_ringkas || '',
+            paragraf_2: item.paragraf_2 || '',
+            paragraf_3: item.paragraf_3 || '',
+            alamat_tujuan: item.alamat_tujuan || item.tujuan_instansi || 'di Tempat',
+            tujuan_yth: item.tujuan_yth || item.tujuan_instansi || '',
+            logo_url: item.logo_url || '',
+            ttd_ketua_url: item.ttd_ketua_url || '',
+            ttd_sekretaris_url: item.ttd_sekretaris_url || '',
+            cap_stempel_url: item.cap_stempel_url || '',
+            logo_pos: item.logo_pos || { x: 0, y: 0 },
+            stempel_pos: item.stempel_pos || { x: -35, y: 0 },
+            ttd_ketua_pos: item.ttd_ketua_pos || { x: 0, y: 0 },
+            ttd_sekretaris_pos: item.ttd_sekretaris_pos || { x: 0, y: 0 },
+            logo_scale: item.logo_scale || 100,
+            ttd_ketua_scale: item.ttd_ketua_scale || 100,
+            ttd_sekretaris_scale: item.ttd_sekretaris_scale || 100,
+            stempel_scale: item.stempel_scale || 100,
+            show_recipient: item.show_recipient !== false,
+            show_greetings: item.show_greetings !== false,
+            title_override: item.title_override || '',
+            include_lampiran_peserta: Boolean(item.include_lampiran_peserta),
+            judul_lampiran: item.judul_lampiran || 'Daftar Lampiran Peserta',
+            lampiran_peserta: item.lampiran_peserta || '',
+            lampiran_text: item.lampiran || '-',
+            nama_ketua: item.nama_ketua || 'H. WAWAN',
+            nama_sekretaris: item.nama_sekretaris || 'H. BARHAMAN MUIN S.AG'
+          };
+          payload.lampiran = JSON.stringify(extraMetadata);
+        }
+
         if (nomor && nomor !== '__MASTER_DIGITAL_ASSETS__') {
           await fetch(`${SUPABASE_URL}/rest/v1/arsip_surat?nomor_surat=eq.${encodeURIComponent(nomor)}`, {
             method: 'DELETE',
@@ -620,8 +654,28 @@ async function startServer() {
       copy.isi_surat = cleanIsi;
       copy.isi_ringkas = cleanIsi;
       copy.lampiran = cleanLampiran;
-      if (extra.paragraf_2) copy.paragraf_2 = extra.paragraf_2;
-      if (extra.paragraf_3) copy.paragraf_3 = extra.paragraf_3;
+
+      // Extract all extra fields to root copy if present in extra metadata
+      if (extra.paragraf_2 !== undefined) copy.paragraf_2 = extra.paragraf_2;
+      if (extra.paragraf_3 !== undefined) copy.paragraf_3 = extra.paragraf_3;
+      if (extra.lampiran_peserta !== undefined) copy.lampiran_peserta = extra.lampiran_peserta;
+      if (extra.include_lampiran_peserta !== undefined) copy.include_lampiran_peserta = extra.include_lampiran_peserta;
+      if (extra.judul_lampiran !== undefined) copy.judul_lampiran = extra.judul_lampiran;
+      if (extra.show_recipient !== undefined) copy.show_recipient = extra.show_recipient;
+      if (extra.show_greetings !== undefined) copy.show_greetings = extra.show_greetings;
+      if (extra.title_override !== undefined) copy.title_override = extra.title_override;
+      if (extra.logo_pos !== undefined) copy.logo_pos = extra.logo_pos;
+      if (extra.stempel_pos !== undefined) copy.stempel_pos = extra.stempel_pos;
+      if (extra.ttd_ketua_pos !== undefined) copy.ttd_ketua_pos = extra.ttd_ketua_pos;
+      if (extra.ttd_sekretaris_pos !== undefined) copy.ttd_sekretaris_pos = extra.ttd_sekretaris_pos;
+      if (extra.logo_scale !== undefined) copy.logo_scale = extra.logo_scale;
+      if (extra.stempel_scale !== undefined) copy.stempel_scale = extra.stempel_scale;
+      if (extra.ttd_ketua_scale !== undefined) copy.ttd_ketua_scale = extra.ttd_ketua_scale;
+      if (extra.ttd_sekretaris_scale !== undefined) copy.ttd_sekretaris_scale = extra.ttd_sekretaris_scale;
+      if (extra.nama_ketua !== undefined) copy.nama_ketua = extra.nama_ketua;
+      if (extra.nama_sekretaris !== undefined) copy.nama_sekretaris = extra.nama_sekretaris;
+      if (extra.alamat_tujuan !== undefined) copy.alamat_tujuan = extra.alamat_tujuan;
+      if (extra.tujuan_yth !== undefined) copy.tujuan_yth = extra.tujuan_yth;
 
       // Standardize Sidrap letter numbering if mislabeled
       if (copy.perihal?.includes('Tiga Lima Sidrap') || copy.perihal?.includes('Sidrap')) {
@@ -633,11 +687,23 @@ async function startServer() {
     const normalizeSuratKey = (item: any): string => {
       if (!item) return '';
       const sanitized = sanitizeSuratItem(item);
+      const perihal = (sanitized.perihal || '').trim().toLowerCase();
+      if (perihal.includes('tiga lima sidrap') || perihal.includes('sidrap')) {
+        return 'surat_persahabatan_sidrap_003';
+      }
+      if (perihal.includes('narasumber') || (sanitized.nomor_surat && sanitized.nomor_surat.includes('001/'))) {
+        return 'surat_narasumber_kajian_001';
+      }
+      if (perihal.includes('mengikuti kajian') || (sanitized.nomor_surat && sanitized.nomor_surat.includes('002/PB') && sanitized.nomor_surat.includes('/II/'))) {
+        return 'surat_mengikuti_kajian_002';
+      }
+      if (perihal.includes('mabar arsy') || perihal.includes('surat tugas') || (sanitized.nomor_surat && sanitized.nomor_surat.includes('004/'))) {
+        return 'surat_tugas_mabar_004';
+      }
       const rawNomor = (sanitized.nomor_surat || '').trim().toUpperCase().replace(/PB[-_]BILIBILI[-_]?162/i, 'PB-BILIBILI162').replace(/\s+/g, '');
       if (rawNomor && rawNomor !== '__MASTER_DIGITAL_ASSETS__') {
         return `nomor_${rawNomor}`;
       }
-      const perihal = (sanitized.perihal || '').trim().toLowerCase();
       const tanggal = (sanitized.tanggal_surat || sanitized.tempat_tanggal || '').trim().toLowerCase();
       if (perihal) {
         return `perihal_${perihal}_${tanggal}`;
