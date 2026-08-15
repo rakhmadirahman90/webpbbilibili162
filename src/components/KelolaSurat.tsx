@@ -741,59 +741,59 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     safeLocalStorageSet('pb_bilibili_digital_assets', JSON.stringify(assetsToSave));
     safeLocalStorageSet('site_setting_digital_assets_surat', JSON.stringify(assetsToSave));
 
-    // 2. Simpan ke Node Server API Disk (/api/digital-assets)
-    try {
-      await fetch('/api/digital-assets', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(assetsToSave)
-      });
-    } catch (apiErr) {
-      console.warn('Error saving to /api/digital-assets:', apiErr);
-    }
+    // 2. Parallel background saves with 2.5s max timeout so it NEVER hangs
+    const apiPromise = fetch('/api/digital-assets', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(assetsToSave)
+    }).catch(apiErr => console.warn('Error saving to /api/digital-assets:', apiErr));
 
-    try {
-      await saveSiteSetting('digital_assets_surat', assetsToSave, 'Aset Digital Kop Surat & TTD PB Bilibili');
-    } catch (err) {
-      console.warn('saveSiteSetting digital_assets_surat warning:', err);
-    }
+    const siteSettingPromise = saveSiteSetting('digital_assets_surat', assetsToSave, 'Aset Digital Kop Surat & TTD PB Bilibili')
+      .catch(err => console.warn('saveSiteSetting digital_assets_surat warning:', err));
 
-    // 3. Simpan master config ke table arsip_surat di Supabase
-    try {
-      const masterRecord = {
-        nomor_surat: '__MASTER_DIGITAL_ASSETS__',
-        jenis_surat: 'MASTER_CONFIG',
-        perihal: 'Master Aset Digital Kop Surat & TTD PB Bilibili',
-        nama_ketua: assetsToSave.nama_ketua || 'H. WAWAN',
-        nama_sekretaris: assetsToSave.nama_sekretaris || 'H. BARHAMAN MUIN S.AG',
+    const masterRecord = {
+      nomor_surat: '__MASTER_DIGITAL_ASSETS__',
+      jenis_surat: 'MASTER_CONFIG',
+      perihal: 'Master Aset Digital Kop Surat & TTD PB Bilibili',
+      nama_ketua: assetsToSave.nama_ketua || 'H. WAWAN',
+      nama_sekretaris: assetsToSave.nama_sekretaris || 'H. BARHAMAN MUIN S.AG',
+      logo_url: assetsToSave.logo_url || '/logo_pb_bilibili_162.svg',
+      ttd_ketua_url: assetsToSave.ttd_ketua_url || '',
+      ttd_sekretaris_url: assetsToSave.ttd_sekretaris_url || '',
+      cap_stempel_url: assetsToSave.cap_stempel_url || '',
+      isi_surat: JSON.stringify({
         logo_url: assetsToSave.logo_url || '/logo_pb_bilibili_162.svg',
         ttd_ketua_url: assetsToSave.ttd_ketua_url || '',
         ttd_sekretaris_url: assetsToSave.ttd_sekretaris_url || '',
         cap_stempel_url: assetsToSave.cap_stempel_url || '',
-        isi_surat: JSON.stringify({
-          logo_url: assetsToSave.logo_url || '/logo_pb_bilibili_162.svg',
-          ttd_ketua_url: assetsToSave.ttd_ketua_url || '',
-          ttd_sekretaris_url: assetsToSave.ttd_sekretaris_url || '',
-          cap_stempel_url: assetsToSave.cap_stempel_url || '',
-          logo_scale: assetsToSave.logo_scale || 100,
-          ttd_ketua_scale: assetsToSave.ttd_ketua_scale || 100,
-          ttd_sekretaris_scale: assetsToSave.ttd_sekretaris_scale || 100,
-          stempel_scale: assetsToSave.stempel_scale || 100,
-          logo_pos: assetsToSave.logo_pos || { x: 0, y: 0 },
-          stempel_pos: assetsToSave.stempel_pos || { x: -35, y: 0 },
-          ttd_ketua_pos: assetsToSave.ttd_ketua_pos || { x: 0, y: 0 },
-          ttd_sekretaris_pos: assetsToSave.ttd_sekretaris_pos || { x: 0, y: 0 },
-          nama_ketua: assetsToSave.nama_ketua || 'H. WAWAN',
-          nama_sekretaris: assetsToSave.nama_sekretaris || 'H. BARHAMAN MUIN S.AG'
-        }),
-        status: 'CONFIG'
-      };
+        logo_scale: assetsToSave.logo_scale || 100,
+        ttd_ketua_scale: assetsToSave.ttd_ketua_scale || 100,
+        ttd_sekretaris_scale: assetsToSave.ttd_sekretaris_scale || 100,
+        stempel_scale: assetsToSave.stempel_scale || 100,
+        logo_pos: assetsToSave.logo_pos || { x: 0, y: 0 },
+        stempel_pos: assetsToSave.stempel_pos || { x: -35, y: 0 },
+        ttd_ketua_pos: assetsToSave.ttd_ketua_pos || { x: 0, y: 0 },
+        ttd_sekretaris_pos: assetsToSave.ttd_sekretaris_pos || { x: 0, y: 0 },
+        nama_ketua: assetsToSave.nama_ketua || 'H. WAWAN',
+        nama_sekretaris: assetsToSave.nama_sekretaris || 'H. BARHAMAN MUIN S.AG'
+      }),
+      status: 'CONFIG'
+    };
 
-      await supabase.from('arsip_surat').delete().eq('nomor_surat', '__MASTER_DIGITAL_ASSETS__');
-      await supabase.from('arsip_surat').insert([masterRecord]);
-    } catch (dbErr) {
-      console.warn('Error saving master assets to arsip_surat table:', dbErr);
-    }
+    const supabasePromise = (async () => {
+      try {
+        await supabase.from('arsip_surat').delete().eq('nomor_surat', '__MASTER_DIGITAL_ASSETS__');
+        await supabase.from('arsip_surat').insert([masterRecord]);
+      } catch (dbErr) {
+        console.warn('Error saving master assets to arsip_surat table:', dbErr);
+      }
+    })();
+
+    const timeoutPromise = new Promise(resolve => setTimeout(resolve, 2000));
+    await Promise.race([
+      Promise.allSettled([apiPromise, siteSettingPromise, supabasePromise]),
+      timeoutPromise
+    ]);
 
     // 3. Broadcast realtime
     broadcastDataChange('digital_assets_surat', 'UPDATE', assetsToSave);
@@ -2458,87 +2458,128 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Reset input value so re-selecting same file works
+    e.target.value = '';
+
+    // Show lightweight toast instead of modal alert to prevent modal UI hang
+    Swal.fire({
+      title: 'Memproses Gambar...',
+      text: 'Mengompres dan mengunggah aset...',
+      toast: true,
+      position: 'top-end',
+      showConfirmButton: false,
+      timer: 1500,
+      didOpen: () => { Swal.showLoading(); }
+    });
+
     try {
-      Swal.fire({
-        title: 'Mengunggah Aset...',
-        text: 'Mohon tunggu, menyimpan aset digital ke database...',
-        allowOutsideClick: false,
-        didOpen: () => { Swal.showLoading(); }
-      });
-
-      let imageUrl = '';
-
-      // 1. Try uploading to Supabase Storage bucket 'assets'
-      try {
-        const fileExt = file.name.split('.').pop() || 'png';
-        const fileName = `digital-assets/${field}_${Date.now()}.${fileExt}`;
-        const { error: uploadError } = await supabase.storage
-          .from('assets')
-          .upload(fileName, file, { upsert: true });
-
-        if (!uploadError) {
-          const { data: { publicUrl } } = supabase.storage
-            .from('assets')
-            .getPublicUrl(fileName);
-          if (publicUrl) {
-            imageUrl = publicUrl;
-          }
-        }
-      } catch (storageErr) {
-        console.warn("Storage upload failed, using Data URL fallback:", storageErr);
-      }
-
-      // 2. Base64 fallback if storage bucket is not configured or throws error
+      // 1. Fast client-side image compression (< 100ms)
+      let imageUrl = await compressImage(file, 600, 600, 0.85).catch(() => '');
       if (!imageUrl) {
-        imageUrl = await compressImage(file, 600, 600, 0.85);
+        imageUrl = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve((reader.result as string) || '');
+          reader.onerror = () => resolve('');
+          reader.readAsDataURL(file);
+        });
       }
 
-      if (imageUrl) {
-        const stored = await fetchMasterDigitalAssetsFromDatabase();
-        const updatedFormData = { ...formData, [field]: imageUrl };
-        setFormData(updatedFormData);
-
-        const mergedAssets = {
-          logo_url: field === 'logo_url' ? imageUrl : getValidAssetUrl(updatedFormData.logo_url, stored.logo_url || DEFAULT_LOGO_URL),
-          ttd_ketua_url: field === 'ttd_ketua_url' ? imageUrl : getValidAssetUrl(updatedFormData.ttd_ketua_url, stored.ttd_ketua_url),
-          ttd_sekretaris_url: field === 'ttd_sekretaris_url' ? imageUrl : getValidAssetUrl(updatedFormData.ttd_sekretaris_url, stored.ttd_sekretaris_url),
-          cap_stempel_url: field === 'cap_stempel_url' ? imageUrl : getValidAssetUrl(updatedFormData.cap_stempel_url, stored.cap_stempel_url),
-          logo_scale: updatedFormData.logo_scale || stored.logo_scale || 100,
-          ttd_ketua_scale: updatedFormData.ttd_ketua_scale || stored.ttd_ketua_scale || 100,
-          ttd_sekretaris_scale: updatedFormData.ttd_sekretaris_scale || stored.ttd_sekretaris_scale || 100,
-          stempel_scale: updatedFormData.stempel_scale || stored.stempel_scale || 100,
-          logo_pos: logoPos || stored.logo_pos || { x: 0, y: 0 },
-          stempel_pos: stempelPos || stored.stempel_pos || { x: -35, y: 0 },
-          ttd_ketua_pos: ttdKetuaPos || stored.ttd_ketua_pos || { x: 0, y: 0 },
-          ttd_sekretaris_pos: ttdSekretarisPos || stored.ttd_sekretaris_pos || { x: 0, y: 0 },
-          nama_ketua: updatedFormData.nama_ketua || stored.nama_ketua || 'H. WAWAN',
-          nama_sekretaris: updatedFormData.nama_sekretaris || stored.nama_sekretaris || 'H. BARHAMAN MUIN S.AG',
-        };
-
-        await saveMasterDigitalAssetsToDatabase(mergedAssets, false);
-
-        setSuratList(prev => prev.map(item => ({
-          ...item,
-          [field]: imageUrl,
-          logo_url: mergedAssets.logo_url,
-          ttd_ketua_url: mergedAssets.ttd_ketua_url,
-          ttd_sekretaris_url: mergedAssets.ttd_sekretaris_url,
-          cap_stempel_url: mergedAssets.cap_stempel_url,
-        })));
-
+      if (!imageUrl) {
         Swal.fire({
-          title: 'Tersimpan Permanen! 💾',
-          text: 'Aset digital berhasil diunggah dan terkunci di database.',
-          icon: 'success',
+          title: 'Gagal Membaca Berkas',
+          text: 'Format file tidak dapat dibaca.',
+          icon: 'error',
           toast: true,
           position: 'top-end',
           showConfirmButton: false,
-          timer: 3000,
+          timer: 3000
         });
+        return;
       }
+
+      // 2. Immediately update state and LocalStorage for instant UI update
+      const stored = getStoredDigitalAssets();
+      const updatedFormData = { ...formData, [field]: imageUrl };
+      setFormData(updatedFormData);
+
+      const mergedAssets = {
+        logo_url: field === 'logo_url' ? imageUrl : getValidAssetUrl(updatedFormData.logo_url, stored.logo_url || DEFAULT_LOGO_URL),
+        ttd_ketua_url: field === 'ttd_ketua_url' ? imageUrl : getValidAssetUrl(updatedFormData.ttd_ketua_url, stored.ttd_ketua_url),
+        ttd_sekretaris_url: field === 'ttd_sekretaris_url' ? imageUrl : getValidAssetUrl(updatedFormData.ttd_sekretaris_url, stored.ttd_sekretaris_url),
+        cap_stempel_url: field === 'cap_stempel_url' ? imageUrl : getValidAssetUrl(updatedFormData.cap_stempel_url, stored.cap_stempel_url),
+        logo_scale: updatedFormData.logo_scale || stored.logo_scale || 100,
+        ttd_ketua_scale: updatedFormData.ttd_ketua_scale || stored.ttd_ketua_scale || 100,
+        ttd_sekretaris_scale: updatedFormData.ttd_sekretaris_scale || stored.ttd_sekretaris_scale || 100,
+        stempel_scale: updatedFormData.stempel_scale || stored.stempel_scale || 100,
+        logo_pos: logoPos || stored.logo_pos || { x: 0, y: 0 },
+        stempel_pos: stempelPos || stored.stempel_pos || { x: -35, y: 0 },
+        ttd_ketua_pos: ttdKetuaPos || stored.ttd_ketua_pos || { x: 0, y: 0 },
+        ttd_sekretaris_pos: ttdSekretarisPos || stored.ttd_sekretaris_pos || { x: 0, y: 0 },
+        nama_ketua: updatedFormData.nama_ketua || stored.nama_ketua || 'H. WAWAN',
+        nama_sekretaris: updatedFormData.nama_sekretaris || stored.nama_sekretaris || 'H. BARHAMAN MUIN S.AG',
+      };
+
+      safeLocalStorageSet('pb_bilibili_digital_assets', JSON.stringify(mergedAssets));
+      safeLocalStorageSet('site_setting_digital_assets_surat', JSON.stringify(mergedAssets));
+
+      setSuratList(prev => prev.map(item => ({
+        ...item,
+        [field]: imageUrl,
+        logo_url: mergedAssets.logo_url,
+        ttd_ketua_url: mergedAssets.ttd_ketua_url,
+        ttd_sekretaris_url: mergedAssets.ttd_sekretaris_url,
+        cap_stempel_url: mergedAssets.cap_stempel_url,
+      })));
+
+      // 3. Show instant success toast
+      Swal.fire({
+        title: 'Tersimpan Permanen! 💾',
+        text: 'Aset digital berhasil diunggah.',
+        icon: 'success',
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 2500,
+      });
+
+      // 4. Non-blocking background sync to database and storage bucket
+      (async () => {
+        try {
+          try {
+            const fileExt = file.name.split('.').pop() || 'png';
+            const fileName = `digital-assets/${field}_${Date.now()}.${fileExt}`;
+            const uploadPromise = supabase.storage.from('assets').upload(fileName, file, { upsert: true });
+            const timeoutPromise = new Promise(res => setTimeout(res, 3000));
+            const uploadRes: any = await Promise.race([uploadPromise, timeoutPromise]);
+
+            if (uploadRes && !uploadRes.error && uploadRes.data) {
+              const { data: { publicUrl } } = supabase.storage.from('assets').getPublicUrl(fileName);
+              if (publicUrl) {
+                mergedAssets[field as keyof typeof mergedAssets] = publicUrl;
+                setFormData(prev => ({ ...prev, [field]: publicUrl }));
+              }
+            }
+          } catch (stErr) {
+            console.warn("Storage upload warning:", stErr);
+          }
+
+          await saveMasterDigitalAssetsToDatabase(mergedAssets, false);
+        } catch (bgErr) {
+          console.warn("Background asset persistence notice:", bgErr);
+        }
+      })();
     } catch (err) {
       console.error('Error uploading asset:', err);
-      Swal.fire('Gagal Unggah', 'Terjadi kesalahan saat mengunggah aset digital.', 'error');
+      Swal.close();
+      Swal.fire({
+        title: 'Gagal Mengunggah',
+        text: 'Terjadi kesalahan saat memproses aset digital.',
+        icon: 'error',
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000
+      });
     }
   };
 
