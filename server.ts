@@ -416,7 +416,8 @@ async function startServer() {
         validCols.forEach(col => {
           if (item[col] !== undefined) payload[col] = item[col];
         });
-        if (item.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.id)) {
+        const isUuid = item.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.id);
+        if (isUuid) {
           payload.id = item.id;
         }
 
@@ -459,26 +460,61 @@ async function startServer() {
         };
         payload.lampiran = JSON.stringify(extraMetadata);
 
-        if (nomor && nomor !== '__MASTER_DIGITAL_ASSETS__') {
-          await fetch(`${SUPABASE_URL}/rest/v1/arsip_surat?nomor_surat=eq.${encodeURIComponent(nomor)}`, {
-            method: 'DELETE',
-            headers: { 'apikey': SUPABASE_KEY }
+        console.log('[DEBUG BEFORE DB CALL - Server syncArsipSuratToSupabase]', {
+          operation: isUuid ? 'UPDATE/UPSERT' : 'INSERT',
+          id: payload.id,
+          nomor_surat: payload.nomor_surat,
+          isi_surat: payload.isi_surat,
+          cap_stempel_url: payload.cap_stempel_url,
+          ttd_ketua_url: payload.ttd_ketua_url,
+          ttd_sekretaris_url: payload.ttd_sekretaris_url,
+          logo_url: payload.logo_url,
+          extraMetadata,
+          payload
+        });
+
+        let res: Response;
+        if (isUuid) {
+          res = await fetch(`${SUPABASE_URL}/rest/v1/arsip_surat?id=eq.${payload.id}`, {
+            method: 'PATCH',
+            headers: {
+              'apikey': SUPABASE_KEY,
+              'Content-Type': 'application/json',
+              'Prefer': 'return=representation'
+            },
+            body: JSON.stringify(payload)
           });
-        } else if (payload.id) {
-          await fetch(`${SUPABASE_URL}/rest/v1/arsip_surat?id=eq.${payload.id}`, {
-            method: 'DELETE',
-            headers: { 'apikey': SUPABASE_KEY }
+          if (!res.ok) {
+            delete payload.id;
+            res = await fetch(`${SUPABASE_URL}/rest/v1/arsip_surat`, {
+              method: 'POST',
+              headers: {
+                'apikey': SUPABASE_KEY,
+                'Content-Type': 'application/json',
+                'Prefer': 'return=minimal'
+              },
+              body: JSON.stringify(payload)
+            });
+          }
+        } else {
+          if (nomor && nomor !== '__MASTER_DIGITAL_ASSETS__') {
+            delete payload.id;
+          }
+          res = await fetch(`${SUPABASE_URL}/rest/v1/arsip_surat`, {
+            method: 'POST',
+            headers: {
+              'apikey': SUPABASE_KEY,
+              'Content-Type': 'application/json',
+              'Prefer': 'return=minimal'
+            },
+            body: JSON.stringify(payload)
           });
         }
 
-        await fetch(`${SUPABASE_URL}/rest/v1/arsip_surat`, {
-          method: 'POST',
-          headers: {
-            'apikey': SUPABASE_KEY,
-            'Content-Type': 'application/json',
-            'Prefer': 'return=minimal'
-          },
-          body: JSON.stringify(payload)
+        console.log('[DEBUG AFTER DB CALL - Server syncArsipSuratToSupabase]', {
+          status: res.status,
+          statusText: res.statusText,
+          success: res.ok
         });
       } catch (e) {
         console.warn("Supabase sync warning:", e);

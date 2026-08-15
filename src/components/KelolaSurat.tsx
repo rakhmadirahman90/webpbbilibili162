@@ -1352,25 +1352,77 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       }
     } catch (e) {}
 
-    // 4. Non-blocking parallel background sync to Supabase & Express API
+    // 4. Supabase & Express API Database persistence with debug logging
+    const isUuid = currentEditId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(currentEditId));
+
+    // [DEBUG LOG BEFORE DATABASE CALL]
+    console.log('[DEBUG BEFORE DB CALL - KelolaSurat]', {
+      operation: isUuid ? 'UPDATE/UPSERT' : 'INSERT',
+      currentEditId,
+      nomor_surat: dbPayload.nomor_surat,
+      perihal: dbPayload.perihal,
+      isi_surat: dbPayload.isi_surat,
+      cap_stempel_url: dbPayload.cap_stempel_url,
+      ttd_ketua_url: dbPayload.ttd_ketua_url,
+      ttd_sekretaris_url: dbPayload.ttd_sekretaris_url,
+      logo_url: dbPayload.logo_url,
+      lampiran_metadata: extraMetadata,
+      dbPayload
+    });
+
     const syncPromise = Promise.allSettled([
-      // Supabase write
+      // Supabase write with update/upsert/insert
       (async () => {
+        let dbResponse: any = null;
+        let dbError: any = null;
         try {
-          if (currentEditId && !currentEditId.toString().startsWith('local_') && !currentEditId.toString().startsWith('seed_')) {
-            await supabase.from('arsip_surat').delete().eq('id', currentEditId);
-            const insertWithId = { ...dbPayload, id: currentEditId };
-            const { data } = await supabase.from('arsip_surat').insert([insertWithId]).select().single();
-            if (data?.id) resultId = data.id;
-          } else {
-            if (dbPayload.nomor_surat) {
-              await supabase.from('arsip_surat').delete().eq('nomor_surat', dbPayload.nomor_surat);
+          if (isUuid) {
+            // Update existing record
+            const { data: updateData, error: updateErr } = await supabase
+              .from('arsip_surat')
+              .update(dbPayload)
+              .eq('id', currentEditId)
+              .select();
+
+            dbResponse = updateData;
+            dbError = updateErr;
+
+            if (updateErr) {
+              console.warn('[Supabase UPDATE warning, attempting UPSERT]:', updateErr);
+              const { data: upsertData, error: upsertErr } = await supabase
+                .from('arsip_surat')
+                .upsert([{ ...dbPayload, id: currentEditId }])
+                .select();
+              dbResponse = upsertData;
+              dbError = upsertErr;
+              if (upsertData?.[0]?.id) resultId = upsertData[0].id;
+            } else {
+              resultId = currentEditId;
             }
-            const { data } = await supabase.from('arsip_surat').insert([dbPayload]).select().single();
-            if (data?.id) resultId = data.id;
+          } else {
+            // Insert new record
+            const insertPayload = { ...dbPayload };
+            delete insertPayload.id;
+            const { data: insertData, error: insertErr } = await supabase
+              .from('arsip_surat')
+              .insert([insertPayload])
+              .select();
+
+            dbResponse = insertData;
+            dbError = insertErr;
+            if (insertData?.[0]?.id) resultId = insertData[0].id;
           }
-        } catch (err) {
+        } catch (err: any) {
+          dbError = err;
           console.warn("Background DB sync notice:", err);
+        } finally {
+          // [DEBUG LOG AFTER DATABASE CALL]
+          console.log('[DEBUG AFTER DB CALL - KelolaSurat]', {
+            resultId,
+            success: !dbError,
+            error: dbError,
+            persistedRecord: dbResponse
+          });
         }
       })(),
       // Server API write
@@ -1385,8 +1437,8 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       })()
     ]);
 
-    // Timeout guard so function returns targetId in < 250ms
-    const quickTimeout = new Promise(resolve => setTimeout(resolve, 200));
+    // Timeout guard so function returns targetId smoothly
+    const quickTimeout = new Promise(resolve => setTimeout(resolve, 300));
     await Promise.race([syncPromise, quickTimeout]);
 
     return resultId || targetId;
@@ -1948,17 +2000,43 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       timer: 2000
     });
 
-    // Background database sync
+    // Background database sync with debug logging
+    const isMasukUuid = editMasukId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(editMasukId));
+
+    console.log('[DEBUG BEFORE DB CALL - Surat Masuk]', {
+      operation: isMasukUuid ? 'UPDATE' : 'INSERT',
+      editMasukId,
+      nomor_surat: dbRecord.nomor_surat,
+      dbRecord
+    });
+
     try {
-      if (editMasukId) {
-        await supabase.from('arsip_surat').delete().eq('id', editMasukId);
-        await supabase.from('arsip_surat').insert([{ ...dbRecord, id: editMasukId }]);
-      } else {
-        if (dbRecord.nomor_surat) {
-          await supabase.from('arsip_surat').delete().eq('nomor_surat', dbRecord.nomor_surat).eq('jenis_surat', 'MASUK');
+      let dbResponse: any = null;
+      let dbError: any = null;
+
+      if (isMasukUuid) {
+        const { data, error } = await supabase.from('arsip_surat').update(dbRecord).eq('id', editMasukId).select();
+        dbResponse = data;
+        dbError = error;
+        if (error) {
+          console.warn('[Surat Masuk update error, attempting insert]:', error);
+          const { data: insData, error: insErr } = await supabase.from('arsip_surat').insert([dbRecord]).select();
+          dbResponse = insData;
+          dbError = insErr;
         }
-        await supabase.from('arsip_surat').insert([dbRecord]);
+      } else {
+        const { data, error } = await supabase.from('arsip_surat').insert([dbRecord]).select();
+        dbResponse = data;
+        dbError = error;
       }
+
+      console.log('[DEBUG AFTER DB CALL - Surat Masuk]', {
+        editMasukId,
+        success: !dbError,
+        error: dbError,
+        dbResponse
+      });
+
       fetchSuratMasuk().catch(() => {});
     } catch (err: any) {
       console.warn("Background surat masuk save error:", err);
