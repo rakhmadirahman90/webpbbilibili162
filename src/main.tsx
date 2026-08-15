@@ -3,6 +3,10 @@ import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import ErrorBoundary from './components/ErrorBoundary.tsx';
 import './index.css';
+import { installPopupImageRecovery } from './utils/popupImageRecovery';
+
+// Recover legacy Supabase Storage popup images after the project migration.
+installPopupImageRecovery();
 
 // Register Service Worker for Progressive Web App (PWA)
 if ('serviceWorker' in navigator) {
