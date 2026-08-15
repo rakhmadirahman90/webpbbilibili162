@@ -1254,10 +1254,10 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       ttd_ketua_url: resolvedTtdKetuaUrl,
       ttd_sekretaris_url: resolvedTtdSekreUrl,
       cap_stempel_url: resolvedStempelUrl,
-      logo_pos: currentPositions.logoPos || stored.logo_pos || { x: 0, y: 0 },
-      stempel_pos: currentPositions.stempelPos || stored.stempel_pos || { x: -35, y: 0 },
-      ttd_ketua_pos: currentPositions.ttdKetuaPos || stored.ttd_ketua_pos || { x: 0, y: 0 },
-      ttd_sekretaris_pos: currentPositions.ttdSekretarisPos || stored.ttd_sekretaris_pos || { x: 0, y: 0 },
+      logo_pos: currentPositions.logoPos || rawPayload.logo_pos || stored.logo_pos || { x: 0, y: 0 },
+      stempel_pos: currentPositions.stempelPos || rawPayload.stempel_pos || stored.stempel_pos || { x: -35, y: 0 },
+      ttd_ketua_pos: currentPositions.ttdKetuaPos || rawPayload.ttd_ketua_pos || stored.ttd_ketua_pos || { x: 0, y: 0 },
+      ttd_sekretaris_pos: currentPositions.ttdSekretarisPos || rawPayload.ttd_sekretaris_pos || stored.ttd_sekretaris_pos || { x: 0, y: 0 },
       logo_scale: rawPayload.logo_scale || stored.logo_scale || 100,
       ttd_ketua_scale: rawPayload.ttd_ketua_scale || stored.ttd_ketua_scale || 100,
       ttd_sekretaris_scale: rawPayload.ttd_sekretaris_scale || stored.ttd_sekretaris_scale || 100,
@@ -1269,7 +1269,8 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       judul_lampiran: rawPayload.judul_lampiran || 'Daftar Lampiran Peserta',
       lampiran_peserta: rawPayload.lampiran_peserta || '',
       nama_ketua: rawPayload.nama_ketua || stored.nama_ketua || 'H. WAWAN',
-      nama_sekretaris: rawPayload.nama_sekretaris || stored.nama_sekretaris || 'H. BARHAMAN MUIN S.AG'
+      nama_sekretaris: rawPayload.nama_sekretaris || stored.nama_sekretaris || 'H. BARHAMAN MUIN S.AG',
+      updated_at: new Date().toISOString()
     };
 
     const fullPayload: any = {
@@ -1525,8 +1526,8 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
             ...older,
             ...newer,
             id: chosenId,
-            isi_surat: newer.isi_surat || older.isi_surat || '',
-            isi_ringkas: newer.isi_ringkas || older.isi_ringkas || '',
+            isi_surat: (newer.isi_surat && String(newer.isi_surat).trim()) ? newer.isi_surat : (older.isi_surat || ''),
+            isi_ringkas: (newer.isi_ringkas && String(newer.isi_ringkas).trim()) ? newer.isi_ringkas : (older.isi_ringkas || ''),
             paragraf_2: newer.paragraf_2 !== undefined ? newer.paragraf_2 : older.paragraf_2,
             paragraf_3: newer.paragraf_3 !== undefined ? newer.paragraf_3 : older.paragraf_3,
             lampiran_peserta: newer.lampiran_peserta !== undefined ? newer.lampiran_peserta : older.lampiran_peserta,
@@ -1534,6 +1535,14 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
             tempat_tanggal: newer.tempat_tanggal || older.tempat_tanggal || '',
             tujuan_yth: newer.tujuan_yth || older.tujuan_yth || '',
             lampiran: newer.lampiran || older.lampiran || '-',
+            logo_pos: newer.logo_pos || older.logo_pos || { x: 0, y: 0 },
+            stempel_pos: newer.stempel_pos || older.stempel_pos || { x: -35, y: 0 },
+            ttd_ketua_pos: newer.ttd_ketua_pos || older.ttd_ketua_pos || { x: 0, y: 0 },
+            ttd_sekretaris_pos: newer.ttd_sekretaris_pos || older.ttd_sekretaris_pos || { x: 0, y: 0 },
+            logo_scale: newer.logo_scale || older.logo_scale || 100,
+            stempel_scale: newer.stempel_scale || older.stempel_scale || 100,
+            ttd_ketua_scale: newer.ttd_ketua_scale || older.ttd_ketua_scale || 100,
+            ttd_sekretaris_scale: newer.ttd_sekretaris_scale || older.ttd_sekretaris_scale || 100,
             updated_at: newer.updated_at || older.updated_at || new Date().toISOString(),
             ttd_ketua_url: getValidAssetUrl(newer.ttd_ketua_url || older.ttd_ketua_url, storedAssets.ttd_ketua_url),
             ttd_sekretaris_url: getValidAssetUrl(newer.ttd_sekretaris_url || older.ttd_sekretaris_url, storedAssets.ttd_sekretaris_url),
@@ -2291,7 +2300,7 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
   };
 
   const handlePreview = (surat: any) => {
-    setEditId(null);
+    setEditId(surat.id);
     setIsPreviewOnly(true);
     setActiveModalTab('preview');
 
