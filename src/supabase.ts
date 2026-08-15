@@ -1,23 +1,20 @@
 import { createClient } from '@supabase/supabase-js';
 
 // PB BILIBILI 162 production Supabase project.
-// The URL is intentionally fixed to prevent a stale Vercel variable from
-// silently redirecting the frontend to another Supabase project.
+// The production app must never be redirected by a stale Vercel environment
+// variable to another Supabase project.
 const SUPABASE_URL = 'https://missjyvqfehamtpyodjr.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_trhfpzLX50WdkdaItRPFMQ_ewqF0fgn';
 
-const envKey =
-  typeof import.meta !== 'undefined' && import.meta.env
-    ? import.meta.env.VITE_SUPABASE_ANON || import.meta.env.VITE_SUPABASE_ANON_KEY
-    : undefined;
+// Always use the canonical production project/key. Environment variables are
+// intentionally ignored here because an old Vercel VITE_SUPABASE_* value was
+// able to make different deployments talk to different projects.
+const resolvedKey = SUPABASE_PUBLISHABLE_KEY;
 
-const resolvedKey = envKey || SUPABASE_PUBLISHABLE_KEY;
-
-// Supabase supplies a Headers instance containing the critical `apikey` and
-// `Authorization` headers. Never spread Headers into an object: doing so
-// drops its entries and produces the exact "No API key found in request"
-// error seen in AdminPopup. Clone Headers explicitly before adding cache
-// controls so REST, Storage and Realtime-related requests keep authentication.
+// Supabase supplies authentication headers through the fetch init object.
+// Clone them with Headers and explicitly restore apikey/Authorization so a
+// custom fetch wrapper can never drop them. This directly prevents the
+// "No API key found in request" failure seen in production.
 const retryFetch: typeof fetch = async (input, init) => {
   const maxAttempts = 3;
   const delays = [350, 900];
@@ -25,6 +22,10 @@ const retryFetch: typeof fetch = async (input, init) => {
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     try {
       const headers = new Headers(init?.headers);
+      headers.set('apikey', resolvedKey);
+      if (!headers.has('Authorization')) {
+        headers.set('Authorization', `Bearer ${resolvedKey}`);
+      }
       headers.set('Cache-Control', 'no-cache');
       headers.set('Pragma', 'no-cache');
 
