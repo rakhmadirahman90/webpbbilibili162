@@ -626,10 +626,10 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
               } catch (e) {}
             }
             masterFromDb = {
-              logo_url: data.logo_url,
-              ttd_ketua_url: data.ttd_ketua_url,
-              ttd_sekretaris_url: data.ttd_sekretaris_url,
-              cap_stempel_url: data.cap_stempel_url,
+              logo_url: data.logo_url || extra.logo_url,
+              ttd_ketua_url: data.ttd_ketua_url || extra.ttd_ketua_url,
+              ttd_sekretaris_url: data.ttd_sekretaris_url || extra.ttd_sekretaris_url,
+              cap_stempel_url: data.cap_stempel_url || extra.cap_stempel_url,
               nama_ketua: data.nama_ketua || extra.nama_ketua,
               nama_sekretaris: data.nama_sekretaris || extra.nama_sekretaris,
               ...extra
@@ -733,6 +733,10 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
         ttd_sekretaris_url: assetsToSave.ttd_sekretaris_url || '',
         cap_stempel_url: assetsToSave.cap_stempel_url || '',
         isi_surat: JSON.stringify({
+          logo_url: assetsToSave.logo_url || '/logo_pb_bilibili_162.svg',
+          ttd_ketua_url: assetsToSave.ttd_ketua_url || '',
+          ttd_sekretaris_url: assetsToSave.ttd_sekretaris_url || '',
+          cap_stempel_url: assetsToSave.cap_stempel_url || '',
           logo_scale: assetsToSave.logo_scale || 100,
           ttd_ketua_scale: assetsToSave.ttd_ketua_scale || 100,
           ttd_sekretaris_scale: assetsToSave.ttd_sekretaris_scale || 100,
@@ -1204,6 +1208,10 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       paragraf_2: rawPayload.paragraf_2 || '',
       paragraf_3: rawPayload.paragraf_3 || '',
       alamat_tujuan: rawPayload.alamat_tujuan || 'di Tempat',
+      logo_url: resolvedLogoUrl,
+      ttd_ketua_url: resolvedTtdKetuaUrl,
+      ttd_sekretaris_url: resolvedTtdSekreUrl,
+      cap_stempel_url: resolvedStempelUrl,
       logo_pos: currentPositions.logoPos || stored.logo_pos || { x: 0, y: 0 },
       stempel_pos: currentPositions.stempelPos || stored.stempel_pos || { x: -35, y: 0 },
       ttd_ketua_pos: currentPositions.ttdKetuaPos || stored.ttd_ketua_pos || { x: 0, y: 0 },

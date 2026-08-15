@@ -560,7 +560,12 @@ async function startServer() {
           : ((rawIsi && typeof rawIsi === 'string' && !rawIsi.trim().startsWith('{'))
             ? rawIsi
             : (copy.isi_surat || copy.isi_ringkas || '')));
-      const cleanLampiran = extra.lampiran_text || (rawLampiran && !rawLampiran.trim().startsWith('{') ? rawLampiran : '-') || '-';
+      
+      // Preserve JSON lampiran if it exists, otherwise use extra text
+      const cleanLampiran = (rawLampiran && typeof rawLampiran === 'string' && rawLampiran.trim().startsWith('{')) 
+        ? rawLampiran 
+        : (extra.lampiran_text || rawLampiran || '-');
+
       copy.isi_surat = cleanIsi;
       copy.isi_ringkas = cleanIsi;
       copy.lampiran = cleanLampiran;
