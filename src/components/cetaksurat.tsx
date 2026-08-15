@@ -1,9 +1,9 @@
 import { jsPDF } from 'jspdf';
 import Swal from 'sweetalert2';
-import { getStoredDigitalAssets, getValidAssetUrl, DEFAULT_LOGO_URL } from './KelolaSurat';
+import { getStoredDigitalAssets, fetchMasterDigitalAssetsFromDatabase, getValidAssetUrl, DEFAULT_LOGO_URL } from './KelolaSurat';
 
 export const cetakSuratPDF = async (surat: any) => {
-  const masterAssets = getStoredDigitalAssets();
+  const masterAssets = await fetchMasterDigitalAssetsFromDatabase();
   const doc = new jsPDF('p', 'mm', 'a4');
   const pageWidth = doc.internal.pageSize.getWidth();
 

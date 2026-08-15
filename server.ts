@@ -471,10 +471,28 @@ async function startServer() {
           isi_surat: JSON.stringify(assets),
           status: 'CONFIG'
         };
+
+        // 1. Sync to site_settings table
+        await fetch(`${SUPABASE_URL}/rest/v1/site_settings`, {
+          method: 'POST',
+          headers: {
+            'apikey': SUPABASE_KEY,
+            'Content-Type': 'application/json',
+            'Prefer': 'resolution=merge-duplicates'
+          },
+          body: JSON.stringify({
+            key: 'digital_assets_surat',
+            value: assets,
+            updated_at: new Date().toISOString()
+          })
+        }).catch(() => {});
+
+        // 2. Sync to arsip_surat table
         await fetch(`${SUPABASE_URL}/rest/v1/arsip_surat?nomor_surat=eq.__MASTER_DIGITAL_ASSETS__`, {
           method: 'DELETE',
           headers: { 'apikey': SUPABASE_KEY }
-        });
+        }).catch(() => {});
+
         await fetch(`${SUPABASE_URL}/rest/v1/arsip_surat`, {
           method: 'POST',
           headers: {
@@ -483,46 +501,67 @@ async function startServer() {
             'Prefer': 'return=minimal'
           },
           body: JSON.stringify(masterRecord)
-        });
+        }).catch(() => {});
       } catch (e) {}
     }
 
     // Digital Assets API
     app.get("/api/digital-assets", async (req, res) => {
       let assets = loadJsonFile(DIGITAL_ASSETS_FILE, null);
-      if (!assets || !assets.logo_url) {
-        try {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 1500);
-          const response = await fetch(`${SUPABASE_URL}/rest/v1/arsip_surat?nomor_surat=eq.__MASTER_DIGITAL_ASSETS__&select=*`, {
-            headers: {
-              'apikey': SUPABASE_KEY
-            },
-            signal: controller.signal
-          }).finally(() => clearTimeout(timeoutId));
 
-          if (response.ok) {
-            const dbData = await response.json();
-            if (Array.isArray(dbData) && dbData.length > 0) {
-              const row = dbData[0];
-              let extra: any = {};
-              if (row.isi_surat) {
-                try { extra = JSON.parse(row.isi_surat); } catch (e) {}
-              }
-              assets = {
-                logo_url: row.logo_url || '/logo_pb_bilibili_162.svg',
-                ttd_ketua_url: row.ttd_ketua_url || '',
-                ttd_sekretaris_url: row.ttd_sekretaris_url || '',
-                cap_stempel_url: row.cap_stempel_url || '',
-                nama_ketua: row.nama_ketua || extra.nama_ketua || 'H. WAWAN',
-                nama_sekretaris: row.nama_sekretaris || extra.nama_sekretaris || 'H. BARHAMAN MUIN S.AG',
-                ...extra
-              };
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2000);
+
+        // 1. Check site_settings table first
+        const siteRes = await fetch(`${SUPABASE_URL}/rest/v1/site_settings?key=eq.digital_assets_surat&select=*`, {
+          headers: { 'apikey': SUPABASE_KEY },
+          signal: controller.signal
+        });
+
+        if (siteRes.ok) {
+          const siteData = await siteRes.json();
+          if (Array.isArray(siteData) && siteData.length > 0 && siteData[0].value) {
+            const val = typeof siteData[0].value === 'string' ? JSON.parse(siteData[0].value) : siteData[0].value;
+            if (val && (val.logo_url || val.ttd_ketua_url || val.ttd_sekretaris_url || val.cap_stempel_url)) {
+              assets = { ...(assets || {}), ...val };
               saveJsonFile(DIGITAL_ASSETS_FILE, assets);
+              clearTimeout(timeoutId);
+              return res.json(assets);
             }
           }
-        } catch (e) {}
-      }
+        }
+
+        // 2. Fallback to arsip_surat table
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/arsip_surat?nomor_surat=eq.__MASTER_DIGITAL_ASSETS__&select=*`, {
+          headers: { 'apikey': SUPABASE_KEY },
+          signal: controller.signal
+        }).finally(() => clearTimeout(timeoutId));
+
+        if (response.ok) {
+          const dbData = await response.json();
+          if (Array.isArray(dbData) && dbData.length > 0) {
+            const row = dbData[0];
+            let extra: any = {};
+            if (row.isi_surat) {
+              try { extra = typeof row.isi_surat === 'string' ? JSON.parse(row.isi_surat) : row.isi_surat; } catch (e) {}
+            }
+            const fetched = {
+              logo_url: row.logo_url || extra.logo_url || '/logo_pb_bilibili_162.svg',
+              ttd_ketua_url: row.ttd_ketua_url || extra.ttd_ketua_url || '',
+              ttd_sekretaris_url: row.ttd_sekretaris_url || extra.ttd_sekretaris_url || '',
+              cap_stempel_url: row.cap_stempel_url || extra.cap_stempel_url || '',
+              nama_ketua: row.nama_ketua || extra.nama_ketua || 'H. WAWAN',
+              nama_sekretaris: row.nama_sekretaris || extra.nama_sekretaris || 'H. BARHAMAN MUIN S.AG',
+              ...extra
+            };
+            assets = { ...(assets || {}), ...fetched };
+            saveJsonFile(DIGITAL_ASSETS_FILE, assets);
+            return res.json(assets);
+          }
+        }
+      } catch (e) {}
+
       return res.json(assets || {});
     });
 
@@ -530,6 +569,11 @@ async function startServer() {
       try {
         const assets = req.body;
         saveJsonFile(DIGITAL_ASSETS_FILE, assets);
+
+        const store = loadLocalSettingsStore();
+        store['digital_assets_surat'] = assets;
+        saveLocalSettingsStore(store);
+
         await syncMasterAssetsToSupabase(assets);
 
         const payloadStr = JSON.stringify({ table: 'digital_assets_surat', eventType: 'UPSERT', data: assets, value: assets });

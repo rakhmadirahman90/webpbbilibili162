@@ -233,6 +233,91 @@ export const getStoredDigitalAssets = () => {
   };
 };
 
+export const fetchMasterDigitalAssetsFromDatabase = async () => {
+  try {
+    let masterFromDb: any = null;
+
+    // 1. Fetch from Supabase site_settings
+    try {
+      const { data } = await supabase
+        .from('site_settings')
+        .select('value')
+        .eq('key', 'digital_assets_surat')
+        .maybeSingle();
+
+      if (data?.value) {
+        masterFromDb = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
+      }
+    } catch (e) {}
+
+    // 2. Fetch from Supabase arsip_surat master record
+    if (!masterFromDb || (!masterFromDb.ttd_ketua_url && !masterFromDb.cap_stempel_url)) {
+      try {
+        const { data } = await supabase
+          .from('arsip_surat')
+          .select('*')
+          .eq('nomor_surat', '__MASTER_DIGITAL_ASSETS__')
+          .maybeSingle();
+
+        if (data) {
+          let extra: any = {};
+          if (data.isi_surat) {
+            try { extra = typeof data.isi_surat === 'string' ? JSON.parse(data.isi_surat) : data.isi_surat; } catch (e) {}
+          }
+          masterFromDb = {
+            logo_url: data.logo_url || extra.logo_url,
+            ttd_ketua_url: data.ttd_ketua_url || extra.ttd_ketua_url,
+            ttd_sekretaris_url: data.ttd_sekretaris_url || extra.ttd_sekretaris_url,
+            cap_stempel_url: data.cap_stempel_url || extra.cap_stempel_url,
+            nama_ketua: data.nama_ketua || extra.nama_ketua,
+            nama_sekretaris: data.nama_sekretaris || extra.nama_sekretaris,
+            ...extra,
+            ...(masterFromDb || {})
+          };
+        }
+      } catch (e) {}
+    }
+
+    // 3. Fallback to /api/digital-assets endpoint
+    if (!masterFromDb || (!masterFromDb.ttd_ketua_url && !masterFromDb.cap_stempel_url)) {
+      try {
+        const res = await fetch('/api/digital-assets');
+        if (res.ok) {
+          const apiData = await res.json();
+          if (apiData) {
+            masterFromDb = { ...(masterFromDb || {}), ...apiData };
+          }
+        }
+      } catch (e) {}
+    }
+
+    if (masterFromDb && typeof masterFromDb === 'object') {
+      const validAssets = {
+        logo_url: getValidAssetUrl(masterFromDb.logo_url, DEFAULT_LOGO_URL),
+        ttd_ketua_url: getValidAssetUrl(masterFromDb.ttd_ketua_url, ""),
+        ttd_sekretaris_url: getValidAssetUrl(masterFromDb.ttd_sekretaris_url, ""),
+        cap_stempel_url: getValidAssetUrl(masterFromDb.cap_stempel_url, ""),
+        logo_scale: masterFromDb.logo_scale || 100,
+        ttd_ketua_scale: masterFromDb.ttd_ketua_scale || 100,
+        ttd_sekretaris_scale: masterFromDb.ttd_sekretaris_scale || 100,
+        stempel_scale: masterFromDb.stempel_scale || 100,
+        logo_pos: masterFromDb.logo_pos || { x: 0, y: 0 },
+        stempel_pos: masterFromDb.stempel_pos || { x: -35, y: 0 },
+        ttd_ketua_pos: masterFromDb.ttd_ketua_pos || { x: 0, y: 0 },
+        ttd_sekretaris_pos: masterFromDb.ttd_sekretaris_pos || { x: 0, y: 0 },
+        nama_ketua: masterFromDb.nama_ketua || 'H. WAWAN',
+        nama_sekretaris: masterFromDb.nama_sekretaris || 'H. BARHAMAN MUIN S.AG',
+      };
+      safeLocalStorageSet('pb_bilibili_digital_assets', JSON.stringify(validAssets));
+      safeLocalStorageSet('site_setting_digital_assets_surat', JSON.stringify(validAssets));
+      return validAssets;
+    }
+  } catch (e) {
+    console.warn('Error fetching master digital assets from database:', e);
+  }
+  return getStoredDigitalAssets();
+};
+
 export const safeLocalStorageSet = (key: string, value: string): boolean => {
   try {
     localStorage.setItem(key, value);
@@ -596,82 +681,35 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
 
   const syncDigitalAssetsFromDatabase = async () => {
     try {
-      let masterFromDb: any = null;
-
-      // 1. Try fetching from Node server API backend (/api/digital-assets)
-      try {
-        const res = await fetch('/api/digital-assets');
-        if (res.ok) {
-          const apiData = await res.json();
-          if (apiData && (apiData.logo_url || apiData.ttd_ketua_url || apiData.ttd_sekretaris_url || apiData.cap_stempel_url)) {
-            masterFromDb = apiData;
-          }
-        }
-      } catch (e) {}
-
-      // 2. Try fetching from Supabase table 'arsip_surat'
-      if (!masterFromDb || !masterFromDb.logo_url) {
-        try {
-          const { data } = await supabase
-            .from('arsip_surat')
-            .select('*')
-            .eq('nomor_surat', '__MASTER_DIGITAL_ASSETS__')
-            .maybeSingle();
-
-          if (data) {
-            let extra: any = {};
-            if (data.isi_surat) {
-              try {
-                extra = typeof data.isi_surat === 'string' ? JSON.parse(data.isi_surat) : data.isi_surat;
-              } catch (e) {}
-            }
-            masterFromDb = {
-              logo_url: data.logo_url || extra.logo_url,
-              ttd_ketua_url: data.ttd_ketua_url || extra.ttd_ketua_url,
-              ttd_sekretaris_url: data.ttd_sekretaris_url || extra.ttd_sekretaris_url,
-              cap_stempel_url: data.cap_stempel_url || extra.cap_stempel_url,
-              nama_ketua: data.nama_ketua || extra.nama_ketua,
-              nama_sekretaris: data.nama_sekretaris || extra.nama_sekretaris,
-              ...extra
-            };
-          }
-        } catch (e) {
-          console.warn('Error fetching master assets from arsip_surat:', e);
-        }
-      }
-
-      const dbAssets = masterFromDb || (await getSiteSetting('digital_assets_surat'));
-      if (dbAssets && typeof dbAssets === 'object') {
-        const parsed = typeof dbAssets === 'string' ? JSON.parse(dbAssets) : dbAssets;
-        const validAssets = {
-          logo_url: getValidAssetUrl(parsed.logo_url, DEFAULT_LOGO_URL),
-          ttd_ketua_url: getValidAssetUrl(parsed.ttd_ketua_url, ""),
-          ttd_sekretaris_url: getValidAssetUrl(parsed.ttd_sekretaris_url, ""),
-          cap_stempel_url: getValidAssetUrl(parsed.cap_stempel_url, ""),
-          logo_scale: parsed.logo_scale || 100,
-          ttd_ketua_scale: parsed.ttd_ketua_scale || 100,
-          ttd_sekretaris_scale: parsed.ttd_sekretaris_scale || 100,
-          stempel_scale: parsed.stempel_scale || 100,
-          logo_pos: parsed.logo_pos || { x: 0, y: 0 },
-          stempel_pos: parsed.stempel_pos || { x: -35, y: 0 },
-          ttd_ketua_pos: parsed.ttd_ketua_pos || { x: 0, y: 0 },
-          ttd_sekretaris_pos: parsed.ttd_sekretaris_pos || { x: 0, y: 0 },
-          nama_ketua: parsed.nama_ketua || 'H. WAWAN',
-          nama_sekretaris: parsed.nama_sekretaris || 'H. BARHAMAN MUIN S.AG',
-        };
-        safeLocalStorageSet('pb_bilibili_digital_assets', JSON.stringify(validAssets));
-        safeLocalStorageSet('site_setting_digital_assets_surat', JSON.stringify(validAssets));
-
-        // Update form state if current form has missing digital assets
+      const validAssets = await fetchMasterDigitalAssetsFromDatabase();
+      if (validAssets) {
         setFormData(prev => ({
           ...prev,
-          logo_url: prev.logo_url || validAssets.logo_url,
-          ttd_ketua_url: prev.ttd_ketua_url || validAssets.ttd_ketua_url,
-          ttd_sekretaris_url: prev.ttd_sekretaris_url || validAssets.ttd_sekretaris_url,
-          cap_stempel_url: prev.cap_stempel_url || validAssets.cap_stempel_url,
-          nama_ketua: prev.nama_ketua || validAssets.nama_ketua,
-          nama_sekretaris: prev.nama_sekretaris || validAssets.nama_sekretaris,
+          logo_url: validAssets.logo_url || prev.logo_url,
+          ttd_ketua_url: validAssets.ttd_ketua_url || prev.ttd_ketua_url,
+          ttd_sekretaris_url: validAssets.ttd_sekretaris_url || prev.ttd_sekretaris_url,
+          cap_stempel_url: validAssets.cap_stempel_url || prev.cap_stempel_url,
+          nama_ketua: validAssets.nama_ketua || prev.nama_ketua,
+          nama_sekretaris: validAssets.nama_sekretaris || prev.nama_sekretaris,
+          logo_scale: validAssets.logo_scale || prev.logo_scale || 100,
+          ttd_ketua_scale: validAssets.ttd_ketua_scale || prev.ttd_ketua_scale || 100,
+          ttd_sekretaris_scale: validAssets.ttd_sekretaris_scale || prev.ttd_sekretaris_scale || 100,
+          stempel_scale: validAssets.stempel_scale || prev.stempel_scale || 100,
         }));
+
+        if (validAssets.logo_pos) setLogoPos(validAssets.logo_pos);
+        if (validAssets.stempel_pos) setStempelPos(validAssets.stempel_pos);
+        if (validAssets.ttd_ketua_pos) setTtdKetuaPos(validAssets.ttd_ketua_pos);
+        if (validAssets.ttd_sekretaris_pos) setTtdSekretarisPos(validAssets.ttd_sekretaris_pos);
+
+        // Update all items in suratList state with the master digital assets
+        setSuratList(prev => prev.map(item => ({
+          ...item,
+          logo_url: item.logo_url || validAssets.logo_url,
+          ttd_ketua_url: item.ttd_ketua_url || validAssets.ttd_ketua_url,
+          ttd_sekretaris_url: item.ttd_sekretaris_url || validAssets.ttd_sekretaris_url,
+          cap_stempel_url: item.cap_stempel_url || validAssets.cap_stempel_url,
+        })));
 
         return validAssets;
       }
@@ -1191,7 +1229,7 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     const { id, ...rawPayload } = currentFormData as any;
     const isoDateFromText = parseIndonesianDateToIso(rawPayload.tempat_tanggal);
     const resolvedCreatedAt = rawPayload.created_at || (isoDateFromText ? new Date(isoDateFromText + 'T12:00:00.000Z').toISOString() : new Date().toISOString());
-    const stored = getStoredDigitalAssets();
+    const stored = await fetchMasterDigitalAssetsFromDatabase();
 
     const resolvedLogoUrl = getValidAssetUrl(rawPayload.logo_url, stored.logo_url || DEFAULT_LOGO_URL);
     const resolvedTtdKetuaUrl = getValidAssetUrl(rawPayload.ttd_ketua_url, stored.ttd_ketua_url);
@@ -1354,8 +1392,8 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       setLoading(true);
     }
     try {
-      // Sync master digital assets from database in background
-      syncDigitalAssetsFromDatabase().catch(() => {});
+      // Sync master digital assets from database first
+      const masterAssets = await syncDigitalAssetsFromDatabase();
 
       // Parallel fetch from Server API and Supabase with 1.5s timeout
       const serverFetchPromise = fetch('/api/arsip-surat')
@@ -1385,7 +1423,7 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
 
       const localData = JSON.parse(localStorage.getItem('arsip_surat_local') || '[]');
       const deletedIds: string[] = JSON.parse(localStorage.getItem('arsip_surat_deleted') || '[]');
-      const storedAssets = getStoredDigitalAssets();
+      const storedAssets = masterAssets || getStoredDigitalAssets();
 
       const parseSuratFromDb = (item: any) => {
         if (!item) return item;
@@ -2418,70 +2456,89 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: string) => {
     if (isPreviewOnly) return;
     const file = e.target.files?.[0];
-    if (file) {
-      const stored = getStoredDigitalAssets();
+    if (!file) return;
+
+    try {
+      Swal.fire({
+        title: 'Mengunggah Aset...',
+        text: 'Mohon tunggu, menyimpan aset digital ke database...',
+        allowOutsideClick: false,
+        didOpen: () => { Swal.showLoading(); }
+      });
+
+      let imageUrl = '';
+
+      // 1. Try uploading to Supabase Storage bucket 'assets'
       try {
-        const compressed = await compressImage(file, 600, 600, 0.85);
-        if (compressed) {
-          setFormData(prev => {
-            const updated = { ...prev, [field]: compressed };
-            const mergedAssets = {
-              logo_url: field === 'logo_url' ? compressed : getValidAssetUrl(updated.logo_url, stored.logo_url || DEFAULT_LOGO_URL),
-              ttd_ketua_url: field === 'ttd_ketua_url' ? compressed : getValidAssetUrl(updated.ttd_ketua_url, stored.ttd_ketua_url),
-              ttd_sekretaris_url: field === 'ttd_sekretaris_url' ? compressed : getValidAssetUrl(updated.ttd_sekretaris_url, stored.ttd_sekretaris_url),
-              cap_stempel_url: field === 'cap_stempel_url' ? compressed : getValidAssetUrl(updated.cap_stempel_url, stored.cap_stempel_url),
-              logo_scale: updated.logo_scale || stored.logo_scale || 100,
-              ttd_ketua_scale: updated.ttd_ketua_scale || stored.ttd_ketua_scale || 100,
-              ttd_sekretaris_scale: updated.ttd_sekretaris_scale || stored.ttd_sekretaris_scale || 100,
-              stempel_scale: updated.stempel_scale || stored.stempel_scale || 100,
-              logo_pos: logoPos || stored.logo_pos || { x: 0, y: 0 },
-              stempel_pos: stempelPos || stored.stempel_pos || { x: -35, y: 0 },
-              ttd_ketua_pos: ttdKetuaPos || stored.ttd_ketua_pos || { x: 0, y: 0 },
-              ttd_sekretaris_pos: ttdSekretarisPos || stored.ttd_sekretaris_pos || { x: 0, y: 0 },
-              nama_ketua: updated.nama_ketua || stored.nama_ketua || 'H. WAWAN',
-              nama_sekretaris: updated.nama_sekretaris || stored.nama_sekretaris || 'H. BARHAMAN MUIN S.AG',
-            };
-            saveMasterDigitalAssetsToDatabase(mergedAssets, false);
-            return updated;
-          });
-          Swal.fire({
-            title: 'Tersimpan Permanen di Database! 💾',
-            text: 'Aset digital berhasil diunggah dan otomatis menjadi default untuk seluruh surat.',
-            icon: 'success',
-            toast: true,
-            position: 'top-end',
-            showConfirmButton: false,
-            timer: 2500,
-          });
+        const fileExt = file.name.split('.').pop() || 'png';
+        const fileName = `digital-assets/${field}_${Date.now()}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
+          .from('assets')
+          .upload(fileName, file, { upsert: true });
+
+        if (!uploadError) {
+          const { data: { publicUrl } } = supabase.storage
+            .from('assets')
+            .getPublicUrl(fileName);
+          if (publicUrl) {
+            imageUrl = publicUrl;
+          }
         }
-      } catch (err) {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const res = reader.result as string;
-          setFormData(prev => {
-            const updated = { ...prev, [field]: res };
-            const mergedAssets = {
-              logo_url: field === 'logo_url' ? res : getValidAssetUrl(updated.logo_url, stored.logo_url || DEFAULT_LOGO_URL),
-              ttd_ketua_url: field === 'ttd_ketua_url' ? res : getValidAssetUrl(updated.ttd_ketua_url, stored.ttd_ketua_url),
-              ttd_sekretaris_url: field === 'ttd_sekretaris_url' ? res : getValidAssetUrl(updated.ttd_sekretaris_url, stored.ttd_sekretaris_url),
-              cap_stempel_url: field === 'cap_stempel_url' ? res : getValidAssetUrl(updated.cap_stempel_url, stored.cap_stempel_url),
-              logo_scale: updated.logo_scale || stored.logo_scale || 100,
-              ttd_ketua_scale: updated.ttd_ketua_scale || stored.ttd_ketua_scale || 100,
-              ttd_sekretaris_scale: updated.ttd_sekretaris_scale || stored.ttd_sekretaris_scale || 100,
-              stempel_scale: updated.stempel_scale || stored.stempel_scale || 100,
-              logo_pos: logoPos || stored.logo_pos || { x: 0, y: 0 },
-              stempel_pos: stempelPos || stored.stempel_pos || { x: -35, y: 0 },
-              ttd_ketua_pos: ttdKetuaPos || stored.ttd_ketua_pos || { x: 0, y: 0 },
-              ttd_sekretaris_pos: ttdSekretarisPos || stored.ttd_sekretaris_pos || { x: 0, y: 0 },
-              nama_ketua: updated.nama_ketua || stored.nama_ketua || 'H. WAWAN',
-              nama_sekretaris: updated.nama_sekretaris || stored.nama_sekretaris || 'H. BARHAMAN MUIN S.AG',
-            };
-            saveMasterDigitalAssetsToDatabase(mergedAssets, false);
-            return updated;
-          });
-        };
-        reader.readAsDataURL(file);
+      } catch (storageErr) {
+        console.warn("Storage upload failed, using Data URL fallback:", storageErr);
       }
+
+      // 2. Base64 fallback if storage bucket is not configured or throws error
+      if (!imageUrl) {
+        imageUrl = await compressImage(file, 600, 600, 0.85);
+      }
+
+      if (imageUrl) {
+        const stored = await fetchMasterDigitalAssetsFromDatabase();
+        const updatedFormData = { ...formData, [field]: imageUrl };
+        setFormData(updatedFormData);
+
+        const mergedAssets = {
+          logo_url: field === 'logo_url' ? imageUrl : getValidAssetUrl(updatedFormData.logo_url, stored.logo_url || DEFAULT_LOGO_URL),
+          ttd_ketua_url: field === 'ttd_ketua_url' ? imageUrl : getValidAssetUrl(updatedFormData.ttd_ketua_url, stored.ttd_ketua_url),
+          ttd_sekretaris_url: field === 'ttd_sekretaris_url' ? imageUrl : getValidAssetUrl(updatedFormData.ttd_sekretaris_url, stored.ttd_sekretaris_url),
+          cap_stempel_url: field === 'cap_stempel_url' ? imageUrl : getValidAssetUrl(updatedFormData.cap_stempel_url, stored.cap_stempel_url),
+          logo_scale: updatedFormData.logo_scale || stored.logo_scale || 100,
+          ttd_ketua_scale: updatedFormData.ttd_ketua_scale || stored.ttd_ketua_scale || 100,
+          ttd_sekretaris_scale: updatedFormData.ttd_sekretaris_scale || stored.ttd_sekretaris_scale || 100,
+          stempel_scale: updatedFormData.stempel_scale || stored.stempel_scale || 100,
+          logo_pos: logoPos || stored.logo_pos || { x: 0, y: 0 },
+          stempel_pos: stempelPos || stored.stempel_pos || { x: -35, y: 0 },
+          ttd_ketua_pos: ttdKetuaPos || stored.ttd_ketua_pos || { x: 0, y: 0 },
+          ttd_sekretaris_pos: ttdSekretarisPos || stored.ttd_sekretaris_pos || { x: 0, y: 0 },
+          nama_ketua: updatedFormData.nama_ketua || stored.nama_ketua || 'H. WAWAN',
+          nama_sekretaris: updatedFormData.nama_sekretaris || stored.nama_sekretaris || 'H. BARHAMAN MUIN S.AG',
+        };
+
+        await saveMasterDigitalAssetsToDatabase(mergedAssets, false);
+
+        setSuratList(prev => prev.map(item => ({
+          ...item,
+          [field]: imageUrl,
+          logo_url: mergedAssets.logo_url,
+          ttd_ketua_url: mergedAssets.ttd_ketua_url,
+          ttd_sekretaris_url: mergedAssets.ttd_sekretaris_url,
+          cap_stempel_url: mergedAssets.cap_stempel_url,
+        })));
+
+        Swal.fire({
+          title: 'Tersimpan Permanen! 💾',
+          text: 'Aset digital berhasil diunggah dan terkunci di database.',
+          icon: 'success',
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 3000,
+        });
+      }
+    } catch (err) {
+      console.error('Error uploading asset:', err);
+      Swal.fire('Gagal Unggah', 'Terjadi kesalahan saat mengunggah aset digital.', 'error');
     }
   };
 
