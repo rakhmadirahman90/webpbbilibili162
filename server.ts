@@ -233,7 +233,14 @@ async function startServer() {
         if (response.ok) {
           const data = await response.json();
           if (Array.isArray(data) && data.length > 0 && data[0].value !== undefined && data[0].value !== null) {
-            const dbVal = typeof data[0].value === 'string' ? JSON.parse(data[0].value) : data[0].value;
+            let dbVal = data[0].value;
+            if (typeof dbVal === 'string') {
+              try {
+                dbVal = JSON.parse(dbVal);
+              } catch {
+                dbVal = data[0].value;
+              }
+            }
             const localTs = getTs(localVal);
             const dbTs = getTs(dbVal);
 

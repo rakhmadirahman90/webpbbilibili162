@@ -288,7 +288,14 @@ const siteSettingsMemoryCache = new Map<string, any>();
 
 function sanitizeKeyConfig(key: string, val: any) {
   if (key === 'hero_config') {
-    let parsedBest = val ? (typeof val === 'string' ? JSON.parse(val) : val) : null;
+    let parsedBest = val;
+    if (typeof val === 'string') {
+      try {
+        parsedBest = JSON.parse(val);
+      } catch {
+        parsedBest = val;
+      }
+    }
     let slides = parsedBest?.slides || (Array.isArray(parsedBest) ? parsedBest : []);
 
     const hasVideoSlide = Array.isArray(slides) && slides.some((s: any) => s && (s.type === 'video' || s.videoUrl || (typeof s.image === 'string' && (s.image.endsWith('.webm') || s.image.endsWith('.mp4')))));
@@ -341,7 +348,14 @@ async function fetchFreshSiteSetting(key: string) {
         .maybeSingle();
 
       if (!error && data?.value !== undefined && data.value !== null) {
-        dbVal = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
+        dbVal = data.value;
+        if (typeof dbVal === 'string') {
+          try {
+            dbVal = JSON.parse(dbVal);
+          } catch {
+            dbVal = data.value;
+          }
+        }
         dbUpdatedAt = data.updated_at || null;
         if (dbVal && typeof dbVal === 'object') {
           dbVal = { ...dbVal, updated_at: dbVal.updated_at || dbUpdatedAt || new Date().toISOString() };
