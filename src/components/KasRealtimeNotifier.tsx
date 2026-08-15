@@ -258,6 +258,9 @@ export default function KasRealtimeNotifier() {
         `;
       }
 
+      // Close schedule popup if open to prevent screen clutter/overlap
+      window.dispatchEvent(new Event('pb-close-schedule'));
+
       Swal.fire({
         title: titleHtml,
         html: initialHtml,
@@ -269,7 +272,7 @@ export default function KasRealtimeNotifier() {
         color: '#fff',
         toast: true,
         customClass: {
-          popup: `border ${borderClass} rounded-2xl shadow-2xl shadow-black/90 p-3 sm:p-3.5 !max-w-[360px] w-[94vw] sm:w-[360px]`,
+          popup: `border ${borderClass} rounded-2xl shadow-2xl shadow-black/90 p-2.5 sm:p-3.5 !max-w-[360px] w-[92vw] sm:w-[360px] max-h-[85vh] overflow-y-auto custom-scrollbar`,
           container: 'z-[9999999]'
         },
         didOpen: (toast) => {

@@ -24,7 +24,7 @@ function AnimatedDigit({ value }: { value: string }) {
 
 export default function ScheduleWidget() {
   const [scheduleInfo, setScheduleInfo] = useState<ScheduleInfo>(() => computeScheduleInfo());
-  const [showSchedulePopup, setShowSchedulePopup] = useState(true);
+  const [showSchedulePopup, setShowSchedulePopup] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 768);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -35,11 +35,17 @@ export default function ScheduleWidget() {
       setShowSchedulePopup(true);
     };
 
+    const handleCloseSchedule = () => {
+      setShowSchedulePopup(false);
+    };
+
     window.addEventListener('pb-open-schedule', handleOpenSchedule);
+    window.addEventListener('pb-close-schedule', handleCloseSchedule);
 
     return () => {
       clearInterval(timer);
       window.removeEventListener('pb-open-schedule', handleOpenSchedule);
+      window.removeEventListener('pb-close-schedule', handleCloseSchedule);
     };
   }, []);
 
@@ -51,7 +57,7 @@ export default function ScheduleWidget() {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 20, scale: 0.95 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          className="fixed bottom-3 right-3 sm:bottom-6 sm:right-6 w-[calc(100vw-1.5rem)] sm:w-[380px] bg-[#0b1224]/95 backdrop-blur-2xl border border-amber-500/40 rounded-3xl p-4 shadow-[0_20px_50px_rgba(0,0,0,0.7)] z-[99999] overflow-hidden"
+          className="fixed bottom-3 left-3 sm:bottom-6 sm:left-6 md:left-[260px] lg:left-[270px] w-[calc(100vw-1.5rem)] sm:w-[380px] max-h-[85vh] overflow-y-auto custom-scrollbar bg-[#0b1224]/95 backdrop-blur-2xl border border-amber-500/40 rounded-3xl p-3.5 sm:p-4 shadow-[0_20px_50px_rgba(0,0,0,0.7)] z-[99999]"
         >
           {/* Ambient Background Glow */}
           <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/10 rounded-bl-full pointer-events-none" />
@@ -237,7 +243,7 @@ export default function ScheduleWidget() {
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.8 }}
           onClick={() => setShowSchedulePopup(true)}
-          className="fixed bottom-[58px] right-3 sm:bottom-[76px] sm:right-6 w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-[#0b1224]/95 hover:bg-[#121c38] text-amber-400 border border-amber-500/40 shadow-[0_10px_25px_rgba(0,0,0,0.6)] backdrop-blur-xl z-50 flex items-center justify-center transition-all active:scale-95 cursor-pointer group hover:border-amber-400 hover:shadow-amber-500/20"
+          className="fixed bottom-[58px] left-3 sm:bottom-[76px] sm:left-6 md:left-[260px] lg:left-[270px] w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-[#0b1224]/95 hover:bg-[#121c38] text-amber-400 border border-amber-500/40 shadow-[0_10px_25px_rgba(0,0,0,0.6)] backdrop-blur-xl z-[99998] flex items-center justify-center transition-all active:scale-95 cursor-pointer group hover:border-amber-400 hover:shadow-amber-500/20"
           title="Jadwal & Countdown Latihan PB 162"
           aria-label="Jadwal & Countdown Latihan PB 162"
         >
