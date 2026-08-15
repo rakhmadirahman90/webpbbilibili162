@@ -164,117 +164,39 @@ export default function Navbar({ onNavigate }: NavbarProps) {
         .select('*')
         .order('order_index', { ascending: true });
       
-      if (error) console.warn(error);
+      if (error) console.warn("Fetch Nav Error:", error);
 
-      let finalNav: any[] = data || [];
-
-      // Filter out admin or deprecated items from public navbar
-      finalNav = finalNav.filter((item: any) => 
-        item.path !== 'kas' && item.label?.toLowerCase() !== 'kas' && item.label?.toLowerCase() !== 'kelola kas' &&
-        item.path !== 'program' && item.label?.toLowerCase() !== 'program' && item.label?.toLowerCase() !== 'program kelas' &&
-        item.path !== 'faq' && item.label?.toLowerCase() !== 'faq'
-      );
-
-      // Default core menu structure
-      const defaultItems = [
-        { id: '1', label: 'Home', path: 'home', type: 'link', order_index: 0 },
-        { id: '2', label: 'Tentang Kami', path: 'tentang-kami', type: 'dropdown', order_index: 1 },
-        { id: '2-1', parent_id: '2', label: 'Sejarah', path: 'sejarah', order_index: 1 },
-        { id: '2-2', parent_id: '2', label: 'Visi & Misi', path: 'visi-misi', order_index: 2 },
-        { id: '2-3', parent_id: '2', label: 'Fasilitas', path: 'fasilitas', order_index: 3 },
-        { id: '2-4', parent_id: '2', label: 'Struktur Organisasi', path: 'struktur-organisasi', order_index: 4 },
-        { id: '2-5', parent_id: '2', label: 'Dokumen Penting', path: 'dokumen-penting', order_index: 5 },
-        { id: '2-6', parent_id: '2', label: 'Inventaris', path: 'inventaris', order_index: 6 },
-        { id: '3', label: 'Informasi', path: 'informasi', type: 'dropdown', order_index: 2 },
-        { id: '3-1', parent_id: '3', label: 'Berita', path: 'berita', order_index: 1 },
-        { id: '3-2', parent_id: '3', label: 'Prestasi', path: 'prestasi', order_index: 2 },
-        { id: '4', label: 'Peringkat', path: 'peringkat', type: 'dropdown', order_index: 3 },
-        { id: '4-1', parent_id: '4', label: 'Ranking Atlet', path: 'peringkat', order_index: 1 },
-        { id: '4-2', parent_id: '4', label: 'Quiz Badminton', path: 'quiz', order_index: 2 },
-        { id: '5', label: 'Jadwal Latihan', path: 'jadwal', type: 'link', order_index: 4 }
-      ];
-
-      if (finalNav.length === 0) {
-        finalNav = defaultItems;
-      } else {
-        // Ensure all core parent menus exist
-        const hasHome = finalNav.some((item: any) => item.path === 'home' || item.label?.toLowerCase() === 'home');
-        if (!hasHome) {
-          finalNav.unshift({ id: '1', label: 'Home', path: 'home', type: 'link', order_index: 0 });
-        }
-
-        let parentTentang = finalNav.find((item: any) => 
-          item.path === 'tentang-kami' || item.label?.toLowerCase()?.includes('tentang')
-        );
-        if (!parentTentang) {
-          parentTentang = { id: '2', label: 'Tentang Kami', path: 'tentang-kami', type: 'dropdown', order_index: 1 };
-          finalNav.push(parentTentang);
-        }
-
-        let parentInfo = finalNav.find((item: any) => 
-          item.path === 'informasi' || item.label?.toLowerCase()?.includes('informasi')
-        );
-        if (!parentInfo) {
-          parentInfo = { id: '3', label: 'Informasi', path: 'informasi', type: 'dropdown', order_index: 2 };
-          finalNav.push(parentInfo);
-        }
-
-        let parentRanking = finalNav.find((item: any) => 
-          item.path === 'peringkat' || item.path === 'ranking' || item.label?.toLowerCase()?.includes('peringkat')
-        );
-        if (!parentRanking) {
-          parentRanking = { id: '4', label: 'Peringkat', path: 'peringkat', type: 'dropdown', order_index: 3 };
-          finalNav.push(parentRanking);
-        }
-
-        const hasJadwal = finalNav.some((item: any) => item.path === 'jadwal' || item.path === 'jadwal-latihan' || item.label?.toLowerCase()?.includes('jadwal'));
-        if (!hasJadwal) {
-          finalNav.push({ id: '5', label: 'Jadwal Latihan', path: 'jadwal', type: 'link', order_index: 4 });
-        }
-
-        // Check & inject submenus if missing
-        const requiredSubmenus = [
-          { label: 'Sejarah', path: 'sejarah', parent_id: parentTentang.id, order_index: 1 },
-          { label: 'Visi & Misi', path: 'visi-misi', parent_id: parentTentang.id, order_index: 2 },
-          { label: 'Fasilitas', path: 'fasilitas', parent_id: parentTentang.id, order_index: 3 },
-          { label: 'Struktur Organisasi', path: 'struktur-organisasi', parent_id: parentTentang.id, order_index: 4 },
-          { label: 'Dokumen Penting', path: 'dokumen-penting', parent_id: parentTentang.id, order_index: 5 },
-          { label: 'Inventaris', path: 'inventaris', parent_id: parentTentang.id, order_index: 6 },
-          { label: 'Berita', path: 'berita', parent_id: parentInfo.id, order_index: 1 },
-          { label: 'Prestasi', path: 'prestasi', parent_id: parentInfo.id, order_index: 2 },
-          { label: 'Ranking Atlet', path: 'peringkat', parent_id: parentRanking.id, order_index: 1 },
-          { label: 'Quiz Badminton', path: 'quiz', parent_id: parentRanking.id, order_index: 2 }
-        ];
-
-        requiredSubmenus.forEach((sub) => {
-          const exists = finalNav.some((item: any) => 
-            item.path === sub.path || (item.label && item.label.toLowerCase() === sub.label.toLowerCase())
-          );
-          if (!exists) {
-            finalNav.push({
-              id: `${sub.path}-dynamic`,
-              parent_id: sub.parent_id,
-              label: sub.label,
-              path: sub.path,
-              order_index: sub.order_index,
-              type: 'link'
-            });
-          }
-        });
+      if (data && Array.isArray(data) && data.length > 0) {
+        setNavData(data);
+        return;
       }
-      
-      // Deduplicate finalNav by unique label
-      const map = new Map();
-      finalNav.forEach(item => {
-        if (!item || !item.label) return;
-        const key = item.label.trim().toLowerCase();
-        if (!map.has(key) || (item.path && !map.get(key).path)) {
-          map.set(key, item);
-        }
-      });
-      finalNav = Array.from(map.values());
-      
-      setNavData(finalNav);
+
+      // Default core menu structure fallback if table is empty
+      const defaultItems = [
+        { id: '3a852d50-2fce-4050-a416-d6cbbb55ad96', label: 'Beranda', path: 'home', type: 'link', parent_id: null, order_index: 0 },
+        { id: 'cd3a94c1-a825-44b3-8766-78512eb727bb', label: 'Tentang Kami', path: 'about', type: 'dropdown', parent_id: null, order_index: 1 },
+        { id: '6a483114-ecb8-4d87-88fd-9fdc71b40216', label: 'Sejarah', path: 'sejarah', type: 'link', parent_id: 'cd3a94c1-a825-44b3-8766-78512eb727bb', order_index: 1 },
+        { id: '42e2739d-9ce8-4506-96bf-5ac763c59e48', label: 'Visi & Misi', path: 'visi-misi', type: 'link', parent_id: 'cd3a94c1-a825-44b3-8766-78512eb727bb', order_index: 2 },
+        { id: 'a1856185-8d97-493c-b66d-acccc3643b23', label: 'Fasilitas', path: 'fasilitas', type: 'link', parent_id: 'cd3a94c1-a825-44b3-8766-78512eb727bb', order_index: 3 },
+        { id: 'c70d5e62-dece-4cb4-8358-fe77ac65dcce', label: 'Struktur Organisasi', path: 'struktur-organisasi', type: 'link', parent_id: 'cd3a94c1-a825-44b3-8766-78512eb727bb', order_index: 4 },
+        { id: 'e1856185-8d97-493c-b66d-acccc3643b24', label: 'Dokumen Penting', path: 'dokumen-penting', type: 'link', parent_id: 'cd3a94c1-a825-44b3-8766-78512eb727bb', order_index: 5 },
+        { id: 'f1856185-8d97-493c-b66d-acccc3643b25', label: 'Inventaris', path: 'inventaris', type: 'link', parent_id: 'cd3a94c1-a825-44b3-8766-78512eb727bb', order_index: 6 },
+        { id: '7209cc42-be89-4086-9041-35f49acfd97f', label: 'Informasi', path: 'informasi', type: 'dropdown', parent_id: null, order_index: 2 },
+        { id: '182ddd33-5836-4efb-b3b7-92717cb5506b', label: 'Berita', path: 'berita', type: 'link', parent_id: '7209cc42-be89-4086-9041-35f49acfd97f', order_index: 1 },
+        { id: '282ddd33-5836-4efb-b3b7-92717cb5506c', label: 'Prestasi', path: 'prestasi', type: 'link', parent_id: '7209cc42-be89-4086-9041-35f49acfd97f', order_index: 2 },
+        { id: '9209cc42-be89-4086-9041-35f49acfd96e', label: 'Atlet', path: 'atlet', type: 'dropdown', parent_id: null, order_index: 3 },
+        { id: '2d4ab768-c22a-4b71-a76b-c7e30577e3de', label: 'Semua Atlet', path: 'Semua', type: 'link', parent_id: '9209cc42-be89-4086-9041-35f49acfd96e', order_index: 1 },
+        { id: 'a959b75b-5b70-4945-a653-a5f09b77d29b', label: 'Atlet Senior', path: 'Senior', type: 'link', parent_id: '9209cc42-be89-4086-9041-35f49acfd96e', order_index: 2 },
+        { id: 'eb6fd70a-733f-4ede-ae94-5fb2c5944957', label: 'Atlet Muda', path: 'Muda', type: 'link', parent_id: '9209cc42-be89-4086-9041-35f49acfd96e', order_index: 3 },
+        { id: '4fb391bc-f8f8-48a6-9ea4-76dc0b173fb9', label: 'Peringkat', path: 'peringkat', type: 'dropdown', parent_id: null, order_index: 4 },
+        { id: '5fb391bc-f8f8-48a6-9ea4-76dc0b173fc0', label: 'Ranking Atlet', path: 'peringkat', type: 'link', parent_id: '4fb391bc-f8f8-48a6-9ea4-76dc0b173fb9', order_index: 1 },
+        { id: '6fb391bc-f8f8-48a6-9ea4-76dc0b173fc1', label: 'Quiz Badminton', path: 'quiz', type: 'link', parent_id: '4fb391bc-f8f8-48a6-9ea4-76dc0b173fb9', order_index: 2 },
+        { id: '8f9e1002-a537-46af-a4b7-0d2142138279', label: 'Galeri', path: 'gallery', type: 'link', parent_id: null, order_index: 5 },
+        { id: '9f9e1002-a537-46af-a4b7-0d2142138280', label: 'Jadwal Latihan', path: 'jadwal', type: 'link', parent_id: null, order_index: 6 },
+        { id: 'af9e1002-a537-46af-a4b7-0d2142138281', label: 'Hubungi Kami', path: 'contact', type: 'link', parent_id: null, order_index: 7 },
+        { id: 'bf9e1002-a537-46af-a4b7-0d2142138282', label: 'FAQ', path: 'faq', type: 'link', parent_id: null, order_index: 8 }
+      ];
+      setNavData(defaultItems);
     } catch (err) {
       console.warn("Fetch Nav Error:", err);
     }
@@ -358,22 +280,13 @@ export default function Navbar({ onNavigate }: NavbarProps) {
   }, [fetchNavSettings, fetchBrandingSettings]);
 
   const getSubMenus = (parentId: string) => {
-    const sub = navData.filter(item => item.parent_id === parentId);
-    
-    // Force order for "Tentang Kami" (id '2')
-    if (parentId === '2') {
-       const order: Record<string, number> = { 
-         'Sejarah': 1,
-          'Visi & Misi': 2,
-          'Fasilitas': 3,
-          'Struktur Organisasi': 4,
-          'Dokumen Penting': 5,
-          'Inventaris': 6
-       };
-       return sub.sort((a, b) => (order[a.label] || 99) - (order[b.label] || 99));
-    }
-    
-    return sub.sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
+    const parentItem = navData.find(i => i.id === parentId);
+    return navData.filter(item => {
+      if (!item || !item.parent_id) return false;
+      if (item.parent_id === parentId) return true;
+      if (parentItem && item.parent_id === parentItem.id) return true;
+      return false;
+    }).sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
   };
 
   // --- PERBAIKAN LOGIKA NAVIGASI ---
@@ -381,100 +294,118 @@ export default function Navbar({ onNavigate }: NavbarProps) {
     setActiveDropdown(null);
     setIsMobileMenuOpen(false);
 
+    const targetPath = (subPath || path || '').toLowerCase().trim();
+
     // 1. Home
-    if (path === 'home' || path === '/') {
+    if (targetPath === 'home' || targetPath === '/' || targetPath === 'beranda') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
       onNavigate('home');
       return;
     }
 
     // 2. Jadwal Latihan
-    if (path === 'jadwal' || path === 'jadwal-latihan' || path === 'schedule' || path.toLowerCase().includes('jadwal')) {
+    if (targetPath === 'jadwal' || targetPath === 'jadwal-latihan' || targetPath === 'schedule' || targetPath.includes('jadwal')) {
       onNavigate('jadwal');
       window.dispatchEvent(new Event('pb-open-schedule'));
-      setIsMobileMenuOpen(false);
       return;
     }
 
-    
-
-    const targetPath = subPath || path;
-
+    // 3. FAQ
     if (targetPath === 'faq') {
       onNavigate('faq');
       return;
     }
 
-    if (['program', 'prestasi'].includes(targetPath)) {
-      onNavigate('home', targetPath);
-      scrollToSection(targetPath);
-      return;
-    }
-    
-    if (targetPath === 'inventaris') {
-      onNavigate('inventaris');
+    // 4. Hubungi Kami / Contact
+    if (targetPath === 'contact' || targetPath === 'kontak' || targetPath === 'hubungi-kami') {
+      onNavigate('contact');
+      scrollToSection('contact-section');
       return;
     }
 
-    
-    if (path === 'inventaris') {
-      onNavigate('inventaris');
+    // 5. Berita
+    if (targetPath === 'berita' || targetPath === 'news' || targetPath.includes('berita')) {
+      onNavigate('berita');
       return;
     }
 
-    // 3. Quiz Badminton
-    if (subPath === 'quiz' || path === 'quiz') {
-      onNavigate('quiz');
-      scrollToSection('quiz-section'); // Mengarah ke id="quiz-section"
+    // 6. Prestasi
+    if (targetPath === 'prestasi') {
+      onNavigate('prestasi');
       return;
     }
 
-    // 4. Ranking Atlet (Peringkat)
-    if (subPath === 'peringkat' || path === 'peringkat') {
+    // 7. Peringkat / Ranking
+    if (targetPath === 'peringkat' || targetPath === 'rankings' || targetPath === 'ranking') {
       onNavigate('peringkat');
-      scrollToSection('peringkat-section'); // Mengarah ke id="peringkat-section"
+      scrollToSection('peringkat-section');
       return;
     }
 
-    // 5. Dokumen Penting
-    if (subPath === 'dokumen-penting' || path === 'dokumen-penting') {
+    // 8. Quiz
+    if (targetPath === 'quiz') {
+      onNavigate('quiz');
+      scrollToSection('quiz-section');
+      return;
+    }
+
+    // 9. Galeri / Gallery
+    if (targetPath === 'gallery' || targetPath === 'galeri') {
+      onNavigate('galeri');
+      return;
+    }
+
+    // 10. Atlet
+    if (targetPath === 'atlet' || targetPath === 'players' || targetPath === 'pemain' || targetPath === 'semua' || targetPath === 'senior' || targetPath === 'muda') {
+      onNavigate('atlet', subPath || (['semua', 'senior', 'muda'].includes(targetPath) ? subPath || targetPath : undefined));
+      scrollToSection('atlet-section');
+      return;
+    }
+
+    // 11. Sejarah
+    if (targetPath === 'sejarah') {
+      onNavigate('sejarah');
+      return;
+    }
+
+    // 12. Visi Misi
+    if (targetPath === 'visi-misi' || targetPath === 'visi' || targetPath === 'misi') {
+      onNavigate('visi-misi');
+      return;
+    }
+
+    // 13. Fasilitas
+    if (targetPath === 'fasilitas') {
+      onNavigate('fasilitas');
+      return;
+    }
+
+    // 14. Struktur Organisasi
+    if (targetPath === 'struktur-organisasi' || targetPath === 'struktur') {
+      onNavigate('struktur-organisasi');
+      return;
+    }
+
+    // 15. Dokumen Penting
+    if (targetPath === 'dokumen-penting' || targetPath === 'dokumen' || targetPath === 'documents') {
       onNavigate('dokumen-penting');
       scrollToSection('dokumen-section');
       return;
     }
 
-    // 6. Berita
-    if (path === 'berita' || path === 'news' || path.toLowerCase().includes('berita')) {
-      onNavigate('berita');
-      setIsMobileMenuOpen(false); // Close mobile menu
+    // 16. Inventaris
+    if (targetPath === 'inventaris') {
+      onNavigate('inventaris');
       return;
     }
 
-    // 7. Atlet
-    if (path === 'atlet' || path === 'players') {
-      onNavigate('atlet', subPath);
-      scrollToSection('atlet-section');
+    // 17. Tentang Kami / About
+    if (targetPath === 'tentang-kami' || targetPath === 'about' || targetPath === 'tentang') {
+      onNavigate('tentang-kami');
       return;
     }
 
-    // 8. Tentang Kami
-    if (path === 'tentang-kami' || path === 'about') {
-      if (subPath) {
-        if (subPath === 'dokumen') {
-          onNavigate('dokumen-penting');
-        } else if (subPath === 'struktur' || subPath === 'struktur-organisasi') {
-          onNavigate('struktur-organisasi');
-        } else {
-          onNavigate(subPath);
-        }
-      } else {
-        onNavigate('tentang-kami');
-      }
-      return;
-    }
-
-    onNavigate(path, subPath);
-    scrollToSection(subPath || path);
+    onNavigate(targetPath);
   };
 
   const scrollToSection = (id: string) => {
