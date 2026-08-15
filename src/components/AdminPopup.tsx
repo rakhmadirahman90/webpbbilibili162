@@ -26,6 +26,19 @@ export const OFFICIAL_LATEST_POPUP: PopupConfig = {
   file_url: null
 };
 
+const createPopupId = (): string => {
+  // konfigurasi_popup.id is UUID in Supabase. Never use a custom string such as popup-123.
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  // UUID v4 fallback for older browsers/webviews.
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
+
 const timeout = async <T,>(promise: Promise<T>, label: string, ms = 15000): Promise<T> => {
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
@@ -41,7 +54,7 @@ const timeout = async <T,>(promise: Promise<T>, label: string, ms = 15000): Prom
 };
 
 const normalize = (item: any, index: number): PopupConfig => ({
-  id: String(item?.id ?? `popup-${Date.now()}-${index}`),
+  id: String(item?.id ?? createPopupId()),
   url_gambar: String(item?.url_gambar ?? ''),
   judul: String(item?.judul ?? ''),
   deskripsi: String(item?.deskripsi ?? ''),
@@ -218,7 +231,7 @@ export default function AdminPopup() {
     setIsSaving(true);
     setErrorMessage('');
     try {
-      const id = editingId || `popup-${Date.now()}`;
+      const id = editingId || createPopupId();
       const nextItem: PopupConfig = {
         id,
         url_gambar: form.url_gambar.trim(),
@@ -241,7 +254,6 @@ export default function AdminPopup() {
       const message = error?.message || 'Gagal menyimpan popup ke Supabase.';
       setErrorMessage(message);
       await Swal.fire({ title: 'Gagal Menyimpan', text: message, icon: 'error', background: '#0F172A', color: '#fff' });
-      // Important: always leave the button usable after any rejected DB request.
     } finally {
       setIsSaving(false);
     }
