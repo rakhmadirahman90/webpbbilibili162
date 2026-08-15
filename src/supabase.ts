@@ -13,23 +13,25 @@ const envKey =
 
 const resolvedKey = envKey || SUPABASE_PUBLISHABLE_KEY;
 
-// Supabase REST can transiently return gateway/network errors. Retry only
-// transient failures; authorization, RLS and validation errors are returned
-// immediately so the UI can surface the real database error.
+// Supabase supplies a Headers instance containing the critical `apikey` and
+// `Authorization` headers. Never spread Headers into an object: doing so
+// drops its entries and produces the exact "No API key found in request"
+// error seen in AdminPopup. Clone Headers explicitly before adding cache
+// controls so REST, Storage and Realtime-related requests keep authentication.
 const retryFetch: typeof fetch = async (input, init) => {
   const maxAttempts = 3;
   const delays = [350, 900];
 
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     try {
+      const headers = new Headers(init?.headers);
+      headers.set('Cache-Control', 'no-cache');
+      headers.set('Pragma', 'no-cache');
+
       const requestInit: RequestInit = {
         ...init,
         cache: 'no-store',
-        headers: {
-          ...(init?.headers || {}),
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache',
-        },
+        headers,
       };
 
       const response = await fetch(input, requestInit);
