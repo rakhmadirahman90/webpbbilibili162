@@ -1,11 +1,9 @@
 import { supabase } from '../supabase';
 
-const LOCAL_BROADCAST = 'pbilibili-global-realtime-v2';
+const LOCAL_BROADCAST = 'pbilibili-global-realtime-v3';
 const LOCAL_MUTATION_TTL = 3500;
-const RELOAD_DEBOUNCE = 650;
 
 const recentLocalMutations = new Map<string, number>();
-let reloadTimer: ReturnType<typeof setTimeout> | null = null;
 let channel: ReturnType<typeof supabase.channel> | null = null;
 
 function mutationKey(table: string, eventType: string, id?: unknown) {
@@ -20,15 +18,20 @@ function rememberLocalMutation(payload: any) {
   recentLocalMutations.set(mutationKey(table, eventType, id), Date.now() + LOCAL_MUTATION_TTL);
 }
 
-function wasLocalMutation(table: string, eventType: string, row: any) {
+function clearExpiredMutations() {
   const now = Date.now();
-  const id = row?.id ?? row?.key ?? '*';
-  const exact = mutationKey(table, eventType, id);
-  const wildcard = mutationKey(table, eventType, '*');
   for (const [key, expires] of recentLocalMutations) {
     if (expires <= now) recentLocalMutations.delete(key);
   }
-  return recentLocalMutations.has(exact) || recentLocalMutations.has(wildcard);
+}
+
+function wasLocalMutation(table: string, eventType: string, row: any) {
+  clearExpiredMutations();
+  const id = row?.id ?? row?.key ?? '*';
+  return (
+    recentLocalMutations.has(mutationKey(table, eventType, id)) ||
+    recentLocalMutations.has(mutationKey(table, eventType, '*'))
+  );
 }
 
 function clearLegacyMirrors() {
@@ -54,16 +57,6 @@ function dispatchRefresh(detail: any) {
   }
 }
 
-function scheduleHardRefresh() {
-  if (typeof window === 'undefined') return;
-  if (reloadTimer) clearTimeout(reloadTimer);
-  reloadTimer = setTimeout(() => {
-    reloadTimer = null;
-    if (document.visibilityState === 'hidden') return;
-    window.location.reload();
-  }, RELOAD_DEBOUNCE);
-}
-
 export function initCanonicalRealtimeSync() {
   if (typeof window === 'undefined') return () => {};
 
@@ -75,6 +68,7 @@ export function initCanonicalRealtimeSync() {
 
   const onBroadcast = (event: MessageEvent) => {
     if (event.data?.table) rememberLocalMutation(event.data);
+    if (event.data?.detail) dispatchRefresh(event.data.detail);
   };
   broadcastChannel?.addEventListener('message', onBroadcast);
 
@@ -91,17 +85,23 @@ export function initCanonicalRealtimeSync() {
         data: row,
         value: row?.value ?? row,
         timestamp: Date.now(),
-        source: 'supabase'
+        source: 'supabase',
       };
 
       dispatchRefresh(detail);
 
+      // Do not hard-reload the SPA here. A reload storm can multiply REST
+      // requests during a Supabase timeout and make the original problem worse.
+      // Components receive the table-specific event and should refetch their
+      // canonical row/list from Supabase instead.
       if (!wasLocalMutation(table, eventType, row)) {
-        scheduleHardRefresh();
+        console.info('[GlobalDataSync] Remote database change:', table, eventType);
       }
     })
     .subscribe((status) => {
-      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+      if (status === 'SUBSCRIBED') {
+        dispatchRefresh({ source: 'realtime_connected', timestamp: Date.now() });
+      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
         console.warn('[GlobalDataSync] Supabase realtime status:', status);
       }
     });
@@ -112,6 +112,7 @@ export function initCanonicalRealtimeSync() {
     }
   };
   const onOnline = () => dispatchRefresh({ source: 'online', timestamp: Date.now() });
+
   document.addEventListener('visibilitychange', onVisibility);
   window.addEventListener('online', onOnline);
 
@@ -120,8 +121,6 @@ export function initCanonicalRealtimeSync() {
     broadcastChannel?.close();
     document.removeEventListener('visibilitychange', onVisibility);
     window.removeEventListener('online', onOnline);
-    if (reloadTimer) clearTimeout(reloadTimer);
-    reloadTimer = null;
     if (channel) supabase.removeChannel(channel);
     channel = null;
   };
