@@ -4,6 +4,7 @@ import App from './App.tsx';
 import ErrorBoundary from './components/ErrorBoundary.tsx';
 import './index.css';
 import { installPopupImageRecovery } from './utils/popupImageRecovery';
+import './utils/globalDataSync';
 
 // Recover legacy Supabase Storage popup images after the project migration.
 installPopupImageRecovery();
@@ -26,5 +27,3 @@ createRoot(document.getElementById('root')!).render(
     </ErrorBoundary>
   </StrictMode>
 );
-
-
