@@ -283,91 +283,12 @@ export function applyCacheBustingToHeroSlides(slides: any[], configTimestamp?: s
   });
 }
 
-/**
- * Safely reads a setting checking Server API, Supabase, and LocalStorage.
- */
-export async function getSiteSetting(key: string) {
-  let dbVal: any = null;
-  let dbUpdatedAt: string | null = null;
+// In-memory cache for 0ms ultra-fast sync access
+const siteSettingsMemoryCache = new Map<string, any>();
 
-  // 1. Primary Source of Truth: Supabase Database (Shared between AI Studio preview and Live Site)
-  try {
-    const { data, error } = await supabase
-      .from('site_settings')
-      .select('value, updated_at')
-      .eq('key', key)
-      .maybeSingle();
-
-    if (!error && data?.value !== undefined && data.value !== null) {
-      dbVal = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
-      dbUpdatedAt = data.updated_at || null;
-      if (dbVal && typeof dbVal === 'object') {
-        dbVal = { ...dbVal, updated_at: dbVal.updated_at || dbUpdatedAt || new Date().toISOString() };
-      }
-    }
-  } catch (err) {
-    console.warn("[siteSettingsHelper] Error querying Supabase for key " + key, err);
-  }
-
-  let serverVal: any = null;
-  let localVal: any = null;
-
-  try {
-    const rawLocal = localStorage.getItem(`site_setting_${key}`);
-    if (rawLocal !== null) {
-      try {
-        localVal = typeof rawLocal === 'string' ? JSON.parse(rawLocal) : rawLocal;
-      } catch {
-        localVal = rawLocal;
-      }
-    }
-  } catch (e) {}
-
-  try {
-    const apiRes = await fetch(`/api/site-settings?key=${key}`);
-    if (apiRes.ok) {
-      const apiData = await apiRes.json();
-      if (apiData && apiData.value !== undefined && apiData.value !== null) {
-        serverVal = apiData.value;
-      }
-    }
-  } catch (e) {}
-
-  const getTimestamp = (val: any) => {
-    if (!val) return 0;
-    const parsed = typeof val === 'string' ? (() => { try { return JSON.parse(val); } catch { return {}; } })() : val;
-    if (parsed && typeof parsed === 'object' && parsed.updated_at) {
-      const t = new Date(parsed.updated_at).getTime();
-      if (!isNaN(t)) return t;
-    }
-    return 0;
-  };
-
-  const serverTs = getTimestamp(serverVal);
-  const dbTs = getTimestamp(dbVal);
-  const localTs = getTimestamp(localVal);
-
-  const maxTs = Math.max(dbTs, serverTs, localTs);
-
-  let bestVal: any = null;
-
-  if (maxTs > 0) {
-    if (serverTs === maxTs && serverVal !== null && serverVal !== undefined) {
-      bestVal = serverVal;
-    } else if (localTs === maxTs && localVal !== null && localVal !== undefined) {
-      bestVal = localVal;
-    } else if (dbTs === maxTs && dbVal !== null && dbVal !== undefined) {
-      bestVal = dbVal;
-    } else {
-      bestVal = serverVal || localVal || dbVal;
-    }
-  } else {
-    bestVal = dbVal !== null && dbVal !== undefined ? dbVal : (serverVal !== null && serverVal !== undefined ? serverVal : localVal);
-  }
-
-// --- SPECIAL HANDLING FOR hero_config TO ENSURE LATEST VIDEO HERO SLIDE IS ALWAYS PRESENT ---
+function sanitizeKeyConfig(key: string, val: any) {
   if (key === 'hero_config') {
-    let parsedBest = bestVal ? (typeof bestVal === 'string' ? JSON.parse(bestVal) : bestVal) : null;
+    let parsedBest = val ? (typeof val === 'string' ? JSON.parse(val) : val) : null;
     let slides = parsedBest?.slides || (Array.isArray(parsedBest) ? parsedBest : []);
 
     const hasVideoSlide = Array.isArray(slides) && slides.some((s: any) => s && (s.type === 'video' || s.videoUrl || (typeof s.image === 'string' && (s.image.endsWith('.webm') || s.image.endsWith('.mp4')))));
@@ -397,21 +318,154 @@ export async function getSiteSetting(key: string) {
     });
     const cacheBustedSlides = applyCacheBustingToHeroSlides(sanitizedSlides, configTs);
 
-    bestVal = {
+    return {
       settings: parsedBest?.settings || DEFAULT_HERO_CONFIG.settings,
       slides: cacheBustedSlides,
       updated_at: configTs
     };
   }
+  return val;
+}
 
-  if (bestVal) {
+async function fetchFreshSiteSetting(key: string) {
+  let dbVal: any = null;
+  let dbUpdatedAt: string | null = null;
+
+  // Parallelize Supabase & Express API requests with 1.5s max timeout
+  const supabasePromise = (async () => {
     try {
-      localStorage.setItem(`site_setting_${key}`, typeof bestVal === 'string' ? bestVal : JSON.stringify(bestVal));
+      const { data, error } = await supabase
+        .from('site_settings')
+        .select('value, updated_at')
+        .eq('key', key)
+        .maybeSingle();
+
+      if (!error && data?.value !== undefined && data.value !== null) {
+        dbVal = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
+        dbUpdatedAt = data.updated_at || null;
+        if (dbVal && typeof dbVal === 'object') {
+          dbVal = { ...dbVal, updated_at: dbVal.updated_at || dbUpdatedAt || new Date().toISOString() };
+        }
+      }
+    } catch (err) {
+      console.warn("[siteSettingsHelper] Error querying Supabase for key " + key, err);
+    }
+  })();
+
+  let serverVal: any = null;
+  const apiPromise = (async () => {
+    try {
+      const apiRes = await fetch(`/api/site-settings?key=${key}`);
+      if (apiRes.ok) {
+        const apiData = await apiRes.json();
+        if (apiData && apiData.value !== undefined && apiData.value !== null) {
+          serverVal = apiData.value;
+        }
+      }
     } catch (e) {}
-    return bestVal;
+  })();
+
+  let localVal: any = null;
+  try {
+    const rawLocal = localStorage.getItem(`site_setting_${key}`);
+    if (rawLocal !== null) {
+      try {
+        localVal = typeof rawLocal === 'string' ? JSON.parse(rawLocal) : rawLocal;
+      } catch {
+        localVal = rawLocal;
+      }
+    }
+  } catch (e) {}
+
+  const timeoutPromise = new Promise(resolve => setTimeout(resolve, 1500));
+  await Promise.race([
+    Promise.allSettled([supabasePromise, apiPromise]),
+    timeoutPromise
+  ]);
+
+  const getTimestamp = (val: any) => {
+    if (!val) return 0;
+    const parsed = typeof val === 'string' ? (() => { try { return JSON.parse(val); } catch { return {}; } })() : val;
+    if (parsed && typeof parsed === 'object' && parsed.updated_at) {
+      const t = new Date(parsed.updated_at).getTime();
+      if (!isNaN(t)) return t;
+    }
+    return 0;
+  };
+
+  const serverTs = getTimestamp(serverVal);
+  const dbTs = getTimestamp(dbVal);
+  const localTs = getTimestamp(localVal);
+
+  const maxTs = Math.max(dbTs, serverTs, localTs);
+  let bestVal: any = null;
+
+  if (maxTs > 0) {
+    if (serverTs === maxTs && serverVal !== null && serverVal !== undefined) {
+      bestVal = serverVal;
+    } else if (localTs === maxTs && localVal !== null && localVal !== undefined) {
+      bestVal = localVal;
+    } else if (dbTs === maxTs && dbVal !== null && dbVal !== undefined) {
+      bestVal = dbVal;
+    } else {
+      bestVal = serverVal || localVal || dbVal;
+    }
+  } else {
+    bestVal = dbVal !== null && dbVal !== undefined ? dbVal : (serverVal !== null && serverVal !== undefined ? serverVal : localVal);
   }
 
-  return key === 'hero_config' ? DEFAULT_HERO_CONFIG : null;
+  const finalVal = sanitizeKeyConfig(key, bestVal || (key === 'hero_config' ? DEFAULT_HERO_CONFIG : null));
+  if (finalVal) {
+    siteSettingsMemoryCache.set(key, finalVal);
+    try {
+      localStorage.setItem(`site_setting_${key}`, typeof finalVal === 'string' ? finalVal : JSON.stringify(finalVal));
+    } catch (e) {}
+  }
+  return finalVal;
+}
+
+// Background non-blocking revalidation
+function refreshSiteSettingInBackground(key: string) {
+  setTimeout(() => {
+    fetchFreshSiteSetting(key).then(newVal => {
+      if (newVal) {
+        siteSettingsMemoryCache.set(key, newVal);
+        window.dispatchEvent(new CustomEvent('site_setting_updated', { detail: { key, value: newVal } }));
+      }
+    }).catch(() => {});
+  }, 100);
+}
+
+/**
+ * Safely reads a setting with 0ms memory & LocalStorage cache lookup and non-blocking background sync.
+ */
+export async function getSiteSetting(key: string) {
+  if (siteSettingsMemoryCache.has(key)) {
+    const cached = siteSettingsMemoryCache.get(key);
+    refreshSiteSettingInBackground(key);
+    return cached;
+  }
+
+  let localVal: any = null;
+  try {
+    const rawLocal = localStorage.getItem(`site_setting_${key}`);
+    if (rawLocal !== null) {
+      try {
+        localVal = typeof rawLocal === 'string' ? JSON.parse(rawLocal) : rawLocal;
+      } catch {
+        localVal = rawLocal;
+      }
+    }
+  } catch (e) {}
+
+  if (localVal !== null && localVal !== undefined) {
+    const sanitized = sanitizeKeyConfig(key, localVal);
+    siteSettingsMemoryCache.set(key, sanitized);
+    refreshSiteSettingInBackground(key);
+    return sanitized;
+  }
+
+  return await fetchFreshSiteSetting(key);
 }
 
 /**

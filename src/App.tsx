@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from './supabase'; 
 import { getSiteSetting, parsePopupList } from './utils/siteSettingsHelper'; 
@@ -6,7 +6,7 @@ import { getSiteSetting, parsePopupList } from './utils/siteSettingsHelper';
 // --- IMPORT FALLBACK DATA ---
 import popupFallback from './data/konfigurasi_popup.json';
 
-// Import Komponen Landing Page
+// Import Eager Core Components (Landing Page & Framework)
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import SambutanKetua from './components/SambutanKetua';
@@ -15,72 +15,79 @@ import VisiMisi from './components/VisiMisi';
 import Fasilitas from './components/Fasilitas';
 import News from './components/News';
 import PrayerTimes from './components/PrayerTimes';
-import Athletes from './components/Players'; 
-import Ranking from './components/Rankings'; 
-import BadmintonQuiz from './components/BadmintonQuiz'; 
-import Gallery from './components/Gallery';
-import RegistrationForm from './components/RegistrationForm'; 
 import Contact from './components/Contact'; 
 import Footer from './components/Footer';
-import PublicKasView from './components/PublicKasView';
-import DokumenPenting from './components/DokumenPenting'; 
-import StrukturOrganisasiPublic from './components/StrukturOrganisasiPublic';
-import JadwalLatihanView from './components/JadwalLatihanView';
-
-// Import Komponen Admin
 import Login from './components/Login';
 import Sidebar from './components/Sidebar';
-import ManajemenPendaftaran from './ManajemenPendaftaran';
-import AdminDashboard from './components/AdminDashboard';
-import ManajemenAtlet from './ManajemenAtlet';
-import AdminBerita from './components/AdminBerita';
-import AdminMatch from './components/AdminMatch'; 
-import AdminRanking from './components/AdminRanking'; 
-import AdminGallery from './components/AdminGallery'; 
-import AdminContact from './components/AdminContact'; 
-import KelolaNavbar from './components/KelolaNavbar'; 
-import ManajemenPoin from './components/ManajemenPoin';
-import AuditLogPoin from './components/AuditLogPoin';
-import AdminLaporan from './components/AdminLaporan'; 
-import AdminLogs from './components/AdminLogs'; 
-import AdminTampilan from './components/AdminTampilan'; 
-import KelolaHero from './components/KelolaHero'; 
-import AdminPopup from './components/AdminPopup'; 
 import ImagePopup from './components/ImagePopup'; 
-import AdminFooter from './components/AdminFooter';
-import AdminAbsensi from './components/AdminAbsensi';
-import PublicInventaris from './components/PublicInventaris';
-import AdminInventaris from './components/AdminInventaris';
-import AdminPrestasi from './components/AdminPrestasi';
-import AdminFAQ from './components/AdminFAQ';
-import AdminProgram from './components/AdminProgram';
-import PublicPrestasi from './components/PublicPrestasi';
-import PublicFAQ from './components/PublicFAQ';
-import PublicProgram from './components/PublicProgram';
- 
-import AdminAbout from './components/AdminAbout';
-import AdminStructure from './components/AdminStructure'; 
-import AdminSejarah from './components/AdminSejarah';
-import AdminVisiMisi from './components/AdminVisiMisi';
-import AdminFasilitas from './components/AdminFasilitas';
-import ManajemenDokumen from './components/ManajemenDokumen'; 
-import { KelolaSurat } from './components/KelolaSurat'; 
-import KasManager from './components/KasManager'; 
-import ProfilAnggota from './components/ProfilAnggota'; 
-import AdminUsers from './components/AdminUsers';
+import JadwalLatihanView from './components/JadwalLatihanView';
 import ScheduleWidget from './components/ScheduleWidget'; 
 import PresenceManager from './components/PresenceManager';
 import KasRealtimeNotifier from './components/KasRealtimeNotifier';
-import AdminRekapKeuangan from './components/AdminRekapKeuangan';
-import BookingLatihan from './components/BookingLatihan';
-import AnalisisPerforma from './components/AnalisisPerforma';
-import TournamentLeague from './components/TournamentLeague';
-import RaporAtlet from './components/RaporAtlet';
-import LiveScoreWidget from './components/LiveScoreWidget';
-import TestimonialUlasan from './components/TestimonialUlasan';
-import FcmSettingsDashboard from './components/FcmSettingsDashboard';
-import PwaApkManager from './components/PwaApkManager';
 import PwaInstallNotification from './components/PwaInstallNotification';
+
+// Lazy-Loaded Public Views
+const Athletes = lazy(() => import('./components/Players')); 
+const Ranking = lazy(() => import('./components/Rankings')); 
+const BadmintonQuiz = lazy(() => import('./components/BadmintonQuiz')); 
+const Gallery = lazy(() => import('./components/Gallery'));
+const RegistrationForm = lazy(() => import('./components/RegistrationForm')); 
+const PublicKasView = lazy(() => import('./components/PublicKasView'));
+const DokumenPenting = lazy(() => import('./components/DokumenPenting')); 
+const StrukturOrganisasiPublic = lazy(() => import('./components/StrukturOrganisasiPublic'));
+const PublicInventaris = lazy(() => import('./components/PublicInventaris'));
+const PublicPrestasi = lazy(() => import('./components/PublicPrestasi'));
+const PublicFAQ = lazy(() => import('./components/PublicFAQ'));
+const PublicProgram = lazy(() => import('./components/PublicProgram'));
+
+// Lazy-Loaded Admin & Complex Views
+const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
+const ManajemenPendaftaran = lazy(() => import('./ManajemenPendaftaran'));
+const ManajemenAtlet = lazy(() => import('./ManajemenAtlet'));
+const AdminBerita = lazy(() => import('./components/AdminBerita'));
+const AdminMatch = lazy(() => import('./components/AdminMatch')); 
+const AdminRanking = lazy(() => import('./components/AdminRanking')); 
+const AdminGallery = lazy(() => import('./components/AdminGallery')); 
+const AdminContact = lazy(() => import('./components/AdminContact')); 
+const KelolaNavbar = lazy(() => import('./components/KelolaNavbar')); 
+const ManajemenPoin = lazy(() => import('./components/ManajemenPoin'));
+const AuditLogPoin = lazy(() => import('./components/AuditLogPoin'));
+const AdminLaporan = lazy(() => import('./components/AdminLaporan')); 
+const AdminLogs = lazy(() => import('./components/AdminLogs')); 
+const AdminTampilan = lazy(() => import('./components/AdminTampilan')); 
+const KelolaHero = lazy(() => import('./components/KelolaHero')); 
+const AdminPopup = lazy(() => import('./components/AdminPopup')); 
+const AdminFooter = lazy(() => import('./components/AdminFooter'));
+const AdminAbsensi = lazy(() => import('./components/AdminAbsensi'));
+const AdminInventaris = lazy(() => import('./components/AdminInventaris'));
+const AdminPrestasi = lazy(() => import('./components/AdminPrestasi'));
+const AdminFAQ = lazy(() => import('./components/AdminFAQ'));
+const AdminProgram = lazy(() => import('./components/AdminProgram'));
+const AdminAbout = lazy(() => import('./components/AdminAbout'));
+const AdminStructure = lazy(() => import('./components/AdminStructure')); 
+const AdminSejarah = lazy(() => import('./components/AdminSejarah'));
+const AdminVisiMisi = lazy(() => import('./components/AdminVisiMisi'));
+const AdminFasilitas = lazy(() => import('./components/AdminFasilitas'));
+const ManajemenDokumen = lazy(() => import('./components/ManajemenDokumen')); 
+const KelolaSurat = lazy(() => import('./components/KelolaSurat').then(m => ({ default: m.KelolaSurat }))); 
+const KasManager = lazy(() => import('./components/KasManager')); 
+const ProfilAnggota = lazy(() => import('./components/ProfilAnggota')); 
+const AdminUsers = lazy(() => import('./components/AdminUsers'));
+const AdminRekapKeuangan = lazy(() => import('./components/AdminRekapKeuangan'));
+const AnalisisPerforma = lazy(() => import('./components/AnalisisPerforma'));
+const TournamentLeague = lazy(() => import('./components/TournamentLeague'));
+const RaporAtlet = lazy(() => import('./components/RaporAtlet'));
+const LiveScoreWidget = lazy(() => import('./components/LiveScoreWidget'));
+const TestimonialUlasan = lazy(() => import('./components/TestimonialUlasan'));
+const FcmSettingsDashboard = lazy(() => import('./components/FcmSettingsDashboard'));
+const PwaApkManager = lazy(() => import('./components/PwaApkManager'));
+
+const ViewFallback = () => (
+  <div className="w-full min-h-[300px] flex flex-col items-center justify-center p-6 text-center">
+    <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mb-2"></div>
+    <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Memuat Tampilan...</span>
+  </div>
+);
 
 import { X, ChevronLeft, ChevronRight, Menu, Zap, Download, ExternalLink, Volume2, Volume1, VolumeX, ArrowLeft, Plus, Minus, SlidersHorizontal } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -1072,23 +1079,25 @@ export default function App() {
               >
                 <div className="w-full flex flex-col flex-grow max-w-7xl px-2.5 sm:px-4 md:px-8 mx-auto min-h-0">
                   {/* Render Komponen dengan Props masing-masing */}
-                  {(activeView === 'jadwal' || activeView === 'jadwal-latihan' || activeView === 'schedule') && <JadwalLatihanView />}
-                  {(activeView === 'kas') && <PublicKasView />}
-                  {(activeView === 'quiz') && <BadmintonQuiz />}
-                  {(activeView === 'contact' || activeView === 'kontak') && <Contact />}
-                  {(activeView === 'struktur' || activeView === 'struktur-organisasi') && <StrukturOrganisasiPublic />}
-                  {(activeView === 'dokumen-penting' || activeView === 'dokumen' || activeView === 'documents') && <DokumenPenting />}
-                  {(activeView === 'register' || activeView === 'pendaftaran') && <RegistrationForm />}
-                  {(activeView === 'peringkat' || activeView === 'rankings' || activeView === 'ranking') && <Ranking />}
-                  {(activeView === 'atlet' || activeView === 'players' || activeView === 'player') && <Athletes initialFilter={activeAthleteFilter} />}
-                  {(activeView === 'sejarah' || activeView === 'tentang-kami' || activeView === 'about' || activeView === 'tentang') && <Sejarah />}
-                  {(activeView === 'visi-misi' || activeView === 'visi' || activeView === 'misi') && <VisiMisi />}
-                  {(activeView === 'fasilitas') && <Fasilitas />}
-                  {(activeView === 'inventaris' || activeView === 'public-inventaris') && <PublicInventaris />}
-                  {(activeView === 'berita' || activeView === 'news') && <News />}
-                  {(activeView === 'galeri' || activeView === 'gallery') && <Gallery />}
-                  {(activeView === 'faq') && <PublicFAQ />}
-                  {(activeView === 'sambutan' || activeView === 'sambutan-ketua') && <SambutanKetua />}
+                  <Suspense fallback={<ViewFallback />}>
+                    {(activeView === 'jadwal' || activeView === 'jadwal-latihan' || activeView === 'schedule') && <JadwalLatihanView />}
+                    {(activeView === 'kas') && <PublicKasView />}
+                    {(activeView === 'quiz') && <BadmintonQuiz />}
+                    {(activeView === 'contact' || activeView === 'kontak') && <Contact />}
+                    {(activeView === 'struktur' || activeView === 'struktur-organisasi') && <StrukturOrganisasiPublic />}
+                    {(activeView === 'dokumen-penting' || activeView === 'dokumen' || activeView === 'documents') && <DokumenPenting />}
+                    {(activeView === 'register' || activeView === 'pendaftaran') && <RegistrationForm />}
+                    {(activeView === 'peringkat' || activeView === 'rankings' || activeView === 'ranking') && <Ranking />}
+                    {(activeView === 'atlet' || activeView === 'players' || activeView === 'player') && <Athletes initialFilter={activeAthleteFilter} />}
+                    {(activeView === 'sejarah' || activeView === 'tentang-kami' || activeView === 'about' || activeView === 'tentang') && <Sejarah />}
+                    {(activeView === 'visi-misi' || activeView === 'visi' || activeView === 'misi') && <VisiMisi />}
+                    {(activeView === 'fasilitas') && <Fasilitas />}
+                    {(activeView === 'inventaris' || activeView === 'public-inventaris') && <PublicInventaris />}
+                    {(activeView === 'berita' || activeView === 'news') && <News />}
+                    {(activeView === 'galeri' || activeView === 'gallery') && <Gallery />}
+                    {(activeView === 'faq') && <PublicFAQ />}
+                    {(activeView === 'sambutan' || activeView === 'sambutan-ketua') && <SambutanKetua />}
+                  </Suspense>
                 </div>
               </motion.div>
             </AnimatePresence>
@@ -1304,55 +1313,57 @@ function AdminLayout({ session }: { session: any }) {
           </div>
         </div>
         <div className="flex-1 overflow-y-auto bg-[#070d1a] custom-scrollbar">
-          <Routes>
-            {/* Accessible to both Anggota & Admin */}
-            <Route path="dashboard" element={<AdminDashboard />} />
-            <Route path="profil" element={<ProfilAnggota session={session} />} />
-            <Route path="notifications" element={<FcmSettingsDashboard />} />
-            <Route path="pwa-apk" element={<PwaApkManager userRole={userRole} />} />
-            <Route path="analisis-performa" element={<div className="p-4 md:p-8 max-w-7xl mx-auto"><AnalisisPerforma /></div>} />
-            <Route path="rapor-atlet" element={<div className="p-4 md:p-8 max-w-7xl mx-auto"><RaporAtlet isAdmin={isAdmin} /></div>} />
-            <Route path="live-score" element={<div className="p-4 md:p-8 max-w-7xl mx-auto"><LiveScoreWidget isAdmin={isAdmin} /></div>} />
-            <Route path="testimoni" element={<div className="p-4 md:p-8 max-w-7xl mx-auto"><TestimonialUlasan isAdmin={isAdmin} /></div>} />
-            <Route path="turnamen-liga" element={<div className="p-4 md:p-8 max-w-7xl mx-auto"><TournamentLeague isAdmin={isAdmin} /></div>} />
-            <Route path="jadwal" element={<div className="p-4 md:p-8 max-w-7xl mx-auto"><JadwalLatihanView /></div>} />
-            <Route path="jadwal-latihan" element={<div className="p-4 md:p-8 max-w-7xl mx-auto"><JadwalLatihanView /></div>} />
-            <Route path="kas" element={isAdmin ? <KasManager /> : <div className="p-1 xs:p-2 sm:p-4 md:p-8 max-w-7xl mx-auto"><PublicKasView /></div>} />
-            <Route path="rekap-keuangan" element={<AdminRekapKeuangan isAdmin={isAdmin} session={session} />} />
-            <Route path="ranking" element={isAdmin ? <AdminRanking session={session} /> : <div className="p-4 md:p-8 max-w-7xl mx-auto"><Ranking /></div>} />
-            <Route path="skor" element={<AdminMatch session={session} />} />
-            <Route path="berita" element={isAdmin ? <AdminBerita session={session} /> : <div className="p-4 md:p-8 max-w-7xl mx-auto"><News /></div>} />
-            <Route path="galeri" element={isAdmin ? <AdminGallery session={session} /> : <div className="p-4 md:p-8 max-w-7xl mx-auto"><Gallery /></div>} />
-            <Route path="dokumen" element={isAdmin ? <ManajemenDokumen session={session} /> : <div className="p-4 md:p-8 max-w-7xl mx-auto"><DokumenPenting /></div>} /> 
+          <Suspense fallback={<ViewFallback />}>
+            <Routes>
+              {/* Accessible to both Anggota & Admin */}
+              <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="profil" element={<ProfilAnggota session={session} />} />
+              <Route path="notifications" element={<FcmSettingsDashboard />} />
+              <Route path="pwa-apk" element={<PwaApkManager userRole={userRole} />} />
+              <Route path="analisis-performa" element={<div className="p-4 md:p-8 max-w-7xl mx-auto"><AnalisisPerforma /></div>} />
+              <Route path="rapor-atlet" element={<div className="p-4 md:p-8 max-w-7xl mx-auto"><RaporAtlet isAdmin={isAdmin} /></div>} />
+              <Route path="live-score" element={<div className="p-4 md:p-8 max-w-7xl mx-auto"><LiveScoreWidget isAdmin={isAdmin} /></div>} />
+              <Route path="testimoni" element={<div className="p-4 md:p-8 max-w-7xl mx-auto"><TestimonialUlasan isAdmin={isAdmin} /></div>} />
+              <Route path="turnamen-liga" element={<div className="p-4 md:p-8 max-w-7xl mx-auto"><TournamentLeague isAdmin={isAdmin} /></div>} />
+              <Route path="jadwal" element={<div className="p-4 md:p-8 max-w-7xl mx-auto"><JadwalLatihanView /></div>} />
+              <Route path="jadwal-latihan" element={<div className="p-4 md:p-8 max-w-7xl mx-auto"><JadwalLatihanView /></div>} />
+              <Route path="kas" element={isAdmin ? <KasManager /> : <div className="p-1 xs:p-2 sm:p-4 md:p-8 max-w-7xl mx-auto"><PublicKasView /></div>} />
+              <Route path="rekap-keuangan" element={<AdminRekapKeuangan isAdmin={isAdmin} session={session} />} />
+              <Route path="ranking" element={isAdmin ? <AdminRanking session={session} /> : <div className="p-4 md:p-8 max-w-7xl mx-auto"><Ranking /></div>} />
+              <Route path="skor" element={<AdminMatch session={session} />} />
+              <Route path="berita" element={isAdmin ? <AdminBerita session={session} /> : <div className="p-4 md:p-8 max-w-7xl mx-auto"><News /></div>} />
+              <Route path="galeri" element={isAdmin ? <AdminGallery session={session} /> : <div className="p-4 md:p-8 max-w-7xl mx-auto"><Gallery /></div>} />
+              <Route path="dokumen" element={isAdmin ? <ManajemenDokumen session={session} /> : <div className="p-4 md:p-8 max-w-7xl mx-auto"><DokumenPenting /></div>} /> 
 
-            {/* Admin Only Routes - Redirect Anggota to Dashboard */}
-            <Route path="users" element={isAdmin ? <AdminUsers session={session} /> : <Navigate to="/admin/dashboard" replace />} />
-            <Route path="pendaftaran" element={isAdmin ? <ManajemenPendaftaran /> : <Navigate to="/admin/dashboard" replace />} />
-            <Route path="atlet" element={isAdmin ? <ManajemenAtlet /> : <Navigate to="/admin/dashboard" replace />} />
-            <Route path="surat" element={isAdmin ? <KelolaSurat /> : <Navigate to="/admin/dashboard" replace />} />
-            <Route path="poin" element={isAdmin ? <ManajemenPoin /> : <Navigate to="/admin/dashboard" replace />} />
-            <Route path="audit-poin" element={isAdmin ? <AuditLogPoin /> : <Navigate to="/admin/dashboard" replace />} />
-            <Route path="kontak" element={isAdmin ? <AdminContact /> : <Navigate to="/admin/dashboard" replace />} />
-            <Route path="navbar" element={isAdmin ? <KelolaNavbar /> : <Navigate to="/admin/dashboard" replace />} />
-            <Route path="laporan" element={isAdmin ? <AdminLaporan /> : <Navigate to="/admin/dashboard" replace />} />
-            <Route path="logs" element={isAdmin ? <AdminLogs /> : <Navigate to="/admin/dashboard" replace />} />
-            <Route path="tampilan" element={isAdmin ? <AdminTampilan /> : <Navigate to="/admin/dashboard" replace />} />
-            <Route path="hero" element={isAdmin ? <KelolaHero /> : <Navigate to="/admin/dashboard" replace />} />
-            <Route path="popup" element={isAdmin ? <AdminPopup /> : <Navigate to="/admin/dashboard" replace />} /> 
-            <Route path="footer" element={isAdmin ? <AdminFooter /> : <Navigate to="/admin/dashboard" replace />} />
-            
-            <Route path="sejarah" element={isAdmin ? <AdminSejarah /> : <div className="p-4 sm:p-6"><Sejarah /></div>} />
-            <Route path="absensi" element={isAdmin ? <AdminAbsensi session={session} /> : <Navigate to="/admin/dashboard" replace />} />
-            <Route path="inventaris" element={isAdmin ? <AdminInventaris /> : <PublicInventaris />} />
-            <Route path="prestasi" element={isAdmin ? <AdminPrestasi /> : <div className="p-4 sm:p-6"><PublicPrestasi /></div>} />
-            <Route path="faq" element={isAdmin ? <AdminFAQ /> : <div className="p-4 sm:p-6"><PublicFAQ /></div>} />
-            <Route path="program" element={isAdmin ? <AdminProgram /> : <div className="p-4 sm:p-6"><PublicProgram onNavigate={()=>{}} /></div>} />
+              {/* Admin Only Routes - Redirect Anggota to Dashboard */}
+              <Route path="users" element={isAdmin ? <AdminUsers session={session} /> : <Navigate to="/admin/dashboard" replace />} />
+              <Route path="pendaftaran" element={isAdmin ? <ManajemenPendaftaran /> : <Navigate to="/admin/dashboard" replace />} />
+              <Route path="atlet" element={isAdmin ? <ManajemenAtlet /> : <Navigate to="/admin/dashboard" replace />} />
+              <Route path="surat" element={isAdmin ? <KelolaSurat /> : <Navigate to="/admin/dashboard" replace />} />
+              <Route path="poin" element={isAdmin ? <ManajemenPoin /> : <Navigate to="/admin/dashboard" replace />} />
+              <Route path="audit-poin" element={isAdmin ? <AuditLogPoin /> : <Navigate to="/admin/dashboard" replace />} />
+              <Route path="kontak" element={isAdmin ? <AdminContact /> : <Navigate to="/admin/dashboard" replace />} />
+              <Route path="navbar" element={isAdmin ? <KelolaNavbar /> : <Navigate to="/admin/dashboard" replace />} />
+              <Route path="laporan" element={isAdmin ? <AdminLaporan /> : <Navigate to="/admin/dashboard" replace />} />
+              <Route path="logs" element={isAdmin ? <AdminLogs /> : <Navigate to="/admin/dashboard" replace />} />
+              <Route path="tampilan" element={isAdmin ? <AdminTampilan /> : <Navigate to="/admin/dashboard" replace />} />
+              <Route path="hero" element={isAdmin ? <KelolaHero /> : <Navigate to="/admin/dashboard" replace />} />
+              <Route path="popup" element={isAdmin ? <AdminPopup /> : <Navigate to="/admin/dashboard" replace />} /> 
+              <Route path="footer" element={isAdmin ? <AdminFooter /> : <Navigate to="/admin/dashboard" replace />} />
+              
+              <Route path="sejarah" element={isAdmin ? <AdminSejarah /> : <div className="p-4 sm:p-6"><Sejarah /></div>} />
+              <Route path="absensi" element={isAdmin ? <AdminAbsensi session={session} /> : <Navigate to="/admin/dashboard" replace />} />
+              <Route path="inventaris" element={isAdmin ? <AdminInventaris /> : <PublicInventaris />} />
+              <Route path="prestasi" element={isAdmin ? <AdminPrestasi /> : <div className="p-4 sm:p-6"><PublicPrestasi /></div>} />
+              <Route path="faq" element={isAdmin ? <AdminFAQ /> : <div className="p-4 sm:p-6"><PublicFAQ /></div>} />
+              <Route path="program" element={isAdmin ? <AdminProgram /> : <div className="p-4 sm:p-6"><PublicProgram onNavigate={()=>{}} /></div>} />
 
-            <Route path="visi-misi" element={isAdmin ? <AdminVisiMisi /> : <div className="p-4 sm:p-6"><VisiMisi /></div>} />
-            <Route path="fasilitas" element={isAdmin ? <AdminFasilitas /> : <div className="p-4 sm:p-6"><Fasilitas /></div>} />
-            <Route path="struktur" element={isAdmin ? <AdminStructure /> : <div className="p-4 sm:p-6"><StrukturOrganisasiPublic /></div>} /> 
-            <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
-          </Routes>
+              <Route path="visi-misi" element={isAdmin ? <AdminVisiMisi /> : <div className="p-4 sm:p-6"><VisiMisi /></div>} />
+              <Route path="fasilitas" element={isAdmin ? <AdminFasilitas /> : <div className="p-4 sm:p-6"><Fasilitas /></div>} />
+              <Route path="struktur" element={isAdmin ? <AdminStructure /> : <div className="p-4 sm:p-6"><StrukturOrganisasiPublic /></div>} /> 
+              <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
+            </Routes>
+          </Suspense>
         </div>
       </main>
     </div>
