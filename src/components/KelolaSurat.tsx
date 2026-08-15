@@ -466,7 +466,7 @@ export const getInitialSuratList = (): any[] => {
     const storedAssets = getStoredDigitalAssets();
     const map = new Map<string, any>();
 
-    const addOrMerge = (item: any) => {
+    const addOrMerge = (item: any, isLocal = false) => {
       if (!item) return;
       const rawNomor = (item.nomor_surat || '').trim().toUpperCase();
       if (rawNomor === '__MASTER_DIGITAL_ASSETS__' || rawNomor.includes('TEST') || item.jenis_surat === 'MASUK') return;
@@ -478,62 +478,66 @@ export const getInitialSuratList = (): any[] => {
       let extra: any = {};
       const rawLampiran = item.lampiran || '';
       const rawIsi = item.isi_surat || '';
-      if (rawLampiran && typeof rawLampiran === 'string' && rawLampiran.trim().startsWith('{')) {
+      if (typeof rawLampiran === 'string' && rawLampiran.trim().startsWith('{')) {
         try { extra = JSON.parse(rawLampiran); } catch (e) {}
-      } else if (rawIsi && typeof rawIsi === 'string' && rawIsi.trim().startsWith('{')) {
+      } else if (typeof rawIsi === 'string' && rawIsi.trim().startsWith('{')) {
         try { extra = JSON.parse(rawIsi); } catch (e) {}
       }
-      const resolvedIsi = (extra.isi_surat && String(extra.isi_surat).trim())
-        ? String(extra.isi_surat)
-        : ((extra.isi_ringkas && String(extra.isi_ringkas).trim())
-          ? String(extra.isi_ringkas)
-          : ((rawIsi && typeof rawIsi === 'string' && !rawIsi.trim().startsWith('{'))
-            ? rawIsi
+
+      const resolvedIsi = (typeof rawIsi === 'string' && !rawIsi.trim().startsWith('{') && rawIsi.trim().length > 0)
+        ? rawIsi
+        : ((extra.isi_surat && String(extra.isi_surat).trim())
+          ? String(extra.isi_surat)
+          : ((extra.isi_ringkas && String(extra.isi_ringkas).trim())
+            ? String(extra.isi_ringkas)
             : (item.isi_surat || item.isi_ringkas || '')));
 
+      const mergedBase = { ...extra, ...item };
+
       const parsed = {
-        ...item,
-        ...extra,
+        ...mergedBase,
         isi_surat: resolvedIsi,
         isi_ringkas: resolvedIsi,
-        paragraf_2: extra.paragraf_2 !== undefined ? extra.paragraf_2 : (item.paragraf_2 || ''),
-        paragraf_3: extra.paragraf_3 !== undefined ? extra.paragraf_3 : (item.paragraf_3 || ''),
-        alamat_tujuan: extra.alamat_tujuan || item.alamat_tujuan || item.tujuan_instansi || 'di Tempat',
+        paragraf_2: item.paragraf_2 !== undefined && item.paragraf_2 !== null ? item.paragraf_2 : (extra.paragraf_2 !== undefined ? extra.paragraf_2 : ''),
+        paragraf_3: item.paragraf_3 !== undefined && item.paragraf_3 !== null ? item.paragraf_3 : (extra.paragraf_3 !== undefined ? extra.paragraf_3 : ''),
+        alamat_tujuan: item.alamat_tujuan || extra.alamat_tujuan || item.tujuan_instansi || 'di Tempat',
         tujuan_yth: item.tujuan_yth || extra.tujuan_yth || item.tujuan_instansi || '',
         nama_ketua: item.nama_ketua || extra.nama_ketua || storedAssets.nama_ketua || "H. WAWAN",
         nama_sekretaris: item.nama_sekretaris || extra.nama_sekretaris || storedAssets.nama_sekretaris || "H. BARHAMAN MUIN S.AG",
         logo_url: getValidAssetUrl(item.logo_url || extra.logo_url, storedAssets.logo_url || DEFAULT_LOGO_URL),
-        logo_scale: extra.logo_scale || item.logo_scale || storedAssets.logo_scale || 100,
-        logo_pos: extra.logo_pos || item.logo_pos || storedAssets.logo_pos || { x: 0, y: 0 },
+        logo_scale: item.logo_scale || extra.logo_scale || storedAssets.logo_scale || 100,
+        logo_pos: item.logo_pos || extra.logo_pos || storedAssets.logo_pos || { x: 0, y: 0 },
         ttd_ketua_url: getValidAssetUrl(item.ttd_ketua_url || extra.ttd_ketua_url, storedAssets.ttd_ketua_url),
         ttd_sekretaris_url: getValidAssetUrl(item.ttd_sekretaris_url || extra.ttd_sekretaris_url, storedAssets.ttd_sekretaris_url),
         cap_stempel_url: getValidAssetUrl(item.cap_stempel_url || extra.cap_stempel_url, storedAssets.cap_stempel_url),
-        ttd_ketua_scale: extra.ttd_ketua_scale || item.ttd_ketua_scale || storedAssets.ttd_ketua_scale || 100,
-        ttd_sekretaris_scale: extra.ttd_sekretaris_scale || item.ttd_sekretaris_scale || storedAssets.ttd_sekretaris_scale || 100,
-        stempel_scale: extra.stempel_scale || item.stempel_scale || storedAssets.stempel_scale || 100,
-        ttd_ketua_pos: extra.ttd_ketua_pos || item.ttd_ketua_pos || storedAssets.ttd_ketua_pos || { x: 0, y: 0 },
-        ttd_sekretaris_pos: extra.ttd_sekretaris_pos || item.ttd_sekretaris_pos || storedAssets.ttd_sekretaris_pos || { x: 0, y: 0 },
-        stempel_pos: extra.stempel_pos || item.stempel_pos || storedAssets.stempel_pos || { x: -35, y: 0 },
-        show_recipient: extra.show_recipient !== undefined ? extra.show_recipient : (item.show_recipient !== undefined ? item.show_recipient : true),
-        show_greetings: extra.show_greetings !== undefined ? extra.show_greetings : (item.show_greetings !== undefined ? item.show_greetings : true),
-        title_override: extra.title_override !== undefined ? extra.title_override : (item.title_override || ''),
-        include_lampiran_peserta: extra.include_lampiran_peserta !== undefined ? extra.include_lampiran_peserta : Boolean(item.include_lampiran_peserta),
-        judul_lampiran: extra.judul_lampiran !== undefined ? extra.judul_lampiran : (item.judul_lampiran || 'Daftar Lampiran Peserta'),
-        lampiran_peserta: extra.lampiran_peserta !== undefined ? extra.lampiran_peserta : (item.lampiran_peserta || ''),
-        lampiran: extra.lampiran_text || (rawLampiran && typeof rawLampiran === 'string' && !rawLampiran.trim().startsWith('{') ? rawLampiran : '-') || '-'
+        ttd_ketua_scale: item.ttd_ketua_scale || extra.ttd_ketua_scale || storedAssets.ttd_ketua_scale || 100,
+        ttd_sekretaris_scale: item.ttd_sekretaris_scale || extra.ttd_sekretaris_scale || storedAssets.ttd_sekretaris_scale || 100,
+        stempel_scale: item.stempel_scale || extra.stempel_scale || storedAssets.stempel_scale || 100,
+        ttd_ketua_pos: item.ttd_ketua_pos || extra.ttd_ketua_pos || storedAssets.ttd_ketua_pos || { x: 0, y: 0 },
+        ttd_sekretaris_pos: item.ttd_sekretaris_pos || extra.ttd_sekretaris_pos || storedAssets.ttd_sekretaris_pos || { x: 0, y: 0 },
+        stempel_pos: item.stempel_pos || extra.stempel_pos || storedAssets.stempel_pos || { x: -35, y: 0 },
+        show_recipient: item.show_recipient !== undefined ? Boolean(item.show_recipient) : (extra.show_recipient !== undefined ? Boolean(extra.show_recipient) : true),
+        show_greetings: item.show_greetings !== undefined ? Boolean(item.show_greetings) : (extra.show_greetings !== undefined ? Boolean(extra.show_greetings) : true),
+        title_override: item.title_override !== undefined ? item.title_override : (extra.title_override || ''),
+        include_lampiran_peserta: item.include_lampiran_peserta !== undefined ? Boolean(item.include_lampiran_peserta) : Boolean(extra.include_lampiran_peserta),
+        judul_lampiran: item.judul_lampiran !== undefined ? item.judul_lampiran : (extra.judul_lampiran || 'Daftar Lampiran Peserta'),
+        lampiran_peserta: item.lampiran_peserta !== undefined && item.lampiran_peserta !== null ? item.lampiran_peserta : (extra.lampiran_peserta || ''),
+        lampiran: (typeof item.lampiran === 'string' && !item.lampiran.trim().startsWith('{')) ? item.lampiran : (extra.lampiran_text || '-')
       };
 
       if (!map.has(key)) {
         map.set(key, parsed);
       } else {
         const existing = map.get(key);
-        map.set(key, { ...existing, ...parsed });
+        const newer = isLocal ? parsed : existing;
+        const older = isLocal ? existing : parsed;
+        map.set(key, { ...older, ...newer });
       }
     };
 
-    SEED_SURAT.forEach(addOrMerge);
+    SEED_SURAT.forEach(i => addOrMerge(i, false));
     if (Array.isArray(localData)) {
-      localData.forEach(addOrMerge);
+      localData.forEach(i => addOrMerge(i, true));
     }
 
     const seenIds = new Set<string>();
@@ -1430,48 +1434,51 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
         let extra: any = {};
         const rawLampiran = item.lampiran || '';
         const rawIsi = item.isi_surat || '';
-        if (rawLampiran && typeof rawLampiran === 'string' && rawLampiran.trim().startsWith('{')) {
+        if (typeof rawLampiran === 'string' && rawLampiran.trim().startsWith('{')) {
           try { extra = JSON.parse(rawLampiran); } catch (e) {}
-        } else if (rawIsi && typeof rawIsi === 'string' && rawIsi.trim().startsWith('{')) {
+        } else if (typeof rawIsi === 'string' && rawIsi.trim().startsWith('{')) {
           try { extra = JSON.parse(rawIsi); } catch (e) {}
         }
-        const resolvedIsi = (extra.isi_surat && String(extra.isi_surat).trim())
-          ? String(extra.isi_surat)
-          : ((extra.isi_ringkas && String(extra.isi_ringkas).trim())
-            ? String(extra.isi_ringkas)
-            : ((rawIsi && typeof rawIsi === 'string' && !rawIsi.trim().startsWith('{'))
-              ? rawIsi
+
+        const resolvedIsi = (typeof rawIsi === 'string' && !rawIsi.trim().startsWith('{') && rawIsi.trim().length > 0)
+          ? rawIsi
+          : ((extra.isi_surat && String(extra.isi_surat).trim())
+            ? String(extra.isi_surat)
+            : ((extra.isi_ringkas && String(extra.isi_ringkas).trim())
+              ? String(extra.isi_ringkas)
               : (item.isi_surat || item.isi_ringkas || '')));
+
+        const mergedBase = { ...extra, ...item };
+
         return {
-          ...item,
-          ...extra,
+          ...mergedBase,
           isi_surat: resolvedIsi,
           isi_ringkas: resolvedIsi,
-          paragraf_2: extra.paragraf_2 !== undefined ? extra.paragraf_2 : (item.paragraf_2 || ''),
-          paragraf_3: extra.paragraf_3 !== undefined ? extra.paragraf_3 : (item.paragraf_3 || ''),
-          alamat_tujuan: extra.alamat_tujuan || item.alamat_tujuan || item.tujuan_instansi || 'di Tempat',
+          paragraf_2: item.paragraf_2 !== undefined && item.paragraf_2 !== null ? item.paragraf_2 : (extra.paragraf_2 !== undefined ? extra.paragraf_2 : ''),
+          paragraf_3: item.paragraf_3 !== undefined && item.paragraf_3 !== null ? item.paragraf_3 : (extra.paragraf_3 !== undefined ? extra.paragraf_3 : ''),
+          alamat_tujuan: item.alamat_tujuan || extra.alamat_tujuan || item.tujuan_instansi || 'di Tempat',
           tujuan_yth: item.tujuan_yth || extra.tujuan_yth || item.tujuan_instansi || '',
           nama_ketua: item.nama_ketua || extra.nama_ketua || storedAssets.nama_ketua || "H. WAWAN",
           nama_sekretaris: item.nama_sekretaris || extra.nama_sekretaris || storedAssets.nama_sekretaris || "H. BARHAMAN MUIN S.AG",
           logo_url: getValidAssetUrl(item.logo_url || extra.logo_url, storedAssets.logo_url || DEFAULT_LOGO_URL),
-          logo_scale: extra.logo_scale || item.logo_scale || storedAssets.logo_scale || 100,
-          logo_pos: extra.logo_pos || item.logo_pos || storedAssets.logo_pos || { x: 0, y: 0 },
+          logo_scale: item.logo_scale || extra.logo_scale || storedAssets.logo_scale || 100,
+          logo_pos: item.logo_pos || extra.logo_pos || storedAssets.logo_pos || { x: 0, y: 0 },
           ttd_ketua_url: getValidAssetUrl(item.ttd_ketua_url || extra.ttd_ketua_url, storedAssets.ttd_ketua_url),
           ttd_sekretaris_url: getValidAssetUrl(item.ttd_sekretaris_url || extra.ttd_sekretaris_url, storedAssets.ttd_sekretaris_url),
           cap_stempel_url: getValidAssetUrl(item.cap_stempel_url || extra.cap_stempel_url, storedAssets.cap_stempel_url),
-          ttd_ketua_scale: extra.ttd_ketua_scale || item.ttd_ketua_scale || storedAssets.ttd_ketua_scale || 100,
-          ttd_sekretaris_scale: extra.ttd_sekretaris_scale || item.ttd_sekretaris_scale || storedAssets.ttd_sekretaris_scale || 100,
-          stempel_scale: extra.stempel_scale || item.stempel_scale || storedAssets.stempel_scale || 100,
-          ttd_ketua_pos: extra.ttd_ketua_pos || item.ttd_ketua_pos || storedAssets.ttd_ketua_pos || { x: 0, y: 0 },
-          ttd_sekretaris_pos: extra.ttd_sekretaris_pos || item.ttd_sekretaris_pos || storedAssets.ttd_sekretaris_pos || { x: 0, y: 0 },
-          stempel_pos: extra.stempel_pos || item.stempel_pos || storedAssets.stempel_pos || { x: -35, y: 0 },
-          show_recipient: extra.show_recipient !== undefined ? extra.show_recipient : (item.show_recipient !== undefined ? item.show_recipient : true),
-          show_greetings: extra.show_greetings !== undefined ? extra.show_greetings : (item.show_greetings !== undefined ? item.show_greetings : true),
-          title_override: extra.title_override !== undefined ? extra.title_override : (item.title_override || ''),
-          include_lampiran_peserta: extra.include_lampiran_peserta !== undefined ? extra.include_lampiran_peserta : Boolean(item.include_lampiran_peserta),
-          judul_lampiran: extra.judul_lampiran !== undefined ? extra.judul_lampiran : (item.judul_lampiran || 'Daftar Lampiran Peserta'),
-          lampiran_peserta: extra.lampiran_peserta !== undefined ? extra.lampiran_peserta : (item.lampiran_peserta || ''),
-          lampiran: extra.lampiran_text || (rawLampiran && typeof rawLampiran === 'string' && !rawLampiran.trim().startsWith('{') ? rawLampiran : '-') || '-'
+          ttd_ketua_scale: item.ttd_ketua_scale || extra.ttd_ketua_scale || storedAssets.ttd_ketua_scale || 100,
+          ttd_sekretaris_scale: item.ttd_sekretaris_scale || extra.ttd_sekretaris_scale || storedAssets.ttd_sekretaris_scale || 100,
+          stempel_scale: item.stempel_scale || extra.stempel_scale || storedAssets.stempel_scale || 100,
+          ttd_ketua_pos: item.ttd_ketua_pos || extra.ttd_ketua_pos || storedAssets.ttd_ketua_pos || { x: 0, y: 0 },
+          ttd_sekretaris_pos: item.ttd_sekretaris_pos || extra.ttd_sekretaris_pos || storedAssets.ttd_sekretaris_pos || { x: 0, y: 0 },
+          stempel_pos: item.stempel_pos || extra.stempel_pos || storedAssets.stempel_pos || { x: -35, y: 0 },
+          show_recipient: item.show_recipient !== undefined ? Boolean(item.show_recipient) : (extra.show_recipient !== undefined ? Boolean(extra.show_recipient) : true),
+          show_greetings: item.show_greetings !== undefined ? Boolean(item.show_greetings) : (extra.show_greetings !== undefined ? Boolean(extra.show_greetings) : true),
+          title_override: item.title_override !== undefined ? item.title_override : (extra.title_override || ''),
+          include_lampiran_peserta: item.include_lampiran_peserta !== undefined ? Boolean(item.include_lampiran_peserta) : Boolean(extra.include_lampiran_peserta),
+          judul_lampiran: item.judul_lampiran !== undefined ? item.judul_lampiran : (extra.judul_lampiran || 'Daftar Lampiran Peserta'),
+          lampiran_peserta: item.lampiran_peserta !== undefined && item.lampiran_peserta !== null ? item.lampiran_peserta : (extra.lampiran_peserta || ''),
+          lampiran: (typeof item.lampiran === 'string' && !item.lampiran.trim().startsWith('{')) ? item.lampiran : (extra.lampiran_text || '-')
         };
       };
 
@@ -1507,23 +1514,30 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
           const parsedTime = new Date(parsed.updated_at || parsed.created_at || 0).getTime();
 
           const isParsedNewer = isLocalSource || parsedTime >= existingTime;
-          const baseNew = isParsedNewer ? { ...existing, ...parsed } : { ...parsed, ...existing };
+          const newer = isParsedNewer ? parsed : existing;
+          const older = isParsedNewer ? existing : parsed;
 
           const isExistingDb = existing.id && !existing.id.toString().startsWith('seed_') && !existing.id.toString().startsWith('local_');
           const isItemDb = parsed.id && !parsed.id.toString().startsWith('seed_') && !parsed.id.toString().startsWith('local_');
-          const chosenId = isItemDb ? parsed.id : (isExistingDb ? existing.id : (parsed.id || existing.id));
+          const chosenId = isItemDb ? parsed.id : (isExistingDb ? existing.id : (newer.id || older.id));
 
           map.set(key, {
-            ...baseNew,
+            ...older,
+            ...newer,
             id: chosenId,
-            isi_surat: (isParsedNewer ? (parsed.isi_surat || parsed.isi_ringkas) : (existing.isi_surat || existing.isi_ringkas)) || baseNew.isi_surat || baseNew.isi_ringkas || '',
-            isi_ringkas: (isParsedNewer ? (parsed.isi_surat || parsed.isi_ringkas) : (existing.isi_surat || existing.isi_ringkas)) || baseNew.isi_surat || baseNew.isi_ringkas || '',
-            paragraf_2: (isParsedNewer ? (parsed.paragraf_2 !== undefined ? parsed.paragraf_2 : existing.paragraf_2) : (existing.paragraf_2 !== undefined ? existing.paragraf_2 : parsed.paragraf_2)) || '',
-            paragraf_3: (isParsedNewer ? (parsed.paragraf_3 !== undefined ? parsed.paragraf_3 : existing.paragraf_3) : (existing.paragraf_3 !== undefined ? existing.paragraf_3 : parsed.paragraf_3)) || '',
-            lampiran_peserta: (isParsedNewer ? (parsed.lampiran_peserta !== undefined ? parsed.lampiran_peserta : existing.lampiran_peserta) : (existing.lampiran_peserta !== undefined ? existing.lampiran_peserta : parsed.lampiran_peserta)) || '',
-            ttd_ketua_url: getValidAssetUrl(baseNew.ttd_ketua_url, storedAssets.ttd_ketua_url),
-            ttd_sekretaris_url: getValidAssetUrl(baseNew.ttd_sekretaris_url, storedAssets.ttd_sekretaris_url),
-            cap_stempel_url: getValidAssetUrl(baseNew.cap_stempel_url, storedAssets.cap_stempel_url)
+            isi_surat: newer.isi_surat || older.isi_surat || '',
+            isi_ringkas: newer.isi_ringkas || older.isi_ringkas || '',
+            paragraf_2: newer.paragraf_2 !== undefined ? newer.paragraf_2 : older.paragraf_2,
+            paragraf_3: newer.paragraf_3 !== undefined ? newer.paragraf_3 : older.paragraf_3,
+            lampiran_peserta: newer.lampiran_peserta !== undefined ? newer.lampiran_peserta : older.lampiran_peserta,
+            perihal: newer.perihal || older.perihal || '',
+            tempat_tanggal: newer.tempat_tanggal || older.tempat_tanggal || '',
+            tujuan_yth: newer.tujuan_yth || older.tujuan_yth || '',
+            lampiran: newer.lampiran || older.lampiran || '-',
+            updated_at: newer.updated_at || older.updated_at || new Date().toISOString(),
+            ttd_ketua_url: getValidAssetUrl(newer.ttd_ketua_url || older.ttd_ketua_url, storedAssets.ttd_ketua_url),
+            ttd_sekretaris_url: getValidAssetUrl(newer.ttd_sekretaris_url || older.ttd_sekretaris_url, storedAssets.ttd_sekretaris_url),
+            cap_stempel_url: getValidAssetUrl(newer.cap_stempel_url || older.cap_stempel_url, storedAssets.cap_stempel_url)
           });
         }
       };
@@ -2349,7 +2363,8 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     const optimisticSurat = {
       ...formData,
       id: targetEditId || 'local_' + Date.now(),
-      created_at: new Date().toISOString(),
+      created_at: formData.created_at || new Date().toISOString(),
+      updated_at: new Date().toISOString(),
       logo_pos: logoPos,
       stempel_pos: stempelPos,
       ttd_ketua_pos: ttdKetuaPos,
@@ -2383,7 +2398,7 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
         ttdSekretarisPos
       });
       if (dbId && !targetEditId) setEditId(dbId);
-      fetchSurat().catch(() => {});
+      await fetchSurat();
     } catch (err: any) {
       console.warn("Background save notice:", err);
     }
