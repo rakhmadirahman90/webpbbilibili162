@@ -428,7 +428,8 @@ export const getInitialSuratList = (): any[] => {
         title_override: extra.title_override || item.title_override || '',
         include_lampiran_peserta: extra.include_lampiran_peserta !== undefined ? extra.include_lampiran_peserta : Boolean(item.include_lampiran_peserta),
         judul_lampiran: extra.judul_lampiran || item.judul_lampiran || 'Daftar Lampiran Peserta',
-        lampiran_peserta: extra.lampiran_peserta || item.lampiran_peserta || ''
+        lampiran_peserta: extra.lampiran_peserta || item.lampiran_peserta || '',
+        lampiran: extra.lampiran_text || (rawLampiran && typeof rawLampiran === 'string' && !rawLampiran.trim().startsWith('{') ? rawLampiran : '-') || '-'
       };
 
       if (!map.has(key)) {
@@ -590,32 +591,47 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
   const syncDigitalAssetsFromDatabase = async () => {
     try {
       let masterFromDb: any = null;
-      try {
-        const { data } = await supabase
-          .from('arsip_surat')
-          .select('*')
-          .eq('nomor_surat', '__MASTER_DIGITAL_ASSETS__')
-          .maybeSingle();
 
-        if (data) {
-          let extra: any = {};
-          if (data.isi_surat) {
-            try {
-              extra = typeof data.isi_surat === 'string' ? JSON.parse(data.isi_surat) : data.isi_surat;
-            } catch (e) {}
+      // 1. Try fetching from Node server API backend (/api/digital-assets)
+      try {
+        const res = await fetch('/api/digital-assets');
+        if (res.ok) {
+          const apiData = await res.json();
+          if (apiData && (apiData.logo_url || apiData.ttd_ketua_url || apiData.ttd_sekretaris_url || apiData.cap_stempel_url)) {
+            masterFromDb = apiData;
           }
-          masterFromDb = {
-            logo_url: data.logo_url,
-            ttd_ketua_url: data.ttd_ketua_url,
-            ttd_sekretaris_url: data.ttd_sekretaris_url,
-            cap_stempel_url: data.cap_stempel_url,
-            nama_ketua: data.nama_ketua || extra.nama_ketua,
-            nama_sekretaris: data.nama_sekretaris || extra.nama_sekretaris,
-            ...extra
-          };
         }
-      } catch (e) {
-        console.warn('Error fetching master assets from arsip_surat:', e);
+      } catch (e) {}
+
+      // 2. Try fetching from Supabase table 'arsip_surat'
+      if (!masterFromDb || !masterFromDb.logo_url) {
+        try {
+          const { data } = await supabase
+            .from('arsip_surat')
+            .select('*')
+            .eq('nomor_surat', '__MASTER_DIGITAL_ASSETS__')
+            .maybeSingle();
+
+          if (data) {
+            let extra: any = {};
+            if (data.isi_surat) {
+              try {
+                extra = typeof data.isi_surat === 'string' ? JSON.parse(data.isi_surat) : data.isi_surat;
+              } catch (e) {}
+            }
+            masterFromDb = {
+              logo_url: data.logo_url,
+              ttd_ketua_url: data.ttd_ketua_url,
+              ttd_sekretaris_url: data.ttd_sekretaris_url,
+              cap_stempel_url: data.cap_stempel_url,
+              nama_ketua: data.nama_ketua || extra.nama_ketua,
+              nama_sekretaris: data.nama_sekretaris || extra.nama_sekretaris,
+              ...extra
+            };
+          }
+        } catch (e) {
+          console.warn('Error fetching master assets from arsip_surat:', e);
+        }
       }
 
       const dbAssets = masterFromDb || (await getSiteSetting('digital_assets_surat'));
@@ -639,6 +655,18 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
         };
         safeLocalStorageSet('pb_bilibili_digital_assets', JSON.stringify(validAssets));
         safeLocalStorageSet('site_setting_digital_assets_surat', JSON.stringify(validAssets));
+
+        // Update form state if current form has missing digital assets
+        setFormData(prev => ({
+          ...prev,
+          logo_url: prev.logo_url || validAssets.logo_url,
+          ttd_ketua_url: prev.ttd_ketua_url || validAssets.ttd_ketua_url,
+          ttd_sekretaris_url: prev.ttd_sekretaris_url || validAssets.ttd_sekretaris_url,
+          cap_stempel_url: prev.cap_stempel_url || validAssets.cap_stempel_url,
+          nama_ketua: prev.nama_ketua || validAssets.nama_ketua,
+          nama_sekretaris: prev.nama_sekretaris || validAssets.nama_sekretaris,
+        }));
+
         return validAssets;
       }
     } catch (e) {
@@ -668,13 +696,25 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     // 1. Simpan ke LocalStorage & site_settings
     safeLocalStorageSet('pb_bilibili_digital_assets', JSON.stringify(assetsToSave));
     safeLocalStorageSet('site_setting_digital_assets_surat', JSON.stringify(assetsToSave));
+
+    // 2. Simpan ke Node Server API Disk (/api/digital-assets)
+    try {
+      await fetch('/api/digital-assets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(assetsToSave)
+      });
+    } catch (apiErr) {
+      console.warn('Error saving to /api/digital-assets:', apiErr);
+    }
+
     try {
       await saveSiteSetting('digital_assets_surat', assetsToSave, 'Aset Digital Kop Surat & TTD PB Bilibili');
     } catch (err) {
       console.warn('saveSiteSetting digital_assets_surat warning:', err);
     }
 
-    // 2. Simpan master config ke table arsip_surat di Supabase
+    // 3. Simpan master config ke table arsip_surat di Supabase
     try {
       const masterRecord = {
         nomor_surat: '__MASTER_DIGITAL_ASSETS__',
@@ -1366,7 +1406,8 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
           title_override: extra.title_override || item.title_override || '',
           include_lampiran_peserta: extra.include_lampiran_peserta !== undefined ? extra.include_lampiran_peserta : Boolean(item.include_lampiran_peserta),
           judul_lampiran: extra.judul_lampiran || item.judul_lampiran || 'Daftar Lampiran Peserta',
-          lampiran_peserta: extra.lampiran_peserta || item.lampiran_peserta || ''
+          lampiran_peserta: extra.lampiran_peserta || item.lampiran_peserta || '',
+          lampiran: extra.lampiran_text || (rawLampiran && typeof rawLampiran === 'string' && !rawLampiran.trim().startsWith('{') ? rawLampiran : '-') || '-'
         };
       };
 
@@ -2018,10 +2059,10 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     });
     const lastSurat = sortedLetters.length > 0 ? sortedLetters[0] : null;
 
-    const resolvedLogoUrl = getValidAssetUrl(lastSurat?.logo_url, storedAssets.logo_url);
-    const resolvedTtdKetuaUrl = getValidAssetUrl(lastSurat?.ttd_ketua_url, storedAssets.ttd_ketua_url || "");
-    const resolvedTtdSekreUrl = getValidAssetUrl(lastSurat?.ttd_sekretaris_url, storedAssets.ttd_sekretaris_url || "");
-    const resolvedStempelUrl = getValidAssetUrl(lastSurat?.cap_stempel_url, storedAssets.cap_stempel_url || "");
+    const resolvedLogoUrl = getValidAssetUrl(storedAssets.logo_url, getValidAssetUrl(lastSurat?.logo_url, DEFAULT_LOGO_URL));
+    const resolvedTtdKetuaUrl = getValidAssetUrl(storedAssets.ttd_ketua_url, getValidAssetUrl(lastSurat?.ttd_ketua_url, ""));
+    const resolvedTtdSekreUrl = getValidAssetUrl(storedAssets.ttd_sekretaris_url, getValidAssetUrl(lastSurat?.ttd_sekretaris_url, ""));
+    const resolvedStempelUrl = getValidAssetUrl(storedAssets.cap_stempel_url, getValidAssetUrl(lastSurat?.cap_stempel_url, ""));
 
     const resolvedLogoPos = lastSurat?.logo_pos || storedAssets.logo_pos || { x: 0, y: 0 };
     const resolvedStempelPos = lastSurat?.stempel_pos || storedAssets.stempel_pos || { x: -35, y: 0 };

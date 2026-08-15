@@ -554,8 +554,10 @@ async function startServer() {
         try { extra = JSON.parse(rawIsi); } catch (e) {}
       }
       const cleanIsi = extra.isi_ringkas || copy.isi_ringkas || (rawIsi && !rawIsi.startsWith('{') ? rawIsi : '') || '';
+      const cleanLampiran = extra.lampiran_text || (rawLampiran && !rawLampiran.trim().startsWith('{') ? rawLampiran : '-') || '-';
       copy.isi_surat = cleanIsi;
       copy.isi_ringkas = cleanIsi;
+      copy.lampiran = cleanLampiran;
       if (extra.paragraf_2) copy.paragraf_2 = extra.paragraf_2;
       if (extra.paragraf_3) copy.paragraf_3 = extra.paragraf_3;
 
@@ -947,9 +949,8 @@ async function startServer() {
       // Candidate models in prioritized order to ensure robust fallback
       const candidateModels = [
         'gemini-2.5-flash',
-        'gemini-2.5-flash-lite',
-        'gemini-3.7-flash',
-        'gemini-flash-latest'
+        'gemini-2.0-flash',
+        'gemini-1.5-flash'
       ];
 
       let lastError: any = null;
