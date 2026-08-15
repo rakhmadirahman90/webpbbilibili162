@@ -398,7 +398,13 @@ export const getInitialSuratList = (): any[] => {
       } else if (rawIsi && typeof rawIsi === 'string' && rawIsi.trim().startsWith('{')) {
         try { extra = JSON.parse(rawIsi); } catch (e) {}
       }
-      const resolvedIsi = extra.isi_ringkas || item.isi_ringkas || (rawIsi && !rawIsi.startsWith('{') ? rawIsi : '') || '';
+      const resolvedIsi = (extra.isi_surat && String(extra.isi_surat).trim())
+        ? String(extra.isi_surat)
+        : ((extra.isi_ringkas && String(extra.isi_ringkas).trim())
+          ? String(extra.isi_ringkas)
+          : ((rawIsi && typeof rawIsi === 'string' && !rawIsi.trim().startsWith('{'))
+            ? rawIsi
+            : (item.isi_surat || item.isi_ringkas || '')));
 
       const parsed = {
         ...item,
@@ -1188,8 +1194,13 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
     const resolvedTtdSekreUrl = getValidAssetUrl(rawPayload.ttd_sekretaris_url, stored.ttd_sekretaris_url);
     const resolvedStempelUrl = getValidAssetUrl(rawPayload.cap_stempel_url, stored.cap_stempel_url);
 
+    const activeIsiText = (rawPayload.isi_surat && String(rawPayload.isi_surat).trim())
+      ? String(rawPayload.isi_surat).trim()
+      : ((rawPayload.isi_ringkas && String(rawPayload.isi_ringkas).trim()) ? String(rawPayload.isi_ringkas).trim() : '');
+
     const extraMetadata = {
-      isi_ringkas: rawPayload.isi_ringkas || '',
+      isi_surat: activeIsiText,
+      isi_ringkas: activeIsiText,
       paragraf_2: rawPayload.paragraf_2 || '',
       paragraf_3: rawPayload.paragraf_3 || '',
       alamat_tujuan: rawPayload.alamat_tujuan || 'di Tempat',
@@ -1219,7 +1230,8 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       ttd_sekretaris_url: resolvedTtdSekreUrl,
       cap_stempel_url: resolvedStempelUrl,
       tujuan_instansi: rawPayload.alamat_tujuan || rawPayload.tujuan_instansi || 'di Tempat',
-      isi_surat: rawPayload.isi_ringkas || rawPayload.isi_surat || '',
+      isi_surat: activeIsiText,
+      isi_ringkas: activeIsiText,
       lampiran: JSON.stringify(extraMetadata),
       ...extraMetadata
     };
@@ -1377,7 +1389,13 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
         } else if (rawIsi && typeof rawIsi === 'string' && rawIsi.trim().startsWith('{')) {
           try { extra = JSON.parse(rawIsi); } catch (e) {}
         }
-        const resolvedIsi = extra.isi_ringkas || item.isi_ringkas || (rawIsi && !rawIsi.startsWith('{') ? rawIsi : '') || '';
+        const resolvedIsi = (extra.isi_surat && String(extra.isi_surat).trim())
+          ? String(extra.isi_surat)
+          : ((extra.isi_ringkas && String(extra.isi_ringkas).trim())
+            ? String(extra.isi_ringkas)
+            : ((rawIsi && typeof rawIsi === 'string' && !rawIsi.trim().startsWith('{'))
+              ? rawIsi
+              : (item.isi_surat || item.isi_ringkas || '')));
         return {
           ...item,
           ...extra,
@@ -1447,7 +1465,8 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
             ...existing,
             ...parsed,
             id: chosenId,
-            isi_ringkas: parsed.isi_ringkas || existing.isi_ringkas || '',
+            isi_surat: parsed.isi_surat || parsed.isi_ringkas || existing.isi_surat || existing.isi_ringkas || '',
+            isi_ringkas: parsed.isi_surat || parsed.isi_ringkas || existing.isi_surat || existing.isi_ringkas || '',
             paragraf_2: parsed.paragraf_2 || existing.paragraf_2 || '',
             paragraf_3: parsed.paragraf_3 || existing.paragraf_3 || '',
             lampiran_peserta: parsed.lampiran_peserta || existing.lampiran_peserta || '',

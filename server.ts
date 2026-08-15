@@ -553,7 +553,13 @@ async function startServer() {
       } else if (rawIsi && typeof rawIsi === 'string' && rawIsi.trim().startsWith('{')) {
         try { extra = JSON.parse(rawIsi); } catch (e) {}
       }
-      const cleanIsi = extra.isi_ringkas || copy.isi_ringkas || (rawIsi && !rawIsi.startsWith('{') ? rawIsi : '') || '';
+      const cleanIsi = (extra.isi_surat && String(extra.isi_surat).trim())
+        ? String(extra.isi_surat)
+        : ((extra.isi_ringkas && String(extra.isi_ringkas).trim())
+          ? String(extra.isi_ringkas)
+          : ((rawIsi && typeof rawIsi === 'string' && !rawIsi.trim().startsWith('{'))
+            ? rawIsi
+            : (copy.isi_surat || copy.isi_ringkas || '')));
       const cleanLampiran = extra.lampiran_text || (rawLampiran && !rawLampiran.trim().startsWith('{') ? rawLampiran : '-') || '-';
       copy.isi_surat = cleanIsi;
       copy.isi_ringkas = cleanIsi;
@@ -948,9 +954,7 @@ async function startServer() {
 
       // Candidate models in prioritized order to ensure robust fallback
       const candidateModels = [
-        'gemini-2.5-flash',
-        'gemini-2.0-flash',
-        'gemini-1.5-flash'
+        'gemini-2.5-flash'
       ];
 
       let lastError: any = null;
