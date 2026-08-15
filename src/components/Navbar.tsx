@@ -166,110 +166,110 @@ export default function Navbar({ onNavigate }: NavbarProps) {
       
       if (error) console.warn(error);
 
-      let finalNav = data || [];
+      let finalNav: any[] = data || [];
 
-      // Deduplicate finalNav by label or path to ensure no duplicates
-      finalNav = finalNav.filter((item, index, self) => 
-        index === self.findIndex((t) => t.label === item.label) && 
-        item.label && true
+      // Filter out admin or deprecated items from public navbar
+      finalNav = finalNav.filter((item: any) => 
+        item.path !== 'kas' && item.label?.toLowerCase() !== 'kas' && item.label?.toLowerCase() !== 'kelola kas' &&
+        item.path !== 'program' && item.label?.toLowerCase() !== 'program' && item.label?.toLowerCase() !== 'program kelas' &&
+        item.path !== 'faq' && item.label?.toLowerCase() !== 'faq'
       );
 
+      // Default core menu structure
+      const defaultItems = [
+        { id: '1', label: 'Home', path: 'home', type: 'link', order_index: 0 },
+        { id: '2', label: 'Tentang Kami', path: 'tentang-kami', type: 'dropdown', order_index: 1 },
+        { id: '2-1', parent_id: '2', label: 'Sejarah', path: 'sejarah', order_index: 1 },
+        { id: '2-2', parent_id: '2', label: 'Visi & Misi', path: 'visi-misi', order_index: 2 },
+        { id: '2-3', parent_id: '2', label: 'Fasilitas', path: 'fasilitas', order_index: 3 },
+        { id: '2-4', parent_id: '2', label: 'Struktur Organisasi', path: 'struktur-organisasi', order_index: 4 },
+        { id: '2-5', parent_id: '2', label: 'Dokumen Penting', path: 'dokumen-penting', order_index: 5 },
+        { id: '2-6', parent_id: '2', label: 'Inventaris', path: 'inventaris', order_index: 6 },
+        { id: '3', label: 'Informasi', path: 'informasi', type: 'dropdown', order_index: 2 },
+        { id: '3-1', parent_id: '3', label: 'Berita', path: 'berita', order_index: 1 },
+        { id: '3-2', parent_id: '3', label: 'Prestasi', path: 'prestasi', order_index: 2 },
+        { id: '4', label: 'Peringkat', path: 'peringkat', type: 'dropdown', order_index: 3 },
+        { id: '4-1', parent_id: '4', label: 'Ranking Atlet', path: 'peringkat', order_index: 1 },
+        { id: '4-2', parent_id: '4', label: 'Quiz Badminton', path: 'quiz', order_index: 2 },
+        { id: '5', label: 'Jadwal Latihan', path: 'jadwal', type: 'link', order_index: 4 }
+      ];
+
       if (finalNav.length === 0) {
-        finalNav = [
-          { id: '1', label: 'Home', path: 'home', type: 'link', order_index: 0 },
-          { id: '2', label: 'Tentang Kami', path: 'tentang-kami', type: 'dropdown', order_index: 1 },
-          { id: '2-1', parent_id: '2', label: 'Sejarah', path: 'sejarah', order_index: 1 },
-          { id: '2-2', parent_id: '2', label: 'Visi & Misi', path: 'visi-misi', order_index: 2 },
-          { id: '2-3', parent_id: '2', label: 'Fasilitas', path: 'fasilitas', order_index: 3 },
-          { id: '2-4', parent_id: '2', label: 'Struktur Organisasi', path: 'struktur', order_index: 4 },
-          { id: '2-5', parent_id: '2', label: 'Dokumen Penting', path: 'dokumen-penting', order_index: 5 },
-          { id: '2-6', parent_id: '2', label: 'Inventaris', path: 'inventaris', order_index: 6 },
-          { id: '3', label: 'Informasi', path: 'informasi', type: 'dropdown', order_index: 2 },
-          { id: '3-1', parent_id: '3', label: 'Berita', path: 'berita', order_index: 1 },
-          { id: '3-3', parent_id: '3', label: 'Prestasi', path: 'prestasi', order_index: 3 },
-          { id: '4', label: 'Peringkat', path: 'peringkat', type: 'dropdown', order_index: 3 },
-          { id: '4-1', parent_id: '4', label: 'Ranking Atlet', path: 'peringkat' },
-          { id: '4-2', parent_id: '4', label: 'Quiz Badminton', path: 'quiz' },
-          { id: '5', label: 'Jadwal Latihan', path: 'jadwal', type: 'link', order_index: 4 }
-        ];
+        finalNav = defaultItems;
       } else {
-        // Filter out 'kas', 'program', and 'faq' from public navbar
-        finalNav = finalNav.filter((item: any) => 
-          item.path !== 'kas' && item.label?.toLowerCase() !== 'kas' && item.label?.toLowerCase() !== 'kelola kas' &&
-          item.path !== 'program' && item.label?.toLowerCase() !== 'program' && item.label?.toLowerCase() !== 'program kelas' &&
-          item.path !== 'faq' && item.label?.toLowerCase() !== 'faq'
-        );
-
-        const hasJadwal = finalNav.some((item: any) => item.path === 'jadwal' || item.path === 'jadwal-latihan' || item.label?.toLowerCase()?.includes('jadwal'));
-        if (!hasJadwal) {
-          finalNav.push({ id: 'jadwal-dynamic', label: 'Jadwal Latihan', path: 'jadwal', type: 'link', order_index: 4 });
+        // Ensure all core parent menus exist
+        const hasHome = finalNav.some((item: any) => item.path === 'home' || item.label?.toLowerCase() === 'home');
+        if (!hasHome) {
+          finalNav.unshift({ id: '1', label: 'Home', path: 'home', type: 'link', order_index: 0 });
         }
 
-        const hasBerita = finalNav.some((item: any) => item.path === 'berita' || item.path === 'news');
-        if (!hasBerita) {
-          finalNav.push({ id: 'berita-dynamic', label: 'Berita', path: 'berita', type: 'link', order_index: 2.1 });
-        }
-        
-        const parentTentang = finalNav.find((item: any) => 
+        let parentTentang = finalNav.find((item: any) => 
           item.path === 'tentang-kami' || item.label?.toLowerCase()?.includes('tentang')
         );
-        const hasDocs = finalNav.some((item: any) => item.path === 'dokumen');
-        if (!hasDocs && parentTentang) {
-          finalNav.push({ id: 'docs-dynamic', parent_id: parentTentang.id, label: 'Dokumen Penting', path: 'dokumen', order_index: 5 });
+        if (!parentTentang) {
+          parentTentang = { id: '2', label: 'Tentang Kami', path: 'tentang-kami', type: 'dropdown', order_index: 1 };
+          finalNav.push(parentTentang);
         }
 
-        // Update order_index for sub-menus of 'Tentang Kami' (id='2')
-        finalNav = finalNav.map((item: any) => {
-          if (item.parent_id === '2' || (parentTentang && item.parent_id === parentTentang.id)) {
-            if (item.path === 'sejarah') return { ...item, order_index: 1 };
-            if (item.path === 'visi-misi') return { ...item, order_index: 2 };
-            if (item.path === 'fasilitas') return { ...item, order_index: 3 };
-            if (item.path === 'struktur-organisasi') return { ...item, order_index: 4 };
-            if (item.path === 'dokumen') return { ...item, order_index: 5 };
-          }
-          return item;
-        });
-
-        // Pastikan 'Struktur Organisasi' ada di dalam sub-menu 'Tentang Kami'
-        if (parentTentang) {
-          // Remove any existing 'Struktur Organisasi' items (case insensitive) to replace them
-          finalNav = finalNav.filter((item: any) => 
-            !(item.label && item.label?.toLowerCase() === 'struktur organisasi' && item.parent_id === parentTentang.id)
-          );
-          finalNav.push({ 
-            id: 'struktur-dynamic', 
-            parent_id: parentTentang.id, 
-            label: 'Struktur Organisasi', 
-            path: 'struktur-organisasi', 
-            order_index: 4,
-            type: 'link'
-          });
+        let parentInfo = finalNav.find((item: any) => 
+          item.path === 'informasi' || item.label?.toLowerCase()?.includes('informasi')
+        );
+        if (!parentInfo) {
+          parentInfo = { id: '3', label: 'Informasi', path: 'informasi', type: 'dropdown', order_index: 2 };
+          finalNav.push(parentInfo);
         }
 
         let parentRanking = finalNav.find((item: any) => 
           item.path === 'peringkat' || item.path === 'ranking' || item.label?.toLowerCase()?.includes('peringkat')
         );
-
-        if (parentRanking) {
-          parentRanking.type = 'dropdown';
-          const hasQuiz = finalNav.some((item: any) => item.path === 'quiz');
-          if (!hasQuiz) {
-            finalNav.push({ id: 'quiz-dynamic', parent_id: parentRanking.id, label: 'Quiz Badminton', path: 'quiz', order_index: 99 });
-          }
-          const hasRankingSub = finalNav.some((item: any) => item.parent_id === parentRanking?.id && item.path === 'peringkat');
-          if (!hasRankingSub) {
-            finalNav.push({ id: 'ranking-sub-dynamic', parent_id: parentRanking.id, label: 'Ranking Atlet', path: 'peringkat', order_index: 1 });
-          }
+        if (!parentRanking) {
+          parentRanking = { id: '4', label: 'Peringkat', path: 'peringkat', type: 'dropdown', order_index: 3 };
+          finalNav.push(parentRanking);
         }
+
+        const hasJadwal = finalNav.some((item: any) => item.path === 'jadwal' || item.path === 'jadwal-latihan' || item.label?.toLowerCase()?.includes('jadwal'));
+        if (!hasJadwal) {
+          finalNav.push({ id: '5', label: 'Jadwal Latihan', path: 'jadwal', type: 'link', order_index: 4 });
+        }
+
+        // Check & inject submenus if missing
+        const requiredSubmenus = [
+          { label: 'Sejarah', path: 'sejarah', parent_id: parentTentang.id, order_index: 1 },
+          { label: 'Visi & Misi', path: 'visi-misi', parent_id: parentTentang.id, order_index: 2 },
+          { label: 'Fasilitas', path: 'fasilitas', parent_id: parentTentang.id, order_index: 3 },
+          { label: 'Struktur Organisasi', path: 'struktur-organisasi', parent_id: parentTentang.id, order_index: 4 },
+          { label: 'Dokumen Penting', path: 'dokumen-penting', parent_id: parentTentang.id, order_index: 5 },
+          { label: 'Inventaris', path: 'inventaris', parent_id: parentTentang.id, order_index: 6 },
+          { label: 'Berita', path: 'berita', parent_id: parentInfo.id, order_index: 1 },
+          { label: 'Prestasi', path: 'prestasi', parent_id: parentInfo.id, order_index: 2 },
+          { label: 'Ranking Atlet', path: 'peringkat', parent_id: parentRanking.id, order_index: 1 },
+          { label: 'Quiz Badminton', path: 'quiz', parent_id: parentRanking.id, order_index: 2 }
+        ];
+
+        requiredSubmenus.forEach((sub) => {
+          const exists = finalNav.some((item: any) => 
+            item.path === sub.path || (item.label && item.label.toLowerCase() === sub.label.toLowerCase())
+          );
+          if (!exists) {
+            finalNav.push({
+              id: `${sub.path}-dynamic`,
+              parent_id: sub.parent_id,
+              label: sub.label,
+              path: sub.path,
+              order_index: sub.order_index,
+              type: 'link'
+            });
+          }
+        });
       }
       
-      // Final deduplication: keep only the first occurrence of each label, preferring the one with a path
+      // Deduplicate finalNav by unique label
       const map = new Map();
       finalNav.forEach(item => {
-        const label = item.label ? item.label.trim().toLowerCase() : '';
-        
-        if (!map.has(label) || (item.path && !map.get(label).path)) {
-          map.set(label, item);
+        if (!item || !item.label) return;
+        const key = item.label.trim().toLowerCase();
+        if (!map.has(key) || (item.path && !map.get(key).path)) {
+          map.set(key, item);
         }
       });
       finalNav = Array.from(map.values());
@@ -720,52 +720,59 @@ export default function Navbar({ onNavigate }: NavbarProps) {
             </div>
 
             {/* SCROLLABLE MENU ITEMS LIST */}
-            <div className="flex-1 overflow-y-auto no-scrollbar py-1 px-1.5 space-y-0.5 flex flex-col justify-evenly">
-              {navData.filter(item => !item.parent_id ).sort((a, b) => a.order_index - b.order_index).map((menu) => {
-                const subMenus = getSubMenus(menu.id);
-                const isDropdown = menu.type === 'dropdown' || subMenus.length > 0;
-                const isExpanded = activeDropdown === menu.id;
-                return (
-                  <div key={menu.id} className="rounded-lg overflow-hidden">
-                    <button 
-                      onClick={() => {
-                        if (isDropdown) {
-                          setActiveDropdown(activeDropdown === menu.id ? null : menu.id);
-                        } else {
-                          handleNavClick(menu.path);
-                        }
-                      }}
-                      className={`flex justify-between items-center w-full px-3 py-2 text-[11px] font-bold tracking-wider uppercase rounded-lg text-slate-200 hover:bg-blue-600/15 hover:text-blue-400 transition-all duration-200 text-left ${
-                        isExpanded ? 'bg-blue-600/15 text-blue-400' : ''
-                      }`}
-                    >
-                      <span>{menu.label}</span>
-                      {isDropdown && <ChevronDown size={12} className={`text-slate-400 transition-transform duration-300 ${isExpanded ? 'rotate-180 text-blue-400' : ''}`} />}
-                    </button>
-                    
-                    {isDropdown && isExpanded && (
-                      <div className="bg-[#070c18]/60 border-l-2 border-blue-500/50 my-0.5 ml-2 pl-2 pr-1 flex flex-col py-1 gap-0.5 animate-in fade-in duration-200 rounded-r-lg">
-                        {subMenus.map((sub) => (
-                          <button 
-                            key={sub.id} 
-                            onClick={() => {
+            <div className="flex-1 overflow-y-auto custom-scrollbar py-2 px-2 space-y-1 flex flex-col justify-start">
+              {navData
+                .filter(item => !item.parent_id || item.parent_id === '' || item.parent_id === null)
+                .sort((a, b) => (a.order_index || 0) - (b.order_index || 0))
+                .map((menu) => {
+                  const subMenus = getSubMenus(menu.id);
+                  const isDropdown = menu.type === 'dropdown' || subMenus.length > 0;
+                  const isExpanded = activeDropdown === menu.id;
+                  return (
+                    <div key={menu.id} className="rounded-lg overflow-hidden">
+                      <button 
+                        onClick={() => {
+                          if (isDropdown) {
+                            setActiveDropdown(activeDropdown === menu.id ? null : menu.id);
+                          } else {
+                            handleNavClick(menu.path);
+                          }
+                        }}
+                        className={`flex justify-between items-center w-full px-3 py-2 text-[11px] font-bold tracking-wider uppercase rounded-lg text-slate-200 hover:bg-blue-600/15 hover:text-blue-400 transition-all duration-200 text-left ${
+                          isExpanded ? 'bg-blue-600/15 text-blue-400' : ''
+                        }`}
+                      >
+                        <span className="flex items-center gap-2">
+                          {menu.path === 'home' && <Globe size={13} className="text-blue-400 shrink-0" />}
+                          {(menu.path === 'jadwal' || menu.path === 'jadwal-latihan') && <Timer size={13} className="text-amber-400 shrink-0" />}
+                          {menu.label}
+                        </span>
+                        {isDropdown && <ChevronDown size={12} className={`text-slate-400 transition-transform duration-300 ${isExpanded ? 'rotate-180 text-blue-400' : ''}`} />}
+                      </button>
+                      
+                      {isDropdown && isExpanded && (
+                        <div className="bg-[#070c18]/80 border-l-2 border-blue-500/50 my-1 ml-2 pl-2 pr-1 flex flex-col py-1 gap-0.5 animate-in fade-in duration-200 rounded-r-lg">
+                          {subMenus.map((sub) => (
+                            <button 
+                              key={sub.id} 
+                              onClick={() => {
                                 handleNavClick(menu.path, sub.path);
-                            }} 
-                            className="text-left py-1.5 px-2 text-[10px] font-semibold tracking-wider uppercase text-slate-300 hover:text-white hover:bg-white/5 rounded transition-colors flex items-center justify-between"
-                          >
-                            <span className="flex items-center gap-1.5">
-                              {sub.path === 'quiz' && <BrainCircuit size={11} className="text-blue-400" />}
-                              {sub.label}
-                            </span>
-                            {sub.path === 'peringkat' && <Trophy size={10} className="text-yellow-500" />}
-                            {sub.path === 'dokumen-penting' && <FileText size={10} className="text-blue-500" />}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+                              }} 
+                              className="text-left py-1.5 px-2 text-[10.5px] font-semibold tracking-wider uppercase text-slate-300 hover:text-white hover:bg-white/5 rounded transition-colors flex items-center justify-between"
+                            >
+                              <span className="flex items-center gap-1.5">
+                                {sub.path === 'quiz' && <BrainCircuit size={11} className="text-blue-400" />}
+                                {sub.label}
+                              </span>
+                              {sub.path === 'peringkat' && <Trophy size={10} className="text-yellow-500" />}
+                              {sub.path === 'dokumen-penting' && <FileText size={10} className="text-blue-500" />}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
 
               {/* Hubungi Kami Item */}
               <div>
