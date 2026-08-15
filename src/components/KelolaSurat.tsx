@@ -1477,7 +1477,7 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
 
       const map = new Map<string, any>();
 
-      const addOrMergeSurat = (item: any) => {
+      const addOrMergeSurat = (item: any, isLocalSource = false) => {
         if (!item) return;
         const rawNomor = (item.nomor_surat || '').trim().toUpperCase();
         if (rawNomor === '__MASTER_DIGITAL_ASSETS__' || rawNomor.includes('TEST') || item.jenis_surat === 'MASUK') {
@@ -1501,39 +1501,44 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
         if (!map.has(key)) {
           map.set(key, parsed);
         } else {
-          // Merge best values: keep database UUID if available, keep latest edits
+          // Merge best values: keep database UUID if available, keep latest user edits
           const existing = map.get(key);
+          const existingTime = new Date(existing.updated_at || existing.created_at || 0).getTime();
+          const parsedTime = new Date(parsed.updated_at || parsed.created_at || 0).getTime();
+
+          const isParsedNewer = isLocalSource || parsedTime >= existingTime;
+          const baseNew = isParsedNewer ? { ...existing, ...parsed } : { ...parsed, ...existing };
+
           const isExistingDb = existing.id && !existing.id.toString().startsWith('seed_') && !existing.id.toString().startsWith('local_');
           const isItemDb = parsed.id && !parsed.id.toString().startsWith('seed_') && !parsed.id.toString().startsWith('local_');
           const chosenId = isItemDb ? parsed.id : (isExistingDb ? existing.id : (parsed.id || existing.id));
 
           map.set(key, {
-            ...existing,
-            ...parsed,
+            ...baseNew,
             id: chosenId,
-            isi_surat: parsed.isi_surat || parsed.isi_ringkas || existing.isi_surat || existing.isi_ringkas || '',
-            isi_ringkas: parsed.isi_surat || parsed.isi_ringkas || existing.isi_surat || existing.isi_ringkas || '',
-            paragraf_2: (parsed.paragraf_2 !== undefined && parsed.paragraf_2 !== null) ? parsed.paragraf_2 : (existing.paragraf_2 || ''),
-            paragraf_3: (parsed.paragraf_3 !== undefined && parsed.paragraf_3 !== null) ? parsed.paragraf_3 : (existing.paragraf_3 || ''),
-            lampiran_peserta: (parsed.lampiran_peserta !== undefined && parsed.lampiran_peserta !== null) ? parsed.lampiran_peserta : (existing.lampiran_peserta || ''),
-            ttd_ketua_url: getValidAssetUrl(parsed.ttd_ketua_url || existing.ttd_ketua_url, storedAssets.ttd_ketua_url),
-            ttd_sekretaris_url: getValidAssetUrl(parsed.ttd_sekretaris_url || existing.ttd_sekretaris_url, storedAssets.ttd_sekretaris_url),
-            cap_stempel_url: getValidAssetUrl(parsed.cap_stempel_url || existing.cap_stempel_url, storedAssets.cap_stempel_url)
+            isi_surat: (isParsedNewer ? (parsed.isi_surat || parsed.isi_ringkas) : (existing.isi_surat || existing.isi_ringkas)) || baseNew.isi_surat || baseNew.isi_ringkas || '',
+            isi_ringkas: (isParsedNewer ? (parsed.isi_surat || parsed.isi_ringkas) : (existing.isi_surat || existing.isi_ringkas)) || baseNew.isi_surat || baseNew.isi_ringkas || '',
+            paragraf_2: (isParsedNewer ? (parsed.paragraf_2 !== undefined ? parsed.paragraf_2 : existing.paragraf_2) : (existing.paragraf_2 !== undefined ? existing.paragraf_2 : parsed.paragraf_2)) || '',
+            paragraf_3: (isParsedNewer ? (parsed.paragraf_3 !== undefined ? parsed.paragraf_3 : existing.paragraf_3) : (existing.paragraf_3 !== undefined ? existing.paragraf_3 : parsed.paragraf_3)) || '',
+            lampiran_peserta: (isParsedNewer ? (parsed.lampiran_peserta !== undefined ? parsed.lampiran_peserta : existing.lampiran_peserta) : (existing.lampiran_peserta !== undefined ? existing.lampiran_peserta : parsed.lampiran_peserta)) || '',
+            ttd_ketua_url: getValidAssetUrl(baseNew.ttd_ketua_url, storedAssets.ttd_ketua_url),
+            ttd_sekretaris_url: getValidAssetUrl(baseNew.ttd_sekretaris_url, storedAssets.ttd_sekretaris_url),
+            cap_stempel_url: getValidAssetUrl(baseNew.cap_stempel_url, storedAssets.cap_stempel_url)
           });
         }
       };
 
       // 1. Base seed templates
-      SEED_SURAT.forEach(addOrMergeSurat);
+      SEED_SURAT.forEach(i => addOrMergeSurat(i, false));
 
-      // 2. Server API JSON store data
-      (serverData || []).forEach(addOrMergeSurat);
+      // 2. Supabase database data
+      (data || []).forEach(i => addOrMergeSurat(i, false));
 
-      // 3. User local custom data
-      localData.forEach(addOrMergeSurat);
+      // 3. Server API JSON store data
+      (serverData || []).forEach(i => addOrMergeSurat(i, false));
 
-      // 4. Supabase database data takes ultimate precedence
-      (data || []).forEach(addOrMergeSurat);
+      // 4. User local custom data (highest priority for local user edits)
+      localData.forEach(i => addOrMergeSurat(i, true));
 
       const allItems = Array.from(map.values());
 

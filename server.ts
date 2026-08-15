@@ -420,39 +420,44 @@ async function startServer() {
           payload.id = item.id;
         }
 
-        // Guarantee lampiran contains JSON metadata if extra fields exist or if not valid JSON
-        if (!payload.lampiran || typeof payload.lampiran !== 'string' || !payload.lampiran.trim().startsWith('{')) {
-          const extraMetadata = {
-            isi_surat: item.isi_surat || item.isi_ringkas || '',
-            isi_ringkas: item.isi_surat || item.isi_ringkas || '',
-            paragraf_2: item.paragraf_2 || '',
-            paragraf_3: item.paragraf_3 || '',
-            alamat_tujuan: item.alamat_tujuan || item.tujuan_instansi || 'di Tempat',
-            tujuan_yth: item.tujuan_yth || item.tujuan_instansi || '',
-            logo_url: item.logo_url || '',
-            ttd_ketua_url: item.ttd_ketua_url || '',
-            ttd_sekretaris_url: item.ttd_sekretaris_url || '',
-            cap_stempel_url: item.cap_stempel_url || '',
-            logo_pos: item.logo_pos || { x: 0, y: 0 },
-            stempel_pos: item.stempel_pos || { x: -35, y: 0 },
-            ttd_ketua_pos: item.ttd_ketua_pos || { x: 0, y: 0 },
-            ttd_sekretaris_pos: item.ttd_sekretaris_pos || { x: 0, y: 0 },
-            logo_scale: item.logo_scale || 100,
-            ttd_ketua_scale: item.ttd_ketua_scale || 100,
-            ttd_sekretaris_scale: item.ttd_sekretaris_scale || 100,
-            stempel_scale: item.stempel_scale || 100,
-            show_recipient: item.show_recipient !== false,
-            show_greetings: item.show_greetings !== false,
-            title_override: item.title_override || '',
-            include_lampiran_peserta: Boolean(item.include_lampiran_peserta),
-            judul_lampiran: item.judul_lampiran || 'Daftar Lampiran Peserta',
-            lampiran_peserta: item.lampiran_peserta || '',
-            lampiran_text: item.lampiran || '-',
-            nama_ketua: item.nama_ketua || 'H. WAWAN',
-            nama_sekretaris: item.nama_sekretaris || 'H. BARHAMAN MUIN S.AG'
-          };
-          payload.lampiran = JSON.stringify(extraMetadata);
+        // Guarantee lampiran contains full JSON metadata with all current item properties
+        let existingExtra: any = {};
+        if (item.lampiran && typeof item.lampiran === 'string' && item.lampiran.trim().startsWith('{')) {
+          try { existingExtra = JSON.parse(item.lampiran); } catch (e) {}
         }
+        const extraMetadata = {
+          ...existingExtra,
+          isi_surat: item.isi_surat || item.isi_ringkas || existingExtra.isi_surat || '',
+          isi_ringkas: item.isi_surat || item.isi_ringkas || existingExtra.isi_ringkas || '',
+          paragraf_2: item.paragraf_2 !== undefined ? item.paragraf_2 : (existingExtra.paragraf_2 || ''),
+          paragraf_3: item.paragraf_3 !== undefined ? item.paragraf_3 : (existingExtra.paragraf_3 || ''),
+          alamat_tujuan: item.alamat_tujuan || item.tujuan_instansi || existingExtra.alamat_tujuan || 'di Tempat',
+          tujuan_yth: item.tujuan_yth || item.tujuan_instansi || existingExtra.tujuan_yth || '',
+          logo_url: item.logo_url || existingExtra.logo_url || '',
+          ttd_ketua_url: item.ttd_ketua_url || existingExtra.ttd_ketua_url || '',
+          ttd_sekretaris_url: item.ttd_sekretaris_url || existingExtra.ttd_sekretaris_url || '',
+          cap_stempel_url: item.cap_stempel_url || existingExtra.cap_stempel_url || '',
+          logo_pos: item.logo_pos || existingExtra.logo_pos || { x: 0, y: 0 },
+          stempel_pos: item.stempel_pos || existingExtra.stempel_pos || { x: -35, y: 0 },
+          ttd_ketua_pos: item.ttd_ketua_pos || existingExtra.ttd_ketua_pos || { x: 0, y: 0 },
+          ttd_sekretaris_pos: item.ttd_sekretaris_pos || existingExtra.ttd_sekretaris_pos || { x: 0, y: 0 },
+          logo_scale: item.logo_scale || existingExtra.logo_scale || 100,
+          ttd_ketua_scale: item.ttd_ketua_scale || existingExtra.ttd_ketua_scale || 100,
+          ttd_sekretaris_scale: item.ttd_sekretaris_scale || existingExtra.ttd_sekretaris_scale || 100,
+          stempel_scale: item.stempel_scale || existingExtra.stempel_scale || 100,
+          show_recipient: item.show_recipient !== undefined ? item.show_recipient : (existingExtra.show_recipient !== false),
+          show_greetings: item.show_greetings !== undefined ? item.show_greetings : (existingExtra.show_greetings !== false),
+          title_override: item.title_override !== undefined ? item.title_override : (existingExtra.title_override || ''),
+          include_lampiran_peserta: item.include_lampiran_peserta !== undefined ? Boolean(item.include_lampiran_peserta) : Boolean(existingExtra.include_lampiran_peserta),
+          judul_lampiran: item.judul_lampiran !== undefined ? item.judul_lampiran : (existingExtra.judul_lampiran || 'Daftar Lampiran Peserta'),
+          lampiran_peserta: item.lampiran_peserta !== undefined ? item.lampiran_peserta : (existingExtra.lampiran_peserta || ''),
+          lampiran_text: (typeof item.lampiran === 'string' && !item.lampiran.trim().startsWith('{')) ? item.lampiran : (existingExtra.lampiran_text || '-'),
+          nama_ketua: item.nama_ketua || existingExtra.nama_ketua || 'H. WAWAN',
+          nama_sekretaris: item.nama_sekretaris || existingExtra.nama_sekretaris || 'H. BARHAMAN MUIN S.AG',
+          created_at: item.created_at || existingExtra.created_at || new Date().toISOString(),
+          updated_at: item.updated_at || new Date().toISOString()
+        };
+        payload.lampiran = JSON.stringify(extraMetadata);
 
         if (nomor && nomor !== '__MASTER_DIGITAL_ASSETS__') {
           await fetch(`${SUPABASE_URL}/rest/v1/arsip_surat?nomor_surat=eq.${encodeURIComponent(nomor)}`, {
@@ -728,20 +733,30 @@ async function startServer() {
           const dbData = await response.json();
           if (Array.isArray(dbData)) {
             const map = new Map();
-            localData.forEach((i: any) => {
+            dbData.forEach((i: any) => {
               if (i && i.nomor_surat !== '__MASTER_DIGITAL_ASSETS__' && !i.nomor_surat?.includes('TEST') && i.jenis_surat !== 'MASUK') {
                 const sanitized = sanitizeSuratItem(i);
                 const key = normalizeSuratKey(sanitized);
                 if (key) map.set(key, sanitized);
               }
             });
-            dbData.forEach((i: any) => {
+            localData.forEach((i: any) => {
               if (i && i.nomor_surat !== '__MASTER_DIGITAL_ASSETS__' && !i.nomor_surat?.includes('TEST') && i.jenis_surat !== 'MASUK') {
                 const sanitized = sanitizeSuratItem(i);
                 const key = normalizeSuratKey(sanitized);
                 if (key) {
                   const existing = map.get(key);
-                  map.set(key, { ...(existing || {}), ...sanitized });
+                  if (!existing) {
+                    map.set(key, sanitized);
+                  } else {
+                    const existingTime = new Date(existing.updated_at || existing.created_at || 0).getTime();
+                    const localTime = new Date(sanitized.updated_at || sanitized.created_at || 0).getTime();
+                    if (localTime >= existingTime) {
+                      map.set(key, { ...existing, ...sanitized });
+                    } else {
+                      map.set(key, { ...sanitized, ...existing });
+                    }
+                  }
                 }
               }
             });
