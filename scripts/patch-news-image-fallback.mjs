@@ -21,7 +21,7 @@ if (source.includes(oldHeaderSrc)) {
 }
 
 const oldReferrer = 'referrerPolicy="no-referrer"\n                        className="w-full h-full object-cover object-center"';
-const newReferrer = `referrerPolicy="no-referrer"\n                          onError={(e) => {\n                            const target = e.currentTarget;\n                            if (target.dataset.fallbackStage === '1') {\n                              target.dataset.fallbackStage = '2';\n                              target.src = '/logo_pb_bilibili_162.png';\n                              return;\n                            }\n                            target.dataset.fallbackStage = '1';\n                            target.src = \\`/api/news-image?id=\\${encodeURIComponent(selectedNews.id)}\\`;\n                          }}\n                        className="w-full h-full object-cover object-center"`;
+const newReferrer = `referrerPolicy="no-referrer"\n                          onError={(e) => {\n                            const target = e.currentTarget;\n                            if (target.dataset.fallbackStage === '1') {\n                              target.dataset.fallbackStage = '2';\n                              target.src = '/logo_pb_bilibili_162.png';\n                              return;\n                            }\n                            target.dataset.fallbackStage = '1';\n                            target.src = '/api/news-image?id=' + encodeURIComponent(selectedNews.id);\n                          }}\n                        className="w-full h-full object-cover object-center"`;
 
 if (source.includes(oldReferrer) && !source.includes("target.dataset.fallbackStage")) {
   source = source.replace(oldReferrer, newReferrer);
