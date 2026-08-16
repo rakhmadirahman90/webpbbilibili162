@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { PackageOpen, Box, Loader2, RefreshCw, AlertCircle } from 'lucide-react';
+import { PackageOpen, Box, Loader2, RefreshCw, AlertCircle, ImageOff } from 'lucide-react';
 import { supabase } from '../supabase';
-import LazyImage from './LazyImage';
 
 interface Item {
   id: string;
@@ -18,10 +17,10 @@ interface Item {
 
 function resolveImageUrl(value?: string | null) {
   if (!value) return '';
-  const url = String(value).trim();
-  if (!url) return '';
-  if (/^https?:\/\//i.test(url) || url.startsWith('data:') || url.startsWith('blob:')) return url;
-  return supabase.storage.from('identitas-atlet').getPublicUrl(url).data.publicUrl;
+  const raw = String(value).trim();
+  if (!raw) return '';
+  if (/^(https?:|data:|blob:)/i.test(raw)) return raw;
+  return supabase.storage.from('identitas-atlet').getPublicUrl(raw).data.publicUrl;
 }
 
 export default function PublicInventaris() {
@@ -32,20 +31,21 @@ export default function PublicInventaris() {
   const fetchItems = useCallback(async () => {
     setLoading(true);
     setError('');
-    const { data, error: dbError } = await supabase
-      .from('inventaris')
-      .select('*')
-      .order('kategori', { ascending: true })
-      .order('nama', { ascending: true });
-
-    if (dbError) {
-      console.error('[PublicInventaris] Supabase error:', dbError);
-      setError(dbError.message);
-      setItems([]);
-    } else {
+    try {
+      const { data, error: dbError } = await supabase
+        .from('inventaris')
+        .select('id,nama,kategori,jumlah_total,jumlah_baik,jumlah_rusak,keterangan,gambar,created_at,updated_at')
+        .order('kategori', { ascending: true })
+        .order('nama', { ascending: true });
+      if (dbError) throw dbError;
       setItems((data || []) as Item[]);
+    } catch (err: any) {
+      console.error('[PublicInventaris] Supabase error:', err);
+      setItems([]);
+      setError(err?.message || 'Data inventaris tidak dapat dimuat.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -58,73 +58,71 @@ export default function PublicInventaris() {
   }, [fetchItems]);
 
   return (
-    <div className="flex flex-col flex-grow min-h-0 w-full py-4 sm:py-6 space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#0b1224] p-5 rounded-3xl border border-white/5 relative overflow-hidden shrink-0">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="relative z-10">
-          <h1 className="text-xl sm:text-2xl font-black text-white italic uppercase tracking-tight flex items-center gap-3">
-            <PackageOpen className="text-amber-500" size={24} /> Inventaris Klub
-          </h1>
-          <p className="text-slate-400 text-xs mt-1">Data langsung dari database Supabase • realtime</p>
+    <main className="w-full min-h-[calc(100vh-120px)] py-5 sm:py-8 pb-28">
+      <section className="bg-[#0b1224] p-5 sm:p-7 rounded-3xl border border-white/10 relative overflow-hidden mb-6">
+        <div className="absolute -top-24 -right-24 w-72 h-72 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-xl sm:text-3xl font-black text-white italic uppercase tracking-tight flex items-center gap-3">
+              <PackageOpen className="text-amber-500" size={28} /> Inventaris Klub
+            </h1>
+            <p className="text-slate-400 text-xs sm:text-sm mt-2">Data langsung dari Supabase • pembaruan realtime</p>
+          </div>
+          <button type="button" onClick={fetchItems} disabled={loading} className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-200 text-xs font-black uppercase disabled:opacity-50">
+            <RefreshCw size={15} className={loading ? 'animate-spin' : ''} /> Refresh
+          </button>
         </div>
-        <button onClick={fetchItems} disabled={loading} className="relative z-10 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-[10px] font-black uppercase disabled:opacity-50">
-          <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Refresh
-        </button>
-      </div>
+      </section>
 
       {error && (
-        <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-red-300 text-xs flex gap-2">
-          <AlertCircle size={16} className="shrink-0" />
-          <span>Gagal membaca data inventaris dari Supabase: {error}</span>
+        <div className="mb-5 rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-red-200 text-xs flex gap-3">
+          <AlertCircle size={18} className="shrink-0" />
+          <span>{error}</span>
         </div>
       )}
 
-      <div className="flex-grow overflow-y-auto pr-1 custom-scrollbar pb-24">
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 text-slate-500 gap-3">
-            <Loader2 size={36} className="animate-spin text-amber-500" />
-            <span className="text-xs font-bold uppercase tracking-widest">Memuat inventaris dari Supabase...</span>
-          </div>
-        ) : items.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-slate-500">
-            <Box size={48} className="text-slate-600 mb-2 stroke-[1.5]" />
-            <p className="text-sm font-bold uppercase tracking-wider">Belum Ada Data Inventaris</p>
-            <p className="text-[10px] mt-1 text-slate-600">Belum ada record pada tabel public.inventaris.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {items.map(item => {
-              const imageUrl = resolveImageUrl(item.gambar);
-              return (
-                <div key={item.id} className="bg-[#0b1224] border border-white/5 rounded-2xl overflow-hidden relative group transition-all duration-300 hover:border-amber-500/20 hover:shadow-lg hover:shadow-amber-500/5 flex flex-col h-full">
-                  <div className="relative h-44 bg-black/40 overflow-hidden border-b border-white/5 shrink-0">
-                    {imageUrl ? (
-                      <LazyImage src={imageUrl} alt={item.nama} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" containerClassName="w-full h-full" width={500} />
-                    ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-amber-500/5 to-orange-500/10 text-amber-500/40">
-                        <Box size={36} className="stroke-[1.5]" />
-                        <span className="text-[10px] font-bold uppercase tracking-widest mt-2 text-slate-500">Tidak ada foto</span>
-                      </div>
-                    )}
-                    <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10">
-                      <span className="text-[10px] text-amber-400 font-black uppercase tracking-widest">{item.kategori}</span>
+      {loading ? (
+        <div className="min-h-[260px] rounded-3xl border border-white/5 bg-[#0b1224] flex flex-col items-center justify-center text-slate-400 gap-3">
+          <Loader2 size={40} className="animate-spin text-amber-500" />
+          <span className="text-xs font-bold uppercase tracking-widest">Memuat inventaris...</span>
+        </div>
+      ) : items.length === 0 ? (
+        <div className="min-h-[260px] rounded-3xl border border-white/5 bg-[#0b1224] flex flex-col items-center justify-center text-center p-8">
+          <Box size={52} className="text-slate-600 mb-3 stroke-[1.5]" />
+          <p className="text-white font-black uppercase tracking-wider">Belum Ada Data Inventaris</p>
+          <p className="text-xs text-slate-500 mt-2 max-w-md">Tabel <b>public.inventaris</b> saat ini belum memiliki record. Tambahkan data melalui Dashboard Admin agar otomatis tampil di sini.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {items.map(item => {
+            const imageUrl = resolveImageUrl(item.gambar);
+            return (
+              <article key={item.id} className="bg-[#0b1224] border border-white/10 rounded-2xl overflow-hidden flex flex-col shadow-lg">
+                <div className="relative h-52 bg-black/40 overflow-hidden">
+                  {imageUrl ? (
+                    <img src={imageUrl} alt={item.nama} loading="lazy" decoding="async" referrerPolicy="no-referrer" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                  ) : (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-600">
+                      <ImageOff size={40} />
+                      <span className="text-[10px] uppercase tracking-widest mt-2">Foto belum tersedia</span>
                     </div>
-                  </div>
-                  <div className="p-4 flex flex-col flex-grow">
-                    <h3 className="font-bold text-white leading-tight text-base group-hover:text-amber-400 transition-colors">{item.nama}</h3>
-                    <div className="grid grid-cols-3 gap-2 my-3">
-                      <div className="bg-black/40 rounded-xl p-1.5 text-center border border-white/5"><p className="text-[9px] text-slate-500 uppercase font-bold">Total</p><p className="font-black text-white text-sm">{item.jumlah_total}</p></div>
-                      <div className="bg-emerald-500/10 rounded-xl p-1.5 text-center border border-emerald-500/20"><p className="text-[9px] text-emerald-500 uppercase font-bold">Baik</p><p className="font-black text-emerald-400 text-sm">{item.jumlah_baik}</p></div>
-                      <div className="bg-red-500/10 rounded-xl p-1.5 text-center border border-red-500/20"><p className="text-[9px] text-red-500 uppercase font-bold">Rusak</p><p className="font-black text-red-400 text-sm">{item.jumlah_rusak}</p></div>
-                    </div>
-                    {item.keterangan && <p className="text-[11px] text-slate-400 italic bg-white/5 p-2 rounded-lg mt-auto">{item.keterangan}</p>}
-                  </div>
+                  )}
+                  <span className="absolute top-3 left-3 bg-emerald-500 text-white px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider shadow-lg">{item.kategori || 'Umum'}</span>
                 </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    </div>
+                <div className="p-5 flex flex-col flex-1">
+                  <h2 className="text-white font-black text-lg leading-tight">{item.nama}</h2>
+                  <div className="grid grid-cols-3 gap-2 mt-4">
+                    <div className="rounded-xl bg-white/5 p-2 text-center"><div className="text-[9px] text-slate-500 uppercase">Total</div><div className="text-white font-black">{item.jumlah_total ?? 0}</div></div>
+                    <div className="rounded-xl bg-emerald-500/10 p-2 text-center"><div className="text-[9px] text-emerald-400 uppercase">Baik</div><div className="text-emerald-300 font-black">{item.jumlah_baik ?? 0}</div></div>
+                    <div className="rounded-xl bg-red-500/10 p-2 text-center"><div className="text-[9px] text-red-400 uppercase">Rusak</div><div className="text-red-300 font-black">{item.jumlah_rusak ?? 0}</div></div>
+                  </div>
+                  {item.keterangan && <p className="mt-4 rounded-xl bg-white/5 p-3 text-xs text-slate-400 leading-relaxed">{item.keterangan}</p>}
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
+    </main>
   );
 }
