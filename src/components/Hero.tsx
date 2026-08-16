@@ -9,34 +9,15 @@ const HERO_POSTER = `${SUPABASE_STORAGE}/assets/hero-sliders/hero-poster-1786206
 const WAWAN_PHOTO = `${SUPABASE_STORAGE}/identitas-atlet/identitas/1775222807673-ccq2ee.jpg`;
 
 export const defaultSlides = [
-  {
-    id: 'pb162-video-previous',
-    title: 'PB BILIBILI 162',
-    subtitle: 'PROFESSIONAL CLUB',
-    image: HERO_VIDEO,
-    videoUrl: HERO_VIDEO,
-    poster: HERO_POSTER,
-    type: 'video',
-    active: true
-  },
-  {
-    id: 'ketua-wawan-real',
-    title: 'H. Wawan',
-    subtitle: 'Ketua Umum PB Bilibili 162',
-    image: WAWAN_PHOTO,
-    type: 'image',
-    active: true
-  }
+  { id: 'pb162-video-previous', title: 'PB BILIBILI 162', subtitle: 'PROFESSIONAL CLUB', image: HERO_VIDEO, videoUrl: HERO_VIDEO, poster: HERO_POSTER, type: 'video', active: true },
+  { id: 'ketua-wawan-real', title: 'H. Wawan', subtitle: 'Ketua Umum PB Bilibili 162', image: WAWAN_PHOTO, type: 'image', active: true }
 ];
 
 function HeroVideo({ src, poster, active }: { src: string; poster: string; active: boolean }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [failed, setFailed] = useState(false);
 
-  useEffect(() => {
-    setFailed(false);
-  }, [src]);
-
+  useEffect(() => setFailed(false), [src]);
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -45,38 +26,15 @@ function HeroVideo({ src, poster, active }: { src: string; poster: string; activ
     video.playsInline = true;
     if (active && !failed) {
       video.load();
-      video.play().catch(() => {
-        // Mobile browsers may delay autoplay. The poster remains visible until playback is allowed.
-      });
-    } else {
-      video.pause();
-    }
+      video.play().catch(() => {});
+    } else video.pause();
   }, [active, failed, src]);
 
-  if (failed) {
-    return <img src={poster} alt="PB Bilibili 162" className="w-full h-full object-cover object-center" />;
-  }
-
+  if (failed) return <img src={poster} alt="PB Bilibili 162" className="w-full h-full object-cover object-center" />;
   return (
     <div className="relative w-full h-full bg-black">
-      <img
-        src={poster}
-        alt="PB Bilibili 162"
-        className="absolute inset-0 w-full h-full object-cover object-center"
-      />
-      <video
-        ref={videoRef}
-        src={src}
-        poster={poster}
-        autoPlay
-        loop
-        muted
-        playsInline
-        controls={false}
-        preload="auto"
-        onError={() => setFailed(true)}
-        className="relative z-10 w-full h-full object-cover object-center"
-      >
+      <img src={poster} alt="PB Bilibili 162" className="absolute inset-0 w-full h-full object-cover object-center" />
+      <video ref={videoRef} src={src} poster={poster} autoPlay loop muted playsInline controls={false} preload="auto" onError={() => setFailed(true)} className="relative z-10 w-full h-full object-cover object-center">
         <source src={src} type="video/webm" />
       </video>
     </div>
@@ -85,22 +43,12 @@ function HeroVideo({ src, poster, active }: { src: string; poster: string; activ
 
 async function loadWawanPhoto() {
   try {
-    const { data, error } = await supabase
-      .from('pendaftaran')
-      .select('id, nama, foto_url')
-      .ilike('nama', '%Wawan%')
-      .not('foto_url', 'is', null)
-      .limit(10);
-
+    const { data, error } = await supabase.from('pendaftaran').select('id, nama, foto_url').ilike('nama', '%Wawan%').not('foto_url', 'is', null).limit(10);
     if (error || !data?.length) return WAWAN_PHOTO;
-
-    const member = data.find((row: any) => String(row.nama || '').trim().toLowerCase() === 'h. wawan')
-      || data.find((row: any) => String(row.nama || '').toLowerCase().includes('wawan'));
+    const member = data.find((row: any) => String(row.nama || '').trim().toLowerCase() === 'h. wawan') || data.find((row: any) => String(row.nama || '').toLowerCase().includes('wawan'));
     const url = String(member?.foto_url || '').trim().split(/[\s,]+/)[0];
     return url || WAWAN_PHOTO;
-  } catch {
-    return WAWAN_PHOTO;
-  }
+  } catch { return WAWAN_PHOTO; }
 }
 
 export default function Hero() {
@@ -111,10 +59,7 @@ export default function Hero() {
 
   useEffect(() => {
     let mounted = true;
-    Promise.all([
-      loadWawanPhoto(),
-      getSiteSetting('hero_config').catch(() => null)
-    ]).then(([photo, config]) => {
+    Promise.all([loadWawanPhoto(), getSiteSetting('hero_config').catch(() => null)]).then(([photo, config]) => {
       if (!mounted) return;
       if (photo) setWawanPhoto(photo);
       const configured = Number(config?.settings?.duration);
@@ -124,11 +69,9 @@ export default function Hero() {
   }, []);
 
   useEffect(() => {
-    const timer = window.setInterval(() => {
-      if (!transitioning) setCurrentSlide((prev) => (prev + 1) % 2);
-    }, duration * 1000);
+    const timer = window.setInterval(() => setCurrentSlide((prev) => (prev + 1) % 2), duration * 1000);
     return () => window.clearInterval(timer);
-  }, [duration, transitioning]);
+  }, [duration]);
 
   const goTo = (index: number) => {
     if (transitioning) return;
@@ -136,14 +79,10 @@ export default function Hero() {
     setCurrentSlide(index);
     window.setTimeout(() => setTransitioning(false), 500);
   };
-
   const next = () => goTo((currentSlide + 1) % 2);
-  const prev = () => goTo((currentSlide + 1) % 2);
+  const prev = () => goTo((currentSlide - 1 + 2) % 2);
 
-  const slides = [
-    defaultSlides[0],
-    { ...defaultSlides[1], image: wawanPhoto, updated_at: wawanPhoto }
-  ];
+  const slides = [defaultSlides[0], { ...defaultSlides[1], image: wawanPhoto, updated_at: wawanPhoto }];
 
   return (
     <section id="home" className="relative w-full pt-16 lg:pt-20 pb-2 sm:pb-4 bg-[#070d1a] overflow-hidden">
@@ -152,47 +91,14 @@ export default function Hero() {
           {slides.map((slide, index) => {
             const active = index === currentSlide;
             const imageUrl = appendCacheBustParam(slide.image, slide.updated_at || slide.id);
-            return (
-              <div
-                key={slide.id}
-                className={`absolute inset-0 transition-opacity duration-500 ${active ? 'opacity-100 visible z-10' : 'opacity-0 invisible z-0 pointer-events-none'}`}
-              >
-                {slide.type === 'video' ? (
-                  <HeroVideo src={imageUrl} poster={HERO_POSTER} active={active} />
-                ) : (
-                  <img
-                    src={imageUrl}
-                    alt="H. Wawan - Ketua Umum PB Bilibili 162"
-                    className="w-full h-full object-cover object-center"
-                    loading={index === 1 ? 'eager' : 'lazy'}
-                    decoding="async"
-                    onError={(event) => {
-                      if (event.currentTarget.src !== WAWAN_PHOTO) event.currentTarget.src = WAWAN_PHOTO;
-                    }}
-                  />
-                )}
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/45 pointer-events-none" />
-              </div>
-            );
+            return <div key={slide.id} className={`absolute inset-0 transition-opacity duration-500 ${active ? 'opacity-100 visible z-10' : 'opacity-0 invisible z-0 pointer-events-none'}`}>
+              {slide.type === 'video' ? <HeroVideo src={imageUrl} poster={HERO_POSTER} active={active} /> : <img src={imageUrl} alt="H. Wawan - Ketua Umum PB Bilibili 162" className="w-full h-full object-cover object-center" loading={index === 1 ? 'eager' : 'lazy'} decoding="async" onError={(event) => { if (event.currentTarget.src !== WAWAN_PHOTO) event.currentTarget.src = WAWAN_PHOTO; }} />}
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/45 pointer-events-none" />
+            </div>;
           })}
-
-          <button onClick={prev} className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-30 p-2 sm:p-2.5 rounded-full bg-black/35 hover:bg-black/60 text-white transition-all" aria-label="Previous slide">
-            <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
-          </button>
-          <button onClick={next} className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-30 p-2 sm:p-2.5 rounded-full bg-black/35 hover:bg-black/60 text-white transition-all" aria-label="Next slide">
-            <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
-          </button>
-
-          <div className="absolute bottom-3 sm:bottom-5 left-1/2 -translate-x-1/2 flex gap-2 z-30">
-            {slides.map((slide, index) => (
-              <button
-                key={slide.id}
-                onClick={() => goTo(index)}
-                className={`h-1.5 rounded-full transition-all ${index === currentSlide ? 'w-7 bg-blue-500' : 'w-2 bg-white/50'}`}
-                aria-label={`Go to slide ${index + 1}`}
-              />
-            ))}
-          </div>
+          <button onClick={prev} className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-30 p-2 sm:p-2.5 rounded-full bg-black/35 hover:bg-black/60 text-white transition-all" aria-label="Previous slide"><ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" /></button>
+          <button onClick={next} className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-30 p-2 sm:p-2.5 rounded-full bg-black/35 hover:bg-black/60 text-white transition-all" aria-label="Next slide"><ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" /></button>
+          <div className="absolute bottom-3 sm:bottom-5 left-1/2 -translate-x-1/2 flex gap-2 z-30">{slides.map((slide, index) => <button key={slide.id} onClick={() => goTo(index)} className={`h-1.5 rounded-full transition-all ${index === currentSlide ? 'w-7 bg-blue-500' : 'w-2 bg-white/50'}`} aria-label={`Go to slide ${index + 1}`} />)}</div>
         </div>
       </div>
     </section>
