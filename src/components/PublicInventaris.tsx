@@ -58,7 +58,7 @@ export default function PublicInventaris() {
   }, [fetchItems]);
 
   return (
-    <main className="w-full min-h-[calc(100vh-120px)] py-5 sm:py-8 pb-28">
+    <main className="w-full h-full min-h-0 overflow-y-auto overscroll-contain py-5 sm:py-8 pb-32 pr-1">
       <section className="bg-[#0b1224] p-5 sm:p-7 rounded-3xl border border-white/10 relative overflow-hidden mb-6">
         <div className="absolute -top-24 -right-24 w-72 h-72 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
