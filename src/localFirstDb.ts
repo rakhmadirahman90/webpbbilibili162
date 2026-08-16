@@ -1,7 +1,7 @@
 /* Local-first data layer: IndexedDB is the UI database; Supabase is the durable sync target. */
 type Row = Record<string, any>;
 type Op = 'insert'|'update'|'upsert'|'delete';
-type QueueItem = { id:string; table:string; op:Op; payload:any; filters:any[]; targetIds?:string[]; localIds?:string[]; createdAt:number; attempts:number; };
+type QueueItem = { id:string; table:string; op:Op; payload:any; filters:any[]; targetIds?:string[]; localIds?:string[]; createdAt:number; attempts:number; nextAttemptAt?:number; };
 
 const DB_NAME = 'pb-bilibili-162-local-first';
 const DB_VERSION = 2;
@@ -10,6 +10,12 @@ const QUEUE = 'sync_queue';
 const memory: Record<string, Row[]> = {};
 let dbPromise: Promise<IDBDatabase|null>|null = null;
 let syncRunning = false;
+
+// Deduplicate background Supabase reads. The old implementation started a
+// remote SELECT after every local SELECT, which multiplied database I/O.
+const remoteReadInFlight = new Map<string, Promise<void>>();
+const remoteReadAt = new Map<string, number>();
+const REMOTE_READ_TTL = 15_000;
 
 const browser = () => typeof window !== 'undefined' && typeof indexedDB !== 'undefined';
 const clone = <T,>(v:T):T => { try { return structuredClone(v); } catch { return JSON.parse(JSON.stringify(v)); } };
@@ -69,12 +75,12 @@ async function putQueue(item:QueueItem) {
   });
 }
 async function removeQueue(key:string) {
-  const db=await openDb(); if(!db) return;
+  const db=await openDb(); if(!db)return;
   await new Promise<void>(resolve=>{try{const tx=db.transaction(QUEUE,'readwrite');tx.objectStore(QUEUE).delete(key);tx.oncomplete=()=>resolve();tx.onerror=()=>resolve();}catch{resolve();}});
 }
 async function readQueue():Promise<QueueItem[]> {
-  const db=await openDb(); if(!db) return [];
-  return new Promise(resolve=>{try{const r=db.transaction(QUEUE,'readonly').objectStore(QUEUE).getAll();r.onsuccess=()=>resolve(Array.isArray(r.result)?r.result:[]);r.onerror=()=>resolve([]);}catch{resolve([]);}});
+  const db=await openDb(); if(!db)return [];
+  return new Promise(resolve=>{try{const r=db.transaction(QUEUE,'readonly').objectStore(QUEUE).getAll();r.onsuccess=()=>{const all=Array.isArray(r.result)?r.result:[];const t=Date.now();resolve(all.filter((x:QueueItem)=>(x.nextAttemptAt??0)<=t));};r.onerror=()=>resolve([]);}catch{resolve([]);}});
 }
 
 function matches(row:Row, filters:any[]) { return filters.every((f:any)=> {
@@ -91,10 +97,14 @@ function sortRows(rows:Row[], orders:any[]) {
   let out=rows.slice(); for(const o of orders.slice().reverse()) out.sort((a,b)=>{const av=a?.[o.column],bv=b?.[o.column]; if(av===bv)return 0; const n=av>bv?1:-1; return o.ascending?n:-n;}); return out;
 }
 
+function remoteReadKey(q:LocalFirstQuery){
+  return JSON.stringify({table:q.table,filters:q.filters,orders:q.orders,limit:q.limitCount,range:[q.rangeStart,q.rangeEnd],or:q.orExpression,contains:q.containsFilter});
+}
+
 export class LocalFirstQuery implements PromiseLike<any> {
-  private table:string; private operation:Op|'select'='select'; private payload:any[]=[]; private filters:any[]=[]; private orders:any[]=[];
-  private limitCount:number|null=null; private rangeStart:number|null=null; private rangeEnd:number|null=null; private singleMode:'single'|'maybe'|null=null; private returnRows=false;
-  private upsertConflict='id'; private orExpression?:string; private containsFilter?:any;
+  public table:string; private operation:Op|'select'='select'; private payload:any[]=[]; public filters:any[]=[]; public orders:any[]=[];
+  public limitCount:number|null=null; public rangeStart:number|null=null; public rangeEnd:number|null=null; private singleMode:'single'|'maybe'|null=null; private returnRows=false;
+  private upsertConflict='id'; public orExpression?:string; public containsFilter?:any;
   constructor(table:string){this.table=table;}
   select(_columns='*'){this.returnRows=true; return this;}
   insert(v:any){this.operation='insert';this.payload=Array.isArray(v)?clone(v):[clone(v)];return this;}
@@ -131,7 +141,7 @@ export class LocalFirstQuery implements PromiseLike<any> {
     const t=now();
     if(this.operation==='insert'){
       const created=this.payload.map(x=>({...x,id:x.id??makeId(),created_at:x.created_at??t,updated_at:t,_local_updated_at:t,_sync_status:'pending',_deleted:false}));
-      await writeTable(this.table,rows.concat(created)); for(const x of created) { const localPayload=Object.fromEntries(Object.entries(x).filter(([k])=>!k.startsWith('_'))); await putQueue({id:makeId(),table:this.table,op:'insert',payload:localPayload,localIds:[String(x.id)],filters:[],createdAt:Date.now(),attempts:0}); }
+      await writeTable(this.table,rows.concat(created)); for(const x of created){const localPayload=Object.fromEntries(Object.entries(x).filter(([k])=>!k.startsWith('_')));await putQueue({id:makeId(),table:this.table,op:'insert',payload:localPayload,localIds:[String(x.id)],filters:[],createdAt:Date.now(),attempts:0});}
       return {data:this.returnRows?clone(created):null,error:null};
     }
     if(this.operation==='update'){
@@ -146,44 +156,57 @@ export class LocalFirstQuery implements PromiseLike<any> {
   }
 
   private async backgroundRemoteSelect(){
-    try{
-      const remote:any=(globalThis as any).__PB_REMOTE_SUPABASE; if(!remote)return;
-      let q:any=remote.from(this.table).select('*');
-      for(const f of this.filters){if(f.op==='eq')q=q.eq(f.column,f.value);else if(f.op==='neq')q=q.neq(f.column,f.value);else if(f.op==='gt')q=q.gt(f.column,f.value);else if(f.op==='gte')q=q.gte(f.column,f.value);else if(f.op==='lt')q=q.lt(f.column,f.value);else if(f.op==='lte')q=q.lte(f.column,f.value);else if(f.op==='in')q=q.in(f.column,f.value);else if(f.op==='is')q=q.is(f.column,f.value);else if(f.op==='ilike')q=q.ilike(f.column,f.value);}
-      for(const o of this.orders)q=q.order(o.column,{ascending:o.ascending}); if(this.limitCount!==null)q=q.limit(this.limitCount); if(this.rangeStart!==null)q=q.range(this.rangeStart,this.rangeEnd??this.rangeStart);
-      const timeout = new Promise<{data:null,error:any}>(resolve => setTimeout(() => resolve({data:null,error:{message:'timeout'}}), 4000));
-      const {data,error}=await Promise.race([q, timeout]) as any; if(error||!Array.isArray(data))return;
-      const current=await readTable(this.table), map=new Map(current.map(r=>[String(r.id),r]));
-      for(const remoteRow of data){const local=map.get(String(remoteRow.id)); if(!local || local._sync_status!=='pending' || new Date(remoteRow.updated_at??0).getTime()>=new Date(local.updated_at??0).getTime()) map.set(String(remoteRow.id),{...remoteRow,_sync_status:'synced',_local_updated_at:local?._local_updated_at});}
-      await writeTable(this.table,Array.from(map.values()));
-    }catch{}
+    const remote:any=(globalThis as any).__PB_REMOTE_SUPABASE; if(!remote)return;
+    const key=remoteReadKey(this); const last=remoteReadAt.get(key)||0;
+    if(Date.now()-last<REMOTE_READ_TTL)return;
+    const existing=remoteReadInFlight.get(key); if(existing)return existing;
+    const task=(async()=>{
+      try{
+        let q:any=remote.from(this.table).select('*');
+        for(const f of this.filters){if(f.op==='eq')q=q.eq(f.column,f.value);else if(f.op==='neq')q=q.neq(f.column,f.value);else if(f.op==='gt')q=q.gt(f.column,f.value);else if(f.op==='gte')q=q.gte(f.column,f.value);else if(f.op==='lt')q=q.lt(f.column,f.value);else if(f.op==='lte')q=q.lte(f.column,f.value);else if(f.op==='in')q=q.in(f.column,f.value);else if(f.op==='is')q=q.is(f.column,f.value);else if(f.op==='ilike')q=q.ilike(f.column,f.value);}
+        for(const o of this.orders)q=q.order(o.column,{ascending:o.ascending}); if(this.limitCount!==null)q=q.limit(this.limitCount); if(this.rangeStart!==null)q=q.range(this.rangeStart,this.rangeEnd??this.rangeStart);
+        const timeout=new Promise<{data:null,error:any}>(resolve=>setTimeout(()=>resolve({data:null,error:{message:'timeout'}}),3500));
+        const {data,error}=await Promise.race([q,timeout]) as any; if(error||!Array.isArray(data))return;
+        const current=await readTable(this.table), map=new Map(current.map(r=>[String(r.id),r]));
+        for(const remoteRow of data){const id=remoteRow?.id!==undefined?String(remoteRow.id):null;if(!id)continue;const local=map.get(id);if(!local||local._sync_status!=='pending'||new Date(remoteRow.updated_at??0).getTime()>=new Date(local.updated_at??0).getTime())map.set(id,{...remoteRow,_sync_status:'synced',_local_updated_at:local?._local_updated_at});}
+        await writeTable(this.table,Array.from(map.values())); remoteReadAt.set(key,Date.now());
+      }catch{}
+      finally{remoteReadInFlight.delete(key);}
+    })();
+    remoteReadInFlight.set(key,task); return task;
   }
   then(a?:any,b?:any){return this.execute().then(a,b);}
 }
 
 async function applyRemote(item:QueueItem, remote:any){
   let q:any=remote.from(item.table);
-  if(item.op==='insert') { const {error}=await q.insert(item.payload); if(error)throw error; }
-  else if(item.op==='upsert') { const clean=item.payload.map((x:any)=>Object.fromEntries(Object.entries(x).filter(([k])=>!k.startsWith('_')))); const {error}=await q.upsert(clean,{onConflict:'id'}); if(error)throw error; }
-  else if(item.op==='update') { if(item.targetIds?.length) q=q.in('id',item.targetIds); else for(const f of item.filters) if(f.op==='eq') q=q.eq(f.column,f.value); const clean=Object.fromEntries(Object.entries(item.payload||{}).filter(([k])=>!k.startsWith('_'))); const {error}=await q.update(clean); if(error)throw error; }
-  else { if(item.targetIds?.length) q=q.in('id',item.targetIds); else for(const f of item.filters) if(f.op==='eq') q=q.eq(f.column,f.value); const {error}=await q.delete(); if(error)throw error; }
+  if(item.op==='insert'){const {error}=await q.insert(item.payload);if(error)throw error;}
+  else if(item.op==='upsert'){const clean=item.payload.map((x:any)=>Object.fromEntries(Object.entries(x).filter(([k])=>!k.startsWith('_'))));const {error}=await q.upsert(clean,{onConflict:'id'});if(error)throw error;}
+  else if(item.op==='update'){if(item.targetIds?.length)q=q.in('id',item.targetIds);else for(const f of item.filters)if(f.op==='eq')q=q.eq(f.column,f.value);const clean=Object.fromEntries(Object.entries(item.payload||{}).filter(([k])=>!k.startsWith('_')));const {error}=await q.update(clean);if(error)throw error;}
+  else{if(item.targetIds?.length)q=q.in('id',item.targetIds);else for(const f of item.filters)if(f.op==='eq')q=q.eq(f.column,f.value);const {error}=await q.delete();if(error)throw error;}
 }
 
 export async function flushSyncQueue(){
   if(syncRunning)return; const remote=(globalThis as any).__PB_REMOTE_SUPABASE; if(!remote)return; syncRunning=true;
-  try{for(const item of await readQueue()){try{await applyRemote(item,remote); await markSynced(item); await removeQueue(item.id);}catch{item.attempts++;await putQueue(item);}}}finally{syncRunning=false;}
+  try{
+    const items=await readQueue();
+    for(const item of items.slice(0,10)){
+      try{await applyRemote(item,remote);await markSynced(item);await removeQueue(item.id);}
+      catch{item.attempts=(item.attempts||0)+1;item.nextAttemptAt=Date.now()+Math.min(60_000,1000*Math.pow(2,Math.min(item.attempts,6)));await putQueue(item);}
+    }
+  }finally{syncRunning=false;}
 }
 async function markSynced(item:QueueItem){
   const rows=await readTable(item.table); let next=rows;
-  if(item.op==='delete') next=rows.filter(r=>!(item.targetIds?.length ? item.targetIds.includes(String(r.id)) : matches(r,item.filters)));
-  else if(item.op==='update') next=rows.map(r=>matches(r,item.filters)?{...r,_sync_status:'synced'}:r);
-  else if(item.op==='insert') next=rows.map(r=>r.id===item.payload.id?{...r,_sync_status:'synced'}:r);
-  else if(item.op==='upsert') next=rows.map(r=>item.payload.some((p:any)=>p.id===r.id)?{...r,_sync_status:'synced'}:r);
+  if(item.op==='delete')next=rows.filter(r=>!(item.targetIds?.length?item.targetIds.includes(String(r.id)):matches(r,item.filters)));
+  else if(item.op==='update')next=rows.map(r=>matches(r,item.filters)?{...r,_sync_status:'synced'}:r);
+  else if(item.op==='insert')next=rows.map(r=>r.id===item.payload.id?{...r,_sync_status:'synced'}:r);
+  else if(item.op==='upsert')next=rows.map(r=>item.payload.some((p:any)=>p.id===r.id)?{...r,_sync_status:'synced'}:r);
   await writeTable(item.table,next);
 }
 
 export function startLocalFirstSync(){
-  if(!browser())return; const run=()=>void flushSyncQueue(); window.addEventListener('online',run); window.setInterval(run,15000); run();
+  if(!browser())return; const run=()=>void flushSyncQueue(); window.addEventListener('online',run); window.setInterval(run,30_000); run();
 }
 export async function localDbExport(){const db=await openDb();if(!db)return{};return new Promise<any>(resolve=>{const out:any={};try{const tx=db.transaction(TABLES,'readonly'),r=tx.objectStore(TABLES).openCursor();r.onsuccess=()=>{const c=r.result;if(!c)return;out[String(c.key)]=c.value;c.continue();};tx.oncomplete=()=>resolve(out);tx.onerror=()=>resolve(out);}catch{resolve(out);}});}
 export async function localDbImport(data:any){for(const [table,rows] of Object.entries(data||{}))if(Array.isArray(rows))await writeTable(table,rows as Row[]);return{ok:true};}
