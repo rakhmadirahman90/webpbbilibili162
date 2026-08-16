@@ -1,9 +1,46 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Globe, ChevronDown, Menu, X, MapPin, UserPlus, Wallet, FileText, Trophy, BrainCircuit, ArrowLeft, Youtube, Instagram, Facebook, Twitter, Radio, LogIn, LayoutDashboard, UserCheck, LogOut, Timer, HelpCircle, RefreshCw } from 'lucide-react';
+import { 
+  Globe, ChevronDown, Menu, X, MapPin, UserPlus, Wallet, FileText, 
+  Trophy, BrainCircuit, ArrowLeft, Youtube, Instagram, Facebook, Twitter, 
+  Radio, LogIn, LayoutDashboard, UserCheck, LogOut, Timer, HelpCircle, 
+  RefreshCw, Info, Users, Award, Image as ImageIcon, Building2, 
+  Target, Shield, Newspaper, Sparkles
+} from 'lucide-react';
 import { supabase } from '../supabase'; 
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { forceRefreshSiteSettings } from '../utils/siteSettingsHelper';
+
+export const DEFAULT_NAV_ITEMS = [
+  { id: '3a852d50-2fce-4050-a416-d6cbbb55ad96', label: 'Beranda', path: 'home', type: 'link', parent_id: null, order_index: 0 },
+  { id: 'cd3a94c1-a825-44b3-8766-78512eb727bb', label: 'Tentang Kami', path: 'about', type: 'dropdown', parent_id: null, order_index: 1 },
+  { id: '6a483114-ecb8-4d87-88fd-9fdc71b40216', label: 'Sejarah', path: 'sejarah', type: 'link', parent_id: 'cd3a94c1-a825-44b3-8766-78512eb727bb', order_index: 1 },
+  { id: '42e2739d-9ce8-4506-96bf-5ac763c59e48', label: 'Visi & Misi', path: 'visi-misi', type: 'link', parent_id: 'cd3a94c1-a825-44b3-8766-78512eb727bb', order_index: 2 },
+  { id: 'a1856185-8d97-493c-b66d-acccc3643b23', label: 'Fasilitas', path: 'fasilitas', type: 'link', parent_id: 'cd3a94c1-a825-44b3-8766-78512eb727bb', order_index: 3 },
+  { id: 'c70d5e62-dece-4cb4-8358-fe77ac65dcce', label: 'Struktur Organisasi', path: 'struktur-organisasi', type: 'link', parent_id: 'cd3a94c1-a825-44b3-8766-78512eb727bb', order_index: 4 },
+  { id: 'e1856185-8d97-493c-b66d-acccc3643b24', label: 'Dokumen Penting', path: 'dokumen-penting', type: 'link', parent_id: 'cd3a94c1-a825-44b3-8766-78512eb727bb', order_index: 5 },
+  { id: 'f1856185-8d97-493c-b66d-acccc3643b25', label: 'Inventaris', path: 'inventaris', type: 'link', parent_id: 'cd3a94c1-a825-44b3-8766-78512eb727bb', order_index: 6 },
+  { id: '7209cc42-be89-4086-9041-35f49acfd97f', label: 'Informasi', path: 'informasi', type: 'dropdown', parent_id: null, order_index: 2 },
+  { id: '182ddd33-5836-4efb-b3b7-92717cb5506b', label: 'Berita', path: 'berita', type: 'link', parent_id: '7209cc42-be89-4086-9041-35f49acfd97f', order_index: 1 },
+  { id: '282ddd33-5836-4efb-b3b7-92717cb5506c', label: 'Prestasi', path: 'prestasi', type: 'link', parent_id: '7209cc42-be89-4086-9041-35f49acfd97f', order_index: 2 },
+  { id: '9209cc42-be89-4086-9041-35f49acfd96e', label: 'Atlet', path: 'atlet', type: 'dropdown', parent_id: null, order_index: 3 },
+  { id: '2d4ab768-c22a-4b71-a76b-c7e30577e3de', label: 'Semua Atlet', path: 'Semua', type: 'link', parent_id: '9209cc42-be89-4086-9041-35f49acfd96e', order_index: 1 },
+  { id: 'a959b75b-5b70-4945-a653-a5f09b77d29b', label: 'Atlet Senior', path: 'Senior', type: 'link', parent_id: '9209cc42-be89-4086-9041-35f49acfd96e', order_index: 2 },
+  { id: 'eb6fd70a-733f-4ede-ae94-5fb2c5944957', label: 'Atlet Muda', path: 'Muda', type: 'link', parent_id: '9209cc42-be89-4086-9041-35f49acfd96e', order_index: 3 },
+  { id: '4fb391bc-f8f8-48a6-9ea4-76dc0b173fb9', label: 'Peringkat', path: 'peringkat', type: 'dropdown', parent_id: null, order_index: 4 },
+  { id: '5fb391bc-f8f8-48a6-9ea4-76dc0b173fc0', label: 'Ranking Atlet', path: 'peringkat', type: 'link', parent_id: '4fb391bc-f8f8-48a6-9ea4-76dc0b173fb9', order_index: 1 },
+  { id: '6fb391bc-f8f8-48a6-9ea4-76dc0b173fc1', label: 'Quiz Badminton', path: 'quiz', type: 'link', parent_id: '4fb391bc-f8f8-48a6-9ea4-76dc0b173fb9', order_index: 2 },
+  { id: '8f9e1002-a537-46af-a4b7-0d2142138279', label: 'Galeri', path: 'gallery', type: 'link', parent_id: null, order_index: 5 },
+  { id: '9f9e1002-a537-46af-a4b7-0d2142138280', label: 'Jadwal Latihan', path: 'jadwal', type: 'link', parent_id: null, order_index: 6 },
+  { id: 'af9e1002-a537-46af-a4b7-0d2142138281', label: 'Hubungi Kami', path: 'contact', type: 'link', parent_id: null, order_index: 7 },
+  { id: 'bf9e1002-a537-46af-a4b7-0d2142138282', label: 'FAQ', path: 'faq', type: 'link', parent_id: null, order_index: 8 }
+];
+
+// Helper to check if an item is top-level (main menu)
+export const isTopLevelMenuItem = (item: any) => {
+  if (!item) return false;
+  return !item.parent_id || item.parent_id === '' || item.parent_id === 'none' || item.parent_id === null;
+};
 
 interface NavbarProps {
   onNavigate: (sectionId: string, tabId?: string) => void;
@@ -118,7 +155,19 @@ export default function Navbar({ onNavigate }: NavbarProps) {
   })();
   const isAdmin = userRole === 'admin';
 
-  const [navData, setNavData] = useState<any[]>([]);
+  // Initialize navData immediately with DEFAULT_NAV_ITEMS or cached items to avoid empty flicker
+  const [navData, setNavData] = useState<any[]>(() => {
+    try {
+      const cached = localStorage.getItem('site_setting_navbar_items');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (parsed?.items && Array.isArray(parsed.items) && parsed.items.length > 0) return parsed.items;
+      }
+    } catch (e) {}
+    return DEFAULT_NAV_ITEMS;
+  });
+
   const [branding, setBranding] = useState({
     logo_url: '/logo_pb_bilibili_162.svg', 
     brand_name_main: 'PB Bilibili',
@@ -164,41 +213,38 @@ export default function Navbar({ onNavigate }: NavbarProps) {
         .select('*')
         .order('order_index', { ascending: true });
       
-      if (error) console.warn("Fetch Nav Error:", error);
-
-      if (data && Array.isArray(data) && data.length > 0) {
+      if (!error && data && Array.isArray(data) && data.length > 0) {
         setNavData(data);
+        try {
+          localStorage.setItem('site_setting_navbar_items', JSON.stringify(data));
+        } catch (e) {}
         return;
       }
 
-      // Default core menu structure fallback if table is empty
-      const defaultItems = [
-        { id: '3a852d50-2fce-4050-a416-d6cbbb55ad96', label: 'Beranda', path: 'home', type: 'link', parent_id: null, order_index: 0 },
-        { id: 'cd3a94c1-a825-44b3-8766-78512eb727bb', label: 'Tentang Kami', path: 'about', type: 'dropdown', parent_id: null, order_index: 1 },
-        { id: '6a483114-ecb8-4d87-88fd-9fdc71b40216', label: 'Sejarah', path: 'sejarah', type: 'link', parent_id: 'cd3a94c1-a825-44b3-8766-78512eb727bb', order_index: 1 },
-        { id: '42e2739d-9ce8-4506-96bf-5ac763c59e48', label: 'Visi & Misi', path: 'visi-misi', type: 'link', parent_id: 'cd3a94c1-a825-44b3-8766-78512eb727bb', order_index: 2 },
-        { id: 'a1856185-8d97-493c-b66d-acccc3643b23', label: 'Fasilitas', path: 'fasilitas', type: 'link', parent_id: 'cd3a94c1-a825-44b3-8766-78512eb727bb', order_index: 3 },
-        { id: 'c70d5e62-dece-4cb4-8358-fe77ac65dcce', label: 'Struktur Organisasi', path: 'struktur-organisasi', type: 'link', parent_id: 'cd3a94c1-a825-44b3-8766-78512eb727bb', order_index: 4 },
-        { id: 'e1856185-8d97-493c-b66d-acccc3643b24', label: 'Dokumen Penting', path: 'dokumen-penting', type: 'link', parent_id: 'cd3a94c1-a825-44b3-8766-78512eb727bb', order_index: 5 },
-        { id: 'f1856185-8d97-493c-b66d-acccc3643b25', label: 'Inventaris', path: 'inventaris', type: 'link', parent_id: 'cd3a94c1-a825-44b3-8766-78512eb727bb', order_index: 6 },
-        { id: '7209cc42-be89-4086-9041-35f49acfd97f', label: 'Informasi', path: 'informasi', type: 'dropdown', parent_id: null, order_index: 2 },
-        { id: '182ddd33-5836-4efb-b3b7-92717cb5506b', label: 'Berita', path: 'berita', type: 'link', parent_id: '7209cc42-be89-4086-9041-35f49acfd97f', order_index: 1 },
-        { id: '282ddd33-5836-4efb-b3b7-92717cb5506c', label: 'Prestasi', path: 'prestasi', type: 'link', parent_id: '7209cc42-be89-4086-9041-35f49acfd97f', order_index: 2 },
-        { id: '9209cc42-be89-4086-9041-35f49acfd96e', label: 'Atlet', path: 'atlet', type: 'dropdown', parent_id: null, order_index: 3 },
-        { id: '2d4ab768-c22a-4b71-a76b-c7e30577e3de', label: 'Semua Atlet', path: 'Semua', type: 'link', parent_id: '9209cc42-be89-4086-9041-35f49acfd96e', order_index: 1 },
-        { id: 'a959b75b-5b70-4945-a653-a5f09b77d29b', label: 'Atlet Senior', path: 'Senior', type: 'link', parent_id: '9209cc42-be89-4086-9041-35f49acfd96e', order_index: 2 },
-        { id: 'eb6fd70a-733f-4ede-ae94-5fb2c5944957', label: 'Atlet Muda', path: 'Muda', type: 'link', parent_id: '9209cc42-be89-4086-9041-35f49acfd96e', order_index: 3 },
-        { id: '4fb391bc-f8f8-48a6-9ea4-76dc0b173fb9', label: 'Peringkat', path: 'peringkat', type: 'dropdown', parent_id: null, order_index: 4 },
-        { id: '5fb391bc-f8f8-48a6-9ea4-76dc0b173fc0', label: 'Ranking Atlet', path: 'peringkat', type: 'link', parent_id: '4fb391bc-f8f8-48a6-9ea4-76dc0b173fb9', order_index: 1 },
-        { id: '6fb391bc-f8f8-48a6-9ea4-76dc0b173fc1', label: 'Quiz Badminton', path: 'quiz', type: 'link', parent_id: '4fb391bc-f8f8-48a6-9ea4-76dc0b173fb9', order_index: 2 },
-        { id: '8f9e1002-a537-46af-a4b7-0d2142138279', label: 'Galeri', path: 'gallery', type: 'link', parent_id: null, order_index: 5 },
-        { id: '9f9e1002-a537-46af-a4b7-0d2142138280', label: 'Jadwal Latihan', path: 'jadwal', type: 'link', parent_id: null, order_index: 6 },
-        { id: 'af9e1002-a537-46af-a4b7-0d2142138281', label: 'Hubungi Kami', path: 'contact', type: 'link', parent_id: null, order_index: 7 },
-        { id: 'bf9e1002-a537-46af-a4b7-0d2142138282', label: 'FAQ', path: 'faq', type: 'link', parent_id: null, order_index: 8 }
-      ];
-      setNavData(defaultItems);
+      // Check site_settings fallback
+      const { data: siteData } = await supabase
+        .from('site_settings')
+        .select('value')
+        .eq('key', 'navbar_items')
+        .maybeSingle();
+
+      if (siteData && siteData.value) {
+        const val = typeof siteData.value === 'string' ? JSON.parse(siteData.value) : siteData.value;
+        const list = Array.isArray(val) ? val : val?.items;
+        if (Array.isArray(list) && list.length > 0) {
+          setNavData(list);
+          try {
+            localStorage.setItem('site_setting_navbar_items', JSON.stringify(list));
+          } catch (e) {}
+          return;
+        }
+      }
+
+      // Default core menu structure fallback
+      setNavData(DEFAULT_NAV_ITEMS);
     } catch (err) {
       console.warn("Fetch Nav Error:", err);
+      setNavData(DEFAULT_NAV_ITEMS);
     }
   }, []);
 
@@ -282,11 +328,37 @@ export default function Navbar({ onNavigate }: NavbarProps) {
   const getSubMenus = (parentId: string) => {
     const parentItem = navData.find(i => i.id === parentId);
     return navData.filter(item => {
-      if (!item || !item.parent_id) return false;
+      if (!item || !item.parent_id || item.parent_id === 'none' || item.parent_id === '') return false;
       if (item.parent_id === parentId) return true;
       if (parentItem && item.parent_id === parentItem.id) return true;
       return false;
     }).sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
+  };
+
+  // Helper function to get an appropriate icon for any menu item
+  const getMenuIcon = (pathStr: string, labelStr: string) => {
+    const p = (pathStr || '').toLowerCase();
+    const l = (labelStr || '').toLowerCase();
+
+    if (p === 'home' || l.includes('beranda')) return <Globe size={13} className="text-blue-400 shrink-0" />;
+    if (p.includes('jadwal') || l.includes('jadwal')) return <Timer size={13} className="text-amber-400 shrink-0" />;
+    if (p.includes('tentang') || p === 'about' || l.includes('tentang')) return <Shield size={13} className="text-indigo-400 shrink-0" />;
+    if (p.includes('info') || l.includes('informasi')) return <Radio size={13} className="text-cyan-400 shrink-0" />;
+    if (p.includes('atlet') || l.includes('atlet')) return <Users size={13} className="text-emerald-400 shrink-0" />;
+    if (p.includes('peringkat') || p.includes('rank') || l.includes('peringkat')) return <Trophy size={13} className="text-yellow-400 shrink-0" />;
+    if (p.includes('galeri') || p.includes('gallery') || l.includes('galeri')) return <ImageIcon size={13} className="text-purple-400 shrink-0" />;
+    if (p.includes('berita') || l.includes('berita')) return <Newspaper size={13} className="text-blue-400 shrink-0" />;
+    if (p.includes('prestasi') || l.includes('prestasi')) return <Award size={13} className="text-amber-400 shrink-0" />;
+    if (p.includes('sejarah') || l.includes('sejarah')) return <Info size={13} className="text-sky-400 shrink-0" />;
+    if (p.includes('visi') || l.includes('visi')) return <Target size={13} className="text-rose-400 shrink-0" />;
+    if (p.includes('fasilitas') || l.includes('fasilitas')) return <Building2 size={13} className="text-emerald-400 shrink-0" />;
+    if (p.includes('struktur') || l.includes('struktur')) return <Users size={13} className="text-blue-400 shrink-0" />;
+    if (p.includes('dokumen') || l.includes('dokumen')) return <FileText size={13} className="text-indigo-400 shrink-0" />;
+    if (p.includes('quiz') || l.includes('quiz')) return <BrainCircuit size={13} className="text-pink-400 shrink-0" />;
+    if (p.includes('contact') || p.includes('kontak') || l.includes('hubungi')) return <MapPin size={13} className="text-blue-500 shrink-0" />;
+    if (p.includes('faq') || l.includes('faq')) return <HelpCircle size={13} className="text-cyan-400 shrink-0" />;
+
+    return <Sparkles size={13} className="text-blue-400 shrink-0" />;
   };
 
   // --- PERBAIKAN LOGIKA NAVIGASI ---
@@ -467,7 +539,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
 
           {/* DESKTOP NAV (Optimized gaps for different screen sizes) */}
           <div className="hidden lg:flex items-center lg:gap-2.5 xl:gap-6.5 overflow-visible">
-            {navData.filter(item => !item.parent_id ).sort((a, b) => a.order_index - b.order_index).map((menu, index, arr) => {
+            {navData.filter(isTopLevelMenuItem).sort((a, b) => (a.order_index || 0) - (b.order_index || 0)).map((menu, index, arr) => {
               const subMenus = getSubMenus(menu.id);
               const isDropdown = menu.type === 'dropdown' || subMenus.length > 0;
               const isLastFew = index >= Math.floor(arr.length / 2);
@@ -653,7 +725,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
             {/* SCROLLABLE MENU ITEMS LIST */}
             <div className="flex-1 overflow-y-auto custom-scrollbar py-2 px-2 space-y-1 flex flex-col justify-start">
               {navData
-                .filter(item => !item.parent_id || item.parent_id === '' || item.parent_id === null)
+                .filter(isTopLevelMenuItem)
                 .sort((a, b) => (a.order_index || 0) - (b.order_index || 0))
                 .map((menu) => {
                   const subMenus = getSubMenus(menu.id);
@@ -674,8 +746,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
                         }`}
                       >
                         <span className="flex items-center gap-2">
-                          {menu.path === 'home' && <Globe size={13} className="text-blue-400 shrink-0" />}
-                          {(menu.path === 'jadwal' || menu.path === 'jadwal-latihan') && <Timer size={13} className="text-amber-400 shrink-0" />}
+                          {getMenuIcon(menu.path, menu.label)}
                           {menu.label}
                         </span>
                         {isDropdown && <ChevronDown size={12} className={`text-slate-400 transition-transform duration-300 ${isExpanded ? 'rotate-180 text-blue-400' : ''}`} />}
@@ -692,7 +763,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
                               className="text-left py-1.5 px-2 text-[10.5px] font-semibold tracking-wider uppercase text-slate-300 hover:text-white hover:bg-white/5 rounded transition-colors flex items-center justify-between"
                             >
                               <span className="flex items-center gap-1.5">
-                                {sub.path === 'quiz' && <BrainCircuit size={11} className="text-blue-400" />}
+                                {getMenuIcon(sub.path, sub.label)}
                                 {sub.label}
                               </span>
                               {sub.path === 'peringkat' && <Trophy size={10} className="text-yellow-500" />}
@@ -705,30 +776,34 @@ export default function Navbar({ onNavigate }: NavbarProps) {
                   );
                 })}
 
-              {/* Hubungi Kami Item */}
-              <div>
-                <button 
-                  onClick={() => handleNavClick('contact')}
-                  className="flex items-center gap-2 w-full px-3 py-2 text-[11px] font-bold tracking-wider uppercase text-slate-200 hover:bg-blue-600/15 hover:text-blue-400 rounded-lg transition-all duration-200 text-left"
-                >
-                  <MapPin size={13} className="text-blue-500 shrink-0" />
-                  <span>Hubungi Kami</span>
-                </button>
-              </div>
+              {/* Hubungi Kami Item (if not present in navData) */}
+              {!navData.some(item => isTopLevelMenuItem(item) && (item.path === 'contact' || item.label?.toLowerCase().includes('hubungi'))) && (
+                <div>
+                  <button 
+                    onClick={() => handleNavClick('contact')}
+                    className="flex items-center gap-2 w-full px-3 py-2 text-[11px] font-bold tracking-wider uppercase text-slate-200 hover:bg-blue-600/15 hover:text-blue-400 rounded-lg transition-all duration-200 text-left"
+                  >
+                    <MapPin size={13} className="text-blue-500 shrink-0" />
+                    <span>Hubungi Kami</span>
+                  </button>
+                </div>
+              )}
 
-              {/* FAQ Item */}
-              <div>
-                <button 
-                  onClick={() => handleNavClick('faq')}
-                  className="flex items-center gap-2 w-full px-3 py-2 text-[11px] font-bold tracking-wider uppercase text-slate-200 hover:bg-blue-600/15 hover:text-blue-400 rounded-lg transition-all duration-200 text-left"
-                >
-                  <HelpCircle size={13} className="text-blue-500 shrink-0" />
-                  <span>FAQ</span>
-                </button>
-              </div>
+              {/* FAQ Item (if not present in navData) */}
+              {!navData.some(item => isTopLevelMenuItem(item) && (item.path === 'faq' || item.label?.toLowerCase() === 'faq')) && (
+                <div>
+                  <button 
+                    onClick={() => handleNavClick('faq')}
+                    className="flex items-center gap-2 w-full px-3 py-2 text-[11px] font-bold tracking-wider uppercase text-slate-200 hover:bg-blue-600/15 hover:text-blue-400 rounded-lg transition-all duration-200 text-left"
+                  >
+                    <HelpCircle size={13} className="text-blue-500 shrink-0" />
+                    <span>FAQ</span>
+                  </button>
+                </div>
+              )}
 
               {/* Portal Login / Dashboard Item for Mobile */}
-              <div>
+              <div className="pt-2 border-t border-slate-800/80 mt-1">
                 {session ? (
                   <div className="space-y-1.5">
                     <button 

@@ -6,11 +6,14 @@ import { GoogleGenAI } from "@google/genai";
 
 async function injectNewsMetaTags(html: string, newsId: string, hostHeader?: string): Promise<string> {
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 4000);
     const response = await fetch(`https://missjyvqfehamtpyodjr.supabase.co/rest/v1/berita?id=eq.${newsId}&select=*`, {
       headers: {
         'apikey': 'sb_publishable_trhfpzLX50WdkdaItRPFMQ_ewqF0fgn'
-      }
-    });
+      },
+      signal: controller.signal
+    }).finally(() => clearTimeout(timeoutId));
     if (!response.ok) return html;
     const data = await response.json();
     if (!Array.isArray(data) || data.length === 0) return html;
@@ -225,11 +228,14 @@ async function startServer() {
 
       // Try fetching live setting from Supabase REST API
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 4000);
         const response = await fetch(`https://missjyvqfehamtpyodjr.supabase.co/rest/v1/site_settings?key=eq.${key}&select=*`, {
           headers: {
             'apikey': 'sb_publishable_trhfpzLX50WdkdaItRPFMQ_ewqF0fgn'
-          }
-        });
+          },
+          signal: controller.signal
+        }).finally(() => clearTimeout(timeoutId));
         if (response.ok) {
           const data = await response.json();
           if (Array.isArray(data) && data.length > 0 && data[0].value !== undefined && data[0].value !== null) {
@@ -299,16 +305,21 @@ async function startServer() {
             return res.json({ key, value: finalVal });
           }
         }
-      } catch (e) {
-        console.warn("[server.ts] Supabase fetch error for site-settings:", e);
+      } catch (e: any) {
+        if (e?.name !== 'AbortError') {
+          console.warn("[server.ts] Supabase fetch fallback for site-settings:", e?.message || e);
+        }
       }
 
       // Check master digital assets from arsip_surat table if requested
       if (key === 'digital_assets_surat') {
         try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 4000);
           const masterRes = await fetch(`https://missjyvqfehamtpyodjr.supabase.co/rest/v1/arsip_surat?nomor_surat=eq.__MASTER_DIGITAL_ASSETS__&select=*`, {
-            headers: { 'apikey': 'sb_publishable_trhfpzLX50WdkdaItRPFMQ_ewqF0fgn' }
-          });
+            headers: { 'apikey': 'sb_publishable_trhfpzLX50WdkdaItRPFMQ_ewqF0fgn' },
+            signal: controller.signal
+          }).finally(() => clearTimeout(timeoutId));
           if (masterRes.ok) {
             const masterData = await masterRes.json();
             if (Array.isArray(masterData) && masterData.length > 0) {
@@ -474,6 +485,8 @@ async function startServer() {
         });
 
         let res: Response;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 4000);
         if (isUuid) {
           res = await fetch(`${SUPABASE_URL}/rest/v1/arsip_surat?id=eq.${payload.id}`, {
             method: 'PATCH',
@@ -482,10 +495,13 @@ async function startServer() {
               'Content-Type': 'application/json',
               'Prefer': 'return=representation'
             },
-            body: JSON.stringify(payload)
-          });
+            body: JSON.stringify(payload),
+            signal: controller.signal
+          }).finally(() => clearTimeout(timeoutId));
           if (!res.ok) {
             delete payload.id;
+            const insCtrl = new AbortController();
+            const insTimer = setTimeout(() => insCtrl.abort(), 4000);
             res = await fetch(`${SUPABASE_URL}/rest/v1/arsip_surat`, {
               method: 'POST',
               headers: {
@@ -493,8 +509,9 @@ async function startServer() {
                 'Content-Type': 'application/json',
                 'Prefer': 'return=minimal'
               },
-              body: JSON.stringify(payload)
-            });
+              body: JSON.stringify(payload),
+              signal: insCtrl.signal
+            }).finally(() => clearTimeout(insTimer));
           }
         } else {
           if (nomor && nomor !== '__MASTER_DIGITAL_ASSETS__') {
@@ -507,8 +524,9 @@ async function startServer() {
               'Content-Type': 'application/json',
               'Prefer': 'return=minimal'
             },
-            body: JSON.stringify(payload)
-          });
+            body: JSON.stringify(payload),
+            signal: controller.signal
+          }).finally(() => clearTimeout(timeoutId));
         }
 
         console.log('[DEBUG AFTER DB CALL - Server syncArsipSuratToSupabase]', {
@@ -516,25 +534,32 @@ async function startServer() {
           statusText: res.statusText,
           success: res.ok
         });
-      } catch (e) {
-        console.warn("Supabase sync warning:", e);
+      } catch (e: any) {
+        if (e?.name !== 'AbortError') {
+          console.warn("Supabase sync warning:", e?.message || e);
+        }
       }
     }
 
     async function deleteArsipSuratFromSupabase(queryId: string, nomorSurat: string) {
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 4000);
         if (nomorSurat) {
           await fetch(`${SUPABASE_URL}/rest/v1/arsip_surat?nomor_surat=eq.${encodeURIComponent(nomorSurat)}`, {
             method: 'DELETE',
-            headers: { 'apikey': SUPABASE_KEY }
-          });
+            headers: { 'apikey': SUPABASE_KEY },
+            signal: controller.signal
+          }).catch(() => {});
         }
         if (queryId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(queryId)) {
           await fetch(`${SUPABASE_URL}/rest/v1/arsip_surat?id=eq.${queryId}`, {
             method: 'DELETE',
-            headers: { 'apikey': SUPABASE_KEY }
-          });
+            headers: { 'apikey': SUPABASE_KEY },
+            signal: controller.signal
+          }).catch(() => {});
         }
+        clearTimeout(timeoutId);
       } catch (e) {}
     }
 
@@ -554,6 +579,9 @@ async function startServer() {
           status: 'CONFIG'
         };
 
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 4000);
+
         // 1. Sync to site_settings table
         await fetch(`${SUPABASE_URL}/rest/v1/site_settings`, {
           method: 'POST',
@@ -566,13 +594,15 @@ async function startServer() {
             key: 'digital_assets_surat',
             value: assets,
             updated_at: new Date().toISOString()
-          })
+          }),
+          signal: controller.signal
         }).catch(() => {});
 
         // 2. Sync to arsip_surat table
         await fetch(`${SUPABASE_URL}/rest/v1/arsip_surat?nomor_surat=eq.__MASTER_DIGITAL_ASSETS__`, {
           method: 'DELETE',
-          headers: { 'apikey': SUPABASE_KEY }
+          headers: { 'apikey': SUPABASE_KEY },
+          signal: controller.signal
         }).catch(() => {});
 
         await fetch(`${SUPABASE_URL}/rest/v1/arsip_surat`, {
@@ -582,8 +612,10 @@ async function startServer() {
             'Content-Type': 'application/json',
             'Prefer': 'return=minimal'
           },
-          body: JSON.stringify(masterRecord)
+          body: JSON.stringify(masterRecord),
+          signal: controller.signal
         }).catch(() => {});
+        clearTimeout(timeoutId);
       } catch (e) {}
     }
 
@@ -593,7 +625,7 @@ async function startServer() {
 
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2000);
+        const timeoutId = setTimeout(() => controller.abort(), 4000);
 
         // 1. Check site_settings table first
         const siteRes = await fetch(`${SUPABASE_URL}/rest/v1/site_settings?key=eq.digital_assets_surat&select=*`, {
@@ -756,7 +788,7 @@ async function startServer() {
       const localData = loadJsonFile(SURAT_FILE, []);
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 1500);
+        const timeoutId = setTimeout(() => controller.abort(), 4000);
 
         const response = await fetch(`${SUPABASE_URL}/rest/v1/arsip_surat?select=*&order=created_at.desc`, {
           headers: {
@@ -865,7 +897,7 @@ async function startServer() {
       const localData = loadJsonFile(SURAT_MASUK_FILE, []);
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 1500);
+        const timeoutId = setTimeout(() => controller.abort(), 4000);
 
         const response = await fetch(`${SUPABASE_URL}/rest/v1/arsip_surat?jenis_surat=eq.MASUK&select=*&order=created_at.desc`, {
           headers: {
@@ -1013,11 +1045,14 @@ async function startServer() {
 
         let imageUrl = directUrl;
         if (!imageUrl && newsId) {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 4000);
           const response = await fetch(`https://missjyvqfehamtpyodjr.supabase.co/rest/v1/berita?id=eq.${newsId}&select=gambar_url`, {
             headers: {
               'apikey': 'sb_publishable_trhfpzLX50WdkdaItRPFMQ_ewqF0fgn'
-            }
-          });
+            },
+            signal: controller.signal
+          }).finally(() => clearTimeout(timeoutId));
           if (response.ok) {
             const data = await response.json();
             if (Array.isArray(data) && data.length > 0 && data[0].gambar_url) {

@@ -115,8 +115,8 @@ export default function Sidebar({ email, role = 'admin', isOpen, onClose }: Side
   useEffect(() => {
     const checkConnection = async () => {
       try {
-        const { error } = await supabase.from('pendaftaran').select('id', { count: 'exact', head: true }).limit(1);
-        setDbStatus(error ? 'offline' : 'online');
+        const { error } = await supabase.from('site_settings').select('key', { head: true }).limit(1);
+        setDbStatus(error && error.code !== 'PGRST116' ? 'offline' : 'online');
       } catch {
         setDbStatus('offline');
       }
@@ -389,25 +389,24 @@ export default function Sidebar({ email, role = 'admin', isOpen, onClose }: Side
     })
     .filter((section): section is typeof allMenuItems[0] => section !== null);
 
-  // Auto expand section that contains current active route or default expand
+  const [searchTerm, setSearchTerm] = useState('');
+  const [allExpanded, setAllExpanded] = useState(true);
+
+  // Initialize ALL sections as open by default so no menu items are hidden
   useEffect(() => {
     const currentPath = location.pathname.replace('/admin/', '');
     const initialSections: Record<string, boolean> = {};
 
-    menuItems.forEach((group, index) => {
-      const hasActive = group.items.some(item => item.path === currentPath);
-      // For non-admin (anggota), both sections fit naturally so keep open
-      // For admin, open section containing active route, or first section
-      if (role !== 'admin' || hasActive || (index === 0 && Object.keys(openSections).length === 0)) {
-        initialSections[group.section] = true;
-      }
+    menuItems.forEach((group) => {
+      // Default all sections to open (true)
+      initialSections[group.section] = true;
     });
 
     setOpenSections(prev => {
       if (Object.keys(prev).length === 0) {
         return initialSections;
       }
-      // Make sure the group containing currentPath is opened
+      // Ensure the group containing currentPath is opened
       const activeGroup = menuItems.find(g => g.items.some(i => i.path === currentPath));
       if (activeGroup) {
         return { ...prev, [activeGroup.section]: true };
@@ -423,6 +422,30 @@ export default function Sidebar({ email, role = 'admin', isOpen, onClose }: Side
     }));
   };
 
+  const handleToggleAll = () => {
+    const nextState = !allExpanded;
+    setAllExpanded(nextState);
+    const newSections: Record<string, boolean> = {};
+    menuItems.forEach(group => {
+      newSections[group.section] = nextState;
+    });
+    setOpenSections(newSections);
+  };
+
+  // Filter items based on search term if user types in search
+  const filteredMenuItems = menuItems.map(group => {
+    if (!searchTerm.trim()) return group;
+    const lower = searchTerm.toLowerCase();
+    const matchingItems = group.items.filter(item => 
+      item.name.toLowerCase().includes(lower) || item.path.toLowerCase().includes(lower)
+    );
+    if (matchingItems.length === 0 && !group.section.toLowerCase().includes(lower)) return null;
+    return {
+      ...group,
+      items: matchingItems.length > 0 ? matchingItems : group.items
+    };
+  }).filter((group): group is typeof menuItems[0] => group !== null);
+
   return (
     <>
       {/* OVERLAY: Hanya muncul di mobile saat sidebar terbuka */}
@@ -434,12 +457,16 @@ export default function Sidebar({ email, role = 'admin', isOpen, onClose }: Side
       />
 
       {/* SIDEBAR CONTAINER */}
-      <div className={`
-        fixed top-0 left-0 md:relative flex flex-col justify-between
-        w-[280px] sm:w-72 md:w-60 bg-[#0F172A] h-[100dvh] p-2.5 sm:p-3 text-white shadow-2xl z-[101]
-        border-r border-slate-800 transition-all duration-300 overflow-hidden
-        ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-      `}>
+      <aside 
+        id="admin-sidebar"
+        aria-label="Admin Navigation"
+        className={`
+          fixed top-0 left-0 md:relative flex flex-col justify-between
+          w-[290px] sm:w-72 md:w-64 bg-[#0F172A] h-[100dvh] p-2.5 sm:p-3 text-white shadow-2xl z-[101]
+          border-r border-slate-800/90 transition-all duration-300 overflow-hidden flex-shrink-0
+          ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+        `}
+      >
         {/* Dynamic Background Gradients */}
         <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-blue-600/10 to-transparent blur-3xl -z-10 opacity-50 pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-red-600/5 to-transparent blur-3xl -z-10 opacity-30 pointer-events-none" />
@@ -498,80 +525,119 @@ export default function Sidebar({ email, role = 'admin', isOpen, onClose }: Side
               <ExternalLink size={8} />
             </a>
           </div>
-        </div>
 
-        {/* MIDDLE SECTION: Navigation Groups (Accordion & Scrollable if needed) */}
-        <nav className="flex-1 overflow-y-auto no-scrollbar space-y-1.5 pr-0.5 my-1">
-          {menuItems.map((group) => {
-            const isOpenSection = openSections[group.section] ?? true;
-            const isGroupActive = group.items.some(item => location.pathname === `/admin/${item.path}`);
-
-            return (
-              <div key={group.section} className="rounded-xl border border-slate-800/60 bg-slate-900/30 overflow-hidden transition-all">
-                {/* Accordion Group Header */}
+          {/* Quick Search & Expand/Collapse Toggle */}
+          <div className="flex items-center gap-1.5 pt-1">
+            <div className="relative flex-1">
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Cari menu..."
+                className="w-full bg-slate-900/80 border border-slate-800 rounded-lg pl-2 pr-6 py-1 text-[10px] text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
+              />
+              {searchTerm && (
                 <button
                   type="button"
-                  onClick={() => toggleSection(group.section)}
-                  className={`w-full flex items-center justify-between px-2.5 py-1.5 text-left transition-colors cursor-pointer ${
-                    isGroupActive 
-                      ? 'bg-blue-600/10 text-blue-400 font-bold' 
-                      : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'
-                  }`}
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-[10px]"
                 >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isGroupActive ? 'bg-blue-400 animate-pulse' : 'bg-slate-600'}`} />
-                    <span className="text-[9px] uppercase font-bold tracking-wider truncate">{group.section}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <span className="text-[8px] font-mono font-bold px-1.5 py-0.2 rounded bg-slate-800 text-slate-400">
-                      {group.items.length}
-                    </span>
-                    {isOpenSection ? (
-                      <ChevronDown size={12} className="text-slate-400" />
-                    ) : (
-                      <ChevronRight size={12} className="text-slate-400" />
-                    )}
-                  </div>
+                  ✕
                 </button>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={handleToggleAll}
+              className="px-2 py-1 bg-slate-800/70 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700/50 rounded-lg text-[8.5px] font-bold uppercase tracking-wider transition-colors shrink-0"
+              title={allExpanded ? "Tutup Semua Bagian" : "Buka Semua Bagian"}
+            >
+              {allExpanded ? 'Lipat' : 'Buka'}
+            </button>
+          </div>
+        </div>
 
-                {/* Collapsible Menu Items */}
-                {isOpenSection && (
-                  <div className="p-1 pt-0.5 space-y-0.5 bg-slate-950/40 border-t border-slate-800/40 animate-in fade-in duration-200">
-                    {group.items.map((item) => {
-                      const isActive = location.pathname === `/admin/${item.path}`;
-                      return (
-                        <NavLink
-                          key={item.path}
-                          to={`/admin/${item.path}`}
-                          onClick={onClose}
-                          className={`group flex items-center justify-between px-2 py-1 rounded-lg font-medium text-[10px] tracking-wide transition-all duration-200 border relative overflow-hidden pointer-events-auto ${
-                            isActive 
-                              ? 'bg-blue-600 border-blue-500 text-white shadow-md shadow-blue-600/20 font-semibold' 
-                              : 'text-slate-300 border-transparent hover:bg-slate-800/60 hover:text-white'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2 relative z-10 min-w-0">
-                            <div className={`p-1 rounded-md transition-all duration-200 shrink-0 ${
+        {/* MIDDLE SECTION: Navigation Groups (Accordion & Scrollable with visible custom scrollbar) */}
+        <nav 
+          id="sidebar-navigation-menu"
+          className="flex-1 overflow-y-auto custom-scrollbar-sidebar space-y-1.5 pr-1 my-1"
+        >
+          {filteredMenuItems.length === 0 ? (
+            <div className="p-4 text-center text-slate-500 text-xs">
+              Menu "{searchTerm}" tidak ditemukan.
+            </div>
+          ) : (
+            filteredMenuItems.map((group) => {
+              const isOpenSection = searchTerm.trim() ? true : (openSections[group.section] ?? true);
+              const isGroupActive = group.items.some(item => location.pathname === `/admin/${item.path}`);
+
+              return (
+                <div key={group.section} className="rounded-xl border border-slate-800/60 bg-slate-900/30 overflow-hidden transition-all">
+                  {/* Accordion Group Header */}
+                  <button
+                    type="button"
+                    onClick={() => toggleSection(group.section)}
+                    className={`w-full flex items-center justify-between px-2.5 py-1.5 text-left transition-colors cursor-pointer ${
+                      isGroupActive 
+                        ? 'bg-blue-600/10 text-blue-400 font-bold' 
+                        : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isGroupActive ? 'bg-blue-400 animate-pulse' : 'bg-slate-600'}`} />
+                      <span className="text-[9px] uppercase font-bold tracking-wider truncate">{group.section}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className="text-[8px] font-mono font-bold px-1.5 py-0.2 rounded bg-slate-800 text-slate-400">
+                        {group.items.length}
+                      </span>
+                      {isOpenSection ? (
+                        <ChevronDown size={12} className="text-slate-400" />
+                      ) : (
+                        <ChevronRight size={12} className="text-slate-400" />
+                      )}
+                    </div>
+                  </button>
+
+                  {/* Collapsible Menu Items */}
+                  {isOpenSection && (
+                    <div className="p-1 pt-0.5 space-y-0.5 bg-slate-950/40 border-t border-slate-800/40 animate-in fade-in duration-200">
+                      {group.items.map((item) => {
+                        const isActive = location.pathname === `/admin/${item.path}`;
+                        return (
+                          <NavLink
+                            key={item.path}
+                            to={`/admin/${item.path}`}
+                            onClick={onClose}
+                            className={`group flex items-center justify-between px-2 py-1 rounded-lg font-medium text-[10px] tracking-wide transition-all duration-200 border relative overflow-hidden pointer-events-auto ${
                               isActive 
-                                ? 'bg-white text-blue-600 scale-105 shadow-sm' 
-                                : 'bg-slate-800/80 text-slate-400 group-hover:bg-slate-700 group-hover:text-blue-400'
-                            }`}>
-                              <item.icon size={11} />
+                                ? 'bg-blue-600 border-blue-500 text-white shadow-md shadow-blue-600/20 font-semibold' 
+                                : 'text-slate-300 border-transparent hover:bg-slate-800/60 hover:text-white'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 relative z-10 min-w-0">
+                              <div className={`p-1 rounded-md transition-all duration-200 shrink-0 ${
+                                isActive 
+                                  ? 'bg-white text-blue-600 scale-105 shadow-sm' 
+                                  : 'bg-slate-800/80 text-slate-400 group-hover:bg-slate-700 group-hover:text-blue-400'
+                              }`}>
+                                <item.icon size={11} />
+                              </div>
+                              <span className="truncate">{item.name}</span>
                             </div>
-                            <span className="truncate">{item.name}</span>
-                          </div>
 
-                          {isActive && (
-                            <ChevronRight size={10} className="text-white shrink-0 ml-1" />
-                          )}
-                        </NavLink>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+                            {isActive && (
+                              <ChevronRight size={10} className="text-white shrink-0 ml-1" />
+                            )}
+                          </NavLink>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
         </nav>
 
         {/* BOTTOM SECTION: User Info & Logout Button */}
@@ -637,11 +703,23 @@ export default function Sidebar({ email, role = 'admin', isOpen, onClose }: Side
             <Settings size={8} className="text-slate-600 animate-spin-slow" />
           </div>
         </div>
-      </div>
+      </aside>
 
       <style>{`
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .custom-scrollbar-sidebar::-webkit-scrollbar {
+          width: 4px;
+        }
+        .custom-scrollbar-sidebar::-webkit-scrollbar-track {
+          background: rgba(15, 23, 42, 0.6);
+          border-radius: 4px;
+        }
+        .custom-scrollbar-sidebar::-webkit-scrollbar-thumb {
+          background: rgba(51, 65, 85, 0.8);
+          border-radius: 4px;
+        }
+        .custom-scrollbar-sidebar::-webkit-scrollbar-thumb:hover {
+          background: rgba(59, 130, 246, 0.8);
+        }
         @keyframes spin-slow {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
