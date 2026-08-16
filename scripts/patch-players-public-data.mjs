@@ -55,3 +55,39 @@ if (!source.includes('id="players-load-error"')) {
 
 fs.writeFileSync(path, source, 'utf8');
 console.log('[patch-players-public-data] Safe athlete Supabase migration applied.');
+
+// Fix the public Navbar so the top-level Atlet menu is actionable on desktop
+// and mobile. Dropdown children remain usable for Senior/Muda filters.
+const navbarPath = 'src/components/Navbar.tsx';
+let navbar = fs.readFileSync(navbarPath, 'utf8');
+
+const oldDesktop = 'onClick={() => !isDropdown && handleNavClick(menu.path)}';
+const newDesktop = `onClick={() => {
+                    const menuPath = (menu.path || '').toLowerCase();
+                    if (menuPath === 'atlet' || menuPath === 'players' || menuPath === 'player') {
+                      handleNavClick(menu.path);
+                      return;
+                    }
+                    if (!isDropdown) handleNavClick(menu.path);
+                  }}`;
+if (navbar.includes(oldDesktop)) navbar = navbar.replace(oldDesktop, newDesktop);
+
+// Mobile: the Atlet parent opens the full athlete page. Filter choices are
+// still handled by the existing child-button handler when a child is selected.
+const oldMobile = `if (isDropdown) {
+                            setActiveDropdown(activeDropdown === menu.id ? null : menu.id);
+                          } else {
+                            handleNavClick(menu.path);
+                          }`;
+const newMobile = `const menuPath = (menu.path || '').toLowerCase();
+                          if (menuPath === 'atlet' || menuPath === 'players' || menuPath === 'player') {
+                            handleNavClick(menu.path);
+                          } else if (isDropdown) {
+                            setActiveDropdown(activeDropdown === menu.id ? null : menu.id);
+                          } else {
+                            handleNavClick(menu.path);
+                          }`;
+if (navbar.includes(oldMobile)) navbar = navbar.replace(oldMobile, newMobile);
+
+fs.writeFileSync(navbarPath, navbar, 'utf8');
+console.log('[patch-players-public-data] Navbar Atlet menu is directly navigable.');
