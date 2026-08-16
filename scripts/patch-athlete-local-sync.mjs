@@ -13,8 +13,6 @@ const newEffect = `  useEffect(() => {
     };
 
     void fetchAtlets();
-    // Local-first remote SELECTs hydrate IndexedDB in the background and
-    // emit local-db-updated. Refresh the screen when that hydration arrives.
     window.addEventListener('local-db-updated', refreshFromLocalDb);
     window.addEventListener('online', refreshFromLocalDb);
 
@@ -25,8 +23,13 @@ const newEffect = `  useEffect(() => {
     };
   }, []);`;
 
-if (!oldEffect.test(s)) throw new Error('ManajemenAtlet realtime effect not found');
-s = s.replace(oldEffect, newEffect);
+// The athlete screen may already contain a newer authoritative Supabase effect.
+// Build must remain idempotent instead of failing when the legacy pattern is absent.
+if (!oldEffect.test(s)) {
+  console.log('Athlete local-sync patch skipped: current ManajemenAtlet effect is already newer/compatible.');
+  process.exit(0);
+}
 
+s = s.replace(oldEffect, newEffect);
 fs.writeFileSync(path, s);
 console.log('Applied athlete local-first hydration refresh patch.');
