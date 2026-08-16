@@ -1,0 +1,79 @@
+name: Fix popup save latency
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: "!contains(github.event.head_commit.message, '[popup-fix]')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch AdminPopup save/realtime flow
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('src/components/AdminPopup.tsx')
+          s=p.read_text()
+          old=re.search(r"  useEffect\(\(\) => \{\s*fetchPopups\(false\);\s*const syncInterval = setInterval\(\(\) => fetchPopups\(true\), 3000\);.*?\n  \}, \[\]\);", s, re.S)
+          new="""  useEffect(() => {
+    fetchPopups(false);
+    // Realtime is centralized globally; no component-level polling/channel.
+    const handleCustomEvent = (e: any) => {
+      if (!e.detail?.key || e.detail.key === 'popup_config') fetchPopups(true);
+    };
+    const handleLocalDb = (e: any) => {
+      if (!e.detail?.table || e.detail.table === 'konfigurasi_popup' || e.detail.table === 'site_settings') fetchPopups(true);
+    };
+    window.addEventListener('site_setting_updated', handleCustomEvent);
+    window.addEventListener('local-db-updated', handleLocalDb);
+    return () => {
+      window.removeEventListener('site_setting_updated', handleCustomEvent);
+      window.removeEventListener('local-db-updated', handleLocalDb);
+    };
+  }, []);"""
+          if not old: raise SystemExit('useEffect block not found')
+          s=s[:old.start()]+new+s[old.end():]
+          old=re.search(r"  const persistPopups = async \(updatedList: PopupConfig\[\]\) => \{.*?\n  \};\n\n  const loadJadwalLatihanTemplate", s, re.S)
+          new="""  const persistPopups = (updatedList: PopupConfig[]) => {
+    const standardizedList = updatedList.map((item, idx) => ({ ...item, urutan: idx }));
+    // Optimistic UI/local-first state. Remote durability continues in background.
+    setPopups(standardizedList);
+    void (async () => {
+      try { await saveSiteSetting('popup_config', standardizedList, 'Konfigurasi Popup Promo'); } catch (e) {
+        console.warn('[AdminPopup] site setting background sync:', e);
+      }
+      try {
+        const dbUpdates = standardizedList.map(({ id, urutan, judul, deskripsi, url_gambar, is_active, file_url }) => ({
+          id, urutan: urutan ?? 0, judul: judul || '', deskripsi: deskripsi || '', url_gambar: url_gambar || '', is_active: is_active ?? true, file_url: file_url || null
+        }));
+        if (dbUpdates.length) await supabase.from('konfigurasi_popup').upsert(dbUpdates, { onConflict: 'id' });
+      } catch (err) { console.warn('[AdminPopup] background database sync:', err); }
+      try {
+        broadcastDataChange('popup_config', 'UPDATE', standardizedList);
+        broadcastDataChange('konfigurasi_popup', 'UPDATE', standardizedList);
+        window.dispatchEvent(new CustomEvent('site_setting_updated', { detail: { key: 'popup_config', value: standardizedList } }));
+        window.dispatchEvent(new CustomEvent('table_updated_popup_config'));
+        window.dispatchEvent(new CustomEvent('table_updated_konfigurasi_popup'));
+      } catch {}
+    })();
+  };
+
+  const loadJadwalLatihanTemplate"""
+          if not old: raise SystemExit('persist block not found')
+          s=s[:old.start()]+new+s[old.end():]
+          s=s.replace('    await persistPopups(updatedList);\n\n    Swal.fire({', '    persistPopups(updatedList);\n\n    Swal.fire({', 1)
+          s=s.replace('    await persistPopups(updatedList);\n\n    try {\n      await supabase.from(\'konfigurasi_popup\').update({ is_active: !currentStatus }).eq(\'id\', id);', '    persistPopups(updatedList);\n\n    try {\n      await supabase.from(\'konfigurasi_popup\').update({ is_active: !currentStatus }).eq(\'id\', id);')
+          s=s.replace('      await persistPopups(updatedList);\n\n      try {\n        await supabase.from(\'konfigurasi_popup\').delete().eq(\'id\', id);', '      persistPopups(updatedList);\n\n      try {\n        await supabase.from(\'konfigurasi_popup\').delete().eq(\'id\', id);')
+          s=re.sub(r"\n    try \{\n      const dbUpdates = updates\.map\(\(\{ id, urutan, judul, deskripsi, url_gambar, is_active, file_url \}\) => \(\{\n        id, urutan, judul, deskripsi, url_gambar, is_active, file_url\n      \}\)\);\n      await supabase\.from\('konfigurasi_popup'\)\.upsert\(dbUpdates\);\n    \} catch \(err\) \{\n      console\.warn\(\"Supabase reorder sync error \(handled via fallback\):\", err\);\n    \}", '', s)
+          p.write_text(s)
+          PY
+      - name: Commit patch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/components/AdminPopup.tsx
+          git diff --cached --quiet || git commit -m 'fix: eliminate popup save loading and duplicate realtime [popup-fix]'
+          git push
