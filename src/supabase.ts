@@ -21,7 +21,9 @@ export const SUPABASE_ANON_KEY = anon;
 export const SUPABASE_PROJECT_URL = envUrl;
 export const SUPABASE_PROJECT_REF = envUrl.match(/https?:\/\/([^.]+)\.supabase\.co/)?.[1] || '';
 
-const remoteSupabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+// Authoritative remote client. Read-critical admin screens use this directly
+// so an empty/stale IndexedDB cache can never mask Supabase records.
+export const remoteSupabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
@@ -29,14 +31,11 @@ const remoteSupabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     storage: typeof window !== 'undefined' ? window.localStorage : undefined,
   },
   global: { headers: { 'x-application-name': 'pb-bilibili-162' } },
-  // Keep the realtime client conservative on the Nano instance.
   realtime: { params: { eventsPerSecond: 5 } },
 });
 
 (globalThis as any).__PB_REMOTE_SUPABASE = remoteSupabase;
 
-// Existing modules keep the Supabase-shaped API. `.from(table)` is Local-First:
-// IndexedDB answers immediately and remote synchronization is throttled in localFirstDb.
 export const supabase: typeof remoteSupabase = new Proxy(remoteSupabase as any, {
   get(target, prop, receiver) {
     if (prop === 'from') return localFrom;
