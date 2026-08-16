@@ -8,6 +8,17 @@ const HERO_VIDEO = `${SUPABASE_STORAGE}/assets/hero-sliders/hero-video-178620606
 const HERO_POSTER = `${SUPABASE_STORAGE}/assets/hero-sliders/hero-poster-1786206060056.webp`;
 const WAWAN_PHOTO = `${SUPABASE_STORAGE}/identitas-atlet/identitas/1775222807673-ccq2ee.jpg`;
 
+export function isVideoUrl(url?: string, type?: string): boolean {
+  if (type === 'video') return true;
+  if (!url) return false;
+  const clean = url.toLowerCase().split('?')[0];
+  return clean.startsWith('data:video/') || clean.startsWith('blob:') ||
+    clean.endsWith('.mp4') || clean.endsWith('.webm') || clean.endsWith('.mov') ||
+    clean.endsWith('.ogg') || clean.endsWith('.m4v') || clean.includes('video/') ||
+    clean.includes('hero-video') || clean.includes('.mp4') || clean.includes('.webm') ||
+    clean.includes('youtube.com') || clean.includes('youtu.be') || clean.includes('vimeo.com');
+}
+
 export const defaultSlides = [
   { id: 'pb162-video-previous', title: 'PB BILIBILI 162', subtitle: 'PROFESSIONAL CLUB', image: HERO_VIDEO, videoUrl: HERO_VIDEO, poster: HERO_POSTER, type: 'video', active: true },
   { id: 'ketua-wawan-real', title: 'H. Wawan', subtitle: 'Ketua Umum PB Bilibili 162', image: WAWAN_PHOTO, type: 'image', active: true }
