@@ -1,45 +1,51 @@
 import { createClient } from '@supabase/supabase-js';
 
-// 1. Resolve Supabase URL from Vite env or process env with reliable fallback
-let rawUrl: string | undefined;
-try {
-  if (typeof import.meta !== 'undefined' && import.meta?.env) {
-    rawUrl = import.meta.env.VITE_SUPABASE_URL || import.meta.env.SUPABASE_URL;
+// Canonical production Supabase project for PB Bilibili 162.
+// IMPORTANT: do not allow Vercel/Vite variables to redirect the frontend to a
+// different Supabase project. The database and all public/admin modules use
+// this project as the single source of truth.
+export const SUPABASE_URL = 'https://missjyvqfehamtpyodjr.supabase.co';
+export const SUPABASE_ANON_KEY = 'sb_publishable_trhfpzLX50WdkdaItRPFMQ_ewqF0fgn';
+export const SUPABASE_PROJECT_REF = 'missjyvqfehamtpyodjr';
+export const SUPABASE_PROJECT_URL = SUPABASE_URL;
+
+// Supabase supplies a Headers instance containing the critical `apikey` and
+// `Authorization` headers. Never spread Headers into an object: doing so
+// drops its entries and causes "No API key found in request" and empty-data
+// failures across the frontend. Clone Headers explicitly before adding cache
+// controls so REST, Storage and Realtime requests retain authentication.
+const retryFetch: typeof fetch = async (input, init) => {
+  const maxAttempts = 3;
+  const delays = [350, 900];
+
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    try {
+      const headers = new Headers(init?.headers);
+      headers.set('Cache-Control', 'no-cache');
+      headers.set('Pragma', 'no-cache');
+
+      const requestInit: RequestInit = {
+        ...init,
+        cache: 'no-store',
+        headers,
+      };
+
+      const response = await fetch(input, requestInit);
+      const transient = [408, 425, 429, 500, 502, 503, 504, 522, 524].includes(response.status);
+
+      if (response.ok || !transient || attempt === maxAttempts - 1) {
+        return response;
+      }
+    } catch (error) {
+      if (attempt === maxAttempts - 1) throw error;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, delays[attempt] ?? 900));
   }
-} catch (e) {}
 
-if (!rawUrl && typeof process !== 'undefined' && process.env) {
-  rawUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-}
+  throw new Error('Supabase request failed after retries');
+};
 
-let envUrl = (rawUrl || 'https://missjyvqfehamtpyodjr.supabase.co').trim();
-
-// Strip /rest/v1 or trailing slash if present in the URL
-if (envUrl.endsWith('/rest/v1/')) {
-  envUrl = envUrl.substring(0, envUrl.length - 9);
-} else if (envUrl.endsWith('/rest/v1')) {
-  envUrl = envUrl.substring(0, envUrl.length - 8);
-}
-if (envUrl.endsWith('/')) {
-  envUrl = envUrl.substring(0, envUrl.length - 1);
-}
-
-// 2. Resolve Supabase Publishable / Anon Key
-let rawAnon: string | undefined;
-try {
-  if (typeof import.meta !== 'undefined' && import.meta?.env) {
-    rawAnon = import.meta.env.VITE_SUPABASE_ANON || import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.SUPABASE_ANON_KEY;
-  }
-} catch (e) {}
-
-if (!rawAnon && typeof process !== 'undefined' && process.env) {
-  rawAnon = process.env.VITE_SUPABASE_ANON || process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
-}
-
-export const SUPABASE_URL = envUrl;
-export const SUPABASE_ANON_KEY = (rawAnon || 'sb_publishable_trhfpzLX50WdkdaItRPFMQ_ewqF0fgn').trim();
-
-// 3. Create configured Supabase Client
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     persistSession: true,
@@ -48,40 +54,43 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     storage: typeof window !== 'undefined' ? window.localStorage : undefined,
   },
   global: {
+    fetch: retryFetch,
     headers: {
-      'x-application-name': 'pb-bilibili-162'
-    }
+      'x-application-name': 'pb-bilibili-162',
+      'x-pb-project-ref': SUPABASE_PROJECT_REF,
+    },
   },
   realtime: {
     params: {
-      eventsPerSecond: 10
-    }
-  }
+      eventsPerSecond: 10,
+    },
+  },
 });
 
 /**
- * Health check helper to verify Supabase database connectivity
+ * Health check helper used by diagnostics and admin UI.
  */
 export async function testSupabaseConnection(): Promise<{ connected: boolean; message: string; timestamp: string }> {
   try {
     const { error } = await supabase.from('site_settings').select('key').limit(1);
-    if (error && error.code !== 'PGRST116') {
+    if (error) {
       return {
         connected: false,
         message: error.message || 'Database query error',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
     }
+
     return {
       connected: true,
       message: 'Supabase Database Connected Successfully',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   } catch (err: any) {
     return {
       connected: false,
-      message: err.message || 'Network / Connectivity Exception',
-      timestamp: new Date().toISOString()
+      message: err?.message || 'Network / Connectivity Exception',
+      timestamp: new Date().toISOString(),
     };
   }
 }
