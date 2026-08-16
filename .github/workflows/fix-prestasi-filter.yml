@@ -1,0 +1,60 @@
+name: Fix Prestasi Supabase Filter
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: ${{ !contains(github.event.head_commit.message, 'fix: route Prestasi through Supabase category filter') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch News category filter
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('src/components/News.tsx')
+          s = p.read_text()
+
+          marker = "const requestedCategory = searchParams.get('category')?.trim() || '';"
+          if marker not in s:
+              s = s.replace(
+                  "const [searchParams, setSearchParams] = useSearchParams();",
+                  "const [searchParams, setSearchParams] = useSearchParams();\n  " + marker,
+                  1,
+              )
+
+          old = """      const { data, error } = await supabase
+        .from('berita')
+        .select('id, judul, ringkasan, konten, kategori, gambar_url, tanggal, created_at, likes, views')
+        .order('tanggal', { ascending: false })
+        .order('created_at', { ascending: false });"""
+
+          new = """      let beritaQuery = supabase
+        .from('berita')
+        .select('id, judul, ringkasan, konten, kategori, gambar_url, tanggal, created_at, likes, views');
+
+      if (requestedCategory) {
+        beritaQuery = beritaQuery.ilike('kategori', requestedCategory);
+      }
+
+      const { data, error } = await beritaQuery
+        .order('tanggal', { ascending: false })
+        .order('created_at', { ascending: false });"""
+
+          if old in s and "let beritaQuery = supabase" not in s:
+              s = s.replace(old, new, 1)
+
+          p.write_text(s)
+
+      - name: Commit patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/components/News.tsx
+          git diff --cached --quiet || git commit -m "fix: route Prestasi through Supabase category filter"
+          git push
