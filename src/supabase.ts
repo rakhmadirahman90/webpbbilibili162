@@ -29,14 +29,14 @@ const remoteSupabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     storage: typeof window !== 'undefined' ? window.localStorage : undefined,
   },
   global: { headers: { 'x-application-name': 'pb-bilibili-162' } },
-  realtime: { params: { eventsPerSecond: 10 } },
+  // Keep the realtime client conservative on the Nano instance.
+  realtime: { params: { eventsPerSecond: 5 } },
 });
 
-// Keep the real SDK available for durable synchronization and all non-table features.
 (globalThis as any).__PB_REMOTE_SUPABASE = remoteSupabase;
 
-// Existing modules keep the Supabase-shaped API. `.from(table)` is transparently
-// Local-First: IndexedDB answers immediately, while Supabase is synchronized in the background.
+// Existing modules keep the Supabase-shaped API. `.from(table)` is Local-First:
+// IndexedDB answers immediately and remote synchronization is throttled in localFirstDb.
 export const supabase: typeof remoteSupabase = new Proxy(remoteSupabase as any, {
   get(target, prop, receiver) {
     if (prop === 'from') return localFrom;
