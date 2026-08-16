@@ -6,12 +6,16 @@ permissions:
   contents: write
 jobs:
   patch:
-    if: "!contains(github.event.head_commit.message, '[popup-fix]')"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Patch AdminPopup save/realtime flow
+        shell: bash
         run: |
+          if [[ "${{ github.event.head_commit.message }}" == *"[popup-fix]"* ]]; then
+            echo "Patch commit already applied; nothing to do."
+            exit 0
+          fi
           python - <<'PY'
           from pathlib import Path
           import re
@@ -71,9 +75,14 @@ jobs:
           p.write_text(s)
           PY
       - name: Commit patch
+        shell: bash
         run: |
+          if git diff --quiet -- src/components/AdminPopup.tsx; then
+            echo "No source changes needed."
+            exit 0
+          fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add src/components/AdminPopup.tsx
-          git diff --cached --quiet || git commit -m 'fix: eliminate popup save loading and duplicate realtime [popup-fix]'
+          git commit -m 'fix: eliminate popup save loading and duplicate realtime [popup-fix]'
           git push
