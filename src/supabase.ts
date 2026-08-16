@@ -21,8 +21,8 @@ export const SUPABASE_ANON_KEY = anon;
 export const SUPABASE_PROJECT_URL = envUrl;
 export const SUPABASE_PROJECT_REF = envUrl.match(/https?:\/\/([^.]+)\.supabase\.co/)?.[1] || '';
 
-// Authoritative remote client. Read-critical admin screens use this directly
-// so an empty/stale IndexedDB cache can never mask Supabase records.
+// Authoritative remote client. All public frontend reads use this client so
+// the UI cannot be permanently masked by an empty or stale IndexedDB cache.
 export const remoteSupabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     persistSession: true,
@@ -31,34 +31,55 @@ export const remoteSupabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     storage: typeof window !== 'undefined' ? window.localStorage : undefined,
   },
   global: { headers: { 'x-application-name': 'pb-bilibili-162' } },
-  realtime: { params: { eventsPerSecond: 5 } },
+  realtime: { params: { eventsPerSecond: 10 } },
 });
 
 (globalThis as any).__PB_REMOTE_SUPABASE = remoteSupabase;
 
-// The public Prestasi menu uses /berita?category=Prestasi. Apply that URL
-// category at the data-access boundary so both the local-first cache and its
-// remote refresh return only the requested category. This keeps the existing
-// News UI intact while making the menu deterministic and Supabase-backed.
-const localFromWithRouteFilter = (table: string) => {
-  const query: any = localFrom(table);
-  try {
-    if (
-      table === 'berita' &&
-      typeof window !== 'undefined'
-    ) {
-      const category = new URLSearchParams(window.location.search).get('category')?.trim();
-      if (category) query.ilike('kategori', category);
-    }
-  } catch {}
-  return query;
-};
+// Local-first remains the write layer for compatibility with existing admin
+// persistence. Reads are deliberately remote-authoritative.
+const localFromForWrite = (table: string) => localFrom(table);
 
+function remoteFromForRead(table: string) {
+  const target: any = remoteSupabase.from(table);
+  return new Proxy(target, {
+    get(remoteTarget, prop, receiver) {
+      if (prop === 'select') {
+        return (...args: any[]) => {
+          let query: any = remoteTarget.select(...args);
+          try {
+            if (table === 'berita' && typeof window !== 'undefined') {
+              const category = new URLSearchParams(window.location.search).get('category')?.trim();
+              if (category) query = query.ilike('kategori', category);
+            }
+          } catch {}
+          return query;
+        };
+      }
+      return Reflect.get(remoteTarget, prop, receiver);
+    },
+  });
+}
+
+// Proxy keeps the existing API surface. Mutations remain local-first; SELECT
+// always comes directly from Supabase. This makes every navbar page display
+// the current database state on each mount while preserving offline writes.
 export const supabase: typeof remoteSupabase = new Proxy(remoteSupabase as any, {
   get(target, prop, receiver) {
-    if (prop === 'from') return localFromWithRouteFilter;
+    if (prop === 'from') {
+      return (table: string) => {
+        const localQuery: any = localFromForWrite(table);
+        const remoteQuery: any = remoteFromForRead(table);
+        return new Proxy(localQuery, {
+          get(localTarget, method, localReceiver) {
+            if (method === 'select') return remoteQuery.select.bind(remoteQuery);
+            return Reflect.get(localTarget, method, localReceiver);
+          },
+        });
+      };
+    }
     return Reflect.get(target, prop, receiver);
-  }
+  },
 });
 
 if (typeof window !== 'undefined') {
