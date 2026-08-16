@@ -58,6 +58,6 @@
     "postcss": "^8.4.35",
     "tailwindcss": "^3.4.1",
     "tsx": "^4.23.1",
-    "typescript": "^8.3.0"
+    "typescript": "^5.5.3"
   }
 }
