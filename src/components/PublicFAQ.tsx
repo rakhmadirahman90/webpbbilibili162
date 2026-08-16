@@ -14,10 +14,19 @@ export default function PublicFAQ() {
       try {
         const data = await getSiteSetting('faq_list');
         if (data && Array.isArray(data) && data.length > 0) {
-            setFaqs(data);
-        } else {
-            throw new Error("No data");
+          setFaqs(data);
+          localStorage.setItem('faq_local_v3', JSON.stringify(data));
+          return;
         }
+
+        const { data: dbFaqs } = await supabase.from('faq').select('*').order('urutan', { ascending: true });
+        if (dbFaqs && Array.isArray(dbFaqs) && dbFaqs.length > 0) {
+          setFaqs(dbFaqs);
+          localStorage.setItem('faq_local_v3', JSON.stringify(dbFaqs));
+          return;
+        }
+
+        throw new Error("No data");
       } catch (e) {
         const local = JSON.parse(localStorage.getItem('faq_local_v3') || '[]');
         if (local.length > 0) {

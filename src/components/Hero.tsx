@@ -202,8 +202,7 @@ export default function Hero() {
           } catch (e) {}
         }
         const allSlides = config.slides || (Array.isArray(config) ? config : []);
-        const isVid = (s: any) => s && (s.type === 'video' || isVideoUrl(s.videoUrl, s.type) || isVideoUrl(s.image, s.type));
-        const activeSlides = allSlides.filter((s: any) => s && s.active !== false && isVid(s));
+        const activeSlides = allSlides.filter((s: any) => s && s.active !== false);
         if (activeSlides.length > 0) {
           setSlides(activeSlides);
         } else {
@@ -235,8 +234,7 @@ export default function Hero() {
         try {
           const val = typeof detail.value === 'string' ? JSON.parse(detail.value) : detail.value;
           const allSlides = val.slides || (Array.isArray(val) ? val : []);
-          const isVid = (s: any) => s && (s.type === 'video' || isVideoUrl(s.videoUrl, s.type) || isVideoUrl(s.image, s.type));
-          const activeSlides = allSlides.filter((s: any) => s && s.active !== false && isVid(s));
+          const activeSlides = allSlides.filter((s: any) => s && s.active !== false);
           if (activeSlides.length > 0) setSlides(activeSlides);
           if (val.settings) setSettings(val.settings);
         } catch (err) {}

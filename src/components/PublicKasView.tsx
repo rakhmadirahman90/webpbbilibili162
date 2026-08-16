@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
+import { DEFAULT_KAS } from '../data/localDatabase';
 import Swal from 'sweetalert2';
 import { 
   Wallet, FileText, Loader2, ArrowUpCircle, ArrowDownCircle, Calendar,
@@ -69,9 +70,32 @@ export default function PublicKasView({ memberOnlyName }: PublicKasViewProps = {
       
       const { data, error } = await query.order('tanggal_transaksi', { ascending: false });
       
-      if (error) throw error;
-      const fetchedKas = data || [];
-      setKasData(fetchedKas);
+      let fetchedKas: any[] = [];
+      if (!error && data && data.length > 0) {
+        fetchedKas = data;
+        try {
+          localStorage.setItem('cached_kas_pb', JSON.stringify(data));
+        } catch (e) {}
+      } else {
+        const cached = localStorage.getItem('cached_kas_pb') || localStorage.getItem('kas_local_v3');
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              fetchedKas = memberOnlyName 
+                ? parsed.filter((item: any) => (item.nama_pembayar || '').toLowerCase().includes(memberOnlyName.toLowerCase()))
+                : parsed;
+            }
+          } catch (e) {}
+        }
+        if (fetchedKas.length === 0) {
+          fetchedKas = memberOnlyName 
+            ? DEFAULT_KAS.filter(item => (item.nama_pembayar || '').toLowerCase().includes(memberOnlyName.toLowerCase()))
+            : DEFAULT_KAS;
+        }
+      }
+
+      setKasData(fetchedKas as KasEntry[]);
 
       if (fetchedKas.length > 0 && (!hasSetInitialDates || forceResetDates)) {
         const sorted = [...fetchedKas].sort((a, b) => a.tanggal_transaksi.localeCompare(b.tanggal_transaksi));
@@ -82,6 +106,24 @@ export default function PublicKasView({ memberOnlyName }: PublicKasViewProps = {
       }
     } catch (error) {
       console.error("Error fetching kas:", error);
+      let fallbackData: any[] = [];
+      const cached = localStorage.getItem('cached_kas_pb') || localStorage.getItem('kas_local_v3');
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            fallbackData = memberOnlyName 
+              ? parsed.filter((item: any) => (item.nama_pembayar || '').toLowerCase().includes(memberOnlyName.toLowerCase()))
+              : parsed;
+          }
+        } catch (e) {}
+      }
+      if (fallbackData.length === 0) {
+        fallbackData = memberOnlyName 
+          ? DEFAULT_KAS.filter(item => (item.nama_pembayar || '').toLowerCase().includes(memberOnlyName.toLowerCase()))
+          : DEFAULT_KAS;
+      }
+      setKasData(fallbackData as KasEntry[]);
     } finally {
       setLoading(false);
     }

@@ -2,6 +2,7 @@ import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination, Autoplay } from 'swiper/modules';
 import { supabase } from '../supabase';
+import { DEFAULT_PENDAFTARAN, DEFAULT_RANKINGS } from '../data/localDatabase';
 
 import 'swiper/css';
 import 'swiper/css/navigation';
@@ -53,15 +54,15 @@ const Players: React.FC<{ initialFilter?: string }> = ({
   const fetchPlayersFromDB = useCallback(async () => {
     try {
       setIsLoading(true);
-      const [pendaftaranRes, statsRes, rankingsRes] = await Promise.all([
+      const [pendaftaranRes, statsRes, rankingsRes] = await Promise.allSettled([
         supabase.from('pendaftaran').select('*').order('nama', { ascending: true }),
         supabase.from('atlet_stats').select('*'),
         supabase.from('rankings').select('*')
       ]);
 
-      const pendaftaranList = pendaftaranRes.data || [];
-      const statsList = statsRes.data || [];
-      const rankingsList = rankingsRes.data || [];
+      const pendaftaranList = pendaftaranRes.status === 'fulfilled' && pendaftaranRes.value.data ? pendaftaranRes.value.data : [];
+      const statsList = statsRes.status === 'fulfilled' && statsRes.value.data ? statsRes.value.data : [];
+      const rankingsList = rankingsRes.status === 'fulfilled' && rankingsRes.value.data ? rankingsRes.value.data : [];
 
       const statsMap = new Map();
       statsList.forEach((s) => {
@@ -75,8 +76,11 @@ const Players: React.FC<{ initialFilter?: string }> = ({
         if (r.player_name) rankingsMap.set(r.player_name.trim().toLowerCase(), r);
       });
 
-      const combined = pendaftaranList.map((p) => {
+      const playerMap = new Map<string, any>();
+
+      pendaftaranList.forEach((p) => {
         const nameKey = (p.nama || '').trim().toLowerCase();
+        if (!nameKey) return;
         const stat = statsMap.get(p.id) || statsMap.get(nameKey);
         const rankItem = rankingsMap.get(p.id) || rankingsMap.get(nameKey);
 
@@ -86,7 +90,7 @@ const Players: React.FC<{ initialFilter?: string }> = ({
           ? Number(rankItem.total_points)
           : (baseP + bonusP);
 
-        return {
+        playerMap.set(nameKey, {
           id: p.id,
           pendaftaran_id: p.id,
           pendaftaran: p,
@@ -96,12 +100,81 @@ const Players: React.FC<{ initialFilter?: string }> = ({
           seed: stat?.seed || rankItem?.seed || 'UNSEEDED',
           bio: stat?.bio || p.pengalaman || 'Dedikasi dan semangat tinggi untuk membawa nama baik PB Bilibili 162 di kancah nasional.',
           status: p.status || 'Active'
-        };
+        });
       });
 
-      setDbPlayers(combined);
+      // Also add athletes from rankings that might not be in pendaftaran table yet
+      rankingsList.forEach((r) => {
+        const nameKey = (r.player_name || '').trim().toLowerCase();
+        if (!nameKey || playerMap.has(nameKey)) return;
+        const stat = statsMap.get(r.pendaftaran_id) || statsMap.get(nameKey);
+        const baseP = Number(stat?.points) || Number(r.poin) || 0;
+        const bonusP = Number(stat?.total_points) || Number(r.bonus) || 0;
+        const finalP = Number(r.total_points) || (baseP + bonusP);
+
+        playerMap.set(nameKey, {
+          id: r.id || `r-${nameKey}`,
+          pendaftaran_id: r.pendaftaran_id,
+          pendaftaran: {
+            id: r.pendaftaran_id || r.id,
+            nama: r.player_name,
+            foto_url: r.photo_url || null,
+            kategori_atlet: r.category || 'Senior',
+            kategori: r.category || 'Senior',
+            pengalaman: 'Atlet PB Bilibili 162',
+            status: 'Active'
+          },
+          points: baseP,
+          total_points: bonusP,
+          display_points: finalP,
+          seed: stat?.seed || r.seed || 'UNSEEDED',
+          bio: stat?.bio || 'Dedikasi dan semangat tinggi untuk membawa nama baik PB Bilibili 162 di kancah nasional.',
+          status: 'Active'
+        });
+      });
+
+      const resultPlayers = Array.from(playerMap.values());
+      if (resultPlayers.length > 0) {
+        setDbPlayers(resultPlayers);
+        try {
+          localStorage.setItem('cached_pendaftaran_players', JSON.stringify(resultPlayers));
+        } catch (e) {}
+      } else {
+        // Fallback to local default athletes
+        const localList = DEFAULT_PENDAFTARAN.map(p => {
+          const rank = DEFAULT_RANKINGS.find(r => r.pendaftaran_id === p.id || r.player_name.toLowerCase() === p.nama.toLowerCase());
+          return {
+            id: p.id,
+            pendaftaran_id: p.id,
+            pendaftaran: p,
+            points: rank?.poin || 1200,
+            total_points: rank?.bonus || 100,
+            display_points: rank?.total_points || 1300,
+            seed: rank?.seed || 'Non-Seed',
+            bio: p.pengalaman || 'Dedikasi dan semangat tinggi untuk membawa nama baik PB Bilibili 162.',
+            status: p.status || 'Active'
+          };
+        });
+        setDbPlayers(localList);
+      }
     } catch (err) {
       console.error('Database Error:', err);
+      // Fallback on error
+      const localList = DEFAULT_PENDAFTARAN.map(p => {
+        const rank = DEFAULT_RANKINGS.find(r => r.pendaftaran_id === p.id || r.player_name.toLowerCase() === p.nama.toLowerCase());
+        return {
+          id: p.id,
+          pendaftaran_id: p.id,
+          pendaftaran: p,
+          points: rank?.poin || 1200,
+          total_points: rank?.bonus || 100,
+          display_points: rank?.total_points || 1300,
+          seed: rank?.seed || 'Non-Seed',
+          bio: p.pengalaman || 'Dedikasi dan semangat tinggi untuk membawa nama baik PB Bilibili 162.',
+          status: p.status || 'Active'
+        };
+      });
+      setDbPlayers(localList);
     } finally {
       setTimeout(() => setIsLoading(false), 300);
     }

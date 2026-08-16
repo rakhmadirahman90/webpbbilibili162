@@ -13,14 +13,25 @@ export default function PublicPrestasi() {
         const data = await getSiteSetting('prestasi_list');
         if (data && Array.isArray(data) && data.length > 0) {
           setPrestasi(data.slice(0, 6));
-        } else {
-          const { data: sbData } = await supabase.from('prestasi_klub').select('*').order('tahun', { ascending: false }).limit(6);
-          if (sbData && sbData.length > 0) {
-            setPrestasi(sbData);
-          } else {
-            throw new Error("No data");
-          }
+          localStorage.setItem('prestasi_local_v3', JSON.stringify(data));
+          return;
         }
+
+        const { data: sbData1 } = await supabase.from('prestasi').select('*').order('tahun', { ascending: false }).limit(6);
+        if (sbData1 && sbData1.length > 0) {
+          setPrestasi(sbData1);
+          localStorage.setItem('prestasi_local_v3', JSON.stringify(sbData1));
+          return;
+        }
+
+        const { data: sbData2 } = await supabase.from('prestasi_klub').select('*').order('tahun', { ascending: false }).limit(6);
+        if (sbData2 && sbData2.length > 0) {
+          setPrestasi(sbData2);
+          localStorage.setItem('prestasi_local_v3', JSON.stringify(sbData2));
+          return;
+        }
+
+        throw new Error("No data");
       } catch (e) {
         const local = JSON.parse(localStorage.getItem('prestasi_local_v3') || '[]');
         if (local.length > 0) {

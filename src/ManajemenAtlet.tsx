@@ -117,61 +117,44 @@ export default function ManajemenAtlet() {
   const fetchAtlets = async () => {
     setLoading(true);
     try {
-      // 1. Ambil data profil dasar dari pendaftaran
-      const { data: pendaftaran, error: pError } = await supabase
-        .from('pendaftaran')
-        .select('*')
-        .order('nama', { ascending: true });
+      const [pendaftaranRes, rankingsRes, statsRes] = await Promise.allSettled([
+        supabase.from('pendaftaran').select('*').order('nama', { ascending: true }),
+        supabase.from('rankings').select('*').order('total_points', { ascending: false }),
+        supabase.from('atlet_stats').select('pendaftaran_id, points, total_points, seed')
+      ]);
 
-      if (pError) throw pError;
-
-      // 2. Ambil data rankings untuk posisi rank
-      const { data: rankings, error: rError } = await supabase
-        .from('rankings')
-        .select('*')
-        .order('total_points', { ascending: false });
-
-      if (rError) throw rError;
-
-      // 3. AMBIL DATA BARU: statistik untuk kalkulasi poin (Base + Added)
-      const { data: stats, error: sError } = await supabase
-        .from('atlet_stats')
-        .select('pendaftaran_id, points, total_points, seed');
-
-      if (sError) throw sError;
+      const pendaftaran = pendaftaranRes.status === 'fulfilled' && pendaftaranRes.value.data ? pendaftaranRes.value.data : [];
+      const rankings = rankingsRes.status === 'fulfilled' && rankingsRes.value.data ? rankingsRes.value.data : [];
+      const stats = statsRes.status === 'fulfilled' && statsRes.value.data ? statsRes.value.data : [];
 
       // Buat Map untuk mempercepat pencarian statistik berdasarkan ID
-      const statsMap = new Map(stats?.map((s) => [s.pendaftaran_id, s]));
+      const statsMap = new Map(stats?.map((s: any) => [s.pendaftaran_id, s]));
 
-      if (pendaftaran) {
-        const formatted = pendaftaran.map((atlet) => {
+      if (pendaftaran && pendaftaran.length > 0) {
+        const formatted = pendaftaran.map((atlet: any) => {
           // Cari posisi di tabel rankings (berdasarkan nama)
           const rankPosisi = rankings?.findIndex(
-            (r) =>
+            (r: any) =>
+              (r.pendaftaran_id && r.pendaftaran_id === atlet.id) ||
               (r.player_name || r.nama)?.trim().toLowerCase() ===
               atlet.nama?.trim().toLowerCase()
           );
 
-          const rankingMatch = rankPosisi !== -1 ? rankings![rankPosisi] : null;
+          const rankingMatch = rankPosisi !== -1 ? rankings[rankPosisi] : null;
 
           // Ambil data dari atlet_stats berdasarkan ID
           const stat = statsMap.get(atlet.id);
 
           // LOGIKA PERHITUNGAN TOTAL POIN AKHIR
-          // Base Points (dari seed) + Total Points (poin tambahan/manual)
           const basePoints = Number(stat?.points || 0);
           const addedPoints = Number(stat?.total_points || 0);
           const calculatedTotal = basePoints + addedPoints;
 
           return {
             ...atlet,
-            // Perbaikan: Gunakan hasil penjumlahan atau fallback ke rankings jika stat kosong
             points: stat ? calculatedTotal : rankingMatch?.total_points || 0,
-
-            // Simpan raw data untuk keperluan update nantinya
             raw_base_points: basePoints,
             raw_added_points: addedPoints,
-
             rank: rankPosisi !== -1 ? rankPosisi + 1 : 0,
             seed: stat?.seed || rankingMatch?.seed || 'UNSEEDED',
             foto_url: atlet.foto_url || rankingMatch?.photo_url || '',
@@ -181,6 +164,23 @@ export default function ManajemenAtlet() {
         });
 
         setAtlets(formatted);
+      } else if (rankings && rankings.length > 0) {
+        const fromRankings = rankings.map((r: any, idx: number) => ({
+          id: r.pendaftaran_id || r.id || `r-${idx}`,
+          nama: r.player_name || r.nama || 'Atlet',
+          kategori_atlet: r.category || 'SENIOR',
+          points: Number(r.total_points || r.poin || 0),
+          raw_base_points: Number(r.poin || 0),
+          raw_added_points: Number(r.bonus || 0),
+          rank: idx + 1,
+          seed: r.seed || 'UNSEEDED',
+          foto_url: r.photo_url || '',
+          bio: r.bio || 'No biography available.',
+          prestasi: r.achievement || 'Regular Player'
+        }));
+        setAtlets(fromRankings);
+      } else {
+        setAtlets([]);
       }
     } catch (err: any) {
       console.error('Sync Error:', err.message);

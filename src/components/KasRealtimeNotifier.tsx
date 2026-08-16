@@ -293,16 +293,33 @@ export default function KasRealtimeNotifier() {
       });
 
       // 3. FETCH DATABASE BALANCES ASYNC IN THE BACKGROUND
-      supabase
-        .from('kas_pb')
-        .select('*')
-        .order('tanggal_transaksi', { ascending: true })
-        .then(({ data: allKas, error }) => {
-          if (error) {
-            console.error('[Realtime-Notifier] Error fetching database state:', error);
-          }
-          const kasList = allKas || [];
+      const fetchKasListAsync = async () => {
+        let kasList: any[] = [];
+        try {
+          const { data: allKas, error } = await supabase
+            .from('kas_pb')
+            .select('*')
+            .order('tanggal_transaksi', { ascending: true });
 
+          if (!error && allKas && Array.isArray(allKas) && allKas.length > 0) {
+            kasList = allKas;
+            try { localStorage.setItem('cached_kas_pb', JSON.stringify(allKas)); } catch (e) {}
+          } else {
+            if (error) {
+              console.warn('[Realtime-Notifier] Supabase fetch fallback to local cache:', error.message || error);
+            }
+            const cached = localStorage.getItem('cached_kas_pb');
+            if (cached) kasList = JSON.parse(cached);
+          }
+        } catch (err: any) {
+          console.warn('[Realtime-Notifier] Network notice, using cached database state:', err?.message || err);
+          try {
+            const cached = localStorage.getItem('cached_kas_pb');
+            if (cached) kasList = JSON.parse(cached);
+          } catch (e) {}
+        }
+
+        try {
           // Sort stably by tanggal_transaksi ascending, then by id / created_at if available
           const sortedKasList = [...kasList].sort((a, b) => {
             const dateA = a.tanggal_transaksi || '';
@@ -497,7 +514,12 @@ export default function KasRealtimeNotifier() {
           } else {
             triggerPushNotification(titleText, `Sisa Saldo Kas saat ini: ${formatRupiah(sisaSaldoAkhir)}`, 'kas');
           }
-        });
+        } catch (calcErr) {
+          console.warn('[Realtime-Notifier] Error during notification summary calculation:', calcErr);
+        }
+      };
+
+      fetchKasListAsync();
     };
 
     // Listen to local BroadcastChannel (cross-tab local events)

@@ -15,9 +15,15 @@ export default function DokumenPenting() {
   useEffect(() => {
     const getDocs = async () => {
       setLoading(true);
+      const defaultDocs = [
+        { id: 'doc_1', title: 'AD / ART PB Bilibili 162', description: 'Anggaran Dasar & Anggaran Rumah Tangga resmi klub PB Bilibili 162 Parepare.', file_url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', file_size: 245000, created_at: new Date().toISOString() },
+        { id: 'doc_2', title: 'Surat Keputusan Pengurus PBSI', description: 'Surat Pengesahan dan Keputusan Pengurus PBSI Kota Parepare untuk PB Bilibili 162.', file_url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', file_size: 180000, created_at: new Date().toISOString() },
+        { id: 'doc_3', title: 'Tata Tertib Latihan & Kode Etik Atlet', description: 'Panduan tata tertib, jadwal kedisiplinan, dan etika pertandingan atlet.', file_url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', file_size: 120000, created_at: new Date().toISOString() }
+      ];
+
       try {
         const data = await getSiteSetting('documents_list');
-        if (data && Array.isArray(data)) {
+        if (data && Array.isArray(data) && data.length > 0) {
           setDocs(data);
         } else {
           const { data: sbData, error } = await supabase
@@ -25,17 +31,40 @@ export default function DokumenPenting() {
             .select('*')
             .order('created_at', { ascending: false });
           
-          if (!error && sbData) {
+          if (!error && sbData && sbData.length > 0) {
             setDocs(sbData);
+            localStorage.setItem('documents_local_v3', JSON.stringify(sbData));
+          } else {
+            const local = JSON.parse(localStorage.getItem('documents_local_v3') || '[]');
+            setDocs(local.length > 0 ? local : defaultDocs);
           }
         }
       } catch (e) {
         console.error(e);
+        const local = JSON.parse(localStorage.getItem('documents_local_v3') || '[]');
+        setDocs(local.length > 0 ? local : defaultDocs);
       } finally {
         setLoading(false);
       }
     };
     getDocs();
+
+    const handleUpdate = () => getDocs();
+    window.addEventListener('app_data_changed', handleUpdate);
+    window.addEventListener('table_updated_documents', handleUpdate);
+    window.addEventListener('site_setting_updated', handleUpdate);
+
+    const channel = supabase
+      .channel('public_docs_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'documents' }, () => getDocs())
+      .subscribe();
+
+    return () => {
+      window.removeEventListener('app_data_changed', handleUpdate);
+      window.removeEventListener('table_updated_documents', handleUpdate);
+      window.removeEventListener('site_setting_updated', handleUpdate);
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   // Helper untuk memformat ukuran file

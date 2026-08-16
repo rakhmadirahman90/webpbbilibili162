@@ -1,4 +1,14 @@
 import { supabase } from '../supabase';
+import {
+  DEFAULT_GALLERY,
+  DEFAULT_PRESTASI,
+  DEFAULT_PROGRAM,
+  DEFAULT_FAQ,
+  DEFAULT_INVENTARIS,
+  DEFAULT_DOCUMENTS,
+  DEFAULT_STRUKTUR,
+  DEFAULT_FASILITAS
+} from '../data/localDatabase';
 import { isVideoUrl } from '../components/Hero';
 import { broadcastDataChange } from './realtimeHelper';
 
@@ -331,6 +341,18 @@ function sanitizeKeyConfig(key: string, val: any) {
       updated_at: configTs
     };
   }
+
+  if (val === null || val === undefined || (Array.isArray(val) && val.length === 0)) {
+    if (key === 'gallery_list' || key === 'galeri_list') return DEFAULT_GALLERY;
+    if (key === 'prestasi_list') return DEFAULT_PRESTASI;
+    if (key === 'program_list') return DEFAULT_PROGRAM;
+    if (key === 'faq_list') return DEFAULT_FAQ;
+    if (key === 'inventaris_list') return DEFAULT_INVENTARIS;
+    if (key === 'documents_list') return DEFAULT_DOCUMENTS;
+    if (key === 'structure_list' || key === 'organizational_structure') return DEFAULT_STRUKTUR;
+    if (key === 'fasilitas_list') return DEFAULT_FASILITAS;
+  }
+
   return val;
 }
 
@@ -391,7 +413,7 @@ async function fetchFreshSiteSetting(key: string) {
     }
   } catch (e) {}
 
-  const timeoutPromise = new Promise(resolve => setTimeout(resolve, 1500));
+  const timeoutPromise = new Promise(resolve => setTimeout(resolve, 4500));
   await Promise.race([
     Promise.allSettled([supabasePromise, apiPromise]),
     timeoutPromise
@@ -414,15 +436,20 @@ async function fetchFreshSiteSetting(key: string) {
   const maxTs = Math.max(dbTs, serverTs, localTs);
   let bestVal: any = null;
 
-  if (maxTs > 0) {
+  if (dbVal !== null && dbVal !== undefined) {
+    // If Supabase returned valid database content, prioritize it unless server/local has a strictly newer timestamp
+    if (maxTs > dbTs && (localTs === maxTs || serverTs === maxTs)) {
+      bestVal = serverTs === maxTs && serverVal !== null ? serverVal : (localVal !== null ? localVal : dbVal);
+    } else {
+      bestVal = dbVal;
+    }
+  } else if (maxTs > 0) {
     if (serverTs === maxTs && serverVal !== null && serverVal !== undefined) {
       bestVal = serverVal;
     } else if (localTs === maxTs && localVal !== null && localVal !== undefined) {
       bestVal = localVal;
-    } else if (dbTs === maxTs && dbVal !== null && dbVal !== undefined) {
-      bestVal = dbVal;
     } else {
-      bestVal = serverVal || localVal || dbVal;
+      bestVal = serverVal || localVal;
     }
   } else {
     bestVal = dbVal !== null && dbVal !== undefined ? dbVal : (serverVal !== null && serverVal !== undefined ? serverVal : localVal);

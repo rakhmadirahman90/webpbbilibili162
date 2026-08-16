@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import LazyImage from './LazyImage';
 import { getOptimizedImageUrl } from '../utils/imageOptimizer';
 import { getSiteSetting } from '../utils/siteSettingsHelper';
+import { DEFAULT_GALLERY } from '../data/localDatabase';
 
 export default function Gallery() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -142,17 +143,45 @@ export default function Gallery() {
       setLoading(true);
       try {
         const data = await getSiteSetting('gallery_list');
-        if (data && Array.isArray(data)) {
+        if (data && Array.isArray(data) && data.length > 0) {
           setGalleryItems(data);
         } else {
           const { data: sbData } = await supabase
             .from('gallery')
             .select('*')
             .order('created_at', { ascending: false });
-          setGalleryItems(sbData || []);
+          if (sbData && sbData.length > 0) {
+            setGalleryItems(sbData);
+            try {
+              localStorage.setItem('cached_gallery', JSON.stringify(sbData));
+            } catch (e) {}
+          } else {
+            const cached = localStorage.getItem('cached_gallery') || localStorage.getItem('gallery_local_v3');
+            if (cached) {
+              try {
+                const parsed = JSON.parse(cached);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                  setGalleryItems(parsed);
+                  return;
+                }
+              } catch (e) {}
+            }
+            setGalleryItems(DEFAULT_GALLERY);
+          }
         }
       } catch (err: any) {
         console.error("Error fetching gallery:", err.message);
+        const cached = localStorage.getItem('cached_gallery') || localStorage.getItem('gallery_local_v3');
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setGalleryItems(parsed);
+              return;
+            }
+          } catch (e) {}
+        }
+        setGalleryItems(DEFAULT_GALLERY);
       } finally {
         setLoading(false);
       }

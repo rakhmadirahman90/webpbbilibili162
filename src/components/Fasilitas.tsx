@@ -9,10 +9,17 @@ export default function Fasilitas() {
   const [selectedImg, setSelectedImg] = useState<string | null>(null);
   const [dynamicContent, setDynamicContent] = useState<any>({
     fasilitas_title: "Fasilitas Unggulan",
-    fasilitas_main_image: "",
-    fasilitas_img1: "",
-    fasilitas_img2: "",
-    fasilitas_list: []
+    fasilitas_main_image: "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?q=80&w=1200",
+    fasilitas_img1: "https://images.unsplash.com/photo-1544033527-b192daee1f5b?q=80&w=1200",
+    fasilitas_img2: "https://images.unsplash.com/photo-1521537634581-0dced2efa2a3?q=80&w=1200",
+    fasilitas_list: [
+      "Lapangan Bulutangkis Standar PBSI",
+      "Pencahayaan LED Bebas Silau",
+      "Karpet Lapangan Karpet Vynil Pro",
+      "Tribun Penonton & Ruang Tunggu",
+      "Peralatan Latihan & Shuttlecock",
+      "Ruang Ganti & Toilet Bersih"
+    ]
   });
 
   useEffect(() => {

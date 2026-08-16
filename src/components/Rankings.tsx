@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { supabase } from '../supabase';
 import { deleteAthleteCompletely } from '../utils/siteSettingsHelper';
+import { DEFAULT_RANKINGS } from '../data/localDatabase';
 import {
   TrendingUp,
   TrendingDown,
@@ -399,25 +400,11 @@ const Rankings: React.FC = () => {
         });
       });
 
-      // Master Rankings
+      // Master Rankings (include all ranking rows from Supabase)
       rankingsData.forEach((rankItem) => {
         const rawName = rankItem.player_name || '';
         const nameKey = rawName.trim().toLowerCase();
         if (!nameKey || playerMap.has(nameKey)) return;
-
-        // Filter out orphan ranking rows if pendaftaran master list exists
-        if (pendaftaranData.length > 0) {
-          const matchedByPendaftaran = pendaftaranData.some(
-            (p) =>
-              (rankItem.pendaftaran_id && p.id === rankItem.pendaftaran_id) ||
-              (p.nama && p.nama.trim().toLowerCase() === nameKey)
-          );
-          if (!matchedByPendaftaran) {
-            // Orphaned ranking record from an athlete deleted from admin! Purge and skip.
-            deleteAthleteCompletely(rankItem.pendaftaran_id, rankItem.player_name);
-            return;
-          }
-        }
 
         const stat = statsData.find(
           (s) => (s.pendaftaran_id && s.pendaftaran_id === rankItem.pendaftaran_id) || (s.player_name && s.player_name.trim().toLowerCase() === nameKey)
@@ -445,28 +432,15 @@ const Rankings: React.FC = () => {
           total_points: finalTotal,
           seed: currentSeed,
           category: rankItem.category || 'SENIOR',
-          updated_at: rankItem.updated_at,
+          updated_at: rankItem.updated_at || new Date().toISOString(),
         });
       });
 
-      // Master Stats
+      // Master Stats (include all stat rows from Supabase)
       statsData.forEach((stat) => {
         const rawName = stat.player_name || '';
         const nameKey = rawName.trim().toLowerCase();
         if (!nameKey || playerMap.has(nameKey)) return;
-
-        // Filter out orphan stat rows if pendaftaran master list exists
-        if (pendaftaranData.length > 0) {
-          const matchedByPendaftaran = pendaftaranData.some(
-            (p) =>
-              (stat.pendaftaran_id && p.id === stat.pendaftaran_id) ||
-              (p.nama && p.nama.trim().toLowerCase() === nameKey)
-          );
-          if (!matchedByPendaftaran) {
-            deleteAthleteCompletely(stat.pendaftaran_id, stat.player_name);
-            return;
-          }
-        }
 
         const basePoints = Number(stat.points) || 0;
         const addedPoints = Number(stat.total_points) || 0;
@@ -496,9 +470,37 @@ const Rankings: React.FC = () => {
       const syncedData = Array.from(playerMap.values());
       const sortedData = syncedData.sort((a, b) => b.total_points - a.total_points);
 
-      setDbRankings(sortedData);
+      if (sortedData.length > 0) {
+        setDbRankings(sortedData);
+        try {
+          localStorage.setItem('cached_rankings', JSON.stringify(sortedData));
+        } catch (e) {}
+      } else {
+        const cached = localStorage.getItem('cached_rankings') || localStorage.getItem('rankings_local_v3');
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setDbRankings(parsed);
+              return;
+            }
+          } catch (e) {}
+        }
+        setDbRankings(DEFAULT_RANKINGS as any[]);
+      }
     } catch (error: any) {
       console.error('Sync Error:', error);
+      const cached = localStorage.getItem('cached_rankings') || localStorage.getItem('rankings_local_v3');
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setDbRankings(parsed);
+            return;
+          }
+        } catch (e) {}
+      }
+      setDbRankings(DEFAULT_RANKINGS as any[]);
       setFetchError(error.message);
     } finally {
       setLoading(false);

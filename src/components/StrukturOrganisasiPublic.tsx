@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { supabase } from '../supabase';
+import { DEFAULT_STRUKTUR } from '../data/localDatabase';
 import { Loader2, Award, ShieldCheck, Users, Star, Briefcase, Target } from 'lucide-react';
 import { motion, LayoutGroup } from 'framer-motion';
 import LazyImage from './LazyImage';
@@ -41,19 +42,37 @@ export default function StrukturOrganisasiPublic() {
           .select('*')
           .order('sort_order', { ascending: true });
         
-        if (error) throw error;
-        if (data && data.length > 0) { setMembers(data); } else { const defaultStruktur = [
-  { id: 'st1', name: 'H. Andi (Dewan Penasihat)', role: 'Pelindung / Penasihat', category: 'Penasihat', level: 1, sort_order: 1, photo_url: 'https://ui-avatars.com/api/?name=Andi&background=0b1224&color=fff&size=200' },
-  { id: 'st2', name: 'Budi Santoso', role: 'Ketua Umum', category: 'Pengurus Inti', level: 2, sort_order: 2, photo_url: 'https://ui-avatars.com/api/?name=Budi+Santoso&background=0b1224&color=fff&size=200' },
-  { id: 'st3', name: 'Cipto', role: 'Wakil Ketua', category: 'Pengurus Inti', level: 3, sort_order: 3, photo_url: 'https://ui-avatars.com/api/?name=Cipto&background=0b1224&color=fff&size=200' },
-  { id: 'st4', name: 'Diana', role: 'Sekretaris', category: 'Pengurus Inti', level: 4, sort_order: 4, photo_url: 'https://ui-avatars.com/api/?name=Diana&background=0b1224&color=fff&size=200' },
-  { id: 'st5', name: 'Eka', role: 'Bendahara', category: 'Pengurus Inti', level: 5, sort_order: 5, photo_url: 'https://ui-avatars.com/api/?name=Eka&background=0b1224&color=fff&size=200' },
-  { id: 'st6', name: 'Fahri', role: 'Kepala Pelatih (Head Coach)', category: 'Kepelatihan', level: 6, sort_order: 6, photo_url: 'https://ui-avatars.com/api/?name=Fahri&background=0b1224&color=fff&size=200' },
-  { id: 'st7', name: 'Gani', role: 'Koord. Bidang Pembinaan Prestasi', category: 'Bidang-Bidang', level: 7, sort_order: 7, photo_url: 'https://ui-avatars.com/api/?name=Gani&background=0b1224&color=fff&size=200' },
-  { id: 'st8', name: 'Hadi', role: 'Koord. Bidang Sarana & Prasarana', category: 'Bidang-Bidang', level: 7, sort_order: 8, photo_url: 'https://ui-avatars.com/api/?name=Hadi&background=0b1224&color=fff&size=200' },
-]; setMembers(defaultStruktur); }
+        if (!error && data && data.length > 0) {
+          setMembers(data);
+          try {
+            localStorage.setItem('cached_organizational_structure', JSON.stringify(data));
+          } catch (e) {}
+        } else {
+          const cached = localStorage.getItem('cached_organizational_structure') || localStorage.getItem('structure_local_v3');
+          if (cached) {
+            try {
+              const parsed = JSON.parse(cached);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                setMembers(parsed);
+                return;
+              }
+            } catch (e) {}
+          }
+          setMembers(DEFAULT_STRUKTUR);
+        }
       } catch (err) { 
-        console.error("Fetch Error:", err); 
+        console.error("Fetch Error:", err);
+        const cached = localStorage.getItem('cached_organizational_structure') || localStorage.getItem('structure_local_v3');
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setMembers(parsed);
+              return;
+            }
+          } catch (e) {}
+        }
+        setMembers(DEFAULT_STRUKTUR);
       } finally { 
         setLoading(false); 
       }

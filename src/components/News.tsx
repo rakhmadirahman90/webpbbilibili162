@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from "../supabase";
 import { getSiteSetting } from '../utils/siteSettingsHelper';
+import { DEFAULT_BERITA, DEFAULT_KOMENTAR } from '../data/localDatabase';
 import { motion, AnimatePresence } from 'framer-motion';
 import Swal from 'sweetalert2';
 import LazyImage from './LazyImage';
@@ -346,16 +347,29 @@ export default function News() {
   const fetchNews = async () => {
     try {
       setLoading(true);
-      const { data: sbData, error } = await supabase
+      let sbData: any[] | null = null;
+      const { data, error } = await supabase
         .from('berita')
         .select(`*, comments_count:komentar(count)`)
         .order('tanggal', { ascending: false });
       
       if (error) {
-        console.error("Gagal query berita Supabase:", error);
+        console.warn("Query berita relational notice, retrying with direct select:", error.message);
+        const { data: directData, error: directErr } = await supabase
+          .from('berita')
+          .select('*')
+          .order('tanggal', { ascending: false });
+        
+        if (directErr) {
+          console.error("Direct query berita error:", directErr);
+        } else {
+          sbData = directData;
+        }
+      } else {
+        sbData = data;
       }
 
-      if (sbData) {
+      if (sbData && sbData.length > 0) {
         const formattedData = sbData.map(item => ({
           ...item,
           comments_count: Array.isArray(item.comments_count)
@@ -365,14 +379,36 @@ export default function News() {
           views: Number(item.views) || 0
         }));
         setBeritaList(formattedData as Berita[]);
+        try {
+          localStorage.setItem('cached_berita_list', JSON.stringify(formattedData));
+        } catch (e) {}
+      } else {
+        // Fallback to local cached database
+        const localCached = localStorage.getItem('cached_berita_list') || localStorage.getItem('berita_local_v3');
+        if (localCached) {
+          try {
+            const parsed = JSON.parse(localCached);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setBeritaList(parsed as Berita[]);
+              return;
+            }
+          } catch (e) {}
+        }
+        setBeritaList(DEFAULT_BERITA as Berita[]);
       }
     } catch (err) {
       console.error("Gagal memuat berita:", err);
-      Swal.fire({
-        icon: 'error',
-        title: 'Error memuat berita',
-        text: err instanceof Error ? err.message : 'Terjadi kesalahan tidak diketahui'
-      });
+      const localCached = localStorage.getItem('cached_berita_list') || localStorage.getItem('berita_local_v3');
+      if (localCached) {
+        try {
+          const parsed = JSON.parse(localCached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setBeritaList(parsed as Berita[]);
+            return;
+          }
+        } catch (e) {}
+      }
+      setBeritaList(DEFAULT_BERITA as Berita[]);
     } finally {
       setLoading(false);
     }
@@ -386,9 +422,16 @@ export default function News() {
         .eq('berita_id', beritaId)
         .order('tanggal', { ascending: false });
       
-      if (!error && data) setComments(data);
+      if (!error && data && data.length > 0) {
+        setComments(data);
+      } else {
+        const localComments = DEFAULT_KOMENTAR.filter(c => c.berita_id === beritaId);
+        setComments(localComments);
+      }
     } catch (err) {
       console.error("Gagal memuat komentar:", err);
+      const localComments = DEFAULT_KOMENTAR.filter(c => c.berita_id === beritaId);
+      setComments(localComments);
     }
   };
 

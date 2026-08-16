@@ -13,14 +13,18 @@ export default function PublicProgram({ onNavigate }: { onNavigate: (path: strin
         const data = await getSiteSetting('program_list');
         if (data && Array.isArray(data) && data.length > 0) {
           setPrograms(data);
-        } else {
-          const { data: sbData } = await supabase.from('program_latihan').select('*').order('nama_program', { ascending: true });
-          if (sbData && sbData.length > 0) {
-            setPrograms(sbData);
-          } else {
-            throw new Error("No data");
-          }
+          localStorage.setItem('program_local_v3', JSON.stringify(data));
+          return;
         }
+
+        const { data: sbData } = await supabase.from('program_latihan').select('*').order('nama_program', { ascending: true });
+        if (sbData && sbData.length > 0) {
+          setPrograms(sbData);
+          localStorage.setItem('program_local_v3', JSON.stringify(sbData));
+          return;
+        }
+
+        throw new Error("No data");
       } catch (e) {
         const local = JSON.parse(localStorage.getItem('program_local_v3') || '[]');
         if (local.length > 0) {

@@ -117,13 +117,23 @@ export default function AdminBerita({ session }: { session?: any }) {
   const fetchNews = async () => {
     setLoading(true);
     try {
-      const { data: sbData, error } = await supabase
+      let sbData: any[] | null = null;
+      const { data, error } = await supabase
         .from('berita')
         .select(`*, comments_count:komentar(count)`)
         .order('tanggal', { ascending: false });
 
       if (error) {
-        console.error('Error fetching berita from Supabase:', error);
+        console.warn('Notice querying relational comments, falling back to direct select:', error.message);
+        const { data: directData, error: directErr } = await supabase
+          .from('berita')
+          .select('*')
+          .order('tanggal', { ascending: false });
+        if (!directErr && directData) {
+          sbData = directData;
+        }
+      } else {
+        sbData = data;
       }
 
       if (sbData) {
