@@ -36,9 +36,27 @@ export const remoteSupabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 
 (globalThis as any).__PB_REMOTE_SUPABASE = remoteSupabase;
 
+// The public Prestasi menu uses /berita?category=Prestasi. Apply that URL
+// category at the data-access boundary so both the local-first cache and its
+// remote refresh return only the requested category. This keeps the existing
+// News UI intact while making the menu deterministic and Supabase-backed.
+const localFromWithRouteFilter = (table: string) => {
+  const query: any = localFrom(table);
+  try {
+    if (
+      table === 'berita' &&
+      typeof window !== 'undefined'
+    ) {
+      const category = new URLSearchParams(window.location.search).get('category')?.trim();
+      if (category) query.ilike('kategori', category);
+    }
+  } catch {}
+  return query;
+};
+
 export const supabase: typeof remoteSupabase = new Proxy(remoteSupabase as any, {
   get(target, prop, receiver) {
-    if (prop === 'from') return localFrom;
+    if (prop === 'from') return localFromWithRouteFilter;
     return Reflect.get(target, prop, receiver);
   }
 });
