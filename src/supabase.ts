@@ -1,13 +1,6 @@
 import './localSeed';
 
-/*
- * Local database for PB Bilibili 162.
- *
- * Production frontend data is intentionally served from IndexedDB instead of
- * Supabase. This keeps the UI usable when the remote database is unavailable
- * and gives every module one consistent local data source.
- */
-
+/* Local database compatibility layer. Runtime frontend uses IndexedDB. */
 type Row = Record<string, any>;
 type Filter = (row: Row) => boolean;
 
@@ -52,7 +45,7 @@ function makeId() { return `${Date.now()}-${Math.random().toString(36).slice(2, 
 
 class LocalQueryBuilder implements PromiseLike<any> {
   private table: string; private operation: 'select'|'insert'|'update'|'upsert'|'delete' = 'select'; private payload: Row[] = []; private filters: Filter[] = [];
-  private orders: Array<{column:string;ascending:boolean}> = []; private limitCount: number|null = null; private rangeStart:number|null = null; private rangeEnd:number|null = null;
+  private orders: Array<{column:string;ascending:boolean}> = []; private limitCount: number|null = null; private rangeStart: number|null = null; private rangeEnd: number|null = null;
   private wantSingle=false; private wantMaybeSingle=false; private returnRows=false; private conflictColumn:string|null=null;
   constructor(table:string){this.table=table;}
   select(_columns='*'){this.returnRows=true;return this;} insert(v:Row|Row[]){this.operation='insert';this.payload=Array.isArray(v)?clone(v):[clone(v)];return this;}
@@ -62,7 +55,7 @@ class LocalQueryBuilder implements PromiseLike<any> {
   ilike(c:string,p:string){const n=String(p||'').replace(/%/g,'').toLowerCase();this.filters.push(r=>String(r?.[c]??'').toLowerCase().includes(n));return this;} like(c:string,p:string){return this.ilike(c,p);}
   in(c:string,v:any[]){this.filters.push(r=>v.includes(r?.[c]));return this;} is(c:string,v:any){this.filters.push(r=>r?.[c]===v);return this;}
   not(c:string,op:string,v:any){if(op==='is'||op==='eq')this.filters.push(r=>r?.[c]!==v);return this;}
-  or(expr:string){const parts=String(expr||'').split(',').map(p=>p.trim()).filter(Boolean);this.filters.push(r=>parts.some(part=>{const m=part.match(/^([\w-]+)\.(eq|ilike|neq)\.(.*)$/i);if(!m)return false;const [,c,op,raw]=m;const v=raw.replace(/^\"|\"$/g,'');if(op.toLowerCase()==='neq')return String(r?.[c]??'')!==v;if(op.toLowerCase()==='ilike')return String(r?.[c]??'').toLowerCase().includes(v.replace(/%/g,'').toLowerCase());return String(r?.[c]??'')===v;}));return this;}
+  or(expr:string){const parts=String(expr||'').split(',').map(p=>p.trim()).filter(Boolean);this.filters.push(r=>parts.some(part=>{const m=part.match(/^(\w+)\.(eq|ilike|neq)\.(.*)$/i);if(!m)return false;const [,c,op,raw]=m;const v=raw.replace(/^\"|\"$/g,'');if(op.toLowerCase()==='neq')return String(r?.[c]??'')!==v;if(op.toLowerCase()==='ilike')return String(r?.[c]??'').toLowerCase().includes(v.replace(/%/g,'').toLowerCase());return String(r?.[c]??'')===v;}));return this;}
   contains(c:string,v:any){this.filters.push(r=>{const a=r?.[c];if(Array.isArray(a))return Array.isArray(v)&&v.every(x=>a.includes(x));if(a&&typeof a==='object'&&v&&typeof v==='object')return Object.entries(v).every(([k,x])=>a[k]===x);return false;});return this;}
   order(c:string,o?:{ascending?:boolean}){this.orders.push({column:c,ascending:o?.ascending!==false});return this;} limit(v:number){this.limitCount=v;return this;} range(a:number,b:number){this.rangeStart=a;this.rangeEnd=b;return this;}
   single(){this.wantSingle=true;return this;} maybeSingle(){this.wantMaybeSingle=true;return this;}
@@ -76,7 +69,29 @@ class LocalQueryBuilder implements PromiseLike<any> {
   }catch(error:any){return{data:null,error:{message:error?.message||'Local database error'}};}}
   then(a?:any,b?:any){return this.execute().then(a,b);}
 }
+
 const noopChannel={on:()=>noopChannel,subscribe:(cb?:any)=>{cb?.('SUBSCRIBED');return noopChannel;}};
-export const supabase={from:(table:string)=>new LocalQueryBuilder(table),channel:()=>noopChannel,removeChannel:()=>undefined,auth:{getSession:async()=>({data:{session:null},error:null}),getUser:async()=>({data:{user:null},error:null}),signInWithPassword:async()=>({data:{session:null,user:null},error:{message:'Authentication is local-only in this mode'}}),signOut:async()=>({error:null})}};
-export const SUPABASE_URL='';export const SUPABASE_ANON_KEY='';export const SUPABASE_PROJECT_REF='';export const SUPABASE_PROJECT_URL='';
+
+// Supabase-compatible local auth facade. Some existing frontend modules call
+// auth.onAuthStateChange(); Local DB mode must provide the same API so startup
+// cannot fail before any database query runs.
+const authListeners = new Set<(event:string, session:any)=>void>();
+const localSession = () => ({ access_token: null, user: null });
+const localAuth = {
+  getSession: async()=>({data:{session:localSession()},error:null}),
+  getUser: async()=>({data:{user:null},error:null}),
+  signInWithPassword: async()=>({data:{session:null,user:null},error:{message:'Authentication is local-only in this mode'}}),
+  signOut: async()=>{ authListeners.forEach(listener=>listener('SIGNED_OUT',null)); return {error:null}; },
+  onAuthStateChange: (callback:(event:string, session:any)=>void) => {
+    authListeners.add(callback);
+    queueMicrotask(() => { try { callback('INITIAL_SESSION', localSession()); } catch {} });
+    return { data: { subscription: { unsubscribe: () => authListeners.delete(callback) } } };
+  },
+};
+
+export const supabase={from:(table:string)=>new LocalQueryBuilder(table),channel:()=>noopChannel,removeChannel:()=>undefined,auth:localAuth};
+export const SUPABASE_URL='';
+export const SUPABASE_ANON_KEY='';
+export const SUPABASE_PROJECT_REF='';
+export const SUPABASE_PROJECT_URL='';
 export async function testSupabaseConnection(){return{connected:false,message:'Local Database Mode aktif — Supabase tidak digunakan oleh frontend.',timestamp:new Date().toISOString()};}
