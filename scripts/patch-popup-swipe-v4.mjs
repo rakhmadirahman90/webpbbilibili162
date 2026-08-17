@@ -4,13 +4,22 @@ import path from 'node:path';
 const file = path.resolve('src/components/ImagePopup.tsx');
 let source = fs.readFileSync(file, 'utf8');
 
-// Source-safe patch: injects popup-wide pointer navigation and explicit
-// previous/next controls without rewriting JSX wrappers.
+// The current ImagePopup owns swipe navigation directly with native touch
+// events. Do not inject the retired pointer-drag implementation into it.
+if (source.includes('handleTouchStart') && source.includes("touchAction: 'pan-y'")) {
+  console.log('[popup-swipe-v4] native touch swipe implementation already present; no patch needed');
+  process.exit(0);
+}
+
+// Legacy compatibility for older ImagePopup revisions.
 const refTarget = '  const isDismissedRef = useRef<boolean>(false);';
 const swipeRefLine = '  const swipeRef = useRef({ pointerId: null as number | null, startX: 0, startY: 0, active: false, horizontal: false });';
 
 if (!source.includes('POPUP_SWIPE_V4')) {
-  if (!source.includes(refTarget)) throw new Error('[popup-swipe-v4] dismissed ref target not found');
+  if (!source.includes(refTarget)) {
+    console.log('[popup-swipe-v4] no legacy target found; leaving current popup implementation unchanged');
+    process.exit(0);
+  }
   source = source.replace(refTarget, `${refTarget}\n\n  // POPUP_SWIPE_V4: safe pointer swipe on the entire popup card.\n${swipeRefLine}`);
 }
 
@@ -20,27 +29,15 @@ if (!source.includes('const changePopupBySwipe')) {
 
   if (legacyHandler.test(source)) {
     source = source.replace(legacyHandler, swipeLogic);
-  } else {
-    const guard = '  if (promoImages.length === 0 || !isOpen) return null;';
-    if (!source.includes(guard)) throw new Error('[popup-swipe-v4] popup render guard not found');
-    source = source.replace(guard, `${swipeLogic}\n${guard}`);
   }
 }
 
 if (!source.includes('onPointerDown={handleSwipePointerDown}')) {
   const cardMarker = '          onClick={(e) => e.stopPropagation()}';
-  if (!source.includes(cardMarker)) throw new Error('[popup-swipe-v4] popup card marker not found');
-  source = source.replace(cardMarker, `          style={{ touchAction: 'pan-y', WebkitUserSelect: 'none', userSelect: 'none' }}\n          onPointerDown={handleSwipePointerDown}\n          onPointerMove={handleSwipePointerMove}\n          onPointerUp={handleSwipePointerUp}\n          onPointerCancel={handleSwipePointerCancel}\n${cardMarker}`);
-}
-
-// Explicit navigation fallback for every active popup. Keep the generated
-// JSX free of nested template literals so this build patch is valid Node ESM.
-if (!source.includes('POPUP_ACTIVE_SLIDER_CONTROLS')) {
-  const scrollMarker = '          <div ref={scrollRef} className="overflow-y-auto hide-scrollbar scroll-smooth">';
-  if (!source.includes(scrollMarker)) throw new Error('[popup-swipe-v4] popup scroll marker not found');
-  const controls = `          {promoImages.length > 1 && (\n            <div\n              data-popup-active-slider="true"\n              className="absolute left-3 right-3 bottom-3 z-[70] flex items-center justify-between gap-2 pointer-events-none"\n            >\n              <button\n                type="button"\n                aria-label="Pop-up sebelumnya"\n                onClick={(e) => { e.stopPropagation(); changePopupBySwipe(-1); }}\n                className="pointer-events-auto w-10 h-10 rounded-full bg-black/65 hover:bg-black/80 text-white border border-white/20 shadow-xl backdrop-blur-sm flex items-center justify-center text-2xl leading-none active:scale-95"\n              >\n                ‹\n              </button>\n              <div className="pointer-events-auto flex items-center gap-1.5 rounded-full bg-black/55 px-3 py-2 backdrop-blur-sm border border-white/10">\n                {promoImages.map((popup, index) => (\n                  <button\n                    key={popup.id || index}\n                    type="button"\n                    aria-label={'Tampilkan pop-up ' + (index + 1)}\n                    onClick={(e) => { e.stopPropagation(); setIsExpanded(false); setCurrentIndex(index); }}\n                    className={'h-2 rounded-full transition-all ' + (currentIndex === index ? 'w-6 bg-white' : 'w-2 bg-white/45 hover:bg-white/80')}\n                  />\n                ))}\n                <span className="ml-1 text-[10px] font-bold text-white/90 tabular-nums">{currentIndex + 1}/{promoImages.length}</span>\n              </div>\n              <button\n                type="button"\n                aria-label="Pop-up berikutnya"\n                onClick={(e) => { e.stopPropagation(); changePopupBySwipe(1); }}\n                className="pointer-events-auto w-10 h-10 rounded-full bg-black/65 hover:bg-black/80 text-white border border-white/20 shadow-xl backdrop-blur-sm flex items-center justify-center text-2xl leading-none active:scale-95"\n              >\n                ›\n              </button>\n            </div>\n          )}\n          {/* POPUP_ACTIVE_SLIDER_CONTROLS */}\n`;
-  source = source.replace(scrollMarker, `${controls}${scrollMarker}`);
+  if (source.includes(cardMarker)) {
+    source = source.replace(cardMarker, `          style={{ touchAction: 'pan-y', WebkitUserSelect: 'none', userSelect: 'none' }}\n          onPointerDown={handleSwipePointerDown}\n          onPointerMove={handleSwipePointerMove}\n          onPointerUp={handleSwipePointerUp}\n          onPointerCancel={handleSwipePointerCancel}\n${cardMarker}`);
+  }
 }
 
 fs.writeFileSync(file, source, 'utf8');
-console.log('[popup-swipe-v4] active popup slider controls + safe pointer swipe applied successfully');
+console.log('[popup-swipe-v4] legacy compatibility patch applied');
