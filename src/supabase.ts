@@ -21,8 +21,8 @@ export const SUPABASE_ANON_KEY = anon;
 export const SUPABASE_PROJECT_URL = envUrl;
 export const SUPABASE_PROJECT_REF = envUrl.match(/https?:\/\/([^.]+)\.supabase\.co/)?.[1] || '';
 
-// Authoritative remote client. All public frontend reads use this client so
-// the UI cannot be permanently masked by an empty or stale IndexedDB cache.
+// Authoritative remote client. Popup CRUD deliberately uses this client
+// directly so the admin popup cannot be hidden by IndexedDB/site-settings data.
 export const remoteSupabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     persistSession: true,
@@ -36,9 +36,39 @@ export const remoteSupabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 
 (globalThis as any).__PB_REMOTE_SUPABASE = remoteSupabase;
 
-// Local-first remains the write layer for compatibility with existing admin
-// persistence. Reads are deliberately remote-authoritative.
-const localFromForWrite = (table: string) => localFrom(table);
+const isValidUuid = (value: unknown) =>
+  typeof value === 'string' &&
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+
+const sanitizePopupRow = (row: any) => {
+  if (!row || typeof row !== 'object') return row;
+  if ('id' in row && row.id != null && !isValidUuid(row.id)) {
+    const { id: _invalidId, ...cleanRow } = row;
+    return cleanRow;
+  }
+  return row;
+};
+
+function popupRemoteQuery() {
+  const target: any = remoteSupabase.from('konfigurasi_popup');
+  return new Proxy(target, {
+    get(remoteTarget, prop, receiver) {
+      if (prop === 'insert') {
+        return (values: any, options?: any) => {
+          const clean = Array.isArray(values) ? values.map(sanitizePopupRow) : sanitizePopupRow(values);
+          return remoteTarget.insert(clean, options);
+        };
+      }
+      if (prop === 'upsert') {
+        return (values: any, options?: any) => {
+          const clean = Array.isArray(values) ? values.map(sanitizePopupRow) : sanitizePopupRow(values);
+          return remoteTarget.upsert(clean, options);
+        };
+      }
+      return Reflect.get(remoteTarget, prop, receiver);
+    },
+  });
+}
 
 function remoteFromForRead(table: string) {
   const target: any = remoteSupabase.from(table);
@@ -61,14 +91,15 @@ function remoteFromForRead(table: string) {
   });
 }
 
-// Proxy keeps the existing API surface. Mutations remain local-first; SELECT
-// always comes directly from Supabase. This makes every navbar page display
-// the current database state on each mount while preserving offline writes.
+// Proxy keeps the existing API surface. Normal tables remain local-first for
+// compatibility, while konfigurasi_popup is fully Supabase-authoritative.
 export const supabase: typeof remoteSupabase = new Proxy(remoteSupabase as any, {
   get(target, prop, receiver) {
     if (prop === 'from') {
       return (table: string) => {
-        const localQuery: any = localFromForWrite(table);
+        if (table === 'konfigurasi_popup') return popupRemoteQuery();
+
+        const localQuery: any = localFrom(table);
         const remoteQuery: any = remoteFromForRead(table);
         return new Proxy(localQuery, {
           get(localTarget, method, localReceiver) {
