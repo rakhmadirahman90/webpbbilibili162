@@ -39,7 +39,6 @@ const imageReplacement = `  // POPUP_SOURCE_V2: konfigurasi_popup is the only po
         .eq('is_active', true)
         .not('url_gambar', 'is', null)
         .order('urutan', { ascending: true });
-
       if (error) throw error;
 
       const activeItems = (Array.isArray(data) ? data : [])
@@ -64,14 +63,7 @@ const imageReplacement = `  // POPUP_SOURCE_V2: konfigurasi_popup is the only po
   };
 
   const prevActiveViewRef`;
-
-replaceBlock(
-  imagePopupPath,
-  /  const fetchActivePopups = async \(forceShow = false\) => \{/,
-  /\n  const prevActiveViewRef/,
-  imageReplacement,
-  'ImagePopup Supabase source'
-);
+replaceBlock(imagePopupPath, /  const fetchActivePopups = async \(forceShow = false\) => \{/, /\n  const prevActiveViewRef/, imageReplacement, 'ImagePopup Supabase source');
 
 const adminReplacement = `  // POPUP_SOURCE_V2: AdminPopup reads only public.konfigurasi_popup.
   const fetchPopups = async (isSilent = false) => {
@@ -82,7 +74,6 @@ const adminReplacement = `  // POPUP_SOURCE_V2: AdminPopup reads only public.kon
         .select('id,url_gambar,judul,deskripsi,is_active,urutan,file_url')
         .order('urutan', { ascending: true });
       if (error) throw error;
-
       const rows = (Array.isArray(data) ? data : [])
         .filter((item) => item && item.id)
         .map((item) => ({
@@ -95,7 +86,6 @@ const adminReplacement = `  // POPUP_SOURCE_V2: AdminPopup reads only public.kon
           file_url: item.file_url || null
         }))
         .sort((a, b) => a.urutan - b.urutan);
-
       setPopups((previous) => JSON.stringify(previous) === JSON.stringify(rows) ? previous : rows);
     } catch (error) {
       console.error('[popup-v2] AdminPopup Supabase read failed:', error);
@@ -106,13 +96,54 @@ const adminReplacement = `  // POPUP_SOURCE_V2: AdminPopup reads only public.kon
   };
 
   useEffect(() => {`;
+replaceBlock(adminPopupPath, /  const fetchPopups = async \(isSilent = false\) => \{/, /\n  useEffect\(\(\) => \{/, adminReplacement, 'AdminPopup Supabase source');
 
-replaceBlock(
-  adminPopupPath,
-  /  const fetchPopups = async \(isSilent = false\) => \{/,
-  /\n  useEffect\(\(\) => \{/,
-  adminReplacement,
-  'AdminPopup Supabase source'
-);
+const persistReplacement = `  // POPUP_SOURCE_V2: popup writes are also Supabase-only; no site_settings/API backup.
+  const persistPopups = async (updatedList: PopupConfig[]) => {
+    const standardizedList = updatedList.map((item, index) => ({ ...item, urutan: index }));
+    setPopups(standardizedList);
 
-console.log('[popup-v2] Popup frontend is now hard-bound to public.konfigurasi_popup.');
+    const { data: existingRows, error: existingError } = await supabase
+      .from('konfigurasi_popup')
+      .select('id');
+    if (existingError) throw new Error(existingError.message);
+
+    const wanted = new Set(standardizedList.map((item) => String(item.id)));
+    const removedIds = (existingRows || []).map((row: any) => String(row.id)).filter((id) => !wanted.has(id));
+
+    if (standardizedList.length > 0) {
+      const payload = standardizedList.map((item) => ({
+        id: item.id,
+        urutan: item.urutan,
+        judul: item.judul || '',
+        deskripsi: item.deskripsi || '',
+        url_gambar: item.url_gambar || '',
+        is_active: item.is_active === true,
+        file_url: item.file_url || null
+      }));
+      const { error } = await supabase.from('konfigurasi_popup').upsert(payload, { onConflict: 'id' });
+      if (error) throw new Error(error.message);
+    }
+
+    if (removedIds.length) {
+      const { error } = await supabase.from('konfigurasi_popup').delete().in('id', removedIds);
+      if (error) throw new Error(error.message);
+    }
+
+    const { data: verified, error: verifyError } = await supabase
+      .from('konfigurasi_popup')
+      .select('*')
+      .order('urutan', { ascending: true });
+    if (verifyError) throw new Error(verifyError.message);
+    setPopups(Array.isArray(verified) ? verified as PopupConfig[] : []);
+  };
+
+`;
+replaceBlock(adminPopupPath, /  const persistPopups = async \(updatedList: PopupConfig\[\]\) => \{/, /\n  const loadJadwalLatihanTemplate/, persistReplacement + '  const loadJadwalLatihanTemplate', 'AdminPopup Supabase write path');
+
+// New rows in konfigurasi_popup use UUID ids. Legacy popup-<timestamp> ids cause PostgreSQL UUID errors.
+const source = fs.readFileSync(adminPopupPath, 'utf8');
+const uuidPatched = source.replace(/const newId = editingId \|\| \('popup-' \+ Date\.now\(\)\);/, "const newId = editingId || (globalThis.crypto?.randomUUID?.() || crypto.randomUUID());");
+if (uuidPatched !== source) fs.writeFileSync(adminPopupPath, uuidPatched, 'utf8');
+
+console.log('[popup-v2] Popup frontend read/write is now hard-bound to public.konfigurasi_popup.');
