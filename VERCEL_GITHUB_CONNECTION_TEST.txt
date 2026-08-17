@@ -1,0 +1,3 @@
+Vercel GitHub connection test
+Created after reconnecting the GitHub repository to Vercel.
+No application source code is changed by this test.
