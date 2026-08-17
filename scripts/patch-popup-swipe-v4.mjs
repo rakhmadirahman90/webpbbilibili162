@@ -4,11 +4,8 @@ import path from 'node:path';
 const file = path.resolve('src/components/ImagePopup.tsx');
 let source = fs.readFileSync(file, 'utf8');
 
-// This patch is intentionally source-safe: it never rewrites JSX wrappers.
-// The previous implementation could remove a Framer Motion closing tag and
-// leave ImagePopup.tsx syntactically invalid. We only inject pointer handlers
-// plus explicit previous/next controls for every active popup.
-
+// Source-safe patch: injects popup-wide pointer navigation and explicit
+// previous/next controls without rewriting JSX wrappers.
 const refTarget = '  const isDismissedRef = useRef<boolean>(false);';
 const swipeRefLine = '  const swipeRef = useRef({ pointerId: null as number | null, startX: 0, startY: 0, active: false, horizontal: false });';
 
@@ -25,12 +22,8 @@ if (!source.includes('const changePopupBySwipe')) {
     source = source.replace(legacyHandler, swipeLogic);
   } else {
     const guard = '  if (promoImages.length === 0 || !isOpen) return null;';
-    if (!source.includes('const changePopupBySwipe') && !source.includes(guard)) {
-      throw new Error('[popup-swipe-v4] popup render guard not found');
-    }
-    if (!source.includes('const changePopupBySwipe')) {
-      source = source.replace(guard, `${swipeLogic}\n${guard}`);
-    }
+    if (!source.includes(guard)) throw new Error('[popup-swipe-v4] popup render guard not found');
+    source = source.replace(guard, `${swipeLogic}\n${guard}`);
   }
 }
 
@@ -40,17 +33,15 @@ if (!source.includes('onPointerDown={handleSwipePointerDown}')) {
   source = source.replace(cardMarker, `          style={{ touchAction: 'pan-y', WebkitUserSelect: 'none', userSelect: 'none' }}\n          onPointerDown={handleSwipePointerDown}\n          onPointerMove={handleSwipePointerMove}\n          onPointerUp={handleSwipePointerUp}\n          onPointerCancel={handleSwipePointerCancel}\n${cardMarker}`);
 }
 
-// Explicit navigation fallback. This is rendered only when 2+ active popups
-// are loaded from the authoritative popup list. It guarantees every active
-// popup can be reached even when a mobile browser does not emit a complete
-// horizontal pointer gesture.
+// Explicit navigation fallback for every active popup. The escaped ${'$'}
+// sequences below are intentional: they must remain JSX template expressions
+// in the generated TSX rather than being evaluated by this Node patch script.
 if (!source.includes('POPUP_ACTIVE_SLIDER_CONTROLS')) {
   const scrollMarker = '          <div ref={scrollRef} className="overflow-y-auto hide-scrollbar scroll-smooth">';
   if (!source.includes(scrollMarker)) throw new Error('[popup-swipe-v4] popup scroll marker not found');
-  const controls = `          {promoImages.length > 1 && (\n            <div\n              data-popup-active-slider="true"\n              className="absolute left-3 right-3 bottom-3 z-[70] flex items-center justify-between gap-2 pointer-events-none"\n            >\n              <button\n                type="button"\n                aria-label="Pop-up sebelumnya"\n                onClick={(e) => { e.stopPropagation(); changePopupBySwipe(-1); }}\n                className="pointer-events-auto w-10 h-10 rounded-full bg-black/65 hover:bg-black/80 text-white border border-white/20 shadow-xl backdrop-blur-sm flex items-center justify-center text-2xl leading-none active:scale-95"\n              >\n                ‹\n              </button>\n              <div className="pointer-events-auto flex items-center gap-1.5 rounded-full bg-black/55 px-3 py-2 backdrop-blur-sm border border-white/10">\n                {promoImages.map((popup, index) => (\n                  <button\n                    key={popup.id || index}\n                    type="button"\n                    aria-label={\`Tampilkan pop-up ${index + 1}\`}\n                    onClick={(e) => { e.stopPropagation(); setIsExpanded(false); setCurrentIndex(index); }}\n                    className={\`h-2 rounded-full transition-all ${currentIndex === index ? 'w-6 bg-white' : 'w-2 bg-white/45 hover:bg-white/80'}\`}\n                  />\n                ))}\n                <span className="ml-1 text-[10px] font-bold text-white/90 tabular-nums">{currentIndex + 1}/{promoImages.length}</span>\n              </div>\n              <button\n                type="button"\n                aria-label="Pop-up berikutnya"\n                onClick={(e) => { e.stopPropagation(); changePopupBySwipe(1); }}\n                className="pointer-events-auto w-10 h-10 rounded-full bg-black/65 hover:bg-black/80 text-white border border-white/20 shadow-xl backdrop-blur-sm flex items-center justify-center text-2xl leading-none active:scale-95"\n              >\n                ›\n              </button>\n            </div>\n          )}\n          {/* POPUP_ACTIVE_SLIDER_CONTROLS */}\n`;
+  const controls = `          {promoImages.length > 1 && (\n            <div\n              data-popup-active-slider="true"\n              className="absolute left-3 right-3 bottom-3 z-[70] flex items-center justify-between gap-2 pointer-events-none"\n            >\n              <button\n                type="button"\n                aria-label="Pop-up sebelumnya"\n                onClick={(e) => { e.stopPropagation(); changePopupBySwipe(-1); }}\n                className="pointer-events-auto w-10 h-10 rounded-full bg-black/65 hover:bg-black/80 text-white border border-white/20 shadow-xl backdrop-blur-sm flex items-center justify-center text-2xl leading-none active:scale-95"\n              >\n                ‹\n              </button>\n              <div className="pointer-events-auto flex items-center gap-1.5 rounded-full bg-black/55 px-3 py-2 backdrop-blur-sm border border-white/10">\n                {promoImages.map((popup, index) => (\n                  <button\n                    key={popup.id || index}\n                    type="button"\n                    aria-label={`Tampilkan pop-up ${'${'}index + 1}`}\n                    onClick={(e) => { e.stopPropagation(); setIsExpanded(false); setCurrentIndex(index); }}\n                    className={`h-2 rounded-full transition-all ${'${'}currentIndex === index ? 'w-6 bg-white' : 'w-2 bg-white/45 hover:bg-white/80'}`}\n                  />\n                ))}\n                <span className="ml-1 text-[10px] font-bold text-white/90 tabular-nums">${'${'}currentIndex + 1}/${'${'}promoImages.length}</span>\n              </div>\n              <button\n                type="button"\n                aria-label="Pop-up berikutnya"\n                onClick={(e) => { e.stopPropagation(); changePopupBySwipe(1); }}\n                className="pointer-events-auto w-10 h-10 rounded-full bg-black/65 hover:bg-black/80 text-white border border-white/20 shadow-xl backdrop-blur-sm flex items-center justify-center text-2xl leading-none active:scale-95"\n              >\n                ›\n              </button>\n            </div>\n          )}\n          {/* POPUP_ACTIVE_SLIDER_CONTROLS */}\n`;
   source = source.replace(scrollMarker, `${controls}${scrollMarker}`);
 }
 
-// IMPORTANT: do not remove/replace any JSX motion.div wrappers here.
 fs.writeFileSync(file, source, 'utf8');
 console.log('[popup-swipe-v4] active popup slider controls + safe pointer swipe applied successfully');
