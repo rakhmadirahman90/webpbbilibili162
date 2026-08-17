@@ -9,7 +9,9 @@ if (source.includes('KAS_PERSISTENCE_V2')) {
   process.exit(0);
 }
 
-const pattern = /  const handleSave = async \(e: React\.FormEvent\) => \{.*?\n  \};\n\n  const handleEdit/;
+// Match the whole function across newlines. The previous expression used .*?
+// without the dotAll flag, so it could never match a multiline handleSave.
+const pattern = /  const handleSave = async \(e: React\.FormEvent\) => \{[\s\S]*?\n  \};\n\n  const handleEdit/;
 
 const replacement = `  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,7 +56,7 @@ const replacement = `  const handleSave = async (e: React.FormEvent) => {
         savedRecord = data as KasEntry;
       }
 
-      // KAS_PERSISTENCE_V2: database write succeeded; update UI/cache from authoritative row.
+      // KAS_PERSISTENCE_V2: database row is the authoritative saved state.
       setKasData(prev => {
         const next = editingId
           ? prev.map(item => item.id === savedRecord.id ? savedRecord : item)
@@ -68,7 +70,7 @@ const replacement = `  const handleSave = async (e: React.FormEvent) => {
       setFormData({ ...initialForm, tanggal_transaksi: savedRecord.tanggal_transaksi || today });
       setActiveMobileTab('list');
 
-      // Verify/read back from Supabase before reporting success.
+      // Re-read from Supabase so the UI is synchronized with the database.
       await fetchData(false);
 
       Swal.fire({
