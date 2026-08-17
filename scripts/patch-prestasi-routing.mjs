@@ -6,9 +6,8 @@ function patchFile(path, transforms) {
   fs.writeFileSync(path, source);
 }
 
-// IMPORTANT: this runs in Vercel's prebuild step. The public Berita/Prestasi
-// menu must survive the URL -> activeView synchronizer and Prestasi must filter
-// Supabase public.berita rows by kategori.
+// Keep public Berita/Prestasi navigation deterministic and avoid global
+// document click delegation, which can interfere with React Router events.
 patchFile('src/App.tsx', [
   (s) => s.replace(/'berita', 'news', 'faq/g, "'berita', 'news', 'prestasi', 'faq"),
   (s) => {
@@ -20,8 +19,6 @@ patchFile('src/App.tsx', [
 ]);
 
 patchFile('src/components/Navbar.tsx', [
-  // Normalize custom Supabase menu paths such as "berita?category=Prestasi"
-  // before routing conditions inspect the target path.
   (s) => {
     const old = "    const targetPath = (subPath || path || '').toLowerCase().trim();";
     const newer = `    const rawTargetPath = (subPath || path || '').trim();
@@ -34,47 +31,39 @@ patchFile('src/components/Navbar.tsx', [
     return s.replace(old, newer);
   },
   (s) => {
-    // Berita and Prestasi are full navigation targets. Do not let the generic
-    // Berita handler swallow a legacy Prestasi query path.
-    const oldPrestasi = "    // 6. Prestasi\n    if (targetPath === 'prestasi') {\n      onNavigate('prestasi');\n      return;\n    }";
-    const replacementPrestasi = `    // 6. Prestasi: always open the dedicated filtered Prestasi page.
-    // Supports both canonical "prestasi" and legacy "berita?category=Prestasi".
-    if (targetPath === 'prestasi' || (targetPath === 'berita' && targetCategory === 'prestasi')) {
-      setActiveDropdown(null);
-      setIsMobileMenuOpen(false);
-      navigate('/prestasi');
-      return;
-    }`;
-    if (!s.includes("targetPath === 'berita' && targetCategory === 'prestasi'")) {
-      if (!s.includes(oldPrestasi)) throw new Error('Prestasi patch: Prestasi handler marker not found');
-      s = s.replace(oldPrestasi, replacementPrestasi);
-    }
-    return s;
-  },
-  (s) => {
-    // Berita must navigate to a dedicated URL as well, rather than relying only
-    // on parent state. This makes the mobile submenu reliable after menu close.
     const old = "    // 5. Berita\n    if (targetPath === 'berita' || targetPath === 'news' || targetPath.includes('berita')) {\n      onNavigate('berita');\n      return;\n    }";
-    const replacement = `    // 5. Berita: open the canonical news route.
+    const replacement = `    // 5. Berita: use the existing App navigation callback.
+    // This keeps React state and UrlSynchronizer as the single source of truth.
     if (targetPath === 'berita' || targetPath === 'news' || targetPath.includes('berita')) {
-      setActiveDropdown(null);
-      setIsMobileMenuOpen(false);
-      navigate('/berita');
+      onNavigate('berita');
       return;
     }`;
-    if (s.includes("navigate('/berita');")) return s;
+    if (s.includes('// 5. Berita: use the existing App navigation callback.')) return s;
     if (!s.includes(old)) throw new Error('Prestasi patch: Berita handler marker not found');
     return s.replace(old, replacement);
   },
   (s) => {
-    // Defensive mobile click delegation: if a custom navbar renderer omits the
-    // handler on a submenu item, the exact visible labels Berita/Prestasi still
-    // perform the canonical navigation. Capture phase avoids parent overlays.
-    if (s.includes('pb-mobile-news-prestasi-delegation')) return s;
-    const marker = "  // --- PERBAIKAN LOGIKA NAVIGASI ---\n";
-    if (!s.includes(marker)) return s;
-    const injection = `  // pb-mobile-news-prestasi-delegation\n  useEffect(() => {\n    const handleMobileNewsPrestasiClick = (event: MouseEvent) => {\n      const target = event.target as HTMLElement | null;\n      if (!target) return;\n      const clickable = target.closest('button, a, [role=\"button\"], div');\n      if (!clickable) return;\n      const label = (clickable.textContent || '').replace(/\\s+/g, ' ').trim().toLowerCase();\n      if (label !== 'berita' && label !== 'prestasi') return;\n      // Only handle the visible navbar submenu labels, not article/content text.\n      const inNavbar = clickable.closest('header, nav, [class*=\"navbar\"], [class*=\"menu\"]');\n      if (!inNavbar) return;\n      event.preventDefault();\n      event.stopPropagation();\n      setActiveDropdown(null);\n      setIsMobileMenuOpen(false);\n      navigate(label === 'prestasi' ? '/prestasi' : '/berita');\n    };\n    document.addEventListener('click', handleMobileNewsPrestasiClick, true);\n    return () => document.removeEventListener('click', handleMobileNewsPrestasiClick, true);\n  }, [navigate]);\n\n`;
-    return s.replace(marker, injection + marker);
+    const old = "    // 6. Prestasi\n    if (targetPath === 'prestasi') {\n      onNavigate('prestasi');\n      return;\n    }";
+    const replacement = `    // 6. Prestasi: use the existing App navigation callback.
+    // Supports canonical "prestasi" and legacy/custom "berita?category=Prestasi".
+    if (targetPath === 'prestasi' || (targetPath === 'berita' && targetCategory === 'prestasi')) {
+      onNavigate('prestasi');
+      return;
+    }`;
+    if (s.includes('// 6. Prestasi: use the existing App navigation callback.')) return s;
+    if (!s.includes(old)) throw new Error('Prestasi patch: Prestasi handler marker not found');
+    return s.replace(old, replacement);
+  },
+  (s) => {
+    // Remove the previous global capture-phase workaround. It could intercept
+    // unrelated clicks and compete with React Router/React state updates.
+    const start = '  // pb-mobile-news-prestasi-delegation\n';
+    if (!s.includes(start)) return s;
+    const endMarker = '  // --- PERBAIKAN LOGIKA NAVIGASI ---\n';
+    const startIndex = s.indexOf(start);
+    const endIndex = s.indexOf(endMarker, startIndex);
+    if (endIndex === -1) throw new Error('Prestasi patch: delegation cleanup marker not found');
+    return s.slice(0, startIndex) + s.slice(endIndex);
   },
 ]);
 
@@ -98,6 +87,21 @@ patchFile('src/components/News.tsx', [
     if (!s.includes(marker)) return s;
     return s.replace(marker, "  // Prestasi route category state sync\n  useEffect(() => {\n    if (prestasiOnly) {\n      setSelectedCategory('ALL ARTICLES');\n      setTempCategory('ALL ARTICLES');\n      setCurrentPage(1);\n    }\n  }, [prestasiOnly]);\n\n" + marker);
   },
+  (s) => {
+    // Prevent the public news page from downloading the entire komentar table.
+    // Only comments belonging to the currently loaded article set are needed
+    // for the card counters.
+    const old = `        const { data: commentRows } = await supabase
+          .from('komentar')
+          .select('berita_id');`;
+    const replacement = `        const { data: commentRows } = await supabase
+          .from('komentar')
+          .select('berita_id')
+          .in('berita_id', articleIds);`;
+    if (s.includes('.select(\'berita_id\')\n          .in(\'berita_id\', articleIds)')) return s;
+    if (!s.includes(old)) throw new Error('Prestasi patch: comment count query marker not found');
+    return s.replace(old, replacement);
+  },
 ]);
 
-console.log('Berita/Prestasi routing and strict Prestasi filter patch applied successfully.');
+console.log('Stable Berita/Prestasi routing patch applied successfully.');
