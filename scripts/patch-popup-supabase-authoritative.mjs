@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 // SUPABASE_POPUP_AUTH_PATCH_V2: authoritative popup read/realtime patch.
+// Build trigger: keep this patch build-safe and never search for persistPopups.
 // This patch deliberately does not search for or modify persistPopups; save persistence remains in the existing AdminPopup implementation.
 
 const imagePopupPath = path.resolve('src/components/ImagePopup.tsx');
