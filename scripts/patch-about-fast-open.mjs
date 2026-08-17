@@ -17,15 +17,19 @@ function patch(fileName, transform, label) {
   console.log(`[about-fast-open] ${fileName}: ${label}`);
 }
 
+// About pages: render immediately; Supabase refreshes in the background.
 for (const fileName of ['Sejarah.tsx', 'VisiMisi.tsx', 'Fasilitas.tsx']) {
   patch(fileName, (source) => source
     .replace(/const \[loading, setLoading\] = useState\(true\);/g, 'const [loading, setLoading] = useState(false);')
     .replace(/\s*setLoading\(true\);\s*try \{/g, '\n      try {')
+    // Keep the closing brace of the try block. Removing it causes TSX syntax errors.
     .replace(/\s*\} finally \{\s*setLoading\(false\);\s*\}/g, '\n      }')
     .replace(/(setDynamicContent\(\{)/g, "try { localStorage.setItem('cached_about_content', JSON.stringify(val)); } catch (e) {}\n          $1")
   , 'non-blocking Supabase load');
 }
 
+// Structure page: do not mutate its control-flow with a fragile regex. The
+// component itself owns its initial cache/default state and stable animations.
 patch('StrukturOrganisasiPublic.tsx', (source) => source
   .replace(
     /const \[members, setMembers\] = useState<Member\[\]>\(\[\]\);\s*const \[loading, setLoading\] = useState\(true\);/,
@@ -41,9 +45,6 @@ patch('StrukturOrganisasiPublic.tsx', (source) => source
   });
   const [loading, setLoading] = useState(false);`
   )
-  .replace(/\s*\} finally \{\s*setLoading\(false\);\s*\}/g, '')
-  .replace(/\s*window\.addEventListener\('site_setting_updated', handleUpdate\);/g, '')
-  .replace(/\s*window\.removeEventListener\('site_setting_updated', handleUpdate\);/g, '')
   .replace(/initial="hidden" animate="visible"/g, 'initial={false} animate="visible"')
 , 'instant cache and stable rendering');
 
