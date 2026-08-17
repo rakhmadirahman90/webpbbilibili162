@@ -144,7 +144,7 @@ const stableReorder = `  const reorderWithinGroup = (items: PopupConfig[], itemI
     if (targetIndex < 0 || targetIndex >= group.length) return;
     try {
       await persistPopups(reorderWithinGroup(popups, itemId, targetIndex));
-      Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: \\`Urutan \\${targetIndex + 1} tersimpan\\`, showConfirmButton: false, timer: 1000 });
+      Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Urutan ' + (targetIndex + 1) + ' tersimpan', showConfirmButton: false, timer: 1000 });
     } catch (err: any) {
       Swal.fire('Gagal menyimpan urutan', err?.message || 'Supabase tidak dapat menyimpan perubahan', 'error');
     }
