@@ -20,10 +20,35 @@ patchFile('src/App.tsx', [
 ]);
 
 patchFile('src/components/Navbar.tsx', [
+  // Normalize custom Supabase menu paths such as "berita?category=Prestasi"
+  // before the legacy routing conditions inspect the target path.
   (s) => {
-    const marker = "    // 6. Prestasi\n    if (targetPath === 'prestasi') {\n      onNavigate('prestasi');\n      return;\n    }";
-    if (!s.includes(marker) || s.includes('Prestasi: always open the dedicated filtered Prestasi page')) return s;
-    return s.replace(marker, "    // 6. Prestasi: always open the dedicated filtered Prestasi page.\n    if (targetPath === 'prestasi') {\n      setActiveDropdown(null);\n      setIsMobileMenuOpen(false);\n      navigate('/prestasi');\n      return;\n    }");
+    const old = "    const targetPath = (subPath || path || '').toLowerCase().trim();";
+    const newer = `    const rawTargetPath = (subPath || path || '').trim();
+    const [targetPathRaw, targetQueryRaw = ''] = rawTargetPath.split('?');
+    const targetPath = targetPathRaw.toLowerCase().trim();
+    const targetQuery = new URLSearchParams(targetQueryRaw);
+    const targetCategory = (targetQuery.get('category') || '').trim().toLowerCase();`;
+    if (s.includes('const targetQuery = new URLSearchParams(targetQueryRaw);')) return s;
+    if (!s.includes(old)) throw new Error('Prestasi patch: targetPath declaration not found');
+    return s.replace(old, newer);
+  },
+  (s) => {
+    // Always open the dedicated Prestasi route, including legacy/custom
+    // Supabase navbar entries that still use berita?category=Prestasi.
+    const old = "    // 6. Prestasi\n    if (targetPath === 'prestasi') {\n      onNavigate('prestasi');\n      return;\n    }";
+    const replacement = `    // 6. Prestasi: always open the dedicated filtered Prestasi page.
+    // Supports both the canonical "prestasi" path and legacy/custom
+    // Supabase values such as "berita?category=Prestasi".
+    if (targetPath === 'prestasi' || (targetPath === 'berita' && targetCategory === 'prestasi')) {
+      setActiveDropdown(null);
+      setIsMobileMenuOpen(false);
+      navigate('/prestasi');
+      return;
+    }`;
+    if (s.includes("targetPath === 'berita' && targetCategory === 'prestasi'")) return s;
+    if (!s.includes(old)) throw new Error('Prestasi patch: legacy Prestasi handler marker not found');
+    return s.replace(old, replacement);
   },
 ]);
 
