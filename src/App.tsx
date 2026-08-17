@@ -56,7 +56,8 @@ const AdminLaporan = lazy(() => import('./components/AdminLaporan'));
 const AdminLogs = lazy(() => import('./components/AdminLogs')); 
 const AdminTampilan = lazy(() => import('./components/AdminTampilan')); 
 const KelolaHero = lazy(() => import('./components/KelolaHero')); 
-const AdminPopup = lazy(() => import('./components/AdminPopup')); 
+const AdminPopup = lazy(() => import('./components/AdminPopup'));
+const AdminSambutanKetua = lazy(() => import('./components/AdminSambutanKetua')); 
 const AdminFooter = lazy(() => import('./components/AdminFooter'));
 const AdminAbsensi = lazy(() => import('./components/AdminAbsensi'));
 const AdminInventaris = lazy(() => import('./components/AdminInventaris'));
@@ -1349,6 +1350,7 @@ function AdminLayout({ session }: { session: any }) {
               <Route path="tampilan" element={isAdmin ? <AdminTampilan /> : <Navigate to="/admin/dashboard" replace />} />
               <Route path="hero" element={isAdmin ? <KelolaHero /> : <Navigate to="/admin/dashboard" replace />} />
               <Route path="popup" element={isAdmin ? <AdminPopup /> : <Navigate to="/admin/dashboard" replace />} /> 
+              <Route path="sambutan-ketua" element={isAdmin ? <AdminSambutanKetua /> : <Navigate to="/admin/dashboard" replace />} />
               <Route path="footer" element={isAdmin ? <AdminFooter /> : <Navigate to="/admin/dashboard" replace />} />
               
               <Route path="sejarah" element={isAdmin ? <AdminSejarah /> : <div className="p-4 sm:p-6"><Sejarah /></div>} />
