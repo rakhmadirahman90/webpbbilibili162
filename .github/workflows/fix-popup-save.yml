@@ -1,4 +1,4 @@
-name: Fix popup save latency
+name: Fix popup save
 on:
   push:
     branches: [main]
@@ -6,83 +6,117 @@ permissions:
   contents: write
 jobs:
   patch:
+    if: ${{ !contains(github.event.head_commit.message, 'fix: repair AdminPopup Supabase save') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Patch AdminPopup save/realtime flow
-        shell: bash
+        with:
+          fetch-depth: 0
+      - name: Restore production AdminPopup and apply durable Supabase save fix
+        shell: python
         run: |
-          if [[ "${{ github.event.head_commit.message }}" == *"[popup-fix]"* ]]; then
-            echo "Patch commit already applied; nothing to do."
-            exit 0
-          fi
-          python - <<'PY'
+          import subprocess
           from pathlib import Path
-          import re
           p=Path('src/components/AdminPopup.tsx')
-          s=p.read_text()
-          old=re.search(r"  useEffect\(\(\) => \{\s*fetchPopups\(false\);\s*const syncInterval = setInterval\(\(\) => fetchPopups\(true\), 3000\);.*?\n  \}, \[\]\);", s, re.S)
-          new="""  useEffect(() => {
-    fetchPopups(false);
-    // Realtime is centralized globally; no component-level polling/channel.
-    const handleCustomEvent = (e: any) => {
-      if (!e.detail?.key || e.detail.key === 'popup_config') fetchPopups(true);
-    };
-    const handleLocalDb = (e: any) => {
-      if (!e.detail?.table || e.detail.table === 'konfigurasi_popup' || e.detail.table === 'site_settings') fetchPopups(true);
-    };
-    window.addEventListener('site_setting_updated', handleCustomEvent);
-    window.addEventListener('local-db-updated', handleLocalDb);
-    return () => {
-      window.removeEventListener('site_setting_updated', handleCustomEvent);
-      window.removeEventListener('local-db-updated', handleLocalDb);
-    };
-  }, []);"""
-          if not old: raise SystemExit('useEffect block not found')
-          s=s[:old.start()]+new+s[old.end():]
-          old=re.search(r"  const persistPopups = async \(updatedList: PopupConfig\[\]\) => \{.*?\n  \};\n\n  const loadJadwalLatihanTemplate", s, re.S)
-          new="""  const persistPopups = (updatedList: PopupConfig[]) => {
-    const standardizedList = updatedList.map((item, idx) => ({ ...item, urutan: idx }));
-    // Optimistic UI/local-first state. Remote durability continues in background.
-    setPopups(standardizedList);
-    void (async () => {
-      try { await saveSiteSetting('popup_config', standardizedList, 'Konfigurasi Popup Promo'); } catch (e) {
-        console.warn('[AdminPopup] site setting background sync:', e);
-      }
-      try {
-        const dbUpdates = standardizedList.map(({ id, urutan, judul, deskripsi, url_gambar, is_active, file_url }) => ({
-          id, urutan: urutan ?? 0, judul: judul || '', deskripsi: deskripsi || '', url_gambar: url_gambar || '', is_active: is_active ?? true, file_url: file_url || null
-        }));
-        if (dbUpdates.length) await supabase.from('konfigurasi_popup').upsert(dbUpdates, { onConflict: 'id' });
-      } catch (err) { console.warn('[AdminPopup] background database sync:', err); }
-      try {
-        broadcastDataChange('popup_config', 'UPDATE', standardizedList);
-        broadcastDataChange('konfigurasi_popup', 'UPDATE', standardizedList);
-        window.dispatchEvent(new CustomEvent('site_setting_updated', { detail: { key: 'popup_config', value: standardizedList } }));
-        window.dispatchEvent(new CustomEvent('table_updated_popup_config'));
-        window.dispatchEvent(new CustomEvent('table_updated_konfigurasi_popup'));
-      } catch {}
-    })();
-  };
+          s=subprocess.check_output(['git','show','60695dcf18ba05a0a4530223e0398e6ea9ccf2d5:src/components/AdminPopup.tsx'], text=True)
 
-  const loadJadwalLatihanTemplate"""
-          if not old: raise SystemExit('persist block not found')
-          s=s[:old.start()]+new+s[old.end():]
-          s=s.replace('    await persistPopups(updatedList);\n\n    Swal.fire({', '    persistPopups(updatedList);\n\n    Swal.fire({', 1)
-          s=s.replace('    await persistPopups(updatedList);\n\n    try {\n      await supabase.from(\'konfigurasi_popup\').update({ is_active: !currentStatus }).eq(\'id\', id);', '    persistPopups(updatedList);\n\n    try {\n      await supabase.from(\'konfigurasi_popup\').update({ is_active: !currentStatus }).eq(\'id\', id);')
-          s=s.replace('      await persistPopups(updatedList);\n\n      try {\n        await supabase.from(\'konfigurasi_popup\').delete().eq(\'id\', id);', '      persistPopups(updatedList);\n\n      try {\n        await supabase.from(\'konfigurasi_popup\').delete().eq(\'id\', id);')
-          s=re.sub(r"\n    try \{\n      const dbUpdates = updates\.map\(\(\{ id, urutan, judul, deskripsi, url_gambar, is_active, file_url \}\) => \(\{\n        id, urutan, judul, deskripsi, url_gambar, is_active, file_url\n      \}\)\);\n      await supabase\.from\('konfigurasi_popup'\)\.upsert\(dbUpdates\);\n    \} catch \(err\) \{\n      console\.warn\(\"Supabase reorder sync error \(handled via fallback\):\", err\);\n    \}", '', s)
-          p.write_text(s)
-          PY
-      - name: Commit patch
-        shell: bash
+          s=s.replace(
+            "const renderDescriptionWithLinks = (text: string) => {",
+            "const isUuid = (value: unknown): value is string => typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);\n\nconst renderDescriptionWithLinks = (text: string) => {"
+          )
+
+          old="""    // 2. Sync to Supabase `konfigurasi_popup` table
+    try {
+      if (standardizedList.length > 0) {
+        const dbUpdates = standardizedList.map(({ id, urutan, judul, deskripsi, url_gambar, is_active, file_url }) => ({
+          id,
+          urutan: urutan ?? 0,
+          judul: judul || '',
+          deskripsi: deskripsi || '',
+          url_gambar: url_gambar || '',
+          is_active: is_active ?? true,
+          file_url: file_url || null
+        }));
+        await supabase.from('konfigurasi_popup').upsert(dbUpdates, { onConflict: 'id' });
+      }
+    } catch (err) {
+      console.warn(\"Database sync warning (handled via siteSettingsHelper):\", err);
+    }
+"""
+          new="""    // 2. Sync only real UUID rows to Supabase. Legacy UI-only IDs are never sent to PostgreSQL.
+    if (standardizedList.length > 0) {
+      const dbUpdates = standardizedList
+        .filter(item => isUuid(item.id))
+        .map(({ id, urutan, judul, deskripsi, url_gambar, is_active, file_url }) => ({
+          id, urutan: urutan ?? 0, judul: judul || '', deskripsi: deskripsi || '',
+          url_gambar: url_gambar || '', is_active: is_active ?? true, file_url: file_url || null
+        }));
+      if (dbUpdates.length > 0) {
+        const { error } = await supabase.from('konfigurasi_popup').upsert(dbUpdates, { onConflict: 'id' });
+        if (error) throw new Error(`Supabase popup sync failed: ${error.message}`);
+      }
+    }
+"""
+          if old not in s: raise SystemExit('persist block not found')
+          s=s.replace(old,new)
+
+          start=s.index('  const handleSave = async (e: React.FormEvent) => {')
+          end=s.index('\n  const startEdit =',start)
+          handle=r'''  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPopup.url_gambar) return Swal.fire('Opps!', 'Harap unggah gambar terlebih dahulu', 'warning');
+
+    setIsSaving(true);
+    try {
+      const payload = {
+        judul: newPopup.judul,
+        deskripsi: newPopup.deskripsi,
+        url_gambar: newPopup.url_gambar,
+        file_url: newPopup.file_url || null,
+        is_active: true
+      };
+      const rowId = editingId || (globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+      if (!isUuid(rowId)) throw new Error('Gagal membuat ID UUID pop-up yang valid.');
+
+      let dbRow: PopupConfig;
+      if (editingId) {
+        const { data, error } = await supabase.from('konfigurasi_popup')
+          .update(payload).eq('id', rowId).select('*').single();
+        if (error || !data) throw new Error(`Gagal memperbarui Supabase: ${error?.message || 'Data tidak ditemukan.'}`);
+        dbRow=data as PopupConfig;
+      } else {
+        const { data, error } = await supabase.from('konfigurasi_popup')
+          .insert([{ ...payload, id: rowId, urutan: popups.length }]).select('*').single();
+        if (error || !data) throw new Error(`Gagal menyimpan ke Supabase: ${error?.message || 'Database tidak mengembalikan data.'}`);
+        dbRow=data as PopupConfig;
+      }
+
+      const updatedList = editingId
+        ? popups.map(p => p.id === rowId ? { ...p, ...dbRow } : p)
+        : [...popups, dbRow];
+      await persistPopups(updatedList);
+      await fetchPopups(true);
+
+      Swal.fire({ title:'Berhasil', text: editingId ? 'Pop-up diperbarui dan tersimpan di Supabase' : 'Pop-up baru tersimpan di Supabase', icon:'success', background:'#0F172A', color:'#fff' });
+      setEditingId(null);
+      setNewPopup({ url_gambar:'', judul:'', deskripsi:'', file_url:'' });
+      setPreviewImage(null);
+    } catch (err:any) {
+      console.error('[AdminPopup] Supabase save failed:', err);
+      await fetchPopups(true);
+      Swal.fire({ title:'Gagal menyimpan', text:err?.message || 'Pop-up gagal disimpan ke database Supabase.', icon:'error', background:'#0F172A', color:'#fff' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+'''
+          s=s[:start]+handle+s[end:]
+          p.write_text(s,encoding='utf-8')
+      - name: Commit repaired source
         run: |
-          if git diff --quiet -- src/components/AdminPopup.tsx; then
-            echo "No source changes needed."
-            exit 0
-          fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add src/components/AdminPopup.tsx
-          git commit -m 'fix: eliminate popup save loading and duplicate realtime [popup-fix]'
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'fix: repair AdminPopup Supabase save'
           git push
