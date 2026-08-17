@@ -4,21 +4,10 @@ import path from 'node:path';
 const imagePopupPath = path.resolve('src/components/ImagePopup.tsx');
 const adminPopupPath = path.resolve('src/components/AdminPopup.tsx');
 
-// The current popup components already use direct Supabase persistence/read.
-// This legacy transform must never fail the production build when its old
-// source boundaries no longer exist.
-const adminSource = fs.readFileSync(adminPopupPath, 'utf8');
-const imageSource = fs.readFileSync(imagePopupPath, 'utf8');
-
-if (
-  adminSource.includes(".from('konfigurasi_popup')") &&
-  adminSource.includes('crypto.randomUUID()') &&
-  imageSource.includes(".from('konfigurasi_popup')")
-) {
-  console.log('[popup-final] current Supabase-authoritative popup source detected; legacy transform skipped');
-  process.exit(0);
-}
-
+// This is a legacy source transformer. It must be idempotent and must never
+// fail production builds when an individual component has already been
+// refactored. Patch each file independently instead of requiring old
+// boundaries in both files at once.
 function replaceOrSkip(file, regex, replacement, label) {
   const source = fs.readFileSync(file, 'utf8');
   if (source.includes('POPUP_FINAL_SOURCE_V1')) {
@@ -37,14 +26,36 @@ const imageFetch = /  const fetchActivePopups = async \(forceShow = false\) => \
 const imageReplacement = `  // POPUP_FINAL_SOURCE_V1: Supabase konfigurasi_popup is the only public popup source.
   const fetchActivePopups = async (forceShow = false) => {
     try {
-      const { data, error } = await supabase.from('konfigurasi_popup').select('*').eq('is_active', true).order('urutan', { ascending: true });
+      if (typeof window !== 'undefined' && (window.location.pathname.startsWith('/admin') || window.location.pathname.startsWith('/login'))) {
+        setPromoImages([]);
+        setIsOpen(false);
+        return;
+      }
+      if (activeView !== null) {
+        setIsOpen(false);
+        return;
+      }
+      if (!forceShow && isDismissedRef.current) {
+        setIsOpen(false);
+        return;
+      }
+      const { data, error } = await supabase
+        .from('konfigurasi_popup')
+        .select('id,url_gambar,judul,deskripsi,is_active,urutan,file_url')
+        .eq('is_active', true)
+        .not('url_gambar', 'is', null)
+        .order('urutan', { ascending: true });
       if (error) throw error;
-      const activeItems = (Array.isArray(data) ? data : []).filter((item) => item?.id && item?.url_gambar && item.is_active === true);
+      const activeItems = (Array.isArray(data) ? data : [])
+        .filter((item: any) => item && item.id && item.url_gambar && item.is_active === true)
+        .sort((a: any, b: any) => Number(a.urutan ?? 0) - Number(b.urutan ?? 0));
       setPromoImages(activeItems);
+      setCurrentIndex(prev => activeItems.length ? Math.min(prev, activeItems.length - 1) : 0);
       setIsOpen(activeItems.length > 0 && (forceShow || !isDismissedRef.current));
     } catch (err) {
       console.error('[popup-final] Gagal memuat popup Supabase:', err);
       setPromoImages([]);
+      setCurrentIndex(0);
       setIsOpen(false);
     }
   };
