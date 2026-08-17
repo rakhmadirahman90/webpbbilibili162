@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
-    "prebuild": "node scripts/patch-build-script-syntax.mjs && node scripts/patch-popup-save.mjs && node scripts/patch-popup-supabase-authoritative.mjs && node scripts/patch-popup-admin-stable-order-syntax.mjs && node scripts/patch-popup-admin-stable-order.mjs && node scripts/patch-popup-admin-realtime.mjs && node scripts/patch-athlete-local-sync.mjs && node scripts/patch-athlete-remote-read.mjs && node scripts/patch-players-public-data.mjs && node scripts/patch-prestasi-routing.mjs && node scripts/patch-news-detail-content.mjs && node scripts/patch-news-image-fallback.mjs && node scripts/patch-news-open-content-v2.mjs && node scripts/patch-news-remote-source.mjs && node scripts/patch-news-no-refresh.mjs && node scripts/patch-home-fast-media.mjs && node scripts/patch-popup-home-only.mjs && node scripts/patch-popup-public-db-authoritative.mjs && node scripts/patch-popup-swipe-v4.mjs && node scripts/patch-documents-supabase.mjs && node scripts/patch-gallery-remote-read.mjs && node scripts/patch-about-fast-open.mjs && node scripts/patch-kas-persistence.mjs && node scripts/patch-popup-final-source.mjs && node scripts/patch-popup-source-v2.mjs && node scripts/patch-popup-rpc-final.mjs",
+    "prebuild": "node scripts/patch-build-script-syntax.mjs && node scripts/patch-athlete-local-sync.mjs && node scripts/patch-athlete-remote-read.mjs && node scripts/patch-players-public-data.mjs && node scripts/patch-prestasi-routing.mjs && node scripts/patch-news-detail-content.mjs && node scripts/patch-news-image-fallback.mjs && node scripts/patch-news-open-content-v2.mjs && node scripts/patch-news-remote-source.mjs && node scripts/patch-news-no-refresh.mjs && node scripts/patch-home-fast-media.mjs && node scripts/patch-documents-supabase.mjs && node scripts/patch-gallery-remote-read.mjs && node scripts/patch-about-fast-open.mjs && node scripts/patch-kas-persistence.mjs",
     "build": "node scripts/patch-gallery-remote-read.mjs && vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
     "lint": "eslint .",
     "start": "node dist/server.cjs",
@@ -33,7 +33,7 @@
     "react-datepicker": "^9.1.0",
     "react-dom": "^18.3.1",
     "react-easy-crop": "^5.5.6",
-    "react-zoom-pan-pinch": "^4.0.3",
+    "react-zoom-pan-pinch": "^4.0.0",
     "react": "^18.3.1",
     "sweetalert2": "^11.26.18",
     "swiper": "^12.1.0",
@@ -55,7 +55,7 @@
     "globals": "^15.9.0",
     "postcss": "^8.4.35",
     "tailwindcss": "^3.4.1",
-    "tsx": "^4.23.1",
-    "typescript": "^5.5.3"
+    "typescript": "^5.5.3",
+    "tsx": "^4.23.1"
   }
 }
