@@ -8,7 +8,14 @@ function patchFile(path, transforms) {
 }
 
 patchFile('src/App.tsx', [
+  // UrlSynchronizer must treat /prestasi as a full-page route.
   (s) => s.replace(/'berita', 'news', 'faq/g, "'berita', 'news', 'prestasi', 'faq"),
+  // The initial activeView resolver also needs Prestasi; otherwise a direct
+  // /prestasi load is immediately interpreted as the home page.
+  (s) => s.replace(
+    "'berita', 'news', 'faq'];",
+    "'berita', 'news', 'prestasi', 'faq'];"
+  ),
   (s) => {
     const marker = "                    {(activeView === 'berita' || activeView === 'news') && <News />}";
     if (s.includes("(activeView === 'prestasi') && <News />")) return s;
@@ -42,8 +49,6 @@ patchFile('src/components/News.tsx', [
   },
   (s) => s.replace('[beritaList, selectedCategory, orderBy, orderDirection, searchTerm]', '[beritaList, selectedCategory, orderBy, orderDirection, searchTerm, prestasiOnly]'),
   (s) => {
-    // Reset the generic category selector while on the dedicated Prestasi route,
-    // so the page cannot accidentally keep a previous non-Prestasi category in UI state.
     if (s.includes('Prestasi route category state sync')) return s;
     const marker = "  useEffect(() => {\n    fetchNews();";
     if (!s.includes(marker)) return s;
