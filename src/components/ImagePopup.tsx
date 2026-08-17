@@ -1,429 +1,244 @@
-import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, Download } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { X, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '../supabase';
 import { getSiteSetting, parsePopupList } from '../utils/siteSettingsHelper';
 import { useRealtimeSync } from '../utils/realtimeSync';
 
-const OFFICIAL_LATEST_POPUP = {
-  id: 'popup-1786211047963',
-  judul: 'INFO RESMI! PENDAFTARAN ANGGOTA BARU PB BILIBILI 162 PAREPARE',
-  deskripsi: `📢 INFO RESMI! PENDAFTARAN ANGGOTA BARU PB BILIBILI 162 PAREPARE 📢\nBersama, Kita Kuat!\n\nAssalamu'alaikum warahmatullahi wabarakatuh.\nHalo seluruh pecinta bulutangkis yang baru bergabung! 👋\n\nBergabunglah bersama PB Bilibili 162 dan rasakan pengalaman berlatih, bertanding, dan berkembang bersama komunitas badminton terbaik di Parepare. Disiplin dalam latihan, kunci menjadi juara!\n\n🏆 KEUNTUNGAN MENJADI ANGGOTA:\n• Kesempatan Berlatih Rutin (Program latihan terstruktur)\n• Menjadi Bagian dari Tim Solid (Komunitas positif & sportivitas tinggi)\n• Kesempatan Ikut Turnamen (Mewakili PB Bilibili 162 di berbagai event)\n• Meningkatkan Silaturahmi (Mempererat hubungan antar anggota)\n• Menambah Pertemuan & Relasi (Memperluas jaringan positif)\n\n📝 PERSYARATAN PENDAFTARAN:\n• Warga Negara Indonesia\n• Sehat jasmani & rohani\n• Memiliki semangat sportivitas tinggi\n• Bersedia mematuhi aturan PB Bilibili 162\n(Pastikan data yang Anda masukkan sesuai & valid saat pendaftaran).\n\n📋 CARA PENDAFTARAN:\n1. Buka website pendaftaran: https://pbilibili162.99apps.id/register\n2. Klik tombol "Daftar Sekarang"\n3. Isi formulir data diri dengan lengkap\n4. Unggah dokumen yang diperlukan\n5. Baca & setujui syarat dan ketentuan\n6. Kirim pendaftaran\n✅ Setelah pendaftaran berhasil, Anda akan mendapat konfirmasi melalui WhatsApp/Email.\n\n✨ PENDAFTARAN GRATIS! ✨\n📱 Informasi & Konfirmasi Admin: 0896-1674-6342 (Admin PB Bilibili 162)\n🌐 Kunjungi Website Resmi: https://pbilibili162.99apps.id\n\n"Disiplin • Kerja Keras • Juara!" 🏆\n\nHormat kami,\nH. Wawan\nKetua PB Bilibili 162 Parepare 💙🏸`,
-  url_gambar: 'https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/identitas-atlet/promosi/popup-1786212468282.png',
+const FALLBACK_POPUP = {
+  id: 'popup-fallback',
+  judul: 'PENGUMUMAN',
+  deskripsi: '',
+  url_gambar: '',
   is_active: true,
   active: true,
-  urutan: 21
+  urutan: 999999
 };
 
-interface ImagePopupProps {
-  activeView?: string | null;
+interface ImagePopupProps { activeView?: string | null; }
+
+function normalizePopups(items: any[]): any[] {
+  const map = new Map<string, any>();
+  for (const item of Array.isArray(items) ? items : []) {
+    if (!item || !item.id) continue;
+    const active = item.is_active ?? item.active ?? false;
+    if (!active) continue;
+    map.set(String(item.id), { ...item, is_active: true, active: true });
+  }
+  return Array.from(map.values()).sort((a, b) => Number(a.urutan ?? 0) - Number(b.urutan ?? 0));
+}
+
+function readLocalPopupCache(): any[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem('site_setting_popup_config');
+    if (!raw) return [];
+    return normalizePopups(parsePopupList(raw));
+  } catch { return []; }
+}
+
+function preloadImages(items: any[]) {
+  if (typeof window === 'undefined') return;
+  items.slice(0, 8).forEach(item => {
+    if (!item?.url_gambar) return;
+    const img = new Image();
+    img.decoding = 'async';
+    img.src = item.url_gambar;
+  });
 }
 
 function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
-  const [isOpen, setIsOpen] = useState(false);
+  const cached = readLocalPopupCache();
+  const [promoImages, setPromoImages] = useState<any[]>(cached);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [promoImages, setPromoImages] = useState<any[]>([]);
+  const [isOpen, setIsOpen] = useState(activeView === null && cached.length > 0);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isLoading, setIsLoading] = useState(cached.length === 0);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const isDismissedRef = useRef<boolean>(false);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const dismissedRef = useRef(false);
 
-  const fetchActivePopups = async (forceShow = false) => {
-    try {
-      if (typeof window !== 'undefined' && (window.location.pathname.startsWith('/admin') || window.location.pathname.startsWith('/login'))) {
-        setPromoImages([]);
-        setIsOpen(false);
-        return;
-      }
-
-      // If user is currently on a full subpage view (not home session), don't show popup
-      if (activeView !== null) {
-        setIsOpen(false);
-        return;
-      }
-
-      // Check if user already dismissed popup in this home visit
-      if (!forceShow && isDismissedRef.current) {
-        setIsOpen(false);
-        return;
-      }
-
-      let siteConfigRaw: any = null;
-      let siteLoaded = false;
-      try {
-        siteConfigRaw = await getSiteSetting('popup_config');
-        if (siteConfigRaw !== null && siteConfigRaw !== undefined) {
-          siteLoaded = true;
-        }
-      } catch (e) {}
-
-      let apiItems: any[] = [];
-      try {
-        const res = await fetch('/api/konfigurasi-popup');
-        if (res.ok) {
-          const json = await res.json();
-          if (Array.isArray(json)) apiItems = json;
-        }
-      } catch (e) {}
-
-      let dbItems: any[] = [];
-      try {
-        const { data, error } = await supabase
-          .from('konfigurasi_popup')
-          .select('*')
-          .order('urutan', { ascending: true });
-        
-        if (!error && data && data.length > 0) {
-          dbItems = data;
-        } else {
-          const { data: popupsData, error: popupsError } = await supabase
-            .from('popups')
-            .select('*')
-            .order('urutan', { ascending: true });
-          if (!popupsError && popupsData) {
-            dbItems = popupsData;
-          }
-        }
-      } catch (e) {}
-
-      let sitePopups = parsePopupList(siteConfigRaw);
-
-      let canonicalList: any[] = [];
-      if (siteLoaded) {
-        canonicalList = sitePopups;
-      } else if (apiItems.length > 0) {
-        canonicalList = apiItems;
-      } else if (dbItems.length > 0) {
-        canonicalList = dbItems;
-      } else {
-        canonicalList = [OFFICIAL_LATEST_POPUP];
-      }
-
-      const dbMap = new Map(dbItems.map((p: any) => [p.id, p]));
-      let merged: any[] = canonicalList.map(item => {
-        if (!item || !item.id) return item;
-        const dbItem = dbMap.get(item.id);
-        if (dbItem) {
-          return {
-            ...dbItem,
-            ...item,
-            judul: item.judul !== undefined && item.judul !== '' ? item.judul : (dbItem.judul || ''),
-            deskripsi: item.deskripsi !== undefined && item.deskripsi !== '' ? item.deskripsi : (dbItem.deskripsi || ''),
-            url_gambar: item.url_gambar || dbItem.url_gambar || '',
-            file_url: item.file_url !== undefined && item.file_url !== null ? item.file_url : (dbItem.file_url || null),
-            is_active: item.is_active ?? dbItem.is_active ?? true,
-            urutan: item.urutan ?? dbItem.urutan ?? 0
-          };
-        }
-        return item;
-      }).filter(Boolean);
-
-      merged = merged.map(item => {
-        if (!item) return item;
-        if (item.id === 'df3aa22e-5f97-4c05-9f04-700ccba35d08' || (item.judul && item.judul.toUpperCase().includes('AQIQAH')) || (item.url_gambar && item.url_gambar.includes('1784303693873'))) {
-          return { ...item, is_active: false, active: false };
-        }
-        return item;
-      });
-
-      // Deduplicate merged by id to prevent duplicate keys
-      const mergedMap = new Map();
-      for (const item of merged) {
-        if (item && item.id) {
-          mergedMap.set(item.id, item);
-        }
-      }
-      merged = Array.from(mergedMap.values());
-
-      merged.sort((a, b) => (a.urutan ?? 0) - (b.urutan ?? 0));
-
-      const activeItems = merged.filter((p: any) => p && (p.is_active === true || p.active === true));
-      
-      const shouldShow = activeItems.length > 0 && (forceShow || !isDismissedRef.current);
-
-      if (shouldShow) {
-        setPromoImages(activeItems);
-        setCurrentIndex(0);
-        setIsOpen(true);
-      } else {
-        setPromoImages(activeItems);
-        setIsOpen(false);
-      }
-    } catch (err) {
-      console.error("Gagal memuat pop-up:", err);
-    }
+  const applyItems = (items: any[], forceShow = false) => {
+    const active = normalizePopups(items);
+    if (!active.length) return;
+    setPromoImages(prev => {
+      const nextIndex = prev.length && prev[currentIndex]?.id
+        ? Math.min(prev.findIndex(p => p.id === active[currentIndex]?.id), active.length - 1)
+        : 0;
+      setCurrentIndex(nextIndex >= 0 ? nextIndex : 0);
+      return active;
+    });
+    preloadImages(active);
+    if (activeView === null && (forceShow || !dismissedRef.current)) setIsOpen(true);
+    setIsLoading(false);
   };
 
-  const prevActiveViewRef = useRef<string | null>(activeView);
+  const loadPopups = async (forceShow = false) => {
+    if (typeof window !== 'undefined' && (/^\/admin/.test(location.pathname) || /^\/login/.test(location.pathname))) return;
+    if (activeView !== null) { setIsOpen(false); return; }
+    if (!forceShow && dismissedRef.current) return;
+
+    // Show cached data immediately; network/database revalidation happens in parallel.
+    const local = readLocalPopupCache();
+    if (local.length) applyItems(local, forceShow);
+
+    const dbPromise = supabase
+      .from('konfigurasi_popup')
+      .select('*')
+      .order('urutan', { ascending: true });
+
+    const settingsPromise = getSiteSetting('popup_config').catch(() => null);
+    const apiPromise = fetch('/api/konfigurasi-popup').then(r => r.ok ? r.json() : []).catch(() => []);
+
+    const [dbResult, settingsRaw, apiItems] = await Promise.all([dbPromise, settingsPromise, apiPromise]);
+    let dbItems: any[] = [];
+    if (!dbResult.error && Array.isArray(dbResult.data) && dbResult.data.length) {
+      dbItems = dbResult.data;
+    } else {
+      const fallback = await supabase.from('popups').select('*').order('urutan', { ascending: true });
+      if (!fallback.error && Array.isArray(fallback.data)) dbItems = fallback.data;
+    }
+
+    // Supabase is authoritative for active state/order. Other sources are only fallbacks.
+    const authoritative = normalizePopups(dbItems);
+    const settingsItems = normalizePopups(parsePopupList(settingsRaw));
+    const apiNormalized = normalizePopups(Array.isArray(apiItems) ? apiItems : []);
+    const finalItems = authoritative.length ? authoritative : (settingsItems.length ? settingsItems : apiNormalized);
+
+    if (finalItems.length) applyItems(finalItems, forceShow);
+    else if (!promoImages.length && local.length === 0) setIsLoading(false);
+  };
 
   useEffect(() => {
     if (activeView !== null) {
       setIsOpen(false);
-      isDismissedRef.current = false;
-    } else {
-      isDismissedRef.current = false;
-      fetchActivePopups(true);
+      return;
     }
-    prevActiveViewRef.current = activeView;
+    dismissedRef.current = false;
+    loadPopups(true);
   }, [activeView]);
 
-  // Realtime subscription listening directly for database changes on 'popups' table via Supabase
   useEffect(() => {
-    const popupsChannel = supabase
-      .channel('popups-db-changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'popups' },
-        () => {
-          fetchActivePopups(false);
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'konfigurasi_popup' },
-        () => {
-          fetchActivePopups(false);
-        }
-      )
+    const channel = supabase
+      .channel('popup-fast-sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'konfigurasi_popup' }, () => loadPopups(false))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'popups' }, () => loadPopups(false))
       .subscribe();
-
-    return () => {
-      supabase.removeChannel(popupsChannel);
-    };
-  }, []);
-
-  useEffect(() => {
-    // Clear any stale local/session storage keys from earlier builds
-    try {
-      sessionStorage.removeItem('popup_dismissed_session');
-      Object.keys(sessionStorage).forEach(k => {
-        if (k.startsWith('popup_dismissed_')) sessionStorage.removeItem(k);
-      });
-      Object.keys(localStorage).forEach(k => {
-        if (k.startsWith('popup_dismissed_')) localStorage.removeItem(k);
-      });
-    } catch (e) {}
-
-    if (activeView === null) {
-      fetchActivePopups(true);
-    }
-
-    const handleTriggerHome = () => {
-      isDismissedRef.current = false;
-      fetchActivePopups(true);
-    };
-
-    const handleUpdate = () => {
-      fetchActivePopups(false);
-    };
-
-    window.addEventListener('trigger-home-popup', handleTriggerHome);
-    window.addEventListener('site_setting_updated', handleUpdate);
-    window.addEventListener('table_updated_popup_config', handleUpdate);
-    window.addEventListener('table_updated_konfigurasi_popup', handleUpdate);
-    window.addEventListener('app_data_changed', handleUpdate);
-
-    return () => {
-      window.removeEventListener('trigger-home-popup', handleTriggerHome);
-      window.removeEventListener('site_setting_updated', handleUpdate);
-      window.removeEventListener('table_updated_popup_config', handleUpdate);
-      window.removeEventListener('table_updated_konfigurasi_popup', handleUpdate);
-      window.removeEventListener('app_data_changed', handleUpdate);
-    };
-  }, []);
+    return () => { supabase.removeChannel(channel); };
+  }, [activeView]);
 
   useRealtimeSync({
     tables: ['konfigurasi_popup', 'site_settings'],
     settingKeys: ['popup_config'],
-    onUpdate: () => {
-      fetchActivePopups(false);
-    }
+    onUpdate: () => loadPopups(false)
   });
 
   useEffect(() => {
-    let scrollInterval: any;
-    if (isOpen && scrollRef.current) {
-      const startTimeout = setTimeout(() => {
-        scrollInterval = setInterval(() => {
-          if (scrollRef.current) {
-            const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
-            if (scrollTop + clientHeight >= scrollHeight - 1) {
-              clearInterval(scrollInterval);
-            } else {
-              scrollRef.current.scrollBy({ top: 0.5, behavior: 'auto' });
-            }
-          }
-        }, 30);
-      }, 4000);
+    const events = ['trigger-home-popup', 'site_setting_updated', 'table_updated_popup_config', 'table_updated_konfigurasi_popup', 'app_data_changed'];
+    const handler = () => { dismissedRef.current = false; loadPopups(true); };
+    events.forEach(e => window.addEventListener(e, handler));
+    return () => events.forEach(e => window.removeEventListener(e, handler));
+  }, [activeView]);
 
-      return () => {
-        clearInterval(scrollInterval);
-        clearTimeout(startTimeout);
-      };
+  const goTo = (index: number) => {
+    if (!promoImages.length) return;
+    const next = (index + promoImages.length) % promoImages.length;
+    setCurrentIndex(next);
+    setIsExpanded(false);
+    const item = promoImages[next];
+    if (item?.url_gambar) {
+      const img = new Image();
+      img.decoding = 'async';
+      img.src = item.url_gambar;
     }
-  }, [isOpen, currentIndex]);
-
-  // --- PERBAIKAN LOGIKA TEXT RENDER ---
-  const renderCleanDescription = (text: string) => {
-    if (!text) return null;
-    const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+)/g;
-
-    return text.split('\n').map((line, i) => {
-      if (line.trim() === "") return <div key={i} className="h-3" />;
-
-      return (
-        <p 
-          key={i} 
-          className="mb-5 last:mb-0 !leading-7 text-slate-800 !text-justify text-[15px]"
-          style={{ 
-            overflowWrap: 'break-word', 
-            wordWrap: 'break-word'
-          }}
-        >
-          {line.split(urlRegex).map((part, index) => {
-            if (part.match(urlRegex)) {
-              const cleanUrl = part.startsWith('www.') ? `https://${part}` : part;
-              return (
-                <a
-                  key={index}
-                  href={cleanUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:text-blue-800 underline decoration-blue-200 underline-offset-2 font-medium break-all"
-                >
-                  {part} 
-                </a>
-              );
-            }
-            return <span key={index}>{part}</span>;
-          })}
-        </p>
-      );
-    });
   };
-  // ------------------------------------
 
-  const [isExpanded, setIsExpanded] = useState(false);
+  const nextPopup = () => goTo(currentIndex + 1);
+  const previousPopup = () => goTo(currentIndex - 1);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    touchStartRef.current = { x: t.clientX, y: t.clientY };
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const start = touchStartRef.current;
+    touchStartRef.current = null;
+    if (!start) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - start.x;
+    const dy = t.clientY - start.y;
+    if (Math.abs(dx) < 50 || Math.abs(dx) <= Math.abs(dy)) return;
+    if (dx < 0) nextPopup(); else previousPopup();
+  };
+
   const closePopup = () => {
-    isDismissedRef.current = true;
+    dismissedRef.current = true;
     setIsOpen(false);
   };
 
-  const handleDragEnd = (e: any, { offset, velocity }: any) => {
-    const swipe = Math.abs(offset.x) > 50; 
-    if (swipe) {
-      if (offset.x < 0) {
-        setCurrentIndex((prev) => (prev + 1) % promoImages.length);
-      } else {
-        setCurrentIndex((prev) => (prev - 1 + promoImages.length) % promoImages.length);
-      }
-    }
+  if (activeView !== null || !isOpen || !promoImages.length) return null;
+  const current = promoImages[Math.min(currentIndex, promoImages.length - 1)];
+  if (!current) return null;
+
+  const renderDescription = (text: string) => {
+    if (!text) return null;
+    const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+)/g;
+    return text.split('\n').map((line, i) => line.trim() ? (
+      <p key={i} className="mb-3 last:mb-0 leading-6 text-slate-800 text-[14px] break-words">
+        {line.split(urlRegex).map((part, j) => urlRegex.test(part) ? <a key={j} href={part.startsWith('www.') ? `https://${part}` : part} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline break-all">{part}</a> : <span key={j}>{part}</span>)}
+      </p>
+    ) : <div key={i} className="h-2" />);
   };
 
-  if (promoImages.length === 0 || !isOpen) return null;
-  const current = promoImages[currentIndex];
-
   return (
-    <AnimatePresence mode="wait">
-      <div className="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-        <div className="absolute inset-0" onClick={closePopup} />
-        
-        <motion.div 
-          key={current.id || `popup-${currentIndex}`}
-          initial={{ opacity: 0, scale: 0.9, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.9, y: -20 }}
-          transition={{ 
-            type: "spring",
-            stiffness: 400,
-            damping: 30,
-            mass: 0.8
-          }}
-          className="relative w-full max-w-[calc(100vw-2rem)] sm:max-w-[420px] max-h-[85vh] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <button 
-            onClick={closePopup} 
-            className="absolute top-4 right-4 z-[60] p-2 bg-white hover:bg-slate-100 text-slate-800 rounded-full shadow-xl border border-slate-200 transition-all active:scale-90"
-          >
-            <X size={18} />
-          </button>
+    <div className="fixed inset-0 z-[999999] flex items-center justify-center p-3 bg-slate-950/80 backdrop-blur-sm">
+      <div className="absolute inset-0" onClick={closePopup} />
+      <div
+        className="relative w-full max-w-[420px] max-h-[90vh] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden"
+        onClick={e => e.stopPropagation()}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
+        <button onClick={closePopup} aria-label="Tutup" className="absolute top-3 right-3 z-30 p-2.5 bg-white/95 text-slate-800 rounded-full shadow-lg border border-slate-200 active:scale-90">
+          <X size={20} />
+        </button>
 
-          <div ref={scrollRef} className="overflow-y-auto hide-scrollbar scroll-smooth">
-            <AnimatePresence>
-              <motion.div 
-                key={currentIndex}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
-              >
-                 <motion.div 
-                  drag="x"
-                  dragConstraints={{ left: 0, right: 0 }}
-                  onDragEnd={handleDragEnd}
-                  className="relative w-full bg-slate-950 shrink-0 cursor-grab active:cursor-grabbing overflow-hidden flex items-center justify-center"
-                >
-                  {/* Main Banner Image - Fully spans the width proportionally without cropping */}
-                  <img 
-                    src={current.url_gambar} 
-                    className="w-full h-auto block z-10 select-none pointer-events-none" 
-                    alt="Banner" 
-                  />
-                  
-                  {/* Subtle lighting gradient overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/20 via-transparent to-black/10 z-20 pointer-events-none" />
-                </motion.div>
-
-                <div className="px-6 pt-2 pb-8 bg-white">
-                  <div className="flex justify-center mb-4">
-                    <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-bold uppercase tracking-widest border border-blue-100">
-                      Pengumuman
-                    </span>
-                  </div>
-                  
-                  <h3 className="text-2xl font-black text-blue-700 leading-tight text-center mb-6 px-4 uppercase tracking-tighter">
-                    {current.judul}
-                  </h3>
-
-                  <div className="bg-slate-50 border border-slate-100 rounded-3xl p-6 mb-8 shadow-inner">
-                    <div className={`transition-all duration-300 ${isExpanded ? '' : 'line-clamp-3'}`}>
-                      {renderCleanDescription(current.deskripsi)}
-                    </div>
-                    <button 
-                      onClick={() => setIsExpanded(!isExpanded)}
-                      className="text-blue-600 text-xs font-bold mt-2 hover:underline"
-                    >
-                      {isExpanded ? 'Read Less' : 'Read More'}
-                    </button>
-                  </div>
-                  
-                  <div className="space-y-3 px-1">
-                    {current.file_url && current.file_url.length > 5 && (
-                      <motion.a 
-                        whileHover={{ scale: 1.01 }}
-                        whileTap={{ scale: 0.98 }}
-                        href={current.file_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center justify-center gap-2 w-full py-3.5 bg-slate-900 text-white rounded-xl font-bold text-[12px] tracking-wider shadow-lg"
-                      >
-                        <Download size={14} /> LIHAT LAMPIRAN
-                      </motion.a>
-                    )}
-
-                    <button 
-                      onClick={closePopup} 
-                      className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-[12px] tracking-wider transition-all shadow-md"
-                    >
-                      MENGERTI
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            </AnimatePresence>
+        <div ref={scrollRef} className="overflow-y-auto hide-scrollbar">
+          <div className="relative bg-slate-950 min-h-[120px] flex items-center justify-center">
+            <img
+              key={current.id}
+              src={current.url_gambar || FALLBACK_POPUP.url_gambar}
+              alt={current.judul || 'Popup'}
+              loading={currentIndex === 0 ? 'eager' : 'lazy'}
+              decoding="async"
+              fetchPriority={currentIndex === 0 ? 'high' : 'auto'}
+              className="block w-full h-auto max-h-[70vh] object-contain select-none"
+              draggable={false}
+            />
+            {isLoading && <div className="absolute inset-0 flex items-center justify-center bg-slate-950/30"><div className="w-7 h-7 border-2 border-white/40 border-t-white rounded-full animate-spin" /></div>}
           </div>
-        </motion.div>
+
+          {promoImages.length > 1 && (
+            <div className="absolute left-2 right-2 top-[45%] z-20 flex items-center justify-between pointer-events-none">
+              <button onClick={previousPopup} aria-label="Popup sebelumnya" className="pointer-events-auto w-11 h-11 rounded-full bg-slate-900/70 text-white flex items-center justify-center shadow-lg active:scale-90"><ChevronLeft size={25} /></button>
+              <button onClick={nextPopup} aria-label="Popup berikutnya" className="pointer-events-auto w-11 h-11 rounded-full bg-slate-900/70 text-white flex items-center justify-center shadow-lg active:scale-90"><ChevronRight size={25} /></button>
+            </div>
+          )}
+
+          <div className="p-4">
+            {current.judul && <h3 className="text-lg font-black text-blue-700 text-center uppercase leading-tight mb-3">{current.judul}</h3>}
+            {current.deskripsi && <div className={`text-slate-800 ${isExpanded ? '' : 'line-clamp-4'}`}>{renderDescription(current.deskripsi)}</div>}
+            {current.deskripsi && current.deskripsi.length > 300 && <button onClick={() => setIsExpanded(v => !v)} className="mt-2 text-blue-600 font-bold text-xs">{isExpanded ? 'TUTUP DESKRIPSI' : 'BACA SELENGKAPNYA'}</button>}
+            {current.file_url && <a href={current.file_url} target="_blank" rel="noopener noreferrer" className="mt-3 flex items-center justify-center gap-2 w-full py-3 bg-slate-900 text-white rounded-xl font-bold text-xs"><Download size={14} /> LIHAT LAMPIRAN</a>}
+            {promoImages.length > 1 && <div className="flex items-center justify-center gap-1.5 mt-3" aria-label={`Popup ${currentIndex + 1} dari ${promoImages.length}`}>{promoImages.map((_, i) => <button key={i} onClick={() => goTo(i)} aria-label={`Popup ${i + 1}`} className={`h-2 rounded-full transition-all ${i === currentIndex ? 'w-6 bg-slate-800' : 'w-2 bg-slate-300'}`} />)}</div>}
+            <div className="flex items-center justify-between gap-2 mt-3">
+              {promoImages.length > 1 ? <span className="text-[11px] font-bold text-slate-500">{currentIndex + 1}/{promoImages.length}</span> : <span />}
+              <button onClick={closePopup} className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs shadow-md">MENGERTI</button>
+            </div>
+          </div>
+        </div>
       </div>
-    </AnimatePresence>
+    </div>
   );
 }
 
