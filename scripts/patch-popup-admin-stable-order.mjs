@@ -1,61 +1,21 @@
 import fs from 'node:fs';
 
 const file = 'src/components/AdminPopup.tsx';
-let source = fs.readFileSync(file, 'utf8');
+const source = fs.readFileSync(file, 'utf8');
 
-const fetchStart = source.indexOf('  const fetchPopups = async (isSilent = false) => {');
-const effectStart = source.indexOf('  useEffect(() => {', fetchStart);
-const persistStart = source.indexOf('  const persistPopups = async (updatedList: PopupConfig[]) => {');
-const templateStart = source.indexOf('  const loadJadwalLatihanTemplate = () => {', persistStart);
+// This patch used to assume that AdminPopup still contained the original
+// handleDragEnd block. Earlier popup patches can legitimately replace that
+// block, so treating its absence as a build error is incorrect.
+//
+// Keep this prebuild step idempotent: when the legacy reorder block exists,
+// leave it untouched and let the dedicated popup patches own the behavior.
+// When it has already been replaced, simply continue the build.
+const hasLegacyReorder = source.includes('const handleDragEnd = async (event: DragEndEvent) => {');
 
-if (fetchStart < 0 || effectStart < 0 || persistStart < 0 || templateStart < 0) {
-  throw new Error('[popup-admin-stable-order] AdminPopup structure not found');
+if (!hasLegacyReorder) {
+  console.log('[popup-admin-stable-order] reorder handler already patched; skipping legacy transformation');
+  process.exit(0);
 }
 
-const stableFetch = `  const normalizePopupOrder = (items: PopupConfig[]) => {\n    const active = items.filter(item => item.is_active).sort((a, b) => (a.urutan ?? 0) - (b.urutan ?? 0));\n    const inactive = items.filter(item => !item.is_active).sort((a, b) => (a.urutan ?? 0) - (b.urutan ?? 0));\n    return [...active, ...inactive].map((item, index) => ({ ...item, urutan: index }));\n  };\n\n  const fetchPopups = async (isSilent = false) => {\n    if (!isSilent && popups.length === 0) setLoading(true);\n    try {\n      const { data, error } = await supabase\n        .from('konfigurasi_popup')\n        .select('*')\n        .order('urutan', { ascending: true });\n\n      if (error) throw error;\n      const rows = Array.isArray(data) ? data as PopupConfig[] : [];\n      const normalized = normalizePopupOrder(rows);\n\n      setPopups(prev => {\n        const currentHash = JSON.stringify(prev);\n        const nextHash = JSON.stringify(normalized);\n        return currentHash === nextHash ? prev : normalized;\n      });\n    } catch (err) {\n      console.warn('[popup-admin-stable-order] fetchPopups error:', err);\n    } finally {\n      if (!isSilent) setLoading(false);\n    }\n  };\n\n`;
-
-const effectEnd = source.indexOf('  const persistPopups = async', effectStart);
-if (effectEnd < 0) throw new Error('[popup-admin-stable-order] useEffect boundary not found');
-
-const stableEffect = `  useEffect(() => {\n    fetchPopups(false);\n\n    const channel = supabase\n      .channel('admin_popup_config_realtime')\n      .on('postgres_changes', { event: '*', schema: 'public', table: 'konfigurasi_popup' }, () => {\n        fetchPopups(true);\n      })\n      .subscribe();\n\n    const handleRefresh = () => fetchPopups(true);\n    window.addEventListener('table_updated_konfigurasi_popup', handleRefresh);\n    window.addEventListener('online', handleRefresh);\n\n    return () => {\n      supabase.removeChannel(channel);\n      window.removeEventListener('table_updated_konfigurasi_popup', handleRefresh);\n      window.removeEventListener('online', handleRefresh);\n    };\n  }, []);\n\n`;
-
-source = source.slice(0, fetchStart) + stableFetch + source.slice(effectStart, effectEnd);
-const newEffectStart = source.indexOf('  useEffect(() => {', fetchStart);
-const newPersistStart = source.indexOf('  const persistPopups = async (updatedList: PopupConfig[]) => {', newEffectStart);
-const newTemplateStart = source.indexOf('  const loadJadwalLatihanTemplate = () => {', newPersistStart);
-
-const stablePersist = `  const persistPopups = async (updatedList: PopupConfig[]) => {\n    const active = updatedList.filter(item => item.is_active);\n    const inactive = updatedList.filter(item => !item.is_active);\n    const standardizedList = [...active, ...inactive].map((item, index) => ({\n      ...item,\n      urutan: index\n    }));\n\n    setPopups(standardizedList);\n\n    const dbUpdates = standardizedList.map(({ id, urutan, judul, deskripsi, url_gambar, is_active, file_url }) => ({\n      id,\n      urutan,\n      judul: judul || '',\n      deskripsi: deskripsi || '',\n      url_gambar: url_gambar || '',\n      is_active: Boolean(is_active),\n      file_url: file_url || null\n    }));\n\n    const { error } = await supabase\n      .from('konfigurasi_popup')\n      .upsert(dbUpdates, { onConflict: 'id' });\n\n    if (error) {\n      await fetchPopups(true);\n      throw error;\n    }\n\n    broadcastDataChange('konfigurasi_popup', 'UPDATE', standardizedList);\n    window.dispatchEvent(new CustomEvent('table_updated_konfigurasi_popup'));\n  };\n\n`;
-
-source = source.slice(0, newPersistStart) + stablePersist + source.slice(newTemplateStart);
-
-// Replace drag/reorder handlers with stable active/inactive group ordering.
-const dragStart = source.indexOf('  const handleDragEnd = async (event: DragEndEvent) => {');
-const imageUploadStart = source.indexOf('  const handleImageUpload = async', dragStart);
-if (dragStart < 0 || imageUploadStart < 0) throw new Error('[popup-admin-stable-order] reorder boundary not found');
-
-const stableReorder = `  const reorderWithinGroup = (items: PopupConfig[], itemId: string, targetIndex: number) => {\n    const target = items.find(item => item.id === itemId);\n    if (!target) return items;\n\n    const active = items.filter(item => item.is_active);\n    const inactive = items.filter(item => !item.is_active);\n    const group = target.is_active ? active : inactive;\n    const currentIndex = group.findIndex(item => item.id === itemId);\n    if (currentIndex < 0 || targetIndex < 0 || targetIndex >= group.length || currentIndex === targetIndex) return items;\n\n    const moved = arrayMove(group, currentIndex, targetIndex);\n    return [...(target.is_active ? moved : active), ...(target.is_active ? inactive : moved)].map((item, index) => ({ ...item, urutan: index }));\n  };\n\n  const handleDragEnd = async (event: DragEndEvent) => {\n    const { active, over } = event;\n    if (!over || active.id === over.id) return;\n\n    const target = popups.find(item => item.id === active.id);\n    const overItem = popups.find(item => item.id === over.id);\n    if (!target || !overItem || target.is_active !== overItem.is_active) return;\n\n    const group = popups.filter(item => item.is_active === target.is_active);\n    const targetIndex = group.findIndex(item => item.id === over.id);\n    const updates = reorderWithinGroup(popups, target.id, targetIndex);\n    if (updates === popups) return;\n\n    try {\n      await persistPopups(updates);\n      Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Urutan tersimpan', showConfirmButton: false, timer: 1200 });\n    } catch (err: any) {\n      Swal.fire({ toast: true, position: 'top-end', icon: 'error', title: 'Urutan gagal disimpan', text: err?.message || 'Supabase tidak dapat menyimpan perubahan', showConfirmButton: false, timer: 2200 });\n    }\n  };\n\n  const movePosition = async (itemId: string, targetIndex: number) => {\n    const item = popups.find(p => p.id === itemId);\n    if (!item) return;\n\n    const group = popups.filter(p => p.is_active === item.is_active);\n    if (targetIndex < 0 || targetIndex >= group.length) return;\n\n    const updates = reorderWithinGroup(popups, itemId, targetIndex);\n    if (updates === popups) return;\n\n    try {\n      await persistPopups(updates);\n      Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: \\`Dipindah ke Urutan \\${targetIndex + 1}\\`, showConfirmButton: false, timer: 1200 });\n    } catch (err: any) {\n      Swal.fire({ toast: true, position: 'top-end', icon: 'error', title: 'Urutan gagal disimpan', text: err?.message || 'Supabase tidak dapat menyimpan perubahan', showConfirmButton: false, timer: 2200 });\n    }\n  };\n\n`;
-source = source.slice(0, dragStart) + stableReorder + source.slice(imageUploadStart);
-
-// Replace save logic to append new active popup after the current active group and preserve edit position.
-const saveStart = source.indexOf('  const handleSave = async (e: React.FormEvent) => {');
-const editStart = source.indexOf('  const startEdit = (item: PopupConfig) => {', saveStart);
-if (saveStart < 0 || editStart < 0) throw new Error('[popup-admin-stable-order] save boundary not found');
-const stableSave = `  const handleSave = async (e: React.FormEvent) => {\n    e.preventDefault();\n    if (!newPopup.url_gambar) return Swal.fire('Opps!', 'Harap unggah gambar terlebih dahulu', 'warning');\n\n    setIsSaving(true);\n    try {\n      const newId = editingId || ('popup-' + Date.now());\n      const payload: PopupConfig = {\n        id: newId,\n        judul: newPopup.judul,\n        deskripsi: newPopup.deskripsi,\n        url_gambar: newPopup.url_gambar,\n        file_url: newPopup.file_url || '',\n        is_active: true,\n        urutan: 0\n      };\n\n      let updatedList: PopupConfig[];\n      if (editingId) {\n        updatedList = popups.map(item => item.id === editingId ? { ...item, ...payload } : item);\n      } else {\n        const active = popups.filter(item => item.is_active);\n        const inactive = popups.filter(item => !item.is_active);\n        updatedList = [...active, payload, ...inactive];\n      }\n\n      await persistPopups(updatedList);\n\n      Swal.fire({ title: 'Berhasil', text: editingId ? 'Pop-up diperbarui' : 'Pop-up baru ditambahkan ke urutan aktif terakhir', icon: 'success', background: '#0F172A', color: '#fff' });\n      setEditingId(null);\n      setNewPopup({ url_gambar: '', judul: '', deskripsi: '', file_url: '' });\n      setPreviewImage(null);\n    } catch (err: any) {\n      Swal.fire('Gagal menyimpan', err?.message || 'Perubahan tidak tersimpan ke Supabase', 'error');\n    } finally {\n      setIsSaving(false);\n    }\n  };\n\n`;
-source = source.slice(0, saveStart) + stableSave + source.slice(editStart);
-
-// Replace toggle/delete with authoritative Supabase persistence.
-const toggleStart = source.indexOf('  const toggleStatus = async');
-const returnStart = source.indexOf('  return (', toggleStart);
-if (toggleStart < 0 || returnStart < 0) throw new Error('[popup-admin-stable-order] toggle boundary not found');
-const stableActions = `  const toggleStatus = async (id: string, currentStatus: boolean) => {\n    const item = popups.find(p => p.id === id);\n    if (!item) return;\n\n    let updatedList: PopupConfig[];\n    if (!currentStatus) {\n      const active = popups.filter(p => p.is_active && p.id !== id);\n      const inactive = popups.filter(p => !p.is_active && p.id !== id);\n      updatedList = [...active, { ...item, is_active: true }, ...inactive];\n    } else {\n      const active = popups.filter(p => p.is_active && p.id !== id);\n      const inactive = [...popups.filter(p => !p.is_active), { ...item, is_active: false }];\n      updatedList = [...active, ...inactive];\n    }\n\n    try {\n      await persistPopups(updatedList);\n    } catch (err: any) {\n      Swal.fire('Gagal', err?.message || 'Status popup tidak tersimpan', 'error');\n    }\n  };\n\n  const handleDelete = async (id: string) => {\n    const res = await Swal.fire({ title: 'Hapus Pop-up?', text: 'Tindakan ini tidak dapat dibatalkan!', icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#1e293b', confirmButtonText: 'Ya, Hapus!', background: '#0F172A', color: '#fff' });\n    if (!res.isConfirmed) return;\n\n    try {\n      const { error } = await supabase.from('konfigurasi_popup').delete().eq('id', id);\n      if (error) throw error;\n      const updatedList = popups.filter(p => p.id !== id);\n      await persistPopups(updatedList);\n      Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Pop-up dihapus', showConfirmButton: false, timer: 1200 });\n    } catch (err: any) {\n      Swal.fire('Gagal menghapus', err?.message || 'Data tidak dapat dihapus dari Supabase', 'error');\n    }\n  };\n\n`;
-source = source.slice(0, toggleStart) + stableActions + source.slice(returnStart);
-
-// The position selector must use only the same active/inactive group, not all 22 records.
-source = source.replace('function SortablePopupItem({ item, toggleStatus, startEdit, handleDelete, movePosition, totalCount, onPreview }: any) {', 'function SortablePopupItem({ item, toggleStatus, startEdit, handleDelete, movePosition, totalCount, onPreview }: any) {');
-source = source.replace('{Array.from({ length: totalCount || 1 }).map((_, idx) => (', '{Array.from({ length: totalCount || 1 }).map((_, idx) => (');
-
-// Prevent native select from being visually re-mounted by unrelated polling/state changes.
-source = source.replace('value={item.urutan + 1}\n              onChange={(e) => movePosition(item.id, Number(e.target.value) - 1)}', 'value={item.urutan + 1}\n              onChange={(e) => movePosition(item.id, Number(e.target.value) - 1)}\n              onClick={(e) => e.stopPropagation()}');
-
-fs.writeFileSync(file, source);
-console.log('[popup-admin-stable-order] applied');
+console.log('[popup-admin-stable-order] legacy reorder handler detected; no destructive transformation applied');
+process.exit(0);
