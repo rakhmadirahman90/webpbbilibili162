@@ -10,6 +10,7 @@ if (source.includes('KAS_PERSISTENCE_V2')) {
 }
 
 const pattern = /  const handleSave = async \(e: React\.FormEvent\) => \{.*?\n  \};\n\n  const handleEdit/;
+
 const replacement = `  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (saving) return;
@@ -75,7 +76,7 @@ const replacement = `  const handleSave = async (e: React.FormEvent) => {
         position: 'top-end',
         icon: 'success',
         title: 'Data Kas Tersimpan di Supabase',
-        text: \\`ID transaksi: \\${savedRecord.id}\\`,
+        text: 'ID transaksi: ' + savedRecord.id,
         showConfirmButton: false,
         timer: 3000
       });
