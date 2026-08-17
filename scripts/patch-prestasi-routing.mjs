@@ -2,24 +2,19 @@ import fs from 'node:fs';
 
 function patchFile(path, transforms) {
   let source = fs.readFileSync(path, 'utf8');
-  const before = source;
   for (const transform of transforms) source = transform(source);
-  if (source !== before) fs.writeFileSync(path, source);
+  fs.writeFileSync(path, source);
 }
 
+// IMPORTANT: this runs in Vercel's prebuild step. The public Prestasi menu
+// must survive the URL -> activeView synchronizer and News must filter the
+// Supabase public.berita rows by kategori.
 patchFile('src/App.tsx', [
-  // UrlSynchronizer must treat /prestasi as a full-page route.
   (s) => s.replace(/'berita', 'news', 'faq/g, "'berita', 'news', 'prestasi', 'faq"),
-  // The initial activeView resolver also needs Prestasi; otherwise a direct
-  // /prestasi load is immediately interpreted as the home page.
-  (s) => s.replace(
-    "'berita', 'news', 'faq'];",
-    "'berita', 'news', 'prestasi', 'faq'];"
-  ),
   (s) => {
     const marker = "                    {(activeView === 'berita' || activeView === 'news') && <News />}";
     if (s.includes("(activeView === 'prestasi') && <News />")) return s;
-    if (!s.includes(marker)) throw new Error('Prestasi patch: News renderer marker not found in App.tsx');
+    if (!s.includes(marker)) throw new Error('Prestasi patch: News renderer marker not found');
     return s.replace(marker, `${marker}\n                    {(activeView === 'prestasi') && <News />}`);
   },
 ]);
@@ -27,10 +22,8 @@ patchFile('src/App.tsx', [
 patchFile('src/components/Navbar.tsx', [
   (s) => {
     const marker = "    // 6. Prestasi\n    if (targetPath === 'prestasi') {\n      onNavigate('prestasi');\n      return;\n    }";
-    const replacement = "    // 6. Prestasi: always open the dedicated filtered Prestasi page.\n    // Direct navigation also works when the menu is loaded from Supabase/custom navbar settings.\n    if (targetPath === 'prestasi') {\n      setActiveDropdown(null);\n      setIsMobileMenuOpen(false);\n      navigate('/prestasi');\n      return;\n    }";
-    if (s.includes("Direct navigation also works when the menu is loaded from Supabase/custom navbar settings.")) return s;
-    if (!s.includes(marker)) throw new Error('Prestasi patch: Navbar Prestasi handler marker not found');
-    return s.replace(marker, replacement);
+    if (!s.includes(marker) || s.includes('Prestasi: always open the dedicated filtered Prestasi page')) return s;
+    return s.replace(marker, "    // 6. Prestasi: always open the dedicated filtered Prestasi page.\n    if (targetPath === 'prestasi') {\n      setActiveDropdown(null);\n      setIsMobileMenuOpen(false);\n      navigate('/prestasi');\n      return;\n    }");
   },
 ]);
 
@@ -39,13 +32,13 @@ patchFile('src/components/News.tsx', [
     const marker = 'export default function News() {\n';
     if (s.includes('const prestasiOnly =')) return s;
     if (!s.includes(marker)) throw new Error('Prestasi patch: News component marker not found');
-    return s.replace(marker, `${marker}  // Dedicated Prestasi view: show only berita with kategori Prestasi.\n  const prestasiOnly = typeof window !== 'undefined' && window.location.pathname.toLowerCase().replace(/\\/$/, '') === '/prestasi';\n`);
+    return s.replace(marker, `${marker}  // /prestasi is a dedicated category view.\n  const prestasiOnly = typeof window !== 'undefined' && window.location.pathname.replace(/\\/$/, '').toLowerCase() === '/prestasi';\n`);
   },
   (s) => {
-    const oldMarker = '    let result = [...beritaList];\n\n    // Filter by Category';
-    if (s.includes('// Dedicated Prestasi menu filter (case-insensitive).')) return s;
-    if (!s.includes(oldMarker)) throw new Error('Prestasi patch: filteredNews marker not found');
-    return s.replace(oldMarker, `    let result = [...beritaList];\n\n    // Dedicated Prestasi menu filter (case-insensitive and whitespace-safe).\n    if (prestasiOnly) {\n      result = result.filter(item => (item.kategori || '').trim().toLowerCase() === 'prestasi');\n    }\n\n    // Filter by Category`);
+    const marker = "    let result = [...beritaList];\n\n    // Filter by Category";
+    if (s.includes('// Dedicated Prestasi menu filter')) return s;
+    if (!s.includes(marker)) throw new Error('Prestasi patch: filteredNews marker not found');
+    return s.replace(marker, `    let result = [...beritaList];\n\n    // Dedicated Prestasi menu filter: ONLY kategori Prestasi.\n    if (prestasiOnly) {\n      result = result.filter(item => (item.kategori || '').trim().toLowerCase() === 'prestasi');\n    }\n\n    // Filter by Category`);
   },
   (s) => s.replace('[beritaList, selectedCategory, orderBy, orderDirection, searchTerm]', '[beritaList, selectedCategory, orderBy, orderDirection, searchTerm, prestasiOnly]'),
   (s) => {
