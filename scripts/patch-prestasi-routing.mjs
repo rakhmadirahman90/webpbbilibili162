@@ -6,8 +6,8 @@ function patchFile(path, transforms) {
   fs.writeFileSync(path, source);
 }
 
-// IMPORTANT: this runs in Vercel's prebuild step. The public Prestasi menu
-// must survive the URL -> activeView synchronizer and News must filter the
+// IMPORTANT: this runs in Vercel's prebuild step. The public Berita/Prestasi
+// menu must survive the URL -> activeView synchronizer and Prestasi must filter
 // Supabase public.berita rows by kategori.
 patchFile('src/App.tsx', [
   (s) => s.replace(/'berita', 'news', 'faq/g, "'berita', 'news', 'prestasi', 'faq"),
@@ -21,7 +21,7 @@ patchFile('src/App.tsx', [
 
 patchFile('src/components/Navbar.tsx', [
   // Normalize custom Supabase menu paths such as "berita?category=Prestasi"
-  // before the legacy routing conditions inspect the target path.
+  // before routing conditions inspect the target path.
   (s) => {
     const old = "    const targetPath = (subPath || path || '').toLowerCase().trim();";
     const newer = `    const rawTargetPath = (subPath || path || '').trim();
@@ -34,21 +34,47 @@ patchFile('src/components/Navbar.tsx', [
     return s.replace(old, newer);
   },
   (s) => {
-    // Always open the dedicated Prestasi route, including legacy/custom
-    // Supabase navbar entries that still use berita?category=Prestasi.
-    const old = "    // 6. Prestasi\n    if (targetPath === 'prestasi') {\n      onNavigate('prestasi');\n      return;\n    }";
-    const replacement = `    // 6. Prestasi: always open the dedicated filtered Prestasi page.
-    // Supports both the canonical "prestasi" path and legacy/custom
-    // Supabase values such as "berita?category=Prestasi".
+    // Berita and Prestasi are full navigation targets. Do not let the generic
+    // Berita handler swallow a legacy Prestasi query path.
+    const oldPrestasi = "    // 6. Prestasi\n    if (targetPath === 'prestasi') {\n      onNavigate('prestasi');\n      return;\n    }";
+    const replacementPrestasi = `    // 6. Prestasi: always open the dedicated filtered Prestasi page.
+    // Supports both canonical "prestasi" and legacy "berita?category=Prestasi".
     if (targetPath === 'prestasi' || (targetPath === 'berita' && targetCategory === 'prestasi')) {
       setActiveDropdown(null);
       setIsMobileMenuOpen(false);
       navigate('/prestasi');
       return;
     }`;
-    if (s.includes("targetPath === 'berita' && targetCategory === 'prestasi'")) return s;
-    if (!s.includes(old)) throw new Error('Prestasi patch: legacy Prestasi handler marker not found');
+    if (!s.includes("targetPath === 'berita' && targetCategory === 'prestasi'")) {
+      if (!s.includes(oldPrestasi)) throw new Error('Prestasi patch: Prestasi handler marker not found');
+      s = s.replace(oldPrestasi, replacementPrestasi);
+    }
+    return s;
+  },
+  (s) => {
+    // Berita must navigate to a dedicated URL as well, rather than relying only
+    // on parent state. This makes the mobile submenu reliable after menu close.
+    const old = "    // 5. Berita\n    if (targetPath === 'berita' || targetPath === 'news' || targetPath.includes('berita')) {\n      onNavigate('berita');\n      return;\n    }";
+    const replacement = `    // 5. Berita: open the canonical news route.
+    if (targetPath === 'berita' || targetPath === 'news' || targetPath.includes('berita')) {
+      setActiveDropdown(null);
+      setIsMobileMenuOpen(false);
+      navigate('/berita');
+      return;
+    }`;
+    if (s.includes("navigate('/berita');")) return s;
+    if (!s.includes(old)) throw new Error('Prestasi patch: Berita handler marker not found');
     return s.replace(old, replacement);
+  },
+  (s) => {
+    // Defensive mobile click delegation: if a custom navbar renderer omits the
+    // handler on a submenu item, the exact visible labels Berita/Prestasi still
+    // perform the canonical navigation. Capture phase avoids parent overlays.
+    if (s.includes('pb-mobile-news-prestasi-delegation')) return s;
+    const marker = "  // --- PERBAIKAN LOGIKA NAVIGASI ---\n";
+    if (!s.includes(marker)) return s;
+    const injection = `  // pb-mobile-news-prestasi-delegation\n  useEffect(() => {\n    const handleMobileNewsPrestasiClick = (event: MouseEvent) => {\n      const target = event.target as HTMLElement | null;\n      if (!target) return;\n      const clickable = target.closest('button, a, [role=\"button\"], div');\n      if (!clickable) return;\n      const label = (clickable.textContent || '').replace(/\\s+/g, ' ').trim().toLowerCase();\n      if (label !== 'berita' && label !== 'prestasi') return;\n      // Only handle the visible navbar submenu labels, not article/content text.\n      const inNavbar = clickable.closest('header, nav, [class*=\"navbar\"], [class*=\"menu\"]');\n      if (!inNavbar) return;\n      event.preventDefault();\n      event.stopPropagation();\n      setActiveDropdown(null);\n      setIsMobileMenuOpen(false);\n      navigate(label === 'prestasi' ? '/prestasi' : '/berita');\n    };\n    document.addEventListener('click', handleMobileNewsPrestasiClick, true);\n    return () => document.removeEventListener('click', handleMobileNewsPrestasiClick, true);\n  }, [navigate]);\n\n`;
+    return s.replace(marker, injection + marker);
   },
 ]);
 
@@ -74,4 +100,4 @@ patchFile('src/components/News.tsx', [
   },
 ]);
 
-console.log('Prestasi routing/filter patch applied successfully.');
+console.log('Berita/Prestasi routing and strict Prestasi filter patch applied successfully.');
