@@ -1,0 +1,55 @@
+import fs from 'node:fs';
+import path from 'node:path';
+
+const imagePopupPath = path.resolve('src/components/ImagePopup.tsx');
+const adminPopupPath = path.resolve('src/components/AdminPopup.tsx');
+
+function patchFile(filePath, transform, label) {
+  let source = fs.readFileSync(filePath, 'utf8');
+  const next = transform(source);
+  if (next === source) {
+    console.log(`[popup-supabase-authoritative] ${label}: already patched`);
+    return;
+  }
+  fs.writeFileSync(filePath, next, 'utf8');
+  console.log(`[popup-supabase-authoritative] ${label}: patched`);
+}
+
+patchFile(imagePopupPath, (source) => {
+  const block = /      let siteConfigRaw: any = null;[\s\S]*?      const shouldShow = activeItems\.length > 0 && \(forceShow \|\| !isDismissedRef\.current\);\n/;
+  if (!block.test(source)) throw new Error('ImagePopup source block not found');
+
+  const replacement = `      // SUPABASE_POPUP_AUTH_V1: konfigurasi_popup is the only runtime source of truth.\n      // Do not merge site_settings/API/cache data here: those legacy sources can resurrect stale popup state.\n      const { data: dbItems, error: dbError } = await supabase\n        .from('konfigurasi_popup')\n        .select('*')\n        .order('urutan', { ascending: true });\n\n      if (dbError) throw dbError;\n\n      const activeItems = (Array.isArray(dbItems) ? dbItems : [])\n        .filter((item: any) => item && item.is_active === true && item.url_gambar)\n        .sort((a: any, b: any) => (Number(a.urutan ?? 0) - Number(b.urutan ?? 0)));\n\n      const shouldShow = activeItems.length > 0 && (forceShow || !isDismissedRef.current);\n`;
+  return source.replace(block, replacement);
+}, 'ImagePopup source of truth');
+
+patchFile(imagePopupPath, (source) => {
+  const realtimeBlock = /    const popupsChannel = supabase\n      \.channel\('popups-db-changes'\)[\s\S]*?      \.subscribe\(\);/;
+  if (!realtimeBlock.test(source)) return source;
+  const replacement = `    const popupsChannel = supabase\n      .channel('konfigurasi-popup-realtime')\n      .on(\n        'postgres_changes',\n        { event: '*', schema: 'public', table: 'konfigurasi_popup' },\n        () => { fetchActivePopups(true); }\n      )\n      .subscribe();`;
+  return source.replace(realtimeBlock, replacement);
+}, 'ImagePopup realtime');
+
+patchFile(adminPopupPath, (source) => {
+  const block = /      let siteConfigRaw: any = null;[\s\S]*?      setPopups\(prev => \{[\s\S]*?      \}\);\n/;
+  if (!block.test(source)) throw new Error('AdminPopup fetch block not found');
+
+  const replacement = `      // SUPABASE_POPUP_AUTH_V1: Admin UI reads exactly what production popup uses.\n      const { data: dbPopups, error: dbError } = await supabase\n        .from('konfigurasi_popup')\n        .select('*')\n        .order('urutan', { ascending: true });\n\n      if (dbError) throw dbError;\n\n      const merged: PopupConfig[] = (Array.isArray(dbPopups) ? dbPopups : [])\n        .map((item: any) => ({\n          id: String(item.id),\n          url_gambar: item.url_gambar || '',\n          judul: item.judul || '',\n          deskripsi: item.deskripsi || '',\n          is_active: item.is_active === true,\n          urutan: Number(item.urutan ?? 0),\n          file_url: item.file_url || undefined,\n        }))\n        .sort((a, b) => a.urutan - b.urutan);\n\n      setPopups(prev => {\n        const currentHash = JSON.stringify(prev);\n        const newHash = JSON.stringify(merged);\n        return currentHash === newHash ? prev : merged;\n      });\n`;
+  return source.replace(block, replacement);
+}, 'AdminPopup read path');
+
+patchFile(adminPopupPath, (source) => {
+  const start = source.indexOf('  const persistPopups = async (updatedList: PopupConfig[]) => {');
+  if (start < 0) throw new Error('AdminPopup persistPopups start not found');
+  const end = source.indexOf('\n  const loadJadwalLatihanTemplate', start);
+  if (end < 0) throw new Error('AdminPopup persistPopups end not found');
+
+  const replacement = `  const persistPopups = async (updatedList: PopupConfig[]) => {\n    const standardizedList = updatedList.map((item, idx) => ({\n      ...item,\n      urutan: idx,\n      is_active: item.is_active === true,\n    }));\n\n    setPopups(standardizedList);\n\n    const dbUpdates = standardizedList.map(({ id, urutan, judul, deskripsi, url_gambar, is_active, file_url }) => ({\n      id,\n      urutan: urutan ?? 0,\n      judul: judul || '',\n      deskripsi: deskripsi || '',\n      url_gambar: url_gambar || '',\n      is_active: is_active === true,\n      file_url: file_url || null,\n    }));\n\n    const { error: upsertError } = await supabase\n      .from('konfigurasi_popup')\n      .upsert(dbUpdates, { onConflict: 'id' });\n    if (upsertError) throw upsertError;\n\n    // Verify the exact state after every write so the admin UI cannot report a false success.\n    const { data: verified, error: verifyError } = await supabase\n      .from('konfigurasi_popup')\n      .select('*')\n      .order('urutan', { ascending: true });\n    if (verifyError) throw verifyError;\n\n    const verifiedList = (Array.isArray(verified) ? verified : []).map((item: any) => ({\n      id: String(item.id),\n      url_gambar: item.url_gambar || '',\n      judul: item.judul || '',\n      deskripsi: item.deskripsi || '',\n      is_active: item.is_active === true,\n      urutan: Number(item.urutan ?? 0),\n      file_url: item.file_url || undefined,\n    }));\n    setPopups(verifiedList);\n\n    broadcastDataChange('konfigurasi_popup', 'UPDATE', verifiedList);\n    window.dispatchEvent(new CustomEvent('table_updated_konfigurasi_popup'));\n    window.dispatchEvent(new CustomEvent('app_data_changed'));\n  };\n`;
+  return source.slice(0, start) + replacement + source.slice(end);
+}, 'AdminPopup persistence');
+
+patchFile(adminPopupPath, (source) => {
+  const legacy = `    // 1. Save to site_settings JSON store (Primary source of truth across deployments & devices)`;
+  if (source.includes(legacy)) throw new Error('Legacy persist block still exists');
+  return source;
+}, 'AdminPopup legacy persistence guard');
