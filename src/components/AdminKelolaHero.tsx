@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../supabase';
-import { saveSiteSetting } from '../utils/siteSettingsHelper';
 import Swal from 'sweetalert2';
-import { Edit3, Trash2, Image as ImageIcon, Video, Loader2, X, Power } from 'lucide-react';
+import { Edit3, Trash2, Image as ImageIcon, Loader2, X, Power } from 'lucide-react';
 
 interface HeroSlide {
   id: number | string;
@@ -76,16 +75,32 @@ export default function HeroAdmin() {
     } finally { if (!silent) setLoading(false); }
   }, []);
 
+  // Supabase is the single source of truth. No LocalStorage/server fallback is allowed here.
   const persist = useCallback(async (nextSlides: HeroSlide[]) => {
-    const payload = { settings: { duration: DEFAULT_DURATION }, slides: nextSlides, updated_at: new Date().toISOString() };
-    const result = await saveSiteSetting('hero_config', payload);
-    if (result.error) throw result.error;
-    const { data, error } = await supabase.from('site_settings').select('value').eq('key', 'hero_config').maybeSingle();
+    const payload = {
+      settings: { duration: DEFAULT_DURATION },
+      slides: nextSlides,
+      updated_at: new Date().toISOString(),
+    };
+
+    const { data, error } = await supabase
+      .from('site_settings')
+      .upsert({ key: 'hero_config', value: payload, updated_at: payload.updated_at }, { onConflict: 'key' })
+      .select('value')
+      .single();
+
     if (error) throw error;
+
     const stored = parseHero(data?.value).slides;
-    const expected = nextSlides.map(s => String(s.id)).join('|');
-    const actual = stored.map(s => String(s.id)).join('|');
-    if (expected !== actual) throw new Error('Perubahan belum terverifikasi di Supabase. Tidak dianggap berhasil.');
+    const normalize = (items: HeroSlide[]) => items.map(s => ({
+      id: String(s.id), image: s.image, videoUrl: s.videoUrl || null,
+      type: s.type || null, active: s.active !== false,
+      title: s.title, subtitle: s.subtitle,
+    }));
+    if (JSON.stringify(normalize(nextSlides)) !== JSON.stringify(normalize(stored))) {
+      throw new Error('Data Hero berhasil dikirim tetapi hasil verifikasi Supabase tidak sama. Perubahan tidak dianggap berhasil.');
+    }
+
     setSlides(stored);
     window.dispatchEvent(new CustomEvent('site_setting_updated', { detail: { key: 'hero_config' } }));
   }, []);
