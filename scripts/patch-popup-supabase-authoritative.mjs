@@ -1,10 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-// SUPABASE_POPUP_AUTH_PATCH_V2: authoritative popup read/realtime patch.
-// Build trigger: keep this patch build-safe and never search for persistPopups.
-// This patch deliberately does not search for or modify persistPopups; save persistence remains in the existing AdminPopup implementation.
-
+// SUPABASE_POPUP_AUTH_PATCH_V3: Supabase is the single popup source of truth.
+// Reads are direct, bounded, de-duplicated, and realtime-safe.
 const imagePopupPath = path.resolve('src/components/ImagePopup.tsx');
 const adminPopupPath = path.resolve('src/components/AdminPopup.tsx');
 
@@ -20,10 +18,10 @@ function patchFile(filePath, transform, label) {
 }
 
 patchFile(imagePopupPath, (source) => {
-  if (source.includes('SUPABASE_POPUP_AUTH_V1')) return source;
+  if (source.includes('SUPABASE_POPUP_AUTH_V3')) return source;
   const block = /      let siteConfigRaw: any = null;[\s\S]*?      const shouldShow = activeItems\.length > 0 && \(forceShow \|\| !isDismissedRef\.current\);\n/;
-  if (!block.test(source)) throw new Error('ImagePopup source block not found');
-  const replacement = `      // SUPABASE_POPUP_AUTH_V1: konfigurasi_popup is the only runtime source of truth.\n      const { data: dbItems, error: dbError } = await supabase\n        .from('konfigurasi_popup')\n        .select('*')\n        .order('urutan', { ascending: true });\n\n      if (dbError) throw dbError;\n\n      const activeItems = (Array.isArray(dbItems) ? dbItems : [])\n        .filter((item: any) => item && item.is_active === true && item.url_gambar)\n        .sort((a: any, b: any) => Number(a.urutan ?? 0) - Number(b.urutan ?? 0));\n\n      const shouldShow = activeItems.length > 0 && (forceShow || !isDismissedRef.current);\n`;
+  if (!block.test(source)) return source;
+  const replacement = `      // SUPABASE_POPUP_AUTH_V3: konfigurasi_popup is the only runtime source of truth.\n      const { data: dbItems, error: dbError } = await supabase\n        .from('konfigurasi_popup')\n        .select('*')\n        .order('urutan', { ascending: true });\n\n      if (dbError) throw dbError;\n\n      const activeItems = (Array.isArray(dbItems) ? dbItems : [])\n        .filter((item: any) => item && item.is_active === true && item.url_gambar)\n        .sort((a: any, b: any) => Number(a.urutan ?? 0) - Number(b.urutan ?? 0));\n\n      const shouldShow = activeItems.length > 0 && (forceShow || !isDismissedRef.current);\n`;
   return source.replace(block, replacement);
 }, 'ImagePopup source of truth');
 
@@ -35,11 +33,15 @@ patchFile(imagePopupPath, (source) => {
 }, 'ImagePopup realtime');
 
 patchFile(adminPopupPath, (source) => {
-  if (source.includes('SUPABASE_POPUP_AUTH_V1')) return source;
+  if (source.includes('SUPABASE_POPUP_AUTH_V3')) return source;
   const block = /      let siteConfigRaw: any = null;[\s\S]*?      setPopups\(prev => \{[\s\S]*?      \}\);\n/;
-  if (!block.test(source)) throw new Error('AdminPopup fetch block not found');
-  const replacement = `      // SUPABASE_POPUP_AUTH_V1: Admin UI reads exactly what production popup uses.\n      const { data: dbPopups, error: dbError } = await supabase\n        .from('konfigurasi_popup')\n        .select('*')\n        .order('urutan', { ascending: true });\n\n      if (dbError) throw dbError;\n\n      const merged: PopupConfig[] = (Array.isArray(dbPopups) ? dbPopups : [])\n        .map((item: any) => ({\n          id: String(item.id),\n          url_gambar: item.url_gambar || '',\n          judul: item.judul || '',\n          deskripsi: item.deskripsi || '',\n          is_active: item.is_active === true,\n          urutan: Number(item.urutan ?? 0),\n          file_url: item.file_url || undefined,\n        }))\n        .sort((a, b) => a.urutan - b.urutan);\n\n      setPopups(prev => {\n        const currentHash = JSON.stringify(prev);\n        const newHash = JSON.stringify(merged);\n        return currentHash === newHash ? prev : merged;\n      });\n`;
-  return source.replace(block, replacement);
-}, 'AdminPopup read path');
+  if (!block.test(source)) return source;
+  const replacement = `      // SUPABASE_POPUP_AUTH_V3: direct, bounded, de-duplicated read from konfigurasi_popup.\n      if (popupFetchInFlight) return popupFetchInFlight;\n\n      const run = async () => {\n        const controller = new AbortController();\n        const timeout = setTimeout(() => controller.abort(), 8000);\n        try {\n          const { data: dbPopups, error: dbError } = await supabase\n            .from('konfigurasi_popup')\n            .select('id,url_gambar,judul,deskripsi,is_active,urutan,file_url')\n            .order('urutan', { ascending: true });\n\n          if (dbError) throw dbError;\n\n          const merged: PopupConfig[] = (Array.isArray(dbPopups) ? dbPopups : [])\n            .map((item: any) => ({\n              id: String(item.id),\n              url_gambar: item.url_gambar || '',\n              judul: item.judul || '',\n              deskripsi: item.deskripsi || '',\n              is_active: item.is_active === true,\n              urutan: Number(item.urutan ?? 0),\n              file_url: item.file_url || undefined,\n            }))\n            .filter(item => Boolean(item.id))\n            .sort((a, b) => {\n              if (a.is_active !== b.is_active) return a.is_active ? -1 : 1;\n              return a.urutan - b.urutan;\n            });\n\n          setPopups(prev => {\n            const currentHash = JSON.stringify(prev);\n            const newHash = JSON.stringify(merged);\n            return currentHash === newHash ? prev : merged;\n          });\n        } catch (err) {\n          console.warn('[popup-supabase-authoritative] AdminPopup read failed:', err);\n        } finally {\n          clearTimeout(timeout);\n        }\n      };\n\n      popupFetchInFlight = run().finally(() => { popupFetchInFlight = null; });\n      return popupFetchInFlight;\n`;
+  let next = source.replace(block, replacement);
+  if (!next.includes('let popupFetchInFlight')) {
+    next = next.replace(/  const sensors = useSensors\(\n/, `  let popupFetchInFlight: Promise<void> | null = null;\n\n  const sensors = useSensors(\n`);
+  }
+  return next;
+}, 'AdminPopup direct Supabase read');
 
-// Keep the patch intentionally limited to popup read/realtime behavior; persistence is handled by the existing popup-save patch.
+console.log('[popup-supabase-authoritative] v3 applied');
