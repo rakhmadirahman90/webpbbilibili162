@@ -34,7 +34,7 @@ function readLocalPopupCache(): any[] {
 
 function writeLocalPopupCache(items: any[]) {
   if (typeof window === 'undefined' || !items.length) return;
-  try { localStorage.setItem(POPUP_CACHE_KEY, JSON.stringify(items)); } catch { /* optional cache */ }
+  try { localStorage.setItem(POPUP_CACHE_KEY, JSON.stringify(items)); } catch { /* optional */ }
 }
 
 function isPopupDismissed() {
@@ -77,20 +77,30 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
   const [dragX, setDragX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [settleOffset, setSettleOffset] = useState(0);
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const horizontalSwipeRef = useRef(false);
+  const dragXRef = useRef(0);
+  const currentIndexRef = useRef(0);
+  const settlingRef = useRef(false);
   const dismissedRef = useRef(isPopupDismissed());
   const loadingRequestRef = useRef<Promise<void> | null>(null);
+
+  const commitIndex = (index: number) => {
+    currentIndexRef.current = index;
+    setCurrentIndex(index);
+  };
 
   const applyItems = (items: any[], forceShow = false) => {
     const active = normalizePopups(items);
     if (!active.length) return;
     writeLocalPopupCache(active);
     setPromoImages(prev => {
-      const currentId = prev[currentIndex]?.id;
-      const sameIndex = currentId ? active.findIndex(p => p.id === currentId) : -1;
-      setCurrentIndex(sameIndex >= 0 ? sameIndex : 0);
+      const currentId = prev[currentIndexRef.current]?.id;
+      const sameIndex = currentId ? active.findIndex(p => String(p.id) === String(currentId)) : -1;
+      const nextIndex = sameIndex >= 0 ? sameIndex : Math.min(currentIndexRef.current, active.length - 1);
+      commitIndex(nextIndex);
       return active;
     });
     preloadImages(active);
@@ -144,8 +154,6 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
 
   useEffect(() => {
     if (activeView !== null) { setIsOpen(false); return; }
-    // Closing the popup is sticky for the browser session. It is only cleared by
-    // an explicit application trigger, never by a normal realtime refresh.
     dismissedRef.current = isPopupDismissed();
     if (!dismissedRef.current) void loadPopups(true);
     else setIsOpen(false);
@@ -165,7 +173,6 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
   useEffect(() => {
     const events = ['trigger-home-popup', 'site_setting_updated', 'table_updated_popup_config', 'table_updated_konfigurasi_popup', 'app_data_changed'];
     const handler = (event: Event) => {
-      // Only the explicit home-popup trigger is allowed to reopen a dismissed popup.
       const explicitTrigger = event.type === 'trigger-home-popup';
       if (explicitTrigger) {
         setPopupDismissed(false);
@@ -180,77 +187,98 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
   }, [activeView]);
 
   const goTo = (index: number) => {
-    if (!promoImages.length) return;
+    if (!promoImages.length || settlingRef.current) return;
     const next = (index + promoImages.length) % promoImages.length;
-    setCurrentIndex(next);
+    commitIndex(next);
     setIsExpanded(false);
     const url = promoImages[next]?.url_gambar;
     if (url) void preloadImage(url);
   };
 
-  const nextPopup = () => goTo(currentIndex + 1);
-  const previousPopup = () => goTo(currentIndex - 1);
+  const nextPopup = () => goTo(currentIndexRef.current + 1);
+  const previousPopup = () => goTo(currentIndexRef.current - 1);
 
   const handleTouchStart = (e: TouchEvent) => {
-    if (promoImages.length <= 1) return;
+    if (promoImages.length <= 1 || settlingRef.current) return;
     const t = e.touches[0];
     touchStartRef.current = { x: t.clientX, y: t.clientY };
     horizontalSwipeRef.current = false;
+    dragXRef.current = 0;
     setIsDragging(true);
     setDragX(0);
     setSettleOffset(0);
   };
 
   const handleTouchMove = (e: TouchEvent) => {
-    if (!touchStartRef.current || promoImages.length <= 1) return;
+    if (!touchStartRef.current || promoImages.length <= 1 || settlingRef.current) return;
     const t = e.touches[0];
     const dx = t.clientX - touchStartRef.current.x;
     const dy = t.clientY - touchStartRef.current.y;
+
     if (!horizontalSwipeRef.current) {
       if (Math.hypot(dx, dy) < 8) return;
       if (Math.abs(dx) <= Math.abs(dy) * 1.15) {
         touchStartRef.current = null;
         setIsDragging(false);
+        dragXRef.current = 0;
+        setDragX(0);
         return;
       }
       horizontalSwipeRef.current = true;
     }
+
     if (e.cancelable) e.preventDefault();
-    // Slight resistance at the ends while keeping the slider feeling physical.
-    const atFirst = currentIndex === 0 && dx > 0;
-    const atLast = currentIndex === promoImages.length - 1 && dx < 0;
-    setDragX((atFirst || atLast) ? dx * 0.35 : dx);
+    const atFirst = currentIndexRef.current === 0 && dx > 0;
+    const atLast = currentIndexRef.current === promoImages.length - 1 && dx < 0;
+    const effectiveX = (atFirst || atLast) ? dx * 0.35 : dx;
+    dragXRef.current = effectiveX;
+    setDragX(effectiveX);
   };
 
   const handleTouchEnd = (_e: TouchEvent) => {
     const start = touchStartRef.current;
     const wasHorizontal = horizontalSwipeRef.current;
-    const dx = dragX;
+    const dx = dragXRef.current;
     touchStartRef.current = null;
     horizontalSwipeRef.current = false;
-    if (!start || !wasHorizontal || promoImages.length <= 1) {
+
+    if (!start || !wasHorizontal || promoImages.length <= 1 || settlingRef.current) {
       setIsDragging(false);
+      dragXRef.current = 0;
       setDragX(0);
       return;
     }
 
     const threshold = Math.max(55, Math.min(110, window.innerWidth * 0.18));
     const direction = Math.abs(dx) >= threshold ? (dx < 0 ? 1 : -1) : 0;
+
     if (!direction) {
       setIsDragging(false);
+      dragXRef.current = 0;
       setDragX(0);
       return;
     }
 
-    // Animate the hero fully off-screen first, then commit the logical index.
+    const fromIndex = currentIndexRef.current;
+    const targetIndex = (fromIndex + direction + promoImages.length) % promoImages.length;
     const width = Math.max(280, scrollRef.current?.clientWidth || window.innerWidth);
+
+    // Lock the gesture until the slide is committed. This prevents a second
+    // touch/realtime render from restoring the previous index mid-animation.
+    settlingRef.current = true;
     setIsDragging(false);
     setSettleOffset(direction > 0 ? -width : width);
+
     window.setTimeout(() => {
-      setCurrentIndex(prev => (prev + direction + promoImages.length) % promoImages.length);
-      setSettleOffset(0);
+      commitIndex(targetIndex);
+      setIsExpanded(false);
+      dragXRef.current = 0;
       setDragX(0);
-    }, 280);
+      setSettleOffset(0);
+      settlingRef.current = false;
+      const url = promoImages[targetIndex]?.url_gambar;
+      if (url) void preloadImage(url);
+    }, 300);
   };
 
   const closePopup = () => {
@@ -276,7 +304,7 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
   const previousIndex = (currentIndex - 1 + promoImages.length) % promoImages.length;
   const nextIndex = (currentIndex + 1) % promoImages.length;
   const sliderTransform = `translate3d(calc(-100% + ${dragX + settleOffset}px), 0, 0)`;
-  const sliderTransition = isDragging ? 'none' : 'transform 280ms cubic-bezier(0.22, 1, 0.36, 1)';
+  const sliderTransition = isDragging ? 'none' : 'transform 300ms cubic-bezier(0.22, 1, 0.36, 1)';
 
   return (
     <div className="fixed inset-0 z-[999999] flex items-center justify-center p-3 bg-slate-950/80 backdrop-blur-sm">
