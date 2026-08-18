@@ -15,13 +15,11 @@
   font-family: 'Times New Roman', 'Tinos', 'Georgia', serif;
 }
 
-/* Memperbaiki masalah horizontal scroll pada mobile */
 body {
   overflow-x: hidden;
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Utilitas untuk menyembunyikan scrollbar tapi tetap bisa di-scroll */
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
 }
@@ -30,8 +28,59 @@ body {
   scrollbar-width: none;
 }
 
-/* Memastikan gambar tidak keluar dari container */
 img {
   max-width: 100%;
   height: auto;
+}
+
+/* Stable mobile hamburger: centered vertically, fixed to the right edge,
+   and large enough for reliable touch interaction. */
+@media (max-width: 1023px) {
+  #mobile-sidebar-toggle-btn {
+    position: absolute;
+    top: 50%;
+    right: max(12px, env(safe-area-inset-right));
+    transform: translateY(-50%);
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    margin: 0;
+    z-index: 10001;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  #mobile-sidebar-toggle-btn > div {
+    width: 22px;
+    height: 18px;
+    flex: 0 0 auto;
+  }
+
+  #mobile-sidebar-toggle-btn > div > span {
+    display: block;
+    height: 2px;
+    min-height: 2px;
+    border-radius: 9999px;
+  }
+
+  #mobile-sidebar-toggle-btn:focus-visible {
+    outline: 2px solid rgba(96, 165, 250, 0.85);
+    outline-offset: 2px;
+  }
+}
+
+@media (max-width: 380px) {
+  #mobile-sidebar-toggle-btn {
+    right: 10px;
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    min-height: 42px;
+    border-radius: 13px;
+  }
 }
