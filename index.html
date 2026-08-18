@@ -4,23 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PB Bilibili 162 - Persatuan Bulutangkis Terpadu</title>
-    
-    <!-- PWA & Mobile Web App Meta Tags -->
     <meta name="theme-color" content="#070d1a" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="PB Bilibili 162" />
-    <link rel="icon" type="image/svg+xml" href="/logo_pb_bilibili_162.svg" />
-    <link rel="icon" type="image/png" sizes="192x192" href="/pwa-192x192.png" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    
-    <!-- SEO Meta Tags -->
     <meta name="description" content="Website Resmi PB Bilibili 162. Sistem Informasi Atlet Terpadu, Manajemen Pendaftaran, Pencatatan Kas, Poin Peringkat, Galeri Kegiatan, dan Informasi Jadwal Sholat Realtime." />
     <meta name="keywords" content="PB Bilibili 162, Persatuan Bulutangkis, Badminton Club, Parepare, Badminton Indonesia, Manajemen Atlet" />
     <meta name="author" content="PB Bilibili 162" />
-    
-    <!-- Open Graph / Facebook Meta Tags -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://pbilibili162.99apps.id" />
     <meta property="og:title" content="PB Bilibili 162 - Persatuan Bulutangkis Terpadu" />
@@ -32,28 +23,31 @@
     <meta property="og:image:height" content="512" />
     <meta property="og:image:alt" content="PB Bilibili 162 Badminton Club Logo" />
     <meta property="og:locale" content="id_ID" />
-
-    <!-- Twitter Meta Tags -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="PB Bilibili 162 - Persatuan Bulutangkis Terpadu" />
     <meta name="twitter:description" content="Sistem Informasi Terpadu PB Bilibili 162. Kelola data atlet, pendaftaran, laporan kas, peringkat poin, berita bulutangkis, dan jadwal sholat secara realtime." />
     <meta name="twitter:image" content="https://pbilibili162.99apps.id/logo_pb_bilibili_162.png" />
+    <link rel="icon" type="image/svg+xml" href="/logo_pb_bilibili_162.svg" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/pwa-192x192.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.json" />
     <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.getRegistrations().then((registrations) => {
-            for (let registration of registrations) {
-              registration.unregister();
-            }
-          });
-          if ('caches' in window) {
-            caches.keys().then((names) => {
-              names.forEach((name) => caches.delete(name));
-            });
+      // Remove legacy service workers and caches before the React app boots.
+      // This prevents an old cached HTML/JS shell from masking a fresh Worker deployment.
+      (async () => {
+        try {
+          if ('serviceWorker' in navigator) {
+            const registrations = await navigator.serviceWorker.getRegistrations();
+            await Promise.all(registrations.map((registration) => registration.unregister()));
           }
-        });
-      }
+          if ('caches' in window) {
+            const names = await caches.keys();
+            await Promise.all(names.map((name) => caches.delete(name)));
+          }
+        } catch (error) {
+          console.warn('Cache cleanup skipped:', error);
+        }
+      })();
     </script>
   </head>
   <body>
