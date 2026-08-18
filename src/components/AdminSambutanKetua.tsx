@@ -4,6 +4,7 @@ import Swal from 'sweetalert2';
 import { supabase } from '../supabase';
 import { getSiteSetting, saveSiteSetting } from '../utils/siteSettingsHelper';
 
+const SETTING_KEY = 'sambutan_ketua';
 const DEFAULT_IMAGE = 'https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/logos/ketua.png';
 
 const DEFAULT_TEXT = `Selamat datang di PB Bilibili 162. Kami menyambut hangat seluruh atlet bulutangkis dan para pecinta olahraga bulutangkis di Kota Parepare. Kehadiran Anda adalah semangat bagi kami untuk terus berkontribusi bagi kemajuan bulutangkis di daerah kita tercinta.
@@ -40,7 +41,7 @@ export default function AdminSambutanKetua() {
   const loadConfig = async () => {
     setLoading(true);
     try {
-      const raw = await getSiteSetting('sambutan_ketua');
+      const raw = await getSiteSetting(SETTING_KEY);
       let parsed: any = raw;
       if (typeof parsed === 'string') {
         try { parsed = JSON.parse(parsed); } catch { parsed = null; }
@@ -59,7 +60,7 @@ export default function AdminSambutanKetua() {
   useEffect(() => {
     loadConfig();
     const handler = (event: any) => {
-      if (event.detail?.key === 'sambutan_ketua') loadConfig();
+      if (event.detail?.key === SETTING_KEY) loadConfig();
     };
     window.addEventListener('site_setting_updated', handler);
     return () => window.removeEventListener('site_setting_updated', handler);
@@ -105,26 +106,53 @@ export default function AdminSambutanKetua() {
 
   const handleSave = async () => {
     setSaving(true);
-    setMessage('');
+    setMessage('Menyimpan ke Supabase...');
     try {
-      const payload = {
+      const now = new Date().toISOString();
+      const payload: SambutanConfig = {
         nama: (config.nama || 'H. Wawan').trim(),
         jabatan: (config.jabatan || 'Ketua Umum PB Bilibili 162').trim(),
         label: (config.label || 'Sambutan Pimpinan').trim(),
         judul: (config.judul || 'Sambutan Ketua Umum').trim(),
         deskripsi: (config.deskripsi || '').trim(),
         foto_url: config.foto_url || DEFAULT_IMAGE,
-        updated_at: new Date().toISOString()
+        updated_at: now
       };
-      const result = await saveSiteSetting('sambutan_ketua', payload, 'Sambutan Ketua PB Bilibili 162');
-      if (result?.error) throw result.error;
+
+      // Supabase is the authoritative store. Do not rely on LocalStorage/server fallback.
+      const { data: saved, error: dbError } = await supabase
+        .from('site_settings')
+        .upsert(
+          { key: SETTING_KEY, value: payload, updated_at: now },
+          { onConflict: 'key' }
+        )
+        .select('key, value, updated_at')
+        .single();
+
+      if (dbError) throw new Error(`Supabase: ${dbError.message}`);
+      if (!saved?.value) throw new Error('Supabase tidak mengembalikan data setelah penyimpanan.');
+
+      // Keep existing realtime/server/local synchronization after the DB write succeeds.
+      const syncResult = await saveSiteSetting(SETTING_KEY, payload, 'Sambutan Ketua PB Bilibili 162');
+      if (syncResult?.error) throw syncResult.error;
+
+      // Verify the exact row that the landing page reads.
+      const { data: verified, error: verifyError } = await supabase
+        .from('site_settings')
+        .select('value, updated_at')
+        .eq('key', SETTING_KEY)
+        .maybeSingle();
+
+      if (verifyError) throw new Error(`Verifikasi Supabase: ${verifyError.message}`);
+      if (!verified?.value) throw new Error('Data tersimpan tetapi tidak dapat diverifikasi di Supabase.');
+
       setConfig(payload);
-      setMessage('Sambutan Ketua berhasil disimpan dan disinkronkan.');
+      setMessage('Foto dan sambutan berhasil tersimpan di Supabase dan siap tampil di landing page.');
       Swal.fire({
         icon: 'success',
         title: 'Berhasil Disimpan',
-        text: 'Foto dan teks sambutan telah diperbarui.',
-        timer: 1400,
+        text: 'Foto dan teks sambutan telah tersimpan di Supabase serta disinkronkan ke landing page.',
+        timer: 1800,
         showConfirmButton: false,
         background: '#0F172A',
         color: '#fff'
