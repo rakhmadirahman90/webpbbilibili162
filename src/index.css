@@ -51,6 +51,137 @@ img, video, svg, canvas { max-width: 100%; }
   .swal2-popup { width: min(92vw, 420px) !important; max-width: 92vw !important; margin: 0 auto !important; }
   button, a, input, select, textarea { max-width: 100%; }
   input, select, textarea { min-width: 0; }
+
+  /* ================================================================
+     PB BILIBILI 162 — SHARED MOBILE SIDEBAR DESIGN SYSTEM
+     Landing page and Admin use the same visual language.
+     ================================================================ */
+
+  /* Landing-page hamburger: same compact control language as Admin. */
+  nav button[class*="lg:hidden"] {
+    width: 52px !important;
+    height: 52px !important;
+    padding: 0 !important;
+    margin-right: 4px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 16px !important;
+    background: rgba(20, 30, 49, 0.92) !important;
+    border: 1px solid rgba(255,255,255,0.08) !important;
+    box-shadow: 0 10px 28px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.04) !important;
+  }
+  nav button[class*="lg:hidden"] svg { width: 27px !important; height: 27px !important; }
+  nav button[class*="lg:hidden"]:active { transform: scale(0.96); }
+
+  /* Drawer shell — premium dark surface, consistent with Admin. */
+  div[class*="fixed"][class*="inset-y-0"][class*="left-0"][class*="w-[270px]"] {
+    width: min(320px, 88vw) !important;
+    max-width: 88vw !important;
+    background:
+      radial-gradient(circle at 15% 0%, rgba(37,99,235,0.10), transparent 34%),
+      linear-gradient(180deg, #0b1224 0%, #091120 55%, #080f1d 100%) !important;
+    border-right: 1px solid rgba(255,255,255,0.09) !important;
+    box-shadow: 22px 0 55px rgba(0,0,0,0.42) !important;
+  }
+
+  /* Drawer header: cleaner spacing and stronger hierarchy. */
+  div[class*="fixed"][class*="inset-y-0"][class*="left-0"][class*="w-[270px]"] > div:first-child {
+    min-height: 68px !important;
+    padding: 12px 14px !important;
+    background: rgba(7,13,26,0.86) !important;
+    border-bottom: 1px solid rgba(255,255,255,0.08) !important;
+    backdrop-filter: blur(18px) !important;
+  }
+
+  div[class*="fixed"][class*="inset-y-0"][class*="left-0"][class*="w-[270px]"] > div:first-child img {
+    width: 42px !important;
+    height: 42px !important;
+  }
+
+  div[class*="fixed"][class*="inset-y-0"][class*="left-0"][class*="w-[270px]"] > div:first-child button {
+    width: 42px !important;
+    height: 42px !important;
+    padding: 0 !important;
+    border-radius: 13px !important;
+    background: rgba(30,41,59,0.85) !important;
+    border: 1px solid rgba(255,255,255,0.05) !important;
+  }
+
+  /* Scroll area: subtle scrollbar and comfortable touch targets. */
+  div[class*="fixed"][class*="inset-y-0"][class*="left-0"][class*="w-[270px]"] .custom-scrollbar {
+    padding: 12px !important;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(100,116,139,0.35) transparent;
+  }
+  div[class*="fixed"][class*="inset-y-0"][class*="left-0"][class*="w-[270px]"] .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+  div[class*="fixed"][class*="inset-y-0"][class*="left-0"][class*="w-[270px]"] .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(100,116,139,0.35); border-radius: 999px;
+  }
+
+  /* Main navigation links: consistent with Admin's compact, professional cards. */
+  .mobile-nav-link {
+    min-height: 46px !important;
+    width: 100% !important;
+    padding: 10px 12px !important;
+    border-radius: 12px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 11px !important;
+    color: #dbe4f0 !important;
+    background: transparent !important;
+    transition: background .18s ease, color .18s ease, transform .18s ease !important;
+  }
+  .mobile-nav-link:hover,
+  .mobile-nav-link:focus-visible {
+    color: #ffffff !important;
+    background: rgba(37,99,235,0.10) !important;
+    outline: none !important;
+  }
+  .mobile-nav-link:active { transform: scale(.985); }
+
+  /* Nested links are visibly subordinate, reducing visual noise. */
+  .mobile-sub-link {
+    min-height: 38px !important;
+    width: 100% !important;
+    padding: 7px 12px 7px 38px !important;
+    border-radius: 9px !important;
+    color: #94a3b8 !important;
+    transition: all .18s ease !important;
+  }
+  .mobile-sub-link:hover,
+  .mobile-sub-link:focus-visible {
+    color: #dbeafe !important;
+    background: rgba(37,99,235,0.08) !important;
+    outline: none !important;
+  }
+
+  /* Section separators inside the mobile drawer. */
+  div[class*="fixed"][class*="inset-y-0"][class*="left-0"][class*="w-[270px]"] .border-t,
+  div[class*="fixed"][class*="inset-y-0"][class*="left-0"][class*="w-[270px]"] .border-b {
+    border-color: rgba(255,255,255,0.07) !important;
+  }
+
+  /* Action buttons such as Dashboard/Login/Logout use the Admin visual language. */
+  div[class*="fixed"][class*="inset-y-0"][class*="left-0"][class*="w-[270px]"] button[class*="bg-emerald"],
+  div[class*="fixed"][class*="inset-y-0"][class*="left-0"][class*="w-[270px]"] a[class*="bg-emerald"] {
+    min-height: 48px !important;
+    border-radius: 12px !important;
+    border: 1px solid rgba(52,211,153,0.18) !important;
+    box-shadow: 0 8px 20px rgba(16,185,129,0.08) !important;
+  }
+
+  div[class*="fixed"][class*="inset-y-0"][class*="left-0"][class*="w-[270px]"] button[class*="bg-red"],
+  div[class*="fixed"][class*="inset-y-0"][class*="left-0"][class*="w-[270px]"] a[class*="bg-red"] {
+    min-height: 48px !important;
+    border-radius: 12px !important;
+  }
+
+  /* Registration CTA: keep it prominent without overpowering navigation. */
+  div[class*="fixed"][class*="inset-y-0"][class*="left-0"][class*="w-[270px]"] a[class*="bg-blue"],
+  div[class*="fixed"][class*="inset-y-0"][class*="left-0"][class*="w-[270px]"] button[class*="bg-blue"] {
+    border-radius: 12px !important;
+  }
 }
 
 @media (max-width: 420px) {
