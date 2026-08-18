@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
-    "prebuild": "node scripts/patch-menu-naming.mjs && node scripts/patch-build-script-syntax.mjs && node scripts/patch-popup-swipe-v4.mjs && node scripts/patch-popup-swipe-final.mjs && node scripts/patch-athlete-local-sync.mjs && node scripts/patch-athlete-remote-read.mjs && node scripts/patch-players-public-data.mjs && node scripts/patch-mobile-sidebar-visibility.mjs && node scripts/patch-prestasi-routing.mjs && node scripts/patch-news-detail-content.mjs && node scripts/patch-news-image-fallback.mjs && node scripts/patch-news-open-content-v2.mjs && node scripts/patch-news-remote-source.mjs && node scripts/patch-news-no-refresh.mjs && node scripts/patch-home-fast-media.mjs && node scripts/patch-documents-supabase.mjs && node scripts/patch-gallery-remote-read.mjs && node scripts/patch-about-fast-open.mjs && node scripts/patch-kas-persistence.mjs && node scripts/patch-popup-runtime-hardening.mjs && node scripts/patch-popup-runtime-safe.mjs && node scripts/patch-delete-reliability.mjs",
+    "prebuild": "node scripts/patch-menu-naming.mjs && node scripts/patch-build-script-syntax.mjs && node scripts/patch-popup-swipe-v4.mjs && node scripts/patch-popup-swipe-final.mjs && node scripts/patch-athlete-local-sync.mjs && node scripts/patch-athlete-remote-read.mjs && node scripts/patch-players-public-data.mjs && node scripts/patch-mobile-sidebar-visibility.mjs && node scripts/patch-mobile-navbar-v2.mjs && node scripts/patch-prestasi-routing.mjs && node scripts/patch-news-detail-content.mjs && node scripts/patch-news-image-fallback.mjs && node scripts/patch-news-open-content-v2.mjs && node scripts/patch-news-remote-source.mjs && node scripts/patch-news-no-refresh.mjs && node scripts/patch-home-fast-media.mjs && node scripts/patch-documents-supabase.mjs && node scripts/patch-gallery-remote-read.mjs && node scripts/patch-about-fast-open.mjs && node scripts/patch-kas-persistence.mjs && node scripts/patch-popup-runtime-hardening.mjs && node scripts/patch-popup-runtime-safe.mjs && node scripts/patch-delete-reliability.mjs",
     "build": "node scripts/patch-gallery-remote-read.mjs && vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
     "lint": "eslint .",
     "start": "node dist/server.cjs",
@@ -18,14 +18,14 @@
     "@google/genai": "^2.12.0",
     "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.95.2",
-    "browser-image-compression": "^2.0.2",
+    "browser-image-compression": "^2.0.0",
     "date-fns": "^4.1.0",
     "express": "^5.2.1",
     "file-saver": "^2.0.2",
     "firebase": "^12.16.0",
     "framer-motion": "^12.34.3",
     "html2canvas": "^1.4.1",
-    "jspdf": "4.2.1",
+    "jspdf": "4.2.0",
     "jspdf-autotable": "^5.0.0",
     "lucide-react": "^0.344.0",
     "recharts": "^3.10.0",
@@ -38,7 +38,7 @@
     "react-zoom-pan-pinch": "^4.0.0",
     "sweetalert2": "^11.26.18",
     "swiper": "^12.1.0",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.0",
