@@ -45,10 +45,14 @@ function parseHeroValue(value: any): { slides: HeroSlide[]; duration: number } {
 }
 
 async function fetchHeroConfig(): Promise<{ slides: HeroSlide[]; duration: number }> {
+  // Always resolve the newest hero_config row. This avoids an older cached/duplicate
+  // site_settings row winning during the first landing-page request.
   const { data, error } = await supabase
     .from('site_settings')
     .select('value, updated_at')
     .eq('key', 'hero_config')
+    .order('updated_at', { ascending: false })
+    .limit(1)
     .maybeSingle();
 
   if (error) throw error;
@@ -103,7 +107,7 @@ function HeroVideo({ src, poster, active }: { src: string; poster?: string; acti
 }
 
 export default function Hero() {
-  // Never seed the landing page with hard-coded hero media. Supabase is authoritative.
+  // Supabase is the only source of truth. No hard-coded/local hero fallback is used.
   const [slides, setSlides] = useState<HeroSlide[]>([]);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [duration, setDuration] = useState(7);
@@ -123,7 +127,7 @@ export default function Hero() {
       const config = await fetchHeroConfig();
       applyHeroConfig(config);
     } catch (error) {
-      // Keep the currently rendered Supabase data if a realtime refresh temporarily fails.
+      // Never replace the current valid hero with stale/local data when a refresh fails.
       console.warn('[Hero] Supabase refresh failed:', error);
     } finally {
       setLoading(false);
@@ -132,29 +136,46 @@ export default function Hero() {
 
   useEffect(() => {
     let mounted = true;
+
+    // First request is always directly from the current Supabase configuration.
     fetchHeroConfig()
       .then(config => { if (mounted) applyHeroConfig(config); })
       .catch(error => {
         console.error('[Hero] Initial Supabase load failed:', error);
-        // Important: do NOT restore old/default images when Supabase fails.
         if (mounted) setSlides([]);
       })
       .finally(() => { if (mounted) setLoading(false); });
 
     const channel = supabase
       .channel('landing_hero_realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings', filter: 'key=eq.hero_config' }, () => void refreshHero())
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'site_settings',
+        filter: 'key=eq.hero_config'
+      }, () => void refreshHero())
       .subscribe();
 
     const handleSettingUpdate = (event: Event) => {
       if ((event as CustomEvent).detail?.key === 'hero_config') void refreshHero();
     };
+
+    // Re-check when returning to the tab/page so an older first render cannot persist.
+    const handlePageShow = () => void refreshHero();
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') void refreshHero();
+    };
+
     window.addEventListener('site_setting_updated', handleSettingUpdate);
+    window.addEventListener('pageshow', handlePageShow);
+    document.addEventListener('visibilitychange', handleVisibility);
 
     return () => {
       mounted = false;
       supabase.removeChannel(channel);
       window.removeEventListener('site_setting_updated', handleSettingUpdate);
+      window.removeEventListener('pageshow', handlePageShow);
+      document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, []);
 
@@ -187,14 +208,14 @@ export default function Hero() {
 
           {slides.map((slide, index) => {
             const active = index === currentSlide;
-            const imageSource = slide.videoUrl || slide.image || '';
-            const imageUrl = appendCacheBustParam(imageSource, slide.updated_at || slide.id);
+            const mediaSource = slide.videoUrl || slide.image || '';
+            const mediaUrl = appendCacheBustParam(mediaSource, slide.updated_at || slide.id);
             const posterUrl = slide.poster ? appendCacheBustParam(String(slide.poster), slide.updated_at || slide.id) : undefined;
             return (
               <div key={String(slide.id)} className={`absolute inset-0 transition-opacity duration-500 ${active ? 'opacity-100 visible z-10' : 'opacity-0 invisible z-0 pointer-events-none'}`}>
                 {slide.type === 'video'
-                  ? <HeroVideo src={imageUrl} poster={posterUrl} active={active} />
-                  : <img src={imageUrl} alt={slide.title || 'PB Bilibili 162'} className="w-full h-full object-cover object-center" loading={index < 2 ? 'eager' : 'lazy'} decoding="async" />}
+                  ? <HeroVideo src={mediaUrl} poster={posterUrl} active={active} />
+                  : <img src={mediaUrl} alt={slide.title || 'PB Bilibili 162'} className="w-full h-full object-cover object-center" loading={index < 2 ? 'eager' : 'lazy'} decoding="async" />}
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/45 pointer-events-none" />
               </div>
             );
