@@ -36,6 +36,12 @@ export const DEFAULT_NAV_ITEMS = [
   { id: 'bf9e1002-a537-46af-a4b7-0d2142138282', label: 'FAQ', path: 'faq', type: 'link', parent_id: null, order_index: 8 }
 ];
 
+const MOBILE_ATHLETE_SUBMENUS = [
+  { id: 'mobile-athlete-all', label: 'Semua Atlet', path: 'Semua', type: 'link', parent_id: '9209cc42-be89-4086-9041-35f49acfd96e', order_index: 1 },
+  { id: 'mobile-athlete-senior', label: 'Atlet Senior', path: 'Senior', type: 'link', parent_id: '9209cc42-be89-4086-9041-35f49acfd96e', order_index: 2 },
+  { id: 'mobile-athlete-young', label: 'Atlet Muda', path: 'Muda', type: 'link', parent_id: '9209cc42-be89-4086-9041-35f49acfd96e', order_index: 3 },
+];
+
 // Helper to check if an item is top-level (main menu)
 export const isTopLevelMenuItem = (item: any) => {
   if (!item) return false;
@@ -326,15 +332,29 @@ export default function Navbar({ onNavigate }: NavbarProps) {
   }, [fetchNavSettings, fetchBrandingSettings]);
 
   const getSubMenus = (parentId: string) => {
-    const parentItem = navData.find(i => i.id === parentId);
-    return navData.filter(item => {
-      if (!item || !item.parent_id || item.parent_id === 'none' || item.parent_id === '') return false;
-      if (item.parent_id === parentId) return true;
-      if (parentItem && item.parent_id === parentItem.id) return true;
-      return false;
-    }).sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
-  };
+    const parentItem = navData.find(i => String(i?.id) === String(parentId));
+    const normalizedParentPath = String(parentItem?.path || '').toLowerCase().trim();
+    const normalizedParentLabel = String(parentItem?.label || '').toLowerCase().trim();
 
+    const children = navData.filter(item => {
+      if (!item) return false;
+      const childParent = String(item.parent_id ?? '').trim();
+      if (!childParent || childParent === 'none' || childParent === 'null') return false;
+      return childParent === String(parentId);
+    }).sort((a, b) => (Number(a.order_index) || 0) - (Number(b.order_index) || 0));
+
+    const isAthlete = normalizedParentPath === 'atlet' || normalizedParentLabel === 'atlet' || String(parentId) === '9209cc42-be89-4086-9041-35f49acfd96e';
+    if (isAthlete) {
+      const athleteChildren = children.filter(item => {
+        const p = String(item.path || '').toLowerCase().trim();
+        const l = String(item.label || '').toLowerCase().trim();
+        return p === 'semua' || p === 'senior' || p === 'muda' || l.includes('semua atlet') || l.includes('atlet senior') || l.includes('atlet muda');
+      });
+      return athleteChildren.length ? athleteChildren : MOBILE_ATHLETE_SUBMENUS;
+    }
+
+    return children;
+  };
   // Helper function to get an appropriate icon for any menu item
   const getMenuIcon = (pathStr: string, labelStr: string) => {
     const p = (pathStr || '').toLowerCase();
@@ -791,7 +811,10 @@ export default function Navbar({ onNavigate }: NavbarProps) {
                           {subMenus.map((sub) => (
                             <button 
                               key={sub.id} 
-                              onClick={() => {
+                              onPointerDown={(e) => e.stopPropagation()}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
                                 handleNavClick(menu.path, sub.path);
                               }} 
                               className="text-left py-1.5 px-2 text-[10.5px] font-semibold tracking-wider uppercase text-slate-300 hover:text-white hover:bg-white/5 rounded transition-colors flex items-center justify-between"
