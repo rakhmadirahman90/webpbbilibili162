@@ -641,9 +641,26 @@ export default function Navbar({ onNavigate }: NavbarProps) {
             )}
           </div>
 
-          {/* MOBILE MENU TRIGGER */}
-          <button className="lg:hidden p-2 text-slate-300 hover:text-white transition-colors" onClick={() => setIsMobileMenuOpen(true)}>
-            <Menu size={28} />
+          {/* MOBILE MENU TRIGGER — explicit pointer/touch handling */}
+          <button
+            type="button"
+            aria-label="Buka menu navigasi"
+            aria-expanded={isMobileMenuOpen}
+            onPointerDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setActiveDropdown(null);
+              setIsMobileMenuOpen(true);
+            }}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setActiveDropdown(null);
+              setIsMobileMenuOpen(true);
+            }}
+            className="lg:hidden relative z-[10001] flex items-center justify-center w-11 h-11 rounded-xl bg-slate-800/90 border border-white/10 text-slate-200 hover:text-white hover:bg-slate-700 active:scale-95 transition-all cursor-pointer touch-manipulation select-none"
+          >
+            <Menu size={28} strokeWidth={2.2} />
           </button>
         </div>
 
@@ -678,13 +695,28 @@ export default function Navbar({ onNavigate }: NavbarProps) {
       {isMobileMenuOpen && (
         <>
           {/* Backdrop Overlay */}
-          <div 
-            className="lg:hidden fixed inset-0 z-[999998] bg-black/60 backdrop-blur-xs animate-fade-in cursor-pointer"
-            onClick={() => setIsMobileMenuOpen(false)}
+          <div
+            role="presentation"
+            className="lg:hidden fixed inset-0 z-[999998] bg-black/60 backdrop-blur-xs animate-fade-in cursor-pointer touch-manipulation"
+            onPointerDown={(e) => {
+              e.preventDefault();
+              setIsMobileMenuOpen(false);
+              setActiveDropdown(null);
+            }}
+            onClick={() => {
+              setIsMobileMenuOpen(false);
+              setActiveDropdown(null);
+            }}
           />
           
           {/* Left-aligned Drawer Panel */}
-          <div className="lg:hidden fixed inset-y-0 left-0 w-[270px] sm:w-[290px] max-w-[85vw] h-[100dvh] z-[999999] bg-[#0b1224] border-r border-white/10 flex flex-col justify-between overflow-hidden shadow-2xl animate-slide-in-left">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Menu navigasi PB Bilibili 162"
+            className="lg:hidden fixed inset-y-0 left-0 w-[270px] sm:w-[290px] max-w-[85vw] h-[100dvh] z-[999999] bg-[#0b1224] border-r border-white/10 flex flex-col justify-between overflow-hidden shadow-2xl animate-slide-in-left touch-pan-y"
+            onPointerDown={(e) => e.stopPropagation()}
+          >
             
             {/* LOGO & BRANDING HEADER SECTION */}
             <div className="flex items-center justify-between py-2.5 px-3.5 border-b border-white/10 shrink-0 bg-[#070d1a]/80 relative">
@@ -713,9 +745,11 @@ export default function Navbar({ onNavigate }: NavbarProps) {
               </div>
 
               {/* Close Arrow Button */}
-              <button 
-                onClick={() => setIsMobileMenuOpen(false)} 
-                className="text-slate-400 hover:text-white p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 transition-all active:scale-95 flex items-center justify-center shrink-0 ml-1"
+              <button
+                type="button"
+                onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); setIsMobileMenuOpen(false); setActiveDropdown(null); }}
+                onClick={() => { setIsMobileMenuOpen(false); setActiveDropdown(null); }}
+                className="text-slate-300 hover:text-white p-2 rounded-xl bg-slate-800/90 hover:bg-slate-700 transition-all active:scale-95 flex items-center justify-center shrink-0 ml-1 cursor-pointer touch-manipulation"
                 title="Tutup Menu"
               >
                 <X size={16} />
@@ -723,7 +757,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
             </div>
 
             {/* SCROLLABLE MENU ITEMS LIST */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar py-2 px-2 space-y-1 flex flex-col justify-start">
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain custom-scrollbar py-2 px-2 space-y-1 flex flex-col justify-start touch-pan-y">
               {navData
                 .filter(isTopLevelMenuItem)
                 .sort((a, b) => (a.order_index || 0) - (b.order_index || 0))
