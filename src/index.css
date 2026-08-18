@@ -5,33 +5,56 @@
 @tailwind utilities;
 
 @layer base {
-  body {
-    font-family: "Plus Jakarta Sans", "Inter", sans-serif;
-    @apply text-slate-100 bg-[#070d1a] antialiased selection:bg-blue-500/30 selection:text-white;
+  html, body, #root { width: 100%; max-width: 100%; min-width: 0; margin: 0; }
+  body { font-family: "Plus Jakarta Sans", "Inter", sans-serif; @apply text-slate-100 bg-[#070d1a] antialiased selection:bg-blue-500/30 selection:text-white; }
+  *, *::before, *::after { box-sizing: border-box; }
+}
+
+.font-serif { font-family: 'Times New Roman', 'Tinos', 'Georgia', serif; }
+body { overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
+#root { overflow-x: clip; }
+table { max-width: 100%; }
+img, video, svg, canvas { max-width: 100%; }
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Mobile layout guardrails: desktop layout is unchanged. */
+@media (max-width: 767px) {
+  html { width: 100vw; max-width: 100vw; overflow-x: hidden; font-size: 15px; }
+  body, #root { width: 100vw; max-width: 100vw; min-width: 0; overflow-x: hidden; }
+
+  /* Remove desktop sidebar/content offsets when the sidebar becomes a drawer. */
+  [class~="ml-64"], [class~="ml-72"], [class~="ml-80"],
+  [class*="lg:ml-64"], [class*="lg:ml-72"], [class*="lg:ml-80"] {
+    margin-left: 0 !important;
   }
+
+  /* Prevent hidden desktop min-widths from widening the phone canvas. */
+  [class*="min-w-"] { min-width: 0 !important; }
+  [class~="w-screen"], [class*="w-[100vw]"], [class*="w-screen"] {
+    width: 100% !important; max-width: 100% !important;
+  }
+  [class~="w-96"], [class~="w-[28rem]"], [class~="w-[32rem]"],
+  [class~="w-[36rem]"], [class~="w-[40rem]"], [class*="w-[calc(100%-"] {
+    width: 100% !important; max-width: 100% !important;
+  }
+
+  .flex, .grid { min-width: 0; }
+  .flex > *, .grid > * { min-width: 0; }
+  .overflow-x-auto, .overflow-x-scroll {
+    max-width: 100%; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain;
+  }
+  main { min-width: 0 !important; max-width: 100vw !important; }
+
+  /* Dialogs and SweetAlert stay within the viewport. */
+  .swal2-container { width: 100vw !important; max-width: 100vw !important; padding: 12px !important; }
+  .swal2-popup { width: min(92vw, 420px) !important; max-width: 92vw !important; margin: 0 auto !important; }
+  button, a, input, select, textarea { max-width: 100%; }
+  input, select, textarea { min-width: 0; }
 }
 
-.font-serif {
-  font-family: 'Times New Roman', 'Tinos', 'Georgia', serif;
-}
-
-/* Memperbaiki masalah horizontal scroll pada mobile */
-body {
-  overflow-x: hidden;
-  -webkit-tap-highlight-color: transparent;
-}
-
-/* Utilitas untuk menyembunyikan scrollbar tapi tetap bisa di-scroll */
-.hide-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.hide-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-/* Memastikan gambar tidak keluar dari container */
-img {
-  max-width: 100%;
-  height: auto;
+@media (max-width: 420px) {
+  .max-w-6xl, .max-w-7xl, .max-w-5xl, .max-w-4xl { width: 100%; max-width: 100%; }
+  [class~="px-6"], [class~="px-8"] { padding-left: 12px !important; padding-right: 12px !important; }
+  [class~="gap-6"], [class~="gap-8"] { gap: 12px !important; }
 }
