@@ -21,8 +21,6 @@ export const SUPABASE_ANON_KEY = anon;
 export const SUPABASE_PROJECT_URL = envUrl;
 export const SUPABASE_PROJECT_REF = envUrl.match(/https?:\/\/([^.]+)\.supabase\.co/)?.[1] || '';
 
-// Authoritative remote client. Popup CRUD deliberately uses this client
-// directly so the admin popup cannot be hidden by IndexedDB/site-settings data.
 export const remoteSupabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     persistSession: true,
@@ -91,13 +89,15 @@ function remoteFromForRead(table: string) {
   });
 }
 
-// Proxy keeps the existing API surface. Normal tables remain local-first for
-// compatibility, while konfigurasi_popup is fully Supabase-authoritative.
+// Local-first remains enabled for legacy application data. Site settings and
+// popup configuration are authoritative remote Supabase data because they are
+// website configuration shared by every browser/device/deployment.
 export const supabase: typeof remoteSupabase = new Proxy(remoteSupabase as any, {
   get(target, prop, receiver) {
     if (prop === 'from') {
       return (table: string) => {
         if (table === 'konfigurasi_popup') return popupRemoteQuery();
+        if (table === 'site_settings') return remoteSupabase.from('site_settings');
 
         const localQuery: any = localFrom(table);
         const remoteQuery: any = remoteFromForRead(table);
@@ -116,18 +116,4 @@ export const supabase: typeof remoteSupabase = new Proxy(remoteSupabase as any, 
 if (typeof window !== 'undefined') {
   startLocalFirstSync();
   window.addEventListener('online', () => { void flushSyncQueue(); });
-}
-
-export { localDbExport, localDbImport, flushSyncQueue };
-
-export async function testSupabaseConnection(): Promise<{ connected: boolean; message: string; timestamp: string }> {
-  try {
-    const { error } = await remoteSupabase.from('site_settings').select('key').limit(1);
-    if (error && error.code !== 'PGRST116') {
-      return { connected:false, message:error.message || 'Database query error', timestamp:new Date().toISOString() };
-    }
-    return { connected:true, message:'Supabase Database Connected Successfully', timestamp:new Date().toISOString() };
-  } catch (err:any) {
-    return { connected:false, message:err?.message || 'Network / Connectivity Exception', timestamp:new Date().toISOString() };
-  }
 }
