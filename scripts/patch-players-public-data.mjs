@@ -72,8 +72,17 @@ const newDesktop = `onClick={() => {
                   }}`;
 if (navbar.includes(oldDesktop)) navbar = navbar.replace(oldDesktop, newDesktop);
 
-// Mobile: the Atlet parent opens the full athlete page. Filter choices are
-// still handled by the existing child-button handler when a child is selected.
+// Mobile sidebar behavior: selecting Atlet navigates to the athlete page but
+// intentionally keeps the sidebar open. Other navigation items keep the
+// existing close-on-navigation behavior.
+const oldHandler = "  const handleNavClick = (path: string, subPath?: string) => {\n    setActiveDropdown(null);\n    setIsMobileMenuOpen(false);";
+const newHandler = "  const handleNavClick = (path: string, subPath?: string, keepMobileMenuOpen = false) => {\n    setActiveDropdown(null);\n    if (!keepMobileMenuOpen) setIsMobileMenuOpen(false);";
+if (navbar.includes(oldHandler)) {
+  navbar = navbar.replace(oldHandler, newHandler);
+} else if (!navbar.includes('keepMobileMenuOpen = false')) {
+  throw new Error('Navbar handleNavClick marker not found; aborting safely.');
+}
+
 const oldMobile = `if (isDropdown) {
                             setActiveDropdown(activeDropdown === menu.id ? null : menu.id);
                           } else {
@@ -81,7 +90,7 @@ const oldMobile = `if (isDropdown) {
                           }`;
 const newMobile = `const menuPath = (menu.path || '').toLowerCase();
                           if (menuPath === 'atlet' || menuPath === 'players' || menuPath === 'player') {
-                            handleNavClick(menu.path);
+                            handleNavClick(menu.path, undefined, true);
                           } else if (isDropdown) {
                             setActiveDropdown(activeDropdown === menu.id ? null : menu.id);
                           } else {
@@ -89,5 +98,12 @@ const newMobile = `const menuPath = (menu.path || '').toLowerCase();
                           }`;
 if (navbar.includes(oldMobile)) navbar = navbar.replace(oldMobile, newMobile);
 
+// If the previous build patch already inserted the Atlet branch, upgrade only
+// its call so the behavior remains idempotent on subsequent builds.
+navbar = navbar.replace(
+  /if \(menuPath === 'atlet' \|\| menuPath === 'players' \|\| menuPath === 'player'\) \{\n\s*handleNavClick\(menu\.path\);\n\s*\}/g,
+  "if (menuPath === 'atlet' || menuPath === 'players' || menuPath === 'player') {\n                            handleNavClick(menu.path, undefined, true);\n                          }"
+);
+
 fs.writeFileSync(navbarPath, navbar, 'utf8');
-console.log('[patch-players-public-data] Navbar Atlet menu is directly navigable.');
+console.log('[patch-players-public-data] Navbar Atlet menu is directly navigable and keeps mobile sidebar open.');
