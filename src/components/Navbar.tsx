@@ -331,8 +331,10 @@ export default function Navbar({ onNavigate }: NavbarProps) {
     };
   }, [fetchNavSettings, fetchBrandingSettings]);
 
-  const getSubMenus = (parentId: string) => {
-    const parentItem = navData.find(i => String(i?.id) === String(parentId));
+  const getSubMenus = (parentId: string, parentOverride?: any) => {
+    // Use the actual rendered menu item when available. This prevents mobile
+    // submenu failures when Supabase returns a valid menu with a different ID.
+    const parentItem = parentOverride || navData.find(i => String(i?.id) === String(parentId));
     const normalizedParentPath = String(parentItem?.path || '').toLowerCase().trim();
     const normalizedParentLabel = String(parentItem?.label || '').toLowerCase().trim();
 
@@ -560,8 +562,9 @@ export default function Navbar({ onNavigate }: NavbarProps) {
           {/* DESKTOP NAV (Optimized gaps for different screen sizes) */}
           <div className="hidden lg:flex items-center lg:gap-2.5 xl:gap-6.5 overflow-visible">
             {navData.filter(isTopLevelMenuItem).sort((a, b) => (a.order_index || 0) - (b.order_index || 0)).map((menu, index, arr) => {
-              const subMenus = getSubMenus(menu.id);
-              const isDropdown = menu.type === 'dropdown' || subMenus.length > 0;
+              const isAthleteMenu = String(menu?.path || '').toLowerCase().trim() === 'atlet' || String(menu?.label || '').toLowerCase().trim() === 'atlet';
+              const subMenus = getSubMenus(menu.id, menu);
+              const isDropdown = isAthleteMenu || menu.type === 'dropdown' || subMenus.length > 0;
               const isLastFew = index >= Math.floor(arr.length / 2);
               return (
                 <div 
