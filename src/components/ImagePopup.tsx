@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Download, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, Download, ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react';
 import { supabase } from '../supabase';
 import { getSiteSetting, parsePopupList } from '../utils/siteSettingsHelper';
 import { useRealtimeSync } from '../utils/realtimeSync';
@@ -16,14 +16,38 @@ const OFFICIAL_LATEST_POPUP = {
 };
 
 interface ImagePopupProps { activeView?: string | null; }
-
 type PopupItem = Record<string, any>;
+
+const SLIDE_DURATION = 5500;
+const SWIPE_THRESHOLD = 50;
+const SWIPE_VELOCITY = 450;
+
+const slideVariants = {
+  enter: (direction: number) => ({
+    x: direction > 0 ? '105%' : '-105%',
+    opacity: 0.65,
+    scale: 0.985,
+  }),
+  center: {
+    x: 0,
+    opacity: 1,
+    scale: 1,
+  },
+  exit: (direction: number) => ({
+    x: direction > 0 ? '-105%' : '105%',
+    opacity: 0.65,
+    scale: 0.985,
+  }),
+};
 
 function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
   const [isOpen, setIsOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [promoImages, setPromoImages] = useState<PopupItem[]>([]);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [direction, setDirection] = useState(1);
+  const [isAutoPlay, setIsAutoPlay] = useState(true);
+  const [isHovering, setIsHovering] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const isDismissedRef = useRef(false);
 
@@ -77,7 +101,7 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
       } catch {}
 
       const sitePopups = parsePopupList(siteConfigRaw);
-      let canonicalList: PopupItem[] = siteLoaded
+      const canonicalList: PopupItem[] = siteLoaded
         ? sitePopups
         : apiItems.length > 0
           ? apiItems
@@ -116,6 +140,7 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
       merged.forEach(item => {
         if (item?.id) unique.set(String(item.id), item);
       });
+
       const activeItems = Array.from(unique.values())
         .filter(item => item.is_active === true || item.active === true)
         .sort((a, b) => (a.urutan ?? 0) - (b.urutan ?? 0));
@@ -123,6 +148,7 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
       setPromoImages(activeItems);
       setCurrentIndex(prev => activeItems.length ? Math.min(prev, activeItems.length - 1) : 0);
       setIsExpanded(false);
+      setDirection(1);
       setIsOpen(activeItems.length > 0 && (forceShow || !isDismissedRef.current));
     } catch (err) {
       console.error('Gagal memuat pop-up:', err);
@@ -137,7 +163,7 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
 
   useEffect(() => {
     const channel = supabase
-      .channel('popups-db-changes')
+      .channel('landing-popup-carousel-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'popups' }, () => fetchActivePopups(false))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'konfigurasi_popup' }, () => fetchActivePopups(false))
       .subscribe();
@@ -170,6 +196,32 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
     onUpdate: () => fetchActivePopups(false)
   });
 
+  const goTo = useCallback((nextIndex: number, nextDirection: number) => {
+    if (promoImages.length < 2) return;
+    setDirection(nextDirection >= 0 ? 1 : -1);
+    setIsExpanded(false);
+    setCurrentIndex(nextIndex);
+    requestAnimationFrame(() => scrollRef.current?.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior }));
+  }, [promoImages.length]);
+
+  const goNext = useCallback(() => {
+    if (promoImages.length < 2) return;
+    goTo((currentIndex + 1) % promoImages.length, 1);
+  }, [currentIndex, goTo, promoImages.length]);
+
+  const goPrev = useCallback(() => {
+    if (promoImages.length < 2) return;
+    goTo((currentIndex - 1 + promoImages.length) % promoImages.length, -1);
+  }, [currentIndex, goTo, promoImages.length]);
+
+  // Smooth automatic carousel. It pauses while the user is interacting or hovering.
+  useEffect(() => {
+    if (!isOpen || !isAutoPlay || isHovering || promoImages.length < 2) return;
+    const timer = window.setTimeout(goNext, SLIDE_DURATION);
+    return () => window.clearTimeout(timer);
+  }, [isOpen, isAutoPlay, isHovering, promoImages.length, currentIndex, goNext]);
+
+  // Keep the description's existing slow reading scroll behaviour.
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | undefined;
     let timeout: ReturnType<typeof setTimeout> | undefined;
@@ -191,20 +243,6 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
     };
   }, [isOpen, currentIndex]);
 
-  const goNext = () => {
-    if (promoImages.length < 2) return;
-    setIsExpanded(false);
-    setCurrentIndex(prev => (prev + 1) % promoImages.length);
-    requestAnimationFrame(() => scrollRef.current?.scrollTo({ top: 0, behavior: 'auto' }));
-  };
-
-  const goPrev = () => {
-    if (promoImages.length < 2) return;
-    setIsExpanded(false);
-    setCurrentIndex(prev => (prev - 1 + promoImages.length) % promoImages.length);
-    requestAnimationFrame(() => scrollRef.current?.scrollTo({ top: 0, behavior: 'auto' }));
-  };
-
   const closePopup = () => {
     isDismissedRef.current = true;
     setIsOpen(false);
@@ -212,10 +250,10 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
 
   const handleDragEnd = (_event: any, info: any) => {
     if (promoImages.length < 2) return;
-    const distance = Math.abs(info.offset?.x ?? 0);
-    const velocity = Math.abs(info.velocity?.x ?? 0);
-    if (distance > 45 || velocity > 350) {
-      if ((info.offset?.x ?? 0) < 0) goNext();
+    const offsetX = info.offset?.x ?? 0;
+    const velocityX = info.velocity?.x ?? 0;
+    if (Math.abs(offsetX) > SWIPE_THRESHOLD || Math.abs(velocityX) > SWIPE_VELOCITY) {
+      if (offsetX < 0 || velocityX < 0) goNext();
       else goPrev();
     }
   };
@@ -246,61 +284,124 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
 
   return (
     <AnimatePresence mode="wait">
-      <div className="fixed inset-0 z-[999999] flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm">
+      <motion.div
+        key="landing-popup-overlay"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.25, ease: 'easeOut' }}
+        className="fixed inset-0 z-[999999] flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md"
+      >
         <div className="absolute inset-0" onClick={closePopup} />
 
         <motion.div
-          key={current.id || `popup-${currentIndex}`}
-          initial={{ opacity: 0, scale: 0.94, y: 20 }}
+          initial={{ opacity: 0, scale: 0.96, y: 14 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.94, y: -20 }}
-          transition={{ type: 'spring', stiffness: 400, damping: 30, mass: 0.8 }}
-          className="relative w-full max-w-[calc(100vw-1.5rem)] sm:max-w-[420px] max-h-[90vh] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden"
+          exit={{ opacity: 0, scale: 0.97, y: 8 }}
+          transition={{ type: 'spring', stiffness: 320, damping: 28, mass: 0.8 }}
+          className="relative w-full max-w-[calc(100vw-1.5rem)] sm:max-w-[420px] max-h-[90vh] bg-white rounded-[28px] shadow-[0_24px_80px_rgba(0,0,0,0.38)] flex flex-col overflow-hidden ring-1 ring-white/20"
           onClick={e => e.stopPropagation()}
+          onMouseEnter={() => setIsHovering(true)}
+          onMouseLeave={() => setIsHovering(false)}
         >
-          <button onClick={closePopup} aria-label="Tutup pop-up" className="absolute top-3 right-3 z-[80] p-2 bg-white/95 hover:bg-slate-100 text-slate-800 rounded-full shadow-xl border border-slate-200 transition-all active:scale-90">
+          <button onClick={closePopup} aria-label="Tutup pop-up" className="absolute top-3 right-3 z-[80] p-2.5 bg-white/95 hover:bg-slate-100 text-slate-800 rounded-full shadow-xl border border-slate-200 transition-all duration-200 active:scale-90">
             <X size={18} />
           </button>
 
           <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain hide-scrollbar scroll-smooth">
-            <AnimatePresence mode="wait" initial={false}>
-              <motion.div key={current.id || currentIndex} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+            <div className="relative overflow-hidden bg-slate-950">
+              <AnimatePresence initial={false} custom={direction} mode="sync">
                 <motion.div
-                  drag={hasNavigation ? 'x' : false}
-                  dragDirectionLock
-                  dragConstraints={{ left: 0, right: 0 }}
-                  dragElastic={0.18}
-                  onDragEnd={handleDragEnd}
-                  style={{ touchAction: hasNavigation ? 'pan-y' : 'auto' }}
-                  className="relative w-full bg-slate-950 shrink-0 cursor-grab active:cursor-grabbing overflow-hidden flex items-center justify-center select-none"
+                  key={current.id || currentIndex}
+                  custom={direction}
+                  variants={slideVariants}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  transition={{
+                    x: { type: 'spring', stiffness: 330, damping: 34, mass: 0.72 },
+                    opacity: { duration: 0.18, ease: 'easeOut' },
+                    scale: { duration: 0.28, ease: 'easeOut' }
+                  }}
+                  className="relative w-full shrink-0"
                 >
-                  <img src={current.url_gambar} className="w-full h-auto block z-10 select-none pointer-events-none" alt={current.judul || 'Banner pengumuman'} draggable={false} />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/20 via-transparent to-black/10 z-20 pointer-events-none" />
+                  <motion.div
+                    drag={hasNavigation ? 'x' : false}
+                    dragDirectionLock
+                    dragConstraints={{ left: 0, right: 0 }}
+                    dragElastic={0.12}
+                    onDragEnd={handleDragEnd}
+                    onDragStart={() => setIsAutoPlay(false)}
+                    style={{ touchAction: hasNavigation ? 'pan-y' : 'auto' }}
+                    className="relative w-full bg-slate-950 cursor-grab active:cursor-grabbing overflow-hidden flex items-center justify-center select-none"
+                  >
+                    <img src={current.url_gambar} className="w-full h-auto block z-10 select-none pointer-events-none" alt={current.judul || 'Banner pengumuman'} draggable={false} />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/20 via-transparent to-black/10 z-20 pointer-events-none" />
 
-                  {hasNavigation && (
-                    <>
-                      <button type="button" onClick={goPrev} aria-label="Pop-up sebelumnya" className="absolute left-2 top-1/2 -translate-y-1/2 z-40 w-9 h-9 rounded-full bg-black/55 hover:bg-black/75 text-white backdrop-blur-sm flex items-center justify-center shadow-lg active:scale-90 transition-all">
-                        <ChevronLeft size={20} />
-                      </button>
-                      <button type="button" onClick={goNext} aria-label="Pop-up berikutnya" className="absolute right-2 top-1/2 -translate-y-1/2 z-40 w-9 h-9 rounded-full bg-black/55 hover:bg-black/75 text-white backdrop-blur-sm flex items-center justify-center shadow-lg active:scale-90 transition-all">
-                        <ChevronRight size={20} />
-                      </button>
-                    </>
-                  )}
+                    {hasNavigation && (
+                      <>
+                        <button type="button" onClick={goPrev} aria-label="Pop-up sebelumnya" className="absolute left-2.5 top-1/2 -translate-y-1/2 z-40 w-10 h-10 rounded-full bg-black/45 hover:bg-black/65 text-white backdrop-blur-md border border-white/15 flex items-center justify-center shadow-lg active:scale-90 transition-all duration-200">
+                          <ChevronLeft size={21} />
+                        </button>
+                        <button type="button" onClick={goNext} aria-label="Pop-up berikutnya" className="absolute right-2.5 top-1/2 -translate-y-1/2 z-40 w-10 h-10 rounded-full bg-black/45 hover:bg-black/65 text-white backdrop-blur-md border border-white/15 flex items-center justify-center shadow-lg active:scale-90 transition-all duration-200">
+                          <ChevronRight size={21} />
+                        </button>
+                      </>
+                    )}
+                  </motion.div>
                 </motion.div>
+              </AnimatePresence>
 
-                <div className="flex items-center justify-center gap-2 py-2.5 bg-white border-b border-slate-100">
-                  {hasNavigation ? promoImages.map((item, index) => (
-                    <button key={item.id || index} type="button" onClick={() => { setIsExpanded(false); setCurrentIndex(index); scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' }); }} aria-label={`Buka pop-up ${index + 1} dari ${total}`} className={`rounded-full transition-all ${index === currentIndex ? 'w-6 h-2 bg-blue-600' : 'w-2 h-2 bg-slate-300 hover:bg-slate-400'}`} />
-                  )) : <span className="text-[10px] font-bold text-slate-400">1 / 1</span>}
-                  {hasNavigation && <span className="ml-1 text-[10px] font-bold text-slate-500">{currentIndex + 1} / {total}</span>}
-                </div>
+              {hasNavigation && isAutoPlay && !isHovering && (
+                <motion.div
+                  key={`progress-${currentIndex}`}
+                  initial={{ width: '0%' }}
+                  animate={{ width: '100%' }}
+                  transition={{ duration: SLIDE_DURATION / 1000, ease: 'linear' }}
+                  className="absolute left-0 bottom-0 h-1 bg-blue-500/90 z-50"
+                />
+              )}
+            </div>
 
-                <div className="px-5 sm:px-6 pt-3 pb-7 bg-white">
-                  <div className="flex justify-center mb-4">
-                    <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-bold uppercase tracking-widest border border-blue-100">Pengumuman</span>
-                  </div>
+            <div className="flex items-center justify-center gap-2 py-2.5 bg-white border-b border-slate-100">
+              {hasNavigation ? promoImages.map((item, index) => (
+                <button
+                  key={item.id || index}
+                  type="button"
+                  onClick={() => {
+                    setIsAutoPlay(true);
+                    goTo(index, index >= currentIndex ? 1 : -1);
+                  }}
+                  aria-label={`Buka pop-up ${index + 1} dari ${total}`}
+                  className={`rounded-full transition-all duration-300 ${index === currentIndex ? 'w-7 h-2 bg-blue-600' : 'w-2 h-2 bg-slate-300 hover:bg-slate-400'}`}
+                />
+              )) : <span className="text-[10px] font-bold text-slate-400">1 / 1</span>}
+              {hasNavigation && <span className="ml-1 text-[10px] font-bold text-slate-500">{currentIndex + 1} / {total}</span>}
+              {hasNavigation && (
+                <button
+                  type="button"
+                  onClick={() => setIsAutoPlay(v => !v)}
+                  aria-label={isAutoPlay ? 'Jeda slider otomatis' : 'Putar slider otomatis'}
+                  className="ml-1 w-6 h-6 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors"
+                >
+                  {isAutoPlay ? <Pause size={11} /> : <Play size={11} />}
+                </button>
+              )}
+            </div>
 
+            <div className="px-5 sm:px-6 pt-3 pb-7 bg-white">
+              <div className="flex justify-center mb-4">
+                <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-bold uppercase tracking-widest border border-blue-100">Pengumuman</span>
+              </div>
+
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.div
+                  key={`content-${current.id || currentIndex}`}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -5 }}
+                  transition={{ duration: 0.22, ease: 'easeOut' }}
+                >
                   <h3 className="text-xl sm:text-2xl font-black text-blue-700 leading-tight text-center mb-5 px-2 uppercase tracking-tighter">{current.judul}</h3>
 
                   <div className="bg-slate-50 border border-slate-100 rounded-3xl p-5 sm:p-6 mb-7 shadow-inner">
@@ -322,12 +423,12 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
                     )}
                     <button type="button" onClick={closePopup} className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-[12px] tracking-wider transition-all shadow-md">MENGERTI</button>
                   </div>
-                </div>
-              </motion.div>
-            </AnimatePresence>
+                </motion.div>
+              </AnimatePresence>
+            </div>
           </div>
         </motion.div>
-      </div>
+      </motion.div>
     </AnimatePresence>
   );
 }
