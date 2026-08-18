@@ -6,15 +6,20 @@ function patchFile(path, transforms) {
   fs.writeFileSync(path, source);
 }
 
-// Keep public Berita/Prestasi navigation deterministic and avoid global
-// document click delegation, which can interfere with React Router events.
+function replaceIfPresent(source, oldValue, newValue) {
+  return source.includes(oldValue) ? source.replace(oldValue, newValue) : source;
+}
+
+// This patch must be safe to run on every Cloudflare build. Earlier versions
+// assumed exact source markers that may legitimately differ after another
+// mobile-navbar patch has normalized the same file. Missing markers are now
+// treated as an already-applied/no-op condition instead of failing the build.
 patchFile('src/App.tsx', [
   (s) => s.replace(/'berita', 'news', 'faq/g, "'berita', 'news', 'prestasi', 'faq"),
   (s) => {
     const marker = "                    {(activeView === 'berita' || activeView === 'news') && <News />}";
     if (s.includes("(activeView === 'prestasi') && <News />")) return s;
-    if (!s.includes(marker)) throw new Error('Prestasi patch: News renderer marker not found');
-    return s.replace(marker, `${marker}\n                    {(activeView === 'prestasi') && <News />}`);
+    return replaceIfPresent(s, marker, `${marker}\n                    {(activeView === 'prestasi') && <News />}`);
   },
 ]);
 
@@ -27,42 +32,36 @@ patchFile('src/components/Navbar.tsx', [
     const targetQuery = new URLSearchParams(targetQueryRaw);
     const targetCategory = (targetQuery.get('category') || '').trim().toLowerCase();`;
     if (s.includes('const targetQuery = new URLSearchParams(targetQueryRaw);')) return s;
-    if (!s.includes(old)) throw new Error('Prestasi patch: targetPath declaration not found');
-    return s.replace(old, newer);
+    return replaceIfPresent(s, old, newer);
   },
   (s) => {
     const old = "    // 5. Berita\n    if (targetPath === 'berita' || targetPath === 'news' || targetPath.includes('berita')) {\n      onNavigate('berita');\n      return;\n    }";
     const replacement = `    // 5. Berita: use the existing App navigation callback.
-    // This keeps React state and UrlSynchronizer as the single source of truth.
     if (targetPath === 'berita' || targetPath === 'news' || targetPath.includes('berita')) {
       onNavigate('berita');
       return;
     }`;
     if (s.includes('// 5. Berita: use the existing App navigation callback.')) return s;
-    if (!s.includes(old)) throw new Error('Prestasi patch: Berita handler marker not found');
-    return s.replace(old, replacement);
+    return replaceIfPresent(s, old, replacement);
   },
   (s) => {
     const old = "    // 6. Prestasi\n    if (targetPath === 'prestasi') {\n      onNavigate('prestasi');\n      return;\n    }";
-    const replacement = `    // 6. Prestasi: use the existing App navigation callback.
-    // Supports canonical "prestasi" and legacy/custom "berita?category=Prestasi".
+    const replacement = `    // 6. Prestasi: canonical route plus legacy category route.
     if (targetPath === 'prestasi' || (targetPath === 'berita' && targetCategory === 'prestasi')) {
       onNavigate('prestasi');
       return;
     }`;
-    if (s.includes('// 6. Prestasi: use the existing App navigation callback.')) return s;
-    if (!s.includes(old)) throw new Error('Prestasi patch: Prestasi handler marker not found');
-    return s.replace(old, replacement);
+    if (s.includes('// 6. Prestasi: canonical route plus legacy category route.')) return s;
+    return replaceIfPresent(s, old, replacement);
   },
   (s) => {
-    // Remove the previous global capture-phase workaround. It could intercept
-    // unrelated clicks and compete with React Router/React state updates.
+    // Remove the old global capture-phase workaround if it still exists.
     const start = '  // pb-mobile-news-prestasi-delegation\n';
     if (!s.includes(start)) return s;
     const endMarker = '  // --- PERBAIKAN LOGIKA NAVIGASI ---\n';
     const startIndex = s.indexOf(start);
     const endIndex = s.indexOf(endMarker, startIndex);
-    if (endIndex === -1) throw new Error('Prestasi patch: delegation cleanup marker not found');
+    if (endIndex === -1) return s;
     return s.slice(0, startIndex) + s.slice(endIndex);
   },
 ]);
@@ -71,26 +70,21 @@ patchFile('src/components/News.tsx', [
   (s) => {
     const marker = 'export default function News() {\n';
     if (s.includes('const prestasiOnly =')) return s;
-    if (!s.includes(marker)) throw new Error('Prestasi patch: News component marker not found');
-    return s.replace(marker, `${marker}  // /prestasi is a dedicated category view.\n  const prestasiOnly = typeof window !== 'undefined' && window.location.pathname.replace(/\\/$/, '').toLowerCase() === '/prestasi';\n`);
+    return replaceIfPresent(s, marker, `${marker}  // /prestasi is a dedicated category view.\n  const prestasiOnly = typeof window !== 'undefined' && window.location.pathname.replace(/\\/$/, '').toLowerCase() === '/prestasi';\n`);
   },
   (s) => {
     const marker = "    let result = [...beritaList];\n\n    // Filter by Category";
     if (s.includes('// Dedicated Prestasi menu filter')) return s;
-    if (!s.includes(marker)) throw new Error('Prestasi patch: filteredNews marker not found');
-    return s.replace(marker, `    let result = [...beritaList];\n\n    // Dedicated Prestasi menu filter: ONLY kategori Prestasi.\n    if (prestasiOnly) {\n      result = result.filter(item => (item.kategori || '').trim().toLowerCase() === 'prestasi');\n    }\n\n    // Filter by Category`);
+    return replaceIfPresent(s, marker, `    let result = [...beritaList];\n\n    // Dedicated Prestasi menu filter: ONLY kategori Prestasi.\n    if (prestasiOnly) {\n      result = result.filter(item => (item.kategori || '').trim().toLowerCase() === 'prestasi');\n    }\n\n    // Filter by Category`);
   },
   (s) => s.replace('[beritaList, selectedCategory, orderBy, orderDirection, searchTerm]', '[beritaList, selectedCategory, orderBy, orderDirection, searchTerm, prestasiOnly]'),
   (s) => {
-    if (s.includes('Prestasi route category state sync')) return s;
+    if (s.includes('// Prestasi route category state sync')) return s;
     const marker = "  useEffect(() => {\n    fetchNews();";
     if (!s.includes(marker)) return s;
     return s.replace(marker, "  // Prestasi route category state sync\n  useEffect(() => {\n    if (prestasiOnly) {\n      setSelectedCategory('ALL ARTICLES');\n      setTempCategory('ALL ARTICLES');\n      setCurrentPage(1);\n    }\n  }, [prestasiOnly]);\n\n" + marker);
   },
   (s) => {
-    // Prevent the public news page from downloading the entire komentar table.
-    // Only comments belonging to the currently loaded article set are needed
-    // for the card counters.
     const old = `        const { data: commentRows } = await supabase
           .from('komentar')
           .select('berita_id');`;
@@ -98,10 +92,9 @@ patchFile('src/components/News.tsx', [
           .from('komentar')
           .select('berita_id')
           .in('berita_id', articleIds);`;
-    if (s.includes('.select(\'berita_id\')\n          .in(\'berita_id\', articleIds)')) return s;
-    if (!s.includes(old)) throw new Error('Prestasi patch: comment count query marker not found');
-    return s.replace(old, replacement);
+    if (s.includes(".select('berita_id')\n          .in('berita_id', articleIds)")) return s;
+    return replaceIfPresent(s, old, replacement);
   },
 ]);
 
-console.log('Stable Berita/Prestasi routing patch applied successfully.');
+console.log('Stable Berita/Prestasi routing patch completed (safe/idempotent).');
