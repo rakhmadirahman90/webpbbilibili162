@@ -84,3 +84,142 @@ img {
     border-radius: 13px;
   }
 }
+
+/* -------------------------------------------------------------------------
+   ATHLETE / PLAYERS — mobile layout hardening
+   -------------------------------------------------------------------------
+   The desktop carousel is intentionally preserved. On phones the previous
+   1.2-slide viewport made the next athlete peek into the frame and, combined
+   with a fixed-height flex container, could make the card look clipped or
+   horizontally misaligned. These rules make one card fill the available
+   width, keep the content inside the viewport, and keep swipe interaction
+   predictable without changing the data or desktop presentation.
+*/
+@media (max-width: 639px) {
+  #atlet {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    overflow-y: visible;
+    padding-top: 0.75rem;
+    padding-bottom: 6rem;
+  }
+
+  #atlet > .relative.z-10,
+  #atlet .max-w-7xl {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  /* Header/search: prevent the search field from forcing horizontal width. */
+  #atlet input {
+    min-width: 0;
+    height: 46px;
+  }
+
+  /* Category tabs stay inside the viewport and remain easy to tap. */
+  #atlet .no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #atlet .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  #atlet .no-scrollbar button {
+    min-height: 42px;
+    padding-left: 0.9rem;
+    padding-right: 0.9rem;
+  }
+
+  /* One full-width slide on phones. */
+  #atlet .swiper {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    touch-action: pan-y;
+  }
+
+  #atlet .swiper-wrapper {
+    align-items: stretch;
+  }
+
+  #atlet .swiper-slide {
+    width: 100% !important;
+    max-width: 100%;
+    min-width: 0;
+    flex-shrink: 0;
+  }
+
+  /* Compact portrait card: no second card peeking into view. */
+  #atlet .swiper-slide > div {
+    width: 100%;
+    max-width: 100%;
+    aspect-ratio: 4 / 5;
+    min-height: 0;
+    border-radius: 1.5rem;
+    overflow: hidden;
+  }
+
+  #atlet .swiper-slide img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* Keep player information readable without pushing it outside the card. */
+  #atlet .swiper-slide .bottom-8 {
+    left: 1rem;
+    right: 1rem;
+    bottom: 1rem;
+  }
+
+  #atlet .swiper-slide .bottom-8 h3 {
+    margin-bottom: 0.75rem;
+    font-size: 1.05rem;
+    line-height: 1.15;
+  }
+
+  #atlet .swiper-slide .bottom-8 .pt-4 {
+    padding-top: 0.65rem;
+  }
+
+  /* Carousel arrows must be visible on touch devices; hover is unavailable. */
+  #atlet button[class*="md:-left-6"],
+  #atlet button[class*="md:-right-6"] {
+    opacity: 1 !important;
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+    top: 50%;
+    z-index: 30;
+    border-radius: 9999px;
+    touch-action: manipulation;
+  }
+
+  #atlet button[class*="md:-left-6"] {
+    left: 0.4rem;
+  }
+
+  #atlet button[class*="md:-right-6"] {
+    right: 0.4rem;
+  }
+
+  #atlet button[class*="md:-left-6"] svg,
+  #atlet button[class*="md:-right-6"] svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 1023px) {
+  #atlet .swiper-slide > div {
+    max-width: 100%;
+  }
+}
