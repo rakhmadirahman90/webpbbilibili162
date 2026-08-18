@@ -5,187 +5,33 @@
 @tailwind utilities;
 
 @layer base {
-  html, body, #root { width: 100%; max-width: 100%; min-width: 0; margin: 0; }
-  body { font-family: "Plus Jakarta Sans", "Inter", sans-serif; @apply text-slate-100 bg-[#070d1a] antialiased selection:bg-blue-500/30 selection:text-white; }
-  *, *::before, *::after { box-sizing: border-box; }
-}
-
-.font-serif { font-family: 'Times New Roman', 'Tinos', 'Georgia', serif; }
-body { overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
-#root { overflow-x: clip; }
-table { max-width: 100%; }
-img, video, svg, canvas { max-width: 100%; }
-.hide-scrollbar::-webkit-scrollbar { display: none; }
-.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-/* Mobile layout guardrails: desktop layout is unchanged. */
-@media (max-width: 767px) {
-  html { width: 100vw; max-width: 100vw; overflow-x: hidden; font-size: 15px; }
-  body, #root { width: 100vw; max-width: 100vw; min-width: 0; overflow-x: hidden; }
-
-  /* Remove desktop sidebar/content offsets when the sidebar becomes a drawer. */
-  [class~="ml-64"], [class~="ml-72"], [class~="ml-80"],
-  [class*="lg:ml-64"], [class*="lg:ml-72"], [class*="lg:ml-80"] {
-    margin-left: 0 !important;
-  }
-
-  /* Prevent hidden desktop min-widths from widening the phone canvas. */
-  [class*="min-w-"] { min-width: 0 !important; }
-  [class~="w-screen"], [class*="w-[100vw]"], [class*="w-screen"] {
-    width: 100% !important; max-width: 100% !important;
-  }
-  [class~="w-96"], [class~="w-[28rem]"], [class~="w-[32rem]"],
-  [class~="w-[36rem]"], [class~="w-[40rem]"], [class*="w-[calc(100%-"] {
-    width: 100% !important; max-width: 100% !important;
-  }
-
-  .flex, .grid { min-width: 0; }
-  .flex > *, .grid > * { min-width: 0; }
-  .overflow-x-auto, .overflow-x-scroll {
-    max-width: 100%; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain;
-  }
-  main { min-width: 0 !important; max-width: 100vw !important; }
-
-  /* Dialogs and SweetAlert stay within the viewport. */
-  .swal2-container { width: 100vw !important; max-width: 100vw !important; padding: 12px !important; }
-  .swal2-popup { width: min(92vw, 420px) !important; max-width: 92vw !important; margin: 0 auto !important; }
-  button, a, input, select, textarea { max-width: 100%; }
-  input, select, textarea { min-width: 0; }
-
-  /* ================================================================
-     PB BILIBILI 162 — SHARED MOBILE SIDEBAR DESIGN SYSTEM
-     Landing page and Admin use the same visual language.
-     ================================================================ */
-
-  /* Landing-page hamburger: same compact control language as Admin. */
-  nav button[class*="lg:hidden"] {
-    width: 52px !important;
-    height: 52px !important;
-    padding: 0 !important;
-    margin-right: 4px !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    border-radius: 16px !important;
-    background: rgba(20, 30, 49, 0.92) !important;
-    border: 1px solid rgba(255,255,255,0.08) !important;
-    box-shadow: 0 10px 28px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.04) !important;
-  }
-  nav button[class*="lg:hidden"] svg { width: 27px !important; height: 27px !important; }
-  nav button[class*="lg:hidden"]:active { transform: scale(0.96); }
-
-  /* Drawer shell — premium dark surface, consistent with Admin. */
-  div[class*="fixed"][class*="inset-y-0"][class*="left-0"][class*="w-[270px]"] {
-    width: min(320px, 88vw) !important;
-    max-width: 88vw !important;
-    background:
-      radial-gradient(circle at 15% 0%, rgba(37,99,235,0.10), transparent 34%),
-      linear-gradient(180deg, #0b1224 0%, #091120 55%, #080f1d 100%) !important;
-    border-right: 1px solid rgba(255,255,255,0.09) !important;
-    box-shadow: 22px 0 55px rgba(0,0,0,0.42) !important;
-  }
-
-  /* Drawer header: cleaner spacing and stronger hierarchy. */
-  div[class*="fixed"][class*="inset-y-0"][class*="left-0"][class*="w-[270px]"] > div:first-child {
-    min-height: 68px !important;
-    padding: 12px 14px !important;
-    background: rgba(7,13,26,0.86) !important;
-    border-bottom: 1px solid rgba(255,255,255,0.08) !important;
-    backdrop-filter: blur(18px) !important;
-  }
-
-  div[class*="fixed"][class*="inset-y-0"][class*="left-0"][class*="w-[270px]"] > div:first-child img {
-    width: 42px !important;
-    height: 42px !important;
-  }
-
-  div[class*="fixed"][class*="inset-y-0"][class*="left-0"][class*="w-[270px]"] > div:first-child button {
-    width: 42px !important;
-    height: 42px !important;
-    padding: 0 !important;
-    border-radius: 13px !important;
-    background: rgba(30,41,59,0.85) !important;
-    border: 1px solid rgba(255,255,255,0.05) !important;
-  }
-
-  /* Scroll area: subtle scrollbar and comfortable touch targets. */
-  div[class*="fixed"][class*="inset-y-0"][class*="left-0"][class*="w-[270px]"] .custom-scrollbar {
-    padding: 12px !important;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(100,116,139,0.35) transparent;
-  }
-  div[class*="fixed"][class*="inset-y-0"][class*="left-0"][class*="w-[270px]"] .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-  div[class*="fixed"][class*="inset-y-0"][class*="left-0"][class*="w-[270px]"] .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(100,116,139,0.35); border-radius: 999px;
-  }
-
-  /* Main navigation links: consistent with Admin's compact, professional cards. */
-  .mobile-nav-link {
-    min-height: 46px !important;
-    width: 100% !important;
-    padding: 10px 12px !important;
-    border-radius: 12px !important;
-    display: flex !important;
-    align-items: center !important;
-    gap: 11px !important;
-    color: #dbe4f0 !important;
-    background: transparent !important;
-    transition: background .18s ease, color .18s ease, transform .18s ease !important;
-  }
-  .mobile-nav-link:hover,
-  .mobile-nav-link:focus-visible {
-    color: #ffffff !important;
-    background: rgba(37,99,235,0.10) !important;
-    outline: none !important;
-  }
-  .mobile-nav-link:active { transform: scale(.985); }
-
-  /* Nested links are visibly subordinate, reducing visual noise. */
-  .mobile-sub-link {
-    min-height: 38px !important;
-    width: 100% !important;
-    padding: 7px 12px 7px 38px !important;
-    border-radius: 9px !important;
-    color: #94a3b8 !important;
-    transition: all .18s ease !important;
-  }
-  .mobile-sub-link:hover,
-  .mobile-sub-link:focus-visible {
-    color: #dbeafe !important;
-    background: rgba(37,99,235,0.08) !important;
-    outline: none !important;
-  }
-
-  /* Section separators inside the mobile drawer. */
-  div[class*="fixed"][class*="inset-y-0"][class*="left-0"][class*="w-[270px]"] .border-t,
-  div[class*="fixed"][class*="inset-y-0"][class*="left-0"][class*="w-[270px]"] .border-b {
-    border-color: rgba(255,255,255,0.07) !important;
-  }
-
-  /* Action buttons such as Dashboard/Login/Logout use the Admin visual language. */
-  div[class*="fixed"][class*="inset-y-0"][class*="left-0"][class*="w-[270px]"] button[class*="bg-emerald"],
-  div[class*="fixed"][class*="inset-y-0"][class*="left-0"][class*="w-[270px]"] a[class*="bg-emerald"] {
-    min-height: 48px !important;
-    border-radius: 12px !important;
-    border: 1px solid rgba(52,211,153,0.18) !important;
-    box-shadow: 0 8px 20px rgba(16,185,129,0.08) !important;
-  }
-
-  div[class*="fixed"][class*="inset-y-0"][class*="left-0"][class*="w-[270px]"] button[class*="bg-red"],
-  div[class*="fixed"][class*="inset-y-0"][class*="left-0"][class*="w-[270px]"] a[class*="bg-red"] {
-    min-height: 48px !important;
-    border-radius: 12px !important;
-  }
-
-  /* Registration CTA: keep it prominent without overpowering navigation. */
-  div[class*="fixed"][class*="inset-y-0"][class*="left-0"][class*="w-[270px]"] a[class*="bg-blue"],
-  div[class*="fixed"][class*="inset-y-0"][class*="left-0"][class*="w-[270px]"] button[class*="bg-blue"] {
-    border-radius: 12px !important;
+  body {
+    font-family: "Plus Jakarta Sans", "Inter", sans-serif;
+    @apply text-slate-100 bg-[#070d1a] antialiased selection:bg-blue-500/30 selection:text-white;
   }
 }
 
-@media (max-width: 420px) {
-  .max-w-6xl, .max-w-7xl, .max-w-5xl, .max-w-4xl { width: 100%; max-width: 100%; }
-  [class~="px-6"], [class~="px-8"] { padding-left: 12px !important; padding-right: 12px !important; }
-  [class~="gap-6"], [class~="gap-8"] { gap: 12px !important; }
+.font-serif {
+  font-family: 'Times New Roman', 'Tinos', 'Georgia', serif;
+}
+
+/* Memperbaiki masalah horizontal scroll pada mobile */
+body {
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Utilitas untuk menyembunyikan scrollbar tapi tetap bisa di-scroll */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Memastikan gambar tidak keluar dari container */
+img {
+  max-width: 100%;
+  height: auto;
 }

@@ -1,5 +1,0 @@
-Vercel GitHub connection test
-Created after reconnecting the GitHub repository to Vercel.
-No application source code is changed by this test.
-Dependency lockfile removed so Vercel installs xlsx from package.json.
-Trigger production rebuild after popup runtime safety fix.

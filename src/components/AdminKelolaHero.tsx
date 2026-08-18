@@ -1,7 +1,13 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabase';
+import { saveSiteSetting, getSiteSetting } from '../utils/siteSettingsHelper';
 import Swal from 'sweetalert2';
-import { Edit3, Trash2, Image as ImageIcon, Loader2, X, Power } from 'lucide-react';
+import { Trash2, Plus, Image as ImageIcon, Loader2, X, ZoomIn, ZoomOut, Check } from 'lucide-react';
+import Cropper from 'react-easy-crop';
+import imageCompression from 'browser-image-compression';
+
+// --- JIKA TETAP TIDAK MUNCUL, TAMBAHKAN LINE INI DI CSS GLOBAL ANDA ---
+// .react-easy-crop_Container { color: white; }
 
 interface HeroSlide {
   id: number | string;
@@ -10,230 +16,278 @@ interface HeroSlide {
   image: string;
   videoUrl?: string;
   poster?: string;
-  type?: 'image' | 'video' | string;
+  type?: 'image' | 'video';
   active?: boolean;
-  updated_at?: string | number;
-  [key: string]: unknown;
-}
-
-const DEFAULT_DURATION = 7;
-const isVideoFile = (file: File) => file.type.startsWith('video/') || /\.(mp4|webm|mov|m4v|ogg)$/i.test(file.name);
-
-function parseHero(value: any): { settings: { duration: number }; slides: HeroSlide[] } {
-  const parsed = typeof value === 'string' ? (() => { try { return JSON.parse(value); } catch { return {}; } })() : value || {};
-  const duration = Number(parsed.settings?.duration);
-  const slides = Array.isArray(parsed.slides) ? parsed.slides.map((s: any) => ({
-    ...s,
-    id: s?.id ?? crypto.randomUUID(),
-    title: String(s?.title ?? ''),
-    subtitle: String(s?.subtitle ?? ''),
-    image: String(s?.image ?? ''),
-    type: s?.type || (s?.videoUrl ? 'video' : 'image'),
-    active: s?.active !== false,
-  })).filter((s: HeroSlide) => s.image || s.videoUrl) : [];
-  return { settings: { duration: Number.isFinite(duration) && duration >= 5 ? duration : DEFAULT_DURATION }, slides };
-}
-
-async function uploadMedia(file: File): Promise<{ url: string; type: 'image' | 'video' }> {
-  const video = isVideoFile(file);
-  const ext = file.name.split('.').pop()?.toLowerCase() || (video ? 'mp4' : 'jpg');
-  const safeExt = video ? (['mp4', 'webm', 'mov', 'm4v', 'ogg'].includes(ext) ? ext : 'mp4') : 'jpg';
-  const folder = video ? 'hero-sliders' : 'hero';
-  const name = `${video ? 'hero-video' : 'hero'}-${Date.now()}.${safeExt}`;
-  const upload = await supabase.storage.from('assets').upload(`${folder}/${name}`, file, {
-    upsert: false,
-    contentType: file.type || (video ? 'video/mp4' : 'image/jpeg'),
-    cacheControl: '31536000',
-  });
-  if (upload.error) throw upload.error;
-  const { data } = supabase.storage.from('assets').getPublicUrl(`${folder}/${name}`);
-  if (!data?.publicUrl) throw new Error('URL media Hero tidak tersedia.');
-  return { url: data.publicUrl, type: video ? 'video' : 'image' };
 }
 
 export default function HeroAdmin() {
   const [slides, setSlides] = useState<HeroSlide[]>([]);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
   const [newTitle, setNewTitle] = useState('');
   const [newSubtitle, setNewSubtitle] = useState('');
-  const [newFile, setNewFile] = useState<File | null>(null);
-  const [editSlide, setEditSlide] = useState<HeroSlide | null>(null);
-  const [editTitle, setEditTitle] = useState('');
-  const [editSubtitle, setEditSubtitle] = useState('');
-  const [editFile, setEditFile] = useState<File | null>(null);
-
-  const fetchHero = useCallback(async (silent = false) => {
-    if (!silent) setLoading(true);
-    try {
-      const { data, error } = await supabase.from('site_settings').select('value').eq('key', 'hero_config').maybeSingle();
-      if (error) throw error;
-      setSlides(parseHero(data?.value).slides);
-    } catch (error: any) {
-      console.error('[HeroAdmin] Supabase read failed:', error);
-      if (!silent) Swal.fire({ icon: 'error', title: 'Gagal Memuat Hero', text: error?.message || 'Tidak dapat membaca hero dari Supabase.' });
-    } finally { if (!silent) setLoading(false); }
-  }, []);
-
-  // Supabase is the single source of truth. No LocalStorage/server fallback is allowed here.
-  const persist = useCallback(async (nextSlides: HeroSlide[]) => {
-    const payload = {
-      settings: { duration: DEFAULT_DURATION },
-      slides: nextSlides,
-      updated_at: new Date().toISOString(),
-    };
-
-    const { data, error } = await supabase
-      .from('site_settings')
-      .upsert({ key: 'hero_config', value: payload, updated_at: payload.updated_at }, { onConflict: 'key' })
-      .select('value')
-      .single();
-
-    if (error) throw error;
-
-    const stored = parseHero(data?.value).slides;
-    const normalize = (items: HeroSlide[]) => items.map(s => ({
-      id: String(s.id), image: s.image, videoUrl: s.videoUrl || null,
-      type: s.type || null, active: s.active !== false,
-      title: s.title, subtitle: s.subtitle,
-    }));
-    if (JSON.stringify(normalize(nextSlides)) !== JSON.stringify(normalize(stored))) {
-      throw new Error('Data Hero berhasil dikirim tetapi hasil verifikasi Supabase tidak sama. Perubahan tidak dianggap berhasil.');
-    }
-
-    setSlides(stored);
-    window.dispatchEvent(new CustomEvent('site_setting_updated', { detail: { key: 'hero_config' } }));
-  }, []);
+  
+  const [imageSrc, setImageSrc] = useState<string | null>(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
+  const [showCropper, setShowCropper] = useState(false);
+  const [tempPreview, setTempPreview] = useState<string | null>(null);
 
   useEffect(() => {
-    void fetchHero();
-    const channel = supabase.channel('admin_hero_realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings', filter: 'key=eq.hero_config' }, () => void fetchHero(true))
+    fetchHeroData(false);
+
+    const channel = supabase
+      .channel('admin_kelola_hero_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, (payload: any) => {
+        if (!payload.new || payload.new.key === 'hero_config' || payload.old?.key === 'hero_config') {
+          fetchHeroData(true);
+        }
+      })
       .subscribe();
-    const refresh = () => void fetchHero(true);
-    window.addEventListener('site_setting_updated', refresh);
-    window.addEventListener('focus', refresh);
-    window.addEventListener('online', refresh);
+
+    const handleCustomEvent = (e: any) => {
+      if (e.detail?.key === 'hero_config') fetchHeroData(true);
+    };
+    const handleFocus = () => fetchHeroData(true);
+
+    window.addEventListener('site_setting_updated', handleCustomEvent);
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('online', handleFocus);
+    document.addEventListener('visibilitychange', handleFocus);
+
     return () => {
       supabase.removeChannel(channel);
-      window.removeEventListener('site_setting_updated', refresh);
-      window.removeEventListener('focus', refresh);
-      window.removeEventListener('online', refresh);
+      window.removeEventListener('site_setting_updated', handleCustomEvent);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('online', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
     };
-  }, [fetchHero]);
+  }, []);
 
-  const activeCount = useMemo(() => slides.filter(s => s.active !== false).length, [slides]);
+  const fetchHeroData = async (isSilent = false) => {
+    if (!isSilent && slides.length === 0) setLoading(true);
+    try {
+      const data = await getSiteSetting('hero_config');
+      if (data) {
+        const val = typeof data === 'string' ? JSON.parse(data) : data;
+        if (val.slides) setSlides(val.slides);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      if (!isSilent) setLoading(false);
+    }
+  };
 
-  const addSlide = async () => {
-    if (!newFile || !newTitle.trim()) {
-      await Swal.fire({ icon: 'warning', title: 'Data belum lengkap', text: 'Isi judul dan pilih gambar/video.' });
+  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setImageSrc(reader.result as string);
+      setShowCropper(true);
+      setZoom(1);
+      setCrop({ x: 0, y: 0 });
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  const onCropComplete = useCallback((_: any, clippedPixels: any) => {
+    setCroppedAreaPixels(clippedPixels);
+  }, []);
+
+  const handleConfirmCrop = async () => {
+    if (!imageSrc || !croppedAreaPixels) return;
+    try {
+      const image = new Image();
+      image.src = imageSrc;
+      await new Promise((res) => (image.onload = res));
+
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = croppedAreaPixels.width;
+      canvas.height = croppedAreaPixels.height;
+
+      ctx?.drawImage(
+        image,
+        croppedAreaPixels.x,
+        croppedAreaPixels.y,
+        croppedAreaPixels.width,
+        croppedAreaPixels.height,
+        0, 0,
+        croppedAreaPixels.width,
+        croppedAreaPixels.height
+      );
+
+      setTempPreview(canvas.toDataURL('image/jpeg'));
+      setShowCropper(false);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handlePublish = async () => {
+    if (!tempPreview || !newTitle) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Data Tidak Lengkap',
+        text: 'Silakan isi judul dan pilih gambar slider hero terlebih dahulu.',
+        confirmButtonColor: '#3B82F6',
+        background: '#0F172A',
+        color: '#fff'
+      });
       return;
     }
-    setSaving(true);
+    setUploading(true);
     try {
-      const media = await uploadMedia(newFile);
-      const next: HeroSlide[] = [...slides, { id: Date.now(), title: newTitle.trim(), subtitle: newSubtitle.trim(), image: media.url, videoUrl: media.type === 'video' ? media.url : undefined, type: media.type, active: true, updated_at: new Date().toISOString() }];
-      await persist(next);
-      setNewTitle(''); setNewSubtitle(''); setNewFile(null);
-      await Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Hero berhasil ditambahkan', showConfirmButton: false, timer: 1800 });
-    } catch (error: any) {
-      await Swal.fire({ icon: 'error', title: 'Gagal menambah Hero', text: error?.message || 'Gagal menyimpan ke Supabase.' });
-    } finally { setSaving(false); }
-  };
+      const res = await fetch(tempPreview);
+      const blob = await res.blob();
+      const file = await imageCompression(new File([blob], "h.jpg"), { maxSizeMB: 0.8 });
+      
+      const fileName = `hero-${Date.now()}.jpg`;
+      await supabase.storage.from('assets').upload(`hero/${fileName}`, file);
+      const { data: { publicUrl } } = supabase.storage.from('assets').getPublicUrl(`hero/${fileName}`);
 
-  const toggleActive = async (slide: HeroSlide) => {
-    const nextActive = slide.active === false;
-    const next = slides.map(s => String(s.id) === String(slide.id) ? { ...s, active: nextActive, updated_at: new Date().toISOString() } : s);
-    setSaving(true);
-    try {
-      await persist(next);
-      await Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: nextActive ? 'Hero diaktifkan' : 'Hero dinonaktifkan', text: nextActive ? 'Akan tampil di landing page.' : 'Tidak akan tampil di landing page.', showConfirmButton: false, timer: 1800 });
-    } catch (error: any) {
-      await fetchHero(true);
-      await Swal.fire({ icon: 'error', title: 'Gagal mengubah status', text: error?.message || 'Status Hero tidak tersimpan di Supabase.' });
-    } finally { setSaving(false); }
-  };
-
-  const openEdit = (slide: HeroSlide) => {
-    setEditSlide(slide); setEditTitle(slide.title || ''); setEditSubtitle(slide.subtitle || ''); setEditFile(null);
-  };
-
-  const saveEdit = async () => {
-    if (!editSlide || !editTitle.trim()) return;
-    setSaving(true);
-    try {
-      let mediaPatch: Partial<HeroSlide> = {};
-      if (editFile) {
-        const media = await uploadMedia(editFile);
-        mediaPatch = { image: media.url, type: media.type, videoUrl: media.type === 'video' ? media.url : undefined };
-      }
-      const next = slides.map(s => String(s.id) === String(editSlide.id) ? { ...s, ...mediaPatch, title: editTitle.trim(), subtitle: editSubtitle.trim(), updated_at: new Date().toISOString() } : s);
-      await persist(next);
-      setEditSlide(null); setEditFile(null);
-      await Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Hero berhasil diperbarui', showConfirmButton: false, timer: 1800 });
-    } catch (error: any) {
-      await Swal.fire({ icon: 'error', title: 'Gagal edit Hero', text: error?.message || 'Perubahan tidak tersimpan di Supabase.' });
-    } finally { setSaving(false); }
-  };
-
-  const removeSlide = async (slide: HeroSlide) => {
-    const result = await Swal.fire({ title: 'Hapus Hero?', text: `Hapus "${slide.title}" dari konfigurasi Supabase?`, icon: 'warning', showCancelButton: true, confirmButtonText: 'Ya, Hapus', cancelButtonText: 'Batal', confirmButtonColor: '#ef4444' });
-    if (!result.isConfirmed) return;
-    setSaving(true);
-    try {
-      await persist(slides.filter(s => String(s.id) !== String(slide.id)));
-      await Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Hero berhasil dihapus', showConfirmButton: false, timer: 1800 });
-    } catch (error: any) {
-      await Swal.fire({ icon: 'error', title: 'Gagal menghapus Hero', text: error?.message || 'Penghapusan tidak tersimpan di Supabase.' });
-    } finally { setSaving(false); }
+      const updated = [...slides, { id: Date.now(), title: newTitle, subtitle: newSubtitle, image: publicUrl }];
+      await saveSiteSetting('hero_config', { settings: { duration: 7 }, slides: updated });
+      setSlides(updated);
+      setTempPreview(null); setNewTitle(''); setNewSubtitle('');
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: 'Slide berhasil ditambahkan',
+        showConfirmButton: false,
+        timer: 2000
+      });
+    } catch (err: any) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Gagal Publish',
+        text: err.message || 'Terjadi kesalahan saat mempublikasikan slide hero.',
+        confirmButtonColor: '#EF4444',
+        background: '#0F172A',
+        color: '#fff'
+      });
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
     <div className="max-w-7xl mx-auto p-6 bg-black text-white min-h-screen">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <div><h1 className="text-2xl font-black">Kelola Hero</h1><p className="text-xs text-zinc-400 mt-1">Sumber data: Supabase · Realtime aktif · {activeCount} Hero aktif dari {slides.length}</p></div>
+      
+      {/* MODAL CROPPER DENGAN OVERLAY TERPISAH */}
+      {showCropper && imageSrc && (
+        <div className="fixed inset-0 z-[99999] bg-[#070d1a] flex flex-col">
+          <div className="p-4 border-b border-zinc-800 flex justify-between items-center bg-[#0b1224]">
+            <h2 className="font-bold text-blue-500 uppercase italic">Crop Image 16:9</h2>
+            <button onClick={() => setShowCropper(false)}><X size={28}/></button>
+          </div>
+
+          {/* BOX CROPPER - Di sinilah kuncinya */}
+          <div className="relative flex-grow w-full bg-[#070d1a]">
+            <Cropper
+              image={imageSrc}
+              crop={crop}
+              zoom={zoom}
+              aspect={16 / 9}
+              onCropChange={setCrop}
+              onZoomChange={setZoom}
+              onCropComplete={onCropComplete}
+              // Tambahkan class khusus atau inline style yang kuat
+              classes={{
+                containerClassName: "min-h-[300px] w-full h-full",
+              }}
+              style={{
+                containerStyle: { width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 },
+                cropAreaStyle: { border: '2px solid #3b82f6', boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.6)' }
+              }}
+            />
+          </div>
+
+          <div className="p-6 bg-black border-t border-zinc-800 flex flex-col items-center gap-6">
+            <div className="flex items-center gap-4 w-full max-w-md">
+              <ZoomOut size={20} />
+              <input type="range" min={1} max={3} step={0.1} value={zoom} onChange={(e)=>setZoom(Number(e.target.value))} className="flex-grow accent-blue-600" />
+              <ZoomIn size={20} />
+            </div>
+            <button onClick={handleConfirmCrop} className="bg-blue-600 px-10 py-3 rounded-full font-bold">TERAPKAN POTONGAN</button>
+          </div>
+        </div>
+      )}
+
+      {/* DASHBOARD */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+        <div className="lg:col-span-4 bg-zinc-900/50 p-6 rounded-[2rem] border border-white/5">
+          <div 
+            onClick={() => document.getElementById('file-input')?.click()}
+            className="aspect-video bg-black rounded-3xl mb-6 flex items-center justify-center border-2 border-dashed border-zinc-800 overflow-hidden cursor-pointer"
+          >
+            {tempPreview ? <img src={tempPreview} className="w-full h-full object-cover" /> : <ImageIcon className="opacity-20" size={40}/>}
+            <input id="file-input" type="file" hidden accept="image/*" onChange={onFileChange} />
+          </div>
+          <div className="space-y-4">
+            <input placeholder="Judul" value={newTitle} onChange={(e)=>setNewTitle(e.target.value)} className="w-full bg-black p-4 rounded-xl border border-zinc-800 focus:border-blue-500 outline-none" />
+            <textarea placeholder="Deskripsi" value={newSubtitle} onChange={(e)=>setNewSubtitle(e.target.value)} className="w-full bg-black p-4 rounded-xl border border-zinc-800 h-24 focus:border-blue-500 outline-none" />
+            <button onClick={handlePublish} disabled={uploading} className="w-full bg-blue-600 py-4 rounded-xl font-bold uppercase tracking-widest">
+              {uploading ? <Loader2 className="animate-spin mx-auto"/> : "PUBLISH SLIDE"}
+            </button>
+          </div>
+        </div>
+
+        <div className="lg:col-span-8 space-y-4">
+          {slides.map(s => (
+            <div key={s.id} className="bg-zinc-900/30 p-4 rounded-3xl border border-white/5 flex gap-4 items-center">
+              <img src={s.image} className="w-32 aspect-video object-cover rounded-xl" />
+              <div className="flex-grow"><h4 className="font-bold">{s.title}</h4></div>
+              <button onClick={async () => {
+                const result = await Swal.fire({
+                  title: 'Hapus Slide?',
+                  text: "Apakah Anda yakin ingin menghapus slide ini secara permanen?",
+                  icon: 'warning',
+                  showCancelButton: true,
+                  confirmButtonColor: '#EF4444',
+                  cancelButtonColor: '#374151',
+                  confirmButtonText: 'Ya, Hapus!',
+                  cancelButtonText: 'Batal',
+                  background: '#0F172A',
+                  color: '#fff'
+                });
+
+                if (result.isConfirmed) {
+                  const filtered = slides.filter(x => x.id !== s.id);
+                  const { error } = await saveSiteSetting('hero_config', { slides: filtered });
+                  if (!error) {
+                    setSlides(filtered);
+                    Swal.fire({
+                      toast: true,
+                      position: 'top-end',
+                      icon: 'success',
+                      title: 'Slide berhasil dihapus',
+                      showConfirmButton: false,
+                      timer: 2000
+                    });
+                  } else {
+                    Swal.fire({
+                      icon: 'error',
+                      title: 'Gagal Menghapus',
+                      text: error.message,
+                      confirmButtonColor: '#EF4444',
+                      background: '#0F172A',
+                      color: '#fff'
+                    });
+                  }
+                }
+              }} className="p-3 text-red-500"><Trash2/></button>
+            </div>
+          ))}
+        </div>
       </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <div className="lg:col-span-4 bg-zinc-900/60 p-6 rounded-3xl border border-white/10 space-y-4">
-          <h2 className="font-bold">Tambah Hero</h2>
-          <label className="block aspect-video bg-black rounded-2xl border-2 border-dashed border-zinc-700 p-2 cursor-pointer overflow-hidden">
-            {newFile ? (isVideoFile(newFile) ? <video src={URL.createObjectURL(newFile)} className="w-full h-full object-cover rounded-xl" muted playsInline controls /> : <img src={URL.createObjectURL(newFile)} className="w-full h-full object-cover rounded-xl" alt="Preview" />) : <div className="h-full flex flex-col items-center justify-center text-zinc-500"><ImageIcon/><span className="text-xs mt-2">Pilih gambar / video</span></div>}
-            <input type="file" hidden accept="image/*,video/mp4,video/webm,video/quicktime,video/x-m4v,video/ogg" onChange={e => setNewFile(e.target.files?.[0] || null)} />
-          </label>
-          <input value={newTitle} onChange={e => setNewTitle(e.target.value)} placeholder="Judul" className="w-full bg-black p-3 rounded-xl border border-zinc-800 outline-none" />
-          <textarea value={newSubtitle} onChange={e => setNewSubtitle(e.target.value)} placeholder="Deskripsi" className="w-full bg-black p-3 rounded-xl border border-zinc-800 outline-none h-24" />
-          <button disabled={saving} onClick={addSlide} className="w-full py-3 rounded-xl bg-blue-600 font-bold disabled:opacity-50">{saving ? <Loader2 className="animate-spin mx-auto" /> : 'TAMBAH & PUBLISH'}</button>
-        </div>
-
-        <div className="lg:col-span-8 space-y-3">
-          {loading ? <div className="p-10 text-center text-zinc-400"><Loader2 className="animate-spin mx-auto mb-2"/>Membaca Supabase...</div> : slides.map(slide => {
-            const active = slide.active !== false;
-            return <div key={String(slide.id)} className={`p-4 rounded-2xl border flex gap-4 items-center ${active ? 'border-emerald-500/30 bg-zinc-900/60' : 'border-zinc-800 bg-zinc-950/60 opacity-70'}`}>
-              {slide.type === 'video' || slide.videoUrl ? <video src={String(slide.videoUrl || slide.image)} className="w-36 aspect-video object-cover rounded-xl bg-black" muted playsInline controls preload="metadata" /> : <img src={slide.image} className="w-36 aspect-video object-cover rounded-xl" alt={slide.title} />}
-              <div className="flex-1 min-w-0"><h3 className="font-bold truncate">{slide.title}</h3><p className="text-xs text-zinc-400 line-clamp-2">{slide.subtitle}</p><span className={`text-[10px] font-bold ${active ? 'text-emerald-400' : 'text-zinc-500'}`}>{active ? 'AKTIF · TAMPIL DI LANDING' : 'NONAKTIF · TIDAK TAMPIL'}</span></div>
-              <div className="flex items-center gap-1">
-                <button disabled={saving} onClick={() => toggleActive(slide)} title={active ? 'Nonaktifkan' : 'Aktifkan'} className={`p-2 rounded-lg ${active ? 'text-emerald-400 hover:bg-emerald-400/10' : 'text-zinc-500 hover:bg-white/10'}`}><Power size={18}/></button>
-                <button disabled={saving} onClick={() => openEdit(slide)} title="Edit" className="p-2 rounded-lg text-blue-400 hover:bg-blue-400/10"><Edit3 size={18}/></button>
-                <button disabled={saving} onClick={() => removeSlide(slide)} title="Hapus" className="p-2 rounded-lg text-red-400 hover:bg-red-400/10"><Trash2 size={18}/></button>
-              </div>
-            </div>;
-          })}
-          {!loading && !slides.length && <div className="p-10 text-center text-zinc-500">Belum ada Hero di Supabase.</div>}
-        </div>
-      </div>
-
-      {editSlide && <div className="fixed inset-0 z-[99999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setEditSlide(null)}>
-        <div className="w-full max-w-lg bg-zinc-900 rounded-3xl border border-white/10 p-6 space-y-4" onClick={e => e.stopPropagation()}>
-          <div className="flex items-center justify-between"><h2 className="text-xl font-black">Edit Hero</h2><button onClick={() => setEditSlide(null)}><X/></button></div>
-          <div className="aspect-video rounded-2xl overflow-hidden bg-black">{editSlide.type === 'video' || editSlide.videoUrl ? <video src={String(editSlide.videoUrl || editSlide.image)} className="w-full h-full object-contain" muted controls /> : <img src={editSlide.image} className="w-full h-full object-cover" alt={editSlide.title}/>}</div>
-          <input value={editTitle} onChange={e => setEditTitle(e.target.value)} placeholder="Judul" className="w-full bg-black p-3 rounded-xl border border-zinc-800" />
-          <textarea value={editSubtitle} onChange={e => setEditSubtitle(e.target.value)} placeholder="Deskripsi" className="w-full bg-black p-3 rounded-xl border border-zinc-800 h-24" />
-          <label className="block p-3 rounded-xl border border-dashed border-zinc-700 cursor-pointer text-sm text-zinc-300">Ganti gambar/video (opsional)<input type="file" hidden accept="image/*,video/mp4,video/webm,video/quicktime,video/x-m4v,video/ogg" onChange={e => setEditFile(e.target.files?.[0] || null)} /></label>
-          {editFile && <p className="text-xs text-blue-300">File baru: {editFile.name}</p>}
-          <button disabled={saving || !editTitle.trim()} onClick={saveEdit} className="w-full py-3 rounded-xl bg-blue-600 font-bold disabled:opacity-50">{saving ? <Loader2 className="animate-spin mx-auto"/> : 'SIMPAN PERUBAHAN'}</button>
-        </div>
-      </div>}
     </div>
   );
 }

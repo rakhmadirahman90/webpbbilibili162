@@ -1,352 +1,429 @@
-import { useEffect, useRef, useState, type TouchEvent } from 'react';
-import { X, Download, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, Download } from 'lucide-react';
 import { supabase } from '../supabase';
 import { getSiteSetting, parsePopupList } from '../utils/siteSettingsHelper';
 import { useRealtimeSync } from '../utils/realtimeSync';
 
-const FALLBACK_POPUP = { id: 'popup-fallback', judul: 'PENGUMUMAN', deskripsi: '', url_gambar: '', is_active: true, active: true, urutan: 999999 };
-const POPUP_CACHE_KEY = 'site_setting_popup_config';
-const POPUP_DISMISSED_KEY = 'site_popup_dismissed_v2';
+const OFFICIAL_LATEST_POPUP = {
+  id: 'popup-1786211047963',
+  judul: 'INFO RESMI! PENDAFTARAN ANGGOTA BARU PB BILIBILI 162 PAREPARE',
+  deskripsi: `📢 INFO RESMI! PENDAFTARAN ANGGOTA BARU PB BILIBILI 162 PAREPARE 📢\nBersama, Kita Kuat!\n\nAssalamu'alaikum warahmatullahi wabarakatuh.\nHalo seluruh pecinta bulutangkis yang baru bergabung! 👋\n\nBergabunglah bersama PB Bilibili 162 dan rasakan pengalaman berlatih, bertanding, dan berkembang bersama komunitas badminton terbaik di Parepare. Disiplin dalam latihan, kunci menjadi juara!\n\n🏆 KEUNTUNGAN MENJADI ANGGOTA:\n• Kesempatan Berlatih Rutin (Program latihan terstruktur)\n• Menjadi Bagian dari Tim Solid (Komunitas positif & sportivitas tinggi)\n• Kesempatan Ikut Turnamen (Mewakili PB Bilibili 162 di berbagai event)\n• Meningkatkan Silaturahmi (Mempererat hubungan antar anggota)\n• Menambah Pertemuan & Relasi (Memperluas jaringan positif)\n\n📝 PERSYARATAN PENDAFTARAN:\n• Warga Negara Indonesia\n• Sehat jasmani & rohani\n• Memiliki semangat sportivitas tinggi\n• Bersedia mematuhi aturan PB Bilibili 162\n(Pastikan data yang Anda masukkan sesuai & valid saat pendaftaran).\n\n📋 CARA PENDAFTARAN:\n1. Buka website pendaftaran: https://pbilibili162.99apps.id/register\n2. Klik tombol "Daftar Sekarang"\n3. Isi formulir data diri dengan lengkap\n4. Unggah dokumen yang diperlukan\n5. Baca & setujui syarat dan ketentuan\n6. Kirim pendaftaran\n✅ Setelah pendaftaran berhasil, Anda akan mendapat konfirmasi melalui WhatsApp/Email.\n\n✨ PENDAFTARAN GRATIS! ✨\n📱 Informasi & Konfirmasi Admin: 0896-1674-6342 (Admin PB Bilibili 162)\n🌐 Kunjungi Website Resmi: https://pbilibili162.99apps.id\n\n"Disiplin • Kerja Keras • Juara!" 🏆\n\nHormat kami,\nH. Wawan\nKetua PB Bilibili 162 Parepare 💙🏸`,
+  url_gambar: 'https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/identitas-atlet/promosi/popup-1786212468282.png',
+  is_active: true,
+  active: true,
+  urutan: 21
+};
 
-interface ImagePopupProps { activeView?: string | null; }
-
-function normalizePopups(items: any[]): any[] {
-  const map = new Map<string, any>();
-  for (const item of Array.isArray(items) ? items : []) {
-    if (!item || !item.id) continue;
-    const active = item.is_active ?? item.active ?? false;
-    if (!active) continue;
-    map.set(String(item.id), { ...item, is_active: true, active: true });
-  }
-  return Array.from(map.values()).sort((a, b) => {
-    const order = Number(a.urutan ?? 0) - Number(b.urutan ?? 0);
-    return order || String(a.id).localeCompare(String(b.id));
-  });
-}
-
-function readLocalPopupCache(): any[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    const raw = localStorage.getItem(POPUP_CACHE_KEY);
-    return raw ? normalizePopups(parsePopupList(raw)) : [];
-  } catch { return []; }
-}
-
-function writeLocalPopupCache(items: any[]) {
-  if (typeof window === 'undefined' || !items.length) return;
-  try { localStorage.setItem(POPUP_CACHE_KEY, JSON.stringify(items)); } catch { /* optional */ }
-}
-
-function isPopupDismissed() {
-  if (typeof window === 'undefined') return false;
-  try { return sessionStorage.getItem(POPUP_DISMISSED_KEY) === '1'; } catch { return false; }
-}
-
-function setPopupDismissed(value: boolean) {
-  if (typeof window === 'undefined') return;
-  try {
-    if (value) sessionStorage.setItem(POPUP_DISMISSED_KEY, '1');
-    else sessionStorage.removeItem(POPUP_DISMISSED_KEY);
-  } catch { /* optional */ }
-}
-
-function preloadImage(url?: string): Promise<void> {
-  if (!url || typeof window === 'undefined') return Promise.resolve();
-  return new Promise(resolve => {
-    const img = new Image();
-    img.decoding = 'async';
-    img.onload = () => resolve();
-    img.onerror = () => resolve();
-    img.src = url;
-    if (img.complete) resolve();
-  });
-}
-
-function preloadImages(items: any[]) {
-  if (typeof window === 'undefined') return;
-  items.slice(0, 6).forEach(item => { void preloadImage(item?.url_gambar); });
+interface ImagePopupProps {
+  activeView?: string | null;
 }
 
 function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
-  const cached = readLocalPopupCache();
-  const [promoImages, setPromoImages] = useState<any[]>(cached);
+  const [isOpen, setIsOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isOpen, setIsOpen] = useState(activeView === null && cached.length > 0 && !isPopupDismissed());
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [isLoading, setIsLoading] = useState(cached.length === 0);
-  const [dragX, setDragX] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
-  const [settleOffset, setSettleOffset] = useState(0);
-
+  const [promoImages, setPromoImages] = useState<any[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
-  const horizontalSwipeRef = useRef(false);
-  const dragXRef = useRef(0);
-  const currentIndexRef = useRef(0);
-  const settlingRef = useRef(false);
-  const dismissedRef = useRef(isPopupDismissed());
-  const loadingRequestRef = useRef<Promise<void> | null>(null);
+  const isDismissedRef = useRef<boolean>(false);
 
-  const commitIndex = (index: number) => {
-    currentIndexRef.current = index;
-    setCurrentIndex(index);
-  };
-
-  const applyItems = (items: any[], forceShow = false) => {
-    const active = normalizePopups(items);
-    if (!active.length) return;
-    writeLocalPopupCache(active);
-    setPromoImages(prev => {
-      const currentId = prev[currentIndexRef.current]?.id;
-      const sameIndex = currentId ? active.findIndex(p => String(p.id) === String(currentId)) : -1;
-      const nextIndex = sameIndex >= 0 ? sameIndex : Math.min(currentIndexRef.current, active.length - 1);
-      commitIndex(nextIndex);
-      return active;
-    });
-    preloadImages(active);
-    if (activeView === null && (forceShow || !dismissedRef.current) && !isPopupDismissed()) setIsOpen(true);
-    setIsLoading(false);
-  };
-
-  const loadPopups = async (forceShow = false) => {
-    if (typeof window !== 'undefined' && (/^\/admin/.test(window.location.pathname) || /^\/login/.test(window.location.pathname))) return;
-    if (activeView !== null) { setIsOpen(false); return; }
-    if (!forceShow && dismissedRef.current) return;
-
-    const local = readLocalPopupCache();
-    if (local.length) applyItems(local, forceShow);
-
-    if (loadingRequestRef.current) return loadingRequestRef.current;
-    const request = (async () => {
-      try {
-        let dbItems: any[] = [];
-        const dbResult = await supabase.from('konfigurasi_popup').select('*').order('urutan', { ascending: true });
-        if (!dbResult.error && Array.isArray(dbResult.data)) dbItems = dbResult.data;
-
-        if (!dbItems.length) {
-          const fallback = await supabase.from('popups').select('*').order('urutan', { ascending: true });
-          if (!fallback.error && Array.isArray(fallback.data)) dbItems = fallback.data;
-        }
-
-        if (dbItems.length) {
-          const authoritative = normalizePopups(dbItems);
-          if (authoritative.length) { applyItems(authoritative, forceShow); return; }
-        }
-
-        const settingsRaw = await getSiteSetting('popup_config').catch(() => null);
-        const settingsItems = normalizePopups(parsePopupList(settingsRaw));
-        if (settingsItems.length) { applyItems(settingsItems, forceShow); return; }
-
-        const response = await fetch('/api/konfigurasi-popup');
-        if (response.ok) {
-          const apiItems = await response.json();
-          const apiNormalized = normalizePopups(Array.isArray(apiItems) ? apiItems : []);
-          if (apiNormalized.length) applyItems(apiNormalized, forceShow);
-        }
-      } catch (error) {
-        console.warn('Popup refresh failed; keeping cached popup data.', error);
-      } finally { setIsLoading(false); }
-    })();
-
-    loadingRequestRef.current = request;
-    try { await request; } finally { loadingRequestRef.current = null; }
-  };
-
-  useEffect(() => {
-    if (activeView !== null) { setIsOpen(false); return; }
-    dismissedRef.current = isPopupDismissed();
-    if (!dismissedRef.current) void loadPopups(true);
-    else setIsOpen(false);
-  }, [activeView]);
-
-  useEffect(() => {
-    const channel = supabase
-      .channel('popup-fast-sync')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'konfigurasi_popup' }, () => { void loadPopups(false); })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'popups' }, () => { void loadPopups(false); })
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [activeView]);
-
-  useRealtimeSync({ tables: ['konfigurasi_popup', 'site_settings'], settingKeys: ['popup_config'], onUpdate: () => { void loadPopups(false); } });
-
-  useEffect(() => {
-    const events = ['trigger-home-popup', 'site_setting_updated', 'table_updated_popup_config', 'table_updated_konfigurasi_popup', 'app_data_changed'];
-    const handler = (event: Event) => {
-      const explicitTrigger = event.type === 'trigger-home-popup';
-      if (explicitTrigger) {
-        setPopupDismissed(false);
-        dismissedRef.current = false;
-        void loadPopups(true);
-      } else {
-        void loadPopups(false);
-      }
-    };
-    events.forEach(e => window.addEventListener(e, handler));
-    return () => events.forEach(e => window.removeEventListener(e, handler));
-  }, [activeView]);
-
-  const goTo = (index: number) => {
-    if (!promoImages.length || settlingRef.current) return;
-    const next = (index + promoImages.length) % promoImages.length;
-    commitIndex(next);
-    setIsExpanded(false);
-    const url = promoImages[next]?.url_gambar;
-    if (url) void preloadImage(url);
-  };
-
-  const nextPopup = () => goTo(currentIndexRef.current + 1);
-  const previousPopup = () => goTo(currentIndexRef.current - 1);
-
-  const handleTouchStart = (e: TouchEvent) => {
-    if (promoImages.length <= 1 || settlingRef.current) return;
-    const t = e.touches[0];
-    touchStartRef.current = { x: t.clientX, y: t.clientY };
-    horizontalSwipeRef.current = false;
-    dragXRef.current = 0;
-    setIsDragging(true);
-    setDragX(0);
-    setSettleOffset(0);
-  };
-
-  const handleTouchMove = (e: TouchEvent) => {
-    if (!touchStartRef.current || promoImages.length <= 1 || settlingRef.current) return;
-    const t = e.touches[0];
-    const dx = t.clientX - touchStartRef.current.x;
-    const dy = t.clientY - touchStartRef.current.y;
-
-    if (!horizontalSwipeRef.current) {
-      if (Math.hypot(dx, dy) < 8) return;
-      if (Math.abs(dx) <= Math.abs(dy) * 1.15) {
-        touchStartRef.current = null;
-        setIsDragging(false);
-        dragXRef.current = 0;
-        setDragX(0);
+  const fetchActivePopups = async (forceShow = false) => {
+    try {
+      if (typeof window !== 'undefined' && (window.location.pathname.startsWith('/admin') || window.location.pathname.startsWith('/login'))) {
+        setPromoImages([]);
+        setIsOpen(false);
         return;
       }
-      horizontalSwipeRef.current = true;
-    }
 
-    if (e.cancelable) e.preventDefault();
-    const atFirst = currentIndexRef.current === 0 && dx > 0;
-    const atLast = currentIndexRef.current === promoImages.length - 1 && dx < 0;
-    const effectiveX = (atFirst || atLast) ? dx * 0.35 : dx;
-    dragXRef.current = effectiveX;
-    setDragX(effectiveX);
+      // If user is currently on a full subpage view (not home session), don't show popup
+      if (activeView !== null) {
+        setIsOpen(false);
+        return;
+      }
+
+      // Check if user already dismissed popup in this home visit
+      if (!forceShow && isDismissedRef.current) {
+        setIsOpen(false);
+        return;
+      }
+
+      let siteConfigRaw: any = null;
+      let siteLoaded = false;
+      try {
+        siteConfigRaw = await getSiteSetting('popup_config');
+        if (siteConfigRaw !== null && siteConfigRaw !== undefined) {
+          siteLoaded = true;
+        }
+      } catch (e) {}
+
+      let apiItems: any[] = [];
+      try {
+        const res = await fetch('/api/konfigurasi-popup');
+        if (res.ok) {
+          const json = await res.json();
+          if (Array.isArray(json)) apiItems = json;
+        }
+      } catch (e) {}
+
+      let dbItems: any[] = [];
+      try {
+        const { data, error } = await supabase
+          .from('konfigurasi_popup')
+          .select('*')
+          .order('urutan', { ascending: true });
+        
+        if (!error && data && data.length > 0) {
+          dbItems = data;
+        } else {
+          const { data: popupsData, error: popupsError } = await supabase
+            .from('popups')
+            .select('*')
+            .order('urutan', { ascending: true });
+          if (!popupsError && popupsData) {
+            dbItems = popupsData;
+          }
+        }
+      } catch (e) {}
+
+      let sitePopups = parsePopupList(siteConfigRaw);
+
+      let canonicalList: any[] = [];
+      if (siteLoaded) {
+        canonicalList = sitePopups;
+      } else if (apiItems.length > 0) {
+        canonicalList = apiItems;
+      } else if (dbItems.length > 0) {
+        canonicalList = dbItems;
+      } else {
+        canonicalList = [OFFICIAL_LATEST_POPUP];
+      }
+
+      const dbMap = new Map(dbItems.map((p: any) => [p.id, p]));
+      let merged: any[] = canonicalList.map(item => {
+        if (!item || !item.id) return item;
+        const dbItem = dbMap.get(item.id);
+        if (dbItem) {
+          return {
+            ...dbItem,
+            ...item,
+            judul: item.judul !== undefined && item.judul !== '' ? item.judul : (dbItem.judul || ''),
+            deskripsi: item.deskripsi !== undefined && item.deskripsi !== '' ? item.deskripsi : (dbItem.deskripsi || ''),
+            url_gambar: item.url_gambar || dbItem.url_gambar || '',
+            file_url: item.file_url !== undefined && item.file_url !== null ? item.file_url : (dbItem.file_url || null),
+            is_active: item.is_active ?? dbItem.is_active ?? true,
+            urutan: item.urutan ?? dbItem.urutan ?? 0
+          };
+        }
+        return item;
+      }).filter(Boolean);
+
+      merged = merged.map(item => {
+        if (!item) return item;
+        if (item.id === 'df3aa22e-5f97-4c05-9f04-700ccba35d08' || (item.judul && item.judul.toUpperCase().includes('AQIQAH')) || (item.url_gambar && item.url_gambar.includes('1784303693873'))) {
+          return { ...item, is_active: false, active: false };
+        }
+        return item;
+      });
+
+      // Deduplicate merged by id to prevent duplicate keys
+      const mergedMap = new Map();
+      for (const item of merged) {
+        if (item && item.id) {
+          mergedMap.set(item.id, item);
+        }
+      }
+      merged = Array.from(mergedMap.values());
+
+      merged.sort((a, b) => (a.urutan ?? 0) - (b.urutan ?? 0));
+
+      const activeItems = merged.filter((p: any) => p && (p.is_active === true || p.active === true));
+      
+      const shouldShow = activeItems.length > 0 && (forceShow || !isDismissedRef.current);
+
+      if (shouldShow) {
+        setPromoImages(activeItems);
+        setCurrentIndex(0);
+        setIsOpen(true);
+      } else {
+        setPromoImages(activeItems);
+        setIsOpen(false);
+      }
+    } catch (err) {
+      console.error("Gagal memuat pop-up:", err);
+    }
   };
 
-  const handleTouchEnd = (_e: TouchEvent) => {
-    const start = touchStartRef.current;
-    const wasHorizontal = horizontalSwipeRef.current;
-    const dx = dragXRef.current;
-    touchStartRef.current = null;
-    horizontalSwipeRef.current = false;
+  const prevActiveViewRef = useRef<string | null>(activeView);
 
-    if (!start || !wasHorizontal || promoImages.length <= 1 || settlingRef.current) {
-      setIsDragging(false);
-      dragXRef.current = 0;
-      setDragX(0);
-      return;
+  useEffect(() => {
+    if (activeView !== null) {
+      setIsOpen(false);
+      isDismissedRef.current = false;
+    } else {
+      isDismissedRef.current = false;
+      fetchActivePopups(true);
+    }
+    prevActiveViewRef.current = activeView;
+  }, [activeView]);
+
+  // Realtime subscription listening directly for database changes on 'popups' table via Supabase
+  useEffect(() => {
+    const popupsChannel = supabase
+      .channel('popups-db-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'popups' },
+        () => {
+          fetchActivePopups(false);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'konfigurasi_popup' },
+        () => {
+          fetchActivePopups(false);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(popupsChannel);
+    };
+  }, []);
+
+  useEffect(() => {
+    // Clear any stale local/session storage keys from earlier builds
+    try {
+      sessionStorage.removeItem('popup_dismissed_session');
+      Object.keys(sessionStorage).forEach(k => {
+        if (k.startsWith('popup_dismissed_')) sessionStorage.removeItem(k);
+      });
+      Object.keys(localStorage).forEach(k => {
+        if (k.startsWith('popup_dismissed_')) localStorage.removeItem(k);
+      });
+    } catch (e) {}
+
+    if (activeView === null) {
+      fetchActivePopups(true);
     }
 
-    const threshold = Math.max(55, Math.min(110, window.innerWidth * 0.18));
-    const direction = Math.abs(dx) >= threshold ? (dx < 0 ? 1 : -1) : 0;
+    const handleTriggerHome = () => {
+      isDismissedRef.current = false;
+      fetchActivePopups(true);
+    };
 
-    if (!direction) {
-      setIsDragging(false);
-      dragXRef.current = 0;
-      setDragX(0);
-      return;
+    const handleUpdate = () => {
+      fetchActivePopups(false);
+    };
+
+    window.addEventListener('trigger-home-popup', handleTriggerHome);
+    window.addEventListener('site_setting_updated', handleUpdate);
+    window.addEventListener('table_updated_popup_config', handleUpdate);
+    window.addEventListener('table_updated_konfigurasi_popup', handleUpdate);
+    window.addEventListener('app_data_changed', handleUpdate);
+
+    return () => {
+      window.removeEventListener('trigger-home-popup', handleTriggerHome);
+      window.removeEventListener('site_setting_updated', handleUpdate);
+      window.removeEventListener('table_updated_popup_config', handleUpdate);
+      window.removeEventListener('table_updated_konfigurasi_popup', handleUpdate);
+      window.removeEventListener('app_data_changed', handleUpdate);
+    };
+  }, []);
+
+  useRealtimeSync({
+    tables: ['konfigurasi_popup', 'site_settings'],
+    settingKeys: ['popup_config'],
+    onUpdate: () => {
+      fetchActivePopups(false);
     }
+  });
 
-    const fromIndex = currentIndexRef.current;
-    const targetIndex = (fromIndex + direction + promoImages.length) % promoImages.length;
-    const width = Math.max(280, scrollRef.current?.clientWidth || window.innerWidth);
+  useEffect(() => {
+    let scrollInterval: any;
+    if (isOpen && scrollRef.current) {
+      const startTimeout = setTimeout(() => {
+        scrollInterval = setInterval(() => {
+          if (scrollRef.current) {
+            const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+            if (scrollTop + clientHeight >= scrollHeight - 1) {
+              clearInterval(scrollInterval);
+            } else {
+              scrollRef.current.scrollBy({ top: 0.5, behavior: 'auto' });
+            }
+          }
+        }, 30);
+      }, 4000);
 
-    // Lock the gesture until the slide is committed. This prevents a second
-    // touch/realtime render from restoring the previous index mid-animation.
-    settlingRef.current = true;
-    setIsDragging(false);
-    setSettleOffset(direction > 0 ? -width : width);
+      return () => {
+        clearInterval(scrollInterval);
+        clearTimeout(startTimeout);
+      };
+    }
+  }, [isOpen, currentIndex]);
 
-    window.setTimeout(() => {
-      commitIndex(targetIndex);
-      setIsExpanded(false);
-      dragXRef.current = 0;
-      setDragX(0);
-      setSettleOffset(0);
-      settlingRef.current = false;
-      const url = promoImages[targetIndex]?.url_gambar;
-      if (url) void preloadImage(url);
-    }, 300);
+  // --- PERBAIKAN LOGIKA TEXT RENDER ---
+  const renderCleanDescription = (text: string) => {
+    if (!text) return null;
+    const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+)/g;
+
+    return text.split('\n').map((line, i) => {
+      if (line.trim() === "") return <div key={i} className="h-3" />;
+
+      return (
+        <p 
+          key={i} 
+          className="mb-5 last:mb-0 !leading-7 text-slate-800 !text-justify text-[15px]"
+          style={{ 
+            overflowWrap: 'break-word', 
+            wordWrap: 'break-word'
+          }}
+        >
+          {line.split(urlRegex).map((part, index) => {
+            if (part.match(urlRegex)) {
+              const cleanUrl = part.startsWith('www.') ? `https://${part}` : part;
+              return (
+                <a
+                  key={index}
+                  href={cleanUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-800 underline decoration-blue-200 underline-offset-2 font-medium break-all"
+                >
+                  {part} 
+                </a>
+              );
+            }
+            return <span key={index}>{part}</span>;
+          })}
+        </p>
+      );
+    });
   };
+  // ------------------------------------
 
+  const [isExpanded, setIsExpanded] = useState(false);
   const closePopup = () => {
-    dismissedRef.current = true;
-    setPopupDismissed(true);
+    isDismissedRef.current = true;
     setIsOpen(false);
   };
 
-  if (activeView !== null || !isOpen || !promoImages.length) return null;
-  const current = promoImages[Math.min(currentIndex, promoImages.length - 1)];
-  if (!current) return null;
-
-  const renderDescription = (text: string) => {
-    if (!text) return null;
-    const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+)/;
-    return text.split('\n').map((line, i) => line.trim() ? (
-      <p key={i} className="mb-3 last:mb-0 leading-6 text-slate-800 text-[14px] break-words">
-        {line.split(urlRegex).map((part, j) => urlRegex.test(part) ? <a key={j} href={part.startsWith('www.') ? `https://${part}` : part} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline break-all">{part}</a> : <span key={j}>{part}</span>)}
-      </p>
-    ) : <div key={i} className="h-2" />);
+  const handleDragEnd = (e: any, { offset, velocity }: any) => {
+    const swipe = Math.abs(offset.x) > 50; 
+    if (swipe) {
+      if (offset.x < 0) {
+        setCurrentIndex((prev) => (prev + 1) % promoImages.length);
+      } else {
+        setCurrentIndex((prev) => (prev - 1 + promoImages.length) % promoImages.length);
+      }
+    }
   };
 
-  const previousIndex = (currentIndex - 1 + promoImages.length) % promoImages.length;
-  const nextIndex = (currentIndex + 1) % promoImages.length;
-  const sliderTransform = `translate3d(calc(-100% + ${dragX + settleOffset}px), 0, 0)`;
-  const sliderTransition = isDragging ? 'none' : 'transform 300ms cubic-bezier(0.22, 1, 0.36, 1)';
+  if (promoImages.length === 0 || !isOpen) return null;
+  const current = promoImages[currentIndex];
 
   return (
-    <div className="fixed inset-0 z-[999999] flex items-center justify-center p-3 bg-slate-950/80 backdrop-blur-sm">
-      <div className="absolute inset-0" onClick={closePopup} />
-      <div
-        ref={scrollRef}
-        className="relative w-full max-w-[420px] max-h-[90vh] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden"
-        onClick={e => e.stopPropagation()}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        style={{ touchAction: 'pan-y' }}
-      >
-        <button onClick={closePopup} aria-label="Tutup" className="absolute top-3 right-3 z-30 p-2.5 bg-white/95 text-slate-800 rounded-full shadow-lg border border-slate-200 active:scale-90"><X size={20} /></button>
+    <AnimatePresence mode="wait">
+      <div className="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+        <div className="absolute inset-0" onClick={closePopup} />
+        
+        <motion.div 
+          key={current.id || `popup-${currentIndex}`}
+          initial={{ opacity: 0, scale: 0.9, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.9, y: -20 }}
+          transition={{ 
+            type: "spring",
+            stiffness: 400,
+            damping: 30,
+            mass: 0.8
+          }}
+          className="relative w-full max-w-[calc(100vw-2rem)] sm:max-w-[420px] max-h-[85vh] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button 
+            onClick={closePopup} 
+            className="absolute top-4 right-4 z-[60] p-2 bg-white hover:bg-slate-100 text-slate-800 rounded-full shadow-xl border border-slate-200 transition-all active:scale-90"
+          >
+            <X size={18} />
+          </button>
 
-        <div className="overflow-y-auto hide-scrollbar">
-          <div className="relative bg-slate-950 overflow-hidden min-h-[120px] flex items-center justify-center">
-            <div className="flex w-full will-change-transform" style={{ transform: sliderTransform, transition: sliderTransition }}>
-              {[previousIndex, currentIndex, nextIndex].map((index, position) => {
-                const item = promoImages[index];
-                return (
-                  <div key={`${item?.id || index}-${position}`} className="relative shrink-0 w-full flex items-center justify-center">
-                    <img src={item?.url_gambar || FALLBACK_POPUP.url_gambar} alt={item?.judul || 'Popup'} loading={position === 1 ? 'eager' : 'lazy'} decoding="async" fetchPriority={position === 1 ? 'high' : 'low'} className="block w-full h-auto max-h-[70vh] object-contain select-none" draggable={false} />
+          <div ref={scrollRef} className="overflow-y-auto hide-scrollbar scroll-smooth">
+            <AnimatePresence>
+              <motion.div 
+                key={currentIndex}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                 <motion.div 
+                  drag="x"
+                  dragConstraints={{ left: 0, right: 0 }}
+                  onDragEnd={handleDragEnd}
+                  className="relative w-full bg-slate-950 shrink-0 cursor-grab active:cursor-grabbing overflow-hidden flex items-center justify-center"
+                >
+                  {/* Main Banner Image - Fully spans the width proportionally without cropping */}
+                  <img 
+                    src={current.url_gambar} 
+                    className="w-full h-auto block z-10 select-none pointer-events-none" 
+                    alt="Banner" 
+                  />
+                  
+                  {/* Subtle lighting gradient overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/20 via-transparent to-black/10 z-20 pointer-events-none" />
+                </motion.div>
+
+                <div className="px-6 pt-2 pb-8 bg-white">
+                  <div className="flex justify-center mb-4">
+                    <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-bold uppercase tracking-widest border border-blue-100">
+                      Pengumuman
+                    </span>
                   </div>
-                );
-              })}
-            </div>
-            {isLoading && <div className="absolute inset-0 flex items-center justify-center bg-slate-950/30"><div className="w-7 h-7 border-2 border-white/40 border-t-white rounded-full animate-spin" /></div>}
-            {promoImages.length > 1 && <div className="absolute left-2 right-2 top-1/2 -translate-y-1/2 z-20 flex items-center justify-between pointer-events-none"><button onClick={previousPopup} aria-label="Popup sebelumnya" className="pointer-events-auto w-11 h-11 rounded-full bg-slate-900/70 text-white flex items-center justify-center shadow-lg active:scale-90"><ChevronLeft size={25} /></button><button onClick={nextPopup} aria-label="Popup berikutnya" className="pointer-events-auto w-11 h-11 rounded-full bg-slate-900/70 text-white flex items-center justify-center shadow-lg active:scale-90"><ChevronRight size={25} /></button></div>}
-          </div>
+                  
+                  <h3 className="text-2xl font-black text-blue-700 leading-tight text-center mb-6 px-4 uppercase tracking-tighter">
+                    {current.judul}
+                  </h3>
 
-          <div className="p-4">
-            {current.judul && <h3 className="text-lg font-black text-blue-700 text-center uppercase leading-tight mb-3">{current.judul}</h3>}
-            {current.deskripsi && <div className={isExpanded ? '' : 'line-clamp-4'}>{renderDescription(current.deskripsi)}</div>}
-            {current.deskripsi && current.deskripsi.length > 300 && <button onClick={() => setIsExpanded(v => !v)} className="mt-2 text-blue-600 font-bold text-xs">{isExpanded ? 'TUTUP DESKRIPSI' : 'BACA SELENGKAPNYA'}</button>}
-            {current.file_url && <a href={current.file_url} target="_blank" rel="noopener noreferrer" className="mt-3 flex items-center justify-center gap-2 w-full py-3 bg-slate-900 text-white rounded-xl font-bold text-xs"><Download size={14} /> LIHAT LAMPIRAN</a>}
-            {promoImages.length > 1 && <div className="flex items-center justify-center gap-1.5 mt-3">{promoImages.map((_, i) => <button key={i} onClick={() => goTo(i)} aria-label={`Popup ${i + 1}`} className={`h-2 rounded-full transition-all ${i === currentIndex ? 'w-6 bg-slate-800' : 'w-2 bg-slate-300'}`} />)}</div>}
-            <div className="flex items-center justify-between gap-2 mt-3">{promoImages.length > 1 ? <span className="text-[11px] font-bold text-slate-500">{currentIndex + 1}/{promoImages.length}</span> : <span /> }<button onClick={closePopup} className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs shadow-md">MENGERTI</button></div>
+                  <div className="bg-slate-50 border border-slate-100 rounded-3xl p-6 mb-8 shadow-inner">
+                    <div className={`transition-all duration-300 ${isExpanded ? '' : 'line-clamp-3'}`}>
+                      {renderCleanDescription(current.deskripsi)}
+                    </div>
+                    <button 
+                      onClick={() => setIsExpanded(!isExpanded)}
+                      className="text-blue-600 text-xs font-bold mt-2 hover:underline"
+                    >
+                      {isExpanded ? 'Read Less' : 'Read More'}
+                    </button>
+                  </div>
+                  
+                  <div className="space-y-3 px-1">
+                    {current.file_url && current.file_url.length > 5 && (
+                      <motion.a 
+                        whileHover={{ scale: 1.01 }}
+                        whileTap={{ scale: 0.98 }}
+                        href={current.file_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-2 w-full py-3.5 bg-slate-900 text-white rounded-xl font-bold text-[12px] tracking-wider shadow-lg"
+                      >
+                        <Download size={14} /> LIHAT LAMPIRAN
+                      </motion.a>
+                    )}
+
+                    <button 
+                      onClick={closePopup} 
+                      className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-[12px] tracking-wider transition-all shadow-md"
+                    >
+                      MENGERTI
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </AnimatePresence>
           </div>
-        </div>
+        </motion.div>
       </div>
-    </div>
+    </AnimatePresence>
   );
 }
 

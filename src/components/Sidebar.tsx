@@ -366,7 +366,6 @@ export default function Sidebar({ email, role = 'admin', isOpen, onClose }: Side
         { name: 'Kelola Navbar', path: 'navbar', icon: Menu, adminOnly: true }, 
         { name: 'Kelola Hero', path: 'hero', icon: Images, adminOnly: true },
         { name: 'Kelola Pop-up', path: 'popup', icon: Megaphone, adminOnly: true },
-        { name: 'Edit Sambutan Ketua Umum', path: 'sambutan-ketua', icon: MessageSquare, adminOnly: true },
         { name: 'Kelola Footer', path: 'footer', icon: LayoutGrid, adminOnly: true }, 
         { name: 'Kelola Kontak', path: 'kontak', icon: Phone, adminOnly: true },
       ]

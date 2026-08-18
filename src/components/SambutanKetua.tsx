@@ -1,16 +1,52 @@
-import React, { useEffect, useState } from 'react';
-import { supabase } from '../supabase';
+import React from 'react';
 
-const FALLBACK='https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/identitas-atlet/identitas/1775222807673-ccq2ee.jpg';
-interface SambutanConfig { nama:string; jabatan:string; foto_url:string; isi_sambutan?:string; paragraf_1?:string; paragraf_2?:string; paragraf_3?:string; }
-const DEFAULT:SambutanConfig={nama:'H. Wawan',jabatan:'Ketua Umum PB Bilibili 162',foto_url:FALLBACK,isi_sambutan:'Selamat datang di PB Bilibili 162. Kami menyambut hangat seluruh atlet bulutangkis dan para pecinta olahraga bulutangkis di Kota Parepare. Kehadiran Anda adalah semangat bagi kami untuk terus berkontribusi bagi kemajuan bulutangkis di daerah kita tercinta.\n\nBagi rekan-rekan atlet, kami berkomitmen menyediakan wadah pelatihan yang terstruktur, disiplin, dan berintegritas untuk mengasah potensi maksimal Anda. Sementara bagi seluruh pecinta bulutangkis di Parepare, mari kita jadikan klub ini sebagai rumah bersama dalam memupuk sportivitas dan kegemaran terhadap olahraga ini.\n\nMari kita terus bersinergi, meraih prestasi gemilang, dan mempererat tali persaudaraan di dalam maupun di luar lapangan. Terima kasih atas dukungan dan kepercayaan yang Anda berikan kepada PB Bilibili 162.'};
-const toText=(v:any)=>v?.isi_sambutan||[v?.paragraf_1,v?.paragraf_2,v?.paragraf_3].filter((x:any)=>String(x||'').trim()).join('\n\n');
+const SambutanKetua = () => {
+  return (
+    <section className="bg-[#070d1a] text-white py-10 md:py-20 border-t border-white/5 relative overflow-hidden">
+      {/* Background glow effect */}
+      <div className="absolute top-1/2 left-0 -translate-y-1/2 w-72 h-72 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
 
-const SambutanKetua=()=>{
- const [content,setContent]=useState<SambutanConfig>(DEFAULT);
- const loadContent=async()=>{try{const {data,error}=await supabase.from('site_settings').select('value').eq('key','sambutan_ketua_umum').maybeSingle();if(error)throw error;if(data?.value){const v=typeof data.value==='string'?JSON.parse(data.value):data.value;setContent(p=>({...p,...v,isi_sambutan:toText(v)}));}}catch(e){console.warn('[SambutanKetua] fallback',e)}};
- useEffect(()=>{loadContent();const handleUpdate=(event:Event)=>{const d=(event as CustomEvent).detail;if(d?.key==='sambutan_ketua_umum'&&d.value)setContent(p=>({...p,...d.value,isi_sambutan:toText(d.value)}));else if(d?.key==='sambutan_ketua_umum')loadContent();};const handleLocal=(event:Event)=>{const d=(event as CustomEvent).detail;if(d)setContent(p=>({...p,...d,isi_sambutan:toText(d)}));};window.addEventListener('site_setting_updated',handleUpdate);window.addEventListener('sambutan_ketua_updated',handleLocal);const channel=supabase.channel('landing-sambutan-ketua-realtime').on('postgres_changes',{event:'*',schema:'public',table:'site_settings',filter:'key=eq.sambutan_ketua_umum'},(payload:any)=>{const v=payload?.new?.value;if(v){const value=typeof v==='string'?JSON.parse(v):v;setContent(p=>({...p,...value,isi_sambutan:toText(value)}));}else loadContent();}).subscribe();return()=>{window.removeEventListener('site_setting_updated',handleUpdate);window.removeEventListener('sambutan_ketua_updated',handleLocal);supabase.removeChannel(channel);};},[]);
- const paragraphs=String(content.isi_sambutan||'').split(/\n\s*\n+/).map(x=>x.replace(/\s*\n\s*/g,' ').trim()).filter(Boolean);const fotoUrl=String(content.foto_url||FALLBACK).trim()||FALLBACK;
- return <section className="bg-[#070d1a] text-white py-10 md:py-20 border-t border-white/5 relative overflow-hidden"><div className="absolute top-1/2 left-0 -translate-y-1/2 w-72 h-72 bg-blue-600/10 rounded-full blur-3xl pointer-events-none"/><div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10"><div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center"><div className="relative max-w-xs sm:max-w-sm md:max-w-full mx-auto w-full"><img src={fotoUrl} alt={`${content.nama} - ${content.jabatan}`} className="rounded-2xl shadow-2xl border border-white/10 w-full h-auto object-cover aspect-[4/5]" loading="lazy" decoding="async" onError={e=>{if(e.currentTarget.src!==FALLBACK)e.currentTarget.src=FALLBACK;}}/><div className="absolute -bottom-4 -left-4 w-24 h-24 bg-blue-600/20 rounded-full blur-xl -z-10"/></div><div className="space-y-4 sm:space-y-6"><div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-black uppercase tracking-widest"><span>Sambutan Pimpinan</span></div><h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight uppercase italic">Sambutan <span className="text-blue-500">Ketua Umum</span></h2>{paragraphs.map((paragraph,index)=><p key={index} className="text-sm sm:text-base text-slate-300 leading-relaxed text-justify">{paragraph}</p>)}<div className="pt-2 border-t border-white/10"><p className="text-lg font-extrabold text-white">{content.nama}</p><p className="text-blue-400 font-semibold text-xs sm:text-sm">{content.jabatan}</p></div></div></div></div></section>;
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center">
+          {/* Image side */}
+          <div className="relative max-w-xs sm:max-w-sm md:max-w-full mx-auto w-full">
+            <img 
+              src="https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/logos/ketua.png" 
+              alt="H. Wawan - Ketua Umum PB Bilibili 162"
+              className="rounded-2xl shadow-2xl border border-white/10 w-full h-auto object-cover aspect-[4/5]"
+              loading="lazy"
+              decoding="async"
+            />
+            {/* Decoration */}
+            <div className="absolute -bottom-4 -left-4 w-24 h-24 bg-blue-600/20 rounded-full blur-xl -z-10"></div>
+          </div>
+          
+          {/* Text side */}
+          <div className="space-y-4 sm:space-y-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-black uppercase tracking-widest">
+              <span>Sambutan Pimpinan</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight uppercase italic">
+              Sambutan <span className="text-blue-500">Ketua Umum</span>
+            </h2>
+            <p className="text-sm sm:text-base text-slate-300 leading-relaxed text-justify">
+                Selamat datang di PB Bilibili 162. Kami menyambut hangat seluruh atlet bulutangkis dan para pecinta olahraga bulutangkis di Kota Parepare. Kehadiran Anda adalah semangat bagi kami untuk terus berkontribusi bagi kemajuan bulutangkis di daerah kita tercinta.
+            </p>
+            <p className="text-sm sm:text-base text-slate-300 leading-relaxed text-justify">
+                Bagi rekan-rekan atlet, kami berkomitmen menyediakan wadah pelatihan yang terstruktur, disiplin, dan berintegritas untuk mengasah potensi maksimal Anda. Sementara bagi seluruh pecinta bulutangkis di Parepare, mari kita jadikan klub ini sebagai rumah bersama dalam memupuk sportivitas dan kegemaran terhadap olahraga ini.
+            </p>
+            <p className="text-sm sm:text-base text-slate-300 leading-relaxed text-justify">
+                Mari kita terus bersinergi, meraih prestasi gemilang, dan mempererat tali persaudaraan di dalam maupun di luar lapangan. Terima kasih atas dukungan dan kepercayaan yang Anda berikan kepada PB Bilibili 162.
+            </p>
+            <div className="pt-2 border-t border-white/10">
+                <p className="text-lg font-extrabold text-white">H. Wawan</p>
+                <p className="text-blue-400 font-semibold text-xs sm:text-sm">Ketua Umum PB Bilibili 162</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
 };
+
 export default SambutanKetua;

@@ -1,119 +1,111 @@
 import { createClient } from '@supabase/supabase-js';
-import { from as localFrom, flushSyncQueue, startLocalFirstSync, localDbExport, localDbImport } from './localFirstDb';
 
-function readEnv(name: string): string | undefined {
-  try {
-    const vite = (import.meta as any)?.env;
-    if (vite?.[name]) return vite[name];
-  } catch {}
-  try {
-    if (typeof process !== 'undefined' && process.env?.[name]) return process.env[name];
-  } catch {}
-  return undefined;
+// 1. Resolve Supabase URL from Vite env or process env with reliable fallback
+let rawUrl: string | undefined;
+try {
+  if (typeof import.meta !== 'undefined' && import.meta.env) {
+    rawUrl =
+      import.meta.env.VITE_SUPABASE_URL ||
+      import.meta.env.VITE_SUPABASE_PROJECT_URL ||
+      import.meta.env.SUPABASE_URL;
+  }
+} catch (e) {}
+
+if (!rawUrl && typeof process !== 'undefined' && process.env) {
+  rawUrl =
+    process.env.VITE_SUPABASE_URL ||
+    process.env.VITE_SUPABASE_PROJECT_URL ||
+    process.env.SUPABASE_URL;
 }
 
-let envUrl = (readEnv('VITE_SUPABASE_URL') || readEnv('VITE_SUPABASE_PROJECT_URL') || readEnv('SUPABASE_URL') || 'https://missjyvqfehamtpyodjr.supabase.co').trim();
-envUrl = envUrl.replace(/\/rest\/v1\/?$/, '').replace(/\/$/, '');
-const anon = (readEnv('VITE_SUPABASE_ANON') || readEnv('VITE_SUPABASE_ANON_KEY') || readEnv('VITE_SUPABASE_KEY') || readEnv('SUPABASE_ANON_KEY') || readEnv('SUPABASE_KEY') || 'sb_publishable_trhfpzLX50WdkdaItRPFMQ_ewqF0fgn').trim();
+let envUrl = (rawUrl && typeof rawUrl === 'string' && rawUrl.trim() !== '' && rawUrl !== 'undefined'
+  ? rawUrl
+  : 'https://missjyvqfehamtpyodjr.supabase.co'
+).trim();
+
+// Strip /rest/v1 or trailing slash if present in the URL
+if (envUrl.endsWith('/rest/v1/')) {
+  envUrl = envUrl.substring(0, envUrl.length - 9);
+} else if (envUrl.endsWith('/rest/v1')) {
+  envUrl = envUrl.substring(0, envUrl.length - 8);
+}
+if (envUrl.endsWith('/')) {
+  envUrl = envUrl.substring(0, envUrl.length - 1);
+}
+
+// 2. Resolve Supabase Publishable / Anon Key
+let rawAnon: string | undefined;
+try {
+  if (typeof import.meta !== 'undefined' && import.meta.env) {
+    rawAnon =
+      import.meta.env.VITE_SUPABASE_ANON ||
+      import.meta.env.VITE_SUPABASE_ANON_KEY ||
+      import.meta.env.VITE_SUPABASE_KEY ||
+      import.meta.env.SUPABASE_ANON_KEY ||
+      import.meta.env.SUPABASE_KEY;
+  }
+} catch (e) {}
+
+if (!rawAnon && typeof process !== 'undefined' && process.env) {
+  rawAnon =
+    process.env.VITE_SUPABASE_ANON ||
+    process.env.VITE_SUPABASE_ANON_KEY ||
+    process.env.VITE_SUPABASE_KEY ||
+    process.env.SUPABASE_ANON_KEY ||
+    process.env.SUPABASE_KEY;
+}
 
 export const SUPABASE_URL = envUrl;
-export const SUPABASE_ANON_KEY = anon;
-export const SUPABASE_PROJECT_URL = envUrl;
-export const SUPABASE_PROJECT_REF = envUrl.match(/https?:\/\/([^.]+)\.supabase\.co/)?.[1] || '';
+export const SUPABASE_ANON_KEY = (
+  rawAnon && typeof rawAnon === 'string' && rawAnon.trim() !== '' && rawAnon !== 'undefined'
+    ? rawAnon
+    : 'sb_publishable_trhfpzLX50WdkdaItRPFMQ_ewqF0fgn'
+).trim();
 
-export const remoteSupabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+// 3. Create configured Supabase Client
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
     storage: typeof window !== 'undefined' ? window.localStorage : undefined,
   },
-  global: { headers: { 'x-application-name': 'pb-bilibili-162' } },
-  realtime: { params: { eventsPerSecond: 10 } },
+  global: {
+    headers: {
+      'x-application-name': 'pb-bilibili-162'
+    }
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 10
+    }
+  }
 });
 
-(globalThis as any).__PB_REMOTE_SUPABASE = remoteSupabase;
-
-const isValidUuid = (value: unknown) =>
-  typeof value === 'string' &&
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
-
-const sanitizePopupRow = (row: any) => {
-  if (!row || typeof row !== 'object') return row;
-  if ('id' in row && row.id != null && !isValidUuid(row.id)) {
-    const { id: _invalidId, ...cleanRow } = row;
-    return cleanRow;
-  }
-  return row;
-};
-
-function popupRemoteQuery() {
-  const target: any = remoteSupabase.from('konfigurasi_popup');
-  return new Proxy(target, {
-    get(remoteTarget, prop, receiver) {
-      if (prop === 'insert') {
-        return (values: any, options?: any) => {
-          const clean = Array.isArray(values) ? values.map(sanitizePopupRow) : sanitizePopupRow(values);
-          return remoteTarget.insert(clean, options);
-        };
-      }
-      if (prop === 'upsert') {
-        return (values: any, options?: any) => {
-          const clean = Array.isArray(values) ? values.map(sanitizePopupRow) : sanitizePopupRow(values);
-          return remoteTarget.upsert(clean, options);
-        };
-      }
-      return Reflect.get(remoteTarget, prop, receiver);
-    },
-  });
-}
-
-function remoteFromForRead(table: string) {
-  const target: any = remoteSupabase.from(table);
-  return new Proxy(target, {
-    get(remoteTarget, prop, receiver) {
-      if (prop === 'select') {
-        return (...args: any[]) => {
-          let query: any = remoteTarget.select(...args);
-          try {
-            if (table === 'berita' && typeof window !== 'undefined') {
-              const category = new URLSearchParams(window.location.search).get('category')?.trim();
-              if (category) query = query.ilike('kategori', category);
-            }
-          } catch {}
-          return query;
-        };
-      }
-      return Reflect.get(remoteTarget, prop, receiver);
-    },
-  });
-}
-
-// Local-first remains enabled for legacy application data. Site settings and
-// popup configuration are authoritative remote Supabase data because they are
-// website configuration shared by every browser/device/deployment.
-export const supabase: typeof remoteSupabase = new Proxy(remoteSupabase as any, {
-  get(target, prop, receiver) {
-    if (prop === 'from') {
-      return (table: string) => {
-        if (table === 'konfigurasi_popup') return popupRemoteQuery();
-        if (table === 'site_settings') return remoteSupabase.from('site_settings');
-
-        const localQuery: any = localFrom(table);
-        const remoteQuery: any = remoteFromForRead(table);
-        return new Proxy(localQuery, {
-          get(localTarget, method, localReceiver) {
-            if (method === 'select') return remoteQuery.select.bind(remoteQuery);
-            return Reflect.get(localTarget, method, localReceiver);
-          },
-        });
+/**
+ * Health check helper to verify Supabase database connectivity
+ */
+export async function testSupabaseConnection(): Promise<{ connected: boolean; message: string; timestamp: string }> {
+  try {
+    const { error } = await supabase.from('site_settings').select('key').limit(1);
+    if (error && error.code !== 'PGRST116') {
+      return {
+        connected: false,
+        message: error.message || 'Database query error',
+        timestamp: new Date().toISOString()
       };
     }
-    return Reflect.get(target, prop, receiver);
-  },
-});
-
-if (typeof window !== 'undefined') {
-  startLocalFirstSync();
-  window.addEventListener('online', () => { void flushSyncQueue(); });
+    return {
+      connected: true,
+      message: 'Supabase Database Connected Successfully',
+      timestamp: new Date().toISOString()
+    };
+  } catch (err: any) {
+    return {
+      connected: false,
+      message: err.message || 'Network / Connectivity Exception',
+      timestamp: new Date().toISOString()
+    };
+  }
 }
+

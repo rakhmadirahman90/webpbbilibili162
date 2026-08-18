@@ -56,8 +56,7 @@ const AdminLaporan = lazy(() => import('./components/AdminLaporan'));
 const AdminLogs = lazy(() => import('./components/AdminLogs')); 
 const AdminTampilan = lazy(() => import('./components/AdminTampilan')); 
 const KelolaHero = lazy(() => import('./components/KelolaHero')); 
-const AdminPopup = lazy(() => import('./components/AdminPopup'));
-const AdminSambutanKetua = lazy(() => import('./components/AdminSambutanKetua')); 
+const AdminPopup = lazy(() => import('./components/AdminPopup')); 
 const AdminFooter = lazy(() => import('./components/AdminFooter'));
 const AdminAbsensi = lazy(() => import('./components/AdminAbsensi'));
 const AdminInventaris = lazy(() => import('./components/AdminInventaris'));
@@ -702,24 +701,49 @@ export default function App() {
   }, []);
 
   const handleNavigate = (sectionId: string, subPath?: string) => {
-    const rawTarget = (subPath || sectionId || '').toLowerCase().trim();
-    
-    if (!rawTarget || rawTarget === 'home' || rawTarget === 'beranda') {
+    const mainTarget = (sectionId || '').toLowerCase().trim();
+    const subTarget = (subPath || '').toLowerCase().trim();
+
+    if (!mainTarget || mainTarget === 'home' || mainTarget === 'beranda' || (!mainTarget && !subTarget)) {
       setActiveView(null);
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
-    if (rawTarget === 'atlet' || rawTarget === 'players' || rawTarget === 'player') {
-      setActiveView('atlet');
-      if (subPath) {
-        const path = subPath.toLowerCase();
-        if (path.includes('senior')) setActiveAthleteFilter('Senior');
-        else if (path.includes('muda')) setActiveAthleteFilter('Muda');
-        else setActiveAthleteFilter('Semua');
-      } else {
-         setActiveAthleteFilter('Semua');
+    // Atlet & its category sub-menus
+    if (
+      mainTarget === 'atlet' || 
+      mainTarget === 'players' || 
+      mainTarget === 'player' || 
+      subTarget === 'semua' || 
+      subTarget === 'senior' || 
+      subTarget === 'muda' ||
+      mainTarget === 'semua' ||
+      mainTarget === 'senior' ||
+      mainTarget === 'muda'
+    ) {
+      if (subTarget === 'register' || subTarget === 'pendaftaran') {
+        setActiveView('register');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
       }
+      if (subTarget === 'peringkat' || subTarget === 'rankings') {
+        setActiveView('peringkat');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+      if (subTarget === 'prestasi') {
+        setActiveView('prestasi');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+
+      setActiveView('atlet');
+      const targetSub = subTarget || mainTarget;
+      if (targetSub.includes('senior')) setActiveAthleteFilter('Senior');
+      else if (targetSub.includes('muda') || targetSub.includes('taruna')) setActiveAthleteFilter('Muda');
+      else setActiveAthleteFilter('Semua');
+
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
@@ -739,16 +763,18 @@ export default function App() {
       'berita', 'news', 'faq', 'sambutan', 'sambutan-ketua'
     ];
 
-    if (fullPageMenus.includes(rawTarget)) {
-        setActiveView(rawTarget);
+    const finalTarget = subTarget && fullPageMenus.includes(subTarget) ? subTarget : mainTarget;
+
+    if (fullPageMenus.includes(finalTarget)) {
+        setActiveView(finalTarget);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
         setActiveView(null);
-        if (rawTarget === 'beranda' || rawTarget === 'home' || rawTarget === 'hero' || rawTarget === '' || !rawTarget) {
+        if (finalTarget === 'beranda' || finalTarget === 'home' || finalTarget === 'hero' || finalTarget === '' || !finalTarget) {
             window.dispatchEvent(new CustomEvent('trigger-home-popup'));
         }
         setTimeout(() => {
-            const element = document.getElementById(rawTarget);
+            const element = document.getElementById(finalTarget);
             if (element) {
                 const offset = 100;
                 window.scrollTo({ top: element.getBoundingClientRect().top + window.pageYOffset - offset, behavior: 'smooth' });
@@ -1350,7 +1376,6 @@ function AdminLayout({ session }: { session: any }) {
               <Route path="tampilan" element={isAdmin ? <AdminTampilan /> : <Navigate to="/admin/dashboard" replace />} />
               <Route path="hero" element={isAdmin ? <KelolaHero /> : <Navigate to="/admin/dashboard" replace />} />
               <Route path="popup" element={isAdmin ? <AdminPopup /> : <Navigate to="/admin/dashboard" replace />} /> 
-              <Route path="sambutan-ketua" element={isAdmin ? <AdminSambutanKetua /> : <Navigate to="/admin/dashboard" replace />} />
               <Route path="footer" element={isAdmin ? <AdminFooter /> : <Navigate to="/admin/dashboard" replace />} />
               
               <Route path="sejarah" element={isAdmin ? <AdminSejarah /> : <div className="p-4 sm:p-6"><Sejarah /></div>} />
