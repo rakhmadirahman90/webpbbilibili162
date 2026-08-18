@@ -1,62 +1,158 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { supabase } from "../supabase";
-import { saveSiteSetting } from "../utils/siteSettingsHelper";
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { supabase } from '../supabase';
+import { saveSiteSetting } from '../utils/siteSettingsHelper';
 import Swal from 'sweetalert2';
-import { 
-  Menu, Plus, Trash2, MoveUp, MoveDown, 
-  Link as LinkIcon, Layers, RefreshCcw, CheckCircle2,
-  CornerDownRight, GripVertical, Settings, Globe, Image as ImageIcon,
-  AlertCircle, Save
+import {
+  AlertCircle,
+  Check,
+  ChevronDown,
+  ChevronRight,
+  ExternalLink,
+  Globe2,
+  GripVertical,
+  Image as ImageIcon,
+  Layers3,
+  Link2,
+  Loader2,
+  Menu,
+  Pencil,
+  Plus,
+  RefreshCw,
+  Save,
+  Settings2,
+  ShieldCheck,
+  Trash2,
+  X,
 } from 'lucide-react';
 
+type NavItem = {
+  id: string;
+  label: string;
+  path: string;
+  type?: string;
+  parent_id?: string | null;
+  order_index?: number;
+  [key: string]: any;
+};
+
+type BrandSettings = {
+  logo_url: string;
+  brand_name_main: string;
+  brand_name_accent: string;
+  sub_text: string;
+  default_lang: string;
+};
+
+const DEFAULT_BRAND: BrandSettings = {
+  logo_url: '/logo_pb_bilibili_162.svg',
+  brand_name_main: 'PB Bilibili',
+  brand_name_accent: '162',
+  sub_text: 'Professional Badminton',
+  default_lang: 'ID',
+};
+
+const inputClass =
+  'w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10';
+
+const cardClass = 'rounded-2xl border border-slate-200 bg-white shadow-sm';
+
 const KelolaNavbar: React.FC = () => {
-  const [navItems, setNavItems] = useState<any[]>([]);
+  const [navItems, setNavItems] = useState<NavItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
-  
-  // --- STATE UNTUK BRANDING & BAHASA ---
-  const [brandSettings, setBrandSettings] = useState({
-    logo_url: '/logo_pb_bilibili_162.svg',
-    brand_name_main: 'PB Bilibili',
-    brand_name_accent: '162',
-    sub_text: 'Professional Badminton',
-    default_lang: 'ID'
-  });
-  const [isSavingBrand, setIsSavingBrand] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // --- STATE UNTUK DRAG & DROP & EDITING ---
-  const [draggedItemIndex, setDraggedItemIndex] = useState<number | null>(null);
+  const [brandSettings, setBrandSettings] = useState<BrandSettings>(DEFAULT_BRAND);
   const [editingId, setEditingId] = useState<string | null>(null);
-
-  // State Form Lengkap
+  const [editingLabel, setEditingLabel] = useState('');
+  const [editingPath, setEditingPath] = useState('');
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [activePanel, setActivePanel] = useState<'menu' | 'branding'>('menu');
   const [label, setLabel] = useState('');
   const [path, setPath] = useState('');
   const [type, setType] = useState('link');
-  const [parentId, setParentId] = useState<string>('none');
-  const [formError, setFormError] = useState<string | null>(null);
+  const [parentId, setParentId] = useState('none');
+  const [formError, setFormError] = useState('');
+  const [showAddForm, setShowAddForm] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const mainMenus = useMemo(
+    () => navItems.filter((item) => !item.parent_id).sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0)),
+    [navItems]
+  );
+
+  const childrenOf = (parentIdValue: string) =>
+    navItems
+      .filter((item) => item.parent_id === parentIdValue)
+      .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
+
+  const totalSubmenus = navItems.filter((item) => !!item.parent_id).length;
+
+  const notifySuccess = (title: string) => {
+    Swal.fire({
+      toast: true,
+      position: 'top-end',
+      icon: 'success',
+      title,
+      showConfirmButton: false,
+      timer: 1800,
+      timerProgressBar: true,
+    });
+  };
+
+  const notifyError = (title: string, text: string) => {
+    Swal.fire({ icon: 'error', title, text, confirmButtonColor: '#2563eb' });
+  };
+
+  const fetchNavbar = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('navbar_settings')
+        .select('*')
+        .order('order_index', { ascending: true });
+      if (error) throw error;
+      setNavItems((data || []) as NavItem[]);
+    } catch (error: any) {
+      notifyError('Gagal memuat menu', error?.message || 'Tidak dapat membaca konfigurasi navbar.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchBrandSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('site_settings')
+        .select('*')
+        .eq('key', 'navbar_branding')
+        .maybeSingle();
+      if (error) throw error;
+      if (data?.value) {
+        const value = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
+        setBrandSettings({ ...DEFAULT_BRAND, ...value });
+      }
+    } catch (error) {
+      console.error('Gagal memuat branding navbar:', error);
+    }
+  };
 
   useEffect(() => {
     fetchNavbar();
     fetchBrandSettings();
 
+    const channelName = `kelola_navbar_${Date.now()}_${Math.random().toString(36).slice(2)}`;
     const channel = supabase
-      .channel('kelola_navbar_realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'navbar_settings' }, () => {
-        fetchNavbar();
-      })
+      .channel(channelName)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'navbar_settings' }, () => fetchNavbar())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, (payload: any) => {
-        if (payload.new && payload.new.key === 'navbar_branding') {
-          fetchBrandSettings();
-        } else {
-          fetchBrandSettings();
-        }
+        if (payload.new?.key === 'navbar_branding' || payload.old?.key === 'navbar_branding') fetchBrandSettings();
       })
       .subscribe();
 
-    const handleCustomUpdate = (e: any) => {
-      if (e.detail?.key === 'navbar_branding') {
+    const handleCustomUpdate = (event: any) => {
+      if (event.detail?.key === 'navbar_branding' || event.detail?.key === 'navbar_items') {
+        fetchNavbar();
         fetchBrandSettings();
       }
     };
@@ -68,402 +164,366 @@ const KelolaNavbar: React.FC = () => {
     };
   }, []);
 
-  const fetchNavbar = async () => {
-    setIsLoading(true);
-    const { data, error } = await supabase
-      .from('navbar_settings')
-      .select('*')
-      .order('order_index', { ascending: true });
-    
-    if (!error && data) setNavItems(data);
-    setIsLoading(false);
-  };
-
-  const fetchBrandSettings = async () => {
-    const { data, error } = await supabase
-      .from('site_settings')
-      .select('*')
-      .eq('key', 'navbar_branding')
-      .maybeSingle();
-    
-    if (!error && data && data.value) {
-      try {
-        const parsedValue = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
-        setBrandSettings(parsedValue);
-      } catch (e) {
-        console.error("Gagal parse data branding:", e);
-      }
+  const saveBranding = async () => {
+    setIsSaving(true);
+    try {
+      const { error } = await saveSiteSetting('navbar_branding', brandSettings, 'Pengaturan Header & Branding');
+      if (error) throw error;
+      window.dispatchEvent(new CustomEvent('site_setting_updated', { detail: { key: 'navbar_branding', value: brandSettings } }));
+      notifySuccess('Branding berhasil disimpan');
+    } catch (error: any) {
+      notifyError('Gagal menyimpan branding', error?.message || 'Silakan coba lagi.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  // --- PERBAIKAN LOGIKA SIMPAN (SOLUSI ERROR LABEL) ---
-  const performBrandingUpsert = async (newSettings: any) => {
-    return await saveSiteSetting('navbar_branding', newSettings, 'Pengaturan Header & Branding');
-  };
-
-  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
     if (!file) return;
-
+    if (!file.type.startsWith('image/')) {
+      notifyError('File tidak valid', 'Gunakan file gambar untuk logo.');
+      return;
+    }
     setIsUploading(true);
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `logo-${Date.now()}.${fileExt}`;
-      const filePath = `branding/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('assets') 
-        .upload(filePath, file, { upsert: true });
-
-      if (uploadError) throw uploadError;
-
+      const extension = file.name.split('.').pop() || 'png';
+      const filePath = `branding/logo-${Date.now()}.${extension}`;
+      const { error } = await supabase.storage.from('assets').upload(filePath, file, { upsert: true });
+      if (error) throw error;
       const { data } = supabase.storage.from('assets').getPublicUrl(filePath);
-      
-      if (data?.publicUrl) {
-        const newSettings = { ...brandSettings, logo_url: data.publicUrl };
-        setBrandSettings(newSettings);
-        
-        const { error: upsertError } = await performBrandingUpsert(newSettings);
-        if (upsertError) throw upsertError;
-        
-        triggerSuccess();
-      }
-    } catch (err: any) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Upload Gagal',
-        text: err.message,
-        confirmButtonColor: '#EF4444',
-        background: '#0F172A',
-        color: '#fff'
-      });
+      if (!data?.publicUrl) throw new Error('URL logo tidak tersedia.');
+      const next = { ...brandSettings, logo_url: data.publicUrl };
+      setBrandSettings(next);
+      const saveResult = await saveSiteSetting('navbar_branding', next, 'Pengaturan Header & Branding');
+      if (saveResult.error) throw saveResult.error;
+      notifySuccess('Logo berhasil diperbarui');
+    } catch (error: any) {
+      notifyError('Upload logo gagal', error?.message || 'Silakan coba lagi.');
     } finally {
       setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
-  const handleSaveBrand = async () => {
-    setIsSavingBrand(true);
-    try {
-      const { error } = await performBrandingUpsert(brandSettings);
-      if (error) throw error;
-      triggerSuccess();
-    } catch (err: any) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Gagal Menyimpan Branding',
-        text: err.message,
-        confirmButtonColor: '#EF4444',
-        background: '#0F172A',
-        color: '#fff'
-      });
-    } finally {
-      setIsSavingBrand(false);
+  const handleAddMenu = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setFormError('');
+    const cleanLabel = label.trim();
+    const cleanPath = path.trim();
+    if (!cleanLabel || !cleanPath) {
+      setFormError('Nama menu dan URL wajib diisi.');
+      return;
     }
-  };
 
-  const handleInlineUpdate = async (id: string, field: string, value: string) => {
-    const { error } = await supabase
-      .from('navbar_settings')
-      .update({ [field]: value })
-      .eq('id', id);
-
-    if (!error) {
-      setNavItems(prev => prev.map(item => item.id === id ? { ...item, [field]: value } : item));
-      setEditingId(null);
-      triggerSuccess();
-    }
-  };
-
-  const handleDragStart = (index: number) => setDraggedItemIndex(index);
-  const handleDragOver = (e: React.DragEvent) => e.preventDefault();
-
-  const handleDrop = async (dropIndex: number) => {
-    if (draggedItemIndex === null || draggedItemIndex === dropIndex) return;
-
-    const mainMenusTemp = [...navItems.filter(item => !item.parent_id)];
-    const draggedItem = mainMenusTemp[draggedItemIndex];
-    
-    mainMenusTemp.splice(draggedItemIndex, 1);
-    mainMenusTemp.splice(dropIndex, 0, draggedItem);
-
-    const finalUpdates = mainMenusTemp.map((item, idx) => ({
-      ...item,
-      order_index: idx
-    }));
-
-    const { error } = await supabase.from('navbar_settings').upsert(finalUpdates);
-    if (!error) {
-      triggerSuccess();
-      fetchNavbar();
-    }
-    setDraggedItemIndex(null);
-  };
-
-  const handleAddMenu = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setFormError(null);
-    if (!label || !path) { setFormError("Label dan Path wajib diisi"); return; }
-
+    const siblings = parentId === 'none' ? mainMenus : childrenOf(parentId);
     const payload = {
-      label,
-      path: path.startsWith('/') ? path : `/${path}`,
+      label: cleanLabel,
+      path: cleanPath.startsWith('/') || cleanPath.startsWith('http') ? cleanPath : `/${cleanPath}`,
       type,
       parent_id: parentId === 'none' ? null : parentId,
-      order_index: navItems.length
+      order_index: siblings.length,
     };
 
-    const { error } = await supabase.from('navbar_settings').insert([payload]);
-    if (!error) {
-      setLabel(''); setPath(''); setParentId('none');
-      fetchNavbar(); triggerSuccess();
-    } else setFormError(error.message);
-  };
-
-  const updateOrder = async (id: string, currentIndex: number, direction: 'up' | 'down') => {
-    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-    const currentMainMenus = navItems.filter(item => !item.parent_id);
-    if (targetIndex < 0 || targetIndex >= currentMainMenus.length) return;
-
-    const targetItem = currentMainMenus[targetIndex];
-    const currentItem = currentMainMenus[currentIndex];
-
-    await supabase.from('navbar_settings').update({ order_index: targetIndex }).eq('id', currentItem.id);
-    await supabase.from('navbar_settings').update({ order_index: currentIndex }).eq('id', targetItem.id);
-    fetchNavbar();
-  };
-
-  const deleteMenu = async (id: string) => {
-    const result = await Swal.fire({
-      title: 'Hapus Menu?',
-      text: "Apakah Anda yakin ingin menghapus item menu navigasi ini?",
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#EF4444',
-      cancelButtonColor: '#374151',
-      confirmButtonText: 'Ya, Hapus!',
-      cancelButtonText: 'Batal',
-      background: '#0F172A',
-      color: '#fff'
-    });
-
-    if (result.isConfirmed) {
-      const { error } = await supabase.from('navbar_settings').delete().eq('id', id);
-      if (!error) {
-        Swal.fire({
-          toast: true,
-          position: 'top-end',
-          icon: 'success',
-          title: 'Menu berhasil dihapus',
-          showConfirmButton: false,
-          timer: 2000
-        });
-        fetchNavbar();
-      } else {
-        Swal.fire({
-          icon: 'error',
-          title: 'Gagal Menghapus',
-          text: error.message,
-          confirmButtonColor: '#3B82F6',
-          background: '#0F172A',
-          color: '#fff'
-        });
-      }
+    setIsSaving(true);
+    try {
+      const { error } = await supabase.from('navbar_settings').insert([payload]);
+      if (error) throw error;
+      setLabel('');
+      setPath('');
+      setType('link');
+      setParentId('none');
+      setShowAddForm(false);
+      await fetchNavbar();
+      notifySuccess('Menu baru berhasil ditambahkan');
+    } catch (error: any) {
+      setFormError(error?.message || 'Menu gagal ditambahkan.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const triggerSuccess = () => {
-    setShowSuccess(true);
-    setTimeout(() => setShowSuccess(false), 3000);
+  const beginEdit = (item: NavItem) => {
+    setEditingId(item.id);
+    setEditingLabel(item.label || '');
+    setEditingPath(item.path || '');
   };
 
-  const mainMenus = navItems.filter(item => !item.parent_id);
-  const getSubMenus = (id: string) => navItems.filter(item => item.parent_id === id);
+  const saveInlineEdit = async (item: NavItem) => {
+    const nextLabel = editingLabel.trim();
+    const nextPath = editingPath.trim();
+    if (!nextLabel || !nextPath) {
+      notifyError('Data belum lengkap', 'Nama menu dan URL tidak boleh kosong.');
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('navbar_settings')
+        .update({ label: nextLabel, path: nextPath })
+        .eq('id', item.id);
+      if (error) throw error;
+      setNavItems((prev) => prev.map((entry) => (entry.id === item.id ? { ...entry, label: nextLabel, path: nextPath } : entry)));
+      setEditingId(null);
+      notifySuccess('Menu berhasil diperbarui');
+    } catch (error: any) {
+      notifyError('Gagal memperbarui menu', error?.message || 'Silakan coba lagi.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
-  return (
-    <div className="h-screen bg-[#070d1a] text-white flex flex-col overflow-hidden p-4 md:p-8 font-sans selection:bg-blue-500/30">
-      <div className="max-w-7xl mx-auto w-full flex flex-col h-full overflow-hidden">
-        
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 shrink-0">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-black italic tracking-tighter uppercase text-white leading-none">
-              KELOLA <span className="text-blue-600">NAVBAR</span>
-            </h1>
-            <p className="text-zinc-500 text-[10px] font-black uppercase tracking-[0.3em] mt-1">
-              Visual Branding & Navigation Engine
-            </p>
+  const deleteMenu = async (item: NavItem) => {
+    const children = childrenOf(item.id);
+    const warning = children.length
+      ? `Menu ini memiliki ${children.length} submenu. Semua submenu akan ikut dihapus.`
+      : 'Menu ini akan dihapus dari navigasi website.';
+    const result = await Swal.fire({
+      title: 'Hapus menu?',
+      text: warning,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Hapus',
+      cancelButtonText: 'Batal',
+      confirmButtonColor: '#dc2626',
+      reverseButtons: true,
+    });
+    if (!result.isConfirmed) return;
+
+    setIsSaving(true);
+    try {
+      if (children.length) {
+        const { error: childError } = await supabase.from('navbar_settings').delete().eq('parent_id', item.id);
+        if (childError) throw childError;
+      }
+      const { error } = await supabase.from('navbar_settings').delete().eq('id', item.id);
+      if (error) throw error;
+      await fetchNavbar();
+      notifySuccess('Menu berhasil dihapus');
+    } catch (error: any) {
+      notifyError('Gagal menghapus menu', error?.message || 'Silakan coba lagi.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const reorderMainMenus = async (fromId: string, toId: string) => {
+    if (fromId === toId) return;
+    const current = [...mainMenus];
+    const fromIndex = current.findIndex((item) => item.id === fromId);
+    const toIndex = current.findIndex((item) => item.id === toId);
+    if (fromIndex < 0 || toIndex < 0) return;
+    const [moved] = current.splice(fromIndex, 1);
+    current.splice(toIndex, 0, moved);
+
+    setNavItems((prev) => {
+      const byId = new Map(current.map((item, index) => [item.id, index]));
+      return prev.map((item) => (byId.has(item.id) ? { ...item, order_index: byId.get(item.id) } : item));
+    });
+
+    setIsSaving(true);
+    try {
+      for (let index = 0; index < current.length; index += 1) {
+        const { error } = await supabase.from('navbar_settings').update({ order_index: index }).eq('id', current[index].id);
+        if (error) throw error;
+      }
+      await fetchNavbar();
+      notifySuccess('Urutan menu berhasil diperbarui');
+    } catch (error: any) {
+      await fetchNavbar();
+      notifyError('Gagal mengatur urutan', error?.message || 'Silakan coba lagi.');
+    } finally {
+      setIsSaving(false);
+      setDraggedId(null);
+    }
+  };
+
+  const moveMenu = async (item: NavItem, direction: 'up' | 'down') => {
+    const index = mainMenus.findIndex((entry) => entry.id === item.id);
+    const target = direction === 'up' ? index - 1 : index + 1;
+    if (target < 0 || target >= mainMenus.length) return;
+    await reorderMainMenus(item.id, mainMenus[target].id);
+  };
+
+  const renderMenuItem = (item: NavItem, index: number) => {
+    const children = childrenOf(item.id);
+    const isExpanded = expanded[item.id] ?? true;
+    const isEditing = editingId === item.id;
+
+    return (
+      <div
+        key={item.id}
+        draggable={!isEditing}
+        onDragStart={() => setDraggedId(item.id)}
+        onDragOver={(event) => event.preventDefault()}
+        onDrop={() => draggedId && reorderMainMenus(draggedId, item.id)}
+        className={`group rounded-2xl border bg-white transition-all ${draggedId === item.id ? 'border-blue-400 shadow-lg ring-4 ring-blue-500/10' : 'border-slate-200 hover:border-slate-300 hover:shadow-sm'}`}
+      >
+        <div className="flex items-center gap-3 p-3.5">
+          <button
+            type="button"
+            className="hidden sm:flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700 cursor-grab active:cursor-grabbing"
+            title="Tarik untuk mengatur urutan"
+            aria-label="Atur urutan menu"
+          >
+            <GripVertical size={18} />
+          </button>
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 font-bold text-sm">
+            {index + 1}
           </div>
-          <div className="flex items-center gap-3">
-            <button 
-              onClick={fetchNavbar} 
-              className="group flex items-center gap-2 px-5 py-2.5 bg-zinc-900 rounded-xl hover:bg-zinc-800 transition-all border border-white/5 active:scale-95 shadow-xl"
-            >
-              <RefreshCcw size={16} className={`${isLoading ? 'animate-spin text-blue-500' : 'text-zinc-400 group-hover:text-white'}`} />
-              <span className="text-[10px] font-black uppercase tracking-widest">Resync</span>
-            </button>
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-y-auto overflow-x-hidden grid md:grid-cols-12 gap-6 pr-1 custom-scrollbar pb-10">
-          
-          <div className="md:col-span-4 space-y-6">
-            
-            {/* Branding Section */}
-            <div className="bg-zinc-900/50 border border-white/10 p-8 rounded-[2.5rem] backdrop-blur-xl relative overflow-hidden group">
-              <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                <Settings size={64} />
-              </div>
-              <h3 className="text-[10px] font-black uppercase tracking-widest mb-8 flex items-center gap-3 text-blue-500">
-                <Layers size={16} /> Club Identity
-              </h3>
-              
-              <div className="space-y-6">
-                <div className="relative">
-                  <div 
-                    onClick={() => fileInputRef.current?.click()}
-                    className="w-full h-40 bg-black border-2 border-dashed border-zinc-800 rounded-3xl flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-blue-500/50 transition-all overflow-hidden relative group/logo"
-                  >
-                    {brandSettings.logo_url ? (
-                      <img src={brandSettings.logo_url} alt="Logo" className="h-24 w-auto object-contain z-10" />
-                    ) : (
-                      <div className="text-zinc-600 flex flex-col items-center gap-2">
-                        <ImageIcon size={32} />
-                        <span className="text-[9px] font-black uppercase tracking-widest text-center">Upload Logo</span>
-                      </div>
-                    )}
-                    {isUploading && <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-30"><RefreshCcw className="animate-spin text-blue-500" /></div>}
-                  </div>
-                  <input type="file" ref={fileInputRef} onChange={handleLogoUpload} className="hidden" accept="image/*" />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <label className="text-[8px] font-black uppercase text-zinc-500 ml-1">Main Brand</label>
-                    <input type="text" value={brandSettings.brand_name_main} onChange={(e) => setBrandSettings({...brandSettings, brand_name_main: e.target.value})} className="w-full bg-black border border-white/5 rounded-xl px-4 py-3 text-xs font-bold focus:border-blue-600 transition-all outline-none" />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[8px] font-black uppercase text-zinc-500 ml-1">Accent</label>
-                    <input type="text" value={brandSettings.brand_name_accent} onChange={(e) => setBrandSettings({...brandSettings, brand_name_accent: e.target.value})} className="w-full bg-black border border-white/5 rounded-xl px-4 py-3 text-xs font-bold text-blue-500 focus:border-blue-600 transition-all outline-none" />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-[8px] font-black uppercase text-zinc-500 ml-1">System Language</label>
-                  <div className="relative">
-                    <Globe size={14} className="absolute left-4 top-3.5 text-zinc-600" />
-                    <select value={brandSettings.default_lang} onChange={(e) => setBrandSettings({...brandSettings, default_lang: e.target.value})} className="w-full bg-black border border-white/5 rounded-xl px-10 py-3 text-xs font-bold appearance-none cursor-pointer focus:border-blue-600 outline-none">
-                      <option value="ID">ID - Indonesia</option>
-                      <option value="EN">EN - English</option>
-                    </select>
-                  </div>
-                </div>
-
-                <button onClick={handleSaveBrand} disabled={isSavingBrand} className="w-full bg-white text-black hover:bg-blue-600 hover:text-white py-4 rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] transition-all shadow-xl active:scale-95 disabled:opacity-50">
-                  {isSavingBrand ? 'Saving...' : 'Update Branding'}
-                </button>
-              </div>
-            </div>
-
-            {/* Menu Form */}
-            <div className="bg-zinc-900/50 border border-white/10 p-8 rounded-[2.5rem] shadow-xl">
-              <h3 className="text-[10px] font-black uppercase tracking-widest mb-8 flex items-center gap-3 text-blue-500">
-                <Plus size={16} /> New Navigation
-              </h3>
-              <form onSubmit={handleAddMenu} className="space-y-4">
-                {formError && <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-[9px] font-bold uppercase tracking-widest flex items-center gap-2"><AlertCircle size={14} /> {formError}</div>}
-                <input type="text" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Menu Label" className="w-full bg-black border border-white/5 rounded-xl px-5 py-4 text-xs font-bold focus:border-blue-600 outline-none transition-all" />
-                <input type="text" value={path} onChange={(e) => setPath(e.target.value)} placeholder="Path (e.g. /home)" className="w-full bg-black border border-white/5 rounded-xl px-5 py-4 text-xs font-bold focus:border-blue-600 outline-none font-mono transition-all" />
-                <div className="grid grid-cols-2 gap-3">
-                  <select value={type} onChange={(e) => setType(e.target.value)} className="bg-black border border-white/5 rounded-xl px-4 py-3 text-[10px] font-black uppercase outline-none cursor-pointer"><option value="link">Single</option><option value="dropdown">Dropdown</option></select>
-                  <select value={parentId} onChange={(e) => setParentId(e.target.value)} className="bg-black border border-white/5 rounded-xl px-4 py-3 text-[10px] font-black uppercase outline-none text-blue-500 cursor-pointer"><option value="none">Main Menu</option>{mainMenus.filter(m => m.type === 'dropdown').map(p => <option key={p.id} value={p.id}>{p.label}</option>)}</select>
-                </div>
-                <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 py-5 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg shadow-blue-600/20 transition-all active:scale-95">Register Menu</button>
-              </form>
-            </div>
-          </div>
-
-          <div className="md:col-span-8 space-y-4">
-            {mainMenus.length === 0 ? (
-              <div className="text-center py-40 border-2 border-dashed border-zinc-900 rounded-[3rem] bg-zinc-900/10">
-                <Menu size={64} className="mx-auto text-slate-700 mb-6 opacity-40" />
-                <p className="text-zinc-600 font-black uppercase text-[10px] tracking-[0.3em]">System Navigation Empty</p>
+          <div className="min-w-0 flex-1">
+            {isEditing ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <input autoFocus value={editingLabel} onChange={(e) => setEditingLabel(e.target.value)} className={inputClass} placeholder="Nama menu" />
+                <input value={editingPath} onChange={(e) => setEditingPath(e.target.value)} className={inputClass} placeholder="/path atau https://..." onKeyDown={(e) => e.key === 'Enter' && saveInlineEdit(item)} />
               </div>
             ) : (
-              mainMenus.map((item, index) => (
-                <div 
-                  key={item.id} 
-                  className={`space-y-4 transition-all duration-300 ${draggedItemIndex === index ? 'opacity-30 scale-95 blur-sm' : 'opacity-100'}`}
-                  draggable onDragStart={() => handleDragStart(index)} onDragOver={handleDragOver} onDrop={() => handleDrop(index)}
-                >
-                  <div className="group flex items-center justify-between bg-zinc-900 border border-white/5 p-6 rounded-[2.2rem] hover:border-blue-600/50 transition-all shadow-2xl cursor-grab active:cursor-grabbing">
-                    <div className="flex items-center gap-6">
-                      <GripVertical size={20} className="text-slate-600 group-hover:text-blue-500" />
-                      <div className="w-12 h-12 bg-black rounded-2xl flex items-center justify-center text-blue-500 font-black text-sm border border-white/5">
-                        {index + 1}
-                      </div>
-                      <div>
-                        {editingId === item.id ? (
-                          <input 
-                            autoFocus
-                            className="bg-black border border-blue-600 rounded-lg px-3 py-1 text-sm font-black uppercase italic outline-none"
-                            defaultValue={item.label}
-                            onBlur={(e) => handleInlineUpdate(item.id, 'label', e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleInlineUpdate(item.id, 'label', (e.target as any).value)}
-                          />
-                        ) : (
-                          <div className="flex items-center gap-3">
-                            <h4 onClick={() => setEditingId(item.id)} className="font-black uppercase italic text-lg tracking-tighter hover:text-blue-500 cursor-pointer">{item.label}</h4>
-                            {item.type === 'dropdown' && <span className="px-3 py-1 bg-blue-600 text-white text-[7px] font-black rounded-full uppercase tracking-widest">Group</span>}
-                          </div>
-                        )}
-                        <p className="text-[9px] text-zinc-600 font-black uppercase tracking-widest flex items-center gap-2 mt-1"><LinkIcon size={12}/> {item.path}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="flex bg-black/40 p-1 rounded-xl mr-2">
-                        <button onClick={() => updateOrder(item.id, index, 'up')} className="p-2 text-zinc-600 hover:text-white"><MoveUp size={16}/></button>
-                        <button onClick={() => updateOrder(item.id, index, 'down')} className="p-2 text-zinc-600 hover:text-white"><MoveDown size={16}/></button>
-                      </div>
-                      <button onClick={() => deleteMenu(item.id)} className="w-11 h-11 flex items-center justify-center bg-red-600/10 text-red-600 hover:bg-red-600 hover:text-white rounded-xl transition-all shadow-xl"><Trash2 size={18}/></button>
-                    </div>
-                  </div>
-
-                  <div className="ml-16 space-y-3 border-l-2 border-zinc-900 pl-8 pb-4">
-                    {getSubMenus(item.id).map((sub) => (
-                      <div key={sub.id} className="flex items-center justify-between bg-zinc-900/40 border border-white/5 p-4 rounded-2xl hover:bg-zinc-800 transition-all group/sub">
-                        <div className="flex items-center gap-4">
-                          <CornerDownRight size={18} className="text-slate-500 group-hover/sub:text-blue-500" />
-                          <div>
-                            {editingId === sub.id ? (
-                               <input 
-                               autoFocus
-                               className="bg-black border border-blue-600 rounded px-3 py-1 text-[10px] font-black uppercase italic outline-none"
-                               defaultValue={sub.label}
-                               onBlur={(e) => handleInlineUpdate(sub.id, 'label', e.target.value)}
-                             />
-                            ) : (
-                              <p onClick={() => setEditingId(sub.id)} className="text-[12px] font-black uppercase text-zinc-300 tracking-tight hover:text-white cursor-pointer">{sub.label}</p>
-                            )}
-                            <p className="text-[8px] text-zinc-600 font-bold uppercase tracking-widest mt-0.5">{sub.path}</p>
-                          </div>
-                        </div>
-                        <button onClick={() => deleteMenu(sub.id)} className="p-2 text-slate-500 hover:text-red-500 transition-colors"><Trash2 size={14}/></button>
-                      </div>
-                    ))}
-                  </div>
+              <>
+                <div className="flex items-center gap-2 min-w-0">
+                  <p className="font-semibold text-slate-800 truncate">{item.label || 'Tanpa nama'}</p>
+                  <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500 uppercase">{item.type || 'link'}</span>
                 </div>
-              ))
+                <p className="mt-0.5 text-xs text-slate-400 truncate">{item.path || '—'}</p>
+              </>
+            )}
+          </div>
+          <div className="flex items-center gap-1">
+            {isEditing ? (
+              <>
+                <button type="button" onClick={() => saveInlineEdit(item)} disabled={isSaving} className="h-9 w-9 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100" title="Simpan"><Check size={16} /></button>
+                <button type="button" onClick={() => setEditingId(null)} className="h-9 w-9 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200" title="Batal"><X size={16} /></button>
+              </>
+            ) : (
+              <>
+                <button type="button" onClick={() => beginEdit(item)} className="h-9 w-9 rounded-lg text-slate-400 hover:bg-blue-50 hover:text-blue-600" title="Edit menu"><Pencil size={15} /></button>
+                <button type="button" onClick={() => moveMenu(item, 'up')} disabled={index === 0} className="hidden md:flex h-9 w-9 rounded-lg text-slate-400 hover:bg-slate-100 disabled:opacity-20" title="Naik"><ChevronDown className="rotate-180" size={15} /></button>
+                <button type="button" onClick={() => moveMenu(item, 'down')} disabled={index === mainMenus.length - 1} className="hidden md:flex h-9 w-9 rounded-lg text-slate-400 hover:bg-slate-100 disabled:opacity-20" title="Turun"><ChevronDown size={15} /></button>
+                {children.length > 0 && (
+                  <button type="button" onClick={() => setExpanded((prev) => ({ ...prev, [item.id]: !isExpanded }))} className="h-9 w-9 rounded-lg text-slate-400 hover:bg-slate-100" title="Tampilkan submenu">
+                    {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                  </button>
+                )}
+                <button type="button" onClick={() => deleteMenu(item)} className="h-9 w-9 rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600" title="Hapus menu"><Trash2 size={15} /></button>
+              </>
             )}
           </div>
         </div>
-      </div>
 
-      {/* Success Notification */}
-      <div className={`fixed bottom-12 left-1/2 -translate-x-1/2 transition-all duration-1000 z-[100] ${showSuccess ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-20 pointer-events-none'}`}>
-        <div className="bg-blue-600 px-10 py-5 rounded-full flex items-center gap-4 shadow-[0_30px_60px_rgba(37,99,235,0.4)] border border-white/20">
-          <div className="bg-white/20 p-2 rounded-full text-white animate-pulse"><CheckCircle2 size={20} /></div>
-          <span className="font-black uppercase text-[11px] tracking-[0.3em]">Cloud System Synced</span>
+        {isExpanded && children.length > 0 && (
+          <div className="border-t border-slate-100 bg-slate-50/70 px-3 pb-3 pt-2.5">
+            <div className="space-y-2 pl-5 sm:pl-12">
+              {children.map((child) => (
+                <div key={child.id} className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5">
+                  <div className="text-slate-300"><Link2 size={14} /></div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-slate-700 truncate">{child.label || 'Tanpa nama'}</p>
+                    <p className="text-[11px] text-slate-400 truncate">{child.path || '—'}</p>
+                  </div>
+                  <button type="button" onClick={() => beginEdit(child)} className="h-8 w-8 rounded-lg text-slate-400 hover:bg-blue-50 hover:text-blue-600" title="Edit submenu"><Pencil size={14} /></button>
+                  <button type="button" onClick={() => deleteMenu(child)} className="h-8 w-8 rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600" title="Hapus submenu"><Trash2 size={14} /></button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div className="h-full overflow-hidden bg-slate-50 text-slate-800">
+      <div className="h-full overflow-y-auto">
+        <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8 lg:py-7">
+          <header className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-start gap-3">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/20"><Menu size={22} /></div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Atur Menu Website</h1>
+                  <span className="hidden rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-emerald-600 sm:inline-flex">Admin</span>
+                </div>
+                <p className="mt-1 text-sm text-slate-500">Kelola struktur navigasi, submenu, URL, dan identitas header secara terpusat.</p>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button type="button" onClick={() => { fetchNavbar(); fetchBrandSettings(); }} disabled={isLoading} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-medium text-slate-600 shadow-sm hover:bg-slate-50 disabled:opacity-50">
+                <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} /> Sinkronkan
+              </button>
+              <button type="button" onClick={() => setShowAddForm(true)} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-blue-600/20 hover:bg-blue-700">
+                <Plus size={17} /> Tambah Menu
+              </button>
+            </div>
+          </header>
+
+          <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className={`${cardClass} flex items-center gap-3 p-4`}><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600"><Menu size={18} /></div><div><p className="text-xs text-slate-400">Menu utama</p><p className="text-xl font-bold text-slate-800">{mainMenus.length}</p></div></div>
+            <div className={`${cardClass} flex items-center gap-3 p-4`}><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-violet-600"><Layers3 size={18} /></div><div><p className="text-xs text-slate-400">Submenu</p><p className="text-xl font-bold text-slate-800">{totalSubmenus}</p></div></div>
+            <div className={`${cardClass} flex items-center gap-3 p-4`}><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600"><ShieldCheck size={18} /></div><div><p className="text-xs text-slate-400">Status konfigurasi</p><p className="text-sm font-bold text-emerald-600">Aktif & tersinkron</p></div></div>
+          </div>
+
+          <div className="mb-5 flex gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-sm w-fit">
+            <button type="button" onClick={() => setActivePanel('menu')} className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${activePanel === 'menu' ? 'bg-slate-900 text-white' : 'text-slate-500 hover:bg-slate-50'}`}>Struktur Menu</button>
+            <button type="button" onClick={() => setActivePanel('branding')} className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${activePanel === 'branding' ? 'bg-slate-900 text-white' : 'text-slate-500 hover:bg-slate-50'}`}>Header & Branding</button>
+          </div>
+
+          {activePanel === 'menu' ? (
+            <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+              <section className={`${cardClass} overflow-hidden`}>
+                <div className="flex flex-col gap-2 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div><h2 className="font-semibold text-slate-900">Struktur Navigasi</h2><p className="text-xs text-slate-400">Tarik menu utama untuk mengubah urutan.</p></div>
+                  {isSaving && <span className="inline-flex items-center gap-2 text-xs font-medium text-blue-600"><Loader2 size={14} className="animate-spin" /> Menyimpan...</span>}
+                </div>
+                <div className="space-y-2 p-4 sm:p-5">
+                  {isLoading && navItems.length === 0 ? (
+                    <div className="flex min-h-48 items-center justify-center text-sm text-slate-400"><Loader2 className="mr-2 animate-spin" size={18} /> Memuat struktur menu...</div>
+                  ) : mainMenus.length === 0 ? (
+                    <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-10 text-center"><Menu className="mx-auto mb-3 text-slate-300" size={32} /><p className="font-semibold text-slate-600">Belum ada menu</p><p className="mt-1 text-xs text-slate-400">Tambahkan menu utama untuk memulai.</p></div>
+                  ) : mainMenus.map(renderMenuItem)}
+                </div>
+              </section>
+
+              <aside className={`${cardClass} h-fit overflow-hidden`}>
+                <div className="border-b border-slate-100 px-5 py-4"><h2 className="font-semibold text-slate-900">Tambah Menu</h2><p className="text-xs text-slate-400">Buat menu utama atau submenu.</p></div>
+                {!showAddForm ? (
+                  <div className="p-5"><button type="button" onClick={() => setShowAddForm(true)} className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 py-8 text-sm font-semibold text-slate-500 hover:border-blue-400 hover:bg-blue-50/40 hover:text-blue-600"><Plus size={18} /> Tambah item navigasi</button></div>
+                ) : (
+                  <form onSubmit={handleAddMenu} className="space-y-4 p-5">
+                    <div><label className="mb-1.5 block text-xs font-semibold text-slate-600">Nama menu</label><input value={label} onChange={(e) => setLabel(e.target.value)} className={inputClass} placeholder="Contoh: Tentang Kami" /></div>
+                    <div><label className="mb-1.5 block text-xs font-semibold text-slate-600">URL / Path</label><div className="relative"><Link2 size={15} className="absolute left-3 top-3 text-slate-400" /><input value={path} onChange={(e) => setPath(e.target.value)} className={`${inputClass} pl-9`} placeholder="/tentang-kami" /></div></div>
+                    <div><label className="mb-1.5 block text-xs font-semibold text-slate-600">Jenis</label><select value={type} onChange={(e) => setType(e.target.value)} className={inputClass}><option value="link">Link</option><option value="external">External</option><option value="dropdown">Dropdown</option></select></div>
+                    <div><label className="mb-1.5 block text-xs font-semibold text-slate-600">Parent menu</label><select value={parentId} onChange={(e) => setParentId(e.target.value)} className={inputClass}><option value="none">Menu Utama</option>{mainMenus.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select></div>
+                    {formError && <div className="flex gap-2 rounded-xl bg-red-50 p-3 text-xs text-red-600"><AlertCircle size={15} className="mt-0.5 shrink-0" />{formError}</div>}
+                    <div className="flex gap-2"><button type="button" onClick={() => { setShowAddForm(false); setFormError(''); }} className="flex-1 rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50">Batal</button><button type="submit" disabled={isSaving} className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-3 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50">{isSaving ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />} Tambahkan</button></div>
+                  </form>
+                )}
+              </aside>
+            </div>
+          ) : (
+            <section className={`${cardClass} max-w-3xl overflow-hidden`}>
+              <div className="border-b border-slate-100 px-5 py-4"><h2 className="font-semibold text-slate-900">Identitas Header</h2><p className="text-xs text-slate-400">Pengaturan ini digunakan oleh navbar publik.</p></div>
+              <div className="grid gap-6 p-5 md:grid-cols-[220px_minmax(0,1fr)] md:p-6">
+                <div>
+                  <button type="button" onClick={() => fileInputRef.current?.click()} className="relative flex h-44 w-full items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 hover:border-blue-400 hover:bg-blue-50/30">
+                    {brandSettings.logo_url ? <img src={brandSettings.logo_url} alt="Logo PB Bilibili 162" className="max-h-28 max-w-[85%] object-contain" /> : <ImageIcon className="text-slate-300" size={36} />}
+                    {isUploading && <span className="absolute inset-0 flex items-center justify-center bg-white/85"><Loader2 className="animate-spin text-blue-600" /></span>}
+                  </button>
+                  <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+                  <p className="mt-2 text-center text-[11px] text-slate-400">Klik gambar untuk mengganti logo</p>
+                </div>
+                <div className="space-y-4">
+                  <div className="grid gap-4 sm:grid-cols-2"><div><label className="mb-1.5 block text-xs font-semibold text-slate-600">Nama utama</label><input value={brandSettings.brand_name_main} onChange={(e) => setBrandSettings({ ...brandSettings, brand_name_main: e.target.value })} className={inputClass} /></div><div><label className="mb-1.5 block text-xs font-semibold text-slate-600">Aksen</label><input value={brandSettings.brand_name_accent} onChange={(e) => setBrandSettings({ ...brandSettings, brand_name_accent: e.target.value })} className={inputClass} /></div></div>
+                  <div><label className="mb-1.5 block text-xs font-semibold text-slate-600">Subteks</label><input value={brandSettings.sub_text} onChange={(e) => setBrandSettings({ ...brandSettings, sub_text: e.target.value })} className={inputClass} /></div>
+                  <div><label className="mb-1.5 block text-xs font-semibold text-slate-600">Bahasa default</label><div className="relative"><Globe2 size={15} className="absolute left-3 top-3 text-slate-400" /><select value={brandSettings.default_lang} onChange={(e) => setBrandSettings({ ...brandSettings, default_lang: e.target.value })} className={`${inputClass} pl-9`}><option value="ID">ID — Indonesia</option><option value="EN">EN — English</option></select></div></div>
+                  <div className="flex justify-end pt-1"><button type="button" onClick={saveBranding} disabled={isSaving} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50">{isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} Simpan Branding</button></div>
+                </div>
+              </div>
+            </section>
+          )}
+
+          <div className="mt-5 flex items-start gap-3 rounded-2xl border border-blue-100 bg-blue-50/70 p-4 text-xs text-blue-800">
+            <Settings2 size={17} className="mt-0.5 shrink-0 text-blue-600" />
+            <div><p className="font-semibold">Standar pengelolaan menu</p><p className="mt-1 leading-relaxed text-blue-700/80">Gunakan label singkat dan konsisten, URL yang jelas, maksimal satu tingkat submenu, serta urutan menu berdasarkan prioritas pengguna. Perubahan tersimpan langsung ke konfigurasi navbar.</p></div>
+          </div>
         </div>
       </div>
     </div>
