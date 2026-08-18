@@ -332,8 +332,6 @@ export default function Navbar({ onNavigate }: NavbarProps) {
   }, [fetchNavSettings, fetchBrandingSettings]);
 
   const getSubMenus = (parentId: string, parentOverride?: any) => {
-    // Use the actual rendered menu item when available. This prevents mobile
-    // submenu failures when Supabase returns a valid menu with a different ID.
     const parentItem = parentOverride || navData.find(i => String(i?.id) === String(parentId));
     const normalizedParentPath = String(parentItem?.path || '').toLowerCase().trim();
     const normalizedParentLabel = String(parentItem?.label || '').toLowerCase().trim();
