@@ -9,56 +9,62 @@ Bagi rekan-rekan atlet, kami berkomitmen menyediakan wadah pelatihan yang terstr
 Mari kita terus bersinergi, meraih prestasi gemilang, dan mempererat tali persaudaraan di dalam maupun di luar lapangan. Terima kasih atas dukungan dan kepercayaan yang Anda berikan kepada PB Bilibili 162.`;
 
 interface SambutanConfig {
-  nama?: string;
-  jabatan?: string;
-  label?: string;
-  judul?: string;
-  deskripsi?: string;
-  foto_url?: string;
+  nama?: string; jabatan?: string; label?: string; judul?: string; deskripsi?: string; foto_url?: string; updated_at?: string;
 }
+
+const bust = (url: string, stamp?: string) => {
+  if (!url) return DEFAULT_IMAGE;
+  try {
+    const u = new URL(url, window.location.origin);
+    u.searchParams.set('v', String(stamp || Date.now()));
+    return u.toString();
+  } catch {
+    return `${url}${url.includes('?') ? '&' : '?'}v=${stamp || Date.now()}`;
+  }
+};
 
 const SambutanKetua = () => {
   const [config, setConfig] = useState<SambutanConfig>({
-    nama: 'H. Wawan',
-    jabatan: 'Ketua Umum PB Bilibili 162',
-    label: 'Sambutan Pimpinan',
-    judul: 'Sambutan Ketua Umum',
-    deskripsi: DEFAULT_TEXT,
-    foto_url: DEFAULT_IMAGE
+    nama: 'H. Wawan', jabatan: 'Ketua Umum PB Bilibili 162', label: 'Sambutan Pimpinan',
+    judul: 'Sambutan Ketua Umum', deskripsi: DEFAULT_TEXT, foto_url: DEFAULT_IMAGE
   });
+  const [imageSrc, setImageSrc] = useState(DEFAULT_IMAGE);
+
+  const load = async () => {
+    try {
+      const raw = await getSiteSetting('sambutan_ketua');
+      let parsed: any = raw;
+      if (typeof parsed === 'string') { try { parsed = JSON.parse(parsed); } catch { parsed = null; } }
+      if (parsed && typeof parsed === 'object') {
+        setConfig(prev => ({ ...prev, ...parsed }));
+        if (parsed.foto_url) setImageSrc(bust(parsed.foto_url, parsed.updated_at));
+      }
+    } catch (error) { console.warn('Gagal memuat sambutan ketua:', error); }
+  };
 
   useEffect(() => {
     let mounted = true;
-    const load = async () => {
+    const initialLoad = async () => {
       try {
         const raw = await getSiteSetting('sambutan_ketua');
         let parsed: any = raw;
-        if (typeof parsed === 'string') {
-          try { parsed = JSON.parse(parsed); } catch { parsed = null; }
-        }
-        if (mounted && parsed && typeof parsed === 'object') {
-          setConfig(prev => ({ ...prev, ...parsed }));
-        }
-      } catch (error) {
-        console.warn('Gagal memuat sambutan ketua:', error);
-      }
+        if (typeof parsed === 'string') { try { parsed = JSON.parse(parsed); } catch { parsed = null; } }
+        if (!mounted || !parsed || typeof parsed !== 'object') return;
+        setConfig(prev => ({ ...prev, ...parsed }));
+        if (parsed.foto_url) setImageSrc(bust(parsed.foto_url, parsed.updated_at));
+      } catch (error) { console.warn('Gagal memuat sambutan ketua:', error); }
     };
-    load();
-
+    initialLoad();
     const handler = (event: any) => {
       if (event.detail?.key !== 'sambutan_ketua') return;
       const value = event.detail?.value;
       if (value && typeof value === 'object') {
         setConfig(prev => ({ ...prev, ...value }));
-      } else {
-        load();
-      }
+        if (value.foto_url) setImageSrc(bust(value.foto_url, value.updated_at));
+      } else load();
     };
     window.addEventListener('site_setting_updated', handler);
-    return () => {
-      mounted = false;
-      window.removeEventListener('site_setting_updated', handler);
-    };
+    return () => { mounted = false; window.removeEventListener('site_setting_updated', handler); };
   }, []);
 
   const paragraphs = (config.deskripsi || DEFAULT_TEXT).split(/\n\s*\n/).filter(Boolean);
@@ -69,37 +75,14 @@ const SambutanKetua = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center">
           <div className="relative max-w-xs sm:max-w-sm md:max-w-full mx-auto w-full">
-            <img
-              src={config.foto_url || DEFAULT_IMAGE}
-              alt={`${config.nama || 'Ketua'} - ${config.jabatan || 'Ketua Umum PB Bilibili 162'}`}
-              className="rounded-2xl shadow-2xl border border-white/10 w-full h-auto object-cover aspect-[4/5]"
-              loading="lazy"
-              decoding="async"
-              onError={(e) => {
-                if (e.currentTarget.src !== DEFAULT_IMAGE) e.currentTarget.src = DEFAULT_IMAGE;
-              }}
-            />
+            <img key={imageSrc} src={imageSrc} alt={`${config.nama || 'Ketua'} - ${config.jabatan || 'Ketua Umum PB Bilibili 162'}`} className="rounded-2xl shadow-2xl border border-white/10 w-full h-auto object-cover aspect-[4/5]" loading="eager" decoding="async" onError={() => setImageSrc(DEFAULT_IMAGE)} />
             <div className="absolute -bottom-4 -left-4 w-24 h-24 bg-blue-600/20 rounded-full blur-xl -z-10" />
           </div>
-
           <div className="space-y-4 sm:space-y-6">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-black uppercase tracking-widest">
-              <span>{config.label || 'Sambutan Pimpinan'}</span>
-            </div>
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight uppercase italic">
-              {config.judul || 'Sambutan Ketua Umum'}
-            </h2>
-            <div className="space-y-4">
-              {paragraphs.map((paragraph, index) => (
-                <p key={index} className="text-sm sm:text-base text-slate-300 leading-relaxed text-justify whitespace-pre-line">
-                  {paragraph}
-                </p>
-              ))}
-            </div>
-            <div className="pt-2 border-t border-white/10">
-              <p className="text-lg font-extrabold text-white">{config.nama || 'H. Wawan'}</p>
-              <p className="text-blue-400 font-semibold text-xs sm:text-sm">{config.jabatan || 'Ketua Umum PB Bilibili 162'}</p>
-            </div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-black uppercase tracking-widest"><span>{config.label || 'Sambutan Pimpinan'}</span></div>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight uppercase italic">{config.judul || 'Sambutan Ketua Umum'}</h2>
+            <div className="space-y-4">{paragraphs.map((paragraph, index) => <p key={index} className="text-sm sm:text-base text-slate-300 leading-relaxed text-justify whitespace-pre-line">{paragraph}</p>)}</div>
+            <div className="pt-2 border-t border-white/10"><p className="text-lg font-extrabold text-white">{config.nama || 'H. Wawan'}</p><p className="text-blue-400 font-semibold text-xs sm:text-sm">{config.jabatan || 'Ketua Umum PB Bilibili 162'}</p></div>
           </div>
         </div>
       </div>
