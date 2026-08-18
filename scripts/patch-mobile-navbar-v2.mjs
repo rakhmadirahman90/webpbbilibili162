@@ -19,7 +19,7 @@ const replacement = `  const getSubMenus = (parentId: string) => {
 
     // Canonical fallback: keeps the mobile dropdown usable even when
     // navbar_settings contains stale/mismatched parent UUIDs.
-    const canonical = {
+    const canonical: Record<string, any[]> = {
       atlet: [
         { id: 'mobile-atlet-semua', label: 'Semua Atlet', path: 'Semua', type: 'link', order_index: 1 },
         { id: 'mobile-atlet-senior', label: 'Atlet Senior', path: 'Senior', type: 'link', order_index: 2 },
