@@ -26,7 +26,7 @@ const replacements = [
   ['p-2.5 border-t border-white/10 bg-[#070d1a] shrink-0 flex flex-col gap-2', 'p-3 border-t border-white/10 bg-[#070d1a] shrink-0 flex flex-col gap-3'],
   ['bg-[#151d30]/60 border border-white/10 hover:border-blue-500/40 p-2 rounded-xl', 'bg-gradient-to-r from-[#111c32] to-[#0d1729] border border-white/10 hover:border-blue-500/40 p-3 rounded-2xl shadow-lg shadow-black/10'],
   ['w-7 h-7 rounded-lg bg-blue-600/20', 'w-9 h-9 rounded-xl bg-blue-600/20'],
-  ['<Radio size={14}', '<Radio size={16'],
+  ['<Radio size={14}', '<Radio size={16}'],
   ['text-[8px] font-black tracking-widest', 'text-[9px] font-black tracking-widest'],
   ['text-[10px] font-bold text-white', 'text-[11px] font-bold text-white'],
   ['gap-5 pt-0.5', 'gap-7 pt-1'],
