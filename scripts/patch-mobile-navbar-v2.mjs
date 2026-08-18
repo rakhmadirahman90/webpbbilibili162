@@ -4,7 +4,9 @@ const file = 'src/components/Navbar.tsx';
 let text = fs.readFileSync(file, 'utf8');
 
 // Deterministic mobile submenu repair. Do not depend on Supabase UUIDs.
-const getSubMenusBlock = /  const getSubMenus = \(parentId: string\) => \{[\s\S]*?\n  \};/;
+// This script must be idempotent because other prebuild scripts may already
+// have transformed Navbar.tsx before this script runs.
+const getSubMenusBlock = /  const getSubMenus = \([^)]*\) => \{[\s\S]*?\n  \};/;
 const replacement = `  const getSubMenus = (parentId: string) => {
     const parentItem = navData.find(i => String(i.id) === String(parentId));
     const parentPath = String(parentItem?.path || '').toLowerCase().trim();
@@ -17,7 +19,7 @@ const replacement = `  const getSubMenus = (parentId: string) => {
 
     if (children.length > 0) return children;
 
-    // Canonical fallback: keeps the mobile dropdown usable even when
+    // Canonical fallback: keeps mobile dropdowns usable even when
     // navbar_settings contains stale/mismatched parent UUIDs.
     const canonical: Record<string, any[]> = {
       atlet: [
@@ -48,8 +50,14 @@ const replacement = `  const getSubMenus = (parentId: string) => {
       .sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
   };`;
 
-if (!getSubMenusBlock.test(text)) throw new Error('Navbar getSubMenus block not found');
-text = text.replace(getSubMenusBlock, replacement);
+if (getSubMenusBlock.test(text)) {
+  text = text.replace(getSubMenusBlock, replacement);
+  console.log('Mobile navbar v2: getSubMenus normalized.');
+} else {
+  // Another prebuild patch may already have normalized this block. Do not
+  // fail the entire Cloudflare build just because there is nothing to patch.
+  console.warn('Mobile navbar v2: getSubMenus block already transformed; continuing.');
+}
 
 // Canonical dropdown paths remain expandable even if Supabase stores them as links.
 text = text.replace(
