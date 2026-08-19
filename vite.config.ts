@@ -1,7 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
   server: {
@@ -13,19 +12,24 @@ export default defineConfig({
     exclude: ['lucide-react'],
   },
   build: {
-    chunkSizeWarningLimit: 1200,
+    chunkSizeWarningLimit: 800,
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (id.includes('node_modules')) {
-            if (id.includes('jspdf') || id.includes('html2canvas') || id.includes('xlsx')) {
-              return 'vendor-docs';
-            }
-            return 'vendor';
-          }
+          if (!id.includes('node_modules')) return;
+          if (id.includes('jspdf') || id.includes('html2canvas') || id.includes('xlsx') || id.includes('file-saver')) return 'vendor-docs';
+          if (id.includes('framer-motion')) return 'vendor-motion';
+          if (id.includes('react-router')) return 'vendor-router';
+          if (id.includes('@supabase')) return 'vendor-supabase';
+          if (id.includes('recharts')) return 'vendor-charts';
+          if (id.includes('swiper') || id.includes('react-easy-crop') || id.includes('react-zoom-pan-pinch')) return 'vendor-media';
+          if (id.includes('@dnd-kit')) return 'vendor-dnd';
+          if (id.includes('firebase') || id.includes('@google/')) return 'vendor-integrations';
+          if (id.includes('sweetalert2') || id.includes('date-fns') || id.includes('uuid')) return 'vendor-utils';
+          if (id.includes('react/') || id.includes('react-dom')) return 'vendor-react';
+          return 'vendor-core';
         },
       },
     },
   },
 });
-
