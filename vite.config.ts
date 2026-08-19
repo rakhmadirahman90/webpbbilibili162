@@ -17,7 +17,7 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (!id.includes('node_modules')) return;
-          if (id.includes('jspdf') || id.includes('html2canvas') || id.includes('xlsx') || id.includes('file-saver')) return 'vendor-docs';
+          if (id.includes('jspdf') || id.includes('html2canvas') || id.includes('xlsx') || id.includes('file-saver')) return;
           if (id.includes('framer-motion')) return 'vendor-motion';
           if (id.includes('react-router')) return 'vendor-router';
           if (id.includes('@supabase')) return 'vendor-supabase';
