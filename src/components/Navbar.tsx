@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, memo } from 'react';
 import { Globe, ChevronDown, Menu, X, MapPin, UserPlus, FileText, Trophy, BrainCircuit, Youtube, Instagram, Facebook, Twitter, Radio, LogIn, LayoutDashboard, LogOut, Timer, HelpCircle, Info, Users, Award, Image as ImageIcon, Building2, Target, Shield, Newspaper, Sparkles } from 'lucide-react';
-import { supabase } from '../supabase';
+import { supabase, warmupRouteData } from '../supabase';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 
@@ -29,6 +29,58 @@ export const DEFAULT_NAV_ITEMS = [
 
 export const ATLET_DEFAULT_SUBMENUS = DEFAULT_NAV_ITEMS.filter(i => i.parent_id === 'atlet');
 export const isTopLevelMenuItem = (item: any) => !!item && (!item.parent_id || item.parent_id === 'none' || item.parent_id === '');
+
+// Start the next page's network request on pointer-down. On mobile this happens
+// before the click event, so the route/chunk/data request is already underway
+// while the drawer is closing. Only lazy public views are imported here.
+const preloadNavigation = (path: string, subPath?: string) => {
+  const p = (path || '').toLowerCase();
+  const s = (subPath || '').toLowerCase();
+  const target = p === 'atlet' || p === 'players' || ['semua', 'senior', 'muda'].includes(s)
+    ? '/atlet'
+    : p === 'gallery' || p === 'galeri'
+      ? '/galeri'
+      : p === 'peringkat' || p === 'ranking' || p === 'rankings'
+        ? '/peringkat'
+        : p === 'register' || p === 'pendaftaran'
+          ? '/register'
+          : p === 'prestasi'
+            ? '/prestasi'
+            : p === 'faq'
+              ? '/faq'
+              : p === 'berita' || p === 'news'
+                ? '/berita'
+                : p === 'dokumen' || p === 'dokumen-penting' || p === 'documents'
+                  ? '/dokumen-penting'
+                  : p === 'struktur' || p === 'struktur-organisasi'
+                    ? '/struktur-organisasi'
+                    : p === 'sejarah' || p === 'about' || p === 'tentang-kami'
+                      ? '/sejarah'
+                      : p === 'visi' || p === 'visi-misi' || p === 'misi'
+                        ? '/visi-misi'
+                        : p === 'fasilitas'
+                          ? '/fasilitas'
+                          : p === 'jadwal' || p.includes('jadwal')
+                            ? '/jadwal'
+                            : p === 'contact' || p === 'kontak'
+                              ? '/contact'
+                              : null;
+
+  if (!target) return;
+  warmupRouteData(target);
+
+  switch (target) {
+    case '/atlet': void import('./Players'); break;
+    case '/galeri': void import('./Gallery'); break;
+    case '/peringkat': void import('./Rankings'); break;
+    case '/register': void import('./RegistrationForm'); break;
+    case '/prestasi': void import('./PublicPrestasi'); break;
+    case '/faq': void import('./PublicFAQ'); break;
+    case '/dokumen-penting': void import('./DokumenPenting'); break;
+    case '/struktur-organisasi': void import('./StrukturOrganisasiPublic'); break;
+    default: break;
+  }
+};
 
 const LiveClock = memo(() => {
   const [time, setTime] = useState(new Date());
@@ -135,6 +187,10 @@ export default function Navbar({ onNavigate }: NavbarProps) {
     onNavigate(p || s);
   };
 
+  const handleNavigationPointerDown = (path: string, subPath?: string) => {
+    preloadNavigation(path, subPath);
+  };
+
   const logout = async () => {
     const result = await Swal.fire({ title: 'Keluar Sistem?', text: 'Anda yakin ingin keluar dari sesi?', icon: 'question', showCancelButton: true, confirmButtonText: 'Ya, Keluar', cancelButtonText: 'Batal', background: '#0f172a', color: '#fff' });
     if (!result.isConfirmed) return;
@@ -148,15 +204,15 @@ export default function Navbar({ onNavigate }: NavbarProps) {
   return <>
     <nav className="fixed top-0 left-0 right-0 h-14 lg:h-16 z-[10000] bg-slate-950/95 backdrop-blur-xl border-b border-white/10 shadow-2xl">
       <div className="max-w-7xl mx-auto h-full px-3 sm:px-4 md:px-8 flex items-center justify-between gap-3">
-        <button type="button" onClick={() => go('home')} className="flex items-center gap-2 shrink-0 min-w-0" aria-label="Beranda PB Bilibili 162">
+        <button type="button" onPointerDown={() => handleNavigationPointerDown('home')} onClick={() => go('home')} className="flex items-center gap-2 shrink-0 min-w-0" aria-label="Beranda PB Bilibili 162">
           <img src={branding.logo_url} alt="PB Bilibili 162" className="w-9 h-9 lg:w-10 lg:h-10 object-contain" loading="eager" decoding="async" onError={e => { e.currentTarget.src = '/logo_pb_bilibili_162.svg'; }} />
           <span className="hidden xs:flex flex-col text-left leading-none"><span className="font-black italic text-xs sm:text-sm lg:text-base uppercase whitespace-nowrap">{branding.brand_name_main} <b className="text-blue-500">{branding.brand_name_accent}</b></span><span className="text-[6px] sm:text-[7px] tracking-[.2em] text-slate-400 uppercase mt-1">Professional Club</span></span>
         </button>
         <LiveClock />
         <div className="hidden lg:flex items-center gap-4 xl:gap-6 ml-auto">
           {topMenus.map(menu => { const subs = getSubMenus(menu.id); const drop = menu.type === 'dropdown' || subs.length > 0; return <div key={menu.id} className="relative" onMouseEnter={() => drop && setOpenMenu(menu.id)} onMouseLeave={() => drop && setOpenMenu(null)}>
-            <button type="button" onClick={() => !drop && go(menu.path)} className="h-16 flex items-center gap-1.5 text-[11px] xl:text-xs font-bold uppercase tracking-wide text-slate-300 hover:text-white transition-colors">{menu.label}{drop && <ChevronDown size={12} className={openMenu === menu.id ? 'rotate-180' : ''} />}</button>
-            {drop && openMenu === menu.id && <div className="absolute top-full left-0 w-64 pt-2"><div className="rounded-xl border border-white/10 bg-slate-900/98 shadow-2xl overflow-hidden">{subs.map(sub => <button key={sub.id} type="button" onClick={() => go(menu.path, sub.path)} className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-slate-300 hover:bg-blue-500/10 hover:text-white">{iconFor(sub.path, sub.label)}<span>{sub.label}</span></button>)}</div></div>}
+            <button type="button" onPointerDown={() => handleNavigationPointerDown(menu.path)} onClick={() => !drop && go(menu.path)} className="h-16 flex items-center gap-1.5 text-[11px] xl:text-xs font-bold uppercase tracking-wide text-slate-300 hover:text-white transition-colors">{menu.label}{drop && <ChevronDown size={12} className={openMenu === menu.id ? 'rotate-180' : ''} />}</button>
+            {drop && openMenu === menu.id && <div className="absolute top-full left-0 w-64 pt-2"><div className="rounded-xl border border-white/10 bg-slate-900/98 shadow-2xl overflow-hidden">{subs.map(sub => <button key={sub.id} type="button" onPointerDown={() => handleNavigationPointerDown(menu.path, sub.path)} onClick={() => go(menu.path, sub.path)} className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-slate-300 hover:bg-blue-500/10 hover:text-white">{iconFor(sub.path, sub.label)}<span>{sub.label}</span></button>)}</div></div>}
           </div>})}
           {session ? <><button type="button" onClick={() => navigate('/admin/dashboard')} className="px-3 py-2 rounded-full bg-emerald-600 text-white text-[10px] font-bold uppercase"><LayoutDashboard size={13} className="inline mr-1" />Dashboard</button><button type="button" onClick={logout} className="p-2 rounded-full bg-red-500/10 text-red-300"><LogOut size={15}/></button></> : <button type="button" onClick={() => navigate('/login')} className="px-3 py-2 rounded-full bg-blue-600 text-white text-[10px] font-bold uppercase"><LogIn size={13} className="inline mr-1"/>Login</button>}
         </div>
@@ -179,21 +235,21 @@ export default function Navbar({ onNavigate }: NavbarProps) {
             const drop = menu.type === 'dropdown' || subs.length > 0;
             const expanded = openMenu === menu.id;
             return <div key={menu.id} className="rounded-xl overflow-hidden">
-              <button type="button" onClick={() => drop ? setOpenMenu(expanded ? null : menu.id) : go(menu.path)} className={`w-full min-h-[48px] px-3 flex items-center justify-between gap-3 rounded-xl text-left text-[14px] leading-5 font-bold uppercase tracking-[.01em] transition-colors ${expanded ? 'bg-blue-600/15 text-blue-300' : 'text-slate-200 hover:bg-white/5 active:bg-white/10'}`}>
+              <button type="button" onPointerDown={() => handleNavigationPointerDown(menu.path)} onClick={() => drop ? setOpenMenu(expanded ? null : menu.id) : go(menu.path)} className={`w-full min-h-[48px] px-3 flex items-center justify-between gap-3 rounded-xl text-left text-[14px] leading-5 font-bold uppercase tracking-[.01em] transition-colors ${expanded ? 'bg-blue-600/15 text-blue-300' : 'text-slate-200 hover:bg-white/5 active:bg-white/10'}`}>
                 <span className="flex items-center gap-3 min-w-0"><span className="w-6 min-w-6 flex justify-center">{iconFor(menu.path, menu.label)}</span><span className="truncate">{menu.label}</span></span>
-                {drop && <ChevronDown size={15} className={`shrink-0 transition-transform ${expanded ? 'rotate-180 text-blue-400' : 'text-slate-500'}`}/>} 
+                {drop && <ChevronDown size={15} className={`shrink-0 transition-transform ${expanded ? 'rotate-180 text-blue-400' : 'text-slate-500'}`}/>}
               </button>
-              {drop && expanded && <div className="ml-4 pl-3 border-l border-blue-500/40 py-0.5 my-0.5">{subs.map(sub => <button key={sub.id} type="button" onClick={() => go(menu.path, sub.path)} className="w-full min-h-[42px] px-2.5 flex items-center gap-2.5 text-left text-[13px] leading-5 text-slate-300 hover:text-white hover:bg-white/5 active:bg-white/10 rounded-lg"><span className="w-5 min-w-5 flex justify-center">{iconFor(sub.path, sub.label)}</span><span className="truncate">{sub.label}</span></button>)}</div>}
+              {drop && expanded && <div className="ml-4 pl-3 border-l border-blue-500/40 py-0.5 my-0.5">{subs.map(sub => <button key={sub.id} type="button" onPointerDown={() => handleNavigationPointerDown(menu.path, sub.path)} onClick={() => go(menu.path, sub.path)} className="w-full min-h-[42px] px-2.5 flex items-center gap-2.5 text-left text-[13px] leading-5 text-slate-300 hover:text-white hover:bg-white/5 active:bg-white/10 rounded-lg"><span className="w-5 min-w-5 flex justify-center">{iconFor(sub.path, sub.label)}</span><span className="truncate">{sub.label}</span></button>)}</div>}
             </div>;
           })}
         </div>
         <div className="border-t border-white/10 pt-2 mt-1 space-y-0.5">
-          {session ? <><button type="button" onClick={() => { setMobileOpen(false); navigate('/admin/dashboard'); }} className="w-full min-h-[46px] px-3 rounded-xl text-emerald-300 hover:bg-emerald-500/10 text-left font-bold"><LayoutDashboard size={16} className="inline mr-3"/>Dashboard</button><button type="button" onClick={logout} className="w-full min-h-[46px] px-3 rounded-xl text-red-300 hover:bg-red-500/10 text-left font-bold"><LogOut size={16} className="inline mr-3"/>Keluar Sesi</button></> : <button type="button" onClick={() => { setMobileOpen(false); navigate('/login'); }} className="w-full min-h-[46px] px-3 rounded-xl bg-blue-500/10 border border-blue-500/15 text-blue-300 text-left font-bold"><LogIn size={16} className="inline mr-3"/>Portal Login</button>}
+          {session ? <><button type="button" onPointerDown={() => handleNavigationPointerDown('/admin/dashboard')} onClick={() => { setMobileOpen(false); navigate('/admin/dashboard'); }} className="w-full min-h-[46px] px-3 rounded-xl text-emerald-300 hover:bg-emerald-500/10 text-left font-bold"><LayoutDashboard size={16} className="inline mr-3"/>Dashboard</button><button type="button" onClick={logout} className="w-full min-h-[46px] px-3 rounded-xl text-red-300 hover:bg-red-500/10 text-left font-bold"><LogOut size={16} className="inline mr-3"/>Keluar Sesi</button></> : <button type="button" onClick={() => { setMobileOpen(false); navigate('/login'); }} className="w-full min-h-[46px] px-3 rounded-xl bg-blue-500/10 border border-blue-500/15 text-blue-300 text-left font-bold"><LogIn size={16} className="inline mr-3"/>Portal Login</button>}
         </div>
       </div>
 
       <div className="shrink-0 px-3 pt-2 pb-[max(12px,env(safe-area-inset-bottom))] border-t border-white/10 bg-slate-950/95">
-        <button type="button" onClick={() => go('register')} className="w-full min-h-[60px] px-3 py-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-left active:scale-[.99] transition-transform"><span className="block text-[8px] uppercase tracking-[.18em] text-blue-400">Pendaftaran</span><span className="block font-bold text-white text-sm mt-0.5 truncate">Gabung Atlet Baru</span></button>
+        <button type="button" onPointerDown={() => handleNavigationPointerDown('register')} onClick={() => go('register')} className="w-full min-h-[60px] px-3 py-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-left active:scale-[.99] transition-transform"><span className="block text-[8px] uppercase tracking-[.18em] text-blue-400">Pendaftaran</span><span className="block font-bold text-white text-sm mt-0.5 truncate">Gabung Atlet Baru</span></button>
         <div className="flex justify-center gap-5 mt-2.5 text-slate-500"><Youtube size={15}/><Instagram size={15}/><Facebook size={15}/><Twitter size={15}/></div>
       </div>
     </aside>
