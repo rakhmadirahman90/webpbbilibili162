@@ -43,14 +43,19 @@ type CachedResponse = {
 
 const memoryQueryCache = new Map<string, CachedResponse>();
 const inFlightQueries = new Map<string, Promise<Response>>();
-const MEMORY_TTL = 20_000;
+// Return cached data immediately; refresh it silently in the background.
+const MEMORY_TTL = 60_000;
 const SESSION_MAX_AGE = 30 * 60_000;
-const SESSION_PREFIX = 'pb_supabase_query_v3:';
+const SESSION_PREFIX = 'pb_supabase_query_v4:';
 
+// Public/read-only datasets used by landing, member and public menu pages.
+// These are safe to cache because all writes invalidate the read cache below.
 const PUBLIC_CACHE_TABLES = new Set([
   'site_settings', 'berita', 'komentar', 'galeri', 'gallery', 'hero_sliders',
   'navbar_menu', 'navbar_settings', 'page_contents', 'documents',
-  'organizational_structure', 'inventaris', 'rankings', 'pertandingan'
+  'organizational_structure', 'inventaris', 'rankings', 'pertandingan',
+  'pendaftaran', 'atlet_stats', 'kas_pb', 'prestasi', 'program', 'faq',
+  'fasilitas', 'jadwal_latihan'
 ]);
 
 function getFetchUrl(input: RequestInfo | URL): string {
@@ -126,7 +131,7 @@ async function networkSupabaseGet(input: RequestInfo | URL, init?: RequestInit, 
 
   const requestPromise = (async () => {
     const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-    const timeout = typeof window !== 'undefined' ? window.setTimeout(() => controller?.abort(), 8_000) : setTimeout(() => controller?.abort(), 8_000);
+    const timeout = typeof window !== 'undefined' ? window.setTimeout(() => controller?.abort(), 5_000) : setTimeout(() => controller?.abort(), 5_000);
     try {
       const response = await nativeFetch(input, { ...init, signal: init?.signal || controller?.signal });
       if (response.ok && memoryKey) {
@@ -170,6 +175,8 @@ const cachedFetch = async (input: RequestInfo | URL, init?: RequestInit): Promis
   const cached = memoryQueryCache.get(memoryKey);
 
   if (cached) {
+    // Never block the UI on revalidation. The component receives the current cached
+    // snapshot immediately while a single in-flight request refreshes it silently.
     if (Date.now() - cached.savedAt > MEMORY_TTL) void networkSupabaseGet(input, init, memoryKey, url).catch(() => {});
     return responseFromCached(cached);
   }
@@ -231,6 +238,27 @@ export function warmupRouteData(pathname?: string) {
   if (path === '/inventaris' || path.startsWith('/admin/inventaris')) {
     warm(supabase.from('inventaris').select('*'));
   }
+
+  // Public information pages were previously only warmed for admin routes.
+  // Warm the same keys before the lazy public component renders.
+  const publicSettingKey =
+    path === '/sejarah' || path === '/tentang-kami' || path === '/about' || path === '/tentang'
+      ? 'history_content'
+      : path === '/visi-misi' || path === '/visi' || path === '/misi'
+        ? 'visi_misi_content'
+        : path === '/fasilitas'
+          ? 'fasilitas_list'
+          : path === '/faq'
+            ? 'faq_list'
+            : path === '/prestasi'
+              ? 'prestasi_list'
+              : path === '/program'
+                ? 'program_list'
+                : null;
+  if (publicSettingKey) {
+    warm(supabase.from('site_settings').select('value, updated_at').eq('key', publicSettingKey).maybeSingle());
+  }
+
   if (path === '/admin/prestasi' || path === '/admin/program' || path === '/admin/faq' || path === '/admin/sejarah' || path === '/admin/visi-misi' || path === '/admin/fasilitas') {
     const key = path.includes('prestasi') ? 'prestasi_list' : path.includes('program') ? 'program_list' : path.includes('faq') ? 'faq_list' : path.includes('sejarah') ? 'history_content' : path.includes('visi-misi') ? 'visi_misi_content' : 'fasilitas_list';
     warm(supabase.from('site_settings').select('value, updated_at').eq('key', key).maybeSingle());
