@@ -2,16 +2,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 /**
- * Safe performance patch.
+ * Production performance patch.
  *
- * Previous versions aggressively converted several landing/framework imports
- * to lazy chunks and prefetched many routes immediately after first paint.
- * That reduced bundle size but could leave mobile clients with a blank shell
- * when a secondary chunk failed or the network was saturated.
- *
- * The public shell is intentionally kept synchronous here. Route-level views
- * that are already lazy in App.tsx remain lazy; this script only normalizes
- * the known risky transformations so every production build is deterministic.
+ * Keep the public shell deterministic while warming route chunks and the most
+ * frequently visited database-backed settings in the background. The warmup
+ * never blocks first paint or navigation.
  */
 const appPath = path.resolve('src/App.tsx');
 let app = fs.readFileSync(appPath, 'utf8');
@@ -31,22 +26,45 @@ const lazyToEager = [
 ];
 for (const [from, to] of lazyToEager) app = app.replace(from, to);
 
-// Keep the public shell transition simple and resilient.
+// Keep public shell transitions short and predictable on mobile.
 app = app.replace('<AnimatePresence mode="sync">', '<AnimatePresence mode="wait">');
-app = app.replace('transition={{ duration: 0.14, ease: "easeOut" }}', 'transition={{ duration: 0.3 }}');
+app = app.replace('transition={{ duration: 0.14, ease: "easeOut" }}', 'transition={{ duration: 0.22, ease: "easeOut" }}');
 
-// Undo wrappers introduced by the risky patch while tolerating whitespace.
+// Undo wrappers introduced by older performance patches while tolerating whitespace.
 app = app.replace('<Suspense fallback={null}><PresenceManager session={session} /></Suspense>', '<PresenceManager session={session} />');
 app = app.replace('<Suspense fallback={null}><KasRealtimeNotifier /></Suspense>', '<KasRealtimeNotifier />');
 app = app.replace('<Suspense fallback={null}><ScheduleWidget /></Suspense>', '<ScheduleWidget />');
 
-// Remove the generated warmup import/useEffect if the previous build patch
-// already wrote them into App.tsx.
+// Remove obsolete warmup implementation if a previous patch inserted it.
 app = app.replace("import { warmPublicRoutes } from './utils/performancePrefetch';\n", '');
 app = app.replace(/\n\s*useEffect\(\(\) => \{\n\s*warmPublicRoutes\(\);\n\s*\}, \[\]\);\n/g, '\n');
 
-// Keep public rendering non-blocking. Authentication is background work.
+// Add the single shared warmup implementation once.
+if (!app.includes("from './utils/routePreload'")) {
+  app = app.replace(
+    "import { getSiteSetting, parsePopupList } from './utils/siteSettingsHelper';",
+    "import { getSiteSetting, parsePopupList } from './utils/siteSettingsHelper';\nimport { preloadPublicExperience, preloadAdminExperience } from './utils/routePreload';"
+  );
+}
+
+// Start public route/data warmup immediately after App mounts. requestIdleCallback
+// keeps it from competing with the first meaningful paint.
+if (!app.includes('preloadPublicExperience(getSiteSetting);')) {
+  const marker = "export default function App() {\n  const [session, setSession] = useState<any>(null);";
+  const replacement = "export default function App() {\n  const [session, setSession] = useState<any>(null);\n\n  useEffect(() => {\n    preloadPublicExperience(getSiteSetting);\n  }, []);";
+  app = app.replace(marker, replacement);
+}
+
+// Once an authenticated session exists, warm admin route chunks too. This is
+// deliberately background-only so login/dashboard rendering is not blocked.
+if (!app.includes('preloadAdminExperience(getSiteSetting);')) {
+  const marker = "  useEffect(() => {\n    // Safety fallback: Force loading = false after 2.5s if Supabase/network is slow";
+  const replacement = "  useEffect(() => {\n    if (session) preloadAdminExperience(getSiteSetting);\n  }, [session]);\n\n  useEffect(() => {\n    // Safety fallback: Force loading = false after 2.5s if Supabase/network is slow";
+  app = app.replace(marker, replacement);
+}
+
+// Never block the public shell on auth/session I/O.
 app = app.replace('const [loading, setLoading] = useState(true);', 'const [loading, setLoading] = useState(false);');
 
 fs.writeFileSync(appPath, app, 'utf8');
-console.log('[performance] safe public shell enabled; risky eager-to-lazy patch and immediate route warmup disabled');
+console.log('[performance] public/admin route chunks and site settings are warmed in the background; first paint remains non-blocking');
