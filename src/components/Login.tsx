@@ -1,53 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
-import { 
-  Loader2, ShieldCheck, AlertCircle, KeyRound, Eye, EyeOff, Delete, Home, 
-  User, Lock, Flame
-} from 'lucide-react';
+import { AlertCircle, ArrowLeft, CheckCircle2, Delete, Eye, EyeOff, Home, KeyRound, Loader2, ShieldCheck, Sparkles, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 
-interface PinUserData {
-  pin?: string;
-  hasChosenPin: boolean;
-  method: 'pin';
-}
-
+interface PinUserData { pin?: string; hasChosenPin: boolean; method: 'pin'; }
 interface MemberRecord {
-  id: string;
-  nama: string;
-  whatsapp?: string;
-  kategori?: string;
-  kategori_atlet?: string;
-  jenis_kelamin?: string;
-  domisili?: string;
-  pengalaman?: string;
-  foto_url?: string;
-  email?: string;
-  created_at?: string;
+  id: string; nama: string; whatsapp?: string; kategori?: string; kategori_atlet?: string;
+  jenis_kelamin?: string; domisili?: string; pengalaman?: string; foto_url?: string;
+  email?: string; tanggal_lahir?: string; sektor_bermain?: string; ukuran_jersey?: string; created_at?: string;
 }
 
-const getStoredPinData = (userKey: string): PinUserData | null => {
-  try {
-    const raw = localStorage.getItem('pb162_user_pins');
-    if (!raw) return null;
-    const dict = JSON.parse(raw);
-    return dict[userKey.toLowerCase().trim()] || null;
-  } catch (e) {
-    return null;
-  }
+const getStoredPinData = (key: string): PinUserData | null => {
+  try { const raw = localStorage.getItem('pb162_user_pins'); if (!raw) return null; return JSON.parse(raw)[key.toLowerCase().trim()] || null; }
+  catch { return null; }
 };
-
-const saveStoredPinData = (userKey: string, data: PinUserData) => {
-  try {
-    const raw = localStorage.getItem('pb162_user_pins');
-    const dict = raw ? JSON.parse(raw) : {};
-    dict[userKey.toLowerCase().trim()] = data;
-    localStorage.setItem('pb162_user_pins', JSON.stringify(dict));
-  } catch (e) {
-    console.error('Error saving PIN data:', e);
-  }
+const saveStoredPinData = (key: string, data: PinUserData) => {
+  try { const raw = localStorage.getItem('pb162_user_pins'); const dict = raw ? JSON.parse(raw) : {}; dict[key.toLowerCase().trim()] = data; localStorage.setItem('pb162_user_pins', JSON.stringify(dict)); }
+  catch (e) { console.error('Error saving PIN data:', e); }
 };
+const parseLogo = (value: any) => { try { const v = typeof value === 'string' ? JSON.parse(value) : value; return v?.logo_url || ''; } catch { return ''; } };
 
 export default function Login() {
   const navigate = useNavigate();
@@ -56,103 +28,36 @@ export default function Login() {
   const [showPin, setShowPin] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [logoUrl, setLogoUrl] = useState('/logo_pb_bilibili_162.svg');
 
-  // Database Member List (fetched securely for backend verification)
-  const [dbMembers, setDbMembers] = useState<MemberRecord[]>([]);
-  const [logoUrl, setLogoUrl] = useState<string>('/logo_pb_bilibili_162.svg');
-
-  // Fetch Database Members & Branding Logo on Mount
+  // Do not download the whole member table on page load. Only branding is loaded here;
+  // member data is queried narrowly when the user submits the login form.
   useEffect(() => {
-    fetchMembersFromDb();
-    fetchBrandingLogo();
-
-    const channel = supabase
-      .channel('login_branding_realtime_sync')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, (payload: any) => {
-        if (payload.new && payload.new.key === 'navbar_branding') {
-          const val = typeof payload.new.value === 'string' ? JSON.parse(payload.new.value) : payload.new.value;
-          if (val && val.logo_url) setLogoUrl(val.logo_url);
-        } else {
-          fetchBrandingLogo();
-        }
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'pendaftaran' }, () => {
-        fetchMembersFromDb();
-      })
-      .subscribe();
-
-    const handleCustomEvent = (e: any) => {
-      if (e.detail?.key === 'navbar_branding' && e.detail.value?.logo_url) {
-        setLogoUrl(e.detail.value.logo_url);
-      }
+    let mounted = true;
+    const loadBranding = async () => {
+      try {
+        const { data } = await supabase.from('site_settings').select('value').eq('key', 'navbar_branding').maybeSingle();
+        const url = parseLogo(data?.value);
+        if (mounted && url) setLogoUrl(url);
+      } catch (e) { console.warn('Branding fallback:', e); }
     };
-
-    window.addEventListener('site_setting_updated', handleCustomEvent);
-
-    return () => {
-      supabase.removeChannel(channel);
-      window.removeEventListener('site_setting_updated', handleCustomEvent);
-    };
+    loadBranding();
+    const onSetting = (e: any) => { const url = parseLogo(e.detail?.value); if (e.detail?.key === 'navbar_branding' && url) setLogoUrl(url); };
+    window.addEventListener('site_setting_updated', onSetting);
+    return () => { mounted = false; window.removeEventListener('site_setting_updated', onSetting); };
   }, []);
 
-  const fetchBrandingLogo = async () => {
-    try {
-      const { data } = await supabase
-        .from('site_settings')
-        .select('value')
-        .eq('key', 'navbar_branding')
-        .maybeSingle();
-      if (data && data.value) {
-        const val = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
-        if (val.logo_url) setLogoUrl(val.logo_url);
-      }
-    } catch (e) {
-      console.error('Failed to load branding logo:', e);
-    }
-  };
-
-  const fetchMembersFromDb = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('pendaftaran')
-        .select('*');
-
-      if (!error && data) {
-        setDbMembers(data);
-      }
-    } catch (err) {
-      console.error('Failed to load database members:', err);
-    }
-  };
-
-  // Physical Keyboard Listener
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Enter') {
-        if (usernameInput.trim()) {
-          verifyAndLogin();
-        }
-      }
-    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Enter' && usernameInput.trim() && !loading) { e.preventDefault(); verifyAndLogin(); } };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [usernameInput, pinInput, loading]);
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [usernameInput, pinInput]);
-
-  const handleNumpadClick = (num: string) => {
-    setErrorMsg(null);
-    setPinInput(prev => prev + num);
-  };
-
-  const handleNumpadDelete = () => {
-    setErrorMsg(null);
-    setPinInput(prev => prev.slice(0, -1));
-  };
-
-  const handleNumpadClear = () => {
-    setErrorMsg(null);
-    setPinInput('');
-  };
+  const setCleanPin = (value: string) => { setErrorMsg(null); setSuccessMsg(null); setPinInput(value.replace(/\D/g, '').slice(0, 12)); };
+  const handleNumpadClick = (n: string) => setCleanPin(pinInput + n);
+  const handleNumpadDelete = () => setCleanPin(pinInput.slice(0, -1));
+  const handleNumpadClear = () => setCleanPin('');
 
   const finalizeSession = (sessionData: any) => {
     localStorage.setItem('local_admin_session', JSON.stringify(sessionData));
@@ -160,379 +65,131 @@ export default function Login() {
     window.dispatchEvent(new Event('local-session-changed'));
   };
 
-  const createMemberSession = (member: MemberRecord) => {
-    const cleanName = (member.nama || 'Anggota').toLowerCase().replace(/[^a-z0-9]/g, '');
-    return {
-      user: {
-        id: member.id || ('member-' + Date.now()),
-        email: member.email || `${cleanName}@pbbilibili162.com`,
-        user_metadata: {
-          role: 'anggota',
-          id: member.id,
-          full_name: member.nama,
-          nama: member.nama,
-          whatsapp: member.whatsapp || '',
-          kategori: member.kategori || member.kategori_atlet || 'SENIOR',
-          kategori_atlet: member.kategori_atlet || member.kategori || 'SENIOR',
-          jenis_kelamin: member.jenis_kelamin || 'Putra',
-          domisili: member.domisili || 'PAREPARE',
-          pengalaman: member.pengalaman || '',
-          foto_url: member.foto_url || '',
-          tanggal_lahir: member.tanggal_lahir || '',
-          sektor_bermain: member.sektor_bermain || 'Tunggal & Ganda',
-          ukuran_jersey: member.ukuran_jersey || 'L',
-          created_at: member.created_at || new Date().toISOString()
-        }
-      }
-    };
+  const createMemberSession = (m: MemberRecord) => {
+    const cleanName = (m.nama || 'Anggota').toLowerCase().replace(/[^a-z0-9]/g, '');
+    return { user: { id: m.id || `member-${Date.now()}`, email: m.email || `${cleanName}@pbbilibili162.com`, user_metadata: {
+      role: 'anggota', id: m.id, full_name: m.nama, nama: m.nama, whatsapp: m.whatsapp || '',
+      kategori: m.kategori || m.kategori_atlet || 'SENIOR', kategori_atlet: m.kategori_atlet || m.kategori || 'SENIOR',
+      jenis_kelamin: m.jenis_kelamin || 'Putra', domisili: m.domisili || 'PAREPARE', pengalaman: m.pengalaman || '',
+      foto_url: m.foto_url || '', tanggal_lahir: m.tanggal_lahir || '', sektor_bermain: m.sektor_bermain || 'Tunggal & Ganda',
+      ukuran_jersey: m.ukuran_jersey || 'L', created_at: m.created_at || new Date().toISOString()
+    } } };
+  };
+
+  const findMember = async (raw: string): Promise<MemberRecord | null> => {
+    const name = raw.trim().toLowerCase();
+    const digits = raw.replace(/[^0-9]/g, '');
+    const id = await supabase.from('pendaftaran').select('*').eq('id', raw.trim()).maybeSingle();
+    if (id.data) return id.data as MemberRecord;
+    const byName = await supabase.from('pendaftaran').select('*').ilike('nama', name).limit(1);
+    if (byName.data?.[0]) return byName.data[0] as MemberRecord;
+    const byEmail = await supabase.from('pendaftaran').select('*').ilike('email', name).limit(1);
+    if (byEmail.data?.[0]) return byEmail.data[0] as MemberRecord;
+    if (digits.length >= 6) {
+      const byWa = await supabase.from('pendaftaran').select('*').ilike('whatsapp', `%${digits.slice(-8)}%`).limit(10);
+      const match = byWa.data?.find((m: any) => { const d = String(m.whatsapp || '').replace(/[^0-9]/g, ''); return d === digits || d.endsWith(digits); });
+      if (match) return match as MemberRecord;
+    }
+    if (name.length >= 3) {
+      const partial = await supabase.from('pendaftaran').select('*').ilike('nama', `%${name}%`).limit(10);
+      const match = partial.data?.find((m: any) => { const n = String(m.nama || '').trim().toLowerCase(); return n.includes(name) || name.includes(n); });
+      if (match) return match as MemberRecord;
+    }
+    return null;
   };
 
   const verifyAndLogin = async () => {
-    const rawUsername = usernameInput.trim();
-    const cleanPin = pinInput.trim();
-    const lowerUsername = rawUsername.toLowerCase();
-    const lowerPin = cleanPin.toLowerCase();
-
-    if (!rawUsername) {
-      setErrorMsg('Masukkan Username / Nama Anggota terdaftar terlebih dahulu.');
-      return;
-    }
-
-    setLoading(true);
-    setErrorMsg(null);
-
-    // 1. Check Master Admin Login STRICTLY
-    const isAdminUsername = 
-      lowerUsername === 'admin' ||
-      lowerUsername === 'administrator' ||
-      lowerUsername === 'admin162' ||
-      lowerUsername === 'admin@pbbilibili162.com';
-
-    if (isAdminUsername) {
-      const adminPinData = getStoredPinData('admin');
-      const isAdminPinValid =
-        cleanPin === '160390' ||
-        lowerPin === 'admin162' || 
-        cleanPin === '162162' || 
-        cleanPin === '162000' || 
-        (adminPinData && adminPinData.pin === cleanPin);
-
-      if (isAdminPinValid) {
-        saveStoredPinData('admin', { pin: cleanPin || '160390', hasChosenPin: true, method: 'pin' });
-        const session = {
-          user: {
-            id: 'admin-pin-' + Date.now(),
-            email: 'admin@pbbilibili162.com',
-            user_metadata: {
-              role: 'admin',
-              full_name: 'Administrator PB Bilibili 162',
-            }
-          }
-        };
-        finalizeSession(session);
-        setLoading(false);
-        return;
-      } else {
-        setErrorMsg('PIN / Passcode Administrator salah. Silakan periksa PIN Anda.');
-        setLoading(false);
-        return;
+    if (loading) return;
+    const raw = usernameInput.trim(); const pin = pinInput.trim(); const user = raw.toLowerCase(); const lowerPin = pin.toLowerCase();
+    if (!raw) { setErrorMsg('Masukkan username atau nama anggota terlebih dahulu.'); return; }
+    setLoading(true); setErrorMsg(null); setSuccessMsg(null);
+    try {
+      const adminNames = ['admin', 'administrator', 'admin162', 'admin@pbbilibili162.com'];
+      if (adminNames.includes(user)) {
+        const stored = getStoredPinData('admin');
+        const valid = pin === '160390' || lowerPin === 'admin162' || pin === '162162' || pin === '162000' || !!(stored?.pin && stored.pin === pin);
+        if (!valid) { setErrorMsg('PIN / Passcode Administrator salah. Silakan periksa kembali.'); return; }
+        saveStoredPinData('admin', { pin: pin || '160390', hasChosenPin: true, method: 'pin' });
+        finalizeSession({ user: { id: `admin-pin-${Date.now()}`, email: 'admin@pbbilibili162.com', user_metadata: { role: 'admin', full_name: 'Administrator PB Bilibili 162' } } });
+        setSuccessMsg('Akses administrator berhasil. Membuka portal…'); return;
       }
-    }
-
-    // 2. Identify Target Member from database (pendaftaran table)
-    let memberList = dbMembers;
-    if (memberList.length === 0) {
-      try {
-        const { data } = await supabase.from('pendaftaran').select('*');
-        if (data && data.length > 0) {
-          memberList = data;
-          setDbMembers(data);
-        }
-      } catch (e) {
-        console.error('Failed to load members from Supabase:', e);
-      }
-    }
-
-    const cleanUserWa = rawUsername.replace(/[^0-9]/g, '');
-    let targetMember: MemberRecord | null = null;
-
-    // Search Priority Cascade:
-    // Priority 1: Exact ID Match
-    targetMember = memberList.find((m) => m.id && m.id === rawUsername) || null;
-
-    // Priority 2: Exact Name Match
-    if (!targetMember) {
-      targetMember = memberList.find((m) => (m.nama || '').trim().toLowerCase() === lowerUsername) || null;
-    }
-
-    // Priority 3: Exact Email Match
-    if (!targetMember) {
-      targetMember = memberList.find((m) => m.email && m.email.toLowerCase() === lowerUsername) || null;
-    }
-
-    // Priority 4: WhatsApp Match (ONLY if cleanUserWa length >= 6)
-    if (!targetMember && cleanUserWa.length >= 6) {
-      targetMember = memberList.find((m) => {
-        const mWa = (m.whatsapp || '').replace(/[^0-9]/g, '');
-        return mWa && mWa.length >= 6 && (mWa === cleanUserWa || mWa.endsWith(cleanUserWa));
-      }) || null;
-    }
-
-    // Priority 5: Partial Name Match (ONLY if lowerUsername length >= 3)
-    if (!targetMember && lowerUsername.length >= 3) {
-      targetMember = memberList.find((m) => {
-        const mName = (m.nama || '').trim().toLowerCase();
-        return mName && (mName.includes(lowerUsername) || lowerUsername.includes(mName));
-      }) || null;
-    }
-
-    // Direct database query fallback if still not found in local list
-    if (!targetMember) {
-      try {
-        const { data: queryData } = await supabase
-          .from('pendaftaran')
-          .select('*')
-          .ilike('nama', `%${rawUsername}%`);
-
-        if (queryData && queryData.length > 0) {
-          const exact = queryData.find((m: any) => (m.nama || '').trim().toLowerCase() === lowerUsername);
-          if (exact) {
-            targetMember = exact;
-          } else {
-            const partial = queryData.find((m: any) => {
-              const nameLower = (m.nama || '').trim().toLowerCase();
-              return nameLower.includes(lowerUsername) || lowerUsername.includes(nameLower);
-            });
-            if (partial) targetMember = partial;
-          }
-        }
-      } catch (err) {
-        console.error('Database query error:', err);
-      }
-    }
-
-    // If target member is NOT found anywhere in database:
-    if (!targetMember) {
-      setErrorMsg(`Nama / Username "${rawUsername}" tidak terdaftar di database PB Bilibili 162. Silakan melakukan pendaftaran atlet terlebih dahulu.`);
-      setLoading(false);
-      return;
-    }
-
-    // 3. Verify PIN / Passcode for the identified member
-    if (!cleanPin) {
-      setErrorMsg(`Masukkan PIN / Passcode 6-digit untuk akun "${targetMember.nama}".`);
-      setLoading(false);
-      return;
-    }
-
-    const userKey = targetMember.nama.toLowerCase().trim();
-    const savedPin = getStoredPinData(userKey);
-    const cleanWa = (targetMember.whatsapp || '').replace(/[^0-9]/g, '');
-
-    const isPinValid = 
-      (savedPin && savedPin.pin === cleanPin) ||
-      cleanPin === '123456' || 
-      cleanPin === '162162' || 
-      lowerPin === 'anggota162' ||
-      (cleanWa && cleanWa.length >= 4 && (cleanWa === cleanPin || cleanWa.endsWith(cleanPin)));
-
-    if (isPinValid) {
-      saveStoredPinData(userKey, { pin: cleanPin, hasChosenPin: true, method: 'pin' });
-      const session = createMemberSession(targetMember);
-      finalizeSession(session);
-      setLoading(false);
-      return;
-    } else {
-      setErrorMsg(`PIN / Passcode salah untuk atlet "${targetMember.nama}". Silakan periksa kembali.`);
-      setLoading(false);
-      return;
-    }
+      const member = await findMember(raw);
+      if (!member) { setErrorMsg(`Nama / Username “${raw}” tidak terdaftar di database PB Bilibili 162.`); return; }
+      if (!pin) { setErrorMsg(`Masukkan PIN / Passcode untuk akun “${member.nama}”.`); return; }
+      const stored = getStoredPinData(member.nama); const wa = String(member.whatsapp || '').replace(/[^0-9]/g, '');
+      const valid = !!(stored?.pin && stored.pin === pin) || pin === '123456' || pin === '162162' || lowerPin === 'anggota162' || !!(wa && wa.length >= 4 && (wa === pin || wa.endsWith(pin)));
+      if (!valid) { setErrorMsg(`PIN / Passcode salah untuk anggota “${member.nama}”.`); return; }
+      saveStoredPinData(member.nama, { pin, hasChosenPin: true, method: 'pin' });
+      finalizeSession(createMemberSession(member));
+      setSuccessMsg(`Selamat datang, ${member.nama}. Membuka portal…`);
+    } catch (e) { console.error('Login error:', e); setErrorMsg('Koneksi ke server sedang bermasalah. Silakan coba lagi.'); }
+    finally { setLoading(false); }
   };
 
-  const handleFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    verifyAndLogin();
-  };
+  const input = 'w-full h-14 rounded-2xl bg-[#070d1a]/90 border border-white/[0.09] text-white outline-none transition-all duration-200 focus:border-blue-500/70 focus:ring-4 focus:ring-blue-500/10 focus:bg-[#0a1326]';
+  const key = 'h-11 sm:h-12 rounded-2xl bg-white/[0.035] hover:bg-blue-600/15 active:bg-blue-600/30 border border-white/[0.08] text-white font-extrabold text-sm transition-all duration-150 active:scale-[0.97]';
 
   return (
-    <div className="h-screen h-dvh w-full bg-[#070d1a] flex flex-col items-center justify-center p-3 sm:p-4 md:p-6 relative overflow-hidden font-sans select-none">
-      {/* Tombol Navigasi ke Beranda Utama */}
-      <div className="absolute top-3 left-3 sm:top-5 sm:left-5 z-20">
-        <button
-          onClick={() => navigate('/')}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-[#0b1224]/80 hover:bg-blue-600/20 text-slate-300 hover:text-white border border-white/10 hover:border-blue-500/40 text-[11px] sm:text-xs font-bold tracking-wide transition-all shadow-lg backdrop-blur-xl cursor-pointer active:scale-95 group"
-          title="Kembali ke Beranda Utama"
-        >
-          <Home size={14} className="text-blue-400 group-hover:scale-110 transition-transform" />
-          <span className="hidden xs:inline">Beranda Utama</span>
-          <span className="xs:hidden">Beranda</span>
-        </button>
+    <div className="min-h-screen min-h-dvh w-full bg-[#050a14] text-white flex items-center justify-center p-3 sm:p-5 relative overflow-hidden font-sans select-none">
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute -top-32 -left-24 w-[420px] h-[420px] rounded-full bg-blue-600/14 blur-[110px]" />
+        <div className="absolute -bottom-44 -right-28 w-[500px] h-[500px] rounded-full bg-cyan-400/8 blur-[120px]" />
+        <div className="absolute top-[35%] right-[25%] w-[240px] h-[240px] rounded-full bg-indigo-500/8 blur-[100px]" />
+        <div className="absolute inset-0 opacity-[0.025]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,.7) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.7) 1px, transparent 1px)', backgroundSize: '34px 34px' }} />
       </div>
 
-      {/* Decorative Glow Blobs */}
-      <div className="absolute top-1/4 left-1/4 w-[280px] sm:w-[350px] h-[280px] sm:h-[350px] bg-blue-600/15 blur-[90px] rounded-full pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-[300px] sm:w-[400px] h-[300px] sm:h-[400px] bg-emerald-500/10 blur-[100px] rounded-full pointer-events-none" />
+      <button type="button" onClick={() => navigate('/')} className="fixed top-4 left-4 sm:top-6 sm:left-6 z-30 inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-[#0b1224]/80 px-3.5 py-2.5 text-xs font-bold text-slate-300 shadow-xl backdrop-blur-xl transition-all hover:border-blue-400/30 hover:bg-blue-500/10 hover:text-white active:scale-95" aria-label="Kembali ke beranda">
+        <ArrowLeft size={15} className="text-blue-400" /><Home size={14} className="text-blue-300" /><span>Beranda</span>
+      </button>
 
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.96 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.4, ease: "easeOut" }}
-        className="w-full max-w-[360px] sm:max-w-[420px] bg-[#0b1224]/90 backdrop-blur-2xl p-4 sm:p-6 md:p-7 rounded-3xl border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.6)] relative z-10 my-auto max-h-[calc(100vh-1.5rem)] flex flex-col justify-between overflow-y-auto hide-scrollbar"
-      >
-        {/* Header Section */}
-        <div className="text-center mb-3 sm:mb-4 shrink-0">
-          <div className="relative inline-flex mb-2 sm:mb-2.5">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border-2 border-blue-500/30 p-1.5 bg-slate-900/50 shadow-[0_0_25px_rgba(59,130,246,0.25)] flex items-center justify-center">
-              <img 
-                src={logoUrl || "/logo_pb_bilibili_162.svg"} 
-                alt="Logo PB Bilibili 162" 
-                className="w-full h-full object-contain filter drop-shadow"
-                referrerPolicy="no-referrer"
-                onError={(e) => {
-                  e.currentTarget.src = "/logo_pb_bilibili_162.svg";
-                }}
-              />
-            </div>
-            <div className="absolute -bottom-0.5 -right-0.5 bg-blue-600 text-white p-1 rounded-full border-2 border-[#0b1224] shadow-md">
-              <ShieldCheck size={12} className="text-white" />
-            </div>
+      <motion.main initial={{ opacity: 0, y: 14, scale: .985 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: .35, ease: 'easeOut' }} className="relative z-10 w-full max-w-[440px]">
+        <div className="rounded-[30px] border border-white/[0.10] bg-[#0a1121]/95 backdrop-blur-2xl shadow-[0_30px_90px_rgba(0,0,0,.55)] overflow-hidden">
+          <div className="h-1 bg-gradient-to-r from-blue-500 via-cyan-400 to-blue-600" />
+          <div className="p-5 sm:p-7">
+            <header className="text-center">
+              <div className="relative inline-flex mb-4">
+                <div className="absolute inset-[-9px] rounded-[27px] bg-blue-500/10 blur-xl" />
+                <div className="relative h-[82px] w-[82px] sm:h-[92px] sm:w-[92px] rounded-[27px] border border-blue-400/30 bg-[#071022] p-2.5 shadow-[0_0_35px_rgba(37,99,235,.22)]">
+                  <img src={logoUrl || '/logo_pb_bilibili_162.svg'} alt="Logo PB Bilibili 162" className="h-full w-full object-contain" referrerPolicy="no-referrer" onError={(e) => { e.currentTarget.src = '/logo_pb_bilibili_162.svg'; }} />
+                </div>
+                <span className="absolute -right-2 -bottom-2 flex h-8 w-8 items-center justify-center rounded-xl border-2 border-[#0a1121] bg-blue-600 shadow-lg"><ShieldCheck size={15} /></span>
+              </div>
+              <div className="flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.24em] text-blue-300"><Sparkles size={12} /> Secure Member Access</div>
+              <h1 className="mt-2 text-[26px] sm:text-[30px] font-black tracking-tight text-white">Portal System</h1>
+              <p className="mt-1 text-[11px] font-bold uppercase tracking-[0.28em] text-slate-500">PB Bilibili 162</p>
+            </header>
+
+            <AnimatePresence mode="wait">
+              {errorMsg && <motion.div key="error" initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-5 rounded-2xl border border-red-400/20 bg-red-500/[0.07] p-3.5 flex gap-3"><AlertCircle size={17} className="mt-0.5 shrink-0 text-red-400" /><div><p className="text-xs font-extrabold text-red-300">Akses Ditolak</p><p className="mt-0.5 text-[11px] leading-relaxed text-red-200/70">{errorMsg}</p></div></motion.div>}
+              {successMsg && <motion.div key="success" initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-5 rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.07] p-3.5 flex gap-3"><CheckCircle2 size={17} className="mt-0.5 shrink-0 text-emerald-400" /><p className="text-[11px] leading-relaxed text-emerald-200/80">{successMsg}</p></motion.div>}
+            </AnimatePresence>
+
+            <form onSubmit={(e) => { e.preventDefault(); verifyAndLogin(); }} className="mt-5 space-y-4">
+              <div>
+                <label className="mb-2 ml-1 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.13em] text-slate-400"><User size={14} className="text-blue-400" /> Username / Nama Anggota</label>
+                <div className="relative"><input type="text" required autoComplete="username" value={usernameInput} onChange={(e) => { setErrorMsg(null); setSuccessMsg(null); setUsernameInput(e.target.value); }} className={`${input} pl-4 pr-11 text-sm font-semibold placeholder:text-slate-600`} placeholder="Nama anggota / WhatsApp / admin" /><User size={17} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-600" /></div>
+              </div>
+              <div>
+                <div className="mb-2 flex items-center justify-between px-1"><label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.13em] text-slate-400"><KeyRound size={14} className="text-blue-400" /> PIN / Passcode</label><span className="text-[9px] font-mono text-slate-600">6 digit</span></div>
+                <div className="relative"><input type={showPin ? 'text' : 'password'} inputMode="numeric" autoComplete="current-password" value={pinInput} onChange={(e) => setCleanPin(e.target.value)} className={`${input} pl-4 pr-12 text-center font-mono text-lg tracking-[0.32em] placeholder:text-slate-700 placeholder:tracking-normal placeholder:text-xs`} placeholder="Masukkan PIN" /><button type="button" onClick={() => setShowPin(v => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl p-2 text-slate-500 transition hover:bg-white/5 hover:text-white" aria-label={showPin ? 'Sembunyikan PIN' : 'Tampilkan PIN'}>{showPin ? <EyeOff size={17} /> : <Eye size={17} />}</button></div>
+              </div>
+              <div className="rounded-3xl border border-white/[0.07] bg-black/10 p-3">
+                <div className="mb-2 flex items-center justify-between px-1"><span className="text-[9px] font-black uppercase tracking-[0.16em] text-slate-600">Secure keypad</span><button type="button" onClick={handleNumpadClear} className="text-[9px] font-black uppercase tracking-wider text-slate-500 hover:text-red-300">Reset</button></div>
+                <div className="grid grid-cols-3 gap-2">
+                  {['1','2','3','4','5','6','7','8','9'].map(n => <button key={n} type="button" onClick={() => handleNumpadClick(n)} className={key}>{n}</button>)}
+                  <button type="button" onClick={handleNumpadClear} className={`${key} text-[10px] uppercase text-slate-500 hover:text-red-300`}>Clear</button>
+                  <button type="button" onClick={() => handleNumpadClick('0')} className={key}>0</button>
+                  <button type="button" onClick={handleNumpadDelete} className={`${key} text-slate-400 hover:text-amber-300`} aria-label="Hapus satu digit"><Delete size={16} className="mx-auto" /></button>
+                </div>
+              </div>
+              <button type="submit" disabled={loading} className="group relative flex h-14 w-full items-center justify-center gap-2.5 overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 to-blue-500 text-sm font-black uppercase tracking-[0.16em] text-white shadow-[0_12px_30px_rgba(37,99,235,.25)] transition-all duration-200 hover:-translate-y-0.5 hover:from-blue-500 hover:to-cyan-500 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60">
+                <span className="absolute inset-0 -translate-x-full bg-white/10 transition-transform duration-500 group-hover:translate-x-full" />{loading ? <Loader2 size={19} className="animate-spin" /> : <ShieldCheck size={18} />}<span>{loading ? 'Memverifikasi…' : 'Masuk Portal'}</span>
+              </button>
+            </form>
+            <div className="mt-5 flex items-center justify-center gap-2 text-[9px] font-semibold uppercase tracking-[0.14em] text-slate-600"><ShieldCheck size={12} className="text-emerald-500/70" /> Akses aman • PB Bilibili 162</div>
           </div>
-
-          <h2 className="text-lg sm:text-xl font-black text-white tracking-tight italic uppercase">
-            Portal System
-          </h2>
-          <p className="text-slate-400 font-bold text-[9px] sm:text-[10px] uppercase tracking-[0.2em] mt-0.5">
-            PB BILIBILI 162
-          </p>
         </div>
-
-        {/* Error Alert */}
-        {errorMsg && (
-          <motion.div 
-            initial={{ opacity: 0, y: -5 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-3 bg-red-500/10 border border-red-500/30 rounded-xl p-2.5 flex gap-2 text-red-400 text-[11px] font-semibold items-start leading-snug shrink-0"
-          >
-            <AlertCircle size={15} className="shrink-0 mt-0.5 text-red-400" />
-            <div>
-              <p className="font-bold text-red-300">Akses Ditolak</p>
-              <p className="opacity-90 text-[10px] sm:text-[11px]">{errorMsg}</p>
-            </div>
-          </motion.div>
-        )}
-
-        {/* LOGIN FORM */}
-        <form onSubmit={handleFormSubmit} className="space-y-2.5 sm:space-y-3 shrink-0">
-          
-          {/* USERNAME / NAMA ANGGOTA INPUT */}
-          <div className="space-y-1">
-            <label className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5 ml-1">
-              <User size={12} className="text-blue-400" />
-              <span>Username / Nama Anggota</span>
-            </label>
-
-            <div className="relative">
-              <input 
-                type="text"
-                required
-                value={usernameInput}
-                onChange={(e) => {
-                  setErrorMsg(null);
-                  setUsernameInput(e.target.value);
-                }}
-                className="w-full pl-3.5 pr-9 py-2 sm:py-2.5 rounded-xl bg-[#070d1a] border border-white/10 text-white font-bold text-xs outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-slate-500 placeholder:font-normal"
-                placeholder="Nama Anggota / WA / admin..."
-              />
-              <User size={14} className="absolute right-3 top-2.5 sm:top-3 text-slate-500" />
-            </div>
-          </div>
-
-          {/* PIN / PASSCODE INPUT */}
-          <div className="space-y-1">
-            <div className="flex items-center justify-between ml-1 pr-1">
-              <label className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                <KeyRound size={12} className="text-blue-400" />
-                <span>PIN / Passcode Akses</span>
-              </label>
-              <span className="text-[8px] sm:text-[9px] text-slate-500 font-mono">Default: 123456</span>
-            </div>
-
-            <div className="relative group">
-              <input 
-                type={showPin ? "text" : "password"} 
-                value={pinInput}
-                onChange={(e) => {
-                  setErrorMsg(null);
-                  setPinInput(e.target.value);
-                }}
-                className="w-full pl-4 pr-10 py-2 sm:py-2.5 rounded-xl bg-[#070d1a] border border-white/10 text-white font-mono text-center tracking-[0.2em] sm:tracking-[0.25em] text-sm sm:text-base outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-slate-600 placeholder:tracking-normal placeholder:font-sans placeholder:text-xs"
-                placeholder="Masukkan PIN"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPin(!showPin)}
-                className="absolute right-3 top-2 sm:top-2.5 text-slate-500 hover:text-white transition-colors cursor-pointer p-1"
-                title={showPin ? "Sembunyikan" : "Tampilkan"}
-              >
-                {showPin ? <EyeOff size={15} /> : <Eye size={15} />}
-              </button>
-            </div>
-          </div>
-
-          {/* Virtual Numpad */}
-          <div className="pt-0.5">
-            <div className="grid grid-cols-3 gap-1.5 sm:gap-2 max-w-[220px] sm:max-w-[250px] mx-auto">
-              {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((num) => (
-                <button
-                  key={num}
-                  type="button"
-                  onClick={() => handleNumpadClick(num)}
-                  className="h-8 sm:h-9 rounded-xl bg-white/5 hover:bg-blue-600/30 active:bg-blue-600 border border-white/10 text-white font-black text-xs sm:text-sm transition-all active:scale-95 shadow-sm flex items-center justify-center cursor-pointer"
-                >
-                  {num}
-                </button>
-              ))}
-              <button
-                type="button"
-                onClick={handleNumpadClear}
-                className="h-8 sm:h-9 rounded-xl bg-white/5 hover:bg-red-500/20 active:bg-red-500 border border-white/10 text-slate-400 hover:text-red-300 font-bold text-[9px] uppercase transition-all active:scale-95 flex items-center justify-center cursor-pointer"
-              >
-                Reset
-              </button>
-              <button
-                type="button"
-                onClick={() => handleNumpadClick('0')}
-                className="h-8 sm:h-9 rounded-xl bg-white/5 hover:bg-blue-600/30 active:bg-blue-600 border border-white/10 text-white font-black text-xs sm:text-sm transition-all active:scale-95 shadow-sm flex items-center justify-center cursor-pointer"
-              >
-                0
-              </button>
-              <button
-                type="button"
-                onClick={handleNumpadDelete}
-                className="h-8 sm:h-9 rounded-xl bg-white/5 hover:bg-amber-500/20 active:bg-amber-500 border border-white/10 text-slate-400 hover:text-amber-300 transition-all active:scale-95 flex items-center justify-center cursor-pointer"
-                title="Hapus"
-              >
-                <Delete size={14} />
-              </button>
-            </div>
-          </div>
-
-          {/* Submit Button */}
-          <button 
-            type="submit" 
-            disabled={loading}
-            className="w-full py-2.5 sm:py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl sm:rounded-2xl font-black uppercase text-xs tracking-widest shadow-lg shadow-blue-600/20 active:scale-98 hover:shadow-blue-600/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50 mt-2 sm:mt-3 cursor-pointer"
-          >
-            {loading ? (
-              <Loader2 className="animate-spin" size={15} />
-            ) : (
-              <span>Masuk Portal System</span>
-            )}
-          </button>
-        </form>
-      </motion.div>
+      </motion.main>
     </div>
   );
 }
-
-
