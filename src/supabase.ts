@@ -62,6 +62,218 @@ export const SUPABASE_ANON_KEY = (
     : 'sb_publishable_trhfpzLX50WdkdaItRPFMQ_ewqF0fgn'
 ).trim();
 
+/**
+ * Global read-through cache for Supabase REST GET requests.
+ * - In-memory cache makes SPA menu navigation effectively instant.
+ * - sessionStorage keeps public data available after a page refresh.
+ * - Stale data is returned immediately while a background request refreshes it.
+ * - Writes invalidate the cache so edits remain visible without waiting for TTL.
+ */
+type CachedResponse = {
+  body: string;
+  status: number;
+  statusText: string;
+  headers: [string, string][];
+  savedAt: number;
+};
+
+const memoryQueryCache = new Map<string, CachedResponse>();
+const inFlightQueries = new Map<string, Promise<Response>>();
+const MEMORY_TTL = 20_000;
+const SESSION_MAX_AGE = 30 * 60_000;
+const SESSION_PREFIX = 'pb_supabase_query_v2:';
+
+const PUBLIC_CACHE_TABLES = new Set([
+  'site_settings',
+  'berita',
+  'komentar',
+  'galeri',
+  'gallery',
+  'hero_sliders',
+  'navbar_menu',
+  'navbar_settings',
+  'page_contents',
+  'documents',
+  'organizational_structure',
+  'inventaris',
+  'rankings',
+  'pertandingan'
+]);
+
+function getFetchUrl(input: RequestInfo | URL): string {
+  if (typeof input === 'string') return input;
+  if (typeof URL !== 'undefined' && input instanceof URL) return input.toString();
+  return input.url;
+}
+
+function getFetchMethod(input: RequestInfo | URL, init?: RequestInit): string {
+  return String(init?.method || (typeof Request !== 'undefined' && input instanceof Request ? input.method : 'GET')).toUpperCase();
+}
+
+function getHeader(input: RequestInfo | URL, init: RequestInit | undefined, name: string): string {
+  const source: HeadersInit | undefined = init?.headers || (typeof Request !== 'undefined' && input instanceof Request ? input.headers : undefined);
+  if (!source) return '';
+  try {
+    const headers = new Headers(source);
+    return headers.get(name) || '';
+  } catch {
+    return '';
+  }
+}
+
+function getTableFromRestUrl(url: string): string {
+  const marker = '/rest/v1/';
+  const index = url.indexOf(marker);
+  if (index < 0) return '';
+  const rest = url.substring(index + marker.length);
+  return decodeURIComponent(rest.split('?')[0].split('/')[0]);
+}
+
+function isPublicTable(table: string): boolean {
+  return PUBLIC_CACHE_TABLES.has(table);
+}
+
+function makeMemoryKey(url: string, authorization: string): string {
+  // Keep authenticated users isolated in memory without persisting JWTs.
+  const scope = authorization && authorization !== `Bearer ${SUPABASE_ANON_KEY}`
+    ? authorization.slice(-24)
+    : 'public';
+  return `${scope}|${url}`;
+}
+
+function makeSessionKey(url: string): string {
+  try {
+    return `${SESSION_PREFIX}${btoa(unescape(encodeURIComponent(url))).replace(/=+$/g, '')}`;
+  } catch {
+    return `${SESSION_PREFIX}${encodeURIComponent(url)}`;
+  }
+}
+
+function responseFromCached(cached: CachedResponse): Response {
+  return new Response(cached.body, {
+    status: cached.status,
+    statusText: cached.statusText,
+    headers: cached.headers
+  });
+}
+
+async function persistPublicCache(url: string, cached: CachedResponse) {
+  try {
+    if (cached.body.length > 1_500_000) return;
+    sessionStorage.setItem(makeSessionKey(url), JSON.stringify(cached));
+  } catch {
+    // Storage quota/private mode: memory cache still works.
+  }
+}
+
+function readPublicSessionCache(url: string): CachedResponse | null {
+  try {
+    const raw = sessionStorage.getItem(makeSessionKey(url));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as CachedResponse;
+    if (!parsed || typeof parsed.body !== 'string' || !parsed.savedAt) return null;
+    if (Date.now() - parsed.savedAt > SESSION_MAX_AGE) {
+      sessionStorage.removeItem(makeSessionKey(url));
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function invalidateSupabaseReadCache() {
+  memoryQueryCache.clear();
+  inFlightQueries.clear();
+  try {
+    const keys: string[] = [];
+    for (let i = 0; i < sessionStorage.length; i++) {
+      const key = sessionStorage.key(i);
+      if (key?.startsWith(SESSION_PREFIX)) keys.push(key);
+    }
+    keys.forEach(key => sessionStorage.removeItem(key));
+  } catch {}
+}
+
+async function networkSupabaseGet(input: RequestInfo | URL, init?: RequestInit, memoryKey?: string, url?: string): Promise<Response> {
+  const targetUrl = url || getFetchUrl(input);
+  const existing = memoryKey ? inFlightQueries.get(memoryKey) : undefined;
+  if (existing) return existing.then(r => r.clone());
+
+  const requestPromise = (async () => {
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 8_000);
+    try {
+      const response = await nativeFetch(input, { ...init, signal: init?.signal || controller.signal });
+      if (response.ok && memoryKey) {
+        const clone = response.clone();
+        const body = await clone.text();
+        const cached: CachedResponse = {
+          body,
+          status: response.status,
+          statusText: response.statusText,
+          headers: Array.from(response.headers.entries()),
+          savedAt: Date.now()
+        };
+        memoryQueryCache.set(memoryKey, cached);
+        const table = getTableFromRestUrl(targetUrl);
+        if (typeof window !== 'undefined' && isPublicTable(table)) {
+          void persistPublicCache(targetUrl, cached);
+        }
+      }
+      return response;
+    } finally {
+      window.clearTimeout(timeout);
+    }
+  })();
+
+  if (memoryKey) inFlightQueries.set(memoryKey, requestPromise);
+  try {
+    return await requestPromise;
+  } finally {
+    if (memoryKey) inFlightQueries.delete(memoryKey);
+  }
+}
+
+const nativeFetch = typeof window !== 'undefined' ? window.fetch.bind(window) : fetch;
+
+const cachedFetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+  const url = getFetchUrl(input);
+  const method = getFetchMethod(input, init);
+  const isSupabaseRestRead = url.startsWith(`${envUrl}/rest/v1/`) && (method === 'GET' || method === 'HEAD');
+
+  if (!isSupabaseRestRead) {
+    const response = await nativeFetch(input, init);
+    if (url.startsWith(`${envUrl}/rest/v1/`) && method !== 'GET' && method !== 'HEAD') {
+      invalidateSupabaseReadCache();
+    }
+    return response;
+  }
+
+  const table = getTableFromRestUrl(url);
+  const authorization = getHeader(input, init, 'Authorization');
+  const memoryKey = makeMemoryKey(url, authorization);
+  const cached = memoryQueryCache.get(memoryKey);
+
+  if (cached) {
+    if (Date.now() - cached.savedAt > MEMORY_TTL) {
+      void networkSupabaseGet(input, init, memoryKey, url).catch(() => {});
+    }
+    return responseFromCached(cached);
+  }
+
+  if (typeof window !== 'undefined' && isPublicTable(table)) {
+    const sessionCached = readPublicSessionCache(url);
+    if (sessionCached) {
+      memoryQueryCache.set(memoryKey, sessionCached);
+      void networkSupabaseGet(input, init, memoryKey, url).catch(() => {});
+      return responseFromCached(sessionCached);
+    }
+  }
+
+  return networkSupabaseGet(input, init, memoryKey, url);
+};
+
 // 3. Create configured Supabase Client
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
@@ -71,6 +283,7 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     storage: typeof window !== 'undefined' ? window.localStorage : undefined,
   },
   global: {
+    fetch: cachedFetch,
     headers: {
       'x-application-name': 'pb-bilibili-162'
     }
@@ -108,4 +321,3 @@ export async function testSupabaseConnection(): Promise<{ connected: boolean; me
     };
   }
 }
-
