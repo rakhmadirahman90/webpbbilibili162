@@ -2,10 +2,10 @@ import { supabase } from '../supabase';
 import { useEffect } from 'react';
 
 /**
- * Unified Realtime Sync utility module for standardized Supabase subscriptions,
- * Broadcasts, SSE, and custom event listeners across all UI components (Hero, Popup, AdminDashboard, etc.).
+ * Lightweight realtime synchronization for public/admin data.
+ * Realtime is event driven; aggressive 5s polling caused repeated Supabase
+ * requests, unnecessary rerenders and visible loading/flicker on mobile.
  */
-
 export interface RealtimeSubscriptionOptions {
   tables?: string | string[];
   settingKeys?: string | string[];
@@ -23,22 +23,14 @@ export function subscribeToRealtime({ tables, settingKeys, onUpdate }: RealtimeS
     const detailTable = detail.table;
     const detailKey = detail.key || detail.table;
 
-    let match = false;
-    if (tableList.length > 0 && detailTable && tableList.includes(detailTable)) {
-      match = true;
-    }
-    if (keyList.length > 0 && (keyList.includes(detailKey) || keyList.includes(detail.key))) {
-      match = true;
-    }
-    if (tableList.length === 0 && keyList.length === 0) {
-      match = true; // global listener if none specified
-    }
+    const tableMatch = tableList.length === 0 || !detailTable || tableList.includes(detailTable);
+    const keyMatch = keyList.length === 0 || keyList.includes(detailKey) || keyList.includes(detail.key);
 
-    if (match) {
-      onUpdate(detail);
-    }
+    if (tableMatch && keyMatch) onUpdate(detail);
   };
 
+  // Browser focus/online events are a cheap recovery mechanism after a device
+  // sleeps or temporarily loses connectivity. They do not run continuously.
   const handleFocus = () => onUpdate();
 
   window.addEventListener('app_data_changed', handleEvent);
@@ -48,48 +40,50 @@ export function subscribeToRealtime({ tables, settingKeys, onUpdate }: RealtimeS
   window.addEventListener('online', handleFocus);
   document.addEventListener('visibilitychange', handleFocus);
 
-  tableList.forEach(tbl => {
-    window.addEventListener(`table_updated_${tbl}`, handleEvent);
-  });
+  tableList.forEach(tbl => window.addEventListener(`table_updated_${tbl}`, handleEvent));
 
-  // Supabase channel subscription
-  const channelName = `unified-realtime-${Math.random().toString(36).substring(2, 9)}`;
-  let channel = supabase.channel(channelName, {
+  const channelName = `unified-realtime-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const channel = supabase.channel(channelName, {
     config: { broadcast: { self: false } }
   });
 
   if (tableList.length > 0) {
     tableList.forEach(tbl => {
-      channel = channel.on('postgres_changes', { event: '*', schema: 'public', table: tbl }, (payload) => {
+      channel.on('postgres_changes', { event: '*', schema: 'public', table: tbl }, payload => {
         onUpdate(payload);
       });
     });
   } else {
-    // Default listening to common tables
     ['site_settings', 'pendaftaran', 'rankings', 'atlet_stats', 'konfigurasi_popup', 'arsip_surat'].forEach(tbl => {
-      channel = channel.on('postgres_changes', { event: '*', schema: 'public', table: tbl }, (payload) => {
+      channel.on('postgres_changes', { event: '*', schema: 'public', table: tbl }, payload => {
         onUpdate(payload);
       });
     });
   }
 
-  channel
-    .on('broadcast', { event: 'data_changed' }, ({ payload }) => {
-      if (payload) {
-        if (tableList.length === 0 || tableList.includes(payload.table) || keyList.includes(payload.key)) {
-          onUpdate(payload);
-        }
-      }
-    })
-    .subscribe();
+  channel.on('broadcast', { event: 'data_changed' }, ({ payload }) => {
+    if (!payload) return;
+    if (
+      tableList.length === 0 ||
+      !payload.table ||
+      tableList.includes(payload.table) ||
+      (payload.key && keyList.includes(payload.key))
+    ) {
+      onUpdate(payload);
+    }
+  });
 
-  // Polling interval fallback for guaranteed live sync
-  const pollInterval = setInterval(() => {
-    onUpdate();
-  }, 5000);
+  // Subscribe only after every callback has been registered. Never attach
+  // postgres_changes handlers to an already-subscribed channel.
+  void channel.subscribe(status => {
+    if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+      // A later focus/online event will trigger a normal refresh without
+      // creating a polling storm.
+      console.warn(`[realtime] ${channelName}: ${status}`);
+    }
+  });
 
   return () => {
-    clearInterval(pollInterval);
     supabase.removeChannel(channel);
     window.removeEventListener('app_data_changed', handleEvent);
     window.removeEventListener('site_setting_updated', handleEvent);
@@ -97,14 +91,10 @@ export function subscribeToRealtime({ tables, settingKeys, onUpdate }: RealtimeS
     window.removeEventListener('focus', handleFocus);
     window.removeEventListener('online', handleFocus);
     document.removeEventListener('visibilitychange', handleFocus);
-    tableList.forEach(tbl => {
-      window.removeEventListener(`table_updated_${tbl}`, handleEvent);
-    });
+    tableList.forEach(tbl => window.removeEventListener(`table_updated_${tbl}`, handleEvent));
   };
 }
 
 export function useRealtimeSync(options: RealtimeSubscriptionOptions) {
-  useEffect(() => {
-    return subscribeToRealtime(options);
-  }, []);
+  useEffect(() => subscribeToRealtime(options), []);
 }
