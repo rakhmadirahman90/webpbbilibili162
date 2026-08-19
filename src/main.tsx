@@ -5,19 +5,23 @@ import ErrorBoundary from './components/ErrorBoundary.tsx';
 import { initializeLocalDatabase } from './data/localDatabase.ts';
 import './index.css';
 
-// Initialize local database storage eagerly
-initializeLocalDatabase();
-
-// Register Service Worker for Progressive Web App (PWA)
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').then((reg) => {
-      console.log('PWA ServiceWorker registered with scope:', reg.scope);
-    }).catch((err) => {
-      console.log('PWA ServiceWorker registration failed:', err);
-    });
-  });
+// Never block the first paint on cache/demo-data initialization.
+// The live Supabase state is the source of truth; local storage is only a
+// background fallback for offline/slow-network cases.
+if (typeof window !== 'undefined') {
+  window.setTimeout(() => {
+    try {
+      initializeLocalDatabase();
+    } catch (error) {
+      console.warn('[startup] local database initialization skipped:', error);
+    }
+  }, 0);
 }
+
+// Do not register a service worker during the critical production shell boot.
+// A stale worker can serve an old JS graph after a deployment and produce a
+// completely blank mobile screen. PWA assets remain available through the
+// manifest, while the current Vercel deployment is always loaded directly.
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -26,5 +30,3 @@ createRoot(document.getElementById('root')!).render(
     </ErrorBoundary>
   </StrictMode>
 );
-
-
