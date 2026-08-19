@@ -30,7 +30,7 @@ if (!rawAnon && typeof process !== 'undefined' && process.env) {
 export const SUPABASE_URL = envUrl;
 export const SUPABASE_ANON_KEY = (rawAnon && typeof rawAnon === 'string' && rawAnon.trim() !== '' && rawAnon !== 'undefined'
   ? rawAnon
-  : 'sb_publishable_trhfpzLX50WdkdaItRPFMQ_ewf0fgn').trim();
+  : 'sb_publishable_trhfpzLX50WdkdaItRPFMQ_ewQF0fgn').trim();
 
 // Global stale-while-revalidate cache for Supabase REST reads.
 type CachedResponse = {
@@ -205,49 +205,39 @@ export function warmupRouteData(pathname?: string) {
   if (typeof window === 'undefined') return;
   const path = (pathname || window.location.pathname).toLowerCase();
   const tasks: Promise<any>[] = [];
-
   const warm = (promise: Promise<any>) => tasks.push(promise.catch(() => null));
 
   if (path === '/' || path === '/berita' || path === '/news' || path.startsWith('/admin/berita')) {
     warm(supabase.from('berita').select('*, comments_count:komentar(count)').order('tanggal', { ascending: false }));
   }
-
   if (path === '/peringkat' || path === '/rankings' || path === '/ranking' || path === '/atlet' || path === '/players' || path.startsWith('/admin/atlet') || path.startsWith('/admin/ranking')) {
     warm(supabase.from('rankings').select('*'));
     warm(supabase.from('atlet_stats').select('pendaftaran_id, player_name, points, total_points, seed'));
     warm(supabase.from('pendaftaran').select('id, nama, foto_url, kategori_atlet'));
   }
-
   if (path === '/galeri' || path === '/gallery' || path.startsWith('/admin/galeri')) {
     warm(supabase.from('galeri').select('*'));
     warm(supabase.from('gallery').select('*'));
   }
-
   if (path === '/kas' || path.startsWith('/admin/kas') || path.startsWith('/admin/rekap-keuangan')) {
     warm(supabase.from('kas_pb').select('*').order('tanggal', { ascending: false }));
   }
-
   if (path === '/dokumen' || path === '/documents' || path.startsWith('/admin/dokumen')) {
     warm(supabase.from('documents').select('*'));
   }
-
   if (path === '/struktur' || path === '/struktur-organisasi' || path.startsWith('/admin/struktur')) {
     warm(supabase.from('organizational_structure').select('*'));
   }
-
   if (path === '/inventaris' || path.startsWith('/admin/inventaris')) {
     warm(supabase.from('inventaris').select('*'));
   }
-
   if (path === '/admin/prestasi' || path === '/admin/program' || path === '/admin/faq' || path === '/admin/sejarah' || path === '/admin/visi-misi' || path === '/admin/fasilitas') {
     const key = path.includes('prestasi') ? 'prestasi_list' : path.includes('program') ? 'program_list' : path.includes('faq') ? 'faq_list' : path.includes('sejarah') ? 'history_content' : path.includes('visi-misi') ? 'visi_misi_content' : 'fasilitas_list';
     warm(supabase.from('site_settings').select('value, updated_at').eq('key', key).maybeSingle());
   }
-
   if (tasks.length) void Promise.allSettled(tasks);
 }
 
-// Automatically warm the first route and subsequent SPA navigations without blocking UI.
 if (typeof window !== 'undefined') {
   const w = window as any;
   if (!w.__PB_BILIBILI_ROUTE_WARMUP__) {
