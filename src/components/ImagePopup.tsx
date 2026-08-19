@@ -49,18 +49,20 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
       if (activeView !== null) { setIsOpen(false); return; }
       if (!forceShow && isDismissedRef.current) { setIsOpen(false); return; }
 
-      // One authoritative source: Supabase. Do not merge LocalStorage/server/API data here.
-      // This prevents old popup content from appearing after refresh/cache clearing.
+      // Supabase is the single source of truth. No LocalStorage/API fallback is used here,
+      // so a refresh always reflects the current database state.
       const { data, error } = await supabase
         .from('konfigurasi_popup')
-        .select('id, judul, deskripsi, url_gambar, file_url, is_active, active, urutan, updated_at')
+        .select('id, judul, deskripsi, url_gambar, image_url, file_url, is_active, urutan')
+        .eq('is_active', true)
         .order('urutan', { ascending: true });
 
       if (requestId !== requestIdRef.current) return;
       if (error) throw error;
 
       const activeItems = (data || [])
-        .filter((item: PopupItem) => item && (item.is_active === true || item.active === true) && item.url_gambar)
+        .map((item: PopupItem) => ({ ...item, url_gambar: item.url_gambar || item.image_url || '' }))
+        .filter((item: PopupItem) => item && item.url_gambar)
         .sort((a: PopupItem, b: PopupItem) => Number(a.urutan ?? 0) - Number(b.urutan ?? 0));
 
       if (activeItems.length === 0) {
@@ -69,8 +71,8 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
         return;
       }
 
-      // Preload the first image before opening the modal. The page stays visible instead of
-      // showing an empty/dark popup while the large banner is downloading.
+      // Do not display an empty dark modal. Keep the landing page visible until
+      // the first current image is decoded and ready to paint.
       await preloadImage(String(activeItems[0].url_gambar));
       if (requestId !== requestIdRef.current) return;
 
@@ -80,14 +82,12 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
       setDirection(1);
       setIsOpen(!isDismissedRef.current || forceShow);
 
-      // Remaining slides are fetched from browser cache when the user reaches them.
       activeItems.slice(1).forEach(item => {
         if (item.url_gambar) void preloadImage(String(item.url_gambar));
       });
     } catch (err) {
       console.warn('[ImagePopup] Supabase popup fetch failed:', err);
-      // Never replace current/empty content with stale local fallback.
-      if (requestId === requestIdRef.current && promoImages.length === 0) setIsOpen(false);
+      if (requestId === requestIdRef.current) setIsOpen(false);
     }
   }, [activeView]);
 
@@ -100,13 +100,10 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
   useEffect(() => {
     const channel = supabase
       .channel('landing-popup-carousel-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'konfigurasi_popup' }, () => fetchActivePopups(false))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'konfigurasi_popup' }, () => void fetchActivePopups(false))
       .subscribe();
 
-    const handleTriggerHome = () => {
-      isDismissedRef.current = false;
-      void fetchActivePopups(true);
-    };
+    const handleTriggerHome = () => { isDismissedRef.current = false; void fetchActivePopups(true); };
     const handleUpdate = () => void fetchActivePopups(false);
 
     window.addEventListener('trigger-home-popup', handleTriggerHome);
@@ -183,17 +180,11 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
     const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+)/g;
     return text.split('\n').map((line, i) => {
       if (!line.trim()) return <div key={i} className="h-3" />;
-      return (
-        <p key={i} className="mb-5 last:mb-0 !leading-7 text-slate-800 !text-justify text-[15px]" style={{ overflowWrap: 'break-word', wordWrap: 'break-word' }}>
-          {line.split(urlRegex).map((part, index) => {
-            if (part.match(urlRegex)) {
-              const href = part.startsWith('www.') ? `https://${part}` : part;
-              return <a key={index} href={href} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline decoration-blue-200 underline-offset-2 font-medium break-all">{part}</a>;
-            }
-            return <span key={index}>{part}</span>;
-          })}
-        </p>
-      );
+      return <p key={i} className="mb-5 last:mb-0 !leading-7 text-slate-800 !text-justify text-[15px]" style={{ overflowWrap: 'break-word', wordWrap: 'break-word' }}>
+        {line.split(urlRegex).map((part, index) => part.match(urlRegex)
+          ? <a key={index} href={part.startsWith('www.') ? `https://${part}` : part} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline decoration-blue-200 underline-offset-2 font-medium break-all">{part}</a>
+          : <span key={index}>{part}</span>)}
+      </p>;
     });
   };
 
