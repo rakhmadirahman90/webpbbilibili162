@@ -122,3 +122,150 @@ img, video, canvas, iframe { max-width: 100%; }
   .overflow-x-auto { overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; }
   table { max-width: 100%; }
 }
+
+/* -------------------------------------------------------------------------
+   FINAL MOBILE VIEWPORT PASS
+   -------------------------------------------------------------------------
+   The application contains both one-screen shells (navbar/drawers/modals)
+   and data-heavy pages that legitimately scroll. These rules guarantee that
+   the first viewport itself never becomes wider/taller because of accidental
+   fixed-height children, image intrinsic sizes, or mobile browser chrome.
+*/
+@media (max-width: 767px) {
+  html {
+    width: 100%;
+    min-width: 0;
+    overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    width: 100%;
+    min-width: 0;
+    min-height: 100dvh;
+    overflow-x: hidden;
+    overscroll-behavior-x: none;
+  }
+
+  #root {
+    width: 100%;
+    min-width: 0;
+    min-height: 100dvh;
+    overflow-x: clip;
+  }
+
+  /* Never let an intrinsic image create a wider-than-phone layout. */
+  #root img,
+  #root video,
+  #root canvas,
+  #root iframe {
+    max-width: 100%;
+  }
+
+  /* Full-screen page shells should use the real dynamic viewport on Android. */
+  [class*="min-h-screen"] {
+    min-height: 100dvh !important;
+  }
+
+  [class*="h-screen"] {
+    height: 100dvh !important;
+    max-height: 100dvh;
+  }
+
+  /* Do not create a second vertical scrollbar inside ordinary page content. */
+  main {
+    width: 100%;
+    max-width: 100vw;
+    min-width: 0;
+    overflow-x: clip;
+  }
+
+  /* Cards/sections must shrink rather than force the viewport wider. */
+  main > *, section, article, [class*="max-w-"] {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  /* Mobile tables remain usable without expanding the page itself. */
+  table {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  /* Floating controls stay inside the safe visual viewport. */
+  [data-floating-control],
+  .floating-control {
+    max-width: calc(100vw - 24px);
+  }
+
+  /* Popup/modal shell: fit the complete control chrome inside one phone screen. */
+  .fixed.inset-0.z-\\[999999\\] {
+    min-height: 100dvh;
+    height: 100dvh;
+    padding-top: max(8px, env(safe-area-inset-top));
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+    padding-left: max(8px, env(safe-area-inset-left));
+    padding-right: max(8px, env(safe-area-inset-right));
+  }
+
+  .fixed.inset-0.z-\\[999999\\] > .relative.w-full {
+    width: min(100%, 430px);
+    max-width: 430px;
+    max-height: min(90dvh, 760px);
+    min-height: 0;
+    margin: 0 auto;
+  }
+
+  /* Keep the popup image from making a very tall/empty first viewport. */
+  .fixed.inset-0.z-\\[999999\\] img {
+    width: 100%;
+    max-width: 100%;
+    max-height: 58dvh;
+    height: auto;
+    object-fit: contain;
+    object-position: center;
+  }
+
+  /* Prevent popup descriptions/buttons from overflowing horizontally. */
+  .fixed.inset-0.z-\\[999999\\] h1,
+  .fixed.inset-0.z-\\[999999\\] h2,
+  .fixed.inset-0.z-\\[999999\\] h3,
+  .fixed.inset-0.z-\\[999999\\] p,
+  .fixed.inset-0.z-\\[999999\\] a,
+  .fixed.inset-0.z-\\[999999\\] button {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  /* Hero/media blocks use the viewport width, not the image's intrinsic width. */
+  picture, figure {
+    max-width: 100%;
+    min-width: 0;
+  }
+}
+
+/* Small-phone pass: 320–380px devices. */
+@media (max-width: 380px) {
+  body { font-size: 15px; }
+
+  #mobile-sidebar-toggle-btn {
+    right: 10px;
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    min-height: 42px;
+    border-radius: 13px;
+  }
+
+  .fixed.inset-0.z-\\[999999\\] {
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+
+  .fixed.inset-0.z-\\[999999\\] > .relative.w-full {
+    width: 100%;
+    max-height: 92dvh;
+    border-radius: 22px;
+  }
+}
