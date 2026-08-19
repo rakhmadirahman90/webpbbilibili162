@@ -4,6 +4,7 @@ import App from './App.tsx';
 import ErrorBoundary from './components/ErrorBoundary.tsx';
 import { initializeLocalDatabase } from './data/localDatabase.ts';
 import './index.css';
+import './responsive-hardening.css';
 
 // Never block the first paint on cache/demo-data initialization.
 // The live Supabase state is the source of truth; local storage is only a
