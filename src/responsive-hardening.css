@@ -1,0 +1,124 @@
+/* End-to-end responsive hardening.
+   Keeps navigation and content in independent layers, respects mobile safe areas,
+   and prevents fixed/floating controls from covering primary actions. */
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body, #root { width: 100%; min-width: 0; }
+body { margin: 0; overflow-x: hidden; }
+button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
+
+/* Public/mobile navbar */
+@media (max-width: 1023px) {
+  nav.fixed { min-height: 56px; }
+
+  #mobile-sidebar-toggle-btn {
+    touch-action: manipulation;
+    isolation: isolate;
+  }
+
+  /* The drawer owns its own scroll area; footer/actions stay visible. */
+  aside.lg\\:hidden.fixed.z-\\[99999\\] {
+    height: 100dvh;
+    max-height: 100dvh;
+    padding-bottom: env(safe-area-inset-bottom);
+    overscroll-behavior: contain;
+  }
+
+  /* Never allow the drawer's footer to be pushed underneath Android navigation. */
+  aside.lg\\:hidden.fixed.z-\\[99999\\] > div:last-child {
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+
+  /* Mobile drawer content gets a predictable scroll container. */
+  aside.lg\\:hidden.fixed.z-\\[99999\\] > div:nth-child(2) {
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+
+  /* Touch targets: never smaller than the practical mobile target. */
+  aside.lg\\:hidden.fixed.z-\\[99999\\] button,
+  #mobile-sidebar-toggle-btn {
+    touch-action: manipulation;
+  }
+
+  /* Keep nested submenu text inside the drawer width. */
+  aside.lg\\:hidden.fixed.z-\\[99999\\] button span,
+  aside.lg\\:hidden.fixed.z-\\[99999\\] button {
+    min-width: 0;
+  }
+
+  /* Main page content must not be horizontally displaced by the drawer. */
+  main, section, article { min-width: 0; }
+}
+
+/* Admin shell */
+#admin-sidebar {
+  min-width: 0;
+  overscroll-behavior: contain;
+}
+
+#sidebar-navigation-menu {
+  min-height: 0;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
+}
+
+@media (max-width: 767px) {
+  #admin-sidebar {
+    width: min(88vw, 340px) !important;
+    max-width: 340px;
+    height: 100dvh;
+    max-height: 100dvh;
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  }
+
+  #admin-sidebar nav {
+    min-height: 0;
+  }
+
+  /* Compact but reliable touch targets in admin navigation. */
+  #admin-sidebar nav a,
+  #admin-sidebar nav > div > button {
+    min-height: 42px;
+  }
+
+  /* Keep profile/actions above the Android gesture/navigation area. */
+  #admin-sidebar > div:last-of-type {
+    padding-bottom: max(0.35rem, env(safe-area-inset-bottom));
+  }
+
+  /* Avoid fixed widgets visually sitting over the navigation drawer. */
+  body:has(#admin-sidebar.translate-x-0) [data-floating-control],
+  body:has(#admin-sidebar.translate-x-0) .floating-control {
+    z-index: 20 !important;
+  }
+}
+
+@media (min-width: 768px) {
+  #admin-sidebar { width: 264px; }
+}
+
+/* Content containers: no accidental horizontal overflow from cards/tables. */
+#root > * { min-width: 0; }
+img, video, canvas, iframe { max-width: 100%; }
+
+/* Respect reduced-motion settings without disabling functional transitions. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Prevent text/content from creating accidental width overflow on narrow phones. */
+@media (max-width: 639px) {
+  .overflow-x-auto { overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; }
+  table { max-width: 100%; }
+}
