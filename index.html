@@ -69,23 +69,34 @@
         window.addEventListener('error', (event) => showBootError(event.error || event.message));
         window.addEventListener('unhandledrejection', (event) => showBootError(event.reason));
 
-        // Remove obsolete service workers/caches from previous builds that could
-        // keep serving stale JS chunks and cause a completely blank screen.
-        if ('serviceWorker' in navigator) {
-          navigator.serviceWorker.getRegistrations().then((registrations) => {
-            registrations.forEach((registration) => registration.unregister());
-          }).catch(() => {});
-        }
-        if ('caches' in window) {
-          caches.keys().then((keys) => {
-            keys.filter((key) => /pb|vite|workbox|supabase/i.test(key)).forEach((key) => caches.delete(key));
-          }).catch(() => {});
+        // One-time migration only. Older releases used an aggressive cache/SW
+        // cleanup on every page load, which made refreshes slow and could race
+        // the application boot. Clean legacy caches once, then never touch them
+        // during normal navigation/refreshes.
+        const cleanupKey = 'pb162-legacy-cache-cleanup-v3';
+        try {
+          if (!localStorage.getItem(cleanupKey)) {
+            localStorage.setItem(cleanupKey, '1');
+            if ('serviceWorker' in navigator) {
+              navigator.serviceWorker.getRegistrations().then((registrations) => {
+                registrations.forEach((registration) => registration.unregister());
+              }).catch(() => {});
+            }
+            if ('caches' in window) {
+              caches.keys().then((keys) => {
+                keys.filter((key) => /pb|vite|workbox|supabase/i.test(key)).forEach((key) => caches.delete(key));
+              }).catch(() => {});
+            }
+          }
+        } catch (_) {
+          // Private browsing/storage-disabled mode: continue without cleanup.
         }
 
-        // Never leave users on an empty boot screen if a module/chunk is broken.
+        // Fail visibly only after a generous startup window. Normal startup is
+        // not blocked by this watchdog.
         window.setTimeout(() => {
           if (document.getElementById('boot')) showBootError('Startup timeout');
-        }, 12000);
+        }, 15000);
       })();
     </script>
     <script type="module" src="/src/main.tsx"></script>
