@@ -31,6 +31,15 @@
     <link rel="icon" type="image/png" sizes="192x192" href="/pwa-192x192.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.json" />
+    <script>
+      // One-time, non-blocking cleanup for clients that still have the old PWA worker.
+      // Never wait for this before mounting React and never delete application caches.
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations()
+          .then((registrations) => Promise.all(registrations.map((registration) => registration.unregister())))
+          .catch(() => {});
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
