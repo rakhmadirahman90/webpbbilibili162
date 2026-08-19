@@ -1,4 +1,5 @@
 {
+  "buildCommand": "node scripts/patch-performance-v2.mjs && npm run build",
   "headers": [
     {
       "source": "/assets/(.*)",
