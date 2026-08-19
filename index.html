@@ -32,13 +32,22 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.json" />
     <script>
-      // One-time, non-blocking cleanup for clients that still have the old PWA worker.
-      // Never wait for this before mounting React and never delete application caches.
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations()
-          .then((registrations) => Promise.all(registrations.map((registration) => registration.unregister())))
-          .catch(() => {});
-      }
+      // Remove legacy PWA workers that can keep an old JS graph alive after deploy.
+      // Reload only once, and only when an old worker actually controls this page.
+      (() => {
+        if (!('serviceWorker' in navigator)) return;
+        const FLAG = '__pb162_sw_cleanup_v2__';
+        navigator.serviceWorker.getRegistrations().then((registrations) => {
+          if (!registrations.length) return;
+          const hadController = !!navigator.serviceWorker.controller;
+          return Promise.all(registrations.map((registration) => registration.unregister())).then(() => {
+            if (hadController && !sessionStorage.getItem(FLAG)) {
+              sessionStorage.setItem(FLAG, '1');
+              window.location.reload();
+            }
+          });
+        }).catch(() => {});
+      })();
     </script>
   </head>
   <body>
