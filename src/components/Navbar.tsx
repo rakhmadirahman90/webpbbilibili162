@@ -34,33 +34,34 @@ const preloadNavigation = (path: string, subPath?: string) => {
   try {
     const p = (path || '').toLowerCase();
     const s = (subPath || '').toLowerCase();
-    const target = p === 'atlet' || p === 'players' || ['semua', 'senior', 'muda'].includes(s)
+    const effective = s || p;
+    const target = effective === 'atlet' || effective === 'players' || ['semua', 'senior', 'muda'].includes(effective)
       ? '/atlet'
-      : p === 'gallery' || p === 'galeri'
+      : effective === 'gallery' || effective === 'galeri'
         ? '/galeri'
-        : p === 'peringkat' || p === 'ranking' || p === 'rankings'
+        : effective === 'peringkat' || effective === 'ranking' || effective === 'rankings'
           ? '/peringkat'
-          : p === 'register' || p === 'pendaftaran'
+          : effective === 'register' || effective === 'pendaftaran'
             ? '/register'
-            : p === 'prestasi'
+            : effective === 'prestasi'
               ? '/prestasi'
-              : p === 'faq'
+              : effective === 'faq'
                 ? '/faq'
-                : p === 'berita' || p === 'news'
+                : effective === 'berita' || effective === 'news'
                   ? '/berita'
-                  : p === 'dokumen' || p === 'dokumen-penting' || p === 'documents'
+                  : effective === 'dokumen' || effective === 'dokumen-penting' || effective === 'documents'
                     ? '/dokumen-penting'
-                    : p === 'struktur' || p === 'struktur-organisasi'
+                    : effective === 'struktur' || effective === 'struktur-organisasi'
                       ? '/struktur-organisasi'
-                      : p === 'sejarah' || p === 'about' || p === 'tentang-kami'
+                      : effective === 'sejarah' || effective === 'about' || effective === 'tentang-kami'
                         ? '/sejarah'
-                        : p === 'visi' || p === 'visi-misi' || p === 'misi'
+                        : effective === 'visi' || effective === 'visi-misi' || effective === 'misi'
                           ? '/visi-misi'
-                          : p === 'fasilitas'
+                          : effective === 'fasilitas'
                             ? '/fasilitas'
-                            : p === 'jadwal' || p.includes('jadwal')
+                            : effective === 'jadwal' || effective.includes('jadwal')
                               ? '/jadwal'
-                              : p === 'contact' || p === 'kontak'
+                              : effective === 'contact' || effective === 'kontak'
                                 ? '/contact'
                                 : null;
     if (!target) return;
@@ -171,26 +172,26 @@ export default function Navbar({ onNavigate }: NavbarProps) {
     return <C size={15} className="shrink-0 text-blue-400" />;
   };
 
-  const go = (path: string, subPath?: string) => {
+  // Resolve a clicked menu to the actual destination. A dropdown parent such as
+  // "about" or "informasi" is only a container; its child path is the real page.
+  const resolveNavigationTarget = (path: string, subPath?: string) => {
     const p = (path || '').toLowerCase().trim();
     const s = (subPath || '').toLowerCase().trim();
+    if (s) {
+      if (p === 'atlet' || p === 'players') return { section: 'atlet', tab: subPath };
+      return { section: s, tab: undefined };
+    }
+    return { section: p || 'home', tab: undefined };
+  };
+
+  const go = (path: string, subPath?: string) => {
+    const { section, tab } = resolveNavigationTarget(path, subPath);
     try {
-      // Always perform the application navigation first. The drawer is closed
-      // only after the callback has been invoked so a touch cannot become a
-      // no-op while the mobile overlay is animating.
-      if (p === 'home' || p === 'beranda') onNavigate('home');
-      else if (p === 'atlet' || p === 'players' || ['semua','senior','muda'].includes(s)) onNavigate('atlet', subPath || 'Semua');
-      else if (p === 'prestasi') onNavigate('prestasi');
-      else if (p === 'gallery' || p === 'galeri') onNavigate('galeri');
-      else if (p === 'contact' || p === 'kontak') onNavigate('contact');
-      else if (p === 'faq') onNavigate('faq');
-      else if (p === 'register' || p === 'pendaftaran') onNavigate('register');
-      else if (p === 'peringkat' || p === 'ranking' || p === 'rankings') onNavigate('peringkat');
-      else if (p === 'jadwal' || p.includes('jadwal')) onNavigate('jadwal');
-      else onNavigate(p || s);
+      if (section === 'home' || section === 'beranda') onNavigate('home');
+      else onNavigate(section, tab);
     } catch (error) {
       // Hard fallback for a broken callback: React Router navigation still works.
-      const fallback = p === 'home' || p === 'beranda' ? '/' : `/${p || s}`;
+      const fallback = section === 'home' || section === 'beranda' ? '/' : `/${section}`;
       navigate(fallback);
     } finally {
       setOpenMenu(null);
