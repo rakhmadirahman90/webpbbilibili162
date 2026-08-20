@@ -1,0 +1,1 @@
+Stable motion compatibility is implemented in framerMotionStable.tsx. Vite configuration should alias framer-motion to that file.
