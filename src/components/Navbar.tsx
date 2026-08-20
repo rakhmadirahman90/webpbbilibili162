@@ -30,55 +30,54 @@ export const DEFAULT_NAV_ITEMS = [
 export const ATLET_DEFAULT_SUBMENUS = DEFAULT_NAV_ITEMS.filter(i => i.parent_id === 'atlet');
 export const isTopLevelMenuItem = (item: any) => !!item && (!item.parent_id || item.parent_id === 'none' || item.parent_id === '');
 
-// Start the next page's network request on pointer-down. On mobile this happens
-// before the click event, so the route/chunk/data request is already underway
-// while the drawer is closing. Only lazy public views are imported here.
 const preloadNavigation = (path: string, subPath?: string) => {
-  const p = (path || '').toLowerCase();
-  const s = (subPath || '').toLowerCase();
-  const target = p === 'atlet' || p === 'players' || ['semua', 'senior', 'muda'].includes(s)
-    ? '/atlet'
-    : p === 'gallery' || p === 'galeri'
-      ? '/galeri'
-      : p === 'peringkat' || p === 'ranking' || p === 'rankings'
-        ? '/peringkat'
-        : p === 'register' || p === 'pendaftaran'
-          ? '/register'
-          : p === 'prestasi'
-            ? '/prestasi'
-            : p === 'faq'
-              ? '/faq'
-              : p === 'berita' || p === 'news'
-                ? '/berita'
-                : p === 'dokumen' || p === 'dokumen-penting' || p === 'documents'
-                  ? '/dokumen-penting'
-                  : p === 'struktur' || p === 'struktur-organisasi'
-                    ? '/struktur-organisasi'
-                    : p === 'sejarah' || p === 'about' || p === 'tentang-kami'
-                      ? '/sejarah'
-                      : p === 'visi' || p === 'visi-misi' || p === 'misi'
-                        ? '/visi-misi'
-                        : p === 'fasilitas'
-                          ? '/fasilitas'
-                          : p === 'jadwal' || p.includes('jadwal')
-                            ? '/jadwal'
-                            : p === 'contact' || p === 'kontak'
-                              ? '/contact'
-                              : null;
-
-  if (!target) return;
-  warmupRouteData(target);
-
-  switch (target) {
-    case '/atlet': void import('./Players'); break;
-    case '/galeri': void import('./Gallery'); break;
-    case '/peringkat': void import('./Rankings'); break;
-    case '/register': void import('./RegistrationForm'); break;
-    case '/prestasi': void import('./PublicPrestasi'); break;
-    case '/faq': void import('./PublicFAQ'); break;
-    case '/dokumen-penting': void import('./DokumenPenting'); break;
-    case '/struktur-organisasi': void import('./StrukturOrganisasiPublic'); break;
-    default: break;
+  try {
+    const p = (path || '').toLowerCase();
+    const s = (subPath || '').toLowerCase();
+    const target = p === 'atlet' || p === 'players' || ['semua', 'senior', 'muda'].includes(s)
+      ? '/atlet'
+      : p === 'gallery' || p === 'galeri'
+        ? '/galeri'
+        : p === 'peringkat' || p === 'ranking' || p === 'rankings'
+          ? '/peringkat'
+          : p === 'register' || p === 'pendaftaran'
+            ? '/register'
+            : p === 'prestasi'
+              ? '/prestasi'
+              : p === 'faq'
+                ? '/faq'
+                : p === 'berita' || p === 'news'
+                  ? '/berita'
+                  : p === 'dokumen' || p === 'dokumen-penting' || p === 'documents'
+                    ? '/dokumen-penting'
+                    : p === 'struktur' || p === 'struktur-organisasi'
+                      ? '/struktur-organisasi'
+                      : p === 'sejarah' || p === 'about' || p === 'tentang-kami'
+                        ? '/sejarah'
+                        : p === 'visi' || p === 'visi-misi' || p === 'misi'
+                          ? '/visi-misi'
+                          : p === 'fasilitas'
+                            ? '/fasilitas'
+                            : p === 'jadwal' || p.includes('jadwal')
+                              ? '/jadwal'
+                              : p === 'contact' || p === 'kontak'
+                                ? '/contact'
+                                : null;
+    if (!target) return;
+    try { warmupRouteData(target); } catch { /* prefetch must never block navigation */ }
+    switch (target) {
+      case '/atlet': void import('./Players'); break;
+      case '/galeri': void import('./Gallery'); break;
+      case '/peringkat': void import('./Rankings'); break;
+      case '/register': void import('./RegistrationForm'); break;
+      case '/prestasi': void import('./PublicPrestasi'); break;
+      case '/faq': void import('./PublicFAQ'); break;
+      case '/dokumen-penting': void import('./DokumenPenting'); break;
+      case '/struktur-organisasi': void import('./StrukturOrganisasiPublic'); break;
+      default: break;
+    }
+  } catch {
+    // Navigation must always continue even if optional prefetch fails.
   }
 };
 
@@ -173,22 +172,50 @@ export default function Navbar({ onNavigate }: NavbarProps) {
   };
 
   const go = (path: string, subPath?: string) => {
-    setOpenMenu(null); setMobileOpen(false);
-    const p = (path || '').toLowerCase(); const s = (subPath || '').toLowerCase();
-    if (p === 'home' || p === 'beranda') return onNavigate('home');
-    if (p === 'atlet' || p === 'players' || ['semua','senior','muda'].includes(s)) return onNavigate('atlet', subPath || 'Semua');
-    if (p === 'prestasi') return onNavigate('prestasi');
-    if (p === 'gallery' || p === 'galeri') return onNavigate('galeri');
-    if (p === 'contact' || p === 'kontak') return onNavigate('contact');
-    if (p === 'faq') return onNavigate('faq');
-    if (p === 'register' || p === 'pendaftaran') return onNavigate('register');
-    if (p === 'peringkat' || p === 'ranking' || p === 'rankings') return onNavigate('peringkat');
-    if (p === 'jadwal' || p.includes('jadwal')) return onNavigate('jadwal');
-    onNavigate(p || s);
+    const p = (path || '').toLowerCase().trim();
+    const s = (subPath || '').toLowerCase().trim();
+    try {
+      // Always perform the application navigation first. The drawer is closed
+      // only after the callback has been invoked so a touch cannot become a
+      // no-op while the mobile overlay is animating.
+      if (p === 'home' || p === 'beranda') onNavigate('home');
+      else if (p === 'atlet' || p === 'players' || ['semua','senior','muda'].includes(s)) onNavigate('atlet', subPath || 'Semua');
+      else if (p === 'prestasi') onNavigate('prestasi');
+      else if (p === 'gallery' || p === 'galeri') onNavigate('galeri');
+      else if (p === 'contact' || p === 'kontak') onNavigate('contact');
+      else if (p === 'faq') onNavigate('faq');
+      else if (p === 'register' || p === 'pendaftaran') onNavigate('register');
+      else if (p === 'peringkat' || p === 'ranking' || p === 'rankings') onNavigate('peringkat');
+      else if (p === 'jadwal' || p.includes('jadwal')) onNavigate('jadwal');
+      else onNavigate(p || s);
+    } catch (error) {
+      // Hard fallback for a broken callback: React Router navigation still works.
+      const fallback = p === 'home' || p === 'beranda' ? '/' : `/${p || s}`;
+      navigate(fallback);
+    } finally {
+      setOpenMenu(null);
+      setMobileOpen(false);
+    }
   };
 
   const handleNavigationPointerDown = (path: string, subPath?: string) => {
     preloadNavigation(path, subPath);
+  };
+
+  const handleMobileMenuClick = (event: React.MouseEvent<HTMLButtonElement>, path: string, subPath?: string) => {
+    event.preventDefault();
+    event.stopPropagation();
+    go(path, subPath);
+  };
+
+  const handleMobileParentClick = (event: React.MouseEvent<HTMLButtonElement>, menu: any, expanded: boolean, drop: boolean) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (drop) {
+      setOpenMenu(expanded ? null : menu.id);
+      return;
+    }
+    go(menu.path);
   };
 
   const logout = async () => {
@@ -216,41 +243,45 @@ export default function Navbar({ onNavigate }: NavbarProps) {
           </div>})}
           {session ? <><button type="button" onClick={() => navigate('/admin/dashboard')} className="px-3 py-2 rounded-full bg-emerald-600 text-white text-[10px] font-bold uppercase"><LayoutDashboard size={13} className="inline mr-1" />Dashboard</button><button type="button" onClick={logout} className="p-2 rounded-full bg-red-500/10 text-red-300"><LogOut size={15}/></button></> : <button type="button" onClick={() => navigate('/login')} className="px-3 py-2 rounded-full bg-blue-600 text-white text-[10px] font-bold uppercase"><LogIn size={13} className="inline mr-1"/>Login</button>}
         </div>
-        <button id="mobile-sidebar-toggle-btn" type="button" onClick={() => setMobileOpen(v => !v)} aria-label={mobileOpen ? 'Tutup menu navigasi' : 'Buka menu navigasi'} aria-expanded={mobileOpen} className="lg:hidden w-11 h-11 shrink-0 rounded-2xl bg-slate-800/90 border border-white/15 flex items-center justify-center text-slate-200 shadow-lg active:scale-95 transition-transform"><span className="flex flex-col gap-1.5"><i className={`block w-5 h-0.5 bg-blue-300 rounded ${mobileOpen ? 'rotate-45 translate-y-2' : ''}`} /><i className={`block w-4 h-0.5 bg-slate-300 rounded ml-auto ${mobileOpen ? 'opacity-0' : ''}`} /><i className={`block w-5 h-0.5 bg-blue-300 rounded ${mobileOpen ? '-rotate-45 -translate-y-2' : ''}`} /></span></button>
+        <button id="mobile-sidebar-toggle-btn" type="button" onClick={() => setMobileOpen(v => !v)} aria-label={mobileOpen ? 'Tutup menu navigasi' : 'Buka menu navigasi'} aria-expanded={mobileOpen} className="lg:hidden w-11 h-11 shrink-0 rounded-2xl bg-slate-800/90 border border-white/15 flex items-center justify-center text-slate-200 shadow-lg active:scale-95 transition-transform touch-manipulation"><span className="flex flex-col gap-1.5 pointer-events-none"><i className={`block w-5 h-0.5 bg-blue-300 rounded ${mobileOpen ? 'rotate-45 translate-y-2' : ''}`} /><i className={`block w-4 h-0.5 bg-slate-300 rounded ml-auto ${mobileOpen ? 'opacity-0' : ''}`} /><i className={`block w-5 h-0.5 bg-blue-300 rounded ${mobileOpen ? '-rotate-45 -translate-y-2' : ''}`} /></span></button>
       </div>
     </nav>
 
-    <div className={`lg:hidden fixed inset-0 z-[99998] bg-black/70 backdrop-blur-sm transition-opacity duration-200 ${mobileOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => setMobileOpen(false)} aria-hidden="true" />
+    <div className={`lg:hidden fixed inset-0 z-[2147483000] bg-black/70 backdrop-blur-sm transition-opacity duration-150 ${mobileOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => setMobileOpen(false)} aria-hidden="true" />
 
-    <aside aria-label="Menu navigasi seluler" className={`lg:hidden fixed inset-y-0 left-0 z-[99999] w-[min(86vw,350px)] max-w-[350px] bg-[#0b1224] border-r border-white/10 shadow-2xl flex flex-col overflow-hidden transition-transform duration-200 ease-out ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+    <aside aria-label="Menu navigasi seluler" className={`lg:hidden fixed inset-y-0 left-0 z-[2147483001] w-[min(86vw,350px)] max-w-[350px] bg-[#0b1224] border-r border-white/10 shadow-2xl flex flex-col overflow-hidden transition-transform duration-150 ease-out ${mobileOpen ? 'translate-x-0 pointer-events-auto' : '-translate-x-full pointer-events-none'} touch-manipulation`} onClick={(e) => e.stopPropagation()}>
       <div className="h-16 min-h-16 shrink-0 px-4 flex items-center justify-between border-b border-white/10 bg-slate-950/95">
         <div className="flex items-center gap-2.5 min-w-0"><img src={branding.logo_url} className="w-9 h-9 object-contain shrink-0" alt="PB Bilibili 162" loading="eager"/><div className="min-w-0 font-black text-sm italic uppercase truncate">{branding.brand_name_main} <span className="text-blue-500">{branding.brand_name_accent}</span><span className="block text-[7px] tracking-[.18em] text-slate-500 not-italic mt-0.5">PROFESSIONAL CLUB</span></div></div>
-        <button type="button" onClick={() => setMobileOpen(false)} className="w-10 h-10 min-w-10 rounded-xl bg-slate-800 border border-white/10 flex items-center justify-center text-slate-200 active:scale-95" aria-label="Tutup menu"><X size={19}/></button>
+        <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMobileOpen(false); }} className="w-10 h-10 min-w-10 rounded-xl bg-slate-800 border border-white/10 flex items-center justify-center text-slate-200 active:scale-95 touch-manipulation" aria-label="Tutup menu"><X size={19} className="pointer-events-none"/></button>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 py-3 [scrollbar-width:thin]">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 py-3 [scrollbar-width:thin] touch-pan-y">
         <div className="space-y-0.5 pb-2">
           {topMenus.map(menu => {
             const subs = getSubMenus(menu.id);
             const drop = menu.type === 'dropdown' || subs.length > 0;
             const expanded = openMenu === menu.id;
             return <div key={menu.id} className="rounded-xl overflow-hidden">
-              <button type="button" onPointerDown={() => handleNavigationPointerDown(menu.path)} onClick={() => drop ? setOpenMenu(expanded ? null : menu.id) : go(menu.path)} className={`w-full min-h-[48px] px-3 flex items-center justify-between gap-3 rounded-xl text-left text-[14px] leading-5 font-bold uppercase tracking-[.01em] transition-colors ${expanded ? 'bg-blue-600/15 text-blue-300' : 'text-slate-200 hover:bg-white/5 active:bg-white/10'}`}>
-                <span className="flex items-center gap-3 min-w-0"><span className="w-6 min-w-6 flex justify-center">{iconFor(menu.path, menu.label)}</span><span className="truncate">{menu.label}</span></span>
-                {drop && <ChevronDown size={15} className={`shrink-0 transition-transform ${expanded ? 'rotate-180 text-blue-400' : 'text-slate-500'}`}/>}
+              <button type="button" aria-expanded={drop ? expanded : undefined} onClick={(e) => handleMobileParentClick(e, menu, expanded, drop)} className={`w-full min-h-[48px] px-3 flex items-center justify-between gap-3 rounded-xl text-left text-[14px] leading-5 font-bold uppercase tracking-[.01em] transition-colors touch-manipulation select-none ${expanded ? 'bg-blue-600/15 text-blue-300' : 'text-slate-200 hover:bg-white/5 active:bg-white/10'}`}>
+                <span className="flex items-center gap-3 min-w-0 pointer-events-none"><span className="w-6 min-w-6 flex justify-center">{iconFor(menu.path, menu.label)}</span><span className="truncate">{menu.label}</span></span>
+                {drop && <ChevronDown size={15} className={`shrink-0 transition-transform pointer-events-none ${expanded ? 'rotate-180 text-blue-400' : 'text-slate-500'}`}/>} 
               </button>
-              {drop && expanded && <div className="ml-4 pl-3 border-l border-blue-500/40 py-0.5 my-0.5">{subs.map(sub => <button key={sub.id} type="button" onPointerDown={() => handleNavigationPointerDown(menu.path, sub.path)} onClick={() => go(menu.path, sub.path)} className="w-full min-h-[42px] px-2.5 flex items-center gap-2.5 text-left text-[13px] leading-5 text-slate-300 hover:text-white hover:bg-white/5 active:bg-white/10 rounded-lg"><span className="w-5 min-w-5 flex justify-center">{iconFor(sub.path, sub.label)}</span><span className="truncate">{sub.label}</span></button>)}</div>}
+              {drop && expanded && <div className="ml-4 pl-3 border-l border-blue-500/40 py-0.5 my-0.5">
+                {subs.map(sub => <button key={sub.id} type="button" onPointerDown={() => { /* prefetch only; never controls navigation */ preloadNavigation(menu.path, sub.path); }} onClick={(e) => handleMobileMenuClick(e, menu.path, sub.path)} className="w-full min-h-[44px] px-2.5 flex items-center gap-2.5 text-left text-[13px] leading-5 text-slate-300 hover:text-white hover:bg-white/5 active:bg-white/10 rounded-lg touch-manipulation select-none">
+                  <span className="w-5 min-w-5 flex justify-center pointer-events-none">{iconFor(sub.path, sub.label)}</span><span className="truncate pointer-events-none">{sub.label}</span>
+                </button>)}
+              </div>}
             </div>;
           })}
         </div>
         <div className="border-t border-white/10 pt-2 mt-1 space-y-0.5">
-          {session ? <><button type="button" onPointerDown={() => handleNavigationPointerDown('/admin/dashboard')} onClick={() => { setMobileOpen(false); navigate('/admin/dashboard'); }} className="w-full min-h-[46px] px-3 rounded-xl text-emerald-300 hover:bg-emerald-500/10 text-left font-bold"><LayoutDashboard size={16} className="inline mr-3"/>Dashboard</button><button type="button" onClick={logout} className="w-full min-h-[46px] px-3 rounded-xl text-red-300 hover:bg-red-500/10 text-left font-bold"><LogOut size={16} className="inline mr-3"/>Keluar Sesi</button></> : <button type="button" onClick={() => { setMobileOpen(false); navigate('/login'); }} className="w-full min-h-[46px] px-3 rounded-xl bg-blue-500/10 border border-blue-500/15 text-blue-300 text-left font-bold"><LogIn size={16} className="inline mr-3"/>Portal Login</button>}
+          {session ? <><button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMobileOpen(false); navigate('/admin/dashboard'); }} className="w-full min-h-[46px] px-3 rounded-xl text-emerald-300 hover:bg-emerald-500/10 text-left font-bold touch-manipulation"><LayoutDashboard size={16} className="inline mr-3 pointer-events-none"/>Dashboard</button><button type="button" onClick={logout} className="w-full min-h-[46px] px-3 rounded-xl text-red-300 hover:bg-red-500/10 text-left font-bold touch-manipulation"><LogOut size={16} className="inline mr-3 pointer-events-none"/>Keluar Sesi</button></> : <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMobileOpen(false); navigate('/login'); }} className="w-full min-h-[46px] px-3 rounded-xl bg-blue-500/10 border border-blue-500/15 text-blue-300 text-left font-bold touch-manipulation"><LogIn size={16} className="inline mr-3 pointer-events-none"/>Portal Login</button>}
         </div>
       </div>
 
       <div className="shrink-0 px-3 pt-2 pb-[max(12px,env(safe-area-inset-bottom))] border-t border-white/10 bg-slate-950/95">
-        <button type="button" onPointerDown={() => handleNavigationPointerDown('register')} onClick={() => go('register')} className="w-full min-h-[60px] px-3 py-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-left active:scale-[.99] transition-transform"><span className="block text-[8px] uppercase tracking-[.18em] text-blue-400">Pendaftaran</span><span className="block font-bold text-white text-sm mt-0.5 truncate">Gabung Atlet Baru</span></button>
-        <div className="flex justify-center gap-5 mt-2.5 text-slate-500"><Youtube size={15}/><Instagram size={15}/><Facebook size={15}/><Twitter size={15}/></div>
+        <button type="button" onClick={(e) => handleMobileMenuClick(e, 'register')} className="w-full min-h-[60px] px-3 py-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-left active:scale-[.99] transition-transform touch-manipulation"><span className="block text-[8px] uppercase tracking-[.18em] text-blue-400 pointer-events-none">Pendaftaran</span><span className="block font-bold text-white text-sm mt-0.5 truncate pointer-events-none">Gabung Atlet Baru</span></button>
+        <div className="flex justify-center gap-5 mt-2.5 text-slate-500 pointer-events-none"><Youtube size={15}/><Instagram size={15}/><Facebook size={15}/><Twitter size={15}/></div>
       </div>
     </aside>
   </>;
