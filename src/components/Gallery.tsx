@@ -75,21 +75,25 @@ export default function Gallery() {
     if (fetchInFlight.current) return;
     fetchInFlight.current = true;
     try {
-      const data = await getSiteSetting('gallery_list');
-      if (Array.isArray(data) && data.length > 0) {
-        applyGallery(data as GalleryItem[]);
-        try { localStorage.setItem(CACHE_KEY, JSON.stringify(data)); } catch {}
-        return;
-      }
-
-      const { data: sbData, error } = await supabase
+      // Supabase gallery is the authoritative source. In particular, an album
+      // stores all photos in one comma-separated `url` field. Do not prefer the
+      // legacy site_settings copy because it may contain only the first photo.
+      const { data: sbData, error: sbError } = await supabase
         .from('gallery')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (!error && Array.isArray(sbData) && sbData.length > 0) {
+      if (!sbError && Array.isArray(sbData) && sbData.length > 0) {
         applyGallery(sbData as GalleryItem[]);
         try { localStorage.setItem(CACHE_KEY, JSON.stringify(sbData)); } catch {}
+        return;
+      }
+
+      // Legacy/site-setting data is only a fallback when Supabase is unavailable.
+      const data = await getSiteSetting('gallery_list');
+      if (Array.isArray(data) && data.length > 0) {
+        applyGallery(data as GalleryItem[]);
+        try { localStorage.setItem(CACHE_KEY, JSON.stringify(data)); } catch {}
         return;
       }
 
@@ -113,10 +117,19 @@ export default function Gallery() {
           const cached = localStorage.getItem(CACHE_KEY) || localStorage.getItem(LEGACY_CACHE_KEY);
           if (cached) {
             const parsed = JSON.parse(cached);
-            if (Array.isArray(parsed) && parsed.length > 0) applyGallery(parsed as GalleryItem[]);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              applyGallery(parsed as GalleryItem[]);
+              return;
+            }
           }
         } catch {}
-        if (lastGallerySignature.current === '') applyGallery(DEFAULT_GALLERY as GalleryItem[]);
+        try {
+          const data = await getSiteSetting('gallery_list');
+          if (Array.isArray(data) && data.length > 0) applyGallery(data as GalleryItem[]);
+          else if (lastGallerySignature.current === '') applyGallery(DEFAULT_GALLERY as GalleryItem[]);
+        } catch {
+          if (lastGallerySignature.current === '') applyGallery(DEFAULT_GALLERY as GalleryItem[]);
+        }
       }
     } finally {
       fetchInFlight.current = false;
@@ -238,8 +251,6 @@ export default function Gallery() {
   };
 
   const handleShare = (item: GalleryItem, platform: 'wa' | 'fb' | 'copy') => {
-    // v2 deliberately changes the shared URL so WhatsApp does not reuse the old
-    // cached preview that incorrectly showed the PB Bilibili 162 logo.
     const currentUrl = `${window.location.origin}?gallery=${encodeURIComponent(item.id)}&share=v2`;
     const shareText = `Lihat dokumentasi "${item.title || 'PB Bilibili 162'}" dari PB Bilibili 162: ${currentUrl}`;
     if (platform === 'wa') window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
