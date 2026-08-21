@@ -27,14 +27,14 @@ const replacement = `
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
                       {images.map((img, idx) => (
                         <button
-                          key={`${activeMedia.id}-grid-${idx}`}
+                          key={activeMedia.id + '-grid-' + idx}
                           onClick={() => setActiveImgIndex(idx)}
-                          className={`group relative aspect-[4/3] overflow-hidden rounded-xl bg-slate-100 border-2 transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 ${idx === activeImgIndex ? 'border-emerald-500 ring-2 ring-emerald-500/20' : 'border-transparent hover:border-slate-300'}`}
-                          aria-label={`Buka foto ${idx + 1}`}
+                          className={\`group relative aspect-[4/3] overflow-hidden rounded-xl bg-slate-100 border-2 transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 ${idx === activeImgIndex ? 'border-emerald-500 ring-2 ring-emerald-500/20' : 'border-transparent hover:border-slate-300'}\`}
+                          aria-label={'Buka foto ' + (idx + 1)}
                         >
                           <img
                             src={getOptimizedImageUrl(img, 520)}
-                            alt={`Foto ${idx + 1} dari ${count}`}
+                            alt={'Foto ' + (idx + 1) + ' dari ' + count}
                             loading="lazy"
                             decoding="async"
                             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
