@@ -12,13 +12,7 @@ interface LazyImageProps {
   onError?: (e: any) => void;
 }
 
-/**
- * Stable lazy image.
- *
- * Important: this component intentionally does not animate the placeholder,
- * opacity, blur or transform. Gallery images must appear at a fixed geometry
- * without a shimmer/fade that can be perceived as screen flicker on mobile.
- */
+/** Stable lazy image with atomic source swapping and no blank-frame transition. */
 export default function LazyImage({
   src,
   alt,
@@ -29,34 +23,24 @@ export default function LazyImage({
   onClick,
   onError,
 }: LazyImageProps) {
-  const [isInView, setIsInView] = useState(false);
-  const [isLoaded, setIsLoaded] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
   const primarySrc = (src || '').trim().split(/[\s,]+/)[0] || '';
-  const [currentSrc, setCurrentSrc] = useState(() => getOptimizedImageUrl(primarySrc, width, quality));
+  const optimizedSrc = getOptimizedImageUrl(primarySrc, width, quality);
+  const [isInView, setIsInView] = useState(false);
+  const [displaySrc, setDisplaySrc] = useState(optimizedSrc);
+  const [loaded, setLoaded] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const requestRef = useRef(0);
+  const onErrorRef = useRef(onError);
 
   useEffect(() => {
-    const nextSrc = getOptimizedImageUrl(primarySrc, width, quality);
-    setCurrentSrc(nextSrc);
-    setIsLoaded(false);
-  }, [primarySrc, width, quality]);
-
-  const handleImgError = (e: any) => {
-    if (currentSrc !== primarySrc && primarySrc) {
-      setCurrentSrc(primarySrc);
-    } else {
-      setIsLoaded(true);
-      onError?.(e);
-    }
-  };
+    onErrorRef.current = onError;
+  }, [onError]);
 
   useEffect(() => {
     if (!('IntersectionObserver' in window)) {
       setIsInView(true);
       return;
     }
-
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -64,36 +48,57 @@ export default function LazyImage({
           observer.disconnect();
         }
       },
-      { rootMargin: '200px 0px' }
+      { rootMargin: '240px 0px' }
     );
-
     if (containerRef.current) observer.observe(containerRef.current);
     return () => observer.disconnect();
   }, []);
 
-  return (
-    <div
-      ref={containerRef}
-      className={`relative overflow-hidden bg-[#12141c]/40 ${containerClassName}`}
-      onClick={onClick}
-    >
-      {/* Static placeholder only: no pulse, shimmer, blur or opacity animation. */}
-      {!isLoaded && (
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950/20"
-        />
-      )}
+  useEffect(() => {
+    if (!isInView || !optimizedSrc) return;
+    const requestId = ++requestRef.current;
+    const image = new Image();
+    image.decoding = 'async';
+    image.onload = () => {
+      if (requestId !== requestRef.current) return;
+      setDisplaySrc(optimizedSrc);
+      setLoaded(true);
+    };
+    image.onerror = () => {
+      if (requestId !== requestRef.current) return;
+      if (primarySrc && primarySrc !== optimizedSrc) {
+        const fallback = new Image();
+        fallback.onload = () => {
+          if (requestId !== requestRef.current) return;
+          setDisplaySrc(primarySrc);
+          setLoaded(true);
+        };
+        fallback.onerror = event => onErrorRef.current?.(event);
+        fallback.src = primarySrc;
+      } else {
+        onErrorRef.current?.(image);
+      }
+    };
+    image.src = optimizedSrc;
+    return () => {
+      requestRef.current += 1;
+      image.onload = null;
+      image.onerror = null;
+    };
+  }, [isInView, optimizedSrc, primarySrc]);
 
-      {isInView && (
+  return (
+    <div ref={containerRef} className={`relative overflow-hidden bg-[#12141c]/40 ${containerClassName}`} onClick={onClick}>
+      {!loaded && !displaySrc && <div aria-hidden="true" className="absolute inset-0 bg-slate-900" />}
+      {isInView && displaySrc && (
         <img
-          src={currentSrc}
+          src={displaySrc}
           alt={alt}
           referrerPolicy="no-referrer"
           loading="lazy"
           decoding="async"
-          onLoad={() => setIsLoaded(true)}
-          onError={handleImgError}
+          onLoad={() => setLoaded(true)}
+          onError={event => onErrorRef.current?.(event)}
           className={`${className} block opacity-100 blur-0 transform-none`}
         />
       )}
