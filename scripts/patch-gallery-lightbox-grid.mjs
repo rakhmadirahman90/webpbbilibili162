@@ -30,7 +30,7 @@ const replacement = `
                         <button
                           key={activeMedia.id + '-grid-' + idx}
                           onClick={() => setActiveImgIndex(idx)}
-                          className={\`group relative aspect-[4/3] overflow-hidden rounded-xl bg-slate-100 border-2 transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 ${idx === activeImgIndex ? 'border-emerald-500 ring-2 ring-emerald-500/20' : 'border-transparent hover:border-slate-300'}\`}
+                          className={'group relative aspect-[4/3] overflow-hidden rounded-xl bg-slate-100 border-2 transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 ' + (idx === activeImgIndex ? 'border-emerald-500 ring-2 ring-emerald-500/20' : 'border-transparent hover:border-slate-300')}
                           aria-label={'Buka foto ' + (idx + 1)}
                         >
                           <img
