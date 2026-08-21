@@ -74,8 +74,8 @@ body.gallery-route #gallery {
   height: auto !important;
   overflow: hidden !important;
   padding-bottom: 0 !important;
-  display: grid !important;
-  grid-template-rows: minmax(0, 38vh) minmax(0, 1fr) auto !important;
+  display: flex !important;
+  flex-direction: column !important;
 }
 
 #gallery .gallery-lightbox > div:nth-child(2) > div:first-child {
@@ -86,56 +86,28 @@ body.gallery-route #gallery {
   flex: none !important;
 }
 
+/* The metadata + album container is the single vertical scroll owner. */
 #gallery .gallery-lightbox > div:nth-child(2) > div:nth-child(2) {
   min-height: 0 !important;
   height: auto !important;
-  overflow: hidden !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
   padding-top: 0.75rem !important;
-  display: flex !important;
-  flex-direction: column !important;
-}
-
-#gallery .gallery-lightbox > div:nth-child(2) > div:nth-child(2) > .scrollbar-thin {
+  display: block !important;
   flex: 1 1 auto !important;
-  min-height: 0 !important;
-  height: 100% !important;
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
-  overscroll-behavior: contain !important;
   -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior-y: contain !important;
+  overscroll-behavior-x: none !important;
   touch-action: pan-y !important;
-  display: grid !important;
-  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  gap: 0.75rem !important;
-  padding: 0 0.5rem 0.75rem !important;
-  align-content: start !important;
-}
-
-#gallery .gallery-lightbox > div:nth-child(2) > div:nth-child(2) > .scrollbar-thin > button {
-  width: 100% !important;
-  min-width: 0 !important;
-  height: auto !important;
-  aspect-ratio: 4 / 3 !important;
-  margin: 0 !important;
-  touch-action: manipulation !important;
-}
-
-#gallery .gallery-lightbox > div:nth-child(2) > div:nth-child(3) {
-  min-height: 0 !important;
-  max-height: 18vh !important;
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
-  overscroll-behavior: contain !important;
-  flex: none !important;
+  scroll-behavior: auto !important;
+  scrollbar-gutter: stable;
+  contain: layout paint style;
+  transform: translateZ(0);
 }
 
 @media (min-width: 768px) {
-  #gallery .gallery-lightbox > div:nth-child(2) {
-    grid-template-rows: minmax(0, 58vh) minmax(0, 1fr) auto !important;
-  }
-
-  #gallery .gallery-lightbox > div:nth-child(2) > div:nth-child(2) > .scrollbar-thin {
-    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  #gallery .gallery-lightbox > div:nth-child(2) > div:nth-child(2) {
+    scrollbar-width: thin;
   }
 }
 
@@ -147,7 +119,7 @@ body.gallery-route #gallery {
 
   #gallery .grid { overflow: visible; }
 
-  /* Final mobile isolation: header + hero never move. */
+  /* Mobile page itself never becomes the scroll owner while the gallery is open. */
   html:has(#gallery .gallery-lightbox),
   body:has(#gallery .gallery-lightbox) {
     overflow: hidden !important;
@@ -192,6 +164,7 @@ body.gallery-route #gallery {
     touch-action: none !important;
   }
 
+  /* Hero/photo stays completely fixed; it never participates in vertical scrolling. */
   #gallery .gallery-lightbox > div:nth-child(2) > div:first-child {
     position: fixed !important;
     left: 0 !important;
@@ -221,71 +194,48 @@ body.gallery-route #gallery {
     touch-action: manipulation !important;
   }
 
-  /* Only the thumbnail panel is a vertical scroll owner. */
+  /* ONLY this container scrolls. Metadata stays above the album and scrolls naturally with it. */
   #gallery .gallery-lightbox > div:nth-child(2) > div:nth-child(2) {
     position: fixed !important;
     left: 0 !important;
     right: 0 !important;
     top: calc(64px + 38vh) !important;
-    bottom: 18vh !important;
+    bottom: 0 !important;
     width: 100vw !important;
     height: auto !important;
     max-height: none !important;
     min-height: 0 !important;
-    overflow: hidden !important;
-    padding: 0.75rem 0.5rem 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding: 0.75rem 0 2rem !important;
     z-index: 150 !important;
     background: #ffffff !important;
     touch-action: pan-y !important;
     overscroll-behavior-y: contain !important;
-  }
-
-  #gallery .gallery-lightbox > div:nth-child(2) > div:nth-child(2) > .scrollbar-thin {
-    position: relative !important;
-    display: grid !important;
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    align-content: start !important;
-    width: 100% !important;
-    height: 100% !important;
-    max-height: 100% !important;
-    min-height: 0 !important;
-    overflow-y: scroll !important;
-    overflow-x: hidden !important;
-    -webkit-overflow-scrolling: touch !important;
-    overscroll-behavior-y: contain !important;
     overscroll-behavior-x: none !important;
-    touch-action: pan-y !important;
+    -webkit-overflow-scrolling: touch !important;
     scroll-behavior: auto !important;
-    padding: 0 0.25rem 2rem !important;
+    scrollbar-width: none !important;
+    contain: layout paint style !important;
+    transform: translateZ(0) !important;
+    will-change: scroll-position !important;
   }
 
-  #gallery .gallery-lightbox > div:nth-child(2) > div:nth-child(2) > .scrollbar-thin > button {
-    width: 100% !important;
-    min-width: 0 !important;
-    aspect-ratio: 4 / 3 !important;
-    height: auto !important;
+  #gallery .gallery-lightbox > div:nth-child(2) > div:nth-child(2)::-webkit-scrollbar {
+    width: 0 !important;
+    height: 0 !important;
+  }
+
+  /* Keep thumbnail rendering lightweight during fast finger scrolling. */
+  #gallery .gallery-lightbox > div:nth-child(2) > div:nth-child(2) button {
     touch-action: manipulation !important;
+    contain: layout paint style !important;
   }
 
-  /* Restore the existing title/description; it is fixed and does not scroll. */
-  #gallery .gallery-lightbox > div:nth-child(2) > div:nth-child(3) {
-    position: fixed !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    width: 100vw !important;
-    height: 18vh !important;
-    max-height: 18vh !important;
-    min-height: 0 !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    z-index: 160 !important;
-    background: #ffffff !important;
-    padding: 0.75rem 1.25rem !important;
-    opacity: 1 !important;
-    pointer-events: auto !important;
-    overscroll-behavior: contain !important;
-    touch-action: pan-y !important;
+  #gallery .gallery-lightbox > div:nth-child(2) > div:nth-child(2) button img {
+    display: block !important;
+    backface-visibility: hidden !important;
+    -webkit-backface-visibility: hidden !important;
   }
 }
 
