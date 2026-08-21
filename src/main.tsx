@@ -9,11 +9,21 @@ import './index.css';
 import './responsive-hardening.css';
 import './news-footer-fix.css';
 import './public-footer-flow.css';
+import './gallery-stability.css';
 
-// Never block the first paint on cache/demo-data initialization.
-// The live Supabase state is the source of truth; local storage is only a
-// background fallback for offline/slow-network cases.
+// Keep the Gallery route visually stable while the lazy page and its data hydrate.
+// This avoids a partially transparent/stuck route transition on mobile browsers.
 if (typeof window !== 'undefined') {
+  const syncGalleryRouteClass = () => {
+    document.body.classList.toggle(
+      'gallery-route',
+      /^\/(galeri|gallery)(?:\/|$)/i.test(window.location.pathname)
+    );
+  };
+
+  syncGalleryRouteClass();
+  window.addEventListener('popstate', syncGalleryRouteClass);
+
   window.setTimeout(() => {
     try {
       initializeLocalDatabase();
