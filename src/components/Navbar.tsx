@@ -30,40 +30,50 @@ export const DEFAULT_NAV_ITEMS = [
 export const ATLET_DEFAULT_SUBMENUS = DEFAULT_NAV_ITEMS.filter(i => i.parent_id === 'atlet');
 export const isTopLevelMenuItem = (item: any) => !!item && (!item.parent_id || item.parent_id === 'none' || item.parent_id === '');
 
+const normalizeNavigationPath = (value = '') => {
+  const p = String(value).toLowerCase().trim().replace(/\s+/g, '-');
+  if (['ranking', 'rankings', 'ranking-atlet', 'ranking-poin-atlet', 'ranking-dan-poin-atlet', 'peringkat-atlet'].includes(p)) return 'peringkat';
+  if (['quiz', 'quiz-badminton', 'kuis', 'kuis-badminton'].includes(p)) return 'quiz';
+  if (['beranda', 'home'].includes(p)) return 'home';
+  return p;
+};
+
 const preloadNavigation = (path: string, subPath?: string) => {
   try {
-    const p = (path || '').toLowerCase();
-    const s = (subPath || '').toLowerCase();
+    const p = normalizeNavigationPath(path);
+    const s = normalizeNavigationPath(subPath || '');
     const effective = s || p;
     const target = effective === 'atlet' || effective === 'players' || ['semua', 'senior', 'muda'].includes(effective)
       ? '/atlet'
       : effective === 'gallery' || effective === 'galeri'
         ? '/galeri'
-        : effective === 'peringkat' || effective === 'ranking' || effective === 'rankings'
+        : effective === 'peringkat'
           ? '/peringkat'
           : effective === 'register' || effective === 'pendaftaran'
             ? '/register'
             : effective === 'prestasi'
               ? '/prestasi'
-              : effective === 'faq'
-                ? '/faq'
-                : effective === 'berita' || effective === 'news'
-                  ? '/berita'
-                  : effective === 'dokumen' || effective === 'dokumen-penting' || effective === 'documents'
-                    ? '/dokumen-penting'
-                    : effective === 'struktur' || effective === 'struktur-organisasi'
-                      ? '/struktur-organisasi'
-                      : effective === 'sejarah' || effective === 'about' || effective === 'tentang-kami'
-                        ? '/sejarah'
-                        : effective === 'visi' || effective === 'visi-misi' || effective === 'misi'
-                          ? '/visi-misi'
-                          : effective === 'fasilitas'
-                            ? '/fasilitas'
-                            : effective === 'jadwal' || effective.includes('jadwal')
-                              ? '/jadwal'
-                              : effective === 'contact' || effective === 'kontak'
-                                ? '/contact'
-                                : null;
+              : effective === 'quiz'
+                ? '/quiz'
+                : effective === 'faq'
+                  ? '/faq'
+                  : effective === 'berita' || effective === 'news'
+                    ? '/berita'
+                    : effective === 'dokumen' || effective === 'dokumen-penting' || effective === 'documents'
+                      ? '/dokumen-penting'
+                      : effective === 'struktur' || effective === 'struktur-organisasi'
+                        ? '/struktur-organisasi'
+                        : effective === 'sejarah' || effective === 'about' || effective === 'tentang-kami'
+                          ? '/sejarah'
+                          : effective === 'visi' || effective === 'visi-misi' || effective === 'misi'
+                            ? '/visi-misi'
+                            : effective === 'fasilitas'
+                              ? '/fasilitas'
+                              : effective === 'jadwal' || effective.includes('jadwal')
+                                ? '/jadwal'
+                                : effective === 'contact' || effective === 'kontak'
+                                  ? '/contact'
+                                  : null;
     if (!target) return;
     try { warmupRouteData(target); } catch { /* prefetch must never block navigation */ }
     switch (target) {
@@ -72,6 +82,7 @@ const preloadNavigation = (path: string, subPath?: string) => {
       case '/peringkat': void import('./Rankings'); break;
       case '/register': void import('./RegistrationForm'); break;
       case '/prestasi': void import('./PublicPrestasi'); break;
+      case '/quiz': void import('./BadmintonQuiz'); break;
       case '/faq': void import('./PublicFAQ'); break;
       case '/dokumen-penting': void import('./DokumenPenting'); break;
       case '/struktur-organisasi': void import('./StrukturOrganisasiPublic'); break;
@@ -168,19 +179,14 @@ export default function Navbar({ onNavigate }: NavbarProps) {
 
   const iconFor = (path = '', label = '') => {
     const p = path.toLowerCase(), l = label.toLowerCase();
-    const C = p.includes('jadwal') ? Timer : p.includes('berita') ? Newspaper : p.includes('prestasi') ? Award : p.includes('atlet') || l.includes('atlet') ? Users : p.includes('peringkat') || p.includes('rank') ? Trophy : p.includes('gallery') || p.includes('galeri') ? ImageIcon : p.includes('contact') || l.includes('hubungi') ? MapPin : p.includes('faq') ? HelpCircle : p.includes('fasilitas') ? Building2 : p.includes('visi') ? Target : p.includes('struktur') ? Users : p.includes('dokumen') ? FileText : p.includes('tentang') || p === 'about' ? Shield : p === 'quiz' ? BrainCircuit : p === 'home' ? Globe : Sparkles;
+    const C = p.includes('jadwal') ? Timer : p.includes('berita') ? Newspaper : p.includes('prestasi') ? Award : p.includes('atlet') || l.includes('atlet') ? Users : p.includes('peringkat') || p.includes('rank') ? Trophy : p.includes('quiz') || p.includes('kuis') ? BrainCircuit : p.includes('gallery') || p.includes('galeri') ? ImageIcon : p.includes('contact') || l.includes('hubungi') ? MapPin : p.includes('faq') ? HelpCircle : p.includes('fasilitas') ? Building2 : p.includes('visi') ? Target : p.includes('struktur') ? Users : p.includes('dokumen') ? FileText : p.includes('tentang') || p === 'about' ? Shield : p === 'quiz' ? BrainCircuit : p === 'home' ? Globe : Sparkles;
     return <C size={15} className="shrink-0 text-blue-400" />;
   };
 
-  // Resolve a clicked menu to the actual destination. A dropdown parent such as
-  // "about" or "informasi" is only a container; its child path is the real page.
   const resolveNavigationTarget = (path: string, subPath?: string) => {
-    const p = (path || '').toLowerCase().trim();
-    const s = (subPath || '').toLowerCase().trim();
-    if (s) {
-      if (p === 'atlet' || p === 'players') return { section: 'atlet', tab: subPath };
-      return { section: s, tab: undefined };
-    }
+    const p = normalizeNavigationPath(path);
+    const s = normalizeNavigationPath(subPath || '');
+    if (s) return { section: s, tab: undefined };
     return { section: p || 'home', tab: undefined };
   };
 
@@ -190,7 +196,6 @@ export default function Navbar({ onNavigate }: NavbarProps) {
       if (section === 'home' || section === 'beranda') onNavigate('home');
       else onNavigate(section, tab);
     } catch (error) {
-      // Hard fallback for a broken callback: React Router navigation still works.
       const fallback = section === 'home' || section === 'beranda' ? '/' : `/${section}`;
       navigate(fallback);
     } finally {
@@ -268,7 +273,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
                 {drop && <ChevronDown size={15} className={`shrink-0 transition-transform pointer-events-none ${expanded ? 'rotate-180 text-blue-400' : 'text-slate-500'}`}/>} 
               </button>
               {drop && expanded && <div className="ml-4 pl-3 border-l border-blue-500/40 py-0.5 my-0.5">
-                {subs.map(sub => <button key={sub.id} type="button" onPointerDown={() => { /* prefetch only; never controls navigation */ preloadNavigation(menu.path, sub.path); }} onClick={(e) => handleMobileMenuClick(e, menu.path, sub.path)} className="w-full min-h-[44px] px-2.5 flex items-center gap-2.5 text-left text-[13px] leading-5 text-slate-300 hover:text-white hover:bg-white/5 active:bg-white/10 rounded-lg touch-manipulation select-none">
+                {subs.map(sub => <button key={sub.id} type="button" onPointerDown={() => { preloadNavigation(menu.path, sub.path); }} onClick={(e) => handleMobileMenuClick(e, menu.path, sub.path)} className="w-full min-h-[44px] px-2.5 flex items-center gap-2.5 text-left text-[13px] leading-5 text-slate-300 hover:text-white hover:bg-white/5 active:bg-white/10 rounded-lg touch-manipulation select-none">
                   <span className="w-5 min-w-5 flex justify-center pointer-events-none">{iconFor(sub.path, sub.label)}</span><span className="truncate pointer-events-none">{sub.label}</span>
                 </button>)}
               </div>}
