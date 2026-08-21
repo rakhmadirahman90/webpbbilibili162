@@ -9,9 +9,10 @@ if (!fs.existsSync(file)) {
 
 let source = fs.readFileSync(file, 'utf8');
 
-// Replace the lightbox's horizontal thumbnail strip, regardless of harmless
-// class-name changes made by earlier build-time gallery patches.
-const pattern = /\n\s*\{activeMedia\.type === 'image' && count > 1 && \(\n\s*<div className=\"max-w-[^\"]+ mx-auto px-4 sm:px-6 pt-4\">[\s\S]*?<\/div>\n\s*\)\}\n\s*(?=<div className=\"max-w-5xl mx-auto px-5 sm:px-8 py-6 sm:py-8\">)/;
+// Replace the complete lightbox thumbnail strip. The match intentionally
+// spans nested divs so harmless layout changes from earlier patches do not
+// prevent the replacement.
+const pattern = /\n\s*\{activeMedia\.type === 'image' && count > 1 && \([\s\S]*?<div className=\"max-w-5xl mx-auto px-5 sm:px-8 py-6 sm:py-8\">/;
 
 const replacement = `
 
@@ -47,7 +48,8 @@ const replacement = `
                     </div>
                   </div>
                 )}
-`;
+
+                <div className="max-w-5xl mx-auto px-5 sm:px-8 py-6 sm:py-8">`;
 
 if (!pattern.test(source)) {
   console.log('[patch-gallery-lightbox-grid] Target thumbnail strip not found; no change needed.');
