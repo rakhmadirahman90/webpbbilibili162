@@ -23,6 +23,14 @@ type GalleryItem = {
   thumbnail_url?: string;
 };
 
+const splitUrls = (value?: string) => {
+  if (!value) return [];
+  return value
+    .split(/[\s,]+/)
+    .map(url => url.trim())
+    .filter(url => /^https?:\/\//i.test(url) || url.startsWith('/'));
+};
+
 function sameGallery(a: GalleryItem[], b: GalleryItem[]) {
   if (a.length !== b.length) return false;
   return a.every((item, index) => {
@@ -54,9 +62,7 @@ export default function Gallery() {
     } catch {}
   }, []);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [activeTab, searchQuery]);
+  useEffect(() => setCurrentPage(1), [activeTab, searchQuery]);
 
   useEffect(() => {
     window.dispatchEvent(new CustomEvent(selectedId ? 'pb-overlay-open' : 'pb-overlay-close'));
@@ -75,9 +81,8 @@ export default function Gallery() {
     if (fetchInFlight.current) return;
     fetchInFlight.current = true;
     try {
-      // Supabase gallery is the authoritative source. In particular, an album
-      // stores all photos in one comma-separated `url` field. Do not prefer the
-      // legacy site_settings copy because it may contain only the first photo.
+      // Supabase gallery is the source of truth. An album may contain many
+      // photos inside one `url` field, so never replace it with the old setting copy.
       const { data: sbData, error: sbError } = await supabase
         .from('gallery')
         .select('*')
@@ -89,11 +94,10 @@ export default function Gallery() {
         return;
       }
 
-      // Legacy/site-setting data is only a fallback when Supabase is unavailable.
-      const data = await getSiteSetting('gallery_list');
-      if (Array.isArray(data) && data.length > 0) {
-        applyGallery(data as GalleryItem[]);
-        try { localStorage.setItem(CACHE_KEY, JSON.stringify(data)); } catch {}
+      const legacy = await getSiteSetting('gallery_list');
+      if (Array.isArray(legacy) && legacy.length > 0) {
+        applyGallery(legacy as GalleryItem[]);
+        try { localStorage.setItem(CACHE_KEY, JSON.stringify(legacy)); } catch {}
         return;
       }
 
@@ -123,13 +127,7 @@ export default function Gallery() {
             }
           }
         } catch {}
-        try {
-          const data = await getSiteSetting('gallery_list');
-          if (Array.isArray(data) && data.length > 0) applyGallery(data as GalleryItem[]);
-          else if (lastGallerySignature.current === '') applyGallery(DEFAULT_GALLERY as GalleryItem[]);
-        } catch {
-          if (lastGallerySignature.current === '') applyGallery(DEFAULT_GALLERY as GalleryItem[]);
-        }
+        applyGallery(DEFAULT_GALLERY as GalleryItem[]);
       }
     } finally {
       fetchInFlight.current = false;
@@ -143,12 +141,10 @@ export default function Gallery() {
     window.addEventListener('app_data_changed', handleUpdate);
     window.addEventListener('table_updated_gallery', handleUpdate);
     window.addEventListener('site_setting_updated', handleUpdate);
-
     const channel = supabase
       .channel('public_gallery_realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'gallery' }, () => fetchGallery(false))
       .subscribe();
-
     return () => {
       window.removeEventListener('app_data_changed', handleUpdate);
       window.removeEventListener('table_updated_gallery', handleUpdate);
@@ -191,9 +187,7 @@ export default function Gallery() {
   }, [selectedId, searchParams, setSearchParams, urlInitialized]);
 
   useEffect(() => {
-    const handleEsc = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setSelectedId(null);
-    };
+    const handleEsc = (event: KeyboardEvent) => { if (event.key === 'Escape') setSelectedId(null); };
     window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
   }, []);
@@ -204,23 +198,16 @@ export default function Gallery() {
     return match && match[2]?.length === 11 ? match[2] : null;
   }, []);
 
-  const getEmbedUrl = useCallback((url: string) => {
-    if (url.includes('youtube.com/embed/')) return url;
-    const id = getYouTubeID(url);
-    return id ? `https://www.youtube.com/embed/${id}?autoplay=1&rel=0` : url;
-  }, [getYouTubeID]);
-
   const getThumbnail = useCallback((item: GalleryItem) => {
     if (!item.url) return '/placeholder-image.jpg';
-    if (item.type === 'image') return item.url.split(/[\s,]+/)[0];
+    if (item.type === 'image') return splitUrls(item.url)[0] || '/placeholder-image.jpg';
     const videoId = getYouTubeID(item.url);
     if (videoId) return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
     return item.thumbnail_url || '';
   }, [getYouTubeID]);
 
   const getGalleryImages = useCallback((item: GalleryItem) => {
-    if (!item?.url || item.type !== 'image') return [];
-    return item.url.split(/[\s,]+/).map(url => url.trim()).filter(Boolean);
+    return item?.type === 'image' ? splitUrls(item.url) : [];
   }, []);
 
   const filteredMedia = useMemo(() => {
@@ -236,9 +223,7 @@ export default function Gallery() {
   const paginatedMedia = useMemo(() => filteredMedia.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE), [filteredMedia, currentPage]);
   const activeMedia = useMemo(() => galleryItems.find(item => item.id === selectedId) || null, [galleryItems, selectedId]);
 
-  useEffect(() => {
-    if (currentPage > totalPages) setCurrentPage(totalPages);
-  }, [currentPage, totalPages]);
+  useEffect(() => { if (currentPage > totalPages) setCurrentPage(totalPages); }, [currentPage, totalPages]);
 
   const handleLike = (event: React.MouseEvent | React.KeyboardEvent, id: string) => {
     event.stopPropagation();
@@ -251,7 +236,7 @@ export default function Gallery() {
   };
 
   const handleShare = (item: GalleryItem, platform: 'wa' | 'fb' | 'copy') => {
-    const currentUrl = `${window.location.origin}?gallery=${encodeURIComponent(item.id)}&share=v2`;
+    const currentUrl = `${window.location.origin}?gallery=${encodeURIComponent(item.id)}&share=v3`;
     const shareText = `Lihat dokumentasi "${item.title || 'PB Bilibili 162'}" dari PB Bilibili 162: ${currentUrl}`;
     if (platform === 'wa') window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
     if (platform === 'fb') window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl)}`, '_blank');
@@ -263,12 +248,9 @@ export default function Gallery() {
     }
   };
 
-  const changeMedia = (direction: -1 | 1) => {
-    if (!activeMedia || filteredMedia.length < 2) return;
-    const currentIndex = filteredMedia.findIndex(item => item.id === activeMedia.id);
-    const nextIndex = (currentIndex + direction + filteredMedia.length) % filteredMedia.length;
-    setSelectedId(filteredMedia[nextIndex].id);
-    setActiveImgIndex(0);
+  const goToImage = (index: number, count: number) => {
+    if (!count) return;
+    setActiveImgIndex((index + count) % count);
   };
 
   return (
@@ -292,32 +274,31 @@ export default function Gallery() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {paginatedMedia.length > 0 ? paginatedMedia.map(item => {
               const thumbnail = getThumbnail(item);
+              const photoCount = getGalleryImages(item).length;
               return (
                 <article key={item.id} onClick={() => { setSelectedId(item.id); setActiveImgIndex(0); }} className="gallery-card group relative cursor-pointer overflow-hidden rounded-xl bg-white border border-slate-100 flex flex-col shadow-xs">
                   <div className="aspect-[1.5/1] relative overflow-hidden bg-slate-100 shrink-0">
                     {item.type === 'video' && !getYouTubeID(item.url) && thumbnail ? (
                       <video src={`${item.url}#t=0.5`} poster={thumbnail} muted playsInline preload="metadata" className="w-full h-full object-cover block" />
                     ) : thumbnail ? (
-                      <LazyImage src={thumbnail} alt={item.title || ''} containerClassName="w-full h-full" className="w-full h-full object-cover" onError={(event: any) => {
-                        const videoId = getYouTubeID(item.url);
-                        if (videoId) event.currentTarget.src = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
-                      }} />
+                      <LazyImage src={thumbnail} alt={item.title || ''} containerClassName="w-full h-full" className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-slate-400"><PlayCircle size={42} /></div>
                     )}
                     <div className="absolute top-4 left-4 bg-[#22c55e] text-white px-3 py-1.5 rounded-sm text-[10px] font-black uppercase tracking-wider shadow-sm z-10 max-w-[85%] truncate">{item.category || 'DOKUMENTASI'}</div>
+                    {item.type === 'image' && photoCount > 1 && <div className="absolute bottom-4 left-4 bg-black/70 text-white px-2.5 py-1.5 rounded-full text-[10px] font-black z-10">{photoCount} FOTO</div>}
                     <button onClick={event => handleLike(event, item.id)} className={`absolute top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center shadow-md z-10 ${likedItems.has(item.id) ? 'bg-rose-500 text-white' : 'bg-white/95 text-slate-500'}`} aria-label="Sukai"><Heart size={15} fill={likedItems.has(item.id) ? 'currentColor' : 'none'} /></button>
                     <div className="absolute bottom-[-5px] right-5 w-11 h-11 bg-[#22c55e] text-white rounded-full flex items-center justify-center shadow-lg z-10">{item.type === 'video' ? <PlayCircle size={18} /> : <Plus size={18} />}</div>
                   </div>
                   <div className="p-6 sm:p-7 flex flex-col flex-grow">
                     <div className="text-slate-400 text-[10px] mb-2 font-extrabold uppercase tracking-widest flex items-center gap-1.5"><Calendar size={12} className="text-slate-300" />{item.created_at ? new Date(item.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : 'DOKUMENTASI'}</div>
                     <h3 className="text-slate-900 text-base font-black leading-snug uppercase line-clamp-2 mb-4">{item.title}</h3>
-                    <div className="mt-auto pt-4 border-t border-slate-100 flex items-center justify-between"><span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">{item.type === 'video' ? 'VIDEO MULTIMEDIA' : 'PHOTO GALLERY'}</span><div className="flex items-center gap-3 text-slate-400"><span className="flex items-center gap-1"><Heart size={13} fill={likedItems.has(item.id) ? 'currentColor' : 'none'} /><span className="text-[10px] font-bold text-slate-500">{likedItems.has(item.id) ? 1 : 0}</span></span><span className="flex items-center gap-1"><Eye size={13} /><span className="text-[10px] font-bold text-slate-500">1</span></span></div></div>
+                    <div className="mt-auto pt-4 border-t border-slate-100 flex items-center justify-between"><span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">{item.type === 'video' ? 'VIDEO MULTIMEDIA' : `${photoCount > 1 ? `${photoCount} FOTO` : 'PHOTO GALLERY'}`}</span><div className="flex items-center gap-3 text-slate-400"><span className="flex items-center gap-1"><Heart size={13} fill={likedItems.has(item.id) ? 'currentColor' : 'none'} /><span className="text-[10px] font-bold text-slate-500">{likedItems.has(item.id) ? 1 : 0}</span></span><span className="flex items-center gap-1"><Eye size={13} /><span className="text-[10px] font-bold text-slate-500">1</span></span></div></div>
                   </div>
                 </article>
               );
             }) : (
-              <div className="col-span-full py-20 px-6 text-center border border-slate-200 border-dashed rounded-xl bg-white shadow-xs"><div className="max-w-md mx-auto flex flex-col items-center"><div className="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 mb-4 border border-slate-100"><Search size={24} /></div><h4 className="text-slate-800 font-extrabold uppercase tracking-wider text-sm mb-2">{searchQuery ? 'Tidak Ada Hasil Ditemukan' : 'Galeri Kosong'}</h4><p className="text-slate-400 text-xs leading-relaxed">{searchQuery ? `Tidak ada ${activeTab === 'image' ? 'foto' : 'video'} dengan kata kunci "${searchQuery}".` : `Belum ada ${activeTab === 'image' ? 'foto' : 'video'} di galeri.`}</p>{searchQuery && <button onClick={() => setSearchQuery('')} className="mt-4 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-xs font-bold">Reset Pencarian</button>}</div></div>
+              <div className="col-span-full py-20 px-6 text-center border border-slate-200 border-dashed rounded-xl bg-white shadow-xs"><div className="max-w-md mx-auto flex flex-col items-center"><div className="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 mb-4 border border-slate-100"><Search size={24} /></div><h4 className="text-slate-800 font-extrabold uppercase tracking-wider text-sm mb-2">{searchQuery ? 'Tidak Ada Hasil Ditemukan' : 'Galeri Kosong'}</h4><p className="text-slate-400 text-xs leading-relaxed">{searchQuery ? `Tidak ada ${activeTab === 'image' ? 'foto' : 'video'} dengan kata kunci "${searchQuery}".` : `Belum ada ${activeTab === 'image' ? 'foto' : 'video'} di galeri.`}</p></div></div>
             )}
           </div>
         )}
@@ -332,6 +313,7 @@ export default function Gallery() {
 
         {activeMedia && (() => {
           const images = getGalleryImages(activeMedia);
+          const count = images.length;
           const currentImage = images[activeImgIndex] || images[0] || '';
           return (
             <div className="gallery-lightbox fixed inset-0 z-[110000] bg-white text-slate-900 overflow-y-auto flex flex-col">
@@ -340,21 +322,37 @@ export default function Gallery() {
                 <div className="flex items-center gap-2"><div className="w-8 h-8 rounded-full overflow-hidden bg-white flex items-center justify-center shrink-0"><img src="/logo_pb_bilibili_162.svg" alt="Logo" className="w-full h-full object-contain" /></div><span className="text-xs font-black uppercase tracking-[0.2em]">PB BILIBILI 162</span></div>
                 <div className="flex items-center gap-2"><button onClick={event => handleLike(event, activeMedia.id)} className="p-2 rounded-full text-zinc-300" aria-label="Sukai"><Heart size={18} fill={likedItems.has(activeMedia.id) ? 'currentColor' : 'none'} /></button><button onClick={() => handleShare(activeMedia, 'wa')} className="p-2 rounded-full text-zinc-300" aria-label="Bagikan"><Share2 size={18} /></button></div>
               </div>
+
               <div className="w-full flex-grow bg-white pb-20">
                 <div className="w-full bg-[#030712] relative h-[38vh] sm:h-[48vh] md:h-[58vh] lg:h-[65vh] overflow-hidden flex items-center justify-center border-b border-slate-900/40">
                   {activeMedia.type === 'video' ? (
                     <div className="w-full h-full flex items-center justify-center bg-black">
-                      {getYouTubeID(activeMedia.url) ? <iframe key={activeMedia.id} className="w-full h-full max-h-screen border-0" src={getEmbedUrl(activeMedia.url)} title={activeMedia.title || 'Video galeri'} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen /> : <video key={activeMedia.id} src={activeMedia.url} className="w-full h-full max-h-screen object-contain" controls autoPlay playsInline preload="metadata" />}
+                      {getYouTubeID(activeMedia.url) ? <iframe key={activeMedia.id} className="w-full h-full max-h-screen border-0" src={`${getYouTubeID(activeMedia.url) ? `https://www.youtube.com/embed/${getYouTubeID(activeMedia.url)}?autoplay=1&rel=0` : activeMedia.url}`} title={activeMedia.title || 'Video galeri'} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen /> : <video key={activeMedia.id} src={activeMedia.url} className="w-full h-full max-h-screen object-contain" controls autoPlay playsInline preload="metadata" />}
                     </div>
                   ) : (
                     <div className="relative w-full h-full flex items-center justify-center bg-[#030712]">
-                      {currentImage && <img key={currentImage} src={getOptimizedImageUrl(currentImage, 1200)} alt={activeMedia.title || ''} loading="eager" decoding="async" className="max-w-full max-h-full object-contain block" referrerPolicy="no-referrer" />}
-                      {images.length > 1 && <><button onClick={() => setActiveImgIndex(index => index === 0 ? images.length - 1 : index - 1)} className="absolute left-3.5 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/60 text-white z-20" aria-label="Foto sebelumnya"><ChevronLeft size={18} /></button><button onClick={() => setActiveImgIndex(index => index === images.length - 1 ? 0 : index + 1)} className="absolute right-3.5 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/60 text-white z-20" aria-label="Foto berikutnya"><ChevronRight size={18} /></button></>}
+                      {currentImage && <img key={`${activeMedia.id}-${activeImgIndex}`} src={getOptimizedImageUrl(currentImage, 1400)} alt={`${activeMedia.title || 'Foto'} ${activeImgIndex + 1}`} loading="eager" decoding="async" className="max-w-full max-h-full object-contain block" referrerPolicy="no-referrer" />}
+                      {count > 1 && <><button onClick={() => goToImage(activeImgIndex - 1, count)} className="absolute left-3.5 top-1/2 -translate-y-1/2 p-3 rounded-full bg-black/65 hover:bg-black/80 text-white z-20" aria-label="Foto sebelumnya"><ChevronLeft size={22} /></button><button onClick={() => goToImage(activeImgIndex + 1, count)} className="absolute right-3.5 top-1/2 -translate-y-1/2 p-3 rounded-full bg-black/65 hover:bg-black/80 text-white z-20" aria-label="Foto berikutnya"><ChevronRight size={22} /></button></>}
+                      {count > 0 && <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/70 text-white px-3 py-1.5 rounded-full text-[11px] font-black tracking-wider z-20">FOTO {activeImgIndex + 1} / {count}</div>}
                     </div>
                   )}
                 </div>
-                <div className="max-w-5xl mx-auto px-5 sm:px-8 py-8 sm:py-10">
-                  <div className="flex items-center justify-between gap-4 mb-4"><span className="text-[10px] font-black uppercase tracking-widest text-emerald-600">{activeMedia.category || 'DOKUMENTASI'}</span><button onClick={() => handleShare(activeMedia, 'copy')} className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-slate-900"><Link2 size={14} /> Salin Link</button></div>
+
+                {activeMedia.type === 'image' && count > 1 && (
+                  <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-4">
+                    <div className="flex gap-2 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-thin">
+                      {images.map((img, idx) => (
+                        <button key={`${activeMedia.id}-thumb-${idx}`} onClick={() => setActiveImgIndex(idx)} className={`relative shrink-0 w-20 h-16 sm:w-24 sm:h-18 rounded-lg overflow-hidden border-2 snap-start ${idx === activeImgIndex ? 'border-emerald-500 ring-2 ring-emerald-500/20' : 'border-transparent opacity-80 hover:opacity-100'}`} aria-label={`Buka foto ${idx + 1}`}>
+                          <img src={getOptimizedImageUrl(img, 240)} alt={`Thumbnail foto ${idx + 1}`} loading="lazy" decoding="async" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                          <span className="absolute bottom-0 right-0 bg-black/70 text-white text-[8px] font-black px-1.5 py-0.5">{idx + 1}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="max-w-5xl mx-auto px-5 sm:px-8 py-6 sm:py-8">
+                  <div className="flex items-center justify-between gap-4 mb-4"><span className="text-[10px] font-black uppercase tracking-widest text-emerald-600">{activeMedia.category || 'DOKUMENTASI'}</span><button onClick={() => handleShare(activeMedia, 'copy')} className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-slate-900"><Link2 size={14} /> {copySuccess === activeMedia.id ? 'Tersalin' : 'Salin Link'}</button></div>
                   <h2 className="text-xl sm:text-2xl font-black text-slate-900 uppercase leading-tight mb-3">{activeMedia.title}</h2>
                   {activeMedia.description && <p className="text-sm leading-relaxed text-slate-600 whitespace-pre-line">{activeMedia.description}</p>}
                 </div>
