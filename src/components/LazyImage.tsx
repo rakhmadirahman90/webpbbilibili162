@@ -12,7 +12,7 @@ interface LazyImageProps {
   onError?: (e: any) => void;
 }
 
-/** Stable lazy image with atomic source swapping and no blank-frame transition. */
+/** Stable lazy image with atomic source swapping and no visual dark overlay. */
 export default function LazyImage({
   src,
   alt,
@@ -32,9 +32,7 @@ export default function LazyImage({
   const requestRef = useRef(0);
   const onErrorRef = useRef(onError);
 
-  useEffect(() => {
-    onErrorRef.current = onError;
-  }, [onError]);
+  useEffect(() => { onErrorRef.current = onError; }, [onError]);
 
   useEffect(() => {
     if (!('IntersectionObserver' in window)) {
@@ -88,8 +86,8 @@ export default function LazyImage({
   }, [isInView, optimizedSrc, primarySrc]);
 
   return (
-    <div ref={containerRef} className={`relative overflow-hidden bg-[#12141c]/40 ${containerClassName}`} onClick={onClick}>
-      {!loaded && !displaySrc && <div aria-hidden="true" className="absolute inset-0 bg-slate-900" />}
+    <div ref={containerRef} className={`relative isolate overflow-hidden bg-transparent ${containerClassName}`} onClick={onClick}>
+      {!loaded && !displaySrc && <div aria-hidden="true" className="absolute inset-0 bg-slate-100" />}
       {isInView && displaySrc && (
         <img
           src={displaySrc}
@@ -99,7 +97,7 @@ export default function LazyImage({
           decoding="async"
           onLoad={() => setLoaded(true)}
           onError={event => onErrorRef.current?.(event)}
-          className={`${className} block opacity-100 blur-0 transform-none`}
+          className={`${className} relative z-[1] block opacity-100 brightness-100 contrast-100 saturate-100 filter-none transform-none`}
         />
       )}
     </div>
