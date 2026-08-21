@@ -11,12 +11,36 @@ function escapeHtml(value: unknown): string {
     .replace(/'/g, '&#039;');
 }
 
-function normalizeImageUrl(raw: string): string {
-  const first = String(raw || '').split(/[\s,]+/).map(v => v.trim()).find(Boolean) || '';
-  if (!first) return '';
-  if (/^https?:\/\//i.test(first)) return first;
-  if (first.startsWith('//')) return `https:${first}`;
-  return `${PUBLIC_DOMAIN}${first.startsWith('/') ? '' : '/'}${first}`;
+function normalizeUrl(raw: string): string {
+  const value = String(raw || '').trim();
+  if (!value) return '';
+  if (/^https?:\/\//i.test(value)) return value;
+  if (value.startsWith('//')) return `https:${value}`;
+  return `${PUBLIC_DOMAIN}${value.startsWith('/') ? '' : '/'}${value}`;
+}
+
+function isBadPreviewAsset(url: string): boolean {
+  const value = String(url || '').toLowerCase();
+  return !value ||
+    value.includes('logo_pb_bilibili') ||
+    value.includes('/logo.') ||
+    value.includes('/logo/') ||
+    value.includes('favicon') ||
+    value.includes('placeholder') ||
+    value.endsWith('.svg');
+}
+
+function getPrimaryImage(url: string, thumbnailUrl: string): string {
+  // Gallery albums can contain multiple image URLs. Never use the PB logo as
+  // the WhatsApp preview when an actual album photo is available.
+  const candidates = [
+    ...String(thumbnailUrl || '').split(/[\s,]+/),
+    ...String(url || '').split(/[\s,]+/),
+  ]
+    .map(normalizeUrl)
+    .filter(Boolean);
+
+  return candidates.find(candidate => !isBadPreviewAsset(candidate)) || '';
 }
 
 function isCrawler(userAgent: string): boolean {
@@ -49,7 +73,7 @@ export default async function handler(req: any, res: any) {
     if (!gallery) return res.status(404).send('Dokumentasi tidak ditemukan');
 
     const title = String(gallery.title || 'Dokumentasi PB Bilibili 162').trim();
-    const image = normalizeImageUrl(gallery.type === 'image' ? gallery.url : gallery.thumbnail_url || '');
+    const image = getPrimaryImage(gallery.url, gallery.thumbnail_url);
     const canonical = `${PUBLIC_DOMAIN}/?gallery=${encodeURIComponent(gallery.id)}`;
     const description = String(gallery.description || `Dokumentasi ${title} dari PB Bilibili 162`).replace(/\s+/g, ' ').trim().slice(0, 200);
     const pageTitle = `${title} - PB Bilibili 162`;
