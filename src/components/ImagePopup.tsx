@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { X, Download, ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react';
 import { supabase } from '../supabase';
-import { useRealtimeSync } from '../utils/realtimeSync';
 
 interface ImagePopupProps { activeView?: string | null; }
 type PopupItem = Record<string, any>;
@@ -10,12 +8,6 @@ type PopupItem = Record<string, any>;
 const SLIDE_DURATION = 5500;
 const SWIPE_THRESHOLD = 50;
 const SWIPE_VELOCITY = 450;
-
-const slideVariants = {
-  enter: (direction: number) => ({ x: direction > 0 ? '105%' : '-105%', opacity: 0.65, scale: 0.985 }),
-  center: { x: 0, opacity: 1, scale: 1 },
-  exit: (direction: number) => ({ x: direction > 0 ? '-105%' : '105%', opacity: 0.65, scale: 0.985 }),
-};
 
 function preloadImage(url: string): Promise<void> {
   return new Promise(resolve => {
@@ -33,31 +25,48 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [promoImages, setPromoImages] = useState<PopupItem[]>([]);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [direction, setDirection] = useState(1);
   const [isAutoPlay, setIsAutoPlay] = useState(true);
   const [isHovering, setIsHovering] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const isDismissedRef = useRef(false);
+  const isOpenRef = useRef(false);
   const requestIdRef = useRef(0);
+  const fetchingRef = useRef(false);
+
+  const setPopupOpen = useCallback((open: boolean) => {
+    isOpenRef.current = open;
+    setIsOpen(open);
+  }, []);
 
   const fetchActivePopups = useCallback(async (forceShow = false) => {
+    // Never fetch/display the landing popup on non-home routes.
+    if (activeView !== null) {
+      setPopupOpen(false);
+      return;
+    }
+
+    if (!forceShow && isDismissedRef.current) return;
+    if (fetchingRef.current) return;
+
+    // A realtime/event callback must not restart an already visible popup.
+    if (!forceShow && isOpenRef.current) return;
+
     const requestId = ++requestIdRef.current;
+    fetchingRef.current = true;
+
     try {
       if (typeof window !== 'undefined' && (window.location.pathname.startsWith('/admin') || window.location.pathname.startsWith('/login'))) {
-        setPromoImages([]); setIsOpen(false); return;
+        setPopupOpen(false);
+        return;
       }
-      if (activeView !== null) { setIsOpen(false); return; }
-      if (!forceShow && isDismissedRef.current) { setIsOpen(false); return; }
 
-      // Supabase is the single source of truth. No LocalStorage/API fallback is used here,
-      // so a refresh always reflects the current database state.
       const { data, error } = await supabase
         .from('konfigurasi_popup')
         .select('id, judul, deskripsi, url_gambar, image_url, file_url, is_active, urutan')
         .eq('is_active', true)
         .order('urutan', { ascending: true });
 
-      if (requestId !== requestIdRef.current) return;
+      if (requestId !== requestIdRef.current || activeView !== null) return;
       if (error) throw error;
 
       const activeItems = (data || [])
@@ -65,46 +74,65 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
         .filter((item: PopupItem) => item && item.url_gambar)
         .sort((a: PopupItem, b: PopupItem) => Number(a.urutan ?? 0) - Number(b.urutan ?? 0));
 
-      if (activeItems.length === 0) {
+      if (!activeItems.length) {
         setPromoImages([]);
-        setIsOpen(false);
+        setPopupOpen(false);
         return;
       }
 
-      // Do not display an empty dark modal. Keep the landing page visible until
-      // the first current image is decoded and ready to paint.
+      // Decode the first slide before mounting the modal so there is no blank-frame flash.
       await preloadImage(String(activeItems[0].url_gambar));
-      if (requestId !== requestIdRef.current) return;
+      if (requestId !== requestIdRef.current || activeView !== null) return;
 
       setPromoImages(activeItems);
       setCurrentIndex(prev => Math.min(prev, activeItems.length - 1));
       setIsExpanded(false);
-      setDirection(1);
-      setIsOpen(!isDismissedRef.current || forceShow);
+      setIsAutoPlay(true);
+      setPopupOpen(true);
 
       activeItems.slice(1).forEach(item => {
         if (item.url_gambar) void preloadImage(String(item.url_gambar));
       });
     } catch (err) {
       console.warn('[ImagePopup] Supabase popup fetch failed:', err);
-      if (requestId === requestIdRef.current) setIsOpen(false);
+      if (requestId === requestIdRef.current) setPopupOpen(false);
+    } finally {
+      fetchingRef.current = false;
     }
-  }, [activeView]);
+  }, [activeView, setPopupOpen]);
 
+  // Route changes are the single source for opening/closing the landing popup.
+  // This avoids the old double-trigger: state effect + custom event both fetching at once.
   useEffect(() => {
+    requestIdRef.current += 1;
     isDismissedRef.current = false;
-    if (activeView === null) void fetchActivePopups(true);
-    else setIsOpen(false);
-  }, [activeView, fetchActivePopups]);
 
+    if (activeView === null) {
+      void fetchActivePopups(true);
+    } else {
+      setPopupOpen(false);
+    }
+  }, [activeView, fetchActivePopups, setPopupOpen]);
+
+  // Keep one realtime channel only. Multiple realtime subscriptions previously caused
+  // duplicate refreshes and visible popup blinking when returning to Beranda.
   useEffect(() => {
     const channel = supabase
       .channel('landing-popup-carousel-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'konfigurasi_popup' }, () => void fetchActivePopups(false))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'konfigurasi_popup' }, () => {
+        if (activeView === null && !isOpenRef.current) void fetchActivePopups(false);
+      })
       .subscribe();
 
-    const handleTriggerHome = () => { isDismissedRef.current = false; void fetchActivePopups(true); };
-    const handleUpdate = () => void fetchActivePopups(false);
+    const handleTriggerHome = () => {
+      if (activeView !== null) return;
+      isDismissedRef.current = false;
+      if (!isOpenRef.current) void fetchActivePopups(true);
+    };
+
+    const handleUpdate = () => {
+      if (activeView === null && !isOpenRef.current) void fetchActivePopups(false);
+    };
 
     window.addEventListener('trigger-home-popup', handleTriggerHome);
     window.addEventListener('site_setting_updated', handleUpdate);
@@ -120,26 +148,23 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
       window.removeEventListener('table_updated_konfigurasi_popup', handleUpdate);
       window.removeEventListener('app_data_changed', handleUpdate);
     };
-  }, [fetchActivePopups]);
+  }, [activeView, fetchActivePopups]);
 
-  useRealtimeSync({ tables: ['konfigurasi_popup'], onUpdate: () => void fetchActivePopups(false) });
-
-  const goTo = useCallback((nextIndex: number, nextDirection: number) => {
+  const goTo = useCallback((nextIndex: number) => {
     if (promoImages.length < 2) return;
-    setDirection(nextDirection >= 0 ? 1 : -1);
-    setIsExpanded(false);
     setCurrentIndex(nextIndex);
+    setIsExpanded(false);
     requestAnimationFrame(() => scrollRef.current?.scrollTo({ top: 0, behavior: 'auto' }));
   }, [promoImages.length]);
 
   const goNext = useCallback(() => {
     if (promoImages.length < 2) return;
-    goTo((currentIndex + 1) % promoImages.length, 1);
+    goTo((currentIndex + 1) % promoImages.length);
   }, [currentIndex, goTo, promoImages.length]);
 
   const goPrev = useCallback(() => {
     if (promoImages.length < 2) return;
-    goTo((currentIndex - 1 + promoImages.length) % promoImages.length, -1);
+    goTo((currentIndex - 1 + promoImages.length) % promoImages.length);
   }, [currentIndex, goTo, promoImages.length]);
 
   useEffect(() => {
@@ -157,14 +182,19 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
           const el = scrollRef.current;
           if (!el || el.scrollTop + el.clientHeight >= el.scrollHeight - 1) {
             if (interval) clearInterval(interval);
-          } else el.scrollBy({ top: 0.5, behavior: 'auto' });
+          } else {
+            el.scrollBy({ top: 0.5, behavior: 'auto' });
+          }
         }, 30);
       }, 4000);
     }
     return () => { if (interval) clearInterval(interval); if (timeout) clearTimeout(timeout); };
   }, [isOpen, currentIndex]);
 
-  const closePopup = () => { isDismissedRef.current = true; setIsOpen(false); };
+  const closePopup = () => {
+    isDismissedRef.current = true;
+    setPopupOpen(false);
+  };
 
   const handleDragEnd = (_event: any, info: any) => {
     if (promoImages.length < 2) return;
@@ -180,63 +210,65 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
     const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+)/g;
     return text.split('\n').map((line, i) => {
       if (!line.trim()) return <div key={i} className="h-3" />;
-      return <p key={i} className="mb-5 last:mb-0 !leading-7 text-slate-800 !text-justify text-[15px]" style={{ overflowWrap: 'break-word', wordWrap: 'break-word' }}>
-        {line.split(urlRegex).map((part, index) => part.match(urlRegex)
-          ? <a key={index} href={part.startsWith('www.') ? `https://${part}` : part} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline decoration-blue-200 underline-offset-2 font-medium break-all">{part}</a>
-          : <span key={index}>{part}</span>)}
-      </p>;
+      return (
+        <p key={i} className="mb-5 last:mb-0 !leading-7 text-slate-800 !text-justify text-[15px]" style={{ overflowWrap: 'break-word', wordWrap: 'break-word' }}>
+          {line.split(urlRegex).map((part, index) => part.match(urlRegex)
+            ? <a key={index} href={part.startsWith('www.') ? `https://${part}` : part} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline decoration-blue-200 underline-offset-2 font-medium break-all">{part}</a>
+            : <span key={index}>{part}</span>)}
+        </p>
+      );
     });
   };
 
   if (promoImages.length === 0 || !isOpen) return null;
+
   const current = promoImages[currentIndex] || promoImages[0];
   const total = promoImages.length;
   const hasNavigation = total > 1;
 
   return (
-    <AnimatePresence mode="wait">
-      <motion.div key="landing-popup-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="fixed inset-0 z-[999999] flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md">
-        <div className="absolute inset-0" onClick={closePopup} />
-        <motion.div initial={{ opacity: 0, scale: 0.98, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98, y: 4 }} transition={{ duration: 0.16 }} className="relative w-full max-w-[calc(100vw-1.5rem)] sm:max-w-[420px] max-h-[90vh] bg-white rounded-[28px] shadow-[0_24px_80px_rgba(0,0,0,0.38)] flex flex-col overflow-hidden ring-1 ring-white/20" onClick={e => e.stopPropagation()} onMouseEnter={() => setIsHovering(true)} onMouseLeave={() => setIsHovering(false)}>
-          <button onClick={closePopup} aria-label="Tutup pop-up" className="absolute top-3 right-3 z-[80] p-2.5 bg-white/95 hover:bg-slate-100 text-slate-800 rounded-full shadow-xl border border-slate-200 transition-all duration-200 active:scale-90"><X size={18} /></button>
-          <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain hide-scrollbar scroll-smooth">
-            <div className="relative overflow-hidden bg-slate-950">
-              <AnimatePresence initial={false} custom={direction} mode="sync">
-                <motion.div key={current.id || currentIndex} custom={direction} variants={slideVariants} initial="enter" animate="center" exit="exit" transition={{ x: { type: 'spring', stiffness: 330, damping: 34, mass: 0.72 }, opacity: { duration: 0.12 }, scale: { duration: 0.18 } }} className="relative w-full shrink-0">
-                  <motion.div drag={hasNavigation ? 'x' : false} dragDirectionLock dragConstraints={{ left: 0, right: 0 }} dragElastic={0.12} onDragEnd={handleDragEnd} onDragStart={() => setIsAutoPlay(false)} style={{ touchAction: hasNavigation ? 'pan-y' : 'auto' }} className="relative w-full bg-slate-950 cursor-grab active:cursor-grabbing overflow-hidden flex items-center justify-center select-none">
-                    <img src={current.url_gambar} className="w-full h-auto block z-10 select-none pointer-events-none" alt={current.judul || 'Banner pengumuman'} draggable={false} fetchPriority="high" decoding="async" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/20 via-transparent to-black/10 z-20 pointer-events-none" />
-                    {hasNavigation && <>
-                      <button type="button" onClick={goPrev} aria-label="Pop-up sebelumnya" className="absolute left-2.5 top-1/2 -translate-y-1/2 z-40 w-10 h-10 rounded-full bg-black/45 hover:bg-black/65 text-white backdrop-blur-md border border-white/15 flex items-center justify-center shadow-lg active:scale-90 transition-all duration-200"><ChevronLeft size={21} /></button>
-                      <button type="button" onClick={goNext} aria-label="Pop-up berikutnya" className="absolute right-2.5 top-1/2 -translate-y-1/2 z-40 w-10 h-10 rounded-full bg-black/45 hover:bg-black/65 text-white backdrop-blur-md border border-white/15 flex items-center justify-center shadow-lg active:scale-90 transition-all duration-200"><ChevronRight size={21} /></button>
-                    </>}
-                  </motion.div>
-                </motion.div>
-              </AnimatePresence>
-              {hasNavigation && isAutoPlay && !isHovering && <motion.div key={`progress-${currentIndex}`} initial={{ width: '0%' }} animate={{ width: '100%' }} transition={{ duration: SLIDE_DURATION / 1000, ease: 'linear' }} className="absolute left-0 bottom-0 h-1 bg-blue-500/90 z-50" />}
-            </div>
-            <div className="flex items-center justify-center gap-2 py-2.5 bg-white border-b border-slate-100">
-              {hasNavigation ? promoImages.map((item, index) => <button key={item.id || index} type="button" onClick={() => { setIsAutoPlay(true); goTo(index, index >= currentIndex ? 1 : -1); }} aria-label={`Buka pop-up ${index + 1} dari ${total}`} className={`rounded-full transition-all duration-300 ${index === currentIndex ? 'w-7 h-2 bg-blue-600' : 'w-2 h-2 bg-slate-300 hover:bg-slate-400'}`} />) : <span className="text-[10px] font-bold text-slate-400">1 / 1</span>}
-              {hasNavigation && <span className="ml-1 text-[10px] font-bold text-slate-500">{currentIndex + 1} / {total}</span>}
-              {hasNavigation && <button type="button" onClick={() => setIsAutoPlay(v => !v)} aria-label={isAutoPlay ? 'Jeda slider otomatis' : 'Putar slider otomatis'} className="ml-1 w-6 h-6 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors">{isAutoPlay ? <Pause size={11} /> : <Play size={11} />}</button>}
-            </div>
-            <div className="px-5 sm:px-6 pt-3 pb-7 bg-white">
-              <div className="flex justify-center mb-4"><span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-bold uppercase tracking-widest border border-blue-100">Pengumuman</span></div>
-              <AnimatePresence mode="wait" initial={false}>
-                <motion.div key={`content-${current.id || currentIndex}`} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} transition={{ duration: 0.18 }}>
-                  <h3 className="text-xl sm:text-2xl font-black text-blue-700 leading-tight text-center mb-5 px-2 uppercase tracking-tighter">{current.judul}</h3>
-                  <div className="bg-slate-50 border border-slate-100 rounded-3xl p-5 sm:p-6 mb-7 shadow-inner"><div className={`transition-all duration-200 ${isExpanded ? '' : 'line-clamp-3'}`}>{renderCleanDescription(current.deskripsi || '')}</div>{!!current.deskripsi && <button type="button" onClick={() => setIsExpanded(v => !v)} className="text-blue-600 text-xs font-bold mt-2 hover:underline">{isExpanded ? 'Read Less' : 'Read More'}</button>}</div>
-                  <div className="space-y-3 px-1">
-                    {current.file_url && String(current.file_url).length > 5 && <motion.a whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }} href={current.file_url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 w-full py-3.5 bg-slate-900 text-white rounded-xl font-bold text-[12px] tracking-wider shadow-lg"><Download size={14} /> LIHAT LAMPIRAN</motion.a>}
-                    <button type="button" onClick={closePopup} className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-[12px] tracking-wider transition-all shadow-md">MENGERTI</button>
-                  </div>
-                </motion.div>
-              </AnimatePresence>
+    <div className="fixed inset-0 z-[999999] flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md" role="dialog" aria-modal="true" aria-label="Pengumuman PB Bilibili 162">
+      <div className="absolute inset-0" onClick={closePopup} />
+      <div className="relative w-full max-w-[calc(100vw-1.5rem)] sm:max-w-[420px] max-h-[90vh] bg-white rounded-[28px] shadow-[0_24px_80px_rgba(0,0,0,0.38)] flex flex-col overflow-hidden ring-1 ring-white/20" onClick={e => e.stopPropagation()} onMouseEnter={() => setIsHovering(true)} onMouseLeave={() => setIsHovering(false)}>
+        <button onClick={closePopup} aria-label="Tutup pop-up" className="absolute top-3 right-3 z-[80] p-2.5 bg-white/95 hover:bg-slate-100 text-slate-800 rounded-full shadow-xl border border-slate-200 transition-colors active:scale-90"><X size={18} /></button>
+
+        <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain hide-scrollbar">
+          <div className="relative overflow-hidden bg-slate-950">
+            <div className="relative w-full bg-slate-950 flex items-center justify-center select-none">
+              <img src={current.url_gambar} className="w-full h-auto block z-10 select-none pointer-events-none" alt={current.judul || 'Banner pengumuman'} draggable={false} fetchPriority="high" decoding="async" />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/20 via-transparent to-black/10 z-20 pointer-events-none" />
+              {hasNavigation && <>
+                <button type="button" onClick={goPrev} aria-label="Pop-up sebelumnya" className="absolute left-2.5 top-1/2 -translate-y-1/2 z-40 w-10 h-10 rounded-full bg-black/45 hover:bg-black/65 text-white backdrop-blur-md border border-white/15 flex items-center justify-center shadow-lg active:scale-90 transition-colors"><ChevronLeft size={21} /></button>
+                <button type="button" onClick={goNext} aria-label="Pop-up berikutnya" className="absolute right-2.5 top-1/2 -translate-y-1/2 z-40 w-10 h-10 rounded-full bg-black/45 hover:bg-black/65 text-white backdrop-blur-md border border-white/15 flex items-center justify-center shadow-lg active:scale-90 transition-colors"><ChevronRight size={21} /></button>
+              </>}
             </div>
           </div>
-        </motion.div>
-      </motion.div>
-    </AnimatePresence>
+
+          <div className="flex items-center justify-center gap-2 py-2.5 bg-white border-b border-slate-100">
+            {hasNavigation ? promoImages.map((item, index) => (
+              <button key={item.id || index} type="button" onClick={() => { setIsAutoPlay(true); goTo(index); }} aria-label={`Buka pop-up ${index + 1} dari ${total}`} className={`rounded-full transition-all duration-200 ${index === currentIndex ? 'w-7 h-2 bg-blue-600' : 'w-2 h-2 bg-slate-300 hover:bg-slate-400'}`} />
+            )) : <span className="text-[10px] font-bold text-slate-400">1 / 1</span>}
+            {hasNavigation && <span className="ml-1 text-[10px] font-bold text-slate-500">{currentIndex + 1} / {total}</span>}
+            {hasNavigation && <button type="button" onClick={() => setIsAutoPlay(v => !v)} aria-label={isAutoPlay ? 'Jeda slider otomatis' : 'Putar slider otomatis'} className="ml-1 w-6 h-6 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors">{isAutoPlay ? <Pause size={11} /> : <Play size={11} />}</button>}
+          </div>
+
+          <div className="px-5 sm:px-6 pt-3 pb-7 bg-white">
+            <div className="flex justify-center mb-4"><span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-bold uppercase tracking-widest border border-blue-100">Pengumuman</span></div>
+            <div>
+              <h3 className="text-xl sm:text-2xl font-black text-blue-700 leading-tight text-center mb-5 px-2 uppercase tracking-tighter">{current.judul}</h3>
+              <div className="bg-slate-50 border border-slate-100 rounded-3xl p-5 sm:p-6 mb-7 shadow-inner">
+                <div className={isExpanded ? '' : 'line-clamp-3'}>{renderCleanDescription(current.deskripsi || '')}</div>
+                {!!current.deskripsi && <button type="button" onClick={() => setIsExpanded(v => !v)} className="text-blue-600 text-xs font-bold mt-2 hover:underline">{isExpanded ? 'Read Less' : 'Read More'}</button>}
+              </div>
+              <div className="space-y-3 px-1">
+                {current.file_url && String(current.file_url).length > 5 && <a href={current.file_url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 w-full py-3.5 bg-slate-900 text-white rounded-xl font-bold text-[12px] tracking-wider shadow-lg"><Download size={14} /> LIHAT LAMPIRAN</a>}
+                <button type="button" onClick={closePopup} className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-[12px] tracking-wider transition-colors shadow-md">MENGERTI</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
