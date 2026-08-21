@@ -81,8 +81,6 @@ export default function Gallery() {
     if (fetchInFlight.current) return;
     fetchInFlight.current = true;
     try {
-      // Supabase gallery is the source of truth. An album may contain many
-      // photos inside one `url` field, so never replace it with the old setting copy.
       const { data: sbData, error: sbError } = await supabase
         .from('gallery')
         .select('*')
@@ -316,18 +314,18 @@ export default function Gallery() {
           const count = images.length;
           const currentImage = images[activeImgIndex] || images[0] || '';
           return (
-            <div className="gallery-lightbox fixed inset-0 z-[110000] bg-white text-slate-900 overflow-y-auto flex flex-col">
-              <div className="sticky top-0 bg-[#0b1224] text-white px-4 py-3 md:py-4 flex items-center justify-between z-[110] shadow-md">
+            <div className="gallery-lightbox fixed inset-0 z-[110000] bg-white text-slate-900 h-[100dvh] overflow-hidden flex flex-col">
+              <div className="shrink-0 bg-[#0b1224] text-white px-4 py-3 md:py-4 flex items-center justify-between z-[110] shadow-md">
                 <button onClick={() => setSelectedId(null)} className="flex items-center gap-2 text-zinc-300 py-1.5 px-3 rounded-lg" aria-label="Kembali"><ArrowLeft size={20} /><span className="text-sm font-bold uppercase tracking-wider hidden sm:inline">Kembali</span></button>
                 <div className="flex items-center gap-2"><div className="w-8 h-8 rounded-full overflow-hidden bg-white flex items-center justify-center shrink-0"><img src="/logo_pb_bilibili_162.svg" alt="Logo" className="w-full h-full object-contain" /></div><span className="text-xs font-black uppercase tracking-[0.2em]">PB BILIBILI 162</span></div>
                 <div className="flex items-center gap-2"><button onClick={event => handleLike(event, activeMedia.id)} className="p-2 rounded-full text-zinc-300" aria-label="Sukai"><Heart size={18} fill={likedItems.has(activeMedia.id) ? 'currentColor' : 'none'} /></button><button onClick={() => handleShare(activeMedia, 'wa')} className="p-2 rounded-full text-zinc-300" aria-label="Bagikan"><Share2 size={18} /></button></div>
               </div>
 
-              <div className="w-full flex-grow bg-white pb-20">
-                <div className="w-full bg-[#030712] relative h-[38vh] sm:h-[48vh] md:h-[58vh] lg:h-[65vh] overflow-hidden flex items-center justify-center border-b border-slate-900/40">
+              <div className="flex-1 min-h-0 w-full flex flex-col overflow-hidden bg-white">
+                <div className="shrink-0 w-full bg-[#030712] relative h-[38vh] sm:h-[48vh] md:h-[58vh] lg:h-[65vh] overflow-hidden flex items-center justify-center border-b border-slate-900/40">
                   {activeMedia.type === 'video' ? (
                     <div className="w-full h-full flex items-center justify-center bg-black">
-                      {getYouTubeID(activeMedia.url) ? <iframe key={activeMedia.id} className="w-full h-full max-h-screen border-0" src={`${getYouTubeID(activeMedia.url) ? `https://www.youtube.com/embed/${getYouTubeID(activeMedia.url)}?autoplay=1&rel=0` : activeMedia.url}`} title={activeMedia.title || 'Video galeri'} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen /> : <video key={activeMedia.id} src={activeMedia.url} className="w-full h-full max-h-screen object-contain" controls autoPlay playsInline preload="metadata" />}
+                      {getYouTubeID(activeMedia.url) ? <iframe key={activeMedia.id} className="w-full h-full max-h-screen border-0" src={`https://www.youtube.com/embed/${getYouTubeID(activeMedia.url)}?autoplay=1&rel=0`} title={activeMedia.title || 'Video galeri'} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen /> : <video key={activeMedia.id} src={activeMedia.url} className="w-full h-full max-h-screen object-contain" controls autoPlay playsInline preload="metadata" />}
                     </div>
                   ) : (
                     <div className="relative w-full h-full flex items-center justify-center bg-[#030712]">
@@ -338,23 +336,38 @@ export default function Gallery() {
                   )}
                 </div>
 
-                {activeMedia.type === 'image' && count > 1 && (
-                  <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-4">
-                    <div className="flex gap-2 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-thin">
-                      {images.map((img, idx) => (
-                        <button key={`${activeMedia.id}-thumb-${idx}`} onClick={() => setActiveImgIndex(idx)} className={`relative shrink-0 w-20 h-16 sm:w-24 sm:h-18 rounded-lg overflow-hidden border-2 snap-start ${idx === activeImgIndex ? 'border-emerald-500 ring-2 ring-emerald-500/20' : 'border-transparent opacity-80 hover:opacity-100'}`} aria-label={`Buka foto ${idx + 1}`}>
-                          <img src={getOptimizedImageUrl(img, 240)} alt={`Thumbnail foto ${idx + 1}`} loading="lazy" decoding="async" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                          <span className="absolute bottom-0 right-0 bg-black/70 text-white text-[8px] font-black px-1.5 py-0.5">{idx + 1}</span>
-                        </button>
-                      ))}
+                <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y">
+                  {activeMedia.type === 'image' && count > 1 && (
+                    <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-4 pb-2">
+                      <div className="flex items-center justify-between gap-3 mb-3">
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Album Foto</p>
+                          <p className="text-sm font-extrabold text-slate-800">{count} foto dokumentasi</p>
+                        </div>
+                        <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600">Foto {activeImgIndex + 1} dipilih</span>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 pb-2">
+                        {images.map((img, idx) => (
+                          <button
+                            key={`${activeMedia.id}-grid-${idx}`}
+                            onClick={() => setActiveImgIndex(idx)}
+                            className={`group relative aspect-[4/3] overflow-hidden rounded-xl bg-slate-100 border-2 transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 ${idx === activeImgIndex ? 'border-emerald-500 ring-2 ring-emerald-500/20' : 'border-transparent hover:border-slate-300'}`}
+                            aria-label={`Buka foto ${idx + 1}`}
+                          >
+                            <img src={getOptimizedImageUrl(img, 520)} alt={`Foto ${idx + 1} dari ${count}`} loading="lazy" decoding="async" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" referrerPolicy="no-referrer" />
+                            <span className="absolute left-2 bottom-2 min-w-7 h-7 px-2 rounded-full bg-black/75 text-white text-[10px] font-black flex items-center justify-center">{idx + 1}</span>
+                            {idx === activeImgIndex && <span className="absolute top-2 right-2 bg-emerald-500 text-white px-2 py-1 rounded-full text-[9px] font-black uppercase tracking-wider">Terpilih</span>}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                <div className="max-w-5xl mx-auto px-5 sm:px-8 py-6 sm:py-8">
-                  <div className="flex items-center justify-between gap-4 mb-4"><span className="text-[10px] font-black uppercase tracking-widest text-emerald-600">{activeMedia.category || 'DOKUMENTASI'}</span><button onClick={() => handleShare(activeMedia, 'copy')} className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-slate-900"><Link2 size={14} /> {copySuccess === activeMedia.id ? 'Tersalin' : 'Salin Link'}</button></div>
-                  <h2 className="text-xl sm:text-2xl font-black text-slate-900 uppercase leading-tight mb-3">{activeMedia.title}</h2>
-                  {activeMedia.description && <p className="text-sm leading-relaxed text-slate-600 whitespace-pre-line">{activeMedia.description}</p>}
+                  <div className="max-w-5xl mx-auto px-5 sm:px-8 py-6 sm:py-8">
+                    <div className="flex items-center justify-between gap-4 mb-4"><span className="text-[10px] font-black uppercase tracking-widest text-emerald-600">{activeMedia.category || 'DOKUMENTASI'}</span><button onClick={() => handleShare(activeMedia, 'copy')} className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-slate-900"><Link2 size={14} /> {copySuccess === activeMedia.id ? 'Tersalin' : 'Salin Link'}</button></div>
+                    <h2 className="text-xl sm:text-2xl font-black text-slate-900 uppercase leading-tight mb-3">{activeMedia.title}</h2>
+                    {activeMedia.description && <p className="text-sm leading-relaxed text-slate-600 whitespace-pre-line">{activeMedia.description}</p>}
+                  </div>
                 </div>
               </div>
             </div>
