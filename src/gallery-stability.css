@@ -1,5 +1,5 @@
 /* =========================================================
-   GALLERY DETAIL — MODERN RESPONSIVE / MOBILE SCROLL FIX
+   GALLERY DETAIL — MODERN RESPONSIVE / MOBILE + DESKTOP UX
    Header + main photo stay fixed. Only detail content scrolls.
    ========================================================= */
 
@@ -23,12 +23,42 @@ body.gallery-route { overflow-x: hidden; }
   z-index: 110000 !important;
 }
 
+/* Fixed detail header — never participates in page scrolling */
 #gallery .gallery-lightbox > div:first-child {
   position: relative !important;
-  flex: 0 0 auto !important;
+  flex: 0 0 68px !important;
   width: 100% !important;
-  min-height: 64px !important;
+  height: 68px !important;
+  min-height: 68px !important;
   z-index: 300 !important;
+  box-sizing: border-box !important;
+}
+
+/* Always show an explicit navigation label on mobile and desktop */
+#gallery .gallery-lightbox > div:first-child button[aria-label="Kembali"] {
+  min-height: 42px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  white-space: nowrap !important;
+  touch-action: manipulation !important;
+}
+
+#gallery .gallery-lightbox > div:first-child button[aria-label="Kembali"] span {
+  display: inline-block !important;
+  font-size: 0 !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+}
+
+#gallery .gallery-lightbox > div:first-child button[aria-label="Kembali"] span::after {
+  content: "Kembali ke Daftar Foto" !important;
+  font-size: 12px !important;
+  line-height: 1.2 !important;
+  font-weight: 800 !important;
+  letter-spacing: .02em !important;
+  color: inherit !important;
 }
 
 #gallery .gallery-lightbox > div:nth-child(2) {
@@ -42,14 +72,14 @@ body.gallery-route { overflow-x: hidden; }
   flex-direction: column !important;
 }
 
-/* MAIN PHOTO: stable frame, never cropped */
+/* MAIN PHOTO: fixed/stable frame, proportional and never cropped */
 #gallery .gallery-lightbox > div:nth-child(2) > div:first-child {
   position: relative !important;
-  flex: 0 0 clamp(280px, 52svh, 680px) !important;
+  flex: 0 0 clamp(300px, 55svh, 700px) !important;
   width: 100% !important;
   min-height: 0 !important;
-  height: clamp(280px, 52svh, 680px) !important;
-  max-height: 680px !important;
+  height: clamp(300px, 55svh, 700px) !important;
+  max-height: 700px !important;
   overflow: hidden !important;
   display: flex !important;
   align-items: center !important;
@@ -103,7 +133,7 @@ body.gallery-route { overflow-x: hidden; }
   z-index: 30 !important;
 }
 
-/* SINGLE SCROLL OWNER: metadata + album */
+/* SINGLE SCROLL OWNER: metadata + album only */
 #gallery .gallery-lightbox > div:nth-child(2) > div:nth-child(2) {
   position: relative !important;
   flex: 1 1 auto !important;
@@ -128,7 +158,7 @@ body.gallery-route { overflow-x: hidden; }
   max-height: none !important;
 }
 
-/* METADATA */
+/* Metadata — consistent responsive spacing */
 #gallery .gallery-lightbox > div:nth-child(2) > div:nth-child(2) > div:first-child {
   width: 100% !important;
   max-width: 1100px !important;
@@ -141,7 +171,7 @@ body.gallery-route { overflow-x: hidden; }
   overflow-wrap: anywhere !important;
 }
 
-/* ALBUM */
+/* Album — responsive grid with precise proportions */
 #gallery .gallery-lightbox > div:nth-child(2) > div:nth-child(2) > div:nth-child(2) {
   width: 100% !important;
   max-width: 1200px !important;
@@ -170,6 +200,7 @@ body.gallery-route { overflow-x: hidden; }
   border-radius: 14px !important;
   touch-action: manipulation !important;
   transform: translateZ(0) !important;
+  cursor: pointer !important;
 }
 
 #gallery .gallery-lightbox > div:nth-child(2) > div:nth-child(2) > div:nth-child(2) > div:last-child > button img {
@@ -185,6 +216,7 @@ body.gallery-route { overflow-x: hidden; }
 #gallery .gallery-lightbox iframe,
 #gallery .gallery-lightbox button { animation: none !important; }
 
+/* Mobile */
 @media (max-width: 767px) {
   html:has(#gallery .gallery-lightbox),
   body:has(#gallery .gallery-lightbox) {
@@ -195,8 +227,18 @@ body.gallery-route { overflow-x: hidden; }
   }
 
   #gallery .gallery-lightbox > div:first-child {
-    min-height: 64px !important;
+    flex-basis: 64px !important;
     height: 64px !important;
+    min-height: 64px !important;
+  }
+
+  #gallery .gallery-lightbox > div:first-child button[aria-label="Kembali"] {
+    padding: 7px 10px !important;
+    font-size: 12px !important;
+  }
+
+  #gallery .gallery-lightbox > div:first-child button[aria-label="Kembali"] span::after {
+    font-size: 11px !important;
   }
 
   #gallery .gallery-lightbox > div:nth-child(2) > div:first-child {
@@ -231,16 +273,24 @@ body.gallery-route { overflow-x: hidden; }
   }
 }
 
+/* Tablet / desktop — same behavior, larger working area */
 @media (min-width: 768px) {
   #gallery .gallery-lightbox > div:first-child {
-    min-height: 68px !important;
+    flex-basis: 68px !important;
     height: 68px !important;
+    min-height: 68px !important;
   }
 
   #gallery .gallery-lightbox > div:nth-child(2) > div:first-child {
     flex-basis: clamp(360px, 55svh, 700px) !important;
     height: clamp(360px, 55svh, 700px) !important;
     max-height: 700px !important;
+  }
+
+  #gallery .gallery-lightbox > div:nth-child(2) > div:nth-child(2) {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-y !important;
   }
 
   #gallery .gallery-lightbox > div:nth-child(2) > div:nth-child(2) > div:nth-child(2) > div:last-child {
@@ -253,6 +303,10 @@ body.gallery-route { overflow-x: hidden; }
     flex-basis: min(62svh, 760px) !important;
     height: min(62svh, 760px) !important;
     max-height: 760px !important;
+  }
+
+  #gallery .gallery-lightbox > div:nth-child(2) > div:nth-child(2) > div:nth-child(2) {
+    max-width: 1280px !important;
   }
 }
 
