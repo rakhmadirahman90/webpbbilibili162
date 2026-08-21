@@ -30,13 +30,9 @@ function isBadPreviewAsset(url: string): boolean {
     value.endsWith('.svg');
 }
 
-function getPrimaryImage(url: string, thumbnailUrl: string): string {
-  // Gallery albums can contain multiple image URLs. Never use the PB logo as
-  // the WhatsApp preview when an actual album photo is available.
-  const candidates = [
-    ...String(thumbnailUrl || '').split(/[\s,]+/),
-    ...String(url || '').split(/[\s,]+/),
-  ]
+function getPrimaryImage(url: string): string {
+  const candidates = String(url || '')
+    .split(/[\s,]+/)
     .map(normalizeUrl)
     .filter(Boolean);
 
@@ -54,7 +50,9 @@ export default async function handler(req: any, res: any) {
   if (!id) return res.status(400).send('Dokumentasi tidak ditemukan');
 
   try {
-    const endpoint = `${SUPABASE_URL}/rest/v1/gallery?id=eq.${encodeURIComponent(id)}&select=id,title,description,url,thumbnail_url,created_at,type`;
+    // gallery table does not have thumbnail_url; use the album's first real photo
+    // as the share preview instead of falling back to the PB Bilibili logo.
+    const endpoint = `${SUPABASE_URL}/rest/v1/gallery?id=eq.${encodeURIComponent(id)}&select=id,title,description,url,created_at,type`;
     const response = await fetch(endpoint, {
       headers: {
         apikey: SUPABASE_KEY,
@@ -73,7 +71,7 @@ export default async function handler(req: any, res: any) {
     if (!gallery) return res.status(404).send('Dokumentasi tidak ditemukan');
 
     const title = String(gallery.title || 'Dokumentasi PB Bilibili 162').trim();
-    const image = getPrimaryImage(gallery.url, gallery.thumbnail_url);
+    const image = gallery.type === 'image' ? getPrimaryImage(gallery.url) : '';
     const canonical = `${PUBLIC_DOMAIN}/?gallery=${encodeURIComponent(gallery.id)}`;
     const description = String(gallery.description || `Dokumentasi ${title} dari PB Bilibili 162`).replace(/\s+/g, ' ').trim().slice(0, 200);
     const pageTitle = `${title} - PB Bilibili 162`;
@@ -82,7 +80,7 @@ export default async function handler(req: any, res: any) {
     const imageTags = image ? `
       <meta property="og:image" content="${escapeHtml(image)}" />
       <meta property="og:image:secure_url" content="${escapeHtml(image)}" />
-      <meta property="og:image:type" content="image/jpeg" />
+      <meta property="og:image:type" content="image/webp" />
       <meta property="og:image:width" content="1200" />
       <meta property="og:image:height" content="630" />
       <meta property="og:image:alt" content="${escapeHtml(title)}" />
