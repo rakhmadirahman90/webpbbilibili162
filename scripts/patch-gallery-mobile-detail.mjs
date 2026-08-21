@@ -6,8 +6,12 @@ const original = source;
 
 const replacements = [
   [
+    "import { useState, useMemo, useEffect, useCallback, useRef } from 'react';",
+    "import { useState, useMemo, useEffect, useCallback, useRef } from 'react';\nimport { createPortal } from 'react-dom';"
+  ],
+  [
     'gallery-lightbox fixed inset-0 z-[110000] bg-white text-slate-900 overflow-y-auto flex flex-col',
-    'gallery-lightbox fixed inset-0 z-[110000] bg-white text-slate-900 overflow-hidden flex flex-col h-[100dvh] w-screen'
+    'gallery-lightbox fixed inset-0 z-[2147483000] bg-white text-slate-900 overflow-hidden flex flex-col h-[100dvh] w-screen'
   ],
   [
     'sticky top-0 bg-[#0b1224] text-white px-4 py-3 md:py-4 flex items-center justify-between z-[110] shadow-md',
@@ -19,11 +23,11 @@ const replacements = [
   ],
   [
     'w-full bg-[#030712] relative h-[38vh] sm:h-[48vh] md:h-[58vh] lg:h-[65vh] overflow-hidden flex items-center justify-center border-b border-slate-900/40',
-    'w-full bg-[#030712] relative h-[40dvh] sm:h-[48dvh] md:h-[58dvh] lg:h-[65dvh] overflow-hidden flex items-center justify-center border-b border-slate-900/40 shrink-0'
+    'w-full bg-[#030712] relative h-[34dvh] sm:h-[48dvh] md:h-[58dvh] lg:h-[65dvh] overflow-hidden flex items-center justify-center border-b border-slate-900/40 shrink-0'
   ],
   [
     'max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 sm:mt-8',
-    'max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-3 sm:mt-6 flex-1 min-h-0 overflow-hidden'
+    'max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-3 sm:mt-6 flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain'
   ],
   [
     'text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extrabold text-[#0f172a] mb-4 uppercase leading-tight',
@@ -52,6 +56,14 @@ const replacements = [
   [
     '<div className="mt-16 pb-10"><button',
     '<div className="hidden sm:block mt-16 pb-10"><button'
+  ],
+  [
+    'return (\n            <div className="gallery-lightbox',
+    'return createPortal((\n            <div className="gallery-lightbox'
+  ],
+  [
+    '            </div>\n          );\n        })()}',
+    '            </div>\n          ), document.body);\n        })()}'
   ]
 ];
 
@@ -63,9 +75,21 @@ for (const [from, to] of replacements) {
   }
 }
 
+// Lock the page behind the fullscreen gallery detail on mobile and desktop.
+const effectMarker = "  useEffect(() => {\n    window.dispatchEvent(new CustomEvent(selectedId ? 'pb-overlay-open' : 'pb-overlay-close'));";
+const effectReplacement = "  useEffect(() => {\n    const previousOverflow = document.body.style.overflow;\n    if (selectedId) document.body.style.overflow = 'hidden';\n    else document.body.style.overflow = previousOverflow || '';\n    window.dispatchEvent(new CustomEvent(selectedId ? 'pb-overlay-open' : 'pb-overlay-close'));";
+if (source.includes(effectMarker) && !source.includes("const previousOverflow = document.body.style.overflow;")) {
+  source = source.replace(effectMarker, effectReplacement);
+  source = source.replace(
+    "    return () => window.dispatchEvent(new CustomEvent('pb-overlay-close'));\n  }, [selectedId]);",
+    "    return () => {\n      document.body.style.overflow = previousOverflow;\n      window.dispatchEvent(new CustomEvent('pb-overlay-close'));\n    };\n  }, [selectedId]);"
+  );
+  changed++;
+}
+
 if (source !== original) {
   fs.writeFileSync(file, source);
-  console.log(`[patch-gallery-mobile-detail] applied ${changed} layout changes`);
+  console.log(`[patch-gallery-mobile-detail] applied ${changed} fullscreen gallery fixes`);
 } else {
-  console.log('[patch-gallery-mobile-detail] already patched; no changes needed');
+  console.log('[patch-gallery-mobile-detail] no changes needed');
 }
