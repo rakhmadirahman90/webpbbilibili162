@@ -26,8 +26,6 @@ if (source !== original) {
 }
 
 // Restore the news article photo carousel directly below the article text.
-// The public news page previously showed the documentation photos as a carousel;
-// keep that layout instead of the newer static 2/3-column grid.
 const newsFile = 'src/components/News.tsx';
 let newsSource = fs.readFileSync(newsFile, 'utf8');
 const newsOriginal = newsSource;
@@ -51,7 +49,7 @@ const carouselBlock = `                  {/* 3. Supporting Inline Multi-Image Sl
                         >
                           <img
                             src={getOptimizedImageUrl(newsImages[activeImgIndex], 1200)}
-                            alt={`${selectedNews.judul} - Foto ${activeImgIndex + 1}`}
+                            alt={selectedNews.judul + ' - Foto ' + (activeImgIndex + 1)}
                             loading="eager"
                             decoding="async"
                             className="w-full h-full object-contain bg-black"
@@ -85,12 +83,12 @@ const carouselBlock = `                  {/* 3. Supporting Inline Multi-Image Sl
                           <button
                             key={idx}
                             onClick={() => setActiveImgIndex(idx)}
-                            className={`relative shrink-0 w-20 h-14 sm:w-24 sm:h-16 rounded-lg overflow-hidden border-2 snap-start transition-all ${activeImgIndex === idx ? 'border-emerald-500 ring-2 ring-emerald-500/20 opacity-100' : 'border-transparent opacity-70 hover:opacity-100'}`}
-                            aria-label={`Buka foto ${idx + 1}`}
+                            className={activeImgIndex === idx ? 'relative shrink-0 w-20 h-14 sm:w-24 sm:h-16 rounded-lg overflow-hidden border-2 border-emerald-500 ring-2 ring-emerald-500/20 opacity-100 snap-start transition-all' : 'relative shrink-0 w-20 h-14 sm:w-24 sm:h-16 rounded-lg overflow-hidden border-2 border-transparent opacity-70 hover:opacity-100 snap-start transition-all'}
+                            aria-label={'Buka foto ' + (idx + 1)}
                           >
                             <img
                               src={getOptimizedImageUrl(img, 220)}
-                              alt={`Thumbnail foto ${idx + 1}`}
+                              alt={'Thumbnail foto ' + (idx + 1)}
                               loading="lazy"
                               decoding="async"
                               className="w-full h-full object-cover"
