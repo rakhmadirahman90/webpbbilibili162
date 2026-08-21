@@ -1,0 +1,159 @@
+/* -------------------------------------------------------------------------
+   PUBLIC PAGE FLOW / FOOTER SAFETY
+   The public app shell must grow with its content. The footer is a normal
+   document-flow element, never a viewport overlay. This prevents long menu
+   pages, ranking lists and interactive quiz content from being hidden behind
+   the footer on mobile and desktop.
+   ------------------------------------------------------------------------- */
+
+html,
+body,
+#root {
+  height: auto !important;
+  min-height: 100% !important;
+}
+
+body {
+  overflow-y: auto !important;
+}
+
+#root {
+  overflow: visible !important;
+}
+
+/* Public pages are identifiable by the presence of the shared footer. */
+#root:has(#footer-section) {
+  min-height: 100dvh !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+#root:has(#footer-section) main {
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow-x: clip !important;
+  overflow-y: visible !important;
+}
+
+/* App.tsx uses this wrapper around dedicated public views. Never allow the
+   wrapper to shrink to the viewport while its child content is taller. */
+#root:has(#footer-section) .flex-grow.w-full.flex.flex-col.min-h-0 {
+  flex: 0 0 auto !important;
+  flex-grow: 0 !important;
+  flex-shrink: 0 !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+#root:has(#footer-section) .flex.flex-col.min-h-screen.w-full {
+  height: auto !important;
+  min-height: 100dvh !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+/* Shared footer contract. */
+#footer-section {
+  position: relative !important;
+  inset: auto !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+  transform: none !important;
+  float: none !important;
+  clear: both !important;
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 74px !important;
+  max-height: none !important;
+  margin-top: 18px !important;
+  flex: 0 0 auto !important;
+  flex-shrink: 0 !important;
+  overflow: visible !important;
+  z-index: 10 !important;
+}
+
+#footer-section > div {
+  width: 100% !important;
+  height: auto !important;
+  min-height: 74px !important;
+  max-height: none !important;
+}
+
+#footer-section p {
+  position: static !important;
+  height: auto !important;
+  max-height: none !important;
+}
+
+/* Any top-level public section that was accidentally locked to the viewport
+   must instead use natural document height. Internal cards/modals retain their
+   own intentional overflow rules. */
+@media (max-width: 1023px) {
+  #root:has(#footer-section) main > section[class*="h-screen"],
+  #root:has(#footer-section) main > section[class*="h-[calc(100vh"],
+  #root:has(#footer-section) main > section[class*="h-[calc(100dvh"] {
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    overflow-y: visible !important;
+  }
+
+  /* Ranking: the list + pagination define page height. */
+  #rankings {
+    height: auto !important;
+    max-height: none !important;
+    min-height: calc(100dvh - 4.5rem) !important;
+    overflow: visible !important;
+    justify-content: flex-start !important;
+    padding-bottom: calc(7rem + env(safe-area-inset-bottom)) !important;
+  }
+
+  #rankings > .max-w-6xl {
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    flex: 0 0 auto !important;
+  }
+
+  /* Quiz: all levels, clues, grid and controls must finish before footer. */
+  #root:has(#footer-section) section:has(.bg-gradient-to-r.from-blue-950\\/40) {
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    padding-bottom: calc(8rem + env(safe-area-inset-bottom)) !important;
+  }
+
+  #root:has(#footer-section) section:has(.bg-gradient-to-r.from-blue-950\\/40) .max-h-\\[480px\\] {
+    max-height: 55vh !important;
+  }
+}
+
+/* Small screens: preserve comfortable bottom breathing room for floating
+   controls without letting those controls become part of document flow. */
+@media (max-width: 639px) {
+  #footer-section {
+    margin-top: 20px !important;
+    min-height: 76px !important;
+    padding-bottom: env(safe-area-inset-bottom) !important;
+  }
+
+  #footer-section > div {
+    min-height: 76px !important;
+    padding-bottom: max(14px, env(safe-area-inset-bottom)) !important;
+  }
+
+  #root:has(#footer-section) main > section[class*="min-h-screen"] {
+    min-height: 0 !important;
+    height: auto !important;
+  }
+}
