@@ -8,9 +8,8 @@ const fetchReplacement = `  const fetchGallery = async () => {
     setLoading(true);
     try {
       // Supabase is the single source of truth for the admin gallery.
-      // Do not prefer gallery_list/localStorage here because those can contain
-      // stale legacy/demo records and make the UI show photos that are not in
-      // the database.
+      // Do not prefer gallery_list/localStorage because those may contain
+      // stale legacy/demo records that are not in the gallery table.
       const { data, error } = await supabase
         .from('gallery')
         .select('*')
@@ -23,8 +22,6 @@ const fetchReplacement = `  const fetchGallery = async () => {
       localStorage.setItem('gallery_local', JSON.stringify(rows));
     } catch (error) {
       console.error('Failed to load gallery from Supabase', error);
-      // Keep the last successfully loaded Supabase snapshot only as an
-      // offline cache. It is never used when Supabase returns successfully.
       try {
         const cached = JSON.parse(localStorage.getItem('gallery_local') || '[]');
         setItems(Array.isArray(cached) ? cached : []);
@@ -38,12 +35,19 @@ const fetchReplacement = `  const fetchGallery = async () => {
 `;
 
 const saveReplacement = `  const saveItems = async (next: GalleryItem[], action: 'INSERT' | 'UPDATE' | 'DELETE', payload: any) => {
-    // Supabase is the persistent source of truth. The local/site-setting
-    // stores are cache/legacy only and must never replace database writes.
+    // Supabase is the persistent source of truth. Never insert the temporary
+    // client-side ID (gal_...) because gallery.id is PostgreSQL UUID.
+    let persistedItems = next;
+
     if (action === 'INSERT') {
-      const item = next[0];
-      const { error } = await supabase.from('gallery').insert(item);
+      const { data, error } = await supabase
+        .from('gallery')
+        .insert(payload)
+        .select('*')
+        .single();
       if (error) throw error;
+      if (!data) throw new Error('Data galeri tidak dikembalikan oleh Supabase.');
+      persistedItems = [data as GalleryItem, ...next.slice(1)];
     } else if (action === 'UPDATE') {
       const { id, ...changes } = payload;
       const { error } = await supabase.from('gallery').update(changes).eq('id', id);
@@ -55,9 +59,9 @@ const saveReplacement = `  const saveItems = async (next: GalleryItem[], action:
       if (error) throw error;
     }
 
-    setItems(next);
-    localStorage.setItem('gallery_local', JSON.stringify(next));
-    broadcastDataChange('gallery', action, payload);
+    setItems(persistedItems);
+    localStorage.setItem('gallery_local', JSON.stringify(persistedItems));
+    broadcastDataChange('gallery', action, action === 'INSERT' ? persistedItems[0] : payload);
   };
 `;
 
@@ -70,4 +74,4 @@ if (!savePattern.test(source)) throw new Error('patch-gallery-supabase-source: s
 source = source.replace(savePattern, `${saveReplacement}\n  const handleSubmit`);
 
 fs.writeFileSync(filePath, source);
-console.log('Patched AdminGallery to use Supabase as the single source of truth.');
+console.log('Patched AdminGallery: Supabase source of truth + UUID-safe inserts.');
