@@ -22,6 +22,10 @@
   ],
   "rewrites": [
     {
+      "source": "/berita",
+      "destination": "/api/share-berita"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
