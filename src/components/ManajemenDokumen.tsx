@@ -1,410 +1,82 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
-import { saveSiteSetting, getSiteSetting } from '../utils/siteSettingsHelper';
 import Swal from 'sweetalert2';
-import { FileText, Plus, Trash2, Download, Search, Loader2, UploadCloud, Eye, X, AlertCircle, Edit3, Save } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import imageCompression from 'browser-image-compression'; // Library untuk kompresi
+import { FileText, Plus, Trash2, Search, Loader2, UploadCloud, Eye, X, Edit3, Save } from 'lucide-react';
 
 export default function ManajemenDokumen({ session }: { session?: any }) {
-  const userRole = session?.user?.user_metadata?.role || (() => {
-    const raw = localStorage.getItem('local_admin_session');
-    if (raw) {
-      try { return JSON.parse(raw)?.user?.user_metadata?.role || 'admin'; } catch (e) {}
-    }
-    return 'admin';
-  })();
-  const isAdmin = userRole === 'admin';
-
+  const role = session?.user?.user_metadata?.role || 'admin';
+  const isAdmin = role === 'admin';
   const [docs, setDocs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  
-  // State untuk Modal & Editing
-  const [formData, setFormData] = useState({ title: '', description: '' });
+  const [search, setSearch] = useState('');
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  useEffect(() => { 
-    fetchDocs(); 
+  const fetchDocs = async () => {
+    setLoading(true);
+    const { data, error } = await supabase.from('documents').select('*').order('created_at', { ascending: false });
+    if (error) { console.error(error); setDocs([]); } else setDocs(data || []);
+    setLoading(false);
+  };
 
-    const channel = supabase
-      .channel('manajemen_dokumen_realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'documents' }, () => fetchDocs())
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+  useEffect(() => {
+    void fetchDocs();
+    const channel = supabase.channel('admin_documents_realtime_v2').on('postgres_changes', { event: '*', schema: 'public', table: 'documents' }, fetchDocs).subscribe();
+    return () => { void supabase.removeChannel(channel); };
   }, []);
 
-  const fetchDocs = async () => {
-    try {
-      setLoading(true);
-      const data = await getSiteSetting('documents_list');
-      if (data && Array.isArray(data)) {
-        setDocs(data);
-        localStorage.setItem('documents_local', JSON.stringify(data));
-      } else {
-        const { data: sbData } = await supabase
-          .from('documents')
-          .select('*')
-          .order('created_at', { ascending: false });
-        
-        const localData = JSON.parse(localStorage.getItem('documents_local') || '[]');
-        const combined = [...(sbData || []), ...localData];
-        setDocs(combined);
-        await saveSiteSetting('documents_list', combined);
-      }
-    } catch (error: any) {
-      console.error("Error fetching docs:", error.message);
-      const localData = JSON.parse(localStorage.getItem('documents_local') || '[]');
-      setDocs(localData);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const notify = (icon: 'success'|'error', titleText: string, text?: string) => Swal.fire({ icon, title: titleText, text, background: '#0F172A', color: '#fff', confirmButtonColor: '#2563EB' });
 
-  // --- FITUR KOMPRESI & UPLOAD ---
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    let file = e.target.files?.[0];
-    if (!file) return;
-    if (!formData.title) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Judul Kosong',
-        text: 'Silakan isi Judul Dokumen terlebih dahulu sebelum memilih file!',
-        confirmButtonColor: '#3B82F6',
-        background: '#0F172A',
-        color: '#fff'
-      });
-      e.target.value = '';
-      return;
-    }
-
+    const file = e.target.files?.[0];
+    if (!file || !title.trim()) { if (!title.trim()) void notify('error', 'Judul dokumen wajib diisi'); e.target.value = ''; return; }
     setUploading(true);
     try {
-      // Logika Kompresi jika file adalah Gambar
-      if (file.type.startsWith('image/')) {
-        const options = {
-          maxSizeMB: 0.5, // Maksimal 500KB
-          maxWidthOrHeight: 1920,
-          useWebWorker: true
-        };
-        file = await imageCompression(file, options);
-      }
-
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-      const filePath = `docs/${fileName}`;
-
-      // 1. Upload ke Storage (opsional, tangkap error jika storage RLS menolak)
-      let publicUrl = URL.createObjectURL(file);
-      try {
-        let { error: uploadError } = await supabase.storage
-          .from('assets')
-          .upload(filePath, file);
-        if (!uploadError) {
-          const { data: { publicUrl: sUrl } } = supabase.storage
-            .from('assets')
-            .getPublicUrl(filePath);
-          publicUrl = sUrl;
-        }
-      } catch (err) {
-        console.warn("Storage upload fallback to blob URL", err);
-      }
-
-      const newDocPayload = {
-        id: 'doc_' + Date.now(),
-        title: formData.title,
-        description: formData.description,
-        file_url: publicUrl,
-        file_type: fileExt?.toUpperCase() || 'FILE',
-        file_size: file.size,
-        created_at: new Date().toISOString()
-      };
-
-      const updatedDocs = [newDocPayload, ...docs];
-      setDocs(updatedDocs);
-      localStorage.setItem('documents_local', JSON.stringify(updatedDocs));
-      await saveSiteSetting('documents_list', updatedDocs);
-
-      Swal.fire({
-        icon: 'success',
-        title: 'Berhasil Unggah',
-        text: 'Dokumen berhasil dikompres & diunggah!',
-        confirmButtonColor: '#3B82F6',
-        background: '#0F172A',
-        color: '#fff'
-      });
-
-      setFormData({ title: '', description: '' });
-      e.target.value = '';
-    } catch (error: any) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Gagal Mengunggah',
-        text: error.message,
-        confirmButtonColor: '#EF4444',
-        background: '#0F172A',
-        color: '#fff'
-      });
-    } finally {
-      setUploading(false);
-    }
+      const ext = file.name.split('.').pop()?.toLowerCase() || 'pdf';
+      const path = `docs/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const { error: uploadError } = await supabase.storage.from('assets').upload(path, file, { upsert: false });
+      if (uploadError) throw uploadError;
+      const { data: publicData } = supabase.storage.from('assets').getPublicUrl(path);
+      const { error: insertError } = await supabase.from('documents').insert({ title: title.trim(), description: description.trim(), file_url: publicData.publicUrl, file_type: ext.toUpperCase(), file_size: file.size });
+      if (insertError) throw insertError;
+      setTitle(''); setDescription(''); e.target.value = '';
+      await fetchDocs();
+      await notify('success', 'Dokumen berhasil disimpan ke Supabase');
+    } catch (err: any) { console.error(err); await notify('error', 'Gagal menyimpan dokumen', err?.message || 'Periksa hak akses Supabase.'); }
+    finally { setUploading(false); }
   };
 
-  // --- FITUR EDIT ---
-  const handleUpdate = async () => {
-    if (!editingId) return;
-    try {
-      const updatedDocs = docs.map(doc => {
-        if (doc.id === editingId) {
-          return {
-            ...doc,
-            title: formData.title,
-            description: formData.description
-          };
-        }
-        return doc;
-      });
-
-      setDocs(updatedDocs);
-      localStorage.setItem('documents_local', JSON.stringify(updatedDocs));
-      await saveSiteSetting('documents_list', updatedDocs);
-      
-      setEditingId(null);
-      setFormData({ title: '', description: '' });
-      Swal.fire({
-        toast: true,
-        position: 'top-end',
-        icon: 'success',
-        title: 'Dokumen berhasil diperbarui!',
-        showConfirmButton: false,
-        timer: 3000
-      });
-    } catch (error: any) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Gagal Memperbarui',
-        text: error.message,
-        confirmButtonColor: '#EF4444',
-        background: '#0F172A',
-        color: '#fff'
-      });
-    }
+  const saveEdit = async () => {
+    if (!editingId || !title.trim()) return;
+    const { error } = await supabase.from('documents').update({ title: title.trim(), description: description.trim() }).eq('id', editingId);
+    if (error) return void notify('error', 'Gagal memperbarui dokumen', error.message);
+    setEditingId(null); setTitle(''); setDescription(''); await fetchDocs(); await notify('success', 'Dokumen diperbarui');
   };
 
-  const startEdit = (doc: any) => {
-    setEditingId(doc.id);
-    setFormData({ title: doc.title, description: doc.description || '' });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  const startEdit = (doc: any) => { setEditingId(doc.id); setTitle(doc.title || ''); setDescription(doc.description || ''); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+
+  const deleteDoc = async (doc: any) => {
+    const result = await Swal.fire({ title: 'Hapus dokumen?', text: 'Data akan dihapus dari tabel Supabase.', icon: 'warning', showCancelButton: true, confirmButtonText: 'Ya, hapus', cancelButtonText: 'Batal', confirmButtonColor: '#EF4444', background: '#0F172A', color: '#fff' });
+    if (!result.isConfirmed) return;
+    const { error } = await supabase.from('documents').delete().eq('id', doc.id);
+    if (error) return void notify('error', 'Gagal menghapus dokumen', error.message);
+    try { const marker = '/storage/v1/object/public/assets/'; const idx = String(doc.file_url || '').indexOf(marker); if (idx >= 0) await supabase.storage.from('assets').remove([String(doc.file_url).slice(idx + marker.length)]); } catch {}
+    await fetchDocs(); await notify('success', 'Dokumen dihapus dari Supabase');
   };
 
-  const deleteDoc = async (id: string, fileUrl: string) => {
-    const result = await Swal.fire({
-      title: 'Hapus Dokumen?',
-      text: "Dokumen ini akan dihapus secara permanen dari server!",
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#EF4444',
-      cancelButtonColor: '#374151',
-      confirmButtonText: 'Ya, Hapus!',
-      cancelButtonText: 'Batal',
-      background: '#0F172A',
-      color: '#fff'
-    });
+  const filtered = docs.filter(d => `${d.title || ''} ${d.description || ''}`.toLowerCase().includes(search.toLowerCase()));
 
-    if (result.isConfirmed) {
-      try {
-        const urlParts = fileUrl.split('/');
-        const fileName = urlParts[urlParts.length - 1];
-        try {
-          await supabase.storage.from('assets').remove([`docs/${fileName}`]);
-        } catch (storageErr) {
-          console.warn("Could not delete from storage bucket", storageErr);
-        }
-
-        const updatedDocs = docs.filter(doc => doc.id !== id);
-        setDocs(updatedDocs);
-        localStorage.setItem('documents_local', JSON.stringify(updatedDocs));
-        await saveSiteSetting('documents_list', updatedDocs);
-        
-        Swal.fire({
-          toast: true,
-          position: 'top-end',
-          icon: 'success',
-          title: 'Dokumen berhasil dihapus',
-          showConfirmButton: false,
-          timer: 3000
-        });
-      } catch (error: any) {
-        Swal.fire({
-          icon: 'error',
-          title: 'Gagal Menghapus',
-          text: error.message,
-          confirmButtonColor: '#EF4444',
-          background: '#0F172A',
-          color: '#fff'
-        });
-      }
-    }
-  };
-
-  const filteredDocs = docs.filter(doc => 
-    doc.title.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  return (
-    <div className="p-4 md:p-8 bg-[#070d1a] min-h-screen text-white font-sans relative">
-      
-      {/* MODAL PRATINJAU (In-Page Preview) */}
-      <AnimatePresence>
-        {previewUrl && (
-          <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 md:p-10">
-            <motion.div 
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              onClick={() => setPreviewUrl(null)}
-              className="absolute inset-0 bg-black/90 backdrop-blur-xl"
-            />
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-              className="relative w-full max-w-5xl h-full bg-zinc-900 rounded-[2rem] overflow-hidden border border-zinc-800 flex flex-col shadow-2xl"
-            >
-              <div className="p-4 border-b border-zinc-800 flex justify-between items-center bg-zinc-900/50">
-                <h3 className="text-sm font-black uppercase italic tracking-widest text-blue-500">Pratinjau Dokumen</h3>
-                <button onClick={() => setPreviewUrl(null)} className="p-2 hover:bg-red-500/20 text-red-500 rounded-full transition-all">
-                  <X size={24} />
-                </button>
-              </div>
-              <div className="flex-1 bg-zinc-800/20">
-                <iframe src={previewUrl} className="w-full h-full border-none" title="Preview" />
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Header */}
-      <div className="max-w-6xl mx-auto mb-10">
-        <h1 className="text-4xl font-black italic uppercase tracking-tighter flex items-center gap-3">
-          <FileText className="text-blue-600" size={32} />
-          Manajemen <span className="text-blue-600">Dokumen</span>
-        </h1>
-        <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-[0.3em] mt-2">
-          Pusat Kendali Arsip Digital PB BILIBILI 162
-        </p>
+  return <div className="p-4 md:p-8 bg-[#070d1a] min-h-screen text-white">
+    {previewUrl && <div className="fixed inset-0 z-[1000] flex items-center justify-center p-3 bg-black/90"><div className="relative w-full max-w-5xl h-[90dvh] bg-zinc-900 rounded-2xl overflow-hidden"><button onClick={() => setPreviewUrl(null)} className="absolute top-3 right-3 z-10 p-2 bg-black/60 rounded-full"><X/></button><iframe src={previewUrl} className="w-full h-full border-none" title="Preview"/></div></div>}
+    <div className="max-w-6xl mx-auto"><h1 className="text-2xl md:text-4xl font-black italic uppercase flex items-center gap-3"><FileText className="text-blue-500"/>Manajemen <span className="text-blue-500">Dokumen</span></h1><p className="text-[10px] text-zinc-500 font-bold uppercase tracking-[.25em] mt-2">Sumber data tunggal: public.documents — Supabase</p></div>
+    <div className="max-w-6xl mx-auto mt-8 grid lg:grid-cols-3 gap-6">
+      <div className="bg-zinc-900/70 p-5 rounded-2xl border border-zinc-800 h-fit">
+        {isAdmin && <><h2 className="font-black uppercase italic mb-4 flex items-center gap-2">{editingId ? <Edit3 size={18}/> : <Plus size={18}/>} {editingId ? 'Edit Dokumen' : 'Tambah Dokumen'}</h2><input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Judul Dokumen" className="w-full bg-black border border-zinc-800 p-3 rounded-xl mb-3 text-sm"/><textarea value={description} onChange={e=>setDescription(e.target.value)} placeholder="Keterangan" className="w-full bg-black border border-zinc-800 p-3 rounded-xl mb-3 text-sm h-24 resize-none"/>{editingId ? <div className="flex gap-2"><button onClick={saveEdit} className="flex-1 bg-blue-600 p-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2"><Save size={15}/>Simpan</button><button onClick={()=>{setEditingId(null);setTitle('');setDescription('')}} className="p-3 bg-zinc-800 rounded-xl"><X size={16}/></button></div> : <label className="flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-zinc-700 rounded-xl cursor-pointer hover:border-blue-500">{uploading?<Loader2 className="animate-spin text-blue-500"/>:<UploadCloud className="text-zinc-500"/>}<span className="text-[10px] font-black uppercase">{uploading?'Mengunggah...':'Pilih File'}</span><input type="file" hidden accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" disabled={uploading} onChange={handleUpload}/></label>}</>}
       </div>
-
-      <div className="max-w-6xl mx-auto grid lg:grid-cols-3 gap-8">
-        
-        {/* Kolom Kiri: Form Upload/Edit */}
-        <div className="lg:col-span-1">
-          <div className="sticky top-24 bg-zinc-900/50 p-6 rounded-[2rem] border border-zinc-800 backdrop-blur-md shadow-xl">
-            {isAdmin ? (
-              <>
-                <h2 className="text-lg font-black uppercase italic mb-6 flex items-center gap-2">
-                  {editingId ? <Edit3 size={18} className="text-yellow-500" /> : <Plus size={18} className="text-blue-500" />}
-                  {editingId ? 'Edit Dokumen' : 'Tambah Arsip'}
-                </h2>
-                
-                <div className="space-y-4">
-                  <input 
-                    type="text" placeholder="Judul Dokumen" 
-                    className="w-full bg-black border border-zinc-800 p-4 rounded-xl outline-none focus:border-blue-600 transition-all text-sm"
-                    value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})}
-                  />
-                  <textarea 
-                    placeholder="Keterangan..." 
-                    className="w-full bg-black border border-zinc-800 p-4 rounded-xl outline-none focus:border-blue-600 transition-all text-sm h-24 resize-none"
-                    value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})}
-                  />
-
-                  {editingId ? (
-                    <div className="flex gap-2">
-                      <button onClick={handleUpdate} className="flex-1 bg-blue-600 hover:bg-blue-700 p-4 rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all cursor-pointer">
-                        <Save size={16} /> Simpan Perubahan
-                      </button>
-                      <button onClick={() => { setEditingId(null); setFormData({title:'', description:''}); }} className="bg-zinc-800 p-4 rounded-xl hover:bg-zinc-700 transition-all cursor-pointer">
-                        <X size={16} />
-                      </button>
-                    </div>
-                  ) : (
-                    <label className={`flex flex-col items-center justify-center gap-3 p-8 border-2 border-dashed rounded-[1.5rem] transition-all cursor-pointer ${uploading ? 'border-zinc-700 bg-zinc-800/20' : 'border-zinc-800 hover:border-blue-600/50 hover:bg-blue-600/5'}`}>
-                      {uploading ? <Loader2 className="animate-spin text-blue-500" size={32} /> : <UploadCloud size={32} className="text-zinc-600" />}
-                      <div className="text-center">
-                        <p className="text-[10px] font-black uppercase tracking-widest">{uploading ? 'Proses Kompresi...' : 'Klik untuk Upload'}</p>
-                        <input type="file" hidden onChange={handleUpload} disabled={uploading} accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" />
-                      </div>
-                    </label>
-                  )}
-                </div>
-              </>
-            ) : (
-              <div className="space-y-4 text-center py-6">
-                <div className="w-16 h-16 bg-blue-600/10 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-2">
-                  <FileText size={32} />
-                </div>
-                <h3 className="font-black uppercase text-sm italic tracking-wider">Arsip Dokumen Resmi</h3>
-                <p className="text-xs text-zinc-400 leading-relaxed">
-                  Anggota PB BILIBILI 162 dapat melihat, mengunduh, dan meninjau seluruh dokumen & peraturan klub yang diunggah oleh pengurus.
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Kolom Kanan: List Dokumen */}
-        <div className="lg:col-span-2">
-          <div className="relative mb-6">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" size={18} />
-            <input 
-              type="text" placeholder="Cari arsip..." 
-              className="w-full bg-zinc-900/30 border border-zinc-800 py-4 pl-12 pr-6 rounded-2xl outline-none focus:border-blue-900/50 transition-all"
-              value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-
-          <div className="space-y-4">
-            {loading ? (
-              <div className="text-center py-20"><Loader2 className="animate-spin mx-auto text-zinc-700" size={40} /></div>
-            ) : filteredDocs.map(doc => (
-              <motion.div layout key={doc.id} className="group flex flex-col md:flex-row items-center justify-between bg-zinc-900/20 border border-zinc-800/50 p-5 rounded-3xl hover:border-blue-600/30 transition-all duration-300">
-                <div className="flex items-center gap-5 w-full md:w-auto">
-                  <div className="w-14 h-14 bg-zinc-800 rounded-2xl flex items-center justify-center text-zinc-500 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-inner">
-                    <FileText size={24} />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="bg-zinc-800 text-[8px] font-black px-2 py-0.5 rounded text-zinc-400 uppercase">{doc.file_type}</span>
-                      <span className="text-[9px] text-zinc-600 font-bold uppercase">{new Date(doc.created_at).toLocaleDateString('id-ID')}</span>
-                    </div>
-                    <h4 className="font-bold text-sm uppercase tracking-tight group-hover:text-blue-400">{doc.title}</h4>
-                    <p className="text-[11px] text-zinc-500 line-clamp-1">{doc.description}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 mt-4 md:mt-0 pt-4 md:pt-0 border-t md:border-t-0 border-zinc-800 w-full md:w-auto">
-                  <button onClick={() => setPreviewUrl(doc.file_url)} className="flex-1 md:flex-none bg-zinc-800 hover:bg-blue-600/20 hover:text-blue-400 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 cursor-pointer">
-                    <Eye size={14} /> View
-                  </button>
-                  {isAdmin && (
-                    <>
-                      <button onClick={() => startEdit(doc)} className="bg-zinc-800 hover:bg-yellow-600/20 hover:text-yellow-500 p-2.5 rounded-xl transition-all cursor-pointer">
-                        <Edit3 size={16} />
-                      </button>
-                      <button onClick={() => deleteDoc(doc.id, doc.file_url)} className="bg-red-600/10 text-red-500 hover:bg-red-600 hover:text-white p-2.5 rounded-xl transition-all cursor-pointer">
-                        <Trash2 size={16} />
-                      </button>
-                    </>
-                  )}
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </div>
+      <div className="lg:col-span-2"><div className="relative mb-4"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={17}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Cari arsip..." className="w-full bg-zinc-900 border border-zinc-800 py-3 pl-10 rounded-xl text-sm"/></div>{loading?<div className="py-20 flex justify-center"><Loader2 className="animate-spin text-blue-500"/></div>:<div className="space-y-3">{filtered.map(doc=><div key={doc.id} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4"><div className="flex items-start gap-3"><FileText className="text-blue-500 shrink-0"/><div className="min-w-0 flex-1"><h3 className="font-bold truncate">{doc.title}</h3><p className="text-xs text-zinc-500 mt-1">{doc.description || 'Tanpa keterangan'}</p><p className="text-[9px] text-zinc-600 mt-2">{doc.file_type || 'FILE'} • {doc.created_at ? new Date(doc.created_at).toLocaleDateString('id-ID') : ''}</p></div></div><div className="flex gap-2 mt-3"><button onClick={()=>setPreviewUrl(doc.file_url)} className="flex-1 bg-zinc-800 py-2 rounded-lg text-xs font-bold flex justify-center gap-1"><Eye size={14}/>View</button><a href={doc.file_url} download className="flex-1 bg-blue-600 py-2 rounded-lg text-xs font-bold text-center">Download</a>{isAdmin&&<><button onClick={()=>startEdit(doc)} className="p-2 bg-amber-600 rounded-lg"><Edit3 size={14}/></button><button onClick={()=>void deleteDoc(doc)} className="p-2 bg-red-600 rounded-lg"><Trash2 size={14}/></button></>}</div></div>)}</div>}</div>
     </div>
-  );
+  </div>;
 }
