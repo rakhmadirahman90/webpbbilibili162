@@ -11,6 +11,7 @@ function patchFile(path, replacements) {
       if (next !== code) {
         code = next;
         changed += 1;
+        console.log(`[patch-public-routing] ${path}: ${label}`);
       }
     }
   }
@@ -22,18 +23,26 @@ function patchFile(path, replacements) {
 const app = 'src/App.tsx';
 patchFile(app, [
   {
-    label: 'add prestasi/program to full page menu list',
-    test: code => code.includes("'berita', 'news', 'faq', 'sambutan', 'sambutan-ketua'") && !code.includes("'berita', 'news', 'prestasi', 'program', 'faq', 'sambutan', 'sambutan-ketua'"),
-    replace: code => code.replace(
+    label: 'add prestasi/program to every full-page menu list',
+    test: code => code.includes("'berita', 'news', 'faq', 'sambutan', 'sambutan-ketua'"),
+    replace: code => code.replaceAll(
       "'berita', 'news', 'faq', 'sambutan', 'sambutan-ketua'",
       "'berita', 'news', 'prestasi', 'program', 'faq', 'sambutan', 'sambutan-ketua'"
+    )
+  },
+  {
+    label: 'add prestasi/program to initial full-page menu state',
+    test: code => code.includes("'inventaris', 'berita', 'news', 'faq'") && !code.includes("'inventaris', 'berita', 'news', 'prestasi', 'program', 'faq'"),
+    replace: code => code.replace(
+      "'inventaris', 'berita', 'news', 'faq'",
+      "'inventaris', 'berita', 'news', 'prestasi', 'program', 'faq'"
     )
   },
   {
     label: 'add public prestasi/program renderers',
     test: code => !code.includes("activeView === 'prestasi'") && code.includes("activeView === 'berita'") && code.includes("activeView === 'galeri'"),
     replace: code => code.replace(
-      /((?:\s*)\{\(activeView === 'berita' \|\| activeView === 'news'\) && <News \/>\})/,
+      /(\s*\{\(activeView === 'berita' \|\| activeView === 'news'\) && <News \/>\})/,
       `$1\n                    {(activeView === 'prestasi') && <PublicPrestasi />}\n                    {(activeView === 'program') && <PublicProgram onNavigate={(path) => handleNavigate(path)} />}`
     )
   }
