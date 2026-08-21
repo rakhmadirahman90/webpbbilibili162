@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "node scripts/patch-performance-v2.mjs && npm run build",
+  "buildCommand": "node scripts/patch-performance-v2.mjs && node scripts/patch-gallery-source.mjs && npm run build",
   "headers": [
     {
       "source": "/assets/(.*)",
