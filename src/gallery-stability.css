@@ -1,6 +1,16 @@
-/* Gallery route stability: keep the page fully opaque and free from route-transition flicker. */
+/* -------------------------------------------------------------------------
+   GALLERY STABILITY
+   Gallery is a content view, not an animated route surface. The previous
+   route/card fades could produce a white flash on mobile when /galeri opens.
+   ------------------------------------------------------------------------- */
+
 body.gallery-route {
   overflow-x: hidden;
+}
+
+/* Disable opacity fades from Framer Motion while Gallery is active. */
+body.gallery-route [style*="opacity"] {
+  opacity: 1 !important;
 }
 
 body.gallery-route #gallery {
@@ -8,16 +18,49 @@ body.gallery-route #gallery {
   visibility: visible !important;
   animation: none !important;
   transition: none !important;
-  transform: none !important;
   filter: none !important;
 }
 
-body.gallery-route #gallery > * {
+/* The gallery lightbox must open immediately instead of fading/sliding in. */
+body.gallery-route .fixed.inset-0.z-\\[110000\\] {
+  opacity: 1 !important;
+  transform: none !important;
   animation: none !important;
+}
+
+/* Keep gallery cards visually stable. Hover behavior is retained by the
+   component itself; route-level opacity/scale animations are suppressed. */
+body.gallery-route #gallery .group {
+  animation: none !important;
+}
+
+/* Prevent media decoding/paint animations from adding another flash. */
+body.gallery-route #gallery img,
+body.gallery-route #gallery video,
+body.gallery-route #gallery iframe {
+  animation: none !important;
+}
+
+/* Stable compositing without touching the inline transform used by the
+   image slider itself. */
+body.gallery-route #gallery {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 @media (max-width: 767px) {
   body.gallery-route #gallery {
     padding-bottom: max(7rem, calc(5rem + env(safe-area-inset-bottom))) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.gallery-route #gallery *,
+  body.gallery-route #gallery *::before,
+  body.gallery-route #gallery *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
   }
 }
