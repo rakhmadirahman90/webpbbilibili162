@@ -12,11 +12,7 @@ interface LazyImageProps {
   onError?: (e: any) => void;
 }
 
-/**
- * Stable lazy image.
- * The previous image remains mounted while a new source is decoded, so a
- * source change can never produce a blank/placeholder frame between images.
- */
+/** Stable lazy image with atomic source swapping and no blank-frame transition. */
 export default function LazyImage({
   src,
   alt,
@@ -34,13 +30,17 @@ export default function LazyImage({
   const [loaded, setLoaded] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const requestRef = useRef(0);
+  const onErrorRef = useRef(onError);
+
+  useEffect(() => {
+    onErrorRef.current = onError;
+  }, [onError]);
 
   useEffect(() => {
     if (!('IntersectionObserver' in window)) {
       setIsInView(true);
       return;
     }
-
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -50,7 +50,6 @@ export default function LazyImage({
       },
       { rootMargin: '240px 0px' }
     );
-
     if (containerRef.current) observer.observe(containerRef.current);
     return () => observer.disconnect();
   }, []);
@@ -74,10 +73,10 @@ export default function LazyImage({
           setDisplaySrc(primarySrc);
           setLoaded(true);
         };
-        fallback.onerror = (event) => onError?.(event);
+        fallback.onerror = event => onErrorRef.current?.(event);
         fallback.src = primarySrc;
       } else {
-        onError?.(image);
+        onErrorRef.current?.(image);
       }
     };
     image.src = optimizedSrc;
@@ -86,17 +85,11 @@ export default function LazyImage({
       image.onload = null;
       image.onerror = null;
     };
-  }, [isInView, optimizedSrc, primarySrc, onError]);
+  }, [isInView, optimizedSrc, primarySrc]);
 
   return (
-    <div
-      ref={containerRef}
-      className={`relative overflow-hidden bg-[#12141c]/40 ${containerClassName}`}
-      onClick={onClick}
-    >
-      {!loaded && !displaySrc && (
-        <div aria-hidden="true" className="absolute inset-0 bg-slate-900" />
-      )}
+    <div ref={containerRef} className={`relative overflow-hidden bg-[#12141c]/40 ${containerClassName}`} onClick={onClick}>
+      {!loaded && !displaySrc && <div aria-hidden="true" className="absolute inset-0 bg-slate-900" />}
       {isInView && displaySrc && (
         <img
           src={displaySrc}
@@ -105,7 +98,7 @@ export default function LazyImage({
           loading="lazy"
           decoding="async"
           onLoad={() => setLoaded(true)}
-          onError={onError}
+          onError={event => onErrorRef.current?.(event)}
           className={`${className} block opacity-100 blur-0 transform-none`}
         />
       )}
