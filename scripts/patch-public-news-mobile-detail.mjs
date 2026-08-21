@@ -43,18 +43,9 @@ for (const [from, to] of replacements) {
   }
 }
 
-const marker = '<style data-public-news-mobile-detail="true">';
-if (!source.includes(marker)) {
-  source = source.replace(
-    '\n  return (\n    <main\n',
-    `\n  return (\n    <style data-public-news-mobile-detail="true">{\`\n      @media (max-width: 639px) {\n        .public-news-modern { width: 100%; max-width: 100vw; overflow-x: hidden; }\n        .public-news-modern .fixed { max-width: 100vw; }\n      }\n    \`}</style>\n    <main\n`
-  );
-  changed++;
-}
-
 if (source !== original) {
   fs.writeFileSync(file, source);
   console.log(`[patch-public-news-mobile-detail] applied ${changed} responsive changes`);
 } else {
-  console.log('[patch-public-news-mobile-detail] no changes needed');
+  console.log('[patch-public-news-mobile-detail] already patched; no changes needed');
 }
