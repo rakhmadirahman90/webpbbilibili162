@@ -74,7 +74,7 @@
   color: #ffffff !important;
 }
 
-/* HARD RESET: remove any inherited/pseudo dark overlay from gallery thumbnails. */
+/* HARD RESET: remove inherited/pseudo dark overlays from gallery thumbnails. */
 #gallery .gallery-card,
 #gallery .gallery-card > div:first-child,
 #gallery .gallery-card > div:first-child > div,
@@ -124,6 +124,23 @@
   brightness: 1 !important;
   contrast: 1 !important;
   saturate: 1 !important;
+}
+
+/* FINAL: the large photo viewer must never show a black letterbox/background. */
+#gallery .gallery-lightbox > div:nth-child(2) > div:first-child,
+#gallery .gallery-lightbox > div:nth-child(2) > div:first-child > div,
+#gallery .gallery-lightbox > div:nth-child(2) > div:first-child img,
+#gallery .gallery-lightbox > div:nth-child(2) > div:first-child video,
+#gallery .gallery-lightbox > div:nth-child(2) > div:first-child iframe {
+  background: #ffffff !important;
+}
+
+#gallery .gallery-lightbox > div:nth-child(2) > div:first-child img {
+  filter: none !important;
+  -webkit-filter: none !important;
+  opacity: 1 !important;
+  mix-blend-mode: normal !important;
+  box-shadow: none !important;
 }
 
 #gallery .gallery-card > div:first-child > div[class*="bg-[#22c55e]"] {
