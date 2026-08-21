@@ -1,14 +1,12 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { supabase } from "../supabase";
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { supabase } from '../supabase';
 import { broadcastDataChange } from '../utils/realtimeHelper';
-import { saveSiteSetting, getSiteSetting } from '../utils/siteSettingsHelper';
+import { getSiteSetting, saveSiteSetting } from '../utils/siteSettingsHelper';
 import Swal from 'sweetalert2';
-import { 
-  Plus, Trash2, Image as ImageIcon, Video, 
-  Upload, X, Loader2, CheckCircle2,
-  Film, Camera, ChevronLeft, ChevronRight,
-  Edit3, AlignLeft, Tag, Link as LinkIcon,
-  PlayCircle, AlertCircle
+import {
+  Plus, Trash2, Image as ImageIcon, Video, Upload, X, Loader2,
+  CheckCircle2, ChevronLeft, ChevronRight, Edit3, Link as LinkIcon,
+  PlayCircle, Star, GripVertical
 } from 'lucide-react';
 
 interface GalleryItem {
@@ -22,13 +20,21 @@ interface GalleryItem {
   is_local?: boolean;
 }
 
+const ITEMS_PER_PAGE = 6;
+const IMAGE_MAX_SIZE = 5 * 1024 * 1024;
+const VIDEO_MAX_SIZE = 15 * 1024 * 1024;
+
+const splitMediaUrls = (value: string = '') =>
+  value.split(/\s*,\s*|\r?\n/).map(v => v.trim()).filter(Boolean);
+
+const joinMediaUrls = (urls: string[]) => urls.filter(Boolean).join(', ');
+
+const isSupabaseMedia = (url: string) => url.includes('supabase.co/storage/');
+
 export default function AdminGallery({ session }: { session?: any }) {
   const userRole = session?.user?.user_metadata?.role || (() => {
     const raw = localStorage.getItem('local_admin_session');
-    if (raw) {
-      try { return JSON.parse(raw)?.user?.user_metadata?.role || 'admin'; } catch (e) {}
-    }
-    return 'admin';
+    try { return JSON.parse(raw || '{}')?.user?.user_metadata?.role || 'admin'; } catch { return 'admin'; }
   })();
   const isAdmin = userRole === 'admin';
 
@@ -37,660 +43,329 @@ export default function AdminGallery({ session }: { session?: any }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
   const [editingId, setEditingId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'image' | 'video'>('image');
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 6;
-
-  const [videoInputMethod, setVideoInputMethod] = useState<'link' | 'file'>('file');
   const [dragActive, setDragActive] = useState(false);
-
+  const [videoInputMethod, setVideoInputMethod] = useState<'link' | 'file'>('file');
   const [formData, setFormData] = useState({
-    title: '',
-    type: 'image' as 'image' | 'video',
-    url: '',
-    category: 'Pertandingan',
-    description: '',
-    is_local: true 
+    title: '', type: 'image' as 'image' | 'video', url: '',
+    category: 'Pertandingan', description: '', is_local: true
   });
+  const [albumUrls, setAlbumUrls] = useState<string[]>([]);
+  const [previewIndex, setPreviewIndex] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const categories = ['Pertandingan', 'Latihan', 'Prestasi', 'Fasilitas', 'Latihan Rutin'];
 
-  useEffect(() => {
-    fetchGallery();
+  const showToast = (msg: string) => {
+    setSuccessMsg(msg);
+    window.setTimeout(() => setSuccessMsg(null), 3000);
+  };
 
-    const channel = supabase
-      .channel('admin_gallery_realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'gallery' }, () => fetchGallery())
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [activeTab]);
-
-  async function fetchGallery() {
+  const fetchGallery = async () => {
     setLoading(true);
     try {
-      const data = await getSiteSetting('gallery_list');
-      if (data && Array.isArray(data)) {
-        setItems(data);
-        localStorage.setItem('gallery_local', JSON.stringify(data));
-      } else {
-        const { data: sbData } = await supabase
-          .from('gallery')
-          .select('*')
-          .order('created_at', { ascending: false });
-        const localData = JSON.parse(localStorage.getItem('gallery_local') || '[]');
-        const combined = [...(sbData || []), ...localData];
-        setItems(combined);
+      const setting = await getSiteSetting('gallery_list');
+      if (Array.isArray(setting)) {
+        setItems(setting);
+        localStorage.setItem('gallery_local', JSON.stringify(setting));
+        return;
       }
-    } catch (err: any) {
-      console.error(err.message);
-      const localData = JSON.parse(localStorage.getItem('gallery_local') || '[]');
-      setItems(localData);
+      const { data } = await supabase.from('gallery').select('*').order('created_at', { ascending: false });
+      const local = JSON.parse(localStorage.getItem('gallery_local') || '[]');
+      const merged = [...(data || []), ...local];
+      setItems(merged);
+    } catch (error) {
+      console.error(error);
+      setItems(JSON.parse(localStorage.getItem('gallery_local') || '[]'));
     } finally {
       setLoading(false);
     }
-  }
-
-  const getYouTubeID = (url: string) => {
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|shorts\/)([^#&?]*).*/;
-    const match = url.match(regExp);
-    return (match && match[2].length === 11) ? match[2] : null;
   };
 
-  const processVideoUrl = (url: string) => {
-    const id = getYouTubeID(url);
-    if (id) return `https://www.youtube.com/embed/${id}`;
-    return url;
+  useEffect(() => {
+    fetchGallery();
+    const channel = supabase.channel('admin_gallery_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'gallery' }, fetchGallery)
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
+  useEffect(() => { setCurrentPage(1); }, [activeTab]);
+
+  const filteredItems = useMemo(() => items.filter(item => item.type === activeTab), [items, activeTab]);
+  const totalPages = Math.max(1, Math.ceil(filteredItems.length / ITEMS_PER_PAGE));
+  const paginatedItems = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredItems.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredItems, currentPage]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [currentPage, totalPages]);
+
+  const resetForm = () => {
+    setFormData({ title: '', type: 'image', url: '', category: 'Pertandingan', description: '', is_local: true });
+    setAlbumUrls([]);
+    setPreviewIndex(0);
+    setEditingId(null);
+    setVideoInputMethod('file');
   };
 
-  const handleEdit = (item: GalleryItem) => {
-    setEditingId(item.id);
-    setFormData({
-      title: item.title,
-      type: item.type,
-      url: item.url,
-      category: item.category || 'Pertandingan',
-      description: item.description || '',
-      is_local: item.is_local ?? (!item.url.includes('youtube.com') && !item.url.includes('youtu.be'))
-    });
-    if (item.type === 'video') {
-        setVideoInputMethod(item.url.includes('http') && !item.url.includes('supabase') ? 'link' : 'file');
-    }
+  const openCreate = () => {
+    resetForm();
+    setFormData(prev => ({ ...prev, type: activeTab }));
     setIsModalOpen(true);
   };
 
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setEditingId(null);
-    setVideoInputMethod('file');
-    setFormData({ 
-      title: '', 
-      type: 'image', 
-      url: '', 
-      category: 'Pertandingan', 
-      description: '',
-      is_local: true
+  const openEdit = (item: GalleryItem) => {
+    const urls = item.type === 'image' ? splitMediaUrls(item.url) : [item.url].filter(Boolean);
+    setEditingId(item.id);
+    setAlbumUrls(urls);
+    setPreviewIndex(0);
+    setFormData({
+      title: item.title || '', type: item.type, url: item.url || '',
+      category: item.category || 'Pertandingan', description: item.description || '',
+      is_local: item.is_local ?? true
     });
+    setVideoInputMethod(item.type === 'video' && item.url.includes('youtube.com') ? 'link' : 'file');
+    setIsModalOpen(true);
   };
 
-  const filteredItems = useMemo(() => {
-    return items.filter(item => item.type === activeTab);
-  }, [items, activeTab]);
+  const closeModal = () => { setIsModalOpen(false); resetForm(); };
 
-  const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
-  
-  const paginatedItems = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return filteredItems.slice(start, start + itemsPerPage);
-  }, [filteredItems, currentPage]);
+  const getYouTubeID = (url: string) => {
+    const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([^#&?\s]+)/i);
+    return match?.[1]?.length === 11 ? match[1] : null;
+  };
 
-  // BARU: Validasi File dan Handle Upload (Mendukung Multi-Upload untuk Galeri Foto)
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement> | React.DragEvent) => {
-    let files: FileList | File[] | null = null;
-    
-    if ('files' in e.target && e.target.files) {
-      files = e.target.files;
-    } else if ('dataTransfer' in e && e.dataTransfer.files) {
-      files = e.dataTransfer.files;
-    }
+  const processVideoUrl = (url: string) => {
+    const id = getYouTubeID(url.trim());
+    return id ? `https://www.youtube.com/embed/${id}` : url.trim();
+  };
 
-    if (!files || files.length === 0) return;
-
-    const filesArray = Array.from(files);
-
+  const uploadFiles = async (files: File[]) => {
+    if (!files.length) return;
     setIsUploading(true);
     try {
-      const uploadedUrls: string[] = [];
-
-      for (const file of filesArray) {
-        // Validasi Ukuran (Max 15MB untuk Video, 5MB untuk Foto)
-        const maxSize = formData.type === 'video' ? 15 * 1024 * 1024 : 5 * 1024 * 1024;
-        if (file.size > maxSize) {
-          alert(`File "${file.name}" terlalu besar! Maksimal ${formData.type === 'video' ? '15MB' : '5MB'}`);
+      const uploaded: string[] = [];
+      for (const file of files) {
+        const expectedImage = formData.type === 'image';
+        if (expectedImage && !file.type.startsWith('image/')) {
+          await Swal.fire({ icon: 'warning', title: 'File bukan foto', text: `${file.name} dilewati.` });
           continue;
         }
-
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
-        const filePath = `uploads/${fileName}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('gallery')
-          .upload(filePath, file);
-
-        if (uploadError) throw uploadError;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('gallery')
-          .getPublicUrl(filePath);
-
-        uploadedUrls.push(publicUrl);
+        if (!expectedImage && !file.type.startsWith('video/')) {
+          await Swal.fire({ icon: 'warning', title: 'File bukan video', text: `${file.name} dilewati.` });
+          continue;
+        }
+        const max = expectedImage ? IMAGE_MAX_SIZE : VIDEO_MAX_SIZE;
+        if (file.size > max) {
+          await Swal.fire({ icon: 'warning', title: 'Ukuran terlalu besar', text: `${file.name} melebihi batas ${expectedImage ? '5MB' : '15MB'}.` });
+          continue;
+        }
+        const ext = file.name.split('.').pop()?.toLowerCase() || (expectedImage ? 'jpg' : 'mp4');
+        const fileName = `${crypto.randomUUID?.() || Math.random().toString(36).slice(2)}-${Date.now()}.${ext}`;
+        const path = `uploads/${fileName}`;
+        const { error } = await supabase.storage.from('gallery').upload(path, file, { upsert: false });
+        if (error) throw error;
+        const { data } = supabase.storage.from('gallery').getPublicUrl(path);
+        if (data.publicUrl) uploaded.push(data.publicUrl);
       }
-
-      if (uploadedUrls.length > 0) {
-        const existingUrls = formData.url ? formData.url.split(/[\s,]+/).filter(Boolean) : [];
-        const newUrls = [...existingUrls, ...uploadedUrls].join(', ');
-        setFormData(prev => ({ ...prev, url: newUrls, is_local: true }));
-        showToast(`${uploadedUrls.length} Media berhasil diunggah ke cloud!`);
+      if (uploaded.length) {
+        if (formData.type === 'image') {
+          const next = [...albumUrls, ...uploaded];
+          setAlbumUrls(next);
+          setPreviewIndex(Math.max(0, next.length - uploaded.length));
+          setFormData(prev => ({ ...prev, url: joinMediaUrls(next), is_local: true }));
+        } else {
+          setAlbumUrls(uploaded.slice(0, 1));
+          setPreviewIndex(0);
+          setFormData(prev => ({ ...prev, url: uploaded[0], is_local: true }));
+        }
+        showToast(`${uploaded.length} ${formData.type === 'image' ? 'foto' : 'video'} berhasil diunggah`);
       }
-    } catch (err: any) {
-      alert("Gagal upload: " + err.message);
+    } catch (error: any) {
+      await Swal.fire({ icon: 'error', title: 'Upload gagal', text: error?.message || 'Gagal mengunggah media.' });
     } finally {
       setIsUploading(false);
       setDragActive(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
-  const showToast = (msg: string) => {
-    setSuccessMsg(msg);
-    setTimeout(() => setSuccessMsg(null), 3000);
+  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => uploadFiles(Array.from(e.target.files || []));
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => { e.preventDefault(); setDragActive(false); uploadFiles(Array.from(e.dataTransfer.files || [])); };
+
+  const removeAlbumPhoto = async (index: number) => {
+    const target = albumUrls[index];
+    const next = albumUrls.filter((_, i) => i !== index);
+    if (!next.length) {
+      setAlbumUrls([]);
+      setFormData(prev => ({ ...prev, url: '' }));
+      setPreviewIndex(0);
+    } else {
+      setAlbumUrls(next);
+      setFormData(prev => ({ ...prev, url: joinMediaUrls(next) }));
+      setPreviewIndex(Math.min(previewIndex, next.length - 1));
+    }
+    if (target && isSupabaseMedia(target)) {
+      const clean = target.split('?')[0];
+      const marker = '/storage/v1/object/public/gallery/';
+      const path = clean.includes(marker) ? clean.split(marker)[1] : '';
+      if (path) await supabase.storage.from('gallery').remove([path]);
+    }
+  };
+
+  const makeCover = (index: number) => {
+    if (index <= 0) return;
+    const next = [...albumUrls];
+    const [cover] = next.splice(index, 1);
+    next.unshift(cover);
+    setAlbumUrls(next);
+    setFormData(prev => ({ ...prev, url: joinMediaUrls(next) }));
+    setPreviewIndex(0);
+    showToast('Foto utama album diperbarui');
+  };
+
+  const saveItems = async (next: GalleryItem[], action: 'INSERT' | 'UPDATE' | 'DELETE', payload: any) => {
+    setItems(next);
+    localStorage.setItem('gallery_local', JSON.stringify(next));
+    await saveSiteSetting('gallery_list', next);
+    broadcastDataChange('gallery', action, payload);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.url) return alert("Pilih file atau masukkan link terlebih dahulu!");
+    if (!formData.title.trim()) return Swal.fire({ icon: 'warning', title: 'Judul belum diisi' });
+    if (formData.type === 'image' && albumUrls.length === 0) return Swal.fire({ icon: 'warning', title: 'Foto belum dipilih', text: 'Upload minimal satu foto untuk aktivitas ini.' });
+    if (formData.type === 'video' && !formData.url.trim()) return Swal.fire({ icon: 'warning', title: 'Video belum dipilih' });
 
-    let finalUrl = formData.url;
+    let finalUrl = formData.type === 'image' ? joinMediaUrls(albumUrls) : formData.url.trim();
     if (formData.type === 'video' && videoInputMethod === 'link') {
-        const ytId = getYouTubeID(formData.url);
-        if (!ytId) return alert("Link YouTube tidak valid!");
-        finalUrl = processVideoUrl(formData.url);
+      const id = getYouTubeID(finalUrl);
+      if (!id) return Swal.fire({ icon: 'warning', title: 'Link YouTube tidak valid' });
+      finalUrl = processVideoUrl(finalUrl);
     }
 
     const payload = {
-        title: formData.title,
-        type: formData.type,
-        url: finalUrl,
-        category: formData.category,
-        description: formData.description,
-        is_local: formData.type === 'image' ? true : (videoInputMethod === 'file')
+      title: formData.title.trim(), type: formData.type, url: finalUrl,
+      category: formData.category, description: formData.description.trim(),
+      is_local: formData.type === 'image' ? true : videoInputMethod === 'file'
     };
 
     try {
-      let updated;
-      if (editingId) {
-        updated = items.map((item: any) => item.id === editingId ? { ...item, ...payload } : item);
-        showToast("Data galeri diperbarui!");
-      } else {
-        const newLocalItem = { ...payload, id: 'gal_' + Date.now(), created_at: new Date().toISOString() };
-        updated = [newLocalItem, ...items];
-        showToast("Momen baru berhasil dipublikasi!");
-      }
-      
-      setItems(updated);
-      localStorage.setItem('gallery_local', JSON.stringify(updated));
-      await saveSiteSetting('gallery_list', updated);
-      handleCloseModal();
-      broadcastDataChange('gallery', editingId ? 'UPDATE' : 'INSERT', payload);
-    } catch (err: any) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Gagal Menyimpan',
-        text: err.message,
-        confirmButtonColor: '#3B82F6',
-        background: '#0F172A',
-        color: '#fff'
-      });
+      const next = editingId
+        ? items.map(item => item.id === editingId ? { ...item, ...payload } : item)
+        : [{ ...payload, id: `gal_${Date.now()}`, created_at: new Date().toISOString() } as GalleryItem, ...items];
+      await saveItems(next, editingId ? 'UPDATE' : 'INSERT', editingId ? { id: editingId, ...payload } : payload);
+      showToast(editingId ? 'Album berhasil diperbarui' : 'Album berhasil dibuat');
+      closeModal();
+    } catch (error: any) {
+      await Swal.fire({ icon: 'error', title: 'Gagal menyimpan', text: error?.message || 'Terjadi kesalahan.' });
     }
   };
 
-  const handleDelete = async (id: string, url: string) => {
+  const handleDelete = async (item: GalleryItem) => {
+    const urls = item.type === 'image' ? splitMediaUrls(item.url) : [item.url];
     const result = await Swal.fire({
-      title: 'Hapus Media?',
-      text: "Momen/media ini akan dihapus secara permanen dari galeri!",
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#EF4444',
-      cancelButtonColor: '#374151',
-      confirmButtonText: 'Ya, Hapus!',
-      cancelButtonText: 'Batal',
-      background: '#0F172A',
-      color: '#fff'
+      title: 'Hapus aktivitas?',
+      html: `<b>${item.title}</b><br><small>${item.type === 'image' ? `${urls.length} foto dalam album` : '1 video'}</small>`,
+      icon: 'warning', showCancelButton: true, confirmButtonColor: '#EF4444', cancelButtonColor: '#374151',
+      confirmButtonText: 'Ya, Hapus', cancelButtonText: 'Batal', background: '#0F172A', color: '#fff'
     });
-
-    if (result.isConfirmed) {
-      try {
-        const updated = items.filter(i => i.id !== id);
-        setItems(updated);
-        localStorage.setItem('gallery_local', JSON.stringify(updated));
-        await saveSiteSetting('gallery_list', updated);
-
-        if (url.includes('supabase.co')) {
-          const pathParts = url.split('/');
-          const fileName = pathParts[pathParts.length - 1];
-          await supabase.storage.from('gallery').remove([`uploads/${fileName}`]);
-        }
-        showToast("Momen dihapus dari galeri");
-        broadcastDataChange('gallery', 'DELETE', { id });
-      } catch (err: any) {
-        Swal.fire({
-          icon: 'error',
-          title: 'Gagal Menghapus',
-          text: err.message || "Terjadi kesalahan database",
-          confirmButtonColor: '#3B82F6',
-          background: '#0F172A',
-          color: '#fff'
-        });
-      }
+    if (!result.isConfirmed) return;
+    try {
+      const next = items.filter(i => i.id !== item.id);
+      await saveItems(next, 'DELETE', { id: item.id });
+      const storagePaths = urls.filter(isSupabaseMedia).map(url => {
+        const marker = '/storage/v1/object/public/gallery/';
+        return url.split('?')[0].includes(marker) ? url.split('?')[0].split(marker)[1] : '';
+      }).filter(Boolean);
+      if (storagePaths.length) await supabase.storage.from('gallery').remove(storagePaths);
+      showToast('Aktivitas dan medianya berhasil dihapus');
+    } catch (error: any) {
+      await Swal.fire({ icon: 'error', title: 'Gagal menghapus', text: error?.message || 'Terjadi kesalahan.' });
     }
   };
+
+  const currentPreview = albumUrls[previewIndex] || '';
 
   return (
-    <div className="min-h-screen bg-[#070d1a] text-white p-4 md:p-12 font-sans selection:bg-blue-600/30">
+    <div className="min-h-screen bg-[#070d1a] text-white p-4 sm:p-6 md:p-10 font-sans overflow-x-hidden">
       <div className="max-w-6xl mx-auto">
-        
-        {successMsg && (
-          <div className="fixed top-10 left-1/2 -translate-x-1/2 z-[200] bg-blue-600 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase flex items-center gap-3 shadow-[0_20px_50px_rgba(37,99,235,0.3)] animate-in fade-in slide-in-from-top-4">
-            <CheckCircle2 size={18} /> {successMsg}
-          </div>
-        )}
+        {successMsg && <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[300] bg-blue-600 text-white px-5 py-3 rounded-2xl font-black text-[10px] uppercase flex items-center gap-2 shadow-2xl"><CheckCircle2 size={17}/> {successMsg}</div>}
 
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-12">
-          <div className="animate-in slide-in-from-left duration-700">
-            <h1 className="text-6xl font-black italic tracking-tighter uppercase leading-none">
-              MANAGE<span className="text-blue-600"> GALLERY</span>
-            </h1>
-            <div className="flex items-center gap-3 mt-4">
-               <span className="h-px w-8 bg-blue-600"></span>
-               <p className="text-zinc-500 text-[10px] font-black uppercase tracking-[0.3em]">Cloud Media Management v2.0</p>
-            </div>
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 mb-8 md:mb-12">
+          <div>
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-black italic tracking-tighter uppercase leading-none">MANAGE <span className="text-blue-600">GALLERY</span></h1>
+            <div className="flex items-center gap-3 mt-4"><span className="h-px w-8 bg-blue-600"/><p className="text-zinc-500 text-[9px] sm:text-[10px] font-black uppercase tracking-[0.25em]">Cloud Media Management v3.0</p></div>
           </div>
-          
-          {isAdmin && (
-            <button 
-              onClick={() => {
-                  setFormData({...formData, type: activeTab});
-                  setIsModalOpen(true);
-              }}
-              className="group relative flex items-center gap-3 bg-white text-black hover:bg-blue-600 hover:text-white px-10 py-5 rounded-2xl font-black uppercase text-[10px] transition-all active:scale-95 overflow-hidden cursor-pointer"
-            >
-              <Plus size={18} className="transition-transform group-hover:rotate-90" /> Tambah {activeTab === 'image' ? 'Foto' : 'Video'}
-            </button>
-          )}
+          {isAdmin && <button onClick={openCreate} className="w-full sm:w-auto flex items-center justify-center gap-3 bg-white text-black hover:bg-blue-600 hover:text-white px-7 py-4 rounded-2xl font-black uppercase text-[10px] transition-all"><Plus size={18}/> Tambah {activeTab === 'image' ? 'Foto / Album' : 'Video'}</button>}
         </div>
 
-        <div className="flex gap-2 mb-10 bg-zinc-900/50 p-2 rounded-2xl w-fit border border-white/5">
-          <button 
-            onClick={() => setActiveTab('image')}
-            className={`flex items-center gap-3 px-8 py-4 rounded-xl font-black text-[10px] uppercase transition-all ${activeTab === 'image' ? 'bg-blue-600 text-white shadow-[0_10px_20px_rgba(37,99,235,0.2)]' : 'text-zinc-500 hover:text-zinc-300'}`}
-          >
-            <ImageIcon size={16} /> Photography
-          </button>
-          <button 
-            onClick={() => setActiveTab('video')}
-            className={`flex items-center gap-3 px-8 py-4 rounded-xl font-black text-[10px] uppercase transition-all ${activeTab === 'video' ? 'bg-blue-600 text-white shadow-[0_10px_20px_rgba(37,99,235,0.2)]' : 'text-zinc-500 hover:text-zinc-300'}`}
-          >
-            <Video size={16} /> Videography
-          </button>
+        <div className="flex w-full sm:w-fit gap-2 mb-8 bg-zinc-900/60 p-2 rounded-2xl border border-white/5">
+          <button onClick={() => setActiveTab('image')} className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 sm:px-8 py-4 rounded-xl font-black text-[10px] uppercase ${activeTab === 'image' ? 'bg-blue-600 text-white' : 'text-zinc-500'}`}><ImageIcon size={16}/> Photography</button>
+          <button onClick={() => setActiveTab('video')} className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 sm:px-8 py-4 rounded-xl font-black text-[10px] uppercase ${activeTab === 'video' ? 'bg-blue-600 text-white' : 'text-zinc-500'}`}><Video size={16}/> Videography</button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 min-h-[400px]">
-          {loading ? (
-            <div className="col-span-full flex flex-col items-center justify-center py-32 text-zinc-700">
-                <Loader2 className="animate-spin mb-6 text-blue-600" size={50} />
-                <span className="font-black uppercase tracking-[0.5em] text-[10px]">Accessing Database...</span>
-            </div>
-          ) : paginatedItems.length === 0 ? (
-            <div className="col-span-full py-32 text-center border-4 border-dashed border-white/5 rounded-[3rem] group">
-                <ImageIcon size={48} className="mx-auto text-slate-600 mb-6 group-hover:text-blue-600/20 transition-colors" />
-                <p className="text-slate-500 font-black uppercase italic tracking-widest">No assets found in this category</p>
-            </div>
-          ) : paginatedItems.map((item, idx) => (
-            <div 
-              key={item.id} 
-              style={{ animationDelay: `${idx * 100}ms` }}
-              className="group relative bg-zinc-900/30 border border-white/5 rounded-[2.5rem] overflow-hidden aspect-[4/3] transition-all hover:border-blue-600/50 animate-in fade-in zoom-in duration-500"
-            >
-              {item.type === 'image' ? (
-                <img src={item.url} loading="lazy" decoding="async" className="w-full h-full object-cover grayscale-[50%] group-hover:grayscale-0 transition-all duration-700 group-hover:scale-110" alt={item.title} />
-              ) : (
-                <div className="relative w-full h-full bg-black">
-                    {item.url.includes('youtube.com') || item.url.includes('youtu.be') ? (
-                        <div className="w-full h-full relative">
-                            <img 
-                                src={`https://img.youtube.com/vi/${getYouTubeID(item.url)}/maxresdefault.jpg`} 
-                                loading="lazy"
-                                decoding="async"
-                                className="w-full h-full object-cover opacity-40 group-hover:opacity-80 transition-opacity"
-                                alt="Thumbnail"
-                                onError={(e: any) => { e.target.src = `https://img.youtube.com/vi/${getYouTubeID(item.url)}/mqdefault.jpg`; }}
-                            />
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center group-hover:bg-red-600 group-hover:scale-110 transition-all duration-500">
-                                  <PlayCircle size={32} className="text-white" />
-                                </div>
-                            </div>
-                            <span className="absolute top-6 left-6 bg-red-600 text-[7px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest shadow-lg shadow-red-600/20">YouTube</span>
-                        </div>
-                    ) : (
-                        <video src={item.url} className="w-full h-full object-cover opacity-60" />
-                    )}
-                </div>
-              )}
-              
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 p-8 flex flex-col justify-end">
-                <div className="space-y-4 translate-y-8 group-hover:translate-y-0 transition-transform duration-500">
-                  <div>
-                    <span className="bg-blue-600 text-white text-[7px] font-black uppercase tracking-[0.2em] px-3 py-1 rounded-full inline-block mb-3">{item.category}</span>
-                    <h3 className="font-black text-xl uppercase italic leading-none truncate mb-2">{item.title}</h3>
-                    <p className="text-[9px] text-zinc-400 font-bold uppercase tracking-wider line-clamp-2 leading-relaxed">{item.description}</p>
+        {loading ? <div className="min-h-[400px] flex items-center justify-center"><Loader2 className="animate-spin text-blue-600" size={44}/></div> : (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-7">
+              {paginatedItems.length === 0 ? <div className="col-span-full py-20 text-center border border-dashed border-white/10 rounded-3xl"><ImageIcon className="mx-auto text-zinc-600 mb-4" size={44}/><p className="text-zinc-500 text-xs font-black uppercase tracking-widest">Belum ada {activeTab === 'image' ? 'album foto' : 'video'}</p></div> : paginatedItems.map(item => {
+                const urls = item.type === 'image' ? splitMediaUrls(item.url) : [item.url];
+                const cover = urls[0] || '';
+                return <article key={item.id} className="overflow-hidden rounded-3xl bg-[#0d1423] border border-white/10 shadow-xl">
+                  <div className="relative aspect-[4/3] bg-black overflow-hidden">
+                    {item.type === 'image' && cover ? <img src={cover} alt={item.title} className="w-full h-full object-cover" loading="lazy"/> : <div className="w-full h-full flex items-center justify-center bg-zinc-900"><PlayCircle size={58} className="text-blue-500"/></div>}
+                    <div className="absolute top-3 left-3 px-3 py-2 rounded-xl bg-blue-600 text-white text-[9px] font-black uppercase">{item.category}</div>
+                    {item.type === 'image' && <div className="absolute bottom-3 left-3 px-3 py-2 rounded-xl bg-black/75 backdrop-blur text-white text-[10px] font-black"><ImageIcon size={13} className="inline mr-1"/>{urls.length} FOTO</div>}
                   </div>
-                  {isAdmin && (
-                    <div className="flex gap-3 pt-2">
-                      <button onClick={() => handleEdit(item)} className="flex-1 bg-white/10 backdrop-blur-md hover:bg-blue-600 py-4 rounded-2xl transition-all flex items-center justify-center cursor-pointer">
-                        <Edit3 size={18} />
-                      </button>
-                      <button onClick={() => handleDelete(item.id, item.url)} className="flex-1 bg-red-600/20 backdrop-blur-md hover:bg-red-600 py-4 rounded-2xl transition-all flex items-center justify-center text-red-500 hover:text-white cursor-pointer">
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
+                  <div className="p-5">
+                    <h3 className="font-black text-base sm:text-lg leading-tight line-clamp-2">{item.title}</h3>
+                    <p className="mt-2 text-xs text-zinc-500 line-clamp-2">{item.description || 'Dokumentasi PB BILIBILI 162'}</p>
+                    {item.type === 'image' && urls.length > 1 && <p className="mt-3 text-[9px] font-black uppercase tracking-widest text-blue-400">Album aktivitas · {urls.length} foto terkait</p>}
+                    {isAdmin && <div className="grid grid-cols-2 gap-2 mt-5"><button onClick={() => openEdit(item)} className="flex items-center justify-center gap-2 py-3 rounded-xl bg-white/5 hover:bg-blue-600 text-[9px] font-black uppercase"><Edit3 size={14}/> Kelola Album</button><button onClick={() => handleDelete(item)} className="flex items-center justify-center gap-2 py-3 rounded-xl bg-red-500/10 hover:bg-red-600 text-red-400 hover:text-white text-[9px] font-black uppercase"><Trash2 size={14}/> Hapus</button></div>}
+                  </div>
+                </article>;
+              })}
             </div>
-          ))}
-        </div>
-
-        {totalPages > 1 && (
-          <div className="mt-16 flex justify-center items-center gap-6 animate-in fade-in duration-1000">
-            <button 
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage(prev => prev - 1)}
-              className="w-14 h-14 flex items-center justify-center bg-zinc-900 border border-white/5 rounded-2xl disabled:opacity-10 hover:bg-blue-600 transition-all shadow-xl"
-            >
-              <ChevronLeft size={24} />
-            </button>
-            <div className="flex gap-3">
-              {[...Array(totalPages)].map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setCurrentPage(i + 1)}
-                  className={`w-14 h-14 rounded-2xl font-black text-xs transition-all ${currentPage === i + 1 ? 'bg-blue-600 text-white scale-110 shadow-lg shadow-blue-600/30' : 'bg-zinc-900 text-zinc-600 hover:text-white border border-white/5'}`}
-                >
-                  {i + 1}
-                </button>
-              ))}
-            </div>
-            <button 
-              disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage(prev => prev + 1)}
-              className="w-14 h-14 flex items-center justify-center bg-zinc-900 border border-white/5 rounded-2xl disabled:opacity-10 hover:bg-blue-600 transition-all shadow-xl"
-            >
-              <ChevronRight size={24} />
-            </button>
-          </div>
+            {totalPages > 1 && <div className="flex items-center justify-center gap-2 mt-8"><button disabled={currentPage === 1} onClick={() => setCurrentPage(p => Math.max(1, p - 1))} className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 disabled:opacity-30"><ChevronLeft size={18} className="mx-auto"/></button>{Array.from({length: totalPages}, (_, i) => i + 1).map(p => <button key={p} onClick={() => setCurrentPage(p)} className={`w-10 h-10 rounded-xl text-xs font-black ${p === currentPage ? 'bg-blue-600' : 'bg-white/5 border border-white/10'}`}>{p}</button>)}<button disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 disabled:opacity-30"><ChevronRight size={18} className="mx-auto"/></button></div>}
+          </>
         )}
       </div>
 
-      {isModalOpen && (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/90 backdrop-blur-2xl animate-in fade-in duration-300">
-          <div className="bg-[#0c0c0c] w-full max-w-xl max-h-[92vh] overflow-y-auto rounded-[3rem] border border-white/10 shadow-[0_50px_100px_rgba(0,0,0,0.8)] scale-in-center scrollbar-hide">
-            <div className="sticky top-0 bg-[#0c0c0c]/90 backdrop-blur-xl p-10 border-b border-white/5 flex justify-between items-center z-20">
-              <div>
-                <h3 className="font-black uppercase italic text-3xl leading-none">
-                  {editingId ? 'REVISE' : 'CREATE'} <span className="text-blue-600">{formData.type}</span>
-                </h3>
-                <p className="text-[9px] font-black text-zinc-600 uppercase tracking-widest mt-2">Update information for public gallery</p>
+      {isModalOpen && <div className="fixed inset-0 z-[250] bg-black/80 backdrop-blur-md p-3 sm:p-6 overflow-y-auto">
+        <div className="min-h-full flex items-start sm:items-center justify-center py-3 sm:py-8">
+          <form onSubmit={handleSubmit} className="w-full max-w-4xl rounded-3xl bg-[#0d1423] border border-white/10 shadow-2xl overflow-hidden">
+            <div className="flex items-center justify-between p-5 sm:p-7 border-b border-white/10"><div><h2 className="text-xl sm:text-2xl font-black uppercase">{editingId ? 'Kelola Album' : 'Tambah Album'}</h2><p className="text-[9px] text-zinc-500 font-black uppercase tracking-widest mt-1">{formData.type === 'image' ? 'Satu aktivitas dapat memiliki banyak foto' : 'Video aktivitas PB BILIBILI 162'}</p></div><button type="button" onClick={closeModal} className="p-3 rounded-xl bg-white/5"><X size={20}/></button></div>
+            <div className="p-5 sm:p-7 grid lg:grid-cols-[1fr_1.05fr] gap-7">
+              <div className="space-y-5">
+                <label className="block"><span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Judul Aktivitas</span><input value={formData.title} onChange={e => setFormData(p => ({...p, title: e.target.value}))} className="mt-2 w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-blue-500" placeholder="Contoh: Musyawarah Kota PBSI Parepare 2026"/></label>
+                <div className="grid grid-cols-2 gap-3"><label><span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Jenis</span><select value={formData.type} onChange={e => { const type = e.target.value as 'image'|'video'; setFormData(p => ({...p, type, url: type === 'image' ? joinMediaUrls(albumUrls) : ''})); setAlbumUrls(type === 'image' ? albumUrls : []); }} className="mt-2 w-full bg-black/30 border border-white/10 rounded-xl px-3 py-3 text-sm"><option value="image">Foto / Album</option><option value="video">Video</option></select></label><label><span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Kategori</span><select value={formData.category} onChange={e => setFormData(p => ({...p, category:e.target.value}))} className="mt-2 w-full bg-black/30 border border-white/10 rounded-xl px-3 py-3 text-sm">{categories.map(c => <option key={c}>{c}</option>)}</select></label></div>
+                <label className="block"><span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Keterangan</span><textarea value={formData.description} onChange={e => setFormData(p => ({...p, description:e.target.value}))} rows={4} className="mt-2 w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-sm resize-none" placeholder="Keterangan aktivitas..."/></label>
+
+                {formData.type === 'image' ? <>
+                  <div onDragOver={e => {e.preventDefault(); setDragActive(true)}} onDragLeave={() => setDragActive(false)} onDrop={handleDrop} onClick={() => fileInputRef.current?.click()} className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-colors ${dragActive ? 'border-blue-500 bg-blue-500/10' : 'border-white/10 hover:border-blue-500/60'}`}><input ref={fileInputRef} type="file" accept="image/*" multiple hidden onChange={handleFileInput}/><Upload className="mx-auto mb-3 text-blue-500" size={28}/><p className="font-black text-xs uppercase">Upload Banyak Foto Sekaligus</p><p className="text-[10px] text-zinc-500 mt-1">Klik atau drag & drop · maksimal 5MB/foto</p></div>
+                  <div className="rounded-2xl bg-black/20 border border-white/5 p-4"><div className="flex items-center justify-between mb-3"><span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Foto Album</span><span className="text-[9px] font-black text-blue-400">{albumUrls.length} FOTO</span></div>{albumUrls.length ? <div className="grid grid-cols-3 gap-2">{albumUrls.map((url, i) => <div key={`${url}-${i}`} className={`relative aspect-square rounded-xl overflow-hidden border ${i === 0 ? 'border-blue-500' : 'border-white/10'}`}><img src={url} alt={`Foto ${i+1}`} className="w-full h-full object-cover"/><div className="absolute top-1 left-1 px-1.5 py-1 rounded-md bg-black/70 text-[8px] font-black">{i === 0 ? 'UTAMA' : i + 1}</div><div className="absolute bottom-1 left-1 right-1 flex gap-1"><button type="button" onClick={e => {e.stopPropagation(); makeCover(i)}} className="flex-1 bg-blue-600/90 rounded-md py-1 text-[7px] font-black">{i === 0 ? 'UTAMA' : 'JADIKAN UTAMA'}</button><button type="button" onClick={e => {e.stopPropagation(); removeAlbumPhoto(i)}} className="bg-red-600/90 rounded-md px-2 py-1"><Trash2 size={10}/></button></div></div>)}</div> : <p className="text-center py-6 text-zinc-600 text-[10px] font-black uppercase">Belum ada foto</p>}</div>
+                </> : <>
+                  <div className="flex gap-2 bg-black/20 p-1 rounded-xl"><button type="button" onClick={() => setVideoInputMethod('file')} className={`flex-1 py-3 rounded-lg text-[9px] font-black uppercase ${videoInputMethod === 'file' ? 'bg-blue-600' : 'text-zinc-500'}`}>Upload Video</button><button type="button" onClick={() => setVideoInputMethod('link')} className={`flex-1 py-3 rounded-lg text-[9px] font-black uppercase ${videoInputMethod === 'link' ? 'bg-blue-600' : 'text-zinc-500'}`}>Link YouTube</button></div>
+                  {videoInputMethod === 'file' ? <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed border-white/10 rounded-2xl p-8 text-center cursor-pointer hover:border-blue-500/60"><input ref={fileInputRef} type="file" accept="video/*" hidden onChange={handleFileInput}/><Upload className="mx-auto mb-3 text-blue-500" size={30}/><p className="font-black text-xs uppercase">Pilih Video</p><p className="text-[10px] text-zinc-500 mt-1">Maksimal 15MB</p></div> : <div className="relative"><LinkIcon className="absolute left-3 top-3.5 text-zinc-500" size={17}/><input value={formData.url} onChange={e => setFormData(p => ({...p, url:e.target.value}))} className="w-full bg-black/30 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-sm" placeholder="https://youtube.com/watch?v=..."/></div>}
+                  {formData.url && <div className="text-[9px] text-green-400 font-bold break-all">Video siap digunakan</div>}
+                </>}
               </div>
-              <button onClick={handleCloseModal} className="w-12 h-12 flex items-center justify-center bg-zinc-900 rounded-2xl text-zinc-500 hover:text-white hover:bg-red-600 transition-all"><X size={24}/></button>
+
+              <div className="rounded-3xl bg-black/20 border border-white/5 p-4 sm:p-5 min-h-[300px]">
+                <div className="flex items-center justify-between mb-4"><div><p className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Preview Landing Page</p><p className="text-xs font-bold text-white mt-1">Foto pertama = cover aktivitas</p></div>{formData.type === 'image' && albumUrls.length > 1 && <div className="text-[9px] font-black text-zinc-500">{previewIndex + 1}/{albumUrls.length}</div>}</div>
+                {formData.type === 'image' && currentPreview ? <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-black"><img src={currentPreview} alt="Preview" className="w-full h-full object-contain"/>{albumUrls.length > 1 && <><button type="button" onClick={() => setPreviewIndex(i => (i - 1 + albumUrls.length) % albumUrls.length)} className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/70"><ChevronLeft size={18}/></button><button type="button" onClick={() => setPreviewIndex(i => (i + 1) % albumUrls.length)} className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/70"><ChevronRight size={18}/></button></>}</div> : formData.type === 'video' && formData.url ? <div className="aspect-video rounded-2xl overflow-hidden bg-black flex items-center justify-center"><PlayCircle size={60} className="text-blue-500"/></div> : <div className="h-full min-h-[280px] flex flex-col items-center justify-center text-zinc-600"><ImageIcon size={46}/><p className="mt-3 text-[10px] font-black uppercase">Preview akan tampil di sini</p></div>}
+                {formData.type === 'image' && albumUrls.length > 1 && <div className="grid grid-cols-6 gap-1.5 mt-3">{albumUrls.map((url, i) => <button type="button" key={`${url}-thumb-${i}`} onClick={() => setPreviewIndex(i)} className={`aspect-square rounded-lg overflow-hidden border-2 ${i === previewIndex ? 'border-blue-500' : 'border-transparent'}`}><img src={url} alt="thumb" className="w-full h-full object-cover"/></button>)}</div>}
+              </div>
             </div>
-            
-            <form onSubmit={handleSubmit} className="p-10 space-y-8">
-              <div className="space-y-4">
-                <label className="text-[10px] font-black text-zinc-500 uppercase flex items-center gap-2 tracking-widest">
-                   <PlayCircle size={14}/> Asset Type
-                </label>
-                <div className="grid grid-cols-2 gap-4">
-                  <button 
-                    type="button"
-                    onClick={() => setFormData({...formData, type: 'image'})}
-                    className={`group py-5 rounded-[1.5rem] border-2 flex flex-col items-center gap-3 transition-all ${formData.type === 'image' ? 'bg-blue-600 border-blue-600' : 'bg-zinc-900/50 border-white/5 text-zinc-600'}`}
-                  >
-                    <Camera size={24} className={formData.type === 'image' ? 'text-white' : 'group-hover:text-white'} /> 
-                    <span className="font-black text-[10px] tracking-widest uppercase">Photography</span>
-                  </button>
-                  <button 
-                    type="button"
-                    onClick={() => setFormData({...formData, type: 'video'})}
-                    className={`group py-5 rounded-[1.5rem] border-2 flex flex-col items-center gap-3 transition-all ${formData.type === 'video' ? 'bg-blue-600 border-blue-600' : 'bg-zinc-900/50 border-white/5 text-zinc-600'}`}
-                  >
-                    <Film size={24} className={formData.type === 'video' ? 'text-white' : 'group-hover:text-white'} /> 
-                    <span className="font-black text-[10px] tracking-widest uppercase">Videography</span>
-                  </button>
-                </div>
-              </div>
-
-              {formData.type === 'video' && (
-                <div className="space-y-4 animate-in fade-in slide-in-from-top-4">
-                  <label className="text-[10px] font-black text-zinc-500 uppercase flex items-center gap-2 tracking-widest">
-                    <Video size={14}/> Video Source
-                  </label>
-                  <div className="grid grid-cols-2 gap-3 bg-zinc-900/80 p-2 rounded-2xl border border-white/5">
-                    <button 
-                        type="button"
-                        onClick={() => setVideoInputMethod('file')}
-                        className={`py-3 rounded-xl flex items-center justify-center gap-2 font-black text-[9px] uppercase tracking-widest transition-all ${videoInputMethod === 'file' ? 'bg-zinc-800 text-blue-500 shadow-xl' : 'text-zinc-600 hover:text-zinc-400'}`}
-                    >
-                        Local File
-                    </button>
-                    <button 
-                        type="button"
-                        onClick={() => setVideoInputMethod('link')}
-                        className={`py-3 rounded-xl flex items-center justify-center gap-2 font-black text-[9px] uppercase tracking-widest transition-all ${videoInputMethod === 'link' ? 'bg-zinc-800 text-blue-500 shadow-xl' : 'text-zinc-600 hover:text-zinc-400'}`}
-                    >
-                        YouTube URL
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-3">
-                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] flex items-center gap-2">
-                     <Edit3 size={14}/> Asset Title
-                  </label>
-                  <input 
-                    required
-                    className="w-full bg-zinc-900/50 border border-white/10 rounded-2xl p-5 outline-none focus:border-blue-600 font-bold uppercase transition-all placeholder:text-slate-500 text-white"
-                    placeholder="E.g. Training Session..."
-                    value={formData.title}
-                    onChange={e => setFormData({...formData, title: e.target.value})}
-                  />
-                </div>
-                <div className="space-y-3">
-                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] flex items-center gap-2">
-                    <Tag size={14}/> Category
-                  </label>
-                  <select 
-                    className="w-full bg-zinc-900/50 border border-white/10 rounded-2xl p-5 outline-none focus:border-blue-600 font-bold uppercase transition-all appearance-none cursor-pointer text-blue-500"
-                    value={formData.category}
-                    onChange={e => setFormData({...formData, category: e.target.value})}
-                  >
-                    {categories.map(cat => (
-                        <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] flex items-center gap-2">
-                   <AlignLeft size={14}/> Description
-                </label>
-                <textarea 
-                  required
-                  rows={3}
-                  className="w-full bg-zinc-900/50 border border-white/10 rounded-3xl p-6 outline-none focus:border-blue-600 font-medium transition-all placeholder:text-slate-500 text-white resize-none"
-                  placeholder="Tell the story about this moment..."
-                  value={formData.description}
-                  onChange={e => setFormData({...formData, description: e.target.value})}
-                />
-              </div>
-
-              <div className="space-y-4">
-                <label className="text-[10px] font-black text-zinc-500 uppercase flex items-center gap-2 tracking-widest">
-                   {formData.type === 'image' || videoInputMethod === 'file' ? <Upload size={14}/> : <LinkIcon size={14}/>} 
-                   Media Payload
-                </label>
-
-                 {(formData.type === 'image' || videoInputMethod === 'file') ? (
-                    <div 
-                        onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
-                        onDragLeave={() => setDragActive(false)}
-                        onDrop={(e) => { e.preventDefault(); handleFileUpload(e); }}
-                        onClick={() => !isUploading && fileInputRef.current?.click()}
-                        className={`group relative min-h-56 rounded-[2.5rem] border-4 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all overflow-hidden ${dragActive ? 'bg-blue-600/10 border-blue-600 scale-[0.98]' : 'bg-zinc-900/30 border-white/5 hover:border-blue-600/40'}`}
-                    >
-                        {formData.url && formData.is_local ? (
-                            formData.type === 'image' ? (
-                              <div className="w-full h-full p-4 grid grid-cols-3 gap-3">
-                                {formData.url.split(/[\s,]+/).filter(Boolean).map((imgUrl, index) => (
-                                  <div key={index} className="relative aspect-square rounded-2xl overflow-hidden border border-white/10 group/img shadow-md">
-                                    <img src={imgUrl} className="w-full h-full object-cover" />
-                                    <button
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        const currentUrls = formData.url.split(/[\s,]+/).filter(Boolean);
-                                        const filtered = currentUrls.filter((_, i) => i !== index);
-                                        setFormData(prev => ({ ...prev, url: filtered.join(', ') }));
-                                      }}
-                                      className="absolute top-1.5 right-1.5 p-1 bg-red-600 hover:bg-red-700 text-white rounded-full transition-colors z-10"
-                                    >
-                                      <X size={10} />
-                                    </button>
-                                  </div>
-                                ))}
-                                <div className="aspect-square rounded-2xl border-2 border-dashed border-white/15 hover:border-blue-500 flex flex-col items-center justify-center text-zinc-500 hover:text-white transition-colors cursor-pointer" onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}>
-                                  <Plus size={20} />
-                                  <span className="text-[7px] font-black uppercase mt-1">Tambah</span>
-                                </div>
-                              </div>
-                            ) : (
-                                <div className="flex flex-col items-center text-blue-500 text-center px-10 py-6">
-                                    <div className="w-16 h-16 bg-blue-600/10 rounded-full flex items-center justify-center mb-4">
-                                       <Video size={32} />
-                                    </div>
-                                    <span className="text-[10px] font-black uppercase tracking-[0.2em]">Video Securely Stored</span>
-                                    <p className="text-[8px] text-zinc-600 mt-2 font-bold uppercase truncate max-w-full italic">{formData.url.split('/').pop()}</p>
-                                </div>
-                            )
-                        ) : (
-                            <>
-                                <div className={`p-6 bg-zinc-900 rounded-3xl mb-4 text-zinc-700 group-hover:text-blue-600 group-hover:scale-110 transition-all duration-500 shadow-2xl`}>
-                                   <Upload size={32} />
-                                </div>
-                                <div className="text-center">
-                                    <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.1em]">
-                                        {dragActive ? 'Drop file now' : `Drop or click to upload ${formData.type}`}
-                                    </p>
-                                    <p className="text-[8px] text-zinc-700 font-black uppercase mt-2 tracking-widest">Limits: {formData.type === 'image' ? '5MB' : '15MB'}</p>
-                                </div>
-                            </>
-                        )}
-                        
-                        {isUploading && (
-                        <div className="absolute inset-0 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-300 z-20">
-                            <div className="relative">
-                                <Loader2 className="animate-spin text-blue-600 mb-4" size={48} />
-                                <div className="absolute inset-0 animate-pulse bg-blue-600/20 rounded-full blur-2xl"></div>
-                            </div>
-                            <p className="text-[10px] font-black uppercase tracking-[0.4em] animate-pulse">Syncing to Cloud...</p>
-                        </div>
-                        )}
-                    </div>
-                ) : (
-                    <div className="space-y-4 animate-in zoom-in duration-500">
-                        <div className="relative">
-                            <input 
-                                className="w-full bg-zinc-900/80 border border-white/10 rounded-[1.5rem] p-6 outline-none focus:border-red-600 font-bold text-xs transition-all pr-16"
-                                placeholder="Paste Link YouTube / Shorts..."
-                                value={formData.is_local ? '' : formData.url}
-                                onChange={e => setFormData({...formData, url: e.target.value, is_local: false})}
-                            />
-                            <div className="absolute right-6 top-1/2 -translate-y-1/2 text-red-600">
-                                <Film size={20} />
-                            </div>
-                        </div>
-                        {formData.url && getYouTubeID(formData.url) && (
-                            <div className="bg-red-600/5 border border-red-600/20 p-4 rounded-2xl flex items-center gap-4 animate-in slide-in-from-top-2">
-                                <div className="w-20 aspect-video rounded-lg overflow-hidden bg-black shrink-0">
-                                    <img src={`https://img.youtube.com/vi/${getYouTubeID(formData.url)}/default.jpg`} className="w-full h-full object-cover" />
-                                </div>
-                                <div>
-                                    <p className="text-[9px] font-black uppercase text-red-500 tracking-widest">Valid Link Detected</p>
-                                    <p className="text-[8px] text-zinc-500 font-bold truncate max-w-[200px]">{formData.url}</p>
-                                </div>
-                            </div>
-                        )}
-                        <div className="flex items-start gap-3 px-2">
-                            <AlertCircle size={14} className="text-zinc-700 shrink-0 mt-0.5" />
-                            <p className="text-[9px] text-zinc-600 font-bold uppercase leading-relaxed tracking-wider">Paste the full browser URL. We'll automatically generate the embed code and high-res thumbnail.</p>
-                        </div>
-                    </div>
-                )}
-
-                <input 
-                    type="file" 
-                    ref={fileInputRef} 
-                    onChange={handleFileUpload} 
-                    className="hidden" 
-                    accept={formData.type === 'image' ? 'image/jpeg,image/png,image/webp' : 'video/mp4,video/webm'} 
-                    multiple={formData.type === 'image'}
-                />
-              </div>
-
-              <button 
-                type="submit"
-                disabled={isUploading || !formData.url}
-                className="group relative w-full py-6 bg-blue-600 hover:bg-blue-500 disabled:opacity-20 disabled:grayscale rounded-[1.5rem] font-black uppercase text-[11px] tracking-[0.3em] shadow-[0_20px_40px_rgba(37,99,235,0.25)] transition-all active:scale-95 overflow-hidden"
-              >
-                <span className="relative z-10">{editingId ? 'Push Changes to Cloud' : 'Launch to Live Gallery'}</span>
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-              </button>
-            </form>
-          </div>
+            <div className="flex flex-col-reverse sm:flex-row gap-3 p-5 sm:p-7 border-t border-white/10"><button type="button" onClick={closeModal} className="flex-1 py-4 rounded-xl bg-white/5 text-xs font-black uppercase">Batal</button><button type="submit" disabled={isUploading} className="flex-1 py-4 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-xs font-black uppercase flex items-center justify-center gap-2">{isUploading ? <Loader2 className="animate-spin" size={16}/> : <CheckCircle2 size={16}/>} {editingId ? 'Simpan Perubahan' : 'Publikasikan Album'}</button></div>
+          </form>
         </div>
-      )}
-
-      <style>{`
-        .scrollbar-hide::-webkit-scrollbar { display: none; }
-        .scale-in-center { animation: scale-in-center 0.4s cubic-bezier(0.250, 0.460, 0.450, 0.940) both; }
-        @keyframes scale-in-center {
-          0% { transform: scale(0.9); opacity: 0; }
-          100% { transform: scale(1); opacity: 1; }
-        }
-        ::selection { background: #2563eb; color: white; }
-      `}</style>
+      </div>}
     </div>
   );
 }
