@@ -14,6 +14,7 @@ import './news-footer-fix.css';
 import './public-footer-flow.css';
 import './gallery-stability.css';
 import './gallery-back-button-fix.css';
+import './gallery-audio-hide.css';
 
 if (typeof window !== 'undefined') {
   const syncGalleryRouteClass = () => {
