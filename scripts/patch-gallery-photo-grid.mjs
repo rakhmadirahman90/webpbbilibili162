@@ -14,14 +14,14 @@ const albumGrid = `
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
                         {images.map((img, idx) => (
                           <button
-                            key={\`${activeMedia.id}-album-${idx}\`}
+                            key={\`\${activeMedia.id}-album-\${idx}\`}
                             onClick={() => setActiveImgIndex(idx)}
                             className={\`group relative overflow-hidden rounded-xl bg-slate-100 border-2 transition-all aspect-[4/3] \${idx === activeImgIndex ? 'border-emerald-500 ring-2 ring-emerald-500/20' : 'border-transparent hover:border-slate-300'}\`}
                             aria-label={\`Buka foto \${idx + 1}\`}
                           >
                             <img
                               src={getOptimizedImageUrl(img, 500)}
-                              alt={\`${activeMedia.title || 'Foto'} - Foto \${idx + 1}\`}
+                              alt={\`\${activeMedia.title || 'Foto'} - Foto \${idx + 1}\`}
                               loading="lazy"
                               decoding="async"
                               className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
