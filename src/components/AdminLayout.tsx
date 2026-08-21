@@ -47,7 +47,7 @@ export default function AdminLayout({ children, email }: AdminLayoutProps) {
           </span>
         </header>
 
-        <main className="flex-1 min-w-0 min-h-0 overflow-y-auto overflow-x-hidden flex flex-col overscroll-contain">
+        <main className="admin-main flex-1 min-w-0 min-h-0 overflow-y-auto overflow-x-hidden flex flex-col overscroll-contain">
           {children}
         </main>
       </div>
