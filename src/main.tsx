@@ -8,6 +8,7 @@ import { installNavigationPrefetch } from './utils/navigationPrefetch.ts';
 import './index.css';
 import './responsive-hardening.css';
 import './news-footer-fix.css';
+import './public-footer-flow.css';
 
 // Never block the first paint on cache/demo-data initialization.
 // The live Supabase state is the source of truth; local storage is only a
