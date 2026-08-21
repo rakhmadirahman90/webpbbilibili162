@@ -1,3 +1,4 @@
+import './patch-public-news-mobile-detail.mjs';
 import fs from 'node:fs';
 
 const file = 'src/components/News.tsx';
