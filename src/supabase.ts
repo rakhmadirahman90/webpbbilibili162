@@ -32,7 +32,6 @@ export const SUPABASE_ANON_KEY = (rawAnon && typeof rawAnon === 'string' && rawA
   ? rawAnon
   : 'sb_publishable_trhfpzLX50WdkdaItRPFMQ_ewQF0fgn').trim();
 
-// Global stale-while-revalidate cache for Supabase REST reads.
 type CachedResponse = {
   body: string;
   status: number;
@@ -43,16 +42,15 @@ type CachedResponse = {
 
 const memoryQueryCache = new Map<string, CachedResponse>();
 const inFlightQueries = new Map<string, Promise<Response>>();
-// Return cached data immediately; refresh it silently in the background.
 const MEMORY_TTL = 60_000;
 const SESSION_MAX_AGE = 30 * 60_000;
 const SESSION_PREFIX = 'pb_supabase_query_v4:';
 
-// Public/read-only datasets used by landing, member and public menu pages.
-// These are safe to cache because all writes invalidate the read cache below.
+// Documents are intentionally NOT cached. The public documents page must always
+// reflect the current contents of public.documents in Supabase immediately.
 const PUBLIC_CACHE_TABLES = new Set([
   'site_settings', 'berita', 'komentar', 'galeri', 'gallery', 'hero_sliders',
-  'navbar_menu', 'navbar_settings', 'page_contents', 'documents',
+  'navbar_menu', 'navbar_settings', 'page_contents',
   'organizational_structure', 'inventaris', 'rankings', 'pertandingan',
   'pendaftaran', 'atlet_stats', 'kas_pb', 'prestasi', 'program', 'faq',
   'fasilitas', 'jadwal_latihan'
@@ -170,13 +168,18 @@ const cachedFetch = async (input: RequestInfo | URL, init?: RequestInit): Promis
   }
 
   const table = getTableFromRestUrl(url);
+
+  // Never cache the documents table. This prevents an old empty browser/session
+  // cache from masking the real row that currently exists in Supabase.
+  if (table === 'documents') {
+    return networkSupabaseGet(input, init);
+  }
+
   const authorization = getHeader(input, init, 'Authorization');
   const memoryKey = makeMemoryKey(url, authorization);
   const cached = memoryQueryCache.get(memoryKey);
 
   if (cached) {
-    // Never block the UI on revalidation. The component receives the current cached
-    // snapshot immediately while a single in-flight request refreshes it silently.
     if (Date.now() - cached.savedAt > MEMORY_TTL) void networkSupabaseGet(input, init, memoryKey, url).catch(() => {});
     return responseFromCached(cached);
   }
@@ -207,7 +210,6 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   realtime: { params: { eventsPerSecond: 10 } }
 });
 
-/** Route-aware background prefetch. It never blocks rendering. */
 export function warmupRouteData(pathname?: string) {
   if (typeof window === 'undefined') return;
   const path = (pathname || window.location.pathname).toLowerCase();
@@ -239,8 +241,6 @@ export function warmupRouteData(pathname?: string) {
     warm(supabase.from('inventaris').select('*'));
   }
 
-  // Public information pages were previously only warmed for admin routes.
-  // Warm the same keys before the lazy public component renders.
   const publicSettingKey =
     path === '/sejarah' || path === '/tentang-kami' || path === '/about' || path === '/tentang'
       ? 'history_content'
