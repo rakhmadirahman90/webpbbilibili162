@@ -49,7 +49,6 @@ body.gallery-route #gallery {
   animation: none !important;
 }
 
-/* CRITICAL: the lightbox itself must NEVER scroll. */
 #gallery .gallery-lightbox {
   position: fixed !important;
   inset: 0 !important;
@@ -62,7 +61,6 @@ body.gallery-route #gallery {
   touch-action: manipulation;
 }
 
-/* Header is a permanently fixed row inside the fixed lightbox. */
 #gallery .gallery-lightbox > .sticky {
   position: relative !important;
   top: auto !important;
@@ -70,7 +68,6 @@ body.gallery-route #gallery {
   z-index: 200 !important;
 }
 
-/* The white gallery body fills the remaining viewport but does not scroll. */
 #gallery .gallery-lightbox > div:nth-child(2) {
   flex: 1 1 auto !important;
   min-height: 0 !important;
@@ -81,7 +78,6 @@ body.gallery-route #gallery {
   grid-template-rows: minmax(0, 38vh) minmax(0, 1fr) auto !important;
 }
 
-/* Main photo: a fixed, non-scrolling viewport row. */
 #gallery .gallery-lightbox > div:nth-child(2) > div:first-child {
   position: relative !important;
   min-height: 0 !important;
@@ -90,7 +86,6 @@ body.gallery-route #gallery {
   flex: none !important;
 }
 
-/* Thumbnail section: ONLY this section owns vertical scrolling. */
 #gallery .gallery-lightbox > div:nth-child(2) > div:nth-child(2) {
   min-height: 0 !important;
   height: auto !important;
@@ -116,7 +111,6 @@ body.gallery-route #gallery {
   align-content: start !important;
 }
 
-/* Every thumbnail fills its grid cell. */
 #gallery .gallery-lightbox > div:nth-child(2) > div:nth-child(2) > .scrollbar-thin > button {
   width: 100% !important;
   min-width: 0 !important;
@@ -126,7 +120,6 @@ body.gallery-route #gallery {
   touch-action: manipulation !important;
 }
 
-/* Album information stays below the thumbnail scroller and cannot move the hero. */
 #gallery .gallery-lightbox > div:nth-child(2) > div:nth-child(3) {
   min-height: 0 !important;
   max-height: 18vh !important;
@@ -152,58 +145,9 @@ body.gallery-route #gallery {
     padding-bottom: max(7rem, calc(5rem + env(safe-area-inset-bottom))) !important;
   }
 
-  #gallery .grid {
-    overflow: visible;
-  }
+  #gallery .grid { overflow: visible; }
 
-  /* Phone: header + fixed hero remain stationary; only the 17-photo album scrolls. */
-  #gallery .gallery-lightbox > div:nth-child(2) {
-    grid-template-rows: minmax(220px, 38vh) minmax(0, 1fr) auto !important;
-  }
-
-  #gallery .gallery-lightbox > div:nth-child(2) > div:first-child {
-    min-height: 220px !important;
-    max-height: 38vh !important;
-  }
-
-  #gallery .gallery-lightbox > div:nth-child(2) > div:nth-child(2) {
-    padding-left: 0.5rem !important;
-    padding-right: 0.5rem !important;
-  }
-
-  #gallery .gallery-lightbox > div:nth-child(2) > div:nth-child(2) > .scrollbar-thin {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 0.65rem !important;
-    padding-bottom: 0.65rem !important;
-  }
-
-  #gallery .gallery-lightbox > div:nth-child(2) > div:nth-child(3) {
-    max-height: 16vh !important;
-    padding-top: 0.65rem !important;
-    padding-bottom: max(0.65rem, env(safe-area-inset-bottom)) !important;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  #gallery *,
-  #gallery *::before,
-  #gallery *::after,
-  body.gallery-route #gallery *,
-  body.gallery-route #gallery *::before,
-  body.gallery-route #gallery *::after {
-    animation: none !important;
-    transition: none !important;
-    scroll-behavior: auto !important;
-  }
-}
-
-/* ================================================================
-   MOBILE SCROLL ISOLATION — FINAL OVERRIDE
-   The hero and header are fixed viewport surfaces. The only element
-   permitted to consume a vertical touch-scroll is the thumbnail grid.
-   ================================================================ */
-@media (max-width: 767px) {
-  /* Do not allow the page/root behind the gallery to become the scroll owner. */
+  /* Final mobile isolation: header + hero never move. */
   html:has(#gallery .gallery-lightbox),
   body:has(#gallery .gallery-lightbox) {
     overflow: hidden !important;
@@ -229,13 +173,12 @@ body.gallery-route #gallery {
     left: 0 !important;
     right: 0 !important;
     top: 0 !important;
-    height: auto !important;
+    height: 64px !important;
     min-height: 64px !important;
     z-index: 300 !important;
     touch-action: none !important;
   }
 
-  /* Body is a viewport, never a scrolling surface. */
   #gallery .gallery-lightbox > div:nth-child(2) {
     position: fixed !important;
     inset: 64px 0 0 0 !important;
@@ -249,7 +192,6 @@ body.gallery-route #gallery {
     touch-action: none !important;
   }
 
-  /* Main photo never participates in scrolling or panning. */
   #gallery .gallery-lightbox > div:nth-child(2) > div:first-child {
     position: fixed !important;
     left: 0 !important;
@@ -274,13 +216,18 @@ body.gallery-route #gallery {
     pointer-events: none !important;
   }
 
-  /* Only this panel is scrollable. */
+  #gallery .gallery-lightbox > div:nth-child(2) > div:first-child button {
+    pointer-events: auto !important;
+    touch-action: manipulation !important;
+  }
+
+  /* Only the thumbnail panel is a vertical scroll owner. */
   #gallery .gallery-lightbox > div:nth-child(2) > div:nth-child(2) {
     position: fixed !important;
     left: 0 !important;
     right: 0 !important;
     top: calc(64px + 38vh) !important;
-    bottom: 0 !important;
+    bottom: 18vh !important;
     width: 100vw !important;
     height: auto !important;
     max-height: none !important;
@@ -320,24 +267,37 @@ body.gallery-route #gallery {
     touch-action: manipulation !important;
   }
 
-  /* Keep the title/description below the thumbnail panel without becoming
-     a second page scroll owner. It can still be reached after the grid. */
+  /* Restore the existing title/description; it is fixed and does not scroll. */
   #gallery .gallery-lightbox > div:nth-child(2) > div:nth-child(3) {
     position: fixed !important;
     left: 0 !important;
     right: 0 !important;
     bottom: 0 !important;
-    max-height: 0 !important;
-    height: 0 !important;
-    overflow: hidden !important;
-    padding: 0 !important;
-    opacity: 0 !important;
-    pointer-events: none !important;
-  }
-
-  /* Arrow buttons remain clickable although the hero surface itself is inert. */
-  #gallery .gallery-lightbox > div:nth-child(2) > div:first-child button {
+    width: 100vw !important;
+    height: 18vh !important;
+    max-height: 18vh !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    z-index: 160 !important;
+    background: #ffffff !important;
+    padding: 0.75rem 1.25rem !important;
+    opacity: 1 !important;
     pointer-events: auto !important;
-    touch-action: manipulation !important;
+    overscroll-behavior: contain !important;
+    touch-action: pan-y !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #gallery *,
+  #gallery *::before,
+  #gallery *::after,
+  body.gallery-route #gallery *,
+  body.gallery-route #gallery *::before,
+  body.gallery-route #gallery *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
   }
 }
