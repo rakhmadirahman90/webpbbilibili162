@@ -61,6 +61,84 @@ body.gallery-route #gallery .gallery-lightbox {
   visibility: visible !important;
   transform: none !important;
   filter: none !important;
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+  overflow: hidden !important;
+  overscroll-behavior: none;
+}
+
+/* The top PB BILIBILI 162 header never participates in scrolling. */
+#gallery .gallery-lightbox > .sticky {
+  position: relative !important;
+  top: auto !important;
+  flex: 0 0 auto !important;
+  z-index: 200 !important;
+}
+
+/* The lightbox body is a bounded column: hero photo is fixed, the album
+   becomes the only scrolling region, and the existing title/description stays
+   visible instead of being removed. */
+#gallery .gallery-lightbox > div:nth-child(2) {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  padding-bottom: 0 !important;
+}
+
+/* Main/hero photo stays completely fixed while thumbnails are scrolled. */
+#gallery .gallery-lightbox > div:nth-child(2) > div:first-child {
+  flex: 0 0 auto !important;
+  position: relative !important;
+}
+
+/* Album area owns the vertical scroll. */
+#gallery .gallery-lightbox > div:nth-child(2) > div:nth-child(2) {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  padding-top: 0.75rem !important;
+}
+
+#gallery .gallery-lightbox > div:nth-child(2) > div:nth-child(2) > .scrollbar-thin {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 0.75rem !important;
+  padding: 0 0.25rem 0.75rem !important;
+  align-content: start !important;
+}
+
+/* Every thumbnail fills its grid cell and remains individually clickable. */
+#gallery .gallery-lightbox > div:nth-child(2) > div:nth-child(2) > .scrollbar-thin > button {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: auto !important;
+  aspect-ratio: 4 / 3 !important;
+  margin: 0 !important;
+}
+
+/* Keep the existing album title/description present at the bottom of the
+   fixed lightbox instead of allowing it to move with the thumbnail scroller. */
+#gallery .gallery-lightbox > div:nth-child(2) > div:nth-child(3) {
+  flex: 0 0 auto !important;
+  max-height: 22vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+@media (min-width: 768px) {
+  #gallery .gallery-lightbox > div:nth-child(2) > div:nth-child(2) > .scrollbar-thin {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
 }
 
 @media (max-width: 767px) {
@@ -71,6 +149,30 @@ body.gallery-route #gallery .gallery-lightbox {
 
   #gallery .grid {
     overflow: visible;
+  }
+
+  /* Keep enough room for the main image while giving the 17-photo album a
+     real bounded touch-scroll area on phones. */
+  #gallery .gallery-lightbox > div:nth-child(2) > div:first-child {
+    height: 38vh !important;
+    min-height: 220px;
+    max-height: 48vh;
+  }
+
+  #gallery .gallery-lightbox > div:nth-child(2) > div:nth-child(2) {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+
+  #gallery .gallery-lightbox > div:nth-child(2) > div:nth-child(2) > .scrollbar-thin {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.65rem !important;
+  }
+
+  #gallery .gallery-lightbox > div:nth-child(2) > div:nth-child(3) {
+    max-height: 18vh;
+    padding-top: 0.75rem !important;
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom)) !important;
   }
 }
 
