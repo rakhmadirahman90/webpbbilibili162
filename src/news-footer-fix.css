@@ -7,6 +7,8 @@
  * 3. Make the News filter compact and intentional on mobile.
  * 4. Keep article cards, pagination and footer in normal document flow.
  * 5. Preserve the existing desktop layout and interactions.
+ * 6. Prevent the dedicated-page flex shell from shrinking the News view
+ *    and placing the Footer on top of overflowing article cards.
  */
 
 @media (max-width: 767px) {
@@ -36,6 +38,7 @@
     max-height: none !important;
     overflow: visible !important;
     box-sizing: border-box;
+    display: block !important;
   }
 
   /* News page should not carry a large artificial bottom reserve on phones. */
@@ -49,6 +52,61 @@
     max-width: 100% !important;
     padding-left: 12px !important;
     padding-right: 12px !important;
+  }
+
+  /* -----------------------------------------------------------------------
+     1A) CRITICAL FIX — DEDICATED NEWS PAGE MUST GROW WITH ITS CONTENT
+     -----------------------------------------------------------------------
+     App.tsx wraps dedicated views in two nested flex-grow/min-h-0 containers.
+     On a short mobile viewport those containers can legally shrink to the
+     viewport height while the News component continues overflowing below.
+     The Footer then follows the shortened flex box and visually cuts through
+     the next article card. For News/Prestasi only, release that flex sizing.
+     */
+  #root:has(#news) .flex-grow.w-full.flex.flex-col.min-h-0,
+  #root:has(.public-news-modern) .flex-grow.w-full.flex.flex-col.min-h-0 {
+    flex: 0 0 auto !important;
+    flex-grow: 0 !important;
+    flex-shrink: 0 !important;
+    height: auto !important;
+    min-height: max-content !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  #root:has(#news) .flex.flex-col.min-h-screen.w-full,
+  #root:has(.public-news-modern) .flex.flex-col.min-h-screen.w-full {
+    height: auto !important;
+    min-height: 100dvh !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  /* The footer is a sibling AFTER the dedicated content. Keep it in the
+     document flow and add a small separation so it can never overlap the
+     last card or pagination. */
+  #root:has(#news) #footer-section,
+  #root:has(.public-news-modern) #footer-section {
+    position: relative !important;
+    inset: auto !important;
+    z-index: 1 !important;
+    flex: 0 0 auto !important;
+    flex-shrink: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 74px !important;
+    max-height: none !important;
+    margin-top: 18px !important;
+    clear: both !important;
+    overflow: visible !important;
+    transform: none !important;
+  }
+
+  #root:has(#news) #footer-section > div,
+  #root:has(.public-news-modern) #footer-section > div {
+    min-height: 74px !important;
+    height: auto !important;
+    max-height: none !important;
   }
 
   /* -----------------------------------------------------------------------
@@ -196,29 +254,6 @@
     width: 36px !important;
     height: 36px !important;
     min-width: 36px !important;
-  }
-
-  /* -----------------------------------------------------------------------
-     4) FOOTER — ALWAYS AFTER THE COMPLETE NEWS DOCUMENT
-     ----------------------------------------------------------------------- */
-  #root:has(#news) #footer-section,
-  #root:has(.public-news-modern) #footer-section {
-    position: relative !important;
-    inset: auto !important;
-    z-index: 1 !important;
-    flex: 0 0 auto !important;
-    width: 100% !important;
-    height: auto !important;
-    min-height: 74px !important;
-    max-height: none !important;
-    margin-top: 0 !important;
-    clear: both !important;
-    overflow: visible !important;
-  }
-
-  #root:has(#news) #footer-section > div,
-  #root:has(.public-news-modern) #footer-section > div {
-    min-height: 74px !important;
   }
 
   /* -----------------------------------------------------------------------
