@@ -105,7 +105,15 @@ export default function Gallery() {
   useEffect(() => { if (currentPage > totalPages) setCurrentPage(totalPages); }, [currentPage, totalPages]);
 
   const handleLike = (event: React.MouseEvent | React.KeyboardEvent, id: string) => { event.stopPropagation(); setLikedItems(prev => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); try { localStorage.setItem('pb_us_liked_gallery', JSON.stringify([...next])); } catch {} return next; }); };
-  const handleShare = (item: GalleryItem, platform: 'wa' | 'fb' | 'copy') => { const currentUrl = `${window.location.origin}?gallery=${encodeURIComponent(item.id)}&share=v3`; const shareText = `Lihat dokumentasi "${item.title || 'PB Bilibili 162'}" dari PB Bilibili 162: ${currentUrl}`; if (platform === 'wa') window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank'); if (platform === 'fb') window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl)}`, '_blank'); if (platform === 'copy') navigator.clipboard?.writeText(currentUrl).then(() => { setCopySuccess(item.id); window.setTimeout(() => setCopySuccess(null), 2000); }); };
+  const handleShare = (item: GalleryItem, platform: 'wa' | 'fb' | 'copy') => {
+    // Use the canonical gallery route so WhatsApp/shared links always open the complete detail page:
+    // main photo + title/description + full thumbnail album, not the generic gallery landing page.
+    const currentUrl = `${window.location.origin}/galeri?gallery=${encodeURIComponent(item.id)}&share=v4`;
+    const shareText = `Lihat dokumentasi "${item.title || 'PB Bilibili 162'}" dari PB Bilibili 162:\n${currentUrl}`;
+    if (platform === 'wa') window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
+    if (platform === 'fb') window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl)}`, '_blank');
+    if (platform === 'copy') navigator.clipboard?.writeText(currentUrl).then(() => { setCopySuccess(item.id); window.setTimeout(() => setCopySuccess(null), 2000); });
+  };
   const goToImage = (index: number, count: number) => { if (!count) return; setActiveImgIndex((index + count) % count); };
 
   return (
@@ -149,7 +157,6 @@ export default function Gallery() {
               </div>
 
               <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y">
-                {/* Metadata is intentionally ABOVE the album thumbnails. */}
                 <div className="max-w-5xl mx-auto px-5 sm:px-8 pt-6 sm:pt-8 pb-4">
                   <div className="flex items-center justify-between gap-4 mb-3"><span className="text-[10px] font-black uppercase tracking-widest text-emerald-600">{activeMedia.category || 'DOKUMENTASI'}</span><button onClick={() => handleShare(activeMedia, 'copy')} className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-slate-900"><Link2 size={14} /> {copySuccess === activeMedia.id ? 'Tersalin' : 'Salin Link'}</button></div>
                   <h2 className="text-xl sm:text-2xl font-black text-slate-900 uppercase leading-tight mb-3">{activeMedia.title}</h2>
