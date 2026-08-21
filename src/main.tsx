@@ -12,6 +12,7 @@ import './professional-responsive.css';
 import './news-footer-fix.css';
 import './public-footer-flow.css';
 import './gallery-stability.css';
+import './gallery-back-button-fix.css';
 
 // Keep the Gallery route visually stable while the lazy page and its data hydrate.
 if (typeof window !== 'undefined') {
