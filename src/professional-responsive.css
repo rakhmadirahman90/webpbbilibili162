@@ -83,7 +83,8 @@ button,a{touch-action:manipulation}
   #gallery.gallery-stable>.max-w-7xl>div:nth-child(2){grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
   #gallery.gallery-stable .gallery-card{min-width:0;height:auto!important;border-radius:12px!important}
   #gallery.gallery-stable .gallery-card>div:first-child{aspect-ratio:1.6/1!important}
-  #gallery.gallery-stable .gallery-card>div:first-child>div{top:6px!important;left:6px!important}
+  /* Only the category badge is positioned at the top-left. Do not apply top/left to every child div: that moved the green + button over the photo and created the dark circular overlap. */
+  #gallery.gallery-stable .gallery-card>div:first-child>div:nth-child(2){top:6px!important;left:6px!important}
   #gallery.gallery-stable .gallery-card>div:first-child button{width:30px!important;height:30px!important;min-height:30px!important;top:6px!important;right:6px!important}
   #gallery.gallery-stable .gallery-card>div:first-child>div:last-child{width:32px!important;height:32px!important;right:7px!important}
   #gallery.gallery-stable .gallery-card>div:nth-child(2){padding:9px!important}
