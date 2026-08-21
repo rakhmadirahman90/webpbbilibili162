@@ -4,7 +4,7 @@ const file = 'src/components/Gallery.tsx';
 let source = fs.readFileSync(file, 'utf8');
 const original = source;
 
-// Mobile gallery detail: show the complete album below the title/description.
+// Keep the complete album visible on the photo detail page.
 const hiddenAlbum = '{images.length > 1 && <div className="hidden sm:block mt-8 pt-6 border-t border-gray-100">';
 const visibleAlbum = '{images.length > 1 && <div className="gallery-album-grid mt-4 sm:mt-8 pt-4 sm:pt-6 border-t border-gray-100">';
 if (source.includes(hiddenAlbum)) source = source.replace(hiddenAlbum, visibleAlbum);
@@ -12,9 +12,35 @@ source = source.replace(
   '<div className="gallery-album-grid mt-4 sm:mt-8 pt-4 sm:pt-6 border-t border-gray-100">',
   '<div className="gallery-album-grid mt-4 sm:mt-8 pt-4 sm:pt-6 border-t border-gray-100 [&_img]:w-full [&_img]:h-auto [&_img]:object-cover [&_img]:rounded-xl">'
 );
+
+// On the photo detail page, put the title/description BEFORE the 17-photo album,
+// matching the previous layout: title first, then the complete photo carousel.
+const detailBlock = `                <div className="max-w-5xl mx-auto px-5 sm:px-8 py-6 sm:py-8">
+                  <div className="flex items-center justify-between gap-4 mb-4"><span className="text-[10px] font-black uppercase tracking-widest text-emerald-600">{activeMedia.category || 'DOKUMENTASI'}</span><button onClick={() => handleShare(activeMedia, 'copy')} className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-slate-900"><Link2 size={14} /> {copySuccess === activeMedia.id ? 'Tersalin' : 'Salin Link'}</button></div>
+                  <h2 className="text-xl sm:text-2xl font-black text-slate-900 uppercase leading-tight mb-3">{activeMedia.title}</h2>
+                  {activeMedia.description && <p className="text-sm leading-relaxed text-slate-600 whitespace-pre-line">{activeMedia.description}</p>}
+                </div>`;
+
+// Remove the existing detail block from below the thumbnails.
+const detailPattern = /                <div className="max-w-5xl mx-auto px-5 sm:px-8 py-6 sm:py-8">\n                  <div className="flex items-center justify-between gap-4 mb-4"><span className="text-\[10px\] font-black uppercase tracking-widest text-emerald-600">\{activeMedia\.category \|\| 'DOKUMENTASI'\}<\/span><button onClick=\{\(\) => handleShare\(activeMedia, 'copy'\)\} className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-slate-900"><Link2 size=\{14\} \/> \{copySuccess === activeMedia\.id \? 'Tersalin' : 'Salin Link'\}<\/button><\/div>\n                  <h2 className="text-xl sm:text-2xl font-black text-slate-900 uppercase leading-tight mb-3">\{activeMedia\.title\}<\/h2>\n                  \{activeMedia\.description && <p className="text-sm leading-relaxed text-slate-600 whitespace-pre-line">\{activeMedia\.description\}<\/p>\}\n                <\/div>/;
+
+if (detailPattern.test(source)) {
+  source = source.replace(detailPattern, '');
+}
+
+// Insert title/description immediately below the "Mabar Badminton Barokah Cup III Tahun 2026"
+// heading area and BEFORE the main photo carousel/17-photo thumbnail strip.
+const photoAreaMarker = '                <div className="w-full bg-[#030712] relative h-[38vh] sm:h-[48vh] md:h-[58vh] lg:h-[65vh] overflow-hidden flex items-center justify-center border-b border-slate-900/40">';
+if (!source.includes('data-gallery-title-before-album')) {
+  source = source.replace(
+    '<div className="w-full flex-grow bg-white pb-20">\n                ' + photoAreaMarker.trim(),
+    '<div className="w-full flex-grow bg-white pb-20">\n                <div data-gallery-title-before-album="true">' + detailBlock + '</div>\n\n' + photoAreaMarker
+  );
+}
+
 if (source !== original) {
   fs.writeFileSync(file, source);
-  console.log('[patch-gallery-album-mobile] album photos enabled below detail text');
+  console.log('[patch-gallery-album-mobile] gallery title moved above complete photo album');
 } else {
   console.log('[patch-gallery-album-mobile] no changes needed');
 }
@@ -62,13 +88,11 @@ const carouselBlock = `                  {/* 3. Supporting Inline Multi-Image Sl
 
 `;
 
-// Hide the old static documentation grid so only the carousel remains visible.
 newsSource = newsSource.replace(
   '<div className="mt-10 pt-8 border-t border-gray-100">\n                      <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 mb-4 flex items-center gap-2">\n                        <span>●</span> FOTO DOKUMENTASI TERKAIT',
   '<div className="hidden">\n                      <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 mb-4 flex items-center gap-2">\n                        <span>●</span> FOTO DOKUMENTASI TERKAIT'
 );
 
-// Insert the carousel immediately before the reaction section, i.e. directly after article text/photo area.
 const marker = '                  {/* 3.5. Dedicated Interactive Reaction / Apresiasi Box */}';
 if (!newsSource.includes('Supporting Inline Multi-Image Slider/Gallery Carousel') && newsSource.includes(marker)) {
   newsSource = newsSource.replace(marker, carouselBlock + marker);
