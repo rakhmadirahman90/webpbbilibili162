@@ -74,6 +74,69 @@
   color: #ffffff !important;
 }
 
+/* HARD RESET: remove any inherited/pseudo dark overlay from gallery thumbnails. */
+#gallery .gallery-card,
+#gallery .gallery-card > div:first-child,
+#gallery .gallery-card > div:first-child > div,
+#gallery .gallery-card > div:first-child > div:first-child {
+  isolation: isolate !important;
+}
+
+#gallery .gallery-card::before,
+#gallery .gallery-card::after,
+#gallery .gallery-card > div:first-child::before,
+#gallery .gallery-card > div:first-child::after,
+#gallery .gallery-card > div:first-child > div::before,
+#gallery .gallery-card > div:first-child > div::after,
+#gallery .gallery-card > div:first-child > div:first-child::before,
+#gallery .gallery-card > div:first-child > div:first-child::after {
+  content: none !important;
+  display: none !important;
+  background: transparent !important;
+  opacity: 0 !important;
+  box-shadow: none !important;
+  filter: none !important;
+  mix-blend-mode: normal !important;
+  pointer-events: none !important;
+}
+
+#gallery .gallery-card > div:first-child,
+#gallery .gallery-card > div:first-child > div.relative,
+#gallery .gallery-card > div:first-child > div[class*="overflow-hidden"] {
+  background: transparent !important;
+  filter: none !important;
+  opacity: 1 !important;
+  mix-blend-mode: normal !important;
+}
+
+#gallery .gallery-card > div:first-child img,
+#gallery .gallery-card > div:first-child video {
+  position: relative !important;
+  z-index: 1 !important;
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  opacity: 1 !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  mix-blend-mode: normal !important;
+  transform: none !important;
+  brightness: 1 !important;
+  contrast: 1 !important;
+  saturate: 1 !important;
+}
+
+#gallery .gallery-card > div:first-child > div[class*="bg-[#22c55e]"] {
+  z-index: 20 !important;
+  opacity: 1 !important;
+  filter: none !important;
+}
+
+#gallery .gallery-card > div:first-child > button {
+  z-index: 30 !important;
+  opacity: 1 !important;
+}
+
 @media (max-width: 767px) {
   .gallery-lightbox button[aria-label="Kembali"] {
     min-width: 205px !important;
