@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import imageCompression from 'browser-image-compression';
 import { supabase } from '../supabase';
 import { broadcastDataChange } from '../utils/realtimeHelper';
 import { getSiteSetting, saveSiteSetting } from '../utils/siteSettingsHelper';
@@ -6,7 +7,7 @@ import Swal from 'sweetalert2';
 import {
   Plus, Trash2, Image as ImageIcon, Video, Upload, X, Loader2,
   CheckCircle2, ChevronLeft, ChevronRight, Edit3, Link as LinkIcon,
-  PlayCircle, Star, GripVertical
+  PlayCircle
 } from 'lucide-react';
 
 interface GalleryItem {
@@ -21,15 +22,58 @@ interface GalleryItem {
 }
 
 const ITEMS_PER_PAGE = 6;
-const IMAGE_MAX_SIZE = 5 * 1024 * 1024;
+const IMAGE_SOURCE_MAX_SIZE = 50 * 1024 * 1024;
+const IMAGE_TARGET_MAX_MB = 4.5;
+const IMAGE_HARD_MAX_BYTES = 5 * 1024 * 1024;
 const VIDEO_MAX_SIZE = 15 * 1024 * 1024;
 
 const splitMediaUrls = (value: string = '') =>
   value.split(/\s*,\s*|\r?\n/).map(v => v.trim()).filter(Boolean);
 
 const joinMediaUrls = (urls: string[]) => urls.filter(Boolean).join(', ');
-
 const isSupabaseMedia = (url: string) => url.includes('supabase.co/storage/');
+
+/**
+ * High-quality client-side photo optimization.
+ * Large photos are converted to WebP at high visual quality before upload.
+ * The original resolution is retained up to 4096px on the longest side.
+ */
+const compressGalleryImage = async (file: File): Promise<File> => {
+  if (!file.type.startsWith('image/') || file.type === 'image/gif' || file.type === 'image/svg+xml') {
+    return file;
+  }
+
+  const options = {
+    maxSizeMB: IMAGE_TARGET_MAX_MB,
+    maxWidthOrHeight: 4096,
+    useWebWorker: true,
+    initialQuality: 0.94,
+    fileType: 'image/webp' as const,
+    preserveExif: false,
+  };
+
+  let compressed = await imageCompression(file, options);
+
+  // Safety pass for unusually difficult images so the Supabase upload stays below 5MB.
+  if (compressed.size > IMAGE_HARD_MAX_BYTES) {
+    compressed = await imageCompression(file, {
+      ...options,
+      maxSizeMB: 4.0,
+      initialQuality: 0.88,
+    });
+  }
+
+  // Never replace a smaller original with a larger compressed file.
+  if (compressed.size >= file.size && file.size <= IMAGE_HARD_MAX_BYTES) {
+    return file;
+  }
+
+  const baseName = file.name.replace(/\.[^/.]+$/, '') || 'foto-gallery';
+  return new File([compressed], `${baseName}.webp`, {
+    type: 'image/webp',
+    lastModified: Date.now(),
+  });
+};
 
 export default function AdminGallery({ session }: { session?: any }) {
   const userRole = session?.user?.user_metadata?.role || (() => {
@@ -152,6 +196,7 @@ export default function AdminGallery({ session }: { session?: any }) {
       const uploaded: string[] = [];
       for (const file of files) {
         const expectedImage = formData.type === 'image';
+
         if (expectedImage && !file.type.startsWith('image/')) {
           await Swal.fire({ icon: 'warning', title: 'File bukan foto', text: `${file.name} dilewati.` });
           continue;
@@ -160,31 +205,62 @@ export default function AdminGallery({ session }: { session?: any }) {
           await Swal.fire({ icon: 'warning', title: 'File bukan video', text: `${file.name} dilewati.` });
           continue;
         }
-        const max = expectedImage ? IMAGE_MAX_SIZE : VIDEO_MAX_SIZE;
-        if (file.size > max) {
-          await Swal.fire({ icon: 'warning', title: 'Ukuran terlalu besar', text: `${file.name} melebihi batas ${expectedImage ? '5MB' : '15MB'}.` });
+
+        let uploadFile = file;
+        if (expectedImage) {
+          if (file.size > IMAGE_SOURCE_MAX_SIZE) {
+            await Swal.fire({ icon: 'warning', title: 'File terlalu besar', text: `${file.name} melebihi batas sumber 50MB.` });
+            continue;
+          }
+
+          try {
+            uploadFile = await compressGalleryImage(file);
+          } catch (compressionError: any) {
+            await Swal.fire({
+              icon: 'error',
+              title: 'Kompresi foto gagal',
+              text: compressionError?.message || `Foto ${file.name} tidak dapat diproses.`,
+            });
+            continue;
+          }
+
+          if (uploadFile.size > IMAGE_HARD_MAX_BYTES) {
+            await Swal.fire({
+              icon: 'warning',
+              title: 'Foto masih terlalu besar',
+              text: `${file.name} belum dapat dikompresi di bawah 5MB. Silakan gunakan foto dengan ukuran/resolusi lebih kecil.`,
+            });
+            continue;
+          }
+        } else if (file.size > VIDEO_MAX_SIZE) {
+          await Swal.fire({ icon: 'warning', title: 'Ukuran terlalu besar', text: `${file.name} melebihi batas 15MB.` });
           continue;
         }
-        const ext = file.name.split('.').pop()?.toLowerCase() || (expectedImage ? 'jpg' : 'mp4');
+
+        const ext = uploadFile.type === 'image/webp'
+          ? 'webp'
+          : uploadFile.name.split('.').pop()?.toLowerCase() || (expectedImage ? 'jpg' : 'mp4');
         const fileName = `${crypto.randomUUID?.() || Math.random().toString(36).slice(2)}-${Date.now()}.${ext}`;
         const path = `uploads/${fileName}`;
-        const { error } = await supabase.storage.from('gallery').upload(path, file, { upsert: false });
+        const { error } = await supabase.storage.from('gallery').upload(path, uploadFile, { upsert: false });
         if (error) throw error;
         const { data } = supabase.storage.from('gallery').getPublicUrl(path);
         if (data.publicUrl) uploaded.push(data.publicUrl);
       }
+
       if (uploaded.length) {
         if (formData.type === 'image') {
           const next = [...albumUrls, ...uploaded];
           setAlbumUrls(next);
           setPreviewIndex(Math.max(0, next.length - uploaded.length));
           setFormData(prev => ({ ...prev, url: joinMediaUrls(next), is_local: true }));
+          showToast(`${uploaded.length} foto berhasil dikompresi & diunggah dengan kualitas tinggi`);
         } else {
           setAlbumUrls(uploaded.slice(0, 1));
           setPreviewIndex(0);
           setFormData(prev => ({ ...prev, url: uploaded[0], is_local: true }));
+          showToast('Video berhasil diunggah');
         }
-        showToast(`${uploaded.length} ${formData.type === 'image' ? 'foto' : 'video'} berhasil diunggah`);
       }
     } catch (error: any) {
       await Swal.fire({ icon: 'error', title: 'Upload gagal', text: error?.message || 'Gagal mengunggah media.' });
@@ -300,7 +376,7 @@ export default function AdminGallery({ session }: { session?: any }) {
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 mb-8 md:mb-12">
           <div>
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-black italic tracking-tighter uppercase leading-none">MANAGE <span className="text-blue-600">GALLERY</span></h1>
-            <div className="flex items-center gap-3 mt-4"><span className="h-px w-8 bg-blue-600"/><p className="text-zinc-500 text-[9px] sm:text-[10px] font-black uppercase tracking-[0.25em]">Cloud Media Management v3.0</p></div>
+            <div className="flex items-center gap-3 mt-4"><span className="h-px w-8 bg-blue-600"/><p className="text-zinc-500 text-[9px] sm:text-[10px] font-black uppercase tracking-[0.25em]">Cloud Media Management v4.0</p></div>
           </div>
           {isAdmin && <button onClick={openCreate} className="w-full sm:w-auto flex items-center justify-center gap-3 bg-white text-black hover:bg-blue-600 hover:text-white px-7 py-4 rounded-2xl font-black uppercase text-[10px] transition-all"><Plus size={18}/> Tambah {activeTab === 'image' ? 'Foto / Album' : 'Video'}</button>}
         </div>
@@ -347,7 +423,7 @@ export default function AdminGallery({ session }: { session?: any }) {
                 <label className="block"><span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Keterangan</span><textarea value={formData.description} onChange={e => setFormData(p => ({...p, description:e.target.value}))} rows={4} className="mt-2 w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-sm resize-none" placeholder="Keterangan aktivitas..."/></label>
 
                 {formData.type === 'image' ? <>
-                  <div onDragOver={e => {e.preventDefault(); setDragActive(true)}} onDragLeave={() => setDragActive(false)} onDrop={handleDrop} onClick={() => fileInputRef.current?.click()} className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-colors ${dragActive ? 'border-blue-500 bg-blue-500/10' : 'border-white/10 hover:border-blue-500/60'}`}><input ref={fileInputRef} type="file" accept="image/*" multiple hidden onChange={handleFileInput}/><Upload className="mx-auto mb-3 text-blue-500" size={28}/><p className="font-black text-xs uppercase">Upload Banyak Foto Sekaligus</p><p className="text-[10px] text-zinc-500 mt-1">Klik atau drag & drop · maksimal 5MB/foto</p></div>
+                  <div onDragOver={e => {e.preventDefault(); setDragActive(true)}} onDragLeave={() => setDragActive(false)} onDrop={handleDrop} onClick={() => fileInputRef.current?.click()} className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-colors ${dragActive ? 'border-blue-500 bg-blue-500/10' : 'border-white/10 hover:border-blue-500/60'}`}><input ref={fileInputRef} type="file" accept="image/*" multiple hidden onChange={handleFileInput}/><Upload className="mx-auto mb-3 text-blue-500" size={28}/><p className="font-black text-xs uppercase">Upload Banyak Foto Sekaligus</p><p className="text-[10px] text-zinc-500 mt-1">Otomatis dikompresi · kualitas tinggi · maksimal 50MB/foto sumber</p></div>
                   <div className="rounded-2xl bg-black/20 border border-white/5 p-4"><div className="flex items-center justify-between mb-3"><span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Foto Album</span><span className="text-[9px] font-black text-blue-400">{albumUrls.length} FOTO</span></div>{albumUrls.length ? <div className="grid grid-cols-3 gap-2">{albumUrls.map((url, i) => <div key={`${url}-${i}`} className={`relative aspect-square rounded-xl overflow-hidden border ${i === 0 ? 'border-blue-500' : 'border-white/10'}`}><img src={url} alt={`Foto ${i+1}`} className="w-full h-full object-cover"/><div className="absolute top-1 left-1 px-1.5 py-1 rounded-md bg-black/70 text-[8px] font-black">{i === 0 ? 'UTAMA' : i + 1}</div><div className="absolute bottom-1 left-1 right-1 flex gap-1"><button type="button" onClick={e => {e.stopPropagation(); makeCover(i)}} className="flex-1 bg-blue-600/90 rounded-md py-1 text-[7px] font-black">{i === 0 ? 'UTAMA' : 'JADIKAN UTAMA'}</button><button type="button" onClick={e => {e.stopPropagation(); removeAlbumPhoto(i)}} className="bg-red-600/90 rounded-md px-2 py-1"><Trash2 size={10}/></button></div></div>)}</div> : <p className="text-center py-6 text-zinc-600 text-[10px] font-black uppercase">Belum ada foto</p>}</div>
                 </> : <>
                   <div className="flex gap-2 bg-black/20 p-1 rounded-xl"><button type="button" onClick={() => setVideoInputMethod('file')} className={`flex-1 py-3 rounded-lg text-[9px] font-black uppercase ${videoInputMethod === 'file' ? 'bg-blue-600' : 'text-zinc-500'}`}>Upload Video</button><button type="button" onClick={() => setVideoInputMethod('link')} className={`flex-1 py-3 rounded-lg text-[9px] font-black uppercase ${videoInputMethod === 'link' ? 'bg-blue-600' : 'text-zinc-500'}`}>Link YouTube</button></div>
