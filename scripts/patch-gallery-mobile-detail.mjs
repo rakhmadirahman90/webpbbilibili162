@@ -2,6 +2,7 @@ import fs from 'node:fs';
 
 const file = 'src/components/Gallery.tsx';
 let source = fs.readFileSync(file, 'utf8');
+const original = source;
 
 const replacements = [
   [
@@ -18,7 +19,7 @@ const replacements = [
   ],
   [
     'w-full bg-[#030712] relative h-[38vh] sm:h-[48vh] md:h-[58vh] lg:h-[65vh] overflow-hidden flex items-center justify-center border-b border-slate-900/40',
-    'w-full bg-[#030712] relative h-[40dvh] sm:h-[48dvh] md:h-[58vh] lg:h-[65vh] overflow-hidden flex items-center justify-center border-b border-slate-900/40 shrink-0'
+    'w-full bg-[#030712] relative h-[40dvh] sm:h-[48dvh] md:h-[58dvh] lg:h-[65dvh] overflow-hidden flex items-center justify-center border-b border-slate-900/40 shrink-0'
   ],
   [
     'max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 sm:mt-8',
@@ -62,19 +63,9 @@ for (const [from, to] of replacements) {
   }
 }
 
-// Mobile-only safety CSS: keep the detail view inside the physical viewport and prevent horizontal overflow.
-const marker = '<style data-gallery-mobile-detail="true">';
-if (!source.includes(marker)) {
-  source = source.replace(
-    '\n  return (\n    <section id="gallery"',
-    `\n  return (\n    <style data-gallery-mobile-detail="true">{\`\n      @media (max-width: 639px) {\n        .gallery-lightbox, .gallery-lightbox * { max-width: 100vw; }\n        .gallery-lightbox { width: 100vw; height: 100dvh; overflow: hidden; }\n        .gallery-lightbox img, .gallery-lightbox video, .gallery-lightbox iframe { max-width: 100%; }\n      }\n    \`}</style>\n    <section id="gallery"`
-  );
-  changed++;
-}
-
-if (changed > 0) {
+if (source !== original) {
   fs.writeFileSync(file, source);
   console.log(`[patch-gallery-mobile-detail] applied ${changed} layout changes`);
 } else {
-  console.log('[patch-gallery-mobile-detail] no changes needed');
+  console.log('[patch-gallery-mobile-detail] already patched; no changes needed');
 }
