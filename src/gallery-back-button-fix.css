@@ -1,83 +1,89 @@
-/* Final hard override for Gallery detail navigation. */
-#gallery .gallery-lightbox > div:first-child > button[aria-label="Kembali"],
-#gallery .gallery-lightbox > div:first-child > button:first-child {
+/* FINAL GALLERY BACK BUTTON FIX */
+.gallery-lightbox button[aria-label="Kembali"] {
   display: inline-flex !important;
   visibility: visible !important;
   opacity: 1 !important;
   align-items: center !important;
   justify-content: center !important;
+  flex: 0 0 auto !important;
+  width: auto !important;
+  min-width: 235px !important;
+  min-height: 46px !important;
+  height: auto !important;
+  padding: 9px 16px !important;
+  margin: 0 !important;
   gap: 8px !important;
-  min-width: max-content !important;
-  min-height: 44px !important;
-  padding: 8px 12px !important;
-  color: #e2e8f0 !important;
-  white-space: nowrap !important;
-  overflow: visible !important;
   position: relative !important;
-  z-index: 999999 !important;
-  touch-action: manipulation !important;
+  z-index: 9999999 !important;
+  overflow: visible !important;
+  white-space: nowrap !important;
+  color: #ffffff !important;
+  background: rgba(30, 41, 59, 0.96) !important;
+  border: 1px solid rgba(255,255,255,.22) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 4px 14px rgba(0,0,0,.28) !important;
+  cursor: pointer !important;
 }
 
-#gallery .gallery-lightbox > div:first-child > button[aria-label="Kembali"] > span,
-#gallery .gallery-lightbox > div:first-child > button:first-child > span {
+.gallery-lightbox button[aria-label="Kembali"] svg {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  width: 21px !important;
+  height: 21px !important;
+  min-width: 21px !important;
+  min-height: 21px !important;
+  flex: 0 0 21px !important;
+  color: #ffffff !important;
+}
+
+.gallery-lightbox button[aria-label="Kembali"] span,
+.gallery-lightbox button[aria-label="Kembali"] span.hidden {
   display: inline-block !important;
   visibility: visible !important;
   opacity: 1 !important;
   width: auto !important;
   max-width: none !important;
+  min-width: 0 !important;
   height: auto !important;
   max-height: none !important;
   overflow: visible !important;
+  position: static !important;
   margin: 0 !important;
   padding: 0 !important;
+  color: #ffffff !important;
   font-size: 12px !important;
   line-height: 1.2 !important;
-  font-weight: 800 !important;
-  letter-spacing: .02em !important;
-  color: inherit !important;
+  font-weight: 900 !important;
+  letter-spacing: .025em !important;
+  white-space: nowrap !important;
 }
 
-/* The JSX span contains the word Kembali; append the destination explicitly. */
-#gallery .gallery-lightbox > div:first-child > button[aria-label="Kembali"] > span::after,
-#gallery .gallery-lightbox > div:first-child > button:first-child > span::after {
+.gallery-lightbox button[aria-label="Kembali"] span::after {
   content: " ke Daftar Foto" !important;
   display: inline !important;
-  font: inherit !important;
-  color: inherit !important;
-}
-
-#gallery .gallery-lightbox > div:first-child > button[aria-label="Kembali"]::after,
-#gallery .gallery-lightbox > div:first-child > button:first-child::after {
-  content: none !important;
-}
-
-#gallery .gallery-lightbox > div:first-child > button[aria-label="Kembali"] > svg,
-#gallery .gallery-lightbox > div:first-child > button:first-child > svg {
-  display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
-  width: 20px !important;
-  height: 20px !important;
-  flex: 0 0 auto !important;
+  color: inherit !important;
+  font: inherit !important;
+  white-space: nowrap !important;
+}
+
+.gallery-lightbox button[aria-label="Kembali"]:hover {
+  background: #1e293b !important;
+  color: #ffffff !important;
 }
 
 @media (max-width: 767px) {
-  #gallery .gallery-lightbox > div:first-child > button[aria-label="Kembali"],
-  #gallery .gallery-lightbox > div:first-child > button:first-child {
+  .gallery-lightbox button[aria-label="Kembali"] {
+    min-width: 205px !important;
     min-height: 44px !important;
-    padding: 8px 10px !important;
+    padding: 8px 12px !important;
     gap: 7px !important;
   }
 
-  #gallery .gallery-lightbox > div:first-child > button[aria-label="Kembali"] > span,
-  #gallery .gallery-lightbox > div:first-child > button:first-child > span {
+  .gallery-lightbox button[aria-label="Kembali"] span,
+  .gallery-lightbox button[aria-label="Kembali"] span.hidden {
     font-size: 11px !important;
-  }
-}
-
-@media (min-width: 768px) {
-  #gallery .gallery-lightbox > div:first-child > button[aria-label="Kembali"] > span,
-  #gallery .gallery-lightbox > div:first-child > button:first-child > span {
-    font-size: 12px !important;
   }
 }
