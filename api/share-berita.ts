@@ -30,20 +30,30 @@ export default async function handler(req: any, res: any) {
   if (!id) return res.status(400).send('Berita tidak ditemukan');
 
   try {
-    const endpoint = `${SUPABASE_URL}/rest/v1/berita?id=eq.${encodeURIComponent(id)}&select=id,judul,ringkasan,konten,kategori,gambar_url,tanggal,penulis`;
+    // Keep the crawler query deliberately minimal. The previous version selected
+    // optional columns and Supabase returned HTTP 400, causing WhatsApp to get
+    // a 500 page with no OG image at all.
+    const endpoint = `${SUPABASE_URL}/rest/v1/berita?id=eq.${encodeURIComponent(id)}&select=id,judul,gambar_url,tanggal`;
     const response = await fetch(endpoint, {
-      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        Accept: 'application/json',
+      },
     });
-    if (!response.ok) throw new Error(`Supabase returned ${response.status}`);
+    if (!response.ok) {
+      const detail = await response.text().catch(() => '');
+      throw new Error(`Supabase returned ${response.status}${detail ? `: ${detail.slice(0, 300)}` : ''}`);
+    }
 
     const rows = await response.json();
     const news = Array.isArray(rows) ? rows[0] : null;
     if (!news) return res.status(404).send('Berita tidak ditemukan');
 
     const title = String(news.judul || 'Berita PB Bilibili 162').trim();
-    const description = String(news.ringkasan || news.konten || '').replace(/\s+/g, ' ').trim().slice(0, 200);
     const image = normalizeImageUrl(news.gambar_url);
-    const canonical = `${PUBLIC_DOMAIN}/?newsId=${encodeURIComponent(news.id)}`;
+    const canonical = `${PUBLIC_DOMAIN}/berita?newsId=${encodeURIComponent(news.id)}`;
+    const description = `Berita PB Bilibili 162 — ${title}`.slice(0, 200);
     const pageTitle = `${title} - PB Bilibili 162`;
     const crawler = isCrawler(String(req.headers?.['user-agent'] || ''));
 
@@ -51,12 +61,15 @@ export default async function handler(req: any, res: any) {
       <meta property="og:image" content="${escapeHtml(image)}" />
       <meta property="og:image:secure_url" content="${escapeHtml(image)}" />
       <meta property="og:image:type" content="image/jpeg" />
+      <meta property="og:image:width" content="1200" />
+      <meta property="og:image:height" content="630" />
       <meta property="og:image:alt" content="${escapeHtml(title)}" />
       <meta name="twitter:image" content="${escapeHtml(image)}" />
     ` : '';
 
-    // Do not redirect crawler requests. WhatsApp must receive and retain the
-    // article-specific OG metadata and primary photo from this response.
+    // Human browsers are redirected to the normal React article view.
+    // Crawlers (including WhatsApp) stay on this server-rendered response so
+    // they can read article-specific OG metadata and the primary photo.
     const redirectScript = crawler ? '' : `<script>window.location.replace(${JSON.stringify(canonical)});</script>`;
     const redirectMeta = crawler ? '' : `<meta http-equiv="refresh" content="0;url=${escapeHtml(canonical)}" />`;
 
@@ -89,7 +102,7 @@ export default async function handler(req: any, res: any) {
 </html>`;
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('Cache-Control', crawler ? 'public, s-maxage=60, stale-while-revalidate=300' : 'no-store');
+    res.setHeader('Cache-Control', crawler ? 'public, max-age=0, s-maxage=60, stale-while-revalidate=300' : 'no-store');
     return res.status(200).send(html);
   } catch (error) {
     console.error('[share-berita]', error);
