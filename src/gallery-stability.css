@@ -28,12 +28,15 @@ body.gallery-route #gallery * {
   transition: none !important;
 }
 
+/* Override both Gallery internals and the Framer Motion route wrapper above
+   Gallery. This also works when Gallery is opened from the home path rather
+   than /galeri, because the selector detects the rendered #gallery node. */
+body:has(#gallery) [style*="opacity"],
+body:has(#gallery) [style*="transform"],
+body:has(#gallery) [style*="filter"],
 #gallery [style*="opacity"],
 #gallery [style*="transform"],
-#gallery [style*="filter"],
-body.gallery-route:has(#gallery) [style*="opacity"],
-body.gallery-route:has(#gallery) [style*="transform"],
-body.gallery-route:has(#gallery) [style*="filter"] {
+#gallery [style*="filter"] {
   opacity: 1 !important;
   transform: none !important;
   filter: none !important;
