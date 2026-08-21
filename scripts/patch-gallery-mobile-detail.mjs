@@ -1,6 +1,11 @@
 import fs from 'node:fs';
 
 const file = 'src/components/Gallery.tsx';
+if (!fs.existsSync(file)) {
+  console.log('[patch-gallery-mobile-detail] Gallery.tsx not found; skipping.');
+  process.exit(0);
+}
+
 let source = fs.readFileSync(file, 'utf8');
 const original = source;
 
@@ -19,7 +24,7 @@ const replacements = [
   ],
   [
     'w-full flex-grow bg-white pb-20',
-    'w-full flex-1 min-h-0 bg-white overflow-hidden flex flex-col'
+    'w-full flex-1 min-h-0 bg-white overflow-y-auto overscroll-contain flex flex-col'
   ],
   [
     'w-full bg-[#030712] relative h-[38vh] sm:h-[48vh] md:h-[58vh] lg:h-[65vh] overflow-hidden flex items-center justify-center border-b border-slate-900/40',
@@ -73,6 +78,16 @@ for (const [from, to] of replacements) {
     source = source.replace(from, to);
     changed++;
   }
+}
+
+// If a previous deployment already applied the fullscreen layout, explicitly
+// keep the detail content scrollable so the complete photo album can reach the
+// last photo on mobile and desktop.
+const oldScrollableWrapper = 'w-full flex-1 min-h-0 bg-white overflow-hidden flex flex-col';
+const newScrollableWrapper = 'w-full flex-1 min-h-0 bg-white overflow-y-auto overscroll-contain flex flex-col';
+if (source.includes(oldScrollableWrapper)) {
+  source = source.replace(oldScrollableWrapper, newScrollableWrapper);
+  changed++;
 }
 
 // Lock the page behind the fullscreen gallery detail on mobile and desktop.
