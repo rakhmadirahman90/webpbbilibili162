@@ -1,0 +1,43 @@
+/* Mobile news/prestasi page: let the document grow with the cards.
+   The global shell uses viewport-height flex containers for other screens;
+   those containers must not clip the public news feed. */
+@media (max-width: 767px) {
+  #root:has(.public-news-modern) {
+    min-height: 100dvh !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  /* Release any viewport-height/overflow constraint from the shell ancestor
+     that contains the news page. */
+  #root *:has(.public-news-modern) {
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow-y: visible !important;
+  }
+
+  .public-news-modern {
+    height: auto !important;
+    max-height: none !important;
+    min-height: fit-content !important;
+    overflow: visible !important;
+    padding-bottom: 0 !important;
+  }
+
+  /* Footer is normal document flow on news/prestasi pages, never a layer
+     above an overflowing article card. */
+  #root:has(.public-news-modern) #footer-section {
+    position: relative !important;
+    inset: auto !important;
+    z-index: 1 !important;
+    flex: 0 0 auto !important;
+    margin-top: 0 !important;
+    clear: both !important;
+  }
+
+  #root:has(.public-news-modern) #footer-section + * {
+    margin-top: 0 !important;
+  }
+}
