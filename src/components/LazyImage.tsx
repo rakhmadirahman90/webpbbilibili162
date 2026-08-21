@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
 import { getOptimizedImageUrl } from '../utils/imageOptimizer';
 
 interface LazyImageProps {
@@ -13,6 +12,13 @@ interface LazyImageProps {
   onError?: (e: any) => void;
 }
 
+/**
+ * Stable lazy image.
+ *
+ * Important: this component intentionally does not animate the placeholder,
+ * opacity, blur or transform. Gallery images must appear at a fixed geometry
+ * without a shimmer/fade that can be perceived as screen flicker on mobile.
+ */
 export default function LazyImage({
   src,
   alt,
@@ -27,7 +33,6 @@ export default function LazyImage({
   const [isLoaded, setIsLoaded] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Extract first URL if multiple space/comma-separated URLs are passed in src
   const primarySrc = (src || '').trim().split(/[\s,]+/)[0] || '';
   const [currentSrc, setCurrentSrc] = useState(() => getOptimizedImageUrl(primarySrc, width, quality));
 
@@ -39,11 +44,10 @@ export default function LazyImage({
 
   const handleImgError = (e: any) => {
     if (currentSrc !== primarySrc && primarySrc) {
-      // Fallback to direct raw primarySrc if proxy/optimized URL fails
       setCurrentSrc(primarySrc);
     } else {
-      setIsLoaded(true); // Stop loading shimmer if image fails completely
-      if (onError) onError(e);
+      setIsLoaded(true);
+      onError?.(e);
     }
   };
 
@@ -60,18 +64,11 @@ export default function LazyImage({
           observer.disconnect();
         }
       },
-      {
-        rootMargin: '200px 0px', // Load 200px before the image enters viewport
-      }
+      { rootMargin: '200px 0px' }
     );
 
-    if (containerRef.current) {
-      observer.observe(containerRef.current);
-    }
-
-    return () => {
-      observer.disconnect();
-    };
+    if (containerRef.current) observer.observe(containerRef.current);
+    return () => observer.disconnect();
   }, []);
 
   return (
@@ -80,14 +77,16 @@ export default function LazyImage({
       className={`relative overflow-hidden bg-[#12141c]/40 ${containerClassName}`}
       onClick={onClick}
     >
-      {/* Blur-up placeholder background gradient with shimmer effect */}
+      {/* Static placeholder only: no pulse, shimmer, blur or opacity animation. */}
       {!isLoaded && (
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950/20 animate-pulse flex items-center justify-center" />
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950/20"
+        />
       )}
 
-      {/* Actual image loaded dynamically when in view */}
       {isInView && (
-        <motion.img
+        <img
           src={currentSrc}
           alt={alt}
           referrerPolicy="no-referrer"
@@ -95,14 +94,7 @@ export default function LazyImage({
           decoding="async"
           onLoad={() => setIsLoaded(true)}
           onError={handleImgError}
-          initial={{ filter: 'blur(20px)', opacity: 0 }}
-          animate={
-            isLoaded
-              ? { filter: 'blur(0px)', opacity: 1 }
-              : { filter: 'blur(20px)', opacity: 0 }
-          }
-          transition={{ duration: 0.5, ease: 'easeOut' }}
-          className={`${className} ${isLoaded ? '' : 'pointer-events-none'}`}
+          className={`${className} block opacity-100 blur-0 transform-none`}
         />
       )}
     </div>

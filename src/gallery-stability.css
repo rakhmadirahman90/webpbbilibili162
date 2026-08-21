@@ -1,44 +1,42 @@
 /* -------------------------------------------------------------------------
-   GALLERY STABILITY
-   Gallery is a content view, not an animated route surface. The previous
-   route/card fades could produce a white flash on mobile when /galeri opens.
+   GALLERY STABILITY / NO-FLICKER MODE
+   The gallery must render as a stable surface. Image placeholders, Framer
+   Motion route transitions, lazy-image blur/fade effects and floating controls
+   must never flash or move the page while the gallery is visible.
    ------------------------------------------------------------------------- */
 
-body.gallery-route {
+body.gallery-route,
+body:has(#gallery) {
   overflow-x: hidden;
 }
 
-/* Gallery is intentionally rendered as a stable first frame. */
-body.gallery-route #gallery,
-body.gallery-route #gallery * {
-  animation: none !important;
-  transition: none !important;
-}
-
+#gallery,
 body.gallery-route #gallery {
   opacity: 1 !important;
   visibility: visible !important;
   transform: none !important;
   filter: none !important;
+  animation: none !important;
+  transition: none !important;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
 }
 
-body.gallery-route #gallery > * {
-  opacity: 1 !important;
-  transform: none !important;
-  filter: none !important;
+#gallery *,
+body.gallery-route #gallery * {
+  animation: none !important;
+  transition: none !important;
 }
 
-/*
-   The Framer Motion route wrapper is ABOVE #gallery and writes inline
-   opacity/transform styles. Force those route/card styles off only while the
-   Gallery DOM exists. This is the missing layer that can still flash after a
-   hard mobile refresh or when switching FOTO/VIDEO.
-*/
-body.gallery-route:has(#gallery) [style*="opacity"],
-body.gallery-route:has(#gallery) [style*="transform"],
-body.gallery-route:has(#gallery) [style*="filter"] {
+/* Override both Gallery internals and the Framer Motion route wrapper above
+   Gallery. This also works when Gallery is opened from the home path rather
+   than /galeri, because the selector detects the rendered #gallery node. */
+body:has(#gallery) [style*="opacity"],
+body:has(#gallery) [style*="transform"],
+body:has(#gallery) [style*="filter"],
+#gallery [style*="opacity"],
+#gallery [style*="transform"],
+#gallery [style*="filter"] {
   opacity: 1 !important;
   transform: none !important;
   filter: none !important;
@@ -46,16 +44,38 @@ body.gallery-route:has(#gallery) [style*="filter"] {
   transition: none !important;
 }
 
-/* Prevent media paint/decoding transitions from adding another flash. */
+/* LazyImage's former shimmer is disabled so the placeholder never pulses. */
+#gallery .animate-pulse,
+body.gallery-route .animate-pulse {
+  animation: none !important;
+}
+
+#gallery img,
+#gallery video,
+#gallery iframe,
 body.gallery-route img,
 body.gallery-route video,
 body.gallery-route iframe {
   animation: none !important;
+  transition: none !important;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
 }
 
-/* Lightbox opens immediately; its content remains fully usable. */
+/* Reserve media dimensions during decoding to prevent layout shifts. */
+#gallery [class*="aspect-"] {
+  contain: layout paint style;
+}
+
+/* Keep floating controls static while the gallery is visible. They remain
+   functional; only their spring/fade animation is removed. */
+body:has(#gallery) [class*="fixed"] {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* Lightbox also opens as one stable frame. */
+#gallery .fixed.inset-0.z-\\[110000\\],
 body.gallery-route .fixed.inset-0.z-\\[110000\\] {
   opacity: 1 !important;
   transform: none !important;
@@ -64,16 +84,20 @@ body.gallery-route .fixed.inset-0.z-\\[110000\\] {
 }
 
 @media (max-width: 767px) {
+  #gallery,
   body.gallery-route #gallery {
     padding-bottom: max(7rem, calc(5rem + env(safe-area-inset-bottom))) !important;
   }
 
-  body.gallery-route #gallery .grid {
+  #gallery .grid {
     overflow: visible;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  #gallery *,
+  #gallery *::before,
+  #gallery *::after,
   body.gallery-route *,
   body.gallery-route *::before,
   body.gallery-route *::after {
