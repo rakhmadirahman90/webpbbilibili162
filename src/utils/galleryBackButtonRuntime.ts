@@ -3,6 +3,7 @@
 // navbar/sidebar layout, overflow containers, and responsive utility classes.
 if (typeof window !== 'undefined') {
   const BUTTON_ID = 'gallery-back-runtime-fixed';
+  const SHARE_BUTTON_ID = 'gallery-whatsapp-share-runtime';
 
   const installGalleryBackButton = () => {
     const lightbox = document.querySelector<HTMLElement>('.gallery-lightbox');
@@ -40,8 +41,6 @@ if (typeof window !== 'undefined') {
 
     const mobile = window.innerWidth < 768;
 
-    // Modern compact icon control: visually light, touch-friendly, and
-    // positioned below the navbar so it never covers the site logo/sidebar.
     button.style.setProperty('display', 'flex', 'important');
     button.style.setProperty('position', 'fixed', 'important');
     button.style.setProperty('top', mobile ? '78px' : '82px', 'important');
@@ -58,7 +57,6 @@ if (typeof window !== 'undefined') {
     button.style.setProperty('padding', '0', 'important');
     button.style.setProperty('margin', '0', 'important');
     button.style.setProperty('box-sizing', 'border-box', 'important');
-    button.style.setProperty('display', 'flex', 'important');
     button.style.setProperty('align-items', 'center', 'important');
     button.style.setProperty('justify-content', 'center', 'important');
     button.style.setProperty('font-family', 'inherit', 'important');
@@ -88,45 +86,78 @@ if (typeof window !== 'undefined') {
       svg.style.strokeLinejoin = 'round';
       svg.style.pointerEvents = 'none';
     }
-
-    const styleId = 'gallery-back-runtime-style';
-    if (!document.getElementById(styleId)) {
-      const style = document.createElement('style');
-      style.id = styleId;
-      style.textContent = `
-        #${BUTTON_ID}:hover {
-          background: rgba(37, 99, 235, 0.96) !important;
-          border-color: rgba(147, 197, 253, 0.7) !important;
-          box-shadow: 0 10px 28px rgba(37, 99, 235, 0.28), inset 0 1px 0 rgba(255,255,255,0.14) !important;
-          transform: translateY(-1px) !important;
-        }
-        #${BUTTON_ID}:active {
-          transform: scale(0.94) !important;
-        }
-        #${BUTTON_ID}:focus-visible {
-          box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.38), 0 8px 24px rgba(0,0,0,0.28) !important;
-        }
-        #${BUTTON_ID} .sr-only {
-          position: absolute !important;
-          width: 1px !important;
-          height: 1px !important;
-          padding: 0 !important;
-          margin: -1px !important;
-          overflow: hidden !important;
-          clip: rect(0, 0, 0, 0) !important;
-          white-space: nowrap !important;
-          border: 0 !important;
-        }
-        @media (prefers-reduced-motion: reduce) {
-          #${BUTTON_ID} { transition: none !important; }
-        }
-      `;
-      document.head.appendChild(style);
-    }
   };
 
-  const observer = new MutationObserver(installGalleryBackButton);
+  const getGalleryShareUrl = () => {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('gallery') || params.get('galleryId') || params.get('photoId') || '';
+    if (!id) return '';
+    return `${window.location.origin}/api/share-galeri?id=${encodeURIComponent(id)}`;
+  };
+
+  const installGalleryWhatsAppShare = () => {
+    const shareUrl = getGalleryShareUrl();
+    const candidates = Array.from(document.querySelectorAll<HTMLElement>('button, a, [role="button"]'));
+    const target = candidates.find((element) => {
+      if (element.id === SHARE_BUTTON_ID) return true;
+      if (element.closest(`#${SHARE_BUTTON_ID}`)) return false;
+      const text = (element.textContent || '').replace(/\s+/g, ' ').trim().toLowerCase();
+      return text === 'salin link' || text.includes('salin link');
+    });
+
+    if (!target || !shareUrl) return;
+    if (target.id === SHARE_BUTTON_ID) return;
+
+    const button = target.cloneNode(true) as HTMLElement;
+    button.id = SHARE_BUTTON_ID;
+    button.setAttribute('aria-label', 'Bagikan ke WhatsApp');
+    button.setAttribute('title', 'Bagikan ke WhatsApp');
+    button.setAttribute('data-gallery-whatsapp-share', 'true');
+    button.innerHTML = `
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" style="width:18px;height:18px;flex:none">
+        <path d="M20 11.5a8 8 0 0 1-11.8 7L4 20l1.5-4A8 8 0 1 1 20 11.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M9 8.5c.2-.5.5-.5.8-.1l.8 1c.2.3.2.5 0 .8l-.5.5c.5 1 1.3 1.8 2.3 2.3l.5-.5c.3-.2.5-.2.8 0l1 .8c.4.3.4.6-.1.8-.5.2-1 .2-1.5 0-1.8-.7-3.3-2.2-4-4-.2-.5-.2-1 0-1.5Z" fill="currentColor" stroke="none"/>
+      </svg>
+      <span>Bagikan ke WhatsApp</span>
+    `;
+
+    button.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get('gallery') || params.get('galleryId') || params.get('photoId') || '';
+      const currentShareUrl = id ? `${window.location.origin}/api/share-galeri?id=${encodeURIComponent(id)}` : shareUrl;
+      const title = document.querySelector('h1')?.textContent?.replace(/\s+/g, ' ').trim() || 'Dokumentasi PB Bilibili 162';
+      const text = `Lihat dokumentasi "${title}" dari PB Bilibili 162:`;
+      const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(`${text}\n${currentShareUrl}`)}`;
+      window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+    });
+
+    target.replaceWith(button);
+  };
+
+  const styleId = 'gallery-runtime-modern-share-style';
+  if (!document.getElementById(styleId)) {
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.textContent = `
+      #${SHARE_BUTTON_ID} { gap: 8px !important; transition: transform 160ms ease, box-shadow 160ms ease, background-color 160ms ease !important; }
+      #${SHARE_BUTTON_ID}:hover { transform: translateY(-1px); }
+      #${SHARE_BUTTON_ID}:active { transform: scale(.98); }
+      #${SHARE_BUTTON_ID}:focus-visible { outline: 3px solid rgba(37,99,235,.25) !important; outline-offset: 2px !important; }
+      #${SHARE_BUTTON_ID} svg { display:block; }
+    `;
+    document.head.appendChild(style);
+  }
+
+  const observer = new MutationObserver(() => {
+    installGalleryBackButton();
+    installGalleryWhatsAppShare();
+  });
   observer.observe(document.documentElement, { childList: true, subtree: true });
   window.addEventListener('resize', installGalleryBackButton, { passive: true });
-  window.setTimeout(installGalleryBackButton, 0);
+  window.setTimeout(() => {
+    installGalleryBackButton();
+    installGalleryWhatsAppShare();
+  }, 0);
 }
