@@ -9,10 +9,10 @@ if (!fs.existsSync(file)) {
 
 let source = fs.readFileSync(file, 'utf8');
 
-// Replace the complete lightbox thumbnail strip. The match intentionally
-// spans nested divs so harmless layout changes from earlier patches do not
-// prevent the replacement.
-const pattern = /\n\s*\{activeMedia\.type === 'image' && count > 1 && \([\s\S]*?<div className=\"max-w-5xl mx-auto px-5 sm:px-8 py-6 sm:py-8\">/;
+// Match only the lightbox thumbnail conditional. Do not depend on the
+// description block being below it because the mobile-detail patch moves
+// that block above the main photo area.
+const pattern = /\n\s*\{activeMedia\.type === 'image' && count > 1 && \([\s\S]*?\n\s*\)\}\n/;
 
 const replacement = `
 
@@ -48,8 +48,7 @@ const replacement = `
                     </div>
                   </div>
                 )}
-
-                <div className="max-w-5xl mx-auto px-5 sm:px-8 py-6 sm:py-8">`;
+`;
 
 if (!pattern.test(source)) {
   console.log('[patch-gallery-lightbox-grid] Target thumbnail strip not found; no change needed.');
