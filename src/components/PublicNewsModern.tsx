@@ -96,7 +96,10 @@ export default function PublicNewsModern({ initialCategory = 'ALL ARTICLES' }: P
   const isPrestasi = forcedCategory === 'PRESTASI';
 
   return (
-    <main id={isPrestasi ? 'prestasi-news-section' : 'berita-section'} className="public-news-modern min-h-screen bg-slate-50 text-slate-900">
+    <main
+      id={isPrestasi ? 'prestasi-news-section' : 'berita-section'}
+      className="public-news-modern w-full min-h-0 overflow-visible bg-slate-50 text-slate-900"
+    >
       <div className="relative overflow-hidden bg-[#07101f]">
         <div className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-blue-500/20 blur-3xl" />
         <div className="absolute -left-24 bottom-0 h-56 w-56 rounded-full bg-emerald-400/10 blur-3xl" />
@@ -118,7 +121,7 @@ export default function PublicNewsModern({ initialCategory = 'ALL ARTICLES' }: P
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 sm:py-7 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 pb-10 pt-5 sm:px-6 sm:pb-14 sm:pt-7 lg:px-8">
         <section className="sticky top-2 z-30 rounded-2xl border border-slate-200 bg-white/95 p-3 shadow-lg shadow-slate-200/50 backdrop-blur-xl sm:p-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
             <div className="relative flex-1">
