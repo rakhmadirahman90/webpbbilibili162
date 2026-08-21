@@ -19,32 +19,22 @@ function normalizeImageUrl(raw: string): string {
   return `${PUBLIC_DOMAIN}${first.startsWith('/') ? '' : '/'}${first}`;
 }
 
-function formatDate(dateStr?: string): string {
-  if (!dateStr) return '';
-  const d = new Date(dateStr);
-  if (Number.isNaN(d.getTime())) return dateStr;
-  return new Intl.DateTimeFormat('id-ID', {
-    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-    hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Makassar'
-  }).format(d).replace(' pukul ', ' | ') + ' WITA';
-}
-
 export default async function handler(req: any, res: any) {
   if (req.method !== 'GET') return res.status(405).send('Method Not Allowed');
 
-  const id = String(req.query?.id || '').trim();
+  // Accept both the dedicated share URL (?id=...) and the existing public
+  // article URL (?newsId=...). This lets the existing React share buttons work
+  // without changing the news component again.
+  const id = String(req.query?.id || req.query?.newsId || '').trim();
   if (!id) return res.status(400).send('Berita tidak ditemukan');
 
   try {
     const endpoint = `${SUPABASE_URL}/rest/v1/berita?id=eq.${encodeURIComponent(id)}&select=id,judul,ringkasan,konten,kategori,gambar_url,tanggal,penulis`;
     const response = await fetch(endpoint, {
-      headers: {
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`,
-      },
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
     });
-
     if (!response.ok) throw new Error(`Supabase returned ${response.status}`);
+
     const rows = await response.json();
     const news = Array.isArray(rows) ? rows[0] : null;
     if (!news) return res.status(404).send('Berita tidak ditemukan');
@@ -52,11 +42,11 @@ export default async function handler(req: any, res: any) {
     const title = String(news.judul || 'Berita PB Bilibili 162').trim();
     const description = String(news.ringkasan || news.konten || '').replace(/\s+/g, ' ').trim().slice(0, 200);
     const image = normalizeImageUrl(news.gambar_url);
-    const canonical = `${PUBLIC_DOMAIN}/berita?newsId=${encodeURIComponent(news.id)}`;
+    // After the preview is read, open the normal SPA entry point. This avoids
+    // a rewrite loop while still giving crawlers server-rendered OG metadata.
+    const canonical = `${PUBLIC_DOMAIN}/?newsId=${encodeURIComponent(news.id)}`;
     const pageTitle = `${title} - PB Bilibili 162`;
 
-    // IMPORTANT: this is a server-rendered share surface. WhatsApp/Facebook/etc.
-    // read these OG tags directly; the React SPA cannot change OG tags for crawlers.
     const imageTags = image ? `
       <meta property="og:image" content="${escapeHtml(image)}" />
       <meta property="og:image:secure_url" content="${escapeHtml(image)}" />
