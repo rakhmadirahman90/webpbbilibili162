@@ -7,7 +7,7 @@ function escapeHtml(value: unknown): string {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
+    .replace(/\"/g, '&quot;')
     .replace(/'/g, '&#039;');
 }
 
@@ -19,12 +19,13 @@ function normalizeImageUrl(raw: string): string {
   return `${PUBLIC_DOMAIN}${first.startsWith('/') ? '' : '/'}${first}`;
 }
 
+function isCrawler(userAgent: string): boolean {
+  return /WhatsApp|facebookexternalhit|Facebot|Twitterbot|LinkedInBot|TelegramBot|Slackbot|Discordbot|Googlebot|bingbot/i.test(userAgent);
+}
+
 export default async function handler(req: any, res: any) {
   if (req.method !== 'GET') return res.status(405).send('Method Not Allowed');
 
-  // Accept both the dedicated share URL (?id=...) and the existing public
-  // article URL (?newsId=...). This lets the existing React share buttons work
-  // without changing the news component again.
   const id = String(req.query?.id || req.query?.newsId || '').trim();
   if (!id) return res.status(400).send('Berita tidak ditemukan');
 
@@ -42,10 +43,9 @@ export default async function handler(req: any, res: any) {
     const title = String(news.judul || 'Berita PB Bilibili 162').trim();
     const description = String(news.ringkasan || news.konten || '').replace(/\s+/g, ' ').trim().slice(0, 200);
     const image = normalizeImageUrl(news.gambar_url);
-    // After the preview is read, open the normal SPA entry point. This avoids
-    // a rewrite loop while still giving crawlers server-rendered OG metadata.
     const canonical = `${PUBLIC_DOMAIN}/?newsId=${encodeURIComponent(news.id)}`;
     const pageTitle = `${title} - PB Bilibili 162`;
+    const crawler = isCrawler(String(req.headers?.['user-agent'] || ''));
 
     const imageTags = image ? `
       <meta property="og:image" content="${escapeHtml(image)}" />
@@ -54,6 +54,11 @@ export default async function handler(req: any, res: any) {
       <meta property="og:image:alt" content="${escapeHtml(title)}" />
       <meta name="twitter:image" content="${escapeHtml(image)}" />
     ` : '';
+
+    // Do not redirect crawler requests. WhatsApp must receive and retain the
+    // article-specific OG metadata and primary photo from this response.
+    const redirectScript = crawler ? '' : `<script>window.location.replace(${JSON.stringify(canonical)});</script>`;
+    const redirectMeta = crawler ? '' : `<meta http-equiv="refresh" content="0;url=${escapeHtml(canonical)}" />`;
 
     const html = `<!doctype html>
 <html lang="id">
@@ -71,18 +76,20 @@ export default async function handler(req: any, res: any) {
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="${escapeHtml(title)}" />
   <meta name="twitter:description" content="${escapeHtml(description)}" />
+  ${redirectMeta}
   <link rel="canonical" href="${escapeHtml(canonical)}" />
-  <meta http-equiv="refresh" content="0;url=${escapeHtml(canonical)}" />
-  <script>window.location.replace(${JSON.stringify(canonical)});</script>
+  ${redirectScript}
 </head>
 <body>
-  <p>Membuka berita PB Bilibili 162…</p>
+  <h1>${escapeHtml(title)}</h1>
+  ${image ? `<img src="${escapeHtml(image)}" alt="${escapeHtml(title)}" style="max-width:100%;height:auto" />` : ''}
+  <p>${escapeHtml(description)}</p>
   <p><a href="${escapeHtml(canonical)}">Buka berita</a></p>
 </body>
 </html>`;
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=3600');
+    res.setHeader('Cache-Control', crawler ? 'public, s-maxage=60, stale-while-revalidate=300' : 'no-store');
     return res.status(200).send(html);
   } catch (error) {
     console.error('[share-berita]', error);
