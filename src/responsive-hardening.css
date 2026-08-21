@@ -60,3 +60,46 @@ img, video, canvas, iframe { max-width: 100%; }
 #footer-section p { width: 100%; max-width: 100%; margin: 0; white-space: normal; overflow-wrap: anywhere; word-break: break-word; }
 @media (max-width: 639px) { #footer-section { min-height: 74px; } #footer-section > div { min-height: 74px; padding-top: 14px; padding-bottom: max(14px, env(safe-area-inset-bottom)); } #footer-section p { font-size: 10px; line-height: 1.5rem; letter-spacing: 0.025em; } }
 @media (max-width: 380px) { body { font-size: 15px; } #mobile-sidebar-toggle-btn { right: 10px; width: 42px; height: 42px; min-width: 42px; min-height: 42px; border-radius: 13px; } .fixed.inset-0.z-\\[999999\\] { padding-left: 6px; padding-right: 6px; } .fixed.inset-0.z-\\[999999\\] > .relative.w-full { width: 100%; max-height: 92dvh; border-radius: 22px; } }
+
+/* Modern mobile UX: public ranking and quiz use normal document flow. */
+@media (max-width: 767px) {
+  /* Ranking page: remove the viewport lock that was clipping the list/pagination. */
+  #rankings {
+    height: auto !important;
+    min-height: calc(100dvh - 3.5rem) !important;
+    overflow: visible !important;
+    justify-content: flex-start !important;
+    padding-top: 0.75rem !important;
+    padding-bottom: calc(7.5rem + env(safe-area-inset-bottom)) !important;
+  }
+  #rankings > .max-w-6xl {
+    flex: 0 0 auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    gap: 0.75rem !important;
+  }
+  #rankings > .max-w-6xl > .flex-1 {
+    flex: 0 0 auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+  #rankings .md\\:hidden {
+    flex: 0 0 auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  #rankings input { min-height: 42px; font-size: 14px; }
+
+  /* Quiz page: the footer follows the complete quiz instead of cutting across it. */
+  #root section:has(.bg-gradient-to-r.from-blue-950\\/40) {
+    min-height: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+    padding-top: 1rem !important;
+    padding-bottom: calc(8.5rem + env(safe-area-inset-bottom)) !important;
+  }
+  #root section:has(.bg-gradient-to-r.from-blue-950\\/40) .max-h-\\[480px\\] {
+    max-height: 55vh !important;
+  }
+}
