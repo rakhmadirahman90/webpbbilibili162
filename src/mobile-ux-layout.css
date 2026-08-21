@@ -1,0 +1,83 @@
+/* Modern mobile layout hardening for public Ranking + Quiz views.
+   These views should grow with their content instead of being locked to the viewport,
+   so the public footer never overlays or cuts through interactive content. */
+@media (max-width: 767px) {
+  /* Ranking: restore normal document flow on phones. */
+  #rankings {
+    height: auto !important;
+    min-height: calc(100dvh - 3.5rem) !important;
+    overflow: visible !important;
+    justify-content: flex-start !important;
+    padding-top: 0.75rem !important;
+    padding-bottom: 7.5rem !important;
+  }
+
+  #rankings > .max-w-6xl {
+    flex: 0 0 auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    gap: 0.75rem !important;
+  }
+
+  #rankings > .max-w-6xl > .flex-1 {
+    flex: 0 0 auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* Ranking list: let the page scroll naturally instead of creating a nested viewport. */
+  #rankings .md\:hidden {
+    flex: 0 0 auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  /* Keep ranking controls compact and prevent horizontal compression. */
+  #rankings input {
+    min-height: 42px;
+    font-size: 14px;
+  }
+
+  #rankings .flex.items-center.justify-between.w-full {
+    min-width: 0;
+  }
+
+  /* Quiz: natural page height; footer must come after the complete quiz content. */
+  section:has(.bg-gradient-to-r.from-blue-950\/40) {
+    min-height: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+    padding-top: 1rem !important;
+    padding-bottom: 8.5rem !important;
+  }
+
+  /* Prevent the crossword/action area from becoming wider than the phone. */
+  section:has(.bg-gradient-to-r.from-blue-950\/40) .max-w-6xl {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  section:has(.bg-gradient-to-r.from-blue-950\/40) .grid {
+    min-width: 0;
+  }
+
+  section:has(.bg-gradient-to-r.from-blue-950\/40) .overflow-x-auto {
+    scrollbar-width: thin;
+  }
+
+  /* Keep the clue panel readable; scrolling is inside the clue list, not the whole page. */
+  section:has(.bg-gradient-to-r.from-blue-950\/40) .max-h-\[480px\] {
+    max-height: 55vh !important;
+  }
+}
+
+/* iOS/Android safe-area support for the fixed bottom controls. */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  @media (max-width: 767px) {
+    #rankings,
+    section:has(.bg-gradient-to-r.from-blue-950\/40) {
+      padding-bottom: calc(7.5rem + env(safe-area-inset-bottom)) !important;
+    }
+  }
+}
