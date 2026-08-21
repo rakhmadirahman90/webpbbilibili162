@@ -1,0 +1,18 @@
+/* Gallery-only cleanup: hide the global Mars audio floating controller.
+   The black circle visible at the lower-left is the global audio control,
+   not part of the gallery card/photo UI. It should not overlap the gallery. */
+@media (max-width: 767px) {
+  body.gallery-route .fixed[class~="bottom-3"][class~="left-3"][class~="z-[9999]"] {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+}
+
+@media (min-width: 768px) {
+  body.gallery-route .fixed[class~="bottom-6"][class~="left-6"][class~="z-[9999]"] {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+}
