@@ -1,0 +1,23 @@
+/* Gallery route stability: keep the page fully opaque and free from route-transition flicker. */
+body.gallery-route {
+  overflow-x: hidden;
+}
+
+body.gallery-route #gallery {
+  opacity: 1 !important;
+  visibility: visible !important;
+  animation: none !important;
+  transition: none !important;
+  transform: none !important;
+  filter: none !important;
+}
+
+body.gallery-route #gallery > * {
+  animation: none !important;
+}
+
+@media (max-width: 767px) {
+  body.gallery-route #gallery {
+    padding-bottom: max(7rem, calc(5rem + env(safe-area-inset-bottom))) !important;
+  }
+}
