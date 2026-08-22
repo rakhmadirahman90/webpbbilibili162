@@ -3,8 +3,8 @@ import fs from 'node:fs';
 const file = 'src/components/Gallery.tsx';
 let source = fs.readFileSync(file, 'utf8');
 
-// Mandatory build-time guard. Locate the handler by stable symbol names,
-// not whitespace, because Gallery.tsx may be formatted as one line.
+// v11: make the WhatsApp message deterministic and independent of any
+// previously generated share URL or stale client bundle.
 const start = source.indexOf('const handleShare =');
 const end = source.indexOf('const goToImage =', start);
 
@@ -14,10 +14,11 @@ if (start < 0 || end <= start) {
 }
 
 const replacement = `const handleShare = (item: GalleryItem, platform: 'wa' | 'fb' | 'copy') => {
-    // v10: always use the current gallery item's title in the WhatsApp text.
-    // The versioned query also prevents reuse of older shared URLs/handlers.
-    const currentUrl = window.location.origin + '/?gallery=' + encodeURIComponent(item.id) + '&share=v10';
-    const activityTitle = String(item.title || '').trim() || 'Dokumentasi PB Bilibili 162';
+    const activityTitle = String(item.title || item.description || item.category || 'Dokumentasi PB Bilibili 162').trim();
+    // v11: public root URL is intentionally used so Vercel can serve the
+    // crawler-specific /api/share-galeri OG preview while normal users are
+    // redirected back to the gallery detail page.
+    const currentUrl = window.location.origin + '/?gallery=' + encodeURIComponent(item.id) + '&share=v11';
     const shareText = 'Lihat dokumentasi "' + activityTitle + '" dari PB Bilibili 162:\\n' + currentUrl;
 
     if (platform === 'wa') {
@@ -37,4 +38,4 @@ const replacement = `const handleShare = (item: GalleryItem, platform: 'wa' | 'f
 
 source = source.slice(0, start) + replacement + source.slice(end);
 fs.writeFileSync(file, source, 'utf8');
-console.log('[patch-gallery-share-preview] v10 share handler applied successfully');
+console.log('[patch-gallery-share-preview] v11 share handler applied successfully');
