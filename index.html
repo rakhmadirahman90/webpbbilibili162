@@ -69,11 +69,10 @@
         window.addEventListener('error', (event) => showBootError(event.error || event.message));
         window.addEventListener('unhandledrejection', (event) => showBootError(event.reason));
 
-        // One-time migration only. Older releases used an aggressive cache/SW
-        // cleanup on every page load, which made refreshes slow and could race
-        // the application boot. Clean legacy caches once, then never touch them
-        // during normal navigation/refreshes.
-        const cleanupKey = 'pb162-legacy-cache-cleanup-v3';
+        // One-time migration for the latest gallery share-handler release.
+        // This version bump guarantees devices that already completed v3 cleanup
+        // also unregister any legacy service worker and clear stale caches.
+        const cleanupKey = 'pb162-legacy-cache-cleanup-v4';
         try {
           if (!localStorage.getItem(cleanupKey)) {
             localStorage.setItem(cleanupKey, '1');
@@ -92,8 +91,6 @@
           // Private browsing/storage-disabled mode: continue without cleanup.
         }
 
-        // Fail visibly only after a generous startup window. Normal startup is
-        // not blocked by this watchdog.
         window.setTimeout(() => {
           if (document.getElementById('boot')) showBootError('Startup timeout');
         }, 15000);
