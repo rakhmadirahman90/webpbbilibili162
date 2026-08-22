@@ -3,9 +3,8 @@ import fs from 'node:fs';
 const file = 'src/components/Gallery.tsx';
 let source = fs.readFileSync(file, 'utf8');
 
-// Always normalize the share handler. This avoids stale legacy /api/share-galeri
-// links and ensures the WhatsApp text uses the actual activity title stored in
-// the gallery record.
+// Force the final gallery share format at build time. This intentionally
+// replaces any older share=v* implementation, so a stale handler cannot ship.
 const startMarker = '  const handleShare = (item: GalleryItem, platform: \'wa\' | \'fb\' | \'copy\') => {';
 const endMarker = '  const goToImage = (index: number, count: number) => {';
 const start = source.indexOf(startMarker);
@@ -17,7 +16,7 @@ if (start < 0 || end <= start) {
 }
 
 const replacement = `  const handleShare = (item: GalleryItem, platform: 'wa' | 'fb' | 'copy') => {
-    const currentUrl = window.location.origin + '/galeri?gallery=' + encodeURIComponent(item.id) + '&share=v5';
+    const currentUrl = window.location.origin + '/galeri?gallery=' + encodeURIComponent(item.id) + '&share=v6';
     const activityTitle = (item.title || item.description || item.category || 'Dokumentasi PB Bilibili 162').trim();
     const shareText = 'Lihat dokumentasi "' + activityTitle + '" dari PB Bilibili 162:\\n' + currentUrl;
 
@@ -38,4 +37,4 @@ const replacement = `  const handleShare = (item: GalleryItem, platform: 'wa' | 
 
 source = source.slice(0, start) + replacement + source.slice(end);
 fs.writeFileSync(file, source, 'utf8');
-console.log('[patch-gallery-share-preview] direct gallery detail link + actual activity title applied');
+console.log('[patch-gallery-share-preview] forced v6 gallery detail URL + actual activity title');
