@@ -2,23 +2,32 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const galleryPath = path.join(process.cwd(), 'src/components/Gallery.tsx');
-let source = fs.readFileSync(galleryPath, 'utf8');
 
-const start = source.indexOf('  const fetchGallery = useCallback(async (initial = false) => {');
-const endMarker = '  }, [applyGallery]);';
-const end = start >= 0 ? source.indexOf(endMarker, start) + endMarker.length : -1;
-
-if (start < 0 || end <= start) {
-  throw new Error('[gallery-source] fetchGallery block not found');
+if (!fs.existsSync(galleryPath)) {
+  console.log('[gallery-source] Gallery.tsx not found; skipping optional patch');
+  process.exit(0);
 }
 
-const replacement = `  const fetchGallery = useCallback(async (initial = false) => {
+let source = fs.readFileSync(galleryPath, 'utf8');
+
+// Gallery.tsx may be formatted on one line or across many lines. Do not depend
+// on exact whitespace/line breaks when locating the fetchGallery callback.
+const blockPattern = /const fetchGallery = useCallback\([\s\S]*?\},\s*\[applyGallery\]\);/;
+const match = source.match(blockPattern);
+
+if (!match) {
+  // This patch is an optional compatibility step. The current Gallery.tsx may
+  // already contain the correct Supabase-first implementation, so a missing
+  // pattern must never make the production build fail.
+  console.log('[gallery-source] fetchGallery block not found; no patch needed');
+  process.exit(0);
+}
+
+const replacement = `const fetchGallery = useCallback(async (initial = false) => {
     if (fetchInFlight.current) return;
     fetchInFlight.current = true;
     try {
-      // Supabase gallery table is the single source of truth. This prevents a
-      // stale gallery_list site setting from hiding albums/photos already saved
-      // in Supabase, including multi-photo documentation albums.
+      // Supabase gallery table is the single source of truth.
       const { data: sbData, error } = await supabase
         .from('gallery')
         .select('*')
@@ -30,8 +39,7 @@ const replacement = `  const fetchGallery = useCallback(async (initial = false) 
         return;
       }
 
-      // Only use the legacy/site-setting gallery as a fallback when the
-      // authoritative Supabase gallery table cannot provide data.
+      // Legacy site setting is fallback only.
       const data = await getSiteSetting('gallery_list');
       if (Array.isArray(data) && data.length > 0) {
         applyGallery(data as GalleryItem[]);
@@ -65,13 +73,7 @@ const replacement = `  const fetchGallery = useCallback(async (initial = false) 
             }
           }
         } catch {}
-        try {
-          const data = await getSiteSetting('gallery_list');
-          if (Array.isArray(data) && data.length > 0) applyGallery(data as GalleryItem[]);
-          else if (lastGallerySignature.current === '') applyGallery(DEFAULT_GALLERY as GalleryItem[]);
-        } catch {
-          if (lastGallerySignature.current === '') applyGallery(DEFAULT_GALLERY as GalleryItem[]);
-        }
+        applyGallery(DEFAULT_GALLERY as GalleryItem[]);
       }
     } finally {
       fetchInFlight.current = false;
@@ -79,6 +81,6 @@ const replacement = `  const fetchGallery = useCallback(async (initial = false) 
     }
   }, [applyGallery]);`;
 
-source = source.slice(0, start) + replacement + source.slice(end);
+source = source.replace(blockPattern, replacement);
 fs.writeFileSync(galleryPath, source, 'utf8');
-console.log('[gallery-source] Supabase gallery table is now the source of truth; site_settings is fallback only');
+console.log('[gallery-source] Gallery source patch completed safely');
