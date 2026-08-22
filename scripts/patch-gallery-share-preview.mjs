@@ -3,8 +3,8 @@ import fs from 'node:fs';
 const file = 'src/components/Gallery.tsx';
 let source = fs.readFileSync(file, 'utf8');
 
-// v13: keep the client WhatsApp text and crawler OG preview on the same
-// versioned URL so WhatsApp cannot reuse the previous v4/v11/v12 preview.
+// v15: keep the client WhatsApp text and crawler OG preview on a fresh
+// versioned URL so WhatsApp does not reuse the older v4/v11/v12/v13 preview.
 const start = source.indexOf('const handleShare =');
 const end = source.indexOf('const goToImage =', start);
 
@@ -14,10 +14,10 @@ if (start < 0 || end <= start) {
 }
 
 const replacement = `const handleShare = (item: GalleryItem, platform: 'wa' | 'fb' | 'copy') => {
-    const activityTitle = String(item.description || item.title || item.category || 'Dokumentasi PB Bilibili 162').replace(/\\s+/g, ' ').trim();
-    // v13: public root share URL; /api/share-galeri supplies crawler-specific
+    const activityTitle = String(item.title || item.description || item.category || 'Dokumentasi PB Bilibili 162').replace(/\\s+/g, ' ').trim();
+    // v15: public root share URL; /api/share-galeri supplies crawler-specific
     // OG metadata while normal visitors are redirected to the gallery detail view.
-    const currentUrl = window.location.origin + '/?gallery=' + encodeURIComponent(item.id) + '&share=v13';
+    const currentUrl = window.location.origin + '/?gallery=' + encodeURIComponent(item.id) + '&share=v15';
     const shareText = 'Lihat dokumentasi "' + activityTitle + '" dari PB Bilibili 162:\\n' + currentUrl;
 
     if (platform === 'wa') {
@@ -37,4 +37,4 @@ const replacement = `const handleShare = (item: GalleryItem, platform: 'wa' | 'f
 
 source = source.slice(0, start) + replacement + source.slice(end);
 fs.writeFileSync(file, source, 'utf8');
-console.log('[patch-gallery-share-preview] v13 share handler applied successfully');
+console.log('[patch-gallery-share-preview] v15 share handler applied successfully');
