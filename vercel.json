@@ -42,6 +42,21 @@
       "destination": "/api/share-berita"
     },
     {
+      "source": "/galeri",
+      "has": [
+        {
+          "type": "query",
+          "key": "gallery"
+        },
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(WhatsApp|facebookexternalhit|Facebot|Twitterbot|LinkedInBot|TelegramBot|Slackbot|Discordbot|Googlebot|bingbot).*"
+        }
+      ],
+      "destination": "/api/share-galeri"
+    },
+    {
       "source": "/",
       "has": [
         {
