@@ -49,49 +49,51 @@ export default async function handler(req: any, res: any) {
     const gallery = Array.isArray(rows) ? rows[0] : null;
     if (!gallery) return res.status(404).send('Dokumentasi tidak ditemukan');
 
-    // v14: The WhatsApp/OG preview must always use the actual FOTO TITLE
-    // stored in gallery.title. The description is intentionally not used as
-    // the activity name because descriptions may be empty or contain different text.
+    // v15: use the actual gallery.title for the WhatsApp/OG title.
     const photoTitle = String(gallery.title || '').replace(/\s+/g, ' ').trim() || 'Dokumentasi PB Bilibili 162';
-    const shareTitle = `Lihat dokumentasi "${photoTitle}" dari PB Bilibili 162`;
+    const shareTitle = `Lihat dokumentasi \"${photoTitle}\" dari PB Bilibili 162`;
     const image = gallery.type === 'image' ? getPrimaryImage(gallery.url) : '';
-    const canonical = `${PUBLIC_DOMAIN}/?gallery=${encodeURIComponent(gallery.id)}&share=v14`;
+
+    // WhatsApp can retain an OG preview for an old URL. A version query makes
+    // every newly shared preview a distinct URL while keeping the same gallery.
+    const requestedVersion = String(req.query?.v || '15').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 24) || '15';
+    const canonical = `${PUBLIC_DOMAIN}/api/share-galeri?id=${encodeURIComponent(gallery.id)}&v=${encodeURIComponent(requestedVersion)}`;
     const description = `${shareTitle}.`.slice(0, 200);
     const pageTitle = shareTitle;
     const crawler = isCrawler(String(req.headers?.['user-agent'] || ''));
 
     const imageTags = image ? `
-      <meta property="og:image" content="${escapeHtml(image)}" />
-      <meta property="og:image:secure_url" content="${escapeHtml(image)}" />
-      <meta property="og:image:type" content="image/jpeg" />
-      <meta property="og:image:width" content="1200" />
-      <meta property="og:image:height" content="630" />
-      <meta property="og:image:alt" content="${escapeHtml(photoTitle)}" />
-      <meta name="twitter:image" content="${escapeHtml(image)}" />
+      <meta property=\"og:image\" content=\"${escapeHtml(image)}\" />
+      <meta property=\"og:image:secure_url\" content=\"${escapeHtml(image)}\" />
+      <meta property=\"og:image:type\" content=\"image/jpeg\" />
+      <meta property=\"og:image:width\" content=\"1200\" />
+      <meta property=\"og:image:height\" content=\"630\" />
+      <meta property=\"og:image:alt\" content=\"${escapeHtml(photoTitle)}\" />
+      <meta name=\"twitter:image\" content=\"${escapeHtml(image)}\" />
     ` : '';
 
     const html = `<!doctype html>
-<html lang="id"><head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<html lang=\"id\"><head>
+<meta charset=\"utf-8\" />
+<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
 <title>${escapeHtml(pageTitle)}</title>
-<meta name="description" content="${escapeHtml(description)}" />
-<meta property="og:type" content="article" />
-<meta property="og:url" content="${escapeHtml(canonical)}" />
-<meta property="og:title" content="${escapeHtml(shareTitle)}" />
-<meta property="og:description" content="${escapeHtml(description)}" />
-<meta property="og:site_name" content="PB Bilibili 162" />
+<meta name=\"description\" content=\"${escapeHtml(description)}\" />
+<meta property=\"og:type\" content=\"article\" />
+<meta property=\"og:url\" content=\"${escapeHtml(canonical)}\" />
+<meta property=\"og:title\" content=\"${escapeHtml(shareTitle)}\" />
+<meta property=\"og:description\" content=\"${escapeHtml(description)}\" />
+<meta property=\"og:site_name\" content=\"PB Bilibili 162\" />
 ${imageTags}
-<meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="${escapeHtml(shareTitle)}" />
-<meta name="twitter:description" content="${escapeHtml(description)}" />
-<link rel="canonical" href="${escapeHtml(canonical)}" />
-${crawler ? '' : `<meta http-equiv="refresh" content="0;url=${escapeHtml(canonical)}" /><script>window.location.replace(${JSON.stringify(canonical)});</script>`}
+<meta name=\"twitter:card\" content=\"summary_large_image\" />
+<meta name=\"twitter:title\" content=\"${escapeHtml(shareTitle)}\" />
+<meta name=\"twitter:description\" content=\"${escapeHtml(description)}\" />
+<link rel=\"canonical\" href=\"${escapeHtml(canonical)}\" />
+${crawler ? '' : `<meta http-equiv=\"refresh\" content=\"0;url=${escapeHtml(canonical)}\" /><script>window.location.replace(${JSON.stringify(canonical)});</script>`}
 </head><body>
 <h1>${escapeHtml(shareTitle)}</h1>
-${image ? `<img src="${escapeHtml(image)}" alt="${escapeHtml(photoTitle)}" style="max-width:100%;height:auto" />` : ''}
+${image ? `<img src=\"${escapeHtml(image)}\" alt=\"${escapeHtml(photoTitle)}\" style=\"max-width:100%;height:auto\" />` : ''}
 <p>${escapeHtml(description)}</p>
-<p><a href="${escapeHtml(canonical)}">Buka dokumentasi</a></p>
+<p><a href=\"${escapeHtml(canonical)}\">Buka dokumentasi</a></p>
 </body></html>`;
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
