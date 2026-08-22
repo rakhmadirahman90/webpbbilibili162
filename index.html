@@ -69,26 +69,23 @@
         window.addEventListener('error', (event) => showBootError(event.error || event.message));
         window.addEventListener('unhandledrejection', (event) => showBootError(event.reason));
 
-        // One-time migration for the latest gallery share-handler release.
-        // This version bump guarantees devices that already completed v3 cleanup
-        // also unregister any legacy service worker and clear stale caches.
-        const cleanupKey = 'pb162-legacy-cache-cleanup-v4';
+        // v10: invalidate every previous client cleanup marker and aggressively
+        // remove legacy service workers/caches before loading the new app bundle.
+        const cleanupKey = 'pb162-legacy-cache-cleanup-v10';
         try {
-          if (!localStorage.getItem(cleanupKey)) {
-            localStorage.setItem(cleanupKey, '1');
-            if ('serviceWorker' in navigator) {
-              navigator.serviceWorker.getRegistrations().then((registrations) => {
-                registrations.forEach((registration) => registration.unregister());
-              }).catch(() => {});
-            }
-            if ('caches' in window) {
-              caches.keys().then((keys) => {
-                keys.filter((key) => /pb|vite|workbox|supabase/i.test(key)).forEach((key) => caches.delete(key));
-              }).catch(() => {});
-            }
+          localStorage.setItem(cleanupKey, '1');
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then((registrations) => {
+              registrations.forEach((registration) => registration.unregister());
+            }).catch(() => {});
+          }
+          if ('caches' in window) {
+            caches.keys().then((keys) => {
+              keys.forEach((key) => caches.delete(key));
+            }).catch(() => {});
           }
         } catch (_) {
-          // Private browsing/storage-disabled mode: continue without cleanup.
+          // Continue normally when storage/cache APIs are unavailable.
         }
 
         window.setTimeout(() => {
