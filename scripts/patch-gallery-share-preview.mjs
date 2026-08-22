@@ -18,7 +18,7 @@ const replacement = `  const handleShare = (item: GalleryItem, platform: 'wa' | 
     // Use the normal gallery route with the gallery query so one click opens
     // the selected album/photo detail directly. Do not route users through an
     // intermediate /api/share-galeri page.
-    const currentUrl = \`${publicDomain}/galeri?gallery=\${encodeURIComponent(item.id)}&share=v5\`;
+    const currentUrl = publicDomain + '/galeri?gallery=' + encodeURIComponent(item.id) + '&share=v5';
 
     // Some legacy records use a generic title such as "Dokumentasi PB Bilibili 162".
     // Prefer the real activity title/description for the WhatsApp message.
@@ -29,9 +29,9 @@ const replacement = `  const handleShare = (item: GalleryItem, platform: 'wa' | 
       ? (rawDescription || item.category || 'Dokumentasi PB Bilibili 162')
       : rawTitle;
 
-    const shareText = \`Lihat dokumentasi "\${activityTitle}" dari PB Bilibili 162:\\n\${currentUrl}\`;
-    if (platform === 'wa') window.open(\`https://api.whatsapp.com/send?text=\${encodeURIComponent(shareText)}\`, '_blank');
-    if (platform === 'fb') window.open(\`https://www.facebook.com/sharer/sharer.php?u=\${encodeURIComponent(currentUrl)}\`, '_blank');
+    const shareText = 'Lihat dokumentasi "' + activityTitle + '" dari PB Bilibili 162:\\n' + currentUrl;
+    if (platform === 'wa') window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(shareText), '_blank');
+    if (platform === 'fb') window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(currentUrl), '_blank');
     if (platform === 'copy') navigator.clipboard?.writeText(currentUrl).then(() => { setCopySuccess(item.id); window.setTimeout(() => setCopySuccess(null), 2000); });
   };
 `;
