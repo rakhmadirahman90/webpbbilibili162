@@ -14,9 +14,10 @@ if (start < 0 || end <= start) {
 }
 
 const replacement = `const handleShare = (item: GalleryItem, platform: 'wa' | 'fb' | 'copy') => {
-    // v8: public root URL -> Vercel crawler rewrite -> /api/share-galeri.
-    const currentUrl = window.location.origin + '/?gallery=' + encodeURIComponent(item.id) + '&share=v8';
-    const activityTitle = (item.title || item.description || item.category || 'Dokumentasi PB Bilibili 162').trim();
+    // v10: always use the current gallery item's title in the WhatsApp text.
+    // The versioned query also prevents reuse of older shared URLs/handlers.
+    const currentUrl = window.location.origin + '/?gallery=' + encodeURIComponent(item.id) + '&share=v10';
+    const activityTitle = String(item.title || '').trim() || 'Dokumentasi PB Bilibili 162';
     const shareText = 'Lihat dokumentasi "' + activityTitle + '" dari PB Bilibili 162:\\n' + currentUrl;
 
     if (platform === 'wa') {
@@ -36,4 +37,4 @@ const replacement = `const handleShare = (item: GalleryItem, platform: 'wa' | 'f
 
 source = source.slice(0, start) + replacement + source.slice(end);
 fs.writeFileSync(file, source, 'utf8');
-console.log('[patch-gallery-share-preview] v8 share handler applied successfully');
+console.log('[patch-gallery-share-preview] v10 share handler applied successfully');
