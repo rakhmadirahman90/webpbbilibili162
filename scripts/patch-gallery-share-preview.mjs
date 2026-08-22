@@ -5,6 +5,8 @@ let source = fs.readFileSync(file, 'utf8');
 
 // Force the final gallery share format at build time. This intentionally
 // replaces any older share=v* implementation, so a stale handler cannot ship.
+// The public root URL is intentional: Vercel rewrites /?gallery=... to the
+// crawler-friendly /api/share-galeri endpoint for WhatsApp/Facebook/etc.
 const startMarker = '  const handleShare = (item: GalleryItem, platform: \'wa\' | \'fb\' | \'copy\') => {';
 const endMarker = '  const goToImage = (index: number, count: number) => {';
 const start = source.indexOf(startMarker);
@@ -16,7 +18,7 @@ if (start < 0 || end <= start) {
 }
 
 const replacement = `  const handleShare = (item: GalleryItem, platform: 'wa' | 'fb' | 'copy') => {
-    const currentUrl = window.location.origin + '/galeri?gallery=' + encodeURIComponent(item.id) + '&share=v6';
+    const currentUrl = window.location.origin + '/?gallery=' + encodeURIComponent(item.id) + '&share=v7';
     const activityTitle = (item.title || item.description || item.category || 'Dokumentasi PB Bilibili 162').trim();
     const shareText = 'Lihat dokumentasi "' + activityTitle + '" dari PB Bilibili 162:\\n' + currentUrl;
 
@@ -37,4 +39,4 @@ const replacement = `  const handleShare = (item: GalleryItem, platform: 'wa' | 
 
 source = source.slice(0, start) + replacement + source.slice(end);
 fs.writeFileSync(file, source, 'utf8');
-console.log('[patch-gallery-share-preview] forced v6 gallery detail URL + actual activity title');
+console.log('[patch-gallery-share-preview] forced v7 root gallery URL + actual activity title');
