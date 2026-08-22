@@ -49,16 +49,15 @@ export default async function handler(req: any, res: any) {
     const gallery = Array.isArray(rows) ? rows[0] : null;
     if (!gallery) return res.status(404).send('Dokumentasi tidak ditemukan');
 
-    // v13: OG title is deliberately the same human-facing phrase shown by WhatsApp,
-    // rather than the legacy gallery title alone. This prevents the old preview text
-    // from looking unchanged even when WhatsApp has retained an older card.
-    const rawTitle = String(gallery.title || '').trim();
-    const activityTitle = String(gallery.description || rawTitle || 'Dokumentasi PB Bilibili 162').replace(/\s+/g, ' ').trim() || 'Dokumentasi PB Bilibili 162';
-    const shareTitle = `Lihat dokumentasi "${activityTitle}" dari PB Bilibili 162`;
+    // v14: The WhatsApp/OG preview must always use the actual FOTO TITLE
+    // stored in gallery.title. The description is intentionally not used as
+    // the activity name because descriptions may be empty or contain different text.
+    const photoTitle = String(gallery.title || '').replace(/\s+/g, ' ').trim() || 'Dokumentasi PB Bilibili 162';
+    const shareTitle = `Lihat dokumentasi "${photoTitle}" dari PB Bilibili 162`;
     const image = gallery.type === 'image' ? getPrimaryImage(gallery.url) : '';
-    const canonical = `${PUBLIC_DOMAIN}/?gallery=${encodeURIComponent(gallery.id)}&share=v13`;
+    const canonical = `${PUBLIC_DOMAIN}/?gallery=${encodeURIComponent(gallery.id)}&share=v14`;
     const description = `${shareTitle}.`.slice(0, 200);
-    const pageTitle = `${shareTitle}`;
+    const pageTitle = shareTitle;
     const crawler = isCrawler(String(req.headers?.['user-agent'] || ''));
 
     const imageTags = image ? `
@@ -67,7 +66,7 @@ export default async function handler(req: any, res: any) {
       <meta property="og:image:type" content="image/jpeg" />
       <meta property="og:image:width" content="1200" />
       <meta property="og:image:height" content="630" />
-      <meta property="og:image:alt" content="${escapeHtml(activityTitle)}" />
+      <meta property="og:image:alt" content="${escapeHtml(photoTitle)}" />
       <meta name="twitter:image" content="${escapeHtml(image)}" />
     ` : '';
 
@@ -90,7 +89,7 @@ ${imageTags}
 ${crawler ? '' : `<meta http-equiv="refresh" content="0;url=${escapeHtml(canonical)}" /><script>window.location.replace(${JSON.stringify(canonical)});</script>`}
 </head><body>
 <h1>${escapeHtml(shareTitle)}</h1>
-${image ? `<img src="${escapeHtml(image)}" alt="${escapeHtml(activityTitle)}" style="max-width:100%;height:auto" />` : ''}
+${image ? `<img src="${escapeHtml(image)}" alt="${escapeHtml(photoTitle)}" style="max-width:100%;height:auto" />` : ''}
 <p>${escapeHtml(description)}</p>
 <p><a href="${escapeHtml(canonical)}">Buka dokumentasi</a></p>
 </body></html>`;
