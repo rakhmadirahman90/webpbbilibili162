@@ -49,15 +49,16 @@ export default async function handler(req: any, res: any) {
     const gallery = Array.isArray(rows) ? rows[0] : null;
     if (!gallery) return res.status(404).send('Dokumentasi tidak ditemukan');
 
-    // WhatsApp preview must use the same human-facing activity text as the share message,
-    // not the legacy gallery.title that caused stale titles such as old tournament names.
+    // v13: OG title is deliberately the same human-facing phrase shown by WhatsApp,
+    // rather than the legacy gallery title alone. This prevents the old preview text
+    // from looking unchanged even when WhatsApp has retained an older card.
     const rawTitle = String(gallery.title || '').trim();
-    const activityTitle = String(gallery.description || rawTitle || 'Dokumentasi PB Bilibili 162').replace(/\s+/g, ' ').trim();
-    const title = activityTitle || 'Dokumentasi PB Bilibili 162';
+    const activityTitle = String(gallery.description || rawTitle || 'Dokumentasi PB Bilibili 162').replace(/\s+/g, ' ').trim() || 'Dokumentasi PB Bilibili 162';
+    const shareTitle = `Lihat dokumentasi "${activityTitle}" dari PB Bilibili 162`;
     const image = gallery.type === 'image' ? getPrimaryImage(gallery.url) : '';
-    const canonical = `${PUBLIC_DOMAIN}/?gallery=${encodeURIComponent(gallery.id)}&share=v12`;
-    const description = `Lihat dokumentasi "${title}" dari PB Bilibili 162.`.slice(0, 200);
-    const pageTitle = `${title} - PB Bilibili 162`;
+    const canonical = `${PUBLIC_DOMAIN}/?gallery=${encodeURIComponent(gallery.id)}&share=v13`;
+    const description = `${shareTitle}.`.slice(0, 200);
+    const pageTitle = `${shareTitle}`;
     const crawler = isCrawler(String(req.headers?.['user-agent'] || ''));
 
     const imageTags = image ? `
@@ -66,7 +67,7 @@ export default async function handler(req: any, res: any) {
       <meta property="og:image:type" content="image/jpeg" />
       <meta property="og:image:width" content="1200" />
       <meta property="og:image:height" content="630" />
-      <meta property="og:image:alt" content="${escapeHtml(title)}" />
+      <meta property="og:image:alt" content="${escapeHtml(activityTitle)}" />
       <meta name="twitter:image" content="${escapeHtml(image)}" />
     ` : '';
 
@@ -78,18 +79,18 @@ export default async function handler(req: any, res: any) {
 <meta name="description" content="${escapeHtml(description)}" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="${escapeHtml(canonical)}" />
-<meta property="og:title" content="${escapeHtml(title)}" />
+<meta property="og:title" content="${escapeHtml(shareTitle)}" />
 <meta property="og:description" content="${escapeHtml(description)}" />
 <meta property="og:site_name" content="PB Bilibili 162" />
 ${imageTags}
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="${escapeHtml(title)}" />
+<meta name="twitter:title" content="${escapeHtml(shareTitle)}" />
 <meta name="twitter:description" content="${escapeHtml(description)}" />
 <link rel="canonical" href="${escapeHtml(canonical)}" />
 ${crawler ? '' : `<meta http-equiv="refresh" content="0;url=${escapeHtml(canonical)}" /><script>window.location.replace(${JSON.stringify(canonical)});</script>`}
 </head><body>
-<h1>${escapeHtml(title)}</h1>
-${image ? `<img src="${escapeHtml(image)}" alt="${escapeHtml(title)}" style="max-width:100%;height:auto" />` : ''}
+<h1>${escapeHtml(shareTitle)}</h1>
+${image ? `<img src="${escapeHtml(image)}" alt="${escapeHtml(activityTitle)}" style="max-width:100%;height:auto" />` : ''}
 <p>${escapeHtml(description)}</p>
 <p><a href="${escapeHtml(canonical)}">Buka dokumentasi</a></p>
 </body></html>`;
