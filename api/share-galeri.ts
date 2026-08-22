@@ -49,15 +49,15 @@ export default async function handler(req: any, res: any) {
     const gallery = Array.isArray(rows) ? rows[0] : null;
     if (!gallery) return res.status(404).send('Dokumentasi tidak ditemukan');
 
-    // v15: use the actual gallery.title for the WhatsApp/OG title.
+    // v15: always use the actual gallery.title for the WhatsApp/OG preview.
     const photoTitle = String(gallery.title || '').replace(/\s+/g, ' ').trim() || 'Dokumentasi PB Bilibili 162';
     const shareTitle = `Lihat dokumentasi \"${photoTitle}\" dari PB Bilibili 162`;
     const image = gallery.type === 'image' ? getPrimaryImage(gallery.url) : '';
 
-    // WhatsApp can retain an OG preview for an old URL. A version query makes
-    // every newly shared preview a distinct URL while keeping the same gallery.
+    // WhatsApp can retain an OG preview for an old URL. The version query makes
+    // each newly shared preview a distinct URL while keeping the same gallery.
     const requestedVersion = String(req.query?.v || '15').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 24) || '15';
-    const canonical = `${PUBLIC_DOMAIN}/api/share-galeri?id=${encodeURIComponent(gallery.id)}&v=${encodeURIComponent(requestedVersion)}`;
+    const canonical = `${PUBLIC_DOMAIN}/?gallery=${encodeURIComponent(gallery.id)}&share=v15&v=${encodeURIComponent(requestedVersion)}`;
     const description = `${shareTitle}.`.slice(0, 200);
     const pageTitle = shareTitle;
     const crawler = isCrawler(String(req.headers?.['user-agent'] || ''));
