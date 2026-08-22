@@ -1,0 +1,112 @@
+name: Supabase Backup
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '15 16 * * *' # 00:15 Asia/Makassar (UTC+8)
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_PROJECT_REF: missjyvqfehamtpyodjr
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Validate required secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$SUPABASE_DB_URL" || { echo 'Missing SUPABASE_DB_URL'; exit 1; }
+          test -n "$SUPABASE_ACCESS_TOKEN" || { echo 'Missing SUPABASE_ACCESS_TOKEN'; exit 1; }
+          test -n "$BACKUP_ENCRYPTION_KEY" || { echo 'Missing BACKUP_ENCRYPTION_KEY'; exit 1; }
+
+      - name: Prepare backup directory
+        run: mkdir -p backup/database backup/storage
+
+      - name: Backup PostgreSQL roles
+        run: |
+          supabase db dump --db-url "$SUPABASE_DB_URL" \
+            -f backup/database/roles.sql --role-only
+
+      - name: Backup PostgreSQL schema
+        run: |
+          supabase db dump --db-url "$SUPABASE_DB_URL" \
+            -f backup/database/schema.sql
+
+      - name: Backup PostgreSQL data
+        run: |
+          supabase db dump --db-url "$SUPABASE_DB_URL" \
+            -f backup/database/data.sql --data-only --use-copy
+
+      - name: Link Supabase project
+        run: |
+          supabase login --token "$SUPABASE_ACCESS_TOKEN"
+          supabase init --force
+          supabase link --project-ref "$SUPABASE_PROJECT_REF"
+
+      - name: List Storage buckets
+        shell: bash
+        run: |
+          set -euo pipefail
+          supabase storage ls --linked --experimental | tee backup/storage/buckets.txt
+
+      - name: Backup all Storage buckets
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p backup/storage/files
+          # Bucket names are the first column of `supabase storage ls` output.
+          grep -vE '^(NAME|ID|---|$)' backup/storage/buckets.txt \
+            | awk '{print $1}' \
+            | while IFS= read -r bucket; do
+                [ -z "$bucket" ] && continue
+                echo "Backing up bucket: $bucket"
+                mkdir -p "backup/storage/files/$bucket"
+                supabase storage cp -r "ss://$bucket" "backup/storage/files/$bucket" --experimental --linked
+              done
+
+      - name: Create backup manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "project_ref=$SUPABASE_PROJECT_REF"
+            echo "created_at=$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+            echo "postgres_version=17.6.1"
+            echo "database=roles.sql,schema.sql,data.sql"
+            echo "storage=all detected buckets"
+          } > backup/MANIFEST.txt
+
+      - name: Compress and encrypt backup
+        shell: bash
+        run: |
+          set -euo pipefail
+          tar -czf supabase-backup.tar.gz backup
+          printf '%s' "$BACKUP_ENCRYPTION_KEY" \
+            | gpg --batch --yes --pinentry-mode loopback \
+                --passphrase-fd 0 --symmetric --cipher-algo AES256 \
+                --output "supabase-backup-${GITHUB_RUN_ID}.tar.gz.gpg" \
+                supabase-backup.tar.gz
+          rm -f supabase-backup.tar.gz
+
+      - name: Upload encrypted backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: supabase-backup-${{ github.run_id }}
+          path: supabase-backup-${{ github.run_id }}.tar.gz.gpg
+          retention-days: 30
+          if-no-files-found: error
