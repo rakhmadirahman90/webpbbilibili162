@@ -69,9 +69,9 @@
         window.addEventListener('error', (event) => showBootError(event.error || event.message));
         window.addEventListener('unhandledrejection', (event) => showBootError(event.reason));
 
-        // v10: invalidate every previous client cleanup marker and aggressively
-        // remove legacy service workers/caches before loading the new app bundle.
-        const cleanupKey = 'pb162-legacy-cache-cleanup-v10';
+        // v11: invalidate every previous client cleanup marker and aggressively
+        // remove legacy service workers/caches so the new share handler is loaded.
+        const cleanupKey = 'pb162-legacy-cache-cleanup-v11';
         try {
           localStorage.setItem(cleanupKey, '1');
           if ('serviceWorker' in navigator) {
@@ -84,9 +84,7 @@
               keys.forEach((key) => caches.delete(key));
             }).catch(() => {});
           }
-        } catch (_) {
-          // Continue normally when storage/cache APIs are unavailable.
-        }
+        } catch (_) {}
 
         window.setTimeout(() => {
           if (document.getElementById('boot')) showBootError('Startup timeout');
