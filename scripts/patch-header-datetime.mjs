@@ -40,7 +40,7 @@ const replacement = `const LiveClock = memo(() => {
   return (
     <div
       aria-label={\`Waktu saat ini: ${dayName}, ${date} ${month} ${year}, ${clock}\`}
-      className="flex w-auto max-w-[170px] sm:max-w-none items-center justify-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-full bg-[#151d30]/90 border border-white/10 text-[8px] sm:text-[9px] font-mono font-bold text-slate-300 shrink-0 whitespace-nowrap overflow-hidden"
+      className="flex w-auto max-w-[178px] sm:max-w-none items-center justify-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-full bg-[#151d30]/90 border border-white/10 text-[8px] sm:text-[9px] font-mono font-bold text-slate-300 shrink-0 whitespace-nowrap overflow-hidden ml-0.5"
     >
       <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
       <span className="text-slate-200 truncate">{dayName}, {date} {month}</span>
@@ -54,7 +54,7 @@ const replacement = `const LiveClock = memo(() => {
 
 source = source.slice(0, start) + replacement + source.slice(end);
 
-// Keep the mobile header balanced: logo | clock | menu button.
+// Mobile order: logo -> live date/time -> menu. Desktop remains logo -> clock -> navigation.
 source = source.replace(
   'className="max-w-7xl mx-auto h-full px-3 sm:px-4 md:px-8 flex items-center justify-between gap-3"',
   'className="max-w-7xl mx-auto h-full px-3 sm:px-4 md:px-8 flex items-center gap-2 sm:gap-3"'
@@ -62,7 +62,7 @@ source = source.replace(
 
 source = source.replace(
   'className="flex items-center gap-2 shrink-0 min-w-0" aria-label="Beranda PB Bilibili 162"',
-  'className="flex items-center gap-2 shrink-0 min-w-0 flex-1 lg:flex-none" aria-label="Beranda PB Bilibili 162"'
+  'className="flex items-center gap-2 shrink-0 min-w-0" aria-label="Beranda PB Bilibili 162"'
 );
 
 source = source.replace(
@@ -71,4 +71,4 @@ source = source.replace(
 );
 
 fs.writeFileSync(file, source, 'utf8');
-console.log('[patch-header-datetime] Header date/time enabled with balanced mobile layout');
+console.log('[patch-header-datetime] Header date/time positioned beside logo');
