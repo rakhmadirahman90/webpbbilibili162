@@ -3,9 +3,8 @@ import fs from 'node:fs';
 const file = 'src/components/Gallery.tsx';
 let source = fs.readFileSync(file, 'utf8');
 
-// v16: keep the client WhatsApp text and crawler OG preview on a fresh
-// versioned URL. Include the gallery description/news text in the message;
-// the server OG endpoint exposes the same description plus the main photo.
+// v17: use the dedicated OG share endpoint directly. This avoids WhatsApp
+// resolving the SPA/canonical URL and reusing an older preview object.
 const start = source.indexOf('const handleShare =');
 const end = source.indexOf('const goToImage =', start);
 
@@ -17,9 +16,9 @@ if (start < 0 || end <= start) {
 const replacement = `const handleShare = (item: GalleryItem, platform: 'wa' | 'fb' | 'copy') => {
     const activityTitle = String(item.title || item.description || item.category || 'Dokumentasi PB Bilibili 162').replace(/\\s+/g, ' ').trim();
     const activityDescription = String(item.description || '').replace(/\\s+/g, ' ').trim();
-    // v16: root share URL is rewritten to /api/share-galeri for crawlers.
-    // The API supplies OG title, news/description text and the main photo.
-    const currentUrl = window.location.origin + '/?gallery=' + encodeURIComponent(item.id) + '&share=v16&v=16';
+    // v17: share the API OG endpoint itself, with a new version key.
+    // The endpoint returns the exact activity title and the first gallery photo.
+    const currentUrl = window.location.origin + '/api/share-galeri?id=' + encodeURIComponent(item.id) + '&v=17';
     const shareText = 'Lihat dokumentasi "' + activityTitle + '" dari PB Bilibili 162:' + (activityDescription ? '\\n\\n' + activityDescription : '') + '\\n\\n' + currentUrl;
 
     if (platform === 'wa') {
@@ -39,4 +38,4 @@ const replacement = `const handleShare = (item: GalleryItem, platform: 'wa' | 'f
 
 source = source.slice(0, start) + replacement + source.slice(end);
 fs.writeFileSync(file, source, 'utf8');
-console.log('[patch-gallery-share-preview] v16 share handler applied successfully');
+console.log('[patch-gallery-share-preview] v17 share handler applied successfully');
