@@ -14,6 +14,9 @@ if (start < 0 || end < 0) {
   process.exit(0);
 }
 
+// Keep the generated JSX free of template-literal "$" syntax.
+// This avoids displaying a stray "$" in the public header and keeps the
+// date/time markup simple and accessible.
 const replacement = `const LiveClock = memo(() => {
   const [time, setTime] = useState(new Date());
 
@@ -36,18 +39,19 @@ const replacement = `const LiveClock = memo(() => {
     second: '2-digit',
     hour12: false
   });
+  const ariaLabel = 'Waktu saat ini: ' + dayName + ', ' + date + ' ' + month + ' ' + year + ', ' + clock;
 
   return (
     <div
-      aria-label={\`Waktu saat ini: \${dayName}, \${date} \${month} \${year}, \${clock}\`}
+      aria-label={ariaLabel}
       className="flex w-auto max-w-[178px] sm:max-w-none items-center justify-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-full bg-[#151d30]/90 border border-white/10 text-[8px] sm:text-[9px] font-mono font-bold text-slate-300 shrink-0 whitespace-nowrap overflow-hidden ml-0.5"
     >
       <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-      <span className="text-slate-200 truncate">\${dayName}, \${date} \${month}</span>
+      <span className="text-slate-200 truncate">{dayName}, {date} {month}</span>
       <span className="opacity-40 shrink-0">•</span>
-      <span className="text-blue-400 shrink-0">\${clock}</span>
+      <span className="text-blue-400 shrink-0">{clock}</span>
       <span className="hidden sm:inline opacity-40 shrink-0">•</span>
-      <span className="hidden sm:inline text-slate-500 shrink-0">\${year}</span>
+      <span className="hidden sm:inline text-slate-500 shrink-0">{year}</span>
     </div>
   );
 });`;
@@ -61,14 +65,9 @@ source = source.replace(
 );
 
 source = source.replace(
-  'className="flex items-center gap-2 shrink-0 min-w-0" aria-label="Beranda PB Bilibili 162"',
-  'className="flex items-center gap-2 shrink-0 min-w-0" aria-label="Beranda PB Bilibili 162"'
-);
-
-source = source.replace(
   'className="lg:hidden w-11 h-11 shrink-0 rounded-2xl',
   'className="lg:hidden w-11 h-11 shrink-0 ml-auto rounded-2xl'
 );
 
 fs.writeFileSync(file, source, 'utf8');
-console.log('[patch-header-datetime] Header date/time positioned beside logo');
+console.log('[patch-header-datetime] Header date/time cleaned: no stray dollar sign');
