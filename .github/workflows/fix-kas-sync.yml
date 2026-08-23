@@ -1,0 +1,221 @@
+name: Fix Kas Filter and WhatsApp Sync
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Patch kas synchronization
+        shell: python
+        run: |
+          from pathlib import Path
+
+          kas = Path('src/components/KasManager.tsx')
+          text = kas.read_text(encoding='utf-8')
+
+          old = """  const today = getLocalDateString();
+  const firstDayOfMonth = today.substring(0, 8) + '01';
+  const [startDate, setStartDate] = useState(firstDayOfMonth);
+  const [endDate, setEndDate] = useState(today);
+  const [hasSetInitialDates, setHasSetInitialDates] = useState(false);"""
+          new = """  const today = getLocalDateString();
+  const firstDayOfMonth = today.substring(0, 8) + '01';
+  const [startDate, setStartDate] = useState(() => localStorage.getItem('kas_filter_start') || firstDayOfMonth);
+  const [endDate, setEndDate] = useState(() => localStorage.getItem('kas_filter_end') || today);"""
+          if old not in text:
+              raise SystemExit('KasManager date-state pattern not found')
+          text = text.replace(old, new, 1)
+
+          old = """  useEffect(() => {
+    setCurrentPage(1);
+  }, [startDate, endDate, searchTerm]);"""
+          new = """  useEffect(() => {
+    setCurrentPage(1);
+    try {
+      localStorage.setItem('kas_filter_start', startDate);
+      localStorage.setItem('kas_filter_end', endDate);
+    } catch (e) {}
+  }, [startDate, endDate, searchTerm]);"""
+          if old not in text:
+              raise SystemExit('KasManager filter effect pattern not found')
+          text = text.replace(old, new, 1)
+
+          old = """      if (fetchedKas.length > 0 && (!hasSetInitialDates || forceResetDates)) {
+        const sorted = [...fetchedKas].sort((a, b) => a.tanggal_transaksi.localeCompare(b.tanggal_transaksi));
+        const latestDate = sorted[sorted.length - 1].tanggal_transaksi;
+        setStartDate(latestDate);
+        setEndDate(today > latestDate ? today : latestDate);
+        setHasSetInitialDates(true);
+      }
+
+"""
+          if old not in text:
+              raise SystemExit('KasManager forced-date reset block not found')
+          text = text.replace(old, '', 1)
+
+          old = """            onChange={(e) => setStartDate(e.target.value)}"""
+          new = """            onChange={(e) => setStartDate(e.target.value)}"""
+          if old not in text:
+              raise SystemExit('KasManager start-date handler not found')
+
+          old = """            setStartDate(latestTxDate);
+              setEndDate(today > latestTxDate ? today : latestTxDate);"""
+          new = """            setStartDate(firstDayOfMonth);
+              setEndDate(today);"""
+          if old not in text:
+              raise SystemExit('KasManager Bulan Ini handler not found')
+          text = text.replace(old, new, 1)
+
+          kas.write_text(text, encoding='utf-8')
+
+          notifier = Path('src/components/KasRealtimeNotifier.tsx')
+          text = notifier.read_text(encoding='utf-8')
+
+          old = """          // Calculate fields matching the club's financial dashboard (as shown in the user's attached image)
+          const maxDate = sortedKasList.length > 0 
+            ? sortedKasList[sortedKasList.length - 1].tanggal_transaksi 
+            : new Date().toISOString().split('T')[0];
+
+          // 1. Saldo Sebelumnya (cumulative cash balance accumulated before the latest update date)
+          const saldoSebelumnya = sortedKasList
+            .filter(item => item.tanggal_transaksi < maxDate)
+            .reduce((acc, curr) => {
+              const isMasuk = checkIsMasuk(curr);
+              return isMasuk ? acc + (curr.jumlah_bayar || 0) : acc - (curr.jumlah_bayar || 0);
+            }, 0);
+
+          // 2. Pemasukan (Pemasukan Terbaru per tanggal transaksi terakhir)
+          const pemasukanBulanIni = sortedKasList
+            .filter(item => item.tanggal_transaksi === maxDate && checkIsMasuk(item))
+            .reduce((acc, curr) => acc + (curr.jumlah_bayar || 0), 0);
+
+          // 3. Pengeluaran (Pengeluaran Terbaru per tanggal transaksi terakhir)
+          const pengeluaranBulanIni = sortedKasList
+            .filter(item => item.tanggal_transaksi === maxDate && !checkIsMasuk(item))
+            .reduce((acc, curr) => acc + (curr.jumlah_bayar || 0), 0);
+
+          // 4. Saldo Akhir Kas
+          const sisaSaldoAkhir = saldoSebelumnya + pemasukanBulanIni - pengeluaranBulanIni;
+
+          const modalTetap = 600000;
+          const saldoBendahara = sisaSaldoAkhir - modalTetap;
+
+          const incomes = sortedKasList.filter(k => checkIsMasuk(k));
+          const latestIncome = incomes.length > 0 ? incomes[incomes.length - 1] : null;
+
+          const expenses = sortedKasList.filter(k => !checkIsMasuk(k));
+          const latestExpense = expenses.length > 0 ? expenses[expenses.length - 1] : null;"""
+
+          new = """          // Keep the notification summary synchronized with the same filter used by KasManager.
+          // The filter is persisted locally so the WhatsApp text, on the same device, matches the visible cards.
+          const nowDate = new Date();
+          const todayString = `${nowDate.getFullYear()}-${String(nowDate.getMonth() + 1).padStart(2, '0')}-${String(nowDate.getDate()).padStart(2, '0')}`;
+          const defaultStartDate = todayString.substring(0, 8) + '01';
+          const reportStartDate = localStorage.getItem('kas_filter_start') || defaultStartDate;
+          const reportEndDate = localStorage.getItem('kas_filter_end') || todayString;
+
+          const reportItems = sortedKasList.filter(item =>
+            item.tanggal_transaksi >= reportStartDate && item.tanggal_transaksi <= reportEndDate
+          );
+
+          // 1. Saldo sebelumnya = balance before the active filter period.
+          const saldoSebelumnya = sortedKasList
+            .filter(item => item.tanggal_transaksi < reportStartDate)
+            .reduce((acc, curr) => {
+              const isMasuk = checkIsMasuk(curr);
+              return isMasuk ? acc + (curr.jumlah_bayar || 0) : acc - (curr.jumlah_bayar || 0);
+            }, 0);
+
+          // 2-3. Period totals = exactly the same records shown by the active filter.
+          const pemasukanBulanIni = reportItems
+            .filter(item => checkIsMasuk(item))
+            .reduce((acc, curr) => acc + (curr.jumlah_bayar || 0), 0);
+
+          const pengeluaranBulanIni = reportItems
+            .filter(item => !checkIsMasuk(item))
+            .reduce((acc, curr) => acc + (curr.jumlah_bayar || 0), 0);
+
+          // 4. Saldo akhir = opening balance + filtered income - filtered expenses.
+          const sisaSaldoAkhir = saldoSebelumnya + pemasukanBulanIni - pengeluaranBulanIni;
+
+          const modalTetap = 600000;
+          const saldoBendahara = sisaSaldoAkhir - modalTetap;
+
+          const incomeItems = reportItems.filter(k => checkIsMasuk(k));
+          const latestIncome = incomeItems.length > 0
+            ? [...incomeItems].sort((a, b) => String(b.created_at || b.tanggal_transaksi).localeCompare(String(a.created_at || a.tanggal_transaksi)))[0]
+            : null;
+
+          const expenseItems = reportItems.filter(k => !checkIsMasuk(k));
+          const latestExpense = expenseItems.length > 0
+            ? [...expenseItems].sort((a, b) => String(b.created_at || b.tanggal_transaksi).localeCompare(String(a.created_at || a.tanggal_transaksi)))[0]
+            : null;"""
+          if old not in text:
+              raise SystemExit('Notifier balance block not found')
+          text = text.replace(old, new, 1)
+
+          old = """              `• Status Keuangan Klub (Update Terbaru):*\\n` +
+              `• Saldo Sebelumnya: ${formatRupiah(saldoSebelumnya)}\\n` +
+              `• Pemasukan Terbaru: ${formatRupiah(pemasukanBulanIni)}\\n` +
+              `• Pengeluaran Terbaru: ${formatRupiah(pengeluaranBulanIni)}\\n` +
+              `• *Sisa Saldo Akhir: ${formatRupiah(sisaSaldoAkhir)}*\\n` +"""
+          # The source has the heading without a stray star after the colon.
+          old = """              `*Status Keuangan Klub (Update Terbaru):*\\n` +
+              `• Saldo Sebelumnya: ${formatRupiah(saldoSebelumnya)}\\n` +
+              `• Pemasukan Terbaru: ${formatRupiah(pemasukanBulanIni)}\\n` +
+              `• Pengeluaran Terbaru: ${formatRupiah(pengeluaranBulanIni)}\\n` +
+              `• *Sisa Saldo Akhir: ${formatRupiah(sisaSaldoAkhir)}*\\n` +"""
+          new = """              `*Status Keuangan Klub (Sesuai Filter ${reportStartDate} s/d ${reportEndDate}):*\\n` +
+              `• Saldo Sebelumnya: ${formatRupiah(saldoSebelumnya)}\\n` +
+              `• Total Pemasukan Periode: ${formatRupiah(pemasukanBulanIni)}\\n` +
+              `• Total Pengeluaran Periode: ${formatRupiah(pengeluaranBulanIni)}\\n` +
+              (latestIncome ? `• Detail Pemasukan Terakhir: ${latestIncome.nama_pembayar || latestIncome.kategori} — ${formatRupiah(latestIncome.jumlah_bayar || 0)}\\n` : `• Detail Pemasukan Terakhir: -\\n`) +
+              (latestExpense ? `• Detail Pengeluaran Terakhir: ${latestExpense.nama_pembayar || latestExpense.kategori} — ${formatRupiah(latestExpense.jumlah_bayar || 0)}\\n` : `• Detail Pengeluaran Terakhir: -\\n`) +
+              `• *Sisa Saldo Akhir: ${formatRupiah(sisaSaldoAkhir)}*\\n` +"""
+          if old not in text:
+              raise SystemExit('Notifier WhatsApp summary block not found')
+          text = text.replace(old, new, 1)
+
+          # Apply the same detail block to the manual/no-transaction report as well.
+          old = """              `*Status Keuangan Klub (Update Terbaru):*\\n` +
+              `• Saldo Sebelumnya: ${formatRupiah(saldoSebelumnya)}\\n` +
+              `• Pemasukan Terbaru: ${formatRupiah(pemasukanBulanIni)}\\n` +
+              `• Pengeluaran Terbaru: ${formatRupiah(pengeluaranBulanIni)}\\n` +
+              `• *Sisa Saldo Akhir: ${formatRupiah(sisaSaldoAkhir)}*\\n` +"""
+          new = """              `*Status Keuangan Klub (Sesuai Filter ${reportStartDate} s/d ${reportEndDate}):*\\n` +
+              `• Saldo Sebelumnya: ${formatRupiah(saldoSebelumnya)}\\n` +
+              `• Total Pemasukan Periode: ${formatRupiah(pemasukanBulanIni)}\\n` +
+              `• Total Pengeluaran Periode: ${formatRupiah(pengeluaranBulanIni)}\\n` +
+              (latestIncome ? `• Detail Pemasukan Terakhir: ${latestIncome.nama_pembayar || latestIncome.kategori} — ${formatRupiah(latestIncome.jumlah_bayar || 0)}\\n` : `• Detail Pemasukan Terakhir: -\\n`) +
+              (latestExpense ? `• Detail Pengeluaran Terakhir: ${latestExpense.nama_pembayar || latestExpense.kategori} — ${formatRupiah(latestExpense.jumlah_bayar || 0)}\\n` : `• Detail Pengeluaran Terakhir: -\\n`) +
+              `• *Sisa Saldo Akhir: ${formatRupiah(sisaSaldoAkhir)}*\\n` +"""
+          if old not in text:
+              raise SystemExit('Notifier manual summary block not found')
+          text = text.replace(old, new, 1)
+
+          notifier.write_text(text, encoding='utf-8')
+          print('Kas synchronization patch applied successfully.')
+
+      - name: Commit patched source
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/components/KasManager.tsx src/components/KasRealtimeNotifier.tsx
+          if git diff --cached --quiet; then
+            echo "No source changes needed."
+            exit 0
+          fi
+          git commit -m "fix(kas): synchronize filter and WhatsApp transaction details"
+          git push
