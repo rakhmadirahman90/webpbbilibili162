@@ -1,60 +1,81 @@
 /* =========================================================
    PB BILIBILI 162 — REALTIME KAS NOTIFICATION
-   Mobile-first layout hardening for SweetAlert2
+   Mobile-first layout hardening for SweetAlert2 toast/modal.
    ========================================================= */
 
-/* Keep the realtime cash modal above every fixed/mobile UI layer. */
 body.swal2-shown.swal2-height-auto {
   height: auto !important;
   overflow: hidden !important;
 }
 
+/* SweetAlert was configured as top-end toast. Force a centered,
+   selectable notification so Android controls cannot cover it. */
 .swal2-container.swal2-backdrop-show,
 .swal2-container.swal2-noanimation {
   z-index: 20000 !important;
-  padding: max(12px, env(safe-area-inset-top))
-           max(12px, env(safe-area-inset-right))
-           max(12px, env(safe-area-inset-bottom))
-           max(12px, env(safe-area-inset-left)) !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+  padding: max(10px, env(safe-area-inset-top))
+           max(10px, env(safe-area-inset-right))
+           max(10px, env(safe-area-inset-bottom))
+           max(10px, env(safe-area-inset-left)) !important;
   box-sizing: border-box !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  pointer-events: auto !important;
 }
 
-/* The popup becomes a contained sheet instead of an oversized fixed card. */
+/* Applies to both the current toast class and future custom popup class. */
+.swal2-popup.swal2-toast,
 .swal2-popup.kas-realtime-popup {
-  width: min(100%, 560px) !important;
-  max-width: calc(100vw - 24px) !important;
-  max-height: calc(100dvh - 24px) !important;
+  position: relative !important;
+  inset: auto !important;
+  width: min(560px, calc(100vw - 20px)) !important;
+  max-width: calc(100vw - 20px) !important;
+  max-height: calc(100dvh - 20px) !important;
+  min-height: 0 !important;
   margin: 0 auto !important;
   padding: 0 !important;
-  border-radius: 22px !important;
+  border-radius: 20px !important;
   overflow: hidden !important;
   box-sizing: border-box !important;
   display: flex !important;
   flex-direction: column !important;
   background: linear-gradient(180deg, #0b1222 0%, #080f1d 100%) !important;
-  border: 1px solid rgba(71, 85, 105, .42) !important;
-  box-shadow: 0 24px 70px rgba(0, 0, 0, .55) !important;
+  border: 1px solid rgba(34, 211, 238, .24) !important;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .58) !important;
+  pointer-events: auto !important;
+  user-select: text !important;
 }
 
+.swal2-popup.swal2-toast .swal2-title,
 .swal2-popup.kas-realtime-popup .swal2-title {
   flex: 0 0 auto !important;
+  width: 100% !important;
   margin: 0 !important;
-  padding: 18px 18px 12px !important;
+  padding: 15px 16px 11px !important;
   color: #f8fafc !important;
-  font-size: clamp(18px, 5vw, 23px) !important;
+  font-size: clamp(17px, 4.8vw, 22px) !important;
   line-height: 1.15 !important;
   font-weight: 900 !important;
   text-align: left !important;
+  box-sizing: border-box !important;
   letter-spacing: -.02em !important;
 }
 
+/* This is the only scrolling region. Header stays visible and the
+   WhatsApp button remains reachable at the end of the content. */
+.swal2-popup.swal2-toast .swal2-html-container,
 .swal2-popup.kas-realtime-popup .swal2-html-container {
   flex: 1 1 auto !important;
   min-height: 0 !important;
   width: 100% !important;
   max-height: none !important;
   margin: 0 !important;
-  padding: 0 14px 12px !important;
+  padding: 0 11px 12px !important;
   overflow-x: hidden !important;
   overflow-y: auto !important;
   -webkit-overflow-scrolling: touch !important;
@@ -65,129 +86,88 @@ body.swal2-shown.swal2-height-auto {
   user-select: text !important;
 }
 
-/* Compact, consistent cards inside the scroll area. */
-.swal2-popup.kas-realtime-popup .kas-notification-card {
-  margin: 0 0 10px !important;
-  padding: 12px !important;
-  border-radius: 15px !important;
+/* Existing notification cards: tighter spacing without changing content. */
+.swal2-popup.swal2-toast .swal2-html-container > div > div,
+.swal2-popup.kas-realtime-popup .swal2-html-container > div > div {
   box-sizing: border-box !important;
+  max-width: 100% !important;
 }
 
-.swal2-popup.kas-realtime-popup .kas-notification-card:last-child {
-  margin-bottom: 0 !important;
+.swal2-popup.swal2-toast .swal2-html-container b,
+.swal2-popup.swal2-toast .swal2-html-container span,
+.swal2-popup.swal2-toast .swal2-html-container div,
+.swal2-popup.kas-realtime-popup .swal2-html-container b,
+.swal2-popup.kas-realtime-popup .swal2-html-container span,
+.swal2-popup.kas-realtime-popup .swal2-html-container div {
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
 }
 
-.swal2-popup.kas-realtime-popup .kas-notification-row {
-  display: grid !important;
-  grid-template-columns: minmax(84px, 34%) minmax(0, 1fr) !important;
-  gap: 8px !important;
-  align-items: start !important;
-  line-height: 1.35 !important;
-}
-
-.swal2-popup.kas-realtime-popup .kas-notification-value {
+/* Long values such as category/note never force the card wider than screen. */
+.swal2-popup.swal2-toast .swal2-html-container .text-right,
+.swal2-popup.kas-realtime-popup .swal2-html-container .text-right {
   min-width: 0 !important;
   overflow-wrap: anywhere !important;
   word-break: break-word !important;
-  text-align: right !important;
 }
 
-.swal2-popup.kas-realtime-popup .kas-notification-badge {
-  max-width: 46% !important;
-  white-space: normal !important;
-  text-align: center !important;
-  line-height: 1.15 !important;
-}
-
-/* Footer/buttons stay visible and never sit underneath Android navigation. */
-.swal2-popup.kas-realtime-popup .swal2-actions {
-  flex: 0 0 auto !important;
-  width: 100% !important;
-  margin: 0 !important;
-  padding: 10px 14px calc(12px + env(safe-area-inset-bottom)) !important;
-  box-sizing: border-box !important;
-  gap: 8px !important;
-  background: rgba(8, 15, 29, .96) !important;
-  border-top: 1px solid rgba(148, 163, 184, .10) !important;
-  backdrop-filter: blur(12px) !important;
-}
-
-.swal2-popup.kas-realtime-popup .swal2-confirm,
-.swal2-popup.kas-realtime-popup .swal2-cancel {
+/* WhatsApp action remains a proper touch target. */
+.swal2-popup.swal2-toast .swal2-html-container a,
+.swal2-popup.kas-realtime-popup .swal2-html-container a {
   min-height: 44px !important;
-  border-radius: 12px !important;
-  margin: 0 !important;
-  font-size: 12px !important;
-  font-weight: 800 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+  touch-action: manipulation !important;
+  pointer-events: auto !important;
 }
 
-.swal2-popup.kas-realtime-popup .swal2-close {
-  width: 40px !important;
-  height: 40px !important;
-  top: 8px !important;
-  right: 8px !important;
-  z-index: 5 !important;
-  color: #94a3b8 !important;
-  font-size: 28px !important;
-  line-height: 40px !important;
+.swal2-popup.swal2-toast .swal2-timer-progress-bar,
+.swal2-popup.kas-realtime-popup .swal2-timer-progress-bar {
+  height: 3px !important;
 }
 
-/* Phones: use nearly the entire available height while preserving safe areas. */
-@media (max-width: 640px) {
-  .swal2-container.swal2-backdrop-show,
-  .swal2-container.swal2-noanimation {
-    align-items: center !important;
-  }
-
-  .swal2-popup.kas-realtime-popup {
-    width: calc(100vw - 20px) !important;
-    max-width: calc(100vw - 20px) !important;
-    max-height: calc(100dvh - 20px) !important;
-    border-radius: 20px !important;
-  }
-
-  .swal2-popup.kas-realtime-popup .swal2-title {
-    padding: 16px 16px 10px !important;
-    font-size: 18px !important;
-  }
-
-  .swal2-popup.kas-realtime-popup .swal2-html-container {
-    padding: 0 10px 10px !important;
-  }
-
-  .swal2-popup.kas-realtime-popup .kas-notification-row {
-    grid-template-columns: minmax(76px, 31%) minmax(0, 1fr) !important;
-    gap: 6px !important;
-    font-size: 10px !important;
-  }
-
-  .swal2-popup.kas-realtime-popup .kas-notification-card {
-    padding: 10px !important;
-    border-radius: 14px !important;
-  }
-}
-
-/* Very narrow phones: allow label/value to stack instead of colliding. */
-@media (max-width: 380px) {
-  .swal2-popup.kas-realtime-popup {
-    width: calc(100vw - 12px) !important;
-    max-width: calc(100vw - 12px) !important;
-    max-height: calc(100dvh - 12px) !important;
-    border-radius: 17px !important;
-  }
-
-  .swal2-popup.kas-realtime-popup .kas-notification-row {
-    grid-template-columns: 1fr !important;
-    gap: 2px !important;
-  }
-
-  .swal2-popup.kas-realtime-popup .kas-notification-value {
-    text-align: left !important;
-  }
-}
-
-/* Prevent the page's fixed control dock/menu from overlapping the notification. */
+/* Hide the page's fixed docks while the notification is open so they
+   cannot visually overlap the popup. SweetAlert itself is unaffected. */
 body.swal2-shown .fixed,
 body.swal2-shown [class*="fixed"] {
   z-index: 1 !important;
+}
+
+@media (max-width: 640px) {
+  .swal2-popup.swal2-toast,
+  .swal2-popup.kas-realtime-popup {
+    width: calc(100vw - 16px) !important;
+    max-width: calc(100vw - 16px) !important;
+    max-height: calc(100dvh - 16px) !important;
+    border-radius: 18px !important;
+  }
+
+  .swal2-popup.swal2-toast .swal2-title,
+  .swal2-popup.kas-realtime-popup .swal2-title {
+    padding: 13px 14px 9px !important;
+    font-size: 17px !important;
+  }
+
+  .swal2-popup.swal2-toast .swal2-html-container,
+  .swal2-popup.kas-realtime-popup .swal2-html-container {
+    padding: 0 8px 10px !important;
+  }
+}
+
+@media (max-width: 380px) {
+  .swal2-popup.swal2-toast,
+  .swal2-popup.kas-realtime-popup {
+    width: calc(100vw - 10px) !important;
+    max-width: calc(100vw - 10px) !important;
+    max-height: calc(100dvh - 10px) !important;
+    border-radius: 16px !important;
+  }
+
+  .swal2-popup.swal2-toast .swal2-html-container,
+  .swal2-popup.kas-realtime-popup .swal2-html-container {
+    padding-left: 6px !important;
+    padding-right: 6px !important;
+  }
 }
