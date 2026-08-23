@@ -28,6 +28,14 @@ function getPrimaryImage(url: string): string {
   return String(url || '').split(/[\s,]+/).map(normalizeUrl).filter(Boolean).find(candidate => !isBadPreviewAsset(candidate)) || '';
 }
 
+function getImageMime(url: string): string {
+  const value = String(url || '').split('?')[0].toLowerCase();
+  if (value.endsWith('.png')) return 'image/png';
+  if (value.endsWith('.webp')) return 'image/webp';
+  if (value.endsWith('.gif')) return 'image/gif';
+  return 'image/jpeg';
+}
+
 function isCrawler(userAgent: string): boolean {
   return /WhatsApp|facebookexternalhit|Facebot|Twitterbot|LinkedInBot|TelegramBot|Slackbot|Discordbot|Googlebot|bingbot/i.test(userAgent);
 }
@@ -49,23 +57,25 @@ export default async function handler(req: any, res: any) {
     const gallery = Array.isArray(rows) ? rows[0] : null;
     if (!gallery) return res.status(404).send('Dokumentasi tidak ditemukan');
 
-    // v15: always use the actual gallery.title for the WhatsApp/OG preview.
+    // v16: title comes from the actual gallery record. The gallery description
+    // is also exposed as the WhatsApp/OG preview description so the shared
+    // activity/news text travels with the main photo.
     const photoTitle = String(gallery.title || '').replace(/\s+/g, ' ').trim() || 'Dokumentasi PB Bilibili 162';
     const shareTitle = `Lihat dokumentasi \"${photoTitle}\" dari PB Bilibili 162`;
+    const galleryDescription = String(gallery.description || '').replace(/\s+/g, ' ').trim();
+    const description = galleryDescription || `${shareTitle}.`;
     const image = gallery.type === 'image' ? getPrimaryImage(gallery.url) : '';
 
-    // WhatsApp can retain an OG preview for an old URL. The version query makes
-    // each newly shared preview a distinct URL while keeping the same gallery.
-    const requestedVersion = String(req.query?.v || '15').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 24) || '15';
-    const canonical = `${PUBLIC_DOMAIN}/?gallery=${encodeURIComponent(gallery.id)}&share=v15&v=${encodeURIComponent(requestedVersion)}`;
-    const description = `${shareTitle}.`.slice(0, 200);
-    const pageTitle = shareTitle;
+    // Versioned URL prevents WhatsApp from reusing an older preview cache.
+    const requestedVersion = String(req.query?.v || '16').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 24) || '16';
+    const canonical = `${PUBLIC_DOMAIN}/?gallery=${encodeURIComponent(gallery.id)}&share=v16&v=${encodeURIComponent(requestedVersion)}`;
     const crawler = isCrawler(String(req.headers?.['user-agent'] || ''));
+    const imageMime = getImageMime(image);
 
     const imageTags = image ? `
       <meta property=\"og:image\" content=\"${escapeHtml(image)}\" />
       <meta property=\"og:image:secure_url\" content=\"${escapeHtml(image)}\" />
-      <meta property=\"og:image:type\" content=\"image/jpeg\" />
+      <meta property=\"og:image:type\" content=\"${escapeHtml(imageMime)}\" />
       <meta property=\"og:image:width\" content=\"1200\" />
       <meta property=\"og:image:height\" content=\"630\" />
       <meta property=\"og:image:alt\" content=\"${escapeHtml(photoTitle)}\" />
@@ -76,17 +86,17 @@ export default async function handler(req: any, res: any) {
 <html lang=\"id\"><head>
 <meta charset=\"utf-8\" />
 <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
-<title>${escapeHtml(pageTitle)}</title>
-<meta name=\"description\" content=\"${escapeHtml(description)}\" />
+<title>${escapeHtml(shareTitle)}</title>
+<meta name=\"description\" content=\"${escapeHtml(description.slice(0, 300))}\" />
 <meta property=\"og:type\" content=\"article\" />
 <meta property=\"og:url\" content=\"${escapeHtml(canonical)}\" />
 <meta property=\"og:title\" content=\"${escapeHtml(shareTitle)}\" />
-<meta property=\"og:description\" content=\"${escapeHtml(description)}\" />
+<meta property=\"og:description\" content=\"${escapeHtml(description.slice(0, 300))}\" />
 <meta property=\"og:site_name\" content=\"PB Bilibili 162\" />
 ${imageTags}
 <meta name=\"twitter:card\" content=\"summary_large_image\" />
 <meta name=\"twitter:title\" content=\"${escapeHtml(shareTitle)}\" />
-<meta name=\"twitter:description\" content=\"${escapeHtml(description)}\" />
+<meta name=\"twitter:description\" content=\"${escapeHtml(description.slice(0, 300))}\" />
 <link rel=\"canonical\" href=\"${escapeHtml(canonical)}\" />
 ${crawler ? '' : `<meta http-equiv=\"refresh\" content=\"0;url=${escapeHtml(canonical)}\" /><script>window.location.replace(${JSON.stringify(canonical)});</script>`}
 </head><body>
