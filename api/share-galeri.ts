@@ -47,7 +47,7 @@ export default async function handler(req: any, res: any) {
   if (!id) return res.status(400).send('Dokumentasi tidak ditemukan');
 
   try {
-    const endpoint = `${SUPABASE_URL}/rest/v1/gallery?id=eq.${encodeURIComponent(id)}&select=id,title,description,url,created_at,type`;
+    const endpoint = `${SUPABASE_URL}/rest/v1/gallery?id=eq.${encodeURIComponent(id)}&select=id,title,description,url,created_at,updated_at,type`;
     const response = await fetch(endpoint, {
       headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, Accept: 'application/json' },
     });
@@ -57,29 +57,32 @@ export default async function handler(req: any, res: any) {
     const gallery = Array.isArray(rows) ? rows[0] : null;
     if (!gallery) return res.status(404).send('Dokumentasi tidak ditemukan');
 
-    // v16: title comes from the actual gallery record. The gallery description
-    // is also exposed as the WhatsApp/OG preview description so the shared
-    // activity/news text travels with the main photo.
-    const photoTitle = String(gallery.title || '').replace(/\s+/g, ' ').trim() || 'Dokumentasi PB Bilibili 162';
+    // v17: the activity title is always taken from the gallery record.
+    const photoTitle = String(gallery.title || gallery.description || '').replace(/\s+/g, ' ').trim() || 'Dokumentasi PB Bilibili 162';
     const shareTitle = `Lihat dokumentasi \"${photoTitle}\" dari PB Bilibili 162`;
     const galleryDescription = String(gallery.description || '').replace(/\s+/g, ' ').trim();
-    const description = galleryDescription || `${shareTitle}.`;
+    const description = galleryDescription || shareTitle;
     const image = gallery.type === 'image' ? getPrimaryImage(gallery.url) : '';
 
-    // Versioned URL prevents WhatsApp from reusing an older preview cache.
-    const requestedVersion = String(req.query?.v || '16').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 24) || '16';
-    const canonical = `${PUBLIC_DOMAIN}/?gallery=${encodeURIComponent(gallery.id)}&share=v16&v=${encodeURIComponent(requestedVersion)}`;
+    // The share endpoint itself is the Open Graph object. The version is part
+    // of the URL so WhatsApp gets a fresh object instead of an old cached one.
+    const requestedVersion = String(req.query?.v || '17').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 24) || '17';
+    const shareUrl = `${PUBLIC_DOMAIN}/api/share-galeri?id=${encodeURIComponent(gallery.id)}&v=${encodeURIComponent(requestedVersion)}`;
+    const detailUrl = `${PUBLIC_DOMAIN}/?gallery=${encodeURIComponent(gallery.id)}&share=v17&v=${encodeURIComponent(requestedVersion)}`;
     const crawler = isCrawler(String(req.headers?.['user-agent'] || ''));
     const imageMime = getImageMime(image);
+    // A query suffix makes the image URL a new CDN/cache key for this preview.
+    const previewImage = image ? `${image}${image.includes('?') ? '&' : '?'}share=v17` : '';
 
-    const imageTags = image ? `
-      <meta property=\"og:image\" content=\"${escapeHtml(image)}\" />
-      <meta property=\"og:image:secure_url\" content=\"${escapeHtml(image)}\" />
+    const imageTags = previewImage ? `
+      <meta property=\"og:image\" content=\"${escapeHtml(previewImage)}\" />
+      <meta property=\"og:image:url\" content=\"${escapeHtml(previewImage)}\" />
+      <meta property=\"og:image:secure_url\" content=\"${escapeHtml(previewImage)}\" />
       <meta property=\"og:image:type\" content=\"${escapeHtml(imageMime)}\" />
       <meta property=\"og:image:width\" content=\"1200\" />
-      <meta property=\"og:image:height\" content=\"630\" />
+      <meta property=\"og:image:height\" content=\"900\" />
       <meta property=\"og:image:alt\" content=\"${escapeHtml(photoTitle)}\" />
-      <meta name=\"twitter:image\" content=\"${escapeHtml(image)}\" />
+      <meta name=\"twitter:image\" content=\"${escapeHtml(previewImage)}\" />
     ` : '';
 
     const html = `<!doctype html>
@@ -89,7 +92,7 @@ export default async function handler(req: any, res: any) {
 <title>${escapeHtml(shareTitle)}</title>
 <meta name=\"description\" content=\"${escapeHtml(description.slice(0, 300))}\" />
 <meta property=\"og:type\" content=\"article\" />
-<meta property=\"og:url\" content=\"${escapeHtml(canonical)}\" />
+<meta property=\"og:url\" content=\"${escapeHtml(shareUrl)}\" />
 <meta property=\"og:title\" content=\"${escapeHtml(shareTitle)}\" />
 <meta property=\"og:description\" content=\"${escapeHtml(description.slice(0, 300))}\" />
 <meta property=\"og:site_name\" content=\"PB Bilibili 162\" />
@@ -97,18 +100,17 @@ ${imageTags}
 <meta name=\"twitter:card\" content=\"summary_large_image\" />
 <meta name=\"twitter:title\" content=\"${escapeHtml(shareTitle)}\" />
 <meta name=\"twitter:description\" content=\"${escapeHtml(description.slice(0, 300))}\" />
-<link rel=\"canonical\" href=\"${escapeHtml(canonical)}\" />
-${crawler ? '' : `<meta http-equiv=\"refresh\" content=\"0;url=${escapeHtml(canonical)}\" /><script>window.location.replace(${JSON.stringify(canonical)});</script>`}
+<link rel=\"canonical\" href=\"${escapeHtml(detailUrl)}\" />
+${crawler ? '' : `<meta http-equiv=\"refresh\" content=\"0;url=${escapeHtml(detailUrl)}\" /><script>window.location.replace(${JSON.stringify(detailUrl)});</script>`}
 </head><body>
 <h1>${escapeHtml(shareTitle)}</h1>
-${image ? `<img src=\"${escapeHtml(image)}\" alt=\"${escapeHtml(photoTitle)}\" style=\"max-width:100%;height:auto\" />` : ''}
+${previewImage ? `<img src=\"${escapeHtml(previewImage)}\" alt=\"${escapeHtml(photoTitle)}\" style=\"max-width:100%;height:auto\" />` : ''}
 <p>${escapeHtml(description)}</p>
-<p><a href=\"${escapeHtml(canonical)}\">Buka dokumentasi</a></p>
+<p><a href=\"${escapeHtml(detailUrl)}\">Buka dokumentasi</a></p>
 </body></html>`;
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
-    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=300, stale-while-revalidate=60');
     res.setHeader('Vary', 'User-Agent');
     return res.status(200).send(html);
   } catch (error) {
