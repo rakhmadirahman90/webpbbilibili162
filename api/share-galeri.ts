@@ -29,19 +29,21 @@ function previewImage(raw: string, type: string, thumbnailRaw = '') {
 function crawler(ua: string) { return /WhatsApp|facebookexternalhit|Facebot|Twitterbot|LinkedInBot|TelegramBot|Slackbot|Discordbot|Googlebot|bingbot/i.test(ua); }
 
 async function loadGallery(id: string) {
-  const urls = Array.from(new Set([process.env.VITE_SUPABASE_URL, process.env.SUPABASE_URL, DEFAULT_SUPABASE_URL].filter(Boolean).map(v => String(v).replace(/\/$/, ''))));
-  const keys = Array.from(new Set([process.env.VITE_SUPABASE_ANON_KEY, process.env.VITE_SUPABASE_ANON, process.env.SUPABASE_ANON_KEY, process.env.SUPABASE_KEY, DEFAULT_SUPABASE_KEY].filter(Boolean).map(String)));
+  const urls = Array.from(new Set([process.env.VITE_SUPABASE_URL, process.env.VITE_SUPABASE_PROJECT_URL, process.env.SUPABASE_URL, DEFAULT_SUPABASE_URL].filter(Boolean).map(v => String(v).replace(/\/$/, ''))));
+  const keys = Array.from(new Set([process.env.VITE_SUPABASE_ANON_KEY, process.env.VITE_SUPABASE_ANON, process.env.VITE_SUPABASE_KEY, process.env.SUPABASE_ANON_KEY, process.env.SUPABASE_KEY, DEFAULT_SUPABASE_KEY].filter(Boolean).map(String)));
   let lastError = '';
   for (const baseUrl of urls) for (const key of keys) {
-    try {
-      const endpoint = `${baseUrl}/rest/v1/gallery?id=eq.${encodeURIComponent(id)}&select=id,title,description,type,url,thumbnail_url,created_at`;
-      const response = await fetch(endpoint, { headers: { apikey: key, Authorization: `Bearer ${key}`, Accept: 'application/json' }, cache: 'no-store' });
-      if (!response.ok) { lastError = `Supabase ${response.status} at ${baseUrl}`; continue; }
-      const rows = await response.json();
-      const gallery = Array.isArray(rows) ? rows[0] : null;
-      if (gallery) return gallery;
-      lastError = `Gallery ${id} not found at ${baseUrl}`;
-    } catch (error) { lastError = error instanceof Error ? error.message : String(error); }
+    for (const table of ['gallery', 'galeri']) {
+      try {
+        const endpoint = `${baseUrl}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}&select=*`;
+        const response = await fetch(endpoint, { headers: { apikey: key, Authorization: `Bearer ${key}`, Accept: 'application/json' }, cache: 'no-store' });
+        if (!response.ok) { lastError = `Supabase ${response.status} at ${baseUrl}/${table}`; continue; }
+        const rows = await response.json();
+        const gallery = Array.isArray(rows) ? rows[0] : null;
+        if (gallery) return gallery;
+        lastError = `Gallery ${id} not found at ${baseUrl}/${table}`;
+      } catch (error) { lastError = error instanceof Error ? error.message : String(error); }
+    }
   }
   throw new Error(lastError || 'Unable to load gallery');
 }
@@ -52,13 +54,16 @@ export default async function handler(req: any, res: any) {
   if (!id) return res.status(400).send('Dokumentasi tidak ditemukan');
 
   try {
-    const gallery = await loadGallery(id);
-    const photoTitle = String(gallery.title || '').replace(/\s+/g, ' ').trim() || 'Dokumentasi PB Bilibili 162';
+    const gallery = await loadGallery(id).catch(() => null);
+    const queryTitle = String(req.query?.title || '').trim();
+    const queryImage = String(req.query?.image || '').trim();
+    const queryType = String(req.query?.type || '').trim();
+    const photoTitle = (queryTitle || String(gallery?.title || gallery?.judul || '').replace(/\s+/g, ' ').trim() || 'Dokumentasi PB Bilibili 162');
     const shareTitle = `Lihat dokumentasi \"${photoTitle}\" dari PB Bilibili 162:`;
-    const image = previewImage(gallery.url, String(gallery.type || ''), gallery.thumbnail_url);
-    const version = String(req.query?.v || '20').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 24) || '20';
-    const detailUrl = `${PUBLIC_DOMAIN}/galeri?gallery=${encodeURIComponent(gallery.id)}`;
-    const shareUrl = `${PUBLIC_DOMAIN}/api/share-galeri?id=${encodeURIComponent(gallery.id)}&v=${version}`;
+    const rawUrl = queryImage || String(gallery?.url || gallery?.image_url || gallery?.foto_url || gallery?.media_url || '');
+    const image = previewImage(rawUrl, queryType || String(gallery?.type || gallery?.media_type || ''), String(gallery?.thumbnail_url || gallery?.thumbnail || ''));
+    const version = String(req.query?.v || '21').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 24) || '21';
+    const detailUrl = `${PUBLIC_DOMAIN}/galeri?gallery=${encodeURIComponent(id)}`;
     const cacheImage = image ? `${image}${image.includes('?') ? '&' : '?'}gallery_share=${version}` : '';
     const mime = /\.png(?:$|\?)/i.test(image) ? 'image/png' : /\.webp(?:$|\?)/i.test(image) ? 'image/webp' : 'image/jpeg';
     const ua = String(req.headers?.['user-agent'] || '');
