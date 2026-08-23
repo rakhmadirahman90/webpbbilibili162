@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Download, ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react';
 import { supabase } from '../supabase';
+import { getSiteSetting, parsePopupList } from '../utils/siteSettingsHelper';
 
 interface ImagePopupProps { activeView?: string | null; }
 type PopupItem = Record<string, any>;
@@ -60,19 +61,46 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
         return;
       }
 
-      const { data, error } = await supabase
-        .from('konfigurasi_popup')
-        .select('id, judul, deskripsi, url_gambar, image_url, file_url, is_active, urutan')
-        .eq('is_active', true)
-        .order('urutan', { ascending: true });
+      // IMPORTANT: AdminPopup uses `site_settings.popup_config` as the canonical
+      // cross-device source of truth. The old landing code only read the
+      // `konfigurasi_popup` table, which could leave the landing carousel one
+      // or more positions behind the Admin Console. Read the same canonical
+      // setting first, then fall back to Supabase if it is unavailable.
+      let canonicalItems: PopupItem[] = [];
+      try {
+        const rawSetting = await getSiteSetting('popup_config');
+        canonicalItems = parsePopupList(rawSetting)
+          .filter((item: PopupItem) => item && item.is_active !== false)
+          .map((item: PopupItem) => ({
+            ...item,
+            url_gambar: item.url_gambar || item.image_url || ''
+          }))
+          .filter((item: PopupItem) => item && item.url_gambar)
+          .sort((a: PopupItem, b: PopupItem) => Number(a.urutan ?? 0) - Number(b.urutan ?? 0));
+      } catch (settingError) {
+        console.warn('[ImagePopup] Canonical popup setting fetch failed:', settingError);
+      }
+
+      let activeItems = canonicalItems;
+
+      // Fallback for older data/installations where popup_config has not yet
+      // been written to site_settings.
+      if (!activeItems.length) {
+        const { data, error } = await supabase
+          .from('konfigurasi_popup')
+          .select('id, judul, deskripsi, url_gambar, image_url, file_url, is_active, urutan')
+          .eq('is_active', true)
+          .order('urutan', { ascending: true });
+
+        if (error) throw error;
+
+        activeItems = (data || [])
+          .map((item: PopupItem) => ({ ...item, url_gambar: item.url_gambar || item.image_url || '' }))
+          .filter((item: PopupItem) => item && item.url_gambar)
+          .sort((a: PopupItem, b: PopupItem) => Number(a.urutan ?? 0) - Number(b.urutan ?? 0));
+      }
 
       if (requestId !== requestIdRef.current || activeView !== null) return;
-      if (error) throw error;
-
-      const activeItems = (data || [])
-        .map((item: PopupItem) => ({ ...item, url_gambar: item.url_gambar || item.image_url || '' }))
-        .filter((item: PopupItem) => item && item.url_gambar)
-        .sort((a: PopupItem, b: PopupItem) => Number(a.urutan ?? 0) - Number(b.urutan ?? 0));
 
       if (!activeItems.length) {
         setPromoImages([]);
@@ -94,7 +122,7 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
         if (item.url_gambar) void preloadImage(String(item.url_gambar));
       });
     } catch (err) {
-      console.warn('[ImagePopup] Supabase popup fetch failed:', err);
+      console.warn('[ImagePopup] Popup fetch failed:', err);
       if (requestId === requestIdRef.current) setPopupOpen(false);
     } finally {
       fetchingRef.current = false;
