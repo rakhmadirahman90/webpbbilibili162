@@ -39,15 +39,15 @@ const replacement = `const LiveClock = memo(() => {
 
   return (
     <div
-      aria-label={\`Waktu saat ini: ${dayName}, ${date} ${month} ${year}, ${clock}\`}
+      aria-label={\`Waktu saat ini: \${dayName}, \${date} \${month} \${year}, \${clock}\`}
       className="flex w-auto max-w-[178px] sm:max-w-none items-center justify-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-full bg-[#151d30]/90 border border-white/10 text-[8px] sm:text-[9px] font-mono font-bold text-slate-300 shrink-0 whitespace-nowrap overflow-hidden ml-0.5"
     >
       <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-      <span className="text-slate-200 truncate">{dayName}, {date} {month}</span>
+      <span className="text-slate-200 truncate">\${dayName}, \${date} \${month}</span>
       <span className="opacity-40 shrink-0">•</span>
-      <span className="text-blue-400 shrink-0">{clock}</span>
+      <span className="text-blue-400 shrink-0">\${clock}</span>
       <span className="hidden sm:inline opacity-40 shrink-0">•</span>
-      <span className="hidden sm:inline text-slate-500 shrink-0">{year}</span>
+      <span className="hidden sm:inline text-slate-500 shrink-0">\${year}</span>
     </div>
   );
 });`;
