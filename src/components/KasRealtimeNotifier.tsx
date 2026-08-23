@@ -20,7 +20,8 @@ const DAFTAR_PEMASUKAN = [
 ];
 
 const checkIsMasuk = (tx: any) => !!tx && (
-  tx.jenis_transaksi === 'Masuk' || (tx.kategori && DAFTAR_PEMASUKAN.includes(tx.kategori))
+  String(tx.jenis_transaksi || '').toLowerCase() === 'masuk' ||
+  (tx.kategori && DAFTAR_PEMASUKAN.includes(tx.kategori))
 );
 
 const formatRupiah = (num: number | null | undefined) => {
@@ -30,23 +31,23 @@ const formatRupiah = (num: number | null | undefined) => {
   }).format(val);
 };
 
-const formatDateTime = (dateStr?: string) => {
-  if (!dateStr) {
-    return new Date().toLocaleString('id-ID', {
-      day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false
-    }) + ' WITA';
+const formatTransactionDateTime = (tx: any) => {
+  const txDate = String(tx?.tanggal_transaksi || '').slice(0, 10);
+  let dateText = txDate;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(txDate)) {
+    const [y, m, d] = txDate.split('-').map(Number);
+    dateText = new Date(y, m - 1, d).toLocaleDateString('id-ID', {
+      day: '2-digit', month: 'short', year: 'numeric'
+    });
   }
-  try {
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return dateStr;
-    const hasTime = dateStr.includes('T') || dateStr.includes(':');
-    if (!hasTime) return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
-    return d.toLocaleString('id-ID', {
-      day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false
-    }) + ' WITA';
-  } catch {
-    return dateStr;
+
+  const created = tx?.created_at ? new Date(tx.created_at) : null;
+  if (created && !isNaN(created.getTime())) {
+    return `${dateText}, ${created.toLocaleTimeString('id-ID', {
+      hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Makassar'
+    })} WITA`;
   }
+  return dateText;
 };
 
 const getTodayString = () => {
@@ -54,35 +55,36 @@ const getTodayString = () => {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 };
 
-/** Read the actual KasManager filter currently visible on screen. */
 const getActiveKasFilter = () => {
   const today = getTodayString();
   const firstDay = today.substring(0, 8) + '01';
-
   let start = '';
   let end = '';
+
   try {
     start = localStorage.getItem('kas_filter_start') || '';
     end = localStorage.getItem('kas_filter_end') || '';
   } catch {}
 
   const dateInputs = Array.from(document.querySelectorAll('input[type="date"]')) as HTMLInputElement[];
-  const startInput = dateInputs.find(input => {
-    const text = input.parentElement?.innerText || input.closest('div')?.innerText || '';
-    return /Dari\s*:/i.test(text);
-  });
-  const endInput = dateInputs.find(input => {
-    const text = input.parentElement?.innerText || input.closest('div')?.innerText || '';
-    return /Sampai\s*:/i.test(text);
-  });
+  const startInput = dateInputs.find(input => /Dari\s*:/i.test(input.parentElement?.innerText || input.closest('div')?.innerText || ''));
+  const endInput = dateInputs.find(input => /Sampai\s*:/i.test(input.parentElement?.innerText || input.closest('div')?.innerText || ''));
 
   if (!start && startInput?.value) start = startInput.value;
   if (!end && endInput?.value) end = endInput.value;
 
-  return {
-    startDate: start || firstDay,
-    endDate: end || today
-  };
+  return { startDate: start || firstDay, endDate: end || today };
+};
+
+const sortKas = (list: any[]) => [...list].sort((a, b) => {
+  const dateCmp = String(a.tanggal_transaksi || '').localeCompare(String(b.tanggal_transaksi || ''));
+  if (dateCmp !== 0) return dateCmp;
+  return String(a.created_at || a.id || '').localeCompare(String(b.created_at || b.id || ''));
+});
+
+const isInFilter = (tx: any, startDate: string, endDate: string) => {
+  const txDate = String(tx?.tanggal_transaksi || '').slice(0, 10);
+  return !!txDate && txDate >= startDate && txDate <= endDate;
 };
 
 export const broadcastKasChange = async (eventType: 'INSERT' | 'UPDATE' | 'DELETE', payloadData: any) => {
@@ -100,7 +102,6 @@ export const broadcastKasChange = async (eventType: 'INSERT' | 'UPDATE' | 'DELET
       await activeGlobalChannel.send({ type: 'broadcast', event: 'kas-changed', payload });
       return;
     }
-
     const channel = supabase.channel('global-kas-broadcast', { config: { broadcast: { self: true } } });
     channel.subscribe((status) => {
       if (status === 'SUBSCRIBED') {
@@ -117,67 +118,50 @@ export const broadcastKasChange = async (eventType: 'INSERT' | 'UPDATE' | 'DELET
 export default function KasRealtimeNotifier() {
   useEffect(() => {
     const handlePayload = async (payload: any) => {
-      const record = payload.new || payload.old;
-      const recordId = record?.id || 'gen_' + Date.now();
-      const eventKey = `${payload.eventType}-${recordId}-${record?.jumlah_bayar || 0}`;
+      const eventTx = payload.new || payload.old || null;
+      const eventType = payload.eventType || payload.event || 'UPDATE';
+      const recordId = eventTx?.id || 'gen_' + Date.now();
+      const eventKey = `${eventType}-${recordId}-${eventTx?.jumlah_bayar || 0}`;
 
       if (processedEvents.has(eventKey)) return;
       processedEvents.add(eventKey);
       setTimeout(() => processedEvents.delete(eventKey), 3000);
-
       window.dispatchEvent(new CustomEvent('kas-updated', { detail: payload }));
 
-      const newTx = payload.new || payload.old;
-      const eventType = payload.eventType;
-      const isMasuk = newTx ? checkIsMasuk(newTx) : null;
-      const titleText = eventType === 'INSERT'
-        ? 'Transaksi Kas Baru!'
-        : eventType === 'DELETE' ? 'Transaksi Kas Dihapus!' : 'Update Kas Terbaru!';
-
-      const badge = isMasuk === null ? 'LIVE SYNC' : (isMasuk ? '📥 Pemasukan' : '📤 Pengeluaran');
-      const txDetailText = newTx ? `
-        <div class="p-2.5 bg-slate-900/90 rounded-xl border border-slate-800/80 space-y-1.5 mb-2">
-          <div class="flex items-center justify-between text-[9px] text-slate-400 pb-1 border-b border-white/5">
-            <span class="font-bold uppercase tracking-wider">Detail Transaksi</span>
-            <span class="px-1.5 py-0.5 rounded text-[8px] font-black ${isMasuk ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'}">${badge}</span>
-          </div>
-          <div class="flex justify-between gap-2 text-[10px]"><span class="text-slate-400">Nama/Keterangan:</span><b class="text-white text-right break-words">${newTx.nama_pembayar || '-'}</b></div>
-          <div class="flex justify-between gap-2 text-[10px]"><span class="text-slate-400">Jenis:</span><b class="${isMasuk ? 'text-emerald-400' : 'text-rose-400'}">${isMasuk ? 'Pemasukan' : 'Pengeluaran'}</b></div>
-          <div class="flex justify-between gap-2 text-[10px]"><span class="text-slate-400">Kategori:</span><b class="text-cyan-400 text-right">${newTx.kategori || '-'}</b></div>
-          <div class="flex justify-between gap-2 text-[10px]"><span class="text-slate-400">Jumlah:</span><b class="${isMasuk ? 'text-emerald-400' : 'text-rose-400'}">${formatRupiah(newTx.jumlah_bayar || 0)}</b></div>
-          ${newTx.keterangan ? `<div class="flex justify-between gap-2 text-[10px]"><span class="text-slate-400">Catatan:</span><span class="text-slate-300 italic text-right">${newTx.keterangan}</span></div>` : ''}
-          <div class="flex justify-between gap-2 text-[9px] pt-1 border-t border-white/5"><span class="text-slate-400">Tanggal & Waktu:</span><span class="text-slate-300 text-right">${formatDateTime(newTx.created_at || newTx.tanggal_transaksi)}</span></div>
-        </div>` : '';
-
-      Swal.fire({
-        title: `<div class="flex items-center justify-between gap-2"><span class="text-white font-black uppercase text-[11px] sm:text-xs">${titleText}</span><span class="px-2 py-0.5 rounded text-[8px] font-black bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">${badge}</span></div>`,
-        html: `<div class="text-left text-[11px] text-slate-300">${txDetailText}<div class="p-4 rounded-xl bg-[#0b1220] border border-slate-800 text-center"><div class="w-5 h-5 mx-auto border-2 border-cyan-400 border-t-transparent rounded-full animate-spin"></div><div class="text-[9px] mt-2 text-cyan-400 uppercase font-bold">Sinkronisasi saldo...</div></div></div>`,
-        position: 'top-end', showConfirmButton: false, timer: 9000, timerProgressBar: true,
-        background: '#070d1a', color: '#fff', toast: true,
-        customClass: { popup: 'border border-cyan-500/30 rounded-2xl shadow-2xl p-3 !max-w-[380px] w-[92vw] max-h-[85vh] overflow-y-auto', container: 'z-[9999999]' }
-      });
-
       try {
-        const { data: allKas, error } = await supabase.from('kas_pb').select('*').order('tanggal_transaksi', { ascending: true });
+        const { startDate, endDate } = getActiveKasFilter();
+        const { data: allKas, error } = await supabase
+          .from('kas_pb')
+          .select('*')
+          .order('tanggal_transaksi', { ascending: true });
+
         const kasList = !error && Array.isArray(allKas) ? allKas : (() => {
           try { return JSON.parse(localStorage.getItem('cached_kas_pb') || '[]'); } catch { return []; }
         })();
 
-        const { startDate, endDate } = getActiveKasFilter();
-        const sortedKasList = [...kasList].sort((a, b) => {
-          const dateCmp = String(a.tanggal_transaksi || '').localeCompare(String(b.tanggal_transaksi || ''));
-          if (dateCmp !== 0) return dateCmp;
-          return String(a.created_at || a.id || '').localeCompare(String(b.created_at || b.id || ''));
-        });
+        const sortedKasList = sortKas(kasList);
+        const reportItems = sortedKasList.filter(item => isInFilter(item, startDate, endDate));
 
-        // EXACTLY the same period as the KasManager filter: opening balance before start + all filtered income/expense.
+        // IMPORTANT: notification follows tanggal_transaksi, not created_at.
+        // If an event was saved with an older transaction date (e.g. 22 Aug) while
+        // the active report is 23 Aug, do not show that old event as today's transaction.
+        const eventInFilter = !!eventTx && isInFilter(eventTx, startDate, endDate);
+        const latestReportTx = reportItems.length
+          ? [...reportItems].sort((a, b) => String(b.created_at || b.id || '').localeCompare(String(a.created_at || a.id || '')))[0]
+          : null;
+        const displayTx = eventInFilter ? eventTx : latestReportTx;
+        const displayIsMasuk = displayTx ? checkIsMasuk(displayTx) : null;
+
         const saldoSebelumnya = sortedKasList
-          .filter(item => item.tanggal_transaksi < startDate)
+          .filter(item => String(item.tanggal_transaksi || '').slice(0, 10) < startDate)
           .reduce((acc, item) => acc + (checkIsMasuk(item) ? 1 : -1) * Number(item.jumlah_bayar || 0), 0);
 
-        const reportItems = sortedKasList.filter(item => item.tanggal_transaksi >= startDate && item.tanggal_transaksi <= endDate);
-        const pemasukanPeriode = reportItems.filter(checkIsMasuk).reduce((acc, item) => acc + Number(item.jumlah_bayar || 0), 0);
-        const pengeluaranPeriode = reportItems.filter(item => !checkIsMasuk(item)).reduce((acc, item) => acc + Number(item.jumlah_bayar || 0), 0);
+        const pemasukanPeriode = reportItems
+          .filter(checkIsMasuk)
+          .reduce((acc, item) => acc + Number(item.jumlah_bayar || 0), 0);
+        const pengeluaranPeriode = reportItems
+          .filter(item => !checkIsMasuk(item))
+          .reduce((acc, item) => acc + Number(item.jumlah_bayar || 0), 0);
         const saldoAkhir = saldoSebelumnya + pemasukanPeriode - pengeluaranPeriode;
         const modalTetap = 600000;
         const saldoBendahara = saldoAkhir - modalTetap;
@@ -187,16 +171,35 @@ export default function KasRealtimeNotifier() {
         const latestIncome = incomeItems.length ? [...incomeItems].sort((a, b) => String(b.created_at || b.tanggal_transaksi).localeCompare(String(a.created_at || a.tanggal_transaksi)))[0] : null;
         const latestExpense = expenseItems.length ? [...expenseItems].sort((a, b) => String(b.created_at || b.tanggal_transaksi).localeCompare(String(a.created_at || a.tanggal_transaksi)))[0] : null;
 
+        const titleText = eventInFilter
+          ? (eventType === 'INSERT' ? 'TRANSAKSI KAS BARU!' : eventType === 'DELETE' ? 'TRANSAKSI KAS DIHAPUS!' : 'UPDATE KAS TERBARU!')
+          : 'LAPORAN KAS TERBARU';
+        const badge = displayIsMasuk === null ? 'LIVE SYNC' : (displayIsMasuk ? '📥 Pemasukan' : '📤 Pengeluaran');
+
+        const txDetailText = displayTx ? `
+          <div class="p-2.5 bg-slate-900/90 rounded-xl border border-slate-800/80 space-y-1.5 mb-2">
+            <div class="flex items-center justify-between text-[9px] text-slate-400 pb-1 border-b border-white/5">
+              <span class="font-bold uppercase tracking-wider">Detail Transaksi ${eventInFilter ? 'Baru' : 'Sesuai Filter'}</span>
+              <span class="px-1.5 py-0.5 rounded text-[8px] font-black ${displayIsMasuk ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'}">${badge}</span>
+            </div>
+            <div class="flex justify-between gap-2 text-[10px]"><span class="text-slate-400">Nama/Keterangan:</span><b class="text-white text-right break-words">${displayTx.nama_pembayar || '-'}</b></div>
+            <div class="flex justify-between gap-2 text-[10px]"><span class="text-slate-400">Jenis:</span><b class="${displayIsMasuk ? 'text-emerald-400' : 'text-rose-400'}">${displayIsMasuk ? 'Pemasukan' : 'Pengeluaran'}</b></div>
+            <div class="flex justify-between gap-2 text-[10px]"><span class="text-slate-400">Kategori:</span><b class="text-cyan-400 text-right">${displayTx.kategori || '-'}</b></div>
+            <div class="flex justify-between gap-2 text-[10px]"><span class="text-slate-400">Jumlah:</span><b class="${displayIsMasuk ? 'text-emerald-400' : 'text-rose-400'}">${formatRupiah(displayTx.jumlah_bayar || 0)}</b></div>
+            ${displayTx.keterangan ? `<div class="flex justify-between gap-2 text-[10px]"><span class="text-slate-400">Catatan:</span><span class="text-slate-300 italic text-right">${displayTx.keterangan}</span></div>` : ''}
+            <div class="flex justify-between gap-2 text-[9px] pt-1 border-t border-white/5"><span class="text-slate-400">Tanggal Transaksi:</span><span class="text-slate-300 text-right">${formatTransactionDateTime(displayTx)}</span></div>
+          </div>` : '';
+
         const waText = `📢 *LAPORAN REAL-TIME KAS (PB BILIBILI 162)*\n\n` +
-          (newTx ? `*Detail Transaksi Terbaru:*\n` +
-          `• Status: ${eventType === 'DELETE' ? '❌ DIHAPUS' : '✅ BERHASIL'}\n` +
-          `• Jenis: ${isMasuk ? '📥 Pemasukan' : '📤 Pengeluaran'}\n` +
-          `• Tanggal & Waktu: *${formatDateTime(newTx.created_at || newTx.tanggal_transaksi)}*\n` +
-          `• Nama/Keterangan: *${newTx.nama_pembayar || '-'}*\n` +
-          `• Kategori: ${newTx.kategori || '-'}\n` +
-          `• Jumlah: *${formatRupiah(newTx.jumlah_bayar || 0)}*\n` +
-          (newTx.keterangan ? `• Catatan: ${newTx.keterangan}\n` : '') + `\n` : '') +
-          `*Status Keuangan Klub (Sesuai Filter ${startDate} s/d ${endDate}):*\n` +
+          (displayTx ? `*Detail Transaksi ${eventInFilter ? 'Terbaru' : 'Sesuai Filter'}:*\n` +
+          `• Status: ${eventType === 'DELETE' && eventInFilter ? '❌ DIHAPUS' : '✅ BERHASIL'}\n` +
+          `• Jenis: ${displayIsMasuk ? '📥 Pemasukan' : '📤 Pengeluaran'}\n` +
+          `• Tanggal & Waktu: *${formatTransactionDateTime(displayTx)}*\n` +
+          `• Nama/Keterangan: *${displayTx.nama_pembayar || '-'}*\n` +
+          `• Kategori: ${displayTx.kategori || '-'}\n` +
+          `• Jumlah: *${formatRupiah(displayTx.jumlah_bayar || 0)}*\n` +
+          (displayTx.keterangan ? `• Catatan: ${displayTx.keterangan}\n` : '') + `\n` : '') +
+          `*Status Keuangan Klub (Filter ${startDate} s/d ${endDate}):*\n` +
           `• Saldo Sebelumnya: ${formatRupiah(saldoSebelumnya)}\n` +
           `• Total Pemasukan Periode: ${formatRupiah(pemasukanPeriode)}\n` +
           `• Total Pengeluaran Periode: ${formatRupiah(pengeluaranPeriode)}\n` +
@@ -215,7 +218,7 @@ export default function KasRealtimeNotifier() {
         const loadedHtml = `<div class="text-left text-[11px] text-slate-300 space-y-2">
           ${txDetailText}
           <div class="p-3 rounded-xl bg-[#0b1220] border border-slate-800 space-y-2">
-            <div class="text-[9px] text-cyan-400 font-black uppercase">Status Keuangan PB Bilibili</div>
+            <div class="text-[9px] text-cyan-400 font-black uppercase">STATUS KEUANGAN PB BILIBILI 162</div>
             <div class="grid grid-cols-2 gap-1.5">
               <div class="p-2 rounded-lg bg-slate-900 border border-slate-800"><div class="text-[8px] text-slate-400 uppercase">Saldo Sebelumnya</div><b class="text-slate-200">${formatRupiah(saldoSebelumnya)}</b></div>
               <div class="p-2 rounded-lg bg-emerald-950/30 border border-emerald-500/20"><div class="text-[8px] text-emerald-400 uppercase">Pemasukan</div><b class="text-emerald-400">${formatRupiah(pemasukanPeriode)}</b></div>
@@ -226,13 +229,20 @@ export default function KasRealtimeNotifier() {
             <div class="text-[9px] text-slate-400 border-t border-white/5 pt-2">Filter aktif: <b class="text-white">${startDate} s/d ${endDate}</b></div>
             <div class="text-[9px] text-slate-400">Modal Tetap: ${formatRupiah(modalTetap)} · Kas Bendahara: <b class="text-cyan-300">${formatRupiah(saldoBendahara)}</b></div>
           </div>
-          <a href="${waHref}" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-[11px] font-extrabold text-white uppercase tracking-wider no-underline">💬 Kirim Laporan ke WhatsApp</a>
+          <a href="${waHref}" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-[11px] font-extrabold text-white uppercase tracking-wider no-underline">💬 KIRIM LAPORAN KE WHATSAPP</a>
         </div>`;
 
-        if (Swal.isVisible()) Swal.update({ html: loadedHtml });
+        Swal.fire({
+          title: `<div class="flex items-center justify-between gap-2"><span class="text-white font-black uppercase text-[11px] sm:text-xs">${titleText}</span><span class="px-2 py-0.5 rounded text-[8px] font-black ${displayIsMasuk ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'}">${badge}</span></div>`,
+          html: loadedHtml,
+          position: 'top-end', showConfirmButton: false, timer: 12000, timerProgressBar: true,
+          background: '#070d1a', color: '#fff', toast: true,
+          customClass: { popup: 'border border-cyan-500/30 rounded-2xl shadow-2xl p-3 !max-w-[380px] w-[92vw] max-h-[85vh] overflow-y-auto', container: 'z-[9999999]' }
+        });
 
-        if (newTx) {
-          const fcmBody = `${isMasuk ? 'Pemasukan' : 'Pengeluaran'}: ${newTx.nama_pembayar || newTx.kategori} sebesar ${formatRupiah(newTx.jumlah_bayar || 0)}. Saldo akhir: ${formatRupiah(saldoAkhir)}`;
+        // Push notification only for a transaction that actually belongs to the active filter.
+        if (eventTx && eventInFilter) {
+          const fcmBody = `${checkIsMasuk(eventTx) ? 'Pemasukan' : 'Pengeluaran'}: ${eventTx.nama_pembayar || eventTx.kategori} sebesar ${formatRupiah(eventTx.jumlah_bayar || 0)}. Tanggal transaksi: ${eventTx.tanggal_transaksi}. Saldo akhir: ${formatRupiah(saldoAkhir)}`;
           triggerPushNotification(titleText, fcmBody, 'kas');
         }
       } catch (error) {
