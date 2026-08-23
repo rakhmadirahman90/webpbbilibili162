@@ -3,6 +3,9 @@ import fs from 'node:fs';
 const file = 'src/components/Gallery.tsx';
 let source = fs.readFileSync(file, 'utf8');
 
+// Always replace the runtime share handler during Vercel build. The source file
+// has historically contained older handlers, so this is deliberately versioned
+// and whitespace-tolerant.
 const start = source.indexOf('const handleShare =');
 const end = source.indexOf('const goToImage =', start);
 
@@ -13,7 +16,9 @@ if (start < 0 || end <= start) {
 
 const replacement = `const handleShare = (item: GalleryItem, platform: 'wa' | 'fb' | 'copy') => {
     const activityTitle = String(item.title || '').replace(/\\s+/g, ' ').trim() || 'Dokumentasi PB Bilibili 162';
-    const currentUrl = window.location.origin + '/api/share-galeri?id=' + encodeURIComponent(item.id) + '&v=18';
+    // v20: share the public preview endpoint so WhatsApp gets the same title/photo
+    // that the crawler sees. The endpoint itself reads the current gallery.title.
+    const currentUrl = window.location.origin + '/api/share-galeri?id=' + encodeURIComponent(item.id) + '&v=20';
     const shareText = 'Lihat dokumentasi "' + activityTitle + '" dari PB Bilibili 162:' + '\\n' + currentUrl;
 
     if (platform === 'wa') {
@@ -33,4 +38,4 @@ const replacement = `const handleShare = (item: GalleryItem, platform: 'wa' | 'f
 
 source = source.slice(0, start) + replacement + source.slice(end);
 fs.writeFileSync(file, source, 'utf8');
-console.log('[patch-gallery-share-preview] v18: title-only WhatsApp share applied');
+console.log('[patch-gallery-share-preview] v20: actual photo title + fresh preview URL applied');
