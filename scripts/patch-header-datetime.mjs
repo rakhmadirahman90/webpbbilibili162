@@ -40,18 +40,35 @@ const replacement = `const LiveClock = memo(() => {
   return (
     <div
       aria-label={\`Waktu saat ini: ${dayName}, ${date} ${month} ${year}, ${clock}\`}
-      className="flex min-w-0 max-w-[calc(100vw-105px)] sm:max-w-none items-center justify-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-full bg-[#151d30]/90 border border-white/10 text-[8px] sm:text-[9px] font-mono font-bold text-slate-300 shrink-0 whitespace-nowrap"
+      className="flex w-auto max-w-[170px] sm:max-w-none items-center justify-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-full bg-[#151d30]/90 border border-white/10 text-[8px] sm:text-[9px] font-mono font-bold text-slate-300 shrink-0 whitespace-nowrap overflow-hidden"
     >
       <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-      <span className="text-slate-200">{dayName}, {date} {month}</span>
-      <span className="opacity-40">•</span>
-      <span className="text-blue-400">{clock}</span>
-      <span className="hidden sm:inline opacity-40">•</span>
-      <span className="hidden sm:inline text-slate-500">{year}</span>
+      <span className="text-slate-200 truncate">{dayName}, {date} {month}</span>
+      <span className="opacity-40 shrink-0">•</span>
+      <span className="text-blue-400 shrink-0">{clock}</span>
+      <span className="hidden sm:inline opacity-40 shrink-0">•</span>
+      <span className="hidden sm:inline text-slate-500 shrink-0">{year}</span>
     </div>
   );
 });`;
 
 source = source.slice(0, start) + replacement + source.slice(end);
+
+// Keep the mobile header balanced: logo | clock | menu button.
+source = source.replace(
+  'className="max-w-7xl mx-auto h-full px-3 sm:px-4 md:px-8 flex items-center justify-between gap-3"',
+  'className="max-w-7xl mx-auto h-full px-3 sm:px-4 md:px-8 flex items-center gap-2 sm:gap-3"'
+);
+
+source = source.replace(
+  'className="flex items-center gap-2 shrink-0 min-w-0" aria-label="Beranda PB Bilibili 162"',
+  'className="flex items-center gap-2 shrink-0 min-w-0 flex-1 lg:flex-none" aria-label="Beranda PB Bilibili 162"'
+);
+
+source = source.replace(
+  'className="lg:hidden w-11 h-11 shrink-0 rounded-2xl',
+  'className="lg:hidden w-11 h-11 shrink-0 ml-auto rounded-2xl'
+);
+
 fs.writeFileSync(file, source, 'utf8');
-console.log('[patch-header-datetime] Header date/time enabled');
+console.log('[patch-header-datetime] Header date/time enabled with balanced mobile layout');
