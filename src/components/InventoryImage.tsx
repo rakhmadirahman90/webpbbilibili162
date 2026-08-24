@@ -7,43 +7,85 @@ type Props = {
   onError?: () => void;
 };
 
-function normalizeImageSource(value: string): string {
+function decodeSvgDataUri(value: string): string | null {
   const raw = value.trim();
-  if (!raw) return '';
-  if (!raw.toLowerCase().startsWith('data:image/')) return raw;
+  if (!raw.toLowerCase().startsWith('data:image/svg+xml')) return null;
   const comma = raw.indexOf(',');
-  if (comma < 0) return raw;
-  const header = raw.slice(0, comma);
+  if (comma < 0) return null;
+  const header = raw.slice(0, comma).toLowerCase();
   const body = raw.slice(comma + 1);
-  if (/;base64/i.test(header)) return raw;
-  const mime = header.match(/^data:([^;,]+)/i)?.[1]?.toLowerCase() || '';
-  if (mime !== 'image/svg+xml') return raw;
   try {
-    const decoded = decodeURIComponent(body);
-    let encoded = '';
-    try {
-      encoded = btoa(decoded);
-    } catch {
-      encoded = btoa(unescape(encodeURIComponent(decoded)));
+    if (header.includes(';base64')) {
+      return atob(body);
     }
-    return `data:image/svg+xml;base64,${encoded}`;
+    return decodeURIComponent(body);
   } catch (error) {
-    console.error('Gagal menormalisasi gambar SVG inventaris:', error);
-    return raw;
+    console.error('Gagal membaca SVG inventaris dari Supabase:', error);
+    return null;
+  }
+}
+
+function sanitizeSvg(svgText: string): string {
+  try {
+    const doc = new DOMParser().parseFromString(svgText, 'image/svg+xml');
+    const svg = doc.documentElement;
+    if (!svg || svg.nodeName.toLowerCase() !== 'svg') return '';
+
+    doc.querySelectorAll('script,foreignObject').forEach(node => node.remove());
+    doc.querySelectorAll('*').forEach(node => {
+      Array.from(node.attributes).forEach(attr => {
+        const name = attr.name.toLowerCase();
+        const value = attr.value.trim().toLowerCase();
+        if (name.startsWith('on') || value.startsWith('javascript:')) {
+          node.removeAttribute(attr.name);
+        }
+      });
+    });
+
+    if (!svg.getAttribute('xmlns')) {
+      svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    }
+    return new XMLSerializer().serializeToString(svg);
+  } catch (error) {
+    console.error('Gagal membersihkan SVG inventaris:', error);
+    return '';
   }
 }
 
 export default function InventoryImage({ src, alt, className = '', onError }: Props) {
   const raw = (src || '').trim();
-  const normalized = useMemo(() => normalizeImageSource(raw), [raw]);
+  const inlineSvg = useMemo(() => {
+    const decoded = decodeSvgDataUri(raw);
+    return decoded ? sanitizeSvg(decoded) : '';
+  }, [raw]);
   const [failed, setFailed] = useState(false);
-  if (!normalized || failed) return null;
+
+  if (!raw || failed) return null;
+
+  // Supabase currently stores inventory artwork as data:image/svg+xml.
+  // Render it inline instead of through <img src="data:..."> so Android
+  // WebView/CSP restrictions cannot hide an otherwise valid SVG.
+  if (inlineSvg) {
+    return (
+      <div
+        role="img"
+        aria-label={alt}
+        className={className}
+        dangerouslySetInnerHTML={{ __html: inlineSvg }}
+        onError={() => {
+          setFailed(true);
+          onError?.();
+        }}
+      />
+    );
+  }
+
   return (
     <img
-      src={normalized}
+      src={raw}
       alt={alt}
       loading="eager"
-      decoding="sync"
+      decoding="async"
       onError={() => {
         setFailed(true);
         onError?.();
