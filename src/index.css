@@ -45,8 +45,7 @@ img{max-width:100%;height:auto}
 }
 @media(min-width:640px) and (max-width:1023px){#atlet .swiper-slide>div{max-width:100%}}
 
-/* News + achievements: mirror the compact gallery pattern on phones.
-   Six records fit as a 2-column x 3-row page; overflow moves to pagination. */
+/* News + achievements: mirror the compact gallery pattern on phones. */
 @media(max-width:767px){
  #berita-section,#prestasi{width:100%;max-width:100%;overflow-x:hidden}
  #berita-section>.relative.z-10,#prestasi>.relative.z-10,#berita-section .max-w-7xl,#prestasi .max-w-7xl{width:100%;max-width:100%;min-width:0}
@@ -78,63 +77,78 @@ img{max-width:100%;height:auto}
  #prestasi .grid>*{padding:.65rem!important}
 }
 
+#gallery .gallery-lightbox > div:first-child button[aria-label="Kembali"]{display:inline-flex!important;align-items:center!important;justify-content:center!important;gap:8px!important;min-height:42px!important;padding:8px 12px!important;color:#e2e8f0!important;white-space:nowrap!important;touch-action:manipulation!important;-webkit-tap-highlight-color:transparent!important}
+#gallery .gallery-lightbox > div:first-child button[aria-label="Kembali"] > span{display:inline-block!important;visibility:visible!important;opacity:1!important;width:auto!important;max-width:none!important;overflow:visible!important;font-size:12px!important;line-height:1.2!important;font-weight:800!important;letter-spacing:.02em!important;color:inherit!important}
+#gallery .gallery-lightbox > div:first-child button[aria-label="Kembali"] > span::after{content:" ke Daftar Foto"!important;font:inherit!important;color:inherit!important}
+#gallery .gallery-lightbox > div:first-child button[aria-label="Kembali"] > svg{width:20px!important;height:20px!important;flex:0 0 auto!important}
+@media(max-width:767px){#gallery .gallery-lightbox > div:first-child button[aria-label="Kembali"]{min-height:44px!important;padding:8px 10px!important;gap:7px!important}#gallery .gallery-lightbox > div:first-child button[aria-label="Kembali"] > span{font-size:11px!important}}
+@media(min-width:768px){#gallery .gallery-lightbox > div:first-child button[aria-label="Kembali"] > span{font-size:12px!important}}
+
 /* =========================================================
-   GALLERY DETAIL — FORCE VISIBLE NAVIGATION LABEL
-   Applies to both mobile and desktop, independent of the optional
-   gallery-stability stylesheet load order.
+   ADMIN BERITA — MOBILE EDIT/DELETE VISIBILITY + MODAL SCROLL
+   Scoped by the existing search placeholder so public news cards are untouched.
    ========================================================= */
-#gallery .gallery-lightbox > div:first-child button[aria-label="Kembali"] {
-  display:inline-flex !important;
-  align-items:center !important;
-  justify-content:center !important;
-  gap:8px !important;
-  min-height:42px !important;
-  padding:8px 12px !important;
-  color:#e2e8f0 !important;
-  white-space:nowrap !important;
-  touch-action:manipulation !important;
-  -webkit-tap-highlight-color:transparent !important;
-}
-
-#gallery .gallery-lightbox > div:first-child button[aria-label="Kembali"] > span {
-  display:inline-block !important;
-  visibility:visible !important;
-  opacity:1 !important;
-  width:auto !important;
-  max-width:none !important;
-  overflow:visible !important;
-  font-size:12px !important;
-  line-height:1.2 !important;
-  font-weight:800 !important;
-  letter-spacing:.02em !important;
-  color:inherit !important;
-}
-
-#gallery .gallery-lightbox > div:first-child button[aria-label="Kembali"] > span::after {
-  content:" ke Daftar Foto" !important;
-  font:inherit !important;
-  color:inherit !important;
-}
-
-#gallery .gallery-lightbox > div:first-child button[aria-label="Kembali"] > svg {
-  width:20px !important;
-  height:20px !important;
-  flex:0 0 auto !important;
-}
-
 @media(max-width:767px){
-  #gallery .gallery-lightbox > div:first-child button[aria-label="Kembali"] {
-    min-height:44px !important;
-    padding:8px 10px !important;
-    gap:7px !important;
+  body:has(input[placeholder="CARI JUDUL BERITA..."]) .grid > div.group {
+    position:relative;
+    padding-bottom:72px!important;
+    overflow:visible!important;
   }
-  #gallery .gallery-lightbox > div:first-child button[aria-label="Kembali"] > span {
-    font-size:11px !important;
-  }
-}
 
-@media(min-width:768px){
-  #gallery .gallery-lightbox > div:first-child button[aria-label="Kembali"] > span {
-    font-size:12px !important;
+  body:has(input[placeholder="CARI JUDUL BERITA..."]) .grid > div.group > div:last-child {
+    position:absolute!important;
+    top:12px;
+    right:12px;
+    z-index:40;
+    display:flex!important;
+    gap:8px!important;
+    width:auto!important;
+  }
+
+  body:has(input[placeholder="CARI JUDUL BERITA..."]) .grid > div.group > div:last-child button {
+    flex:0 0 46px!important;
+    width:46px!important;
+    min-width:46px!important;
+    height:46px!important;
+    min-height:46px!important;
+    padding:0!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    border:1px solid rgba(255,255,255,.16)!important;
+    box-shadow:0 8px 24px rgba(0,0,0,.45)!important;
+    background:rgba(37,99,235,.96)!important;
+  }
+
+  body:has(input[placeholder="CARI JUDUL BERITA..."]) .grid > div.group > div:last-child button:last-child {
+    background:rgba(39,39,42,.96)!important;
+  }
+
+  body:has(input[placeholder="CARI JUDUL BERITA..."]) .grid > div.group > div:last-child button svg {
+    width:20px!important;
+    height:20px!important;
+  }
+
+  body:has(input[placeholder="CARI JUDUL BERITA..."]) .fixed.inset-0.z-\[100\] {
+    overflow-y:auto!important;
+    -webkit-overflow-scrolling:touch!important;
+    align-items:flex-start!important;
+    padding-top:max(12px,env(safe-area-inset-top))!important;
+    padding-bottom:max(12px,env(safe-area-inset-bottom))!important;
+  }
+
+  body:has(input[placeholder="CARI JUDUL BERITA..."]) .fixed.inset-0.z-\[100\] > div {
+    width:100%!important;
+    max-height:calc(100dvh - 24px)!important;
+    margin:auto 0!important;
+  }
+
+  body:has(input[placeholder="CARI JUDUL BERITA..."]) .fixed.inset-0.z-\[100\] form.custom-scrollbar,
+  body:has(input[placeholder="CARI JUDUL BERITA..."]) .fixed.inset-0.z-\[100\] form.overflow-y-auto {
+    min-height:0!important;
+    overflow-y:auto!important;
+    -webkit-overflow-scrolling:touch!important;
+    overscroll-behavior:contain!important;
+    padding-bottom:24px!important;
   }
 }
