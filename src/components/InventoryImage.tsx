@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 
 type Props = {
   src?: string | null;
@@ -7,57 +7,47 @@ type Props = {
   onError?: () => void;
 };
 
-function dataUriToBlobUrl(dataUri: string): string | null {
+function normalizeImageSource(value: string): string {
+  const raw = value.trim();
+  if (!raw) return '';
+  if (!raw.toLowerCase().startsWith('data:image/')) return raw;
+  const comma = raw.indexOf(',');
+  if (comma < 0) return raw;
+  const header = raw.slice(0, comma);
+  const body = raw.slice(comma + 1);
+  if (/;base64/i.test(header)) return raw;
+  const mime = header.match(/^data:([^;,]+)/i)?.[1]?.toLowerCase() || '';
+  if (mime !== 'image/svg+xml') return raw;
   try {
-    const comma = dataUri.indexOf(',');
-    if (comma < 0) return null;
-    const header = dataUri.slice(0, comma);
-    const body = dataUri.slice(comma + 1);
-    const mime = header.match(/^data:([^;,]+)/i)?.[1] || 'application/octet-stream';
-    const isBase64 = /;base64/i.test(header);
-    const bytes = isBase64
-      ? Uint8Array.from(atob(body), char => char.charCodeAt(0))
-      : new TextEncoder().encode(decodeURIComponent(body));
-    return URL.createObjectURL(new Blob([bytes], { type: mime }));
+    const decoded = decodeURIComponent(body);
+    let encoded = '';
+    try {
+      encoded = btoa(decoded);
+    } catch {
+      encoded = btoa(unescape(encodeURIComponent(decoded)));
+    }
+    return `data:image/svg+xml;base64,${encoded}`;
   } catch (error) {
-    console.error('Gagal mengubah data URI inventaris menjadi Blob URL:', error);
-    return null;
+    console.error('Gagal menormalisasi gambar SVG inventaris:', error);
+    return raw;
   }
 }
 
 export default function InventoryImage({ src, alt, className = '', onError }: Props) {
   const raw = (src || '').trim();
-  const [resolvedSrc, setResolvedSrc] = useState('');
-
-  useEffect(() => {
-    let objectUrl: string | null = null;
-    if (!raw) {
-      setResolvedSrc('');
-      return;
-    }
-
-    if (raw.startsWith('data:image/')) {
-      objectUrl = dataUriToBlobUrl(raw);
-      setResolvedSrc(objectUrl || raw);
-    } else {
-      setResolvedSrc(raw);
-    }
-
-    return () => {
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
-  }, [raw]);
-
-  if (!resolvedSrc) return null;
-
+  const normalized = useMemo(() => normalizeImageSource(raw), [raw]);
+  const [failed, setFailed] = useState(false);
+  if (!normalized || failed) return null;
   return (
     <img
-      src={resolvedSrc}
+      src={normalized}
       alt={alt}
       loading="eager"
-      decoding="async"
-      referrerPolicy="no-referrer"
-      onError={onError}
+      decoding="sync"
+      onError={() => {
+        setFailed(true);
+        onError?.();
+      }}
       className={className}
     />
   );
