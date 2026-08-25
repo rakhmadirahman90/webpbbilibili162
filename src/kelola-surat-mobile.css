@@ -1,0 +1,26 @@
+/* PB162_KELola_SURAT_MOBILE_V1 */
+.kelola-surat-page{min-width:0;width:100%}
+.kelola-surat-page,.kelola-surat-page *,.kelola-surat-page *::before,.kelola-surat-page *::after{box-sizing:border-box}
+@media(max-width:767px){
+.kelola-surat-page{padding:10px!important;gap:10px!important;overflow-x:hidden!important;overflow-y:auto!important;width:100%!important;max-width:100vw!important}
+.kelola-surat-page>div:first-child{flex-direction:column!important;align-items:stretch!important;gap:12px!important;padding:14px!important;min-height:0!important;width:100%!important}
+.kelola-surat-page>div:first-child>.relative.z-10.min-w-0.flex-1{width:100%!important;min-width:0!important;flex:0 0 auto!important;display:flex!important;align-items:center!important;gap:10px!important}
+.kelola-surat-page>div:first-child>.relative.z-10.flex.items-center.gap-2.shrink-0{width:100%!important;min-width:0!important;flex:0 0 auto!important;display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important;align-items:stretch!important}
+.kelola-surat-page>div:first-child>.relative.z-10.flex.items-center.gap-2.shrink-0>button{width:100%!important;min-width:0!important;min-height:48px!important;padding:10px 8px!important;justify-content:center!important;white-space:normal!important;line-height:1.15!important;font-size:clamp(9px,2.7vw,12px)!important;letter-spacing:.055em!important;overflow:hidden!important;text-overflow:ellipsis!important}
+.kelola-surat-page>div:first-child>.relative.z-10.flex.items-center.gap-2.shrink-0>button svg{flex:0 0 auto!important;width:17px!important;height:17px!important}
+.kelola-surat-page>div:first-child h1,.kelola-surat-page>div:first-child h2,.kelola-surat-page>div:first-child h3,.kelola-surat-page>div:first-child p,.kelola-surat-page>div:first-child span{min-width:0!important;max-width:100%!important;overflow-wrap:normal!important;word-break:normal!important;white-space:normal!important}
+.kelola-surat-page>div:first-child img{max-width:100%!important;height:auto!important;object-fit:contain!important}
+.kelola-surat-page>div:nth-child(2){width:100%!important;min-width:0!important;gap:8px!important}
+.kelola-surat-page>div:nth-child(2)>*{min-width:0!important;width:100%!important}
+.kelola-surat-page>div:nth-child(2) button{min-height:54px!important;width:100%!important;padding:8px 7px!important;justify-content:center!important;text-align:center!important;white-space:normal!important;line-height:1.15!important;font-size:clamp(10px,3vw,13px)!important}
+.kelola-surat-page>div:nth-child(2) button svg{width:17px!important;height:17px!important;flex:0 0 auto!important}
+.kelola-surat-page>div:nth-child(3){width:100%!important;min-width:0!important}
+.kelola-surat-page>div:nth-child(3) input{width:100%!important;min-width:0!important;font-size:14px!important}
+.kelola-surat-page>div:nth-child(4){width:100%!important;min-width:0!important;overflow:hidden!important}
+.kelola-surat-page>div:nth-child(4) button{min-width:0!important;touch-action:manipulation}
+.kelola-surat-page>div:nth-child(4) button svg{flex:0 0 auto!important;width:17px!important;height:17px!important}
+.kelola-surat-page [class*=truncate]{min-width:0!important;max-width:100%!important}
+.kelola-surat-page input,.kelola-surat-page textarea,.kelola-surat-page select{max-width:100%!important;min-width:0!important}
+}
+@media(max-width:420px){.kelola-surat-page{padding:8px!important;gap:8px!important}.kelola-surat-page>div:first-child{padding:12px!important}.kelola-surat-page>div:first-child>.relative.z-10.flex.items-center.gap-2.shrink-0{gap:6px!important}.kelola-surat-page>div:first-child>.relative.z-10.flex.items-center.gap-2.shrink-0>button{min-height:46px!important;padding:8px 6px!important;font-size:9px!important}}
+@media(max-width:340px){.kelola-surat-page>div:first-child>.relative.z-10.flex.items-center.gap-2.shrink-0{grid-template-columns:1fr!important}.kelola-surat-page>div:first-child>.relative.z-10.flex.items-center.gap-2.shrink-0>button{min-height:44px!important}}
