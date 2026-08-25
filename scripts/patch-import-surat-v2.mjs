@@ -38,7 +38,7 @@ const newParser = String.raw`  const normalizeImportedParagraphs = (raw: string)
         const y = Number(item.transform?.[5] || 0);
         const existing = rows.find((r) => Math.abs(r.y - y) <= 2.5);
         if (existing) {
-          existing.text = `\${existing.text} \${text}`.replace(/\s+/g, ' ').trim();
+          existing.text = [existing.text, text].join(' ').replace(/\s+/g, ' ').trim();
           existing.x = Math.min(existing.x, x);
         } else {
           rows.push({ y, x, text });
@@ -93,8 +93,8 @@ const newParser = String.raw`  const normalizeImportedParagraphs = (raw: string)
     const paragraphs = normalizeImportedParagraphs(bodyRaw);
     const safeName = fileName.replace(/\.[^.]+$/, '');
     const importedDate = tanggal
-      ? (tanggal.includes(',') ? tanggal : `Parepare, \${tanggal}`)
-      : `Parepare, \${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`;
+      ? (tanggal.includes(',') ? tanggal : 'Parepare, ' + tanggal)
+      : 'Parepare, ' + new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
     const iso = getSafeIsoDate('', importedDate);
 
     const pageCount = Math.max(1, importedPages.length || 1);
@@ -146,11 +146,11 @@ s = s.replace(
 );
 
 const oldPageClass = 'className="bg-white text-black p-[1.5cm] w-[794px] min-h-[1123px] shadow-2xl font-serif text-[11.5pt] leading-[1.65] relative overflow-hidden shrink-0 select-text rounded-sm border border-slate-200"';
-const newPageClass = 'className={`bg-white text-black p-[1.5cm] w-[794px] min-h-[1123px] shadow-2xl font-serif text-[11.5pt] leading-[1.65] relative \${formData.import_page_count && formData.import_page_count > 1 ? \'overflow-visible h-auto\' : \'overflow-hidden\'} shrink-0 select-text rounded-sm border border-slate-200`}';
+const newPageClass = 'className={"bg-white text-black p-[1.5cm] w-[794px] min-h-[1123px] shadow-2xl font-serif text-[11.5pt] leading-[1.65] relative " + (formData.import_page_count && formData.import_page_count > 1 ? "overflow-visible h-auto" : "overflow-hidden") + " shrink-0 select-text rounded-sm border border-slate-200"}';
 if (s.includes(oldPageClass)) s = s.replace(oldPageClass, newPageClass);
 
 s = s.replace('{formData.include_lampiran_peserta && (', '{(formData.include_lampiran_peserta || (formData.import_page_count && formData.import_page_count > 1)) && (');
-s = s.replace('Halaman 1 dari 2 (Surat Utama - A4)', "{formData.import_page_count && formData.import_page_count > 1 ? `Dokumen Import: \${formData.import_page_count} Halaman` : 'Halaman 1 dari 2 (Surat Utama - A4)'}");
+s = s.replace('Halaman 1 dari 2 (Surat Utama - A4)', '{formData.import_page_count && formData.import_page_count > 1 ? "Dokumen Import: " + formData.import_page_count + " Halaman" : "Halaman 1 dari 2 (Surat Utama - A4)"}');
 
 fs.writeFileSync(path, s);
 console.log('[patch-import-surat-v2] structured paragraphs and source page metadata enabled');
