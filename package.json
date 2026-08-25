@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "tsx server.ts",
     "prebuild": "node scripts/patch-admin-member-menus.mjs && node scripts/patch-navbar-realtime.mjs && node scripts/patch-header-datetime.mjs && node scripts/patch-kas-notifier-close.mjs && node scripts/patch-performance.mjs && node scripts/patch-public-routing.mjs && node scripts/patch-modern-public-news.mjs && node scripts/patch-news-share-preview.mjs && node scripts/patch-gallery-mobile-detail.mjs && node scripts/patch-gallery-supabase-source.mjs && node scripts/patch-gallery-album-mobile.mjs && node scripts/patch-gallery-photo-grid.mjs && node scripts/patch-gallery-share-preview.mjs && node scripts/patch-gallery-lightbox-grid.mjs && node scripts/patch-admin-berita-mobile.mjs && node scripts/patch-admin-berita-save-button.mjs && node scripts/patch-admin-berita-save-button-v2.mjs && node scripts/patch-admin-berita-supabase-edit.mjs && node scripts/patch-surat-ttd-persistence.mjs && node scripts/patch-import-surat.mjs && node scripts/patch-kelola-surat-mobile.mjs && node scripts/patch-import-surat-v2.mjs",
-    "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
+    "build": "vite build && npx --yes esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit -p tsconfig.app.json"
   },
@@ -32,7 +32,6 @@
     "react-easy-crop": "^5.5.6",
     "react-dom": "^18.3.1",
     "react-datepicker": "^9.1.0",
-    "react-router-dom": "^7.13.0",
     "react-zoom-pan-pinch": "^4.0.3",
     "recharts": "^3.10.0",
     "sweetalert2": "^11.26.18",
