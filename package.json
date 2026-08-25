@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
-    "prebuild": "node scripts/patch-admin-member-menus.mjs && node scripts/patch-navbar-realtime.mjs && node scripts/patch-header-datetime.mjs && node scripts/patch-kas-notifier-close.mjs && node scripts/patch-performance.mjs && node scripts/patch-public-routing.mjs && node scripts/patch-modern-public-news.mjs && node scripts/patch-news-share-preview.mjs && node scripts/patch-gallery-mobile-detail.mjs && node scripts/patch-gallery-supabase-source.mjs && node scripts/patch-gallery-album-mobile.mjs && node scripts/patch-gallery-photo-grid.mjs && node scripts/patch-gallery-share-preview.mjs && node scripts/patch-gallery-lightbox-grid.mjs && node scripts/patch-admin-berita-mobile.mjs && node scripts/patch-admin-berita-save-button.mjs && node scripts/patch-admin-berita-save-button-v2.mjs && node scripts/patch-admin-berita-supabase-edit.mjs && node scripts/patch-surat-ttd-persistence.mjs",
+    "prebuild": "node scripts/patch-admin-member-menus.mjs && node scripts/patch-navbar-realtime.mjs && node scripts/patch-header-datetime.mjs && node scripts/patch-kas-notifier-close.mjs && node scripts/patch-performance.mjs && node scripts/patch-public-routing.mjs && node scripts/patch-modern-public-news.mjs && node scripts/patch-news-share-preview.mjs && node scripts/patch-gallery-mobile-detail.mjs && node scripts/patch-gallery-supabase-source.mjs && node scripts/patch-gallery-album-mobile.mjs && node scripts/patch-gallery-photo-grid.mjs && node scripts/patch-gallery-share-preview.mjs && node scripts/patch-gallery-lightbox-grid.mjs && node scripts/patch-admin-berita-mobile.mjs && node scripts/patch-admin-berita-save-button.mjs && node scripts/patch-admin-berita-save-button-v2.mjs && node scripts/patch-admin-berita-supabase-edit.mjs && node scripts/patch-surat-ttd-persistence.mjs && node scripts/patch-import-surat.mjs",
     "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit -p tsconfig.app.json"
@@ -20,11 +20,13 @@
     "date-fns": "^4.1.0",
     "file-saver": "^2.0.0",
     "firebase": "^12.16.0",
-    "framer-motion": "^12.34.3",
+    "framer-motion": "^12.34.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.7",
     "lucide-react": "^0.344.0",
+    "mammoth": "^1.10.0",
+    "pdfjs-dist": "^5.4.54",
     "react": "^18.3.1",
     "react-avatar-editor": "^14.0.0",
     "react-datepicker": "^9.1.0",
