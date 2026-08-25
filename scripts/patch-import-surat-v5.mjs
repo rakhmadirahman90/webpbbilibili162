@@ -19,8 +19,7 @@ s = s.replace(
 
 const oldBody = '<p className="whitespace-pre-line leading-[1.65]">{formData.isi_surat}</p>';
 const newBody = `{(Array.isArray(formData.import_page_texts) && formData.import_page_texts.length > 0) ? (\n                              <div className="space-y-4 leading-[1.65]">\n                                {normalizeImportedParagraphs(formData.import_page_texts[0] || formData.isi_surat || '').map((paragraph: string, index: number) => (\n                                  <p key={index} className="text-justify">{paragraph}</p>\n                                ))}\n                              </div>\n                            ) : (\n                              <div className="space-y-4 leading-[1.65]">\n                                {(formData.isi_surat || '').split(/\\n\\s*\\n+/).filter((paragraph: string) => paragraph.trim()).map((paragraph: string, index: number) => (\n                                  <p key={index} className="text-justify whitespace-pre-line">{paragraph.trim()}</p>\n                                ))}\n                              </div>\n                            )}`;
-if (!s.includes(oldBody)) throw new Error('V5 first-page body marker not found');
-s = s.replace(oldBody, newBody);
+if (s.includes(oldBody)) s = s.replace(oldBody, newBody);
 
 const continuationMarker = '                      {/* === HALAMAN 2: LAMPIRAN PESERTA === */}';
 const continuation = String.raw`                      {/* === HALAMAN LANJUTAN DOKUMEN IMPORT === */}
