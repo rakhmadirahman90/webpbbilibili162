@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "node scripts/patch-performance-v2.mjs && node scripts/patch-gallery-source.mjs && node scripts/patch-gallery-share-preview.mjs && node scripts/patch-news-share-preview.mjs && node scripts/patch-header-datetime-v2.mjs && node scripts/patch-import-surat.mjs && npm run build",
+  "buildCommand": "node scripts/build-prep.mjs && npm run build",
   "headers": [
     {
       "source": "/",
@@ -13,9 +13,7 @@
     {
       "source": "/assets/(.*)",
       "headers": [
-        {
-          "key": "Cache-Control", "value": "public, max-age=31536000, immutable"
-        }
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
       ]
     },
     {
@@ -28,9 +26,7 @@
   "rewrites": [
     {
       "source": "/berita",
-      "has": [
-        { "type": "header", "key": "user-agent", "value": ".*(WhatsApp|facebookexternalhit|Facebot|Twitterbot|LinkedInBot|TelegramBot|Slackbot|Discordbot|Googlebot|bingbot).*" }
-      ],
+      "has": [{ "type": "header", "key": "user-agent", "value": ".*(WhatsApp|facebookexternalhit|Facebot|Twitterbot|LinkedInBot|TelegramBot|Slackbot|Discordbot|Googlebot|bingbot).*" }],
       "destination": "/api/share-berita"
     },
     {
