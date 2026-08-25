@@ -19,7 +19,6 @@
     "browser-image-compression": "^2.0.2",
     "date-fns": "^4.1.0",
     "file-saver": "^2.0.0",
-    "file-saver": "^2.0.0",
     "firebase": "^12.16.0",
     "framer-motion": "^12.34.3",
     "html2canvas": "^1.4.1",
