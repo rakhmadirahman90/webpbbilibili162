@@ -29,15 +29,16 @@
     "pdfjs-dist": "^5.4.54",
     "react": "^18.3.1",
     "react-avatar-editor": "^14.0.0",
-    "react-easy-crop": "^5.5.6",
     "react-dom": "^18.3.1",
     "react-datepicker": "^9.1.0",
+    "react-easy-crop": "^5.5.6",
+    "react-router-dom": "^7.13.0",
     "react-zoom-pan-pinch": "^4.0.3",
     "recharts": "^3.10.0",
     "sweetalert2": "^11.26.18",
     "swiper": "^12.1.0",
-    "uuid": "^13.0.0",
-    "xlsx": "^0.18.0"
+    "xlsx": "^0.18.0",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.0",
