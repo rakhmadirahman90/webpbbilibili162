@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
-    "prebuild": "node scripts/patch-admin-member-menus.mjs && node scripts/patch-navbar-realtime.mjs && node scripts/patch-header-datetime.mjs && node scripts/patch-kas-notifier-close.mjs && node scripts/patch-performance.mjs && node scripts/patch-public-routing.mjs && node scripts/patch-modern-public-news.mjs && node scripts/patch-news-share-preview.mjs && node scripts/patch-gallery-mobile-detail.mjs && node scripts/patch-gallery-supabase-source.mjs && node scripts/patch-gallery-album-mobile.mjs && node scripts/patch-gallery-photo-grid.mjs && node scripts/patch-gallery-share-preview.mjs && node scripts/patch-gallery-lightbox-grid.mjs && node scripts/patch-admin-berita-mobile.mjs && node scripts/patch-admin-berita-save-button.mjs && node scripts/patch-admin-berita-save-button-v2.mjs && node scripts/patch-admin-berita-supabase-edit.mjs && node scripts/patch-surat-ttd-persistence.mjs && node scripts/patch-import-surat.mjs && node scripts/patch-kelola-surat-mobile.mjs && node scripts/patch-import-surat-v2.mjs && node scripts/patch-import-surat-v3.mjs && node scripts/patch-import-surat-v4.mjs && node scripts/patch-import-surat-v5.mjs",
+    "prebuild": "node scripts/patch-admin-member-menus.mjs && node scripts/patch-navbar-realtime.mjs && node scripts/patch-header-datetime.mjs && node scripts/patch-kas-notifier-close.mjs && node scripts/patch-performance.mjs && node scripts/patch-public-routing.mjs && node scripts/patch-modern-public-news.mjs && node scripts/patch-news-share-preview.mjs && node scripts/patch-gallery-mobile-detail.mjs && node scripts/patch-gallery-supabase-source.mjs && node scripts/patch-gallery-album-mobile.mjs && node scripts/patch-gallery-photo-grid.mjs && node scripts/patch-gallery-share-preview.mjs && node scripts/patch-gallery-lightbox-grid.mjs && node scripts/patch-admin-berita-mobile.mjs && node scripts/patch-admin-berita-save-button.mjs && node scripts/patch-admin-berita-save-button-v2.mjs && node scripts/patch-admin-berita-supabase-edit.mjs && node scripts/patch-surat-ttd-persistence.mjs && node scripts/patch-import-surat.mjs && node scripts/patch-kelola-surat-mobile.mjs && node scripts/patch-import-surat-v2.mjs && node scripts/patch-import-surat-v3.mjs && node scripts/patch-import-surat-v4.mjs && node scripts/patch-import-surat-v5.mjs && node scripts/patch-import-surat-v6.mjs",
     "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit -p tsconfig.app.json"
@@ -15,7 +15,7 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@google/genai": "^2.12.0",
     "@google/generative-ai": "^0.24.1",
-    "@supabase/supabase-js": "^2.95.2",
+    "@supabase/supabase-js": "^2.95.0",
     "browser-image-compression": "^2.0.2",
     "date-fns": "^4.1.0",
     "file-saver": "^2.0.0",
@@ -39,7 +39,7 @@
     "uuid": "^13.0.0"
   },
   "devDependencies": {
-    "@eslint/js": "^9.9.1",
+    "@eslint/js": "^9.9.0",
     "@resvg/resvg-js": "^2.6.2",
     "@types/express": "^5.0.6",
     "@types/react": "^18.3.5",
