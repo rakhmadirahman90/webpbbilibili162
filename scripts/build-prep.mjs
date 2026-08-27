@@ -6,7 +6,8 @@ const scripts = [
   'patch-gallery-share-preview.mjs',
   'patch-news-share-preview.mjs',
   'patch-header-datetime-v2.mjs',
-  'patch-import-surat.mjs'
+  'patch-import-surat.mjs',
+  'patch-admin-tournament-api.mjs'
 ];
 
 for (const script of scripts) {
