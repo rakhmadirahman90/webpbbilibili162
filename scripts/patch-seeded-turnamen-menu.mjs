@@ -22,18 +22,20 @@ once(sidebarPath,
   "{ name: 'Turnamen & Liga', path: 'turnamen-liga', icon: Trophy, adminOnly: false },\n        { name: 'Seeded Resmi Bilibili 162', path: 'seeded-turnamen', icon: ShieldCheck, adminOnly: false },",
   'member sidebar seeded entry');
 
-// Restore script may provide either the full known-good App (with TournamentLeague)
-// or a later App where the AdminDashboard import is eager-loaded. Support both.
 once(appPath,
   [
     "const TournamentLeague = lazy(() => import('./components/TournamentLeague'));",
-    "const PwaApkManager = lazy(() => import('./components/PwaApkManager'));"
+    "const PwaApkManager = lazy(() => import('./components/PwaApkManager'));",
+    "import PwaInstallNotification from './components/PwaInstallNotification';"
   ],
   (src => {
     if (src.includes("const TournamentLeague = lazy(() => import('./components/TournamentLeague'));")) {
       return "const TournamentLeague = lazy(() => import('./components/TournamentLeague'));\nconst SeededTurnamen = lazy(() => import('./components/SeededTurnamen'));";
     }
-    return "const PwaApkManager = lazy(() => import('./components/PwaApkManager'));\nconst SeededTurnamen = lazy(() => import('./components/SeededTurnamen'));";
+    if (src.includes("const PwaApkManager = lazy(() => import('./components/PwaApkManager'));")) {
+      return "const PwaApkManager = lazy(() => import('./components/PwaApkManager'));\nconst SeededTurnamen = lazy(() => import('./components/SeededTurnamen'));";
+    }
+    return "import PwaInstallNotification from './components/PwaInstallNotification';\nconst SeededTurnamen = lazy(() => import('./components/SeededTurnamen'));";
   })(fs.readFileSync(appPath, 'utf8')),
   'App seeded import');
 
