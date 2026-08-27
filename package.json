@@ -21,7 +21,7 @@
     "date-fns": "^4.1.0",
     "express": "^5.2.1",
     "file-saver": "^2.0.0",
-    "firebase": "^12.16.1",
+    "firebase": "^12.16.2",
     "framer-motion": "^12.34.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",
@@ -40,7 +40,7 @@
     "sweetalert2": "^11.26.18",
     "swiper": "^12.1.0",
     "tesseract.js": "^6.0.1",
-    "xlsx": "^0.18.0",
+    "xlsx": "^0.18.5",
     "uuid": "^13.0.0"
   },
   "devDependencies": {
