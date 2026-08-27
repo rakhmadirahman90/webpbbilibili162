@@ -8,7 +8,8 @@ const scripts = [
   'patch-header-datetime-v2.mjs',
   'patch-import-surat.mjs',
   'patch-admin-tournament-api.mjs',
-  'patch-tournament-status-whatsapp.mjs'
+  'patch-tournament-status-whatsapp.mjs',
+  'patch-tournament-wa-popup.mjs'
 ];
 
 for (const script of scripts) {
