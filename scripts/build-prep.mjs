@@ -9,7 +9,8 @@ const scripts = [
   'patch-import-surat.mjs',
   'patch-admin-tournament-api.mjs',
   'patch-tournament-status-whatsapp.mjs',
-  'patch-tournament-wa-popup.mjs'
+  'patch-tournament-wa-popup.mjs',
+  'patch-registration-whatsapp-direct.mjs'
 ];
 
 for (const script of scripts) {
