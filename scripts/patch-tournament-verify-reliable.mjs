@@ -11,7 +11,7 @@ const start = src.indexOf(startToken);
 const end = src.indexOf(endToken, start);
 if (start < 0 || end < 0) throw new Error('Tournament verify block not found.');
 
-const newVerify = `  const verify=async(item:Registration,nextStatus:'Diterima'|'Ditolak')=>{
+const actualVerify = `  const verify=async(item:Registration,nextStatus:'Diterima'|'Ditolak')=>{
     let note=String(item.catatan_admin||'').trim();
 
     if(nextStatus==='Ditolak'){
@@ -45,8 +45,8 @@ const newVerify = `  const verify=async(item:Registration,nextStatus:'Diterima'|
       if(!r.isConfirmed)return;
     }
 
-    // PATCH_TOURNAMENT_VERIFY_RELIABLE_V1: always show visible progress/error feedback.
-    await Swal.fire({
+    // PATCH_TOURNAMENT_VERIFY_RELIABLE_V1: visible progress + deterministic save + explicit WA action.
+    Swal.fire({
       title:'Menyimpan Verifikasi...',
       text:nextStatus==='Diterima'?'Sedang menyimpan status DITERIMA & DIVERIFIKASI.':'Sedang menyimpan status DITOLAK.',
       allowOutsideClick:false,
@@ -54,14 +54,53 @@ const newVerify = `  const verify=async(item:Registration,nextStatus:'Diterima'|
       showConfirmButton:false,
       didOpen:()=>Swal.showLoading()
     });
+
+    try {
+      const {data,error}=await supabase
+        .from('pendaftaran_turnamen')
+        .update({status_pendaftaran:nextStatus,catatan_admin:note})
+        .eq('id',item.id)
+        .select('*')
+        .single();
+
+      if(error) throw error;
+      if(!data) throw new Error('Data pendaftaran tidak ditemukan setelah penyimpanan.');
+
+      const saved=data as Registration;
+      setItems(p=>p.map(x=>x.id===item.id?saved:x));
+      setSelected(saved);
+      Swal.close();
+
+      const digits=String(saved.whatsapp||item.whatsapp||'').replace(/\\D/g,'');
+      const phone=digits.startsWith('62')?digits:(digits.startsWith('0')?'62'+digits.slice(1):digits);
+      const message=typeof buildTournamentStatusMessage==='function' ? buildTournamentStatusMessage(saved,nextStatus,note) : '';
+      const waUrl=phone&&message?\`https://wa.me/\${phone}?text=\${encodeURIComponent(message)}\`:'';
+      const accepted=nextStatus==='Diterima';
+
+      const result=await Swal.fire({
+        icon:accepted?'success':'warning',
+        title:accepted?'Pendaftaran Berhasil Diterima':'Pendaftaran Berhasil Ditolak',
+        html:\`<div style="text-align:left;font-size:13px;line-height:1.7">\n          <div><b>Status:</b> \${accepted?'DITERIMA & DIVERIFIKASI':'DITOLAK'}</div>\n          <div><b>Kode:</b> \${escapeTournamentHtml(saved.kode_pendaftaran)}</div>\n          <div><b>Pemain:</b> \${escapeTournamentHtml(saved.nama_pemain_1)} &amp; \${escapeTournamentHtml(saved.nama_pemain_2)}</div>\n          <div><b>WhatsApp Penanggung Jawab:</b> \${escapeTournamentHtml(phone?'+'+phone:'Tidak tersedia')}</div>\n          <div><b>Catatan Admin:</b> \${escapeTournamentHtml(note||'-')}</div>\n        </div>\`,
+        showCancelButton:!!waUrl,
+        confirmButtonText:waUrl?'📱 Kirim Konfirmasi ke WhatsApp':'Tutup',
+        cancelButtonText:'Tutup',
+        confirmButtonColor:'#16a34a',
+        cancelButtonColor:'#64748b',
+        allowOutsideClick:false
+      });
+
+      if(result.isConfirmed&&waUrl){
+        // Direct navigation is triggered by the user's tap on the result button,
+        // avoiding mobile popup blocking after the asynchronous database update.
+        window.location.assign(waUrl);
+      }
+    } catch(error) {
+      Swal.close();
+      const message=error instanceof Error?error.message:String(error||'Gagal menyimpan status pendaftaran.');
+      await Swal.fire({icon:'error',title:'Verifikasi Gagal',text:message,confirmButtonText:'Tutup'});
+    }
   };
 `;
-
-// The loading alert above cannot be awaited because it intentionally remains open.
-// Replace it immediately with the actual implementation below.
-const actualVerify = newVerify.replace(
-  `    await Swal.fire({\n      title:'Menyimpan Verifikasi...',\n      text:nextStatus==='Diterima'?'Sedang menyimpan status DITERIMA & DIVERIFIKASI.':'Sedang menyimpan status DITOLAK.',\n      allowOutsideClick:false,\n      allowEscapeKey:false,\n      showConfirmButton:false,\n      didOpen:()=>Swal.showLoading()\n    });`,
-  `    Swal.fire({\n      title:'Menyimpan Verifikasi...',\n      text:nextStatus==='Diterima'?'Sedang menyimpan status DITERIMA & DIVERIFIKASI.':'Sedang menyimpan status DITOLAK.',\n      allowOutsideClick:false,\n      allowEscapeKey:false,\n      showConfirmButton:false,\n      didOpen:()=>Swal.showLoading()\n    });\n\n    try {\n      const {data,error}=await supabase\n        .from('pendaftaran_turnamen')\n        .update({status_pendaftaran:nextStatus,catatan_admin:note})\n        .eq('id',item.id)\n        .select('*')\n        .single();\n\n      if(error) throw error;\n      if(!data) throw new Error('Data pendaftaran tidak ditemukan setelah penyimpanan.');\n\n      const saved=data as Registration;\n      setItems(p=>p.map(x=>x.id===item.id?saved:x));\n      setSelected(saved);\n      Swal.close();\n\n      const digits=String(saved.whatsapp||item.whatsapp||'').replace(/\\D/g,'');\n      const phone=digits.startsWith('62')?digits:(digits.startsWith('0')?'62'+digits.slice(1):digits);\n      const message=typeof buildTournamentStatusMessage==='function' ? buildTournamentStatusMessage(saved,nextStatus,note) : '';\n      const waUrl=phone&&message?\`https://wa.me/\${phone}?text=\${encodeURIComponent(message)}\`:'';\n      const accepted=nextStatus==='Diterima';\n\n      await Swal.fire({\n        icon:accepted?'success':'warning',\n        title:accepted?'Pendaftaran Berhasil Diterima':'Pendaftaran Berhasil Ditolak',\n        html:\`<div style="text-align:left;font-size:13px;line-height:1.7">\n          <div><b>Status:</b> \${accepted?'DITERIMA & DIVERIFIKASI':'DITOLAK'}</div>\n          <div><b>Kode:</b> \${escapeTournamentHtml(saved.kode_pendaftaran)}</div>\n          <div><b>Pemain:</b> \${escapeTournamentHtml(saved.nama_pemain_1)} &amp; \${escapeTournamentHtml(saved.nama_pemain_2)}</div>\n          <div><b>WhatsApp Penanggung Jawab:</b> \${escapeTournamentHtml(phone?'+'+phone:'Tidak tersedia')}</div>\n          <div><b>Catatan Admin:</b> \${escapeTournamentHtml(note||'-')}</div>\n        </div>\`,\n        showCancelButton:!!waUrl,\n        confirmButtonText:waUrl?'📱 Kirim Konfirmasi ke WhatsApp':'Tutup',\n        cancelButtonText:'Tutup',\n        confirmButtonColor:'#16a34a',\n        cancelButtonColor:'#64748b',\n        allowOutsideClick:false\n      }).then(result=>{\n        if(result.isConfirmed&&waUrl){\n          // This navigation is initiated directly by the user's SweetAlert tap,\n          // so mobile popup blockers do not prevent WhatsApp from opening.\n          window.location.assign(waUrl);\n        }\n      });\n    } catch(error) {\n      Swal.close();\n      await Swal.fire({\n        icon:'error',\n        title:'Verifikasi Gagal',\n        text:String(error?.message||error||'Gagal menyimpan status pendaftaran.'),\n        confirmButtonText:'Tutup'\n      });\n    }`\n);
 
 src = src.slice(0,start) + actualVerify + src.slice(end);
 fs.writeFileSync(path,src);
