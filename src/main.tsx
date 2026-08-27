@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import './utils/stableNavigation.ts';
 import './utils/galleryRouteStability.ts';
 import './utils/galleryBackButtonRuntime.ts';
+import './utils/galleryFilePicker.ts';
 import App from './App.tsx';
 import ErrorBoundary from './components/ErrorBoundary.tsx';
 import { initializeLocalDatabase } from './data/localDatabase.ts';
