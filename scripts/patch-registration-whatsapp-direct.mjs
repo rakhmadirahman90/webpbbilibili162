@@ -29,33 +29,33 @@ const replacement = String.raw`  const sendWaStatusNotification = (item: Registr
     }
 
     const message = status === 'Diterima'
-      ? `*PEMBERITAHUAN VERIFIKASI PENDAFTARAN ATLET*\n` +
-        `*PB BILIBILI 162 PAREPARE*\n\n` +
-        `Halo *\${item.nama.toUpperCase()}*,\n` +
-        `Selamat! Pendaftaran Anda sebagai atlet/anggota baru di *PB BILIBILI 162* telah *DITERIMA & DIVERIFIKASI RESMI* oleh Admin.\n\n` +
-        `📋 *INFORMASI ATLET VERIFIED:*\n` +
-        `• Nama Atlet: \${item.nama.toUpperCase()}\n` +
-        `• Status Verifikasi: ✅ *DITERIMA (AKTIF)*\n` +
-        `• Kelompok Usia: \${item.kategori || '-'}\n` +
-        `• Kategori Atlet: \${item.kategori_atlet || 'MUDA'}\n` +
-        `• Domisili: \${item.domisili || '-'}\n\n` +
-        `🌐 *AKSES LOGIN SISTEM:*\n` +
-        `Silakan login untuk mengecek profil atlet Anda di:\n` +
-        `https://pbilibili162.99apps.id/login\n\n` +
-        `Selamat bergabung dan salam olahraga!\n` +
-        `*Pengurus PB BILIBILI 162*`
-      : `*PEMBERITAHUAN STATUS PENDAFTARAN ATLET*\n` +
-        `*PB BILIBILI 162 PAREPARE*\n\n` +
-        `Halo *\${item.nama.toUpperCase()}*,\n` +
-        `Mohon maaf, berdasarkan hasil verifikasi berkas, pendaftaran Anda di *PB BILIBILI 162* saat ini *BELUM DAPAT DITERIMA / DITOLAK*.\n\n` +
-        `📋 *DETAIL PENDAFTARAN:*\n` +
-        `• Nama: \${item.nama.toUpperCase()}\n` +
-        `• Status: ❌ *DITOLAK*\n` +
-        `• Catatan/Alasan: \${reason || 'Persyaratan pendaftaran belum terpenuhi.'}\n\n` +
-        `Apabila ada pertanyaan lebih lanjut, silakan hubungi Pengurus PB BILIBILI 162. Terima kasih.\n\n` +
-        `*Pengurus PB BILIBILI 162*`;
+      ? \`*PEMBERITAHUAN VERIFIKASI PENDAFTARAN ATLET*\\n\` +
+        \`*PB BILIBILI 162 PAREPARE*\\n\\n\` +
+        \`Halo *\${item.nama.toUpperCase()}*,\\n\` +
+        \`Selamat! Pendaftaran Anda sebagai atlet/anggota baru di *PB BILIBILI 162* telah *DITERIMA & DIVERIFIKASI RESMI* oleh Admin.\\n\\n\` +
+        \`📋 *INFORMASI ATLET VERIFIED:*\\n\` +
+        \`• Nama Atlet: \${item.nama.toUpperCase()}\\n\` +
+        \`• Status Verifikasi: ✅ *DITERIMA (AKTIF)*\\n\` +
+        \`• Kelompok Usia: \${item.kategori || '-'}\\n\` +
+        \`• Kategori Atlet: \${item.kategori_atlet || 'MUDA'}\\n\` +
+        \`• Domisili: \${item.domisili || '-'}\\n\\n\` +
+        \`🌐 *AKSES LOGIN SISTEM:*\\n\` +
+        \`Silakan login untuk mengecek profil atlet Anda di:\\n\` +
+        \`https://pbilibili162.99apps.id/login\\n\\n\` +
+        \`Selamat bergabung dan salam olahraga!\\n\` +
+        \`*Pengurus PB BILIBILI 162*\`
+      : \`*PEMBERITAHUAN STATUS PENDAFTARAN ATLET*\\n\` +
+        \`*PB BILIBILI 162 PAREPARE*\\n\\n\` +
+        \`Halo *\${item.nama.toUpperCase()}*,\\n\` +
+        \`Mohon maaf, berdasarkan hasil verifikasi berkas, pendaftaran Anda di *PB BILIBILI 162* saat ini *BELUM DAPAT DITERIMA / DITOLAK*.\\n\\n\` +
+        \`📋 *DETAIL PENDAFTARAN:*\\n\` +
+        \`• Nama: \${item.nama.toUpperCase()}\\n\` +
+        \`• Status: ❌ *DITOLAK*\\n\` +
+        \`• Catatan/Alasan: \${reason || 'Persyaratan pendaftaran belum terpenuhi.'}\\n\\n\` +
+        \`Apabila ada pertanyaan lebih lanjut, silakan hubungi Pengurus PB BILIBILI 162. Terima kasih.\\n\\n\` +
+        \`*Pengurus PB BILIBILI 162*\`;
 
-    const waUrl = `https://wa.me/\${phone}?text=\${encodeURIComponent(message)}`;
+    const waUrl = \`https://wa.me/\${phone}?text=\${encodeURIComponent(message)}\`;
 
     // Jangan gunakan window.open() dari Promise/then: Chrome Android dapat
     // menganggapnya popup dan memblokirnya. Navigasi langsung ke wa.me akan
