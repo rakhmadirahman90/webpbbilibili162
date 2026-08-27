@@ -4,17 +4,22 @@ const sidebarPath = 'src/components/Sidebar.tsx';
 const appPath = 'src/App.tsx';
 
 function once(file, from, to, label) {
-  let src = fs.readFileSync(file, 'utf8');
+  const src = fs.readFileSync(file, 'utf8');
   if (src.includes(to)) return;
   if (!src.includes(from)) throw new Error(`[seeded] marker not found: ${label}`);
   fs.writeFileSync(file, src.replace(from, to), 'utf8');
 }
 
-// Sidebar entry. The existing admin/member menu patch runs before this script.
+// Put the seeded menu in the ADMIN navigation and the member navigation.
+once(sidebarPath,
+  "{ name: 'Pendaftaran Anggota', path: 'pendaftaran', icon: FileSpreadsheet, adminOnly: true },",
+  "{ name: 'Pendaftaran Anggota', path: 'pendaftaran', icon: FileSpreadsheet, adminOnly: true },\n            { name: 'Seeded Resmi Bilibili 162', path: 'seeded-turnamen', icon: ShieldCheck, adminOnly: true },",
+  'admin sidebar seeded entry');
+
 once(sidebarPath,
   "{ name: 'Turnamen & Liga', path: 'turnamen-liga', icon: Trophy, adminOnly: false },",
   "{ name: 'Turnamen & Liga', path: 'turnamen-liga', icon: Trophy, adminOnly: false },\n            { name: 'Seeded Resmi Bilibili 162', path: 'seeded-turnamen', icon: ShieldCheck, adminOnly: false },",
-  'sidebar seeded entry');
+  'member sidebar seeded entry');
 
 // App lazy import.
 once(appPath,
