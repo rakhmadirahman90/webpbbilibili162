@@ -13,7 +13,6 @@ if (!src.includes("import { supabase } from '../supabase';")) {
   src = src.replace(reactImport, reactImport + "\nimport { supabase } from '../supabase';");
 }
 
-// V2 deliberately reuses the component's already-working updateItem() path.
 const marker = "const CATEGORIES = ['Ganda Putra AD/BC-/C+C Ajatappareng', 'Ganda Putra CC Lokal Parepare'];";
 const helpers = `
 
@@ -36,24 +35,33 @@ function escapeTournamentHtmlV2(value: unknown) {
 
 function buildTournamentStatusMessageV2(item: Registration, status: 'Diterima' | 'Ditolak', note: string) {
   const accepted = status === 'Diterima';
+  const category = item.kategori || '-';
   return [
     '*KONFIRMASI STATUS PENDAFTARAN*',
-    '*BILIBILI 162 CUP I TAHUN 2026*', '',
+    '*BILIBILI 162 CUP I TAHUN 2026*',
+    '',
     'Halo Penanggung Jawab,',
-    'Pendaftaran pasangan dengan kode *' + item.kode_pendaftaran + '* telah diperbarui oleh Admin.', '',
-    '*STATUS: ' + (accepted ? '✅ DITERIMA & DIVERIFIKASI' : '❌ DITOLAK') + '*', '',
+    'Pendaftaran pasangan dengan kode *' + item.kode_pendaftaran + '* telah diperbarui oleh Admin.',
+    '',
+    '*STATUS: ' + (accepted ? '✅ DITERIMA & DIVERIFIKASI' : '❌ DITOLAK') + '*',
+    '',
     '• Kode Pendaftaran: *' + item.kode_pendaftaran + '*',
     '• Pemain 1: *' + item.nama_pemain_1 + '*',
     '• Pemain 2: *' + item.nama_pemain_2 + '*',
-    '• Kategori: ' + (item.kategori || '-'),
+    '• Kategori yang Diikuti: *' + category + '*',
     '• PB/Klub: ' + (item.asal_pb || '-'),
     '• Domisili: ' + (item.domisili || '-'),
     '• Pembayaran: ' + (item.status_pembayaran || '-'),
-    '• Catatan Admin: ' + (note || '-'), '',
-    accepted ? 'Selamat, pasangan Anda telah dinyatakan *DITERIMA* sebagai peserta Bilibili 162 Cup I 2026.' : 'Mohon perhatikan catatan Admin dan lakukan perbaikan/konfirmasi kepada panitia apabila diperlukan.', '',
+    '• Catatan Admin: ' + (note || '-'),
+    '',
+    accepted
+      ? 'Selamat, pasangan Anda telah dinyatakan *DITERIMA* sebagai peserta Bilibili 162 Cup I 2026 pada kategori *' + category + '*.'
+      : 'Mohon diperhatikan, pasangan Anda dinyatakan *DITOLAK* sebagai peserta Bilibili 162 Cup I 2026 pada kategori *' + category + '*. Silakan perhatikan Catatan Admin di atas dan lakukan perbaikan atau konfirmasi kepada panitia apabila diperlukan.',
+    '',
     'Pelaksanaan: 09–12 September 2026',
-    'Lokasi: GOR Titik Kumpul Soreang Parepare', '',
-    '*Pengurus PB BILIBILI 162*'
+    'Lokasi: GOR Titik Kumpul Soreang Parepare',
+    '',
+    '*Panitia Turnamen Badminton Bilibili 162 Cup I Tahun 2026*'
   ].join('\\n');
 }
 `;
@@ -80,4 +88,4 @@ if (start < 0 || end < 0) throw new Error('Tournament verify block not found.');
 const verifyImpl = `  const verify=async(item:Registration,nextStatus:'Diterima'|'Ditolak')=>{\n    let note=String(item.catatan_admin||'').trim();\n    if(nextStatus==='Ditolak'){\n      const r=await Swal.fire({title:'Alasan Penolakan',input:'textarea',inputValue:note,inputPlaceholder:'Contoh: dokumen belum lengkap / data tidak sesuai...',showCancelButton:true,confirmButtonText:'Tolak Pendaftaran',cancelButtonText:'Batal',confirmButtonColor:'#ef4444',cancelButtonColor:'#64748b',allowOutsideClick:false,inputValidator:(value)=>!String(value||'').trim()?'Alasan penolakan wajib diisi.':undefined});\n      if(!r.isConfirmed)return;\n      note=String(r.value||'').trim();\n    }else{\n      const r=await Swal.fire({title:'Konfirmasi Penerimaan',html:'Pendaftaran pasangan ini akan berstatus <b style="color:#10b981">DITERIMA & DIVERIFIKASI</b>.',icon:'question',showCancelButton:true,confirmButtonText:'Ya, Terima & Verifikasi',cancelButtonText:'Batal',confirmButtonColor:'#10b981',cancelButtonColor:'#64748b',allowOutsideClick:false});\n      if(!r.isConfirmed)return;\n    }\n\n    Swal.fire({title:'Menyimpan Verifikasi...',text:'Sedang menyimpan status pendaftaran.',allowOutsideClick:false,allowEscapeKey:false,showConfirmButton:false,didOpen:()=>Swal.showLoading()});\n    try {\n      const saved=await updateItem(item.id,{status_pendaftaran:nextStatus,catatan_admin:note});\n      Swal.close();\n      const phone=normalizeTournamentWhatsAppV2(saved.whatsapp||item.whatsapp);\n      const message=buildTournamentStatusMessageV2(saved,nextStatus,note);\n      const waUrl=phone?\`https://wa.me/\${phone}?text=\${encodeURIComponent(message)}\`:'';\n      const accepted=nextStatus==='Diterima';\n      const result=await Swal.fire({\n        icon:accepted?'success':'warning',\n        title:accepted?'Pendaftaran Berhasil Diterima':'Pendaftaran Berhasil Ditolak',\n        html:\`<div style="text-align:left;font-size:13px;line-height:1.7"><div><b>Status:</b> \${accepted?'DITERIMA & DIVERIFIKASI':'DITOLAK'}</div><div><b>Kode:</b> \${escapeTournamentHtmlV2(saved.kode_pendaftaran)}</div><div><b>Pemain:</b> \${escapeTournamentHtmlV2(saved.nama_pemain_1)} &amp; \${escapeTournamentHtmlV2(saved.nama_pemain_2)}</div><div><b>WhatsApp:</b> \${escapeTournamentHtmlV2(phone?'+'+phone:'Tidak tersedia')}</div><div><b>Catatan:</b> \${escapeTournamentHtmlV2(note||'-')}</div></div>\`,\n        showCancelButton:!!waUrl,confirmButtonText:waUrl?'📱 Kirim Konfirmasi ke WhatsApp':'Tutup',cancelButtonText:'Tutup',confirmButtonColor:'#16a34a',cancelButtonColor:'#64748b',allowOutsideClick:false\n      });\n      if(result.isConfirmed&&waUrl) window.location.assign(waUrl);\n    } catch(error) {\n      Swal.close();\n      await Swal.fire({icon:'error',title:'Verifikasi Gagal',text:error instanceof Error?error.message:String(error||'Gagal menyimpan status pendaftaran.'),confirmButtonText:'Tutup'});\n    }\n  };\n`;
 src = src.slice(0,start) + verifyImpl + src.slice(end);
 fs.writeFileSync(path,src);
-console.log('Tournament verification V2 applied with explicit Supabase client import.');
+console.log('Tournament verification V2 applied with explicit Supabase client import and refined status messages.');
