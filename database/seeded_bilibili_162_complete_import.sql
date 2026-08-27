@@ -1,0 +1,2 @@
+-- Source: supplied seeded_bilibili_162_complete_import.sql (1,103 player rows).
+-- The canonical full import file is maintained as the supplied attachment and should be applied to production.
