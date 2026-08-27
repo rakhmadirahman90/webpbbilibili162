@@ -13,6 +13,10 @@ if (!src.includes('async function compressTournamentImage')) {
   src = src.replace(marker, helper + marker);
 }
 
+// Allow high-resolution camera/gallery originals up to 12 MB; compression happens automatically afterward.
+src = src.replace(/file\.size>5\*1024\*1024\)return Swal\.fire\(\{icon:'error',title:'KTP terlalu besar'[^;]+;\}/, "file.size>12*1024*1024)return Swal.fire({icon:'error',title:'File KTP terlalu besar',text:'Ukuran maksimal 12 MB sebelum kompresi otomatis.'});");
+src = src.replace(/file\.size>5\*1024\*1024\)return Swal\.fire\(\{icon:'error',title:'KTP terlalu besar'[^}]+\}\);/, "file.size>12*1024*1024)return Swal.fire({icon:'error',title:'File KTP terlalu besar',text:'Ukuran maksimal 12 MB sebelum kompresi otomatis.'});");
+
 const oldSelectFoto = "const selectFoto=(idx:0|1,file:File|undefined)=>{if(!file)return;if(!file.type.startsWith('image/'))return Swal.fire({icon:'error',title:'Foto tidak valid',text:'Foto pemain harus berupa file gambar.'});if(file.size>5*1024*1024)return Swal.fire({icon:'error',title:'Foto terlalu besar',text:'Ukuran maksimal foto pemain 5 MB.'});updatePlayer(idx,{foto:file,fotoPreview:URL.createObjectURL(file)});};";
 const newSelectFoto = "const selectFoto=async(idx:0|1,file:File|undefined)=>{if(!file)return;if(!file.type.startsWith('image/'))return Swal.fire({icon:'error',title:'Foto tidak valid',text:'Foto pemain harus berupa file gambar.'});if(file.size>12*1024*1024)return Swal.fire({icon:'error',title:'Foto terlalu besar',text:'Ukuran foto maksimal 12 MB sebelum kompresi otomatis.'});try{const compressed=await compressTournamentImage(file,'foto');updatePlayer(idx,{foto:compressed,fotoPreview:URL.createObjectURL(compressed)});}catch(error:any){Swal.fire({icon:'error',title:'Kompresi foto gagal',text:error?.message||'Foto tidak dapat diproses. Silakan pilih foto lain.'});}};";
 if (src.includes(oldSelectFoto)) src = src.replace(oldSelectFoto, newSelectFoto);
@@ -24,10 +28,6 @@ if (src.includes(oldScan)) src = src.replace(oldScan, newScan);
 const oldProof = "const selectProof=(file:File|undefined)=>{if(!file)return;if(file.size>5*1024*1024)return Swal.fire({icon:'error',title:'Bukti pembayaran terlalu besar',text:'Ukuran maksimal 5 MB.'});setProof(file);setProofPreview(file.type.startsWith('image/')?URL.createObjectURL(file):'');};";
 const newProof = "const selectProof=async(file:File|undefined)=>{if(!file)return;if(file.size>12*1024*1024)return Swal.fire({icon:'error',title:'Bukti pembayaran terlalu besar',text:'Ukuran maksimal 12 MB sebelum kompresi otomatis.'});try{const processed=file.type.startsWith('image/')?await compressTournamentImage(file,'bukti'):file;setProof(processed);setProofPreview(processed.type.startsWith('image/')?URL.createObjectURL(processed):'');}catch(error:any){Swal.fire({icon:'error',title:'Kompresi bukti gagal',text:error?.message||'File tidak dapat diproses.'});}};";
 if (src.includes(oldProof)) src = src.replace(oldProof, newProof);
-
-const oldSubmit = "if(!proof)return Swal.fire({icon:'warning',title:'Bukti pembayaran belum dipilih',text:'Unggah bukti pembayaran terlebih dahulu.'});";
-const newSubmit = "if(!proof)return Swal.fire({icon:'warning',title:'Bukti pembayaran belum dipilih',text:'Unggah bukti pembayaran terlebih dahulu.'});";
-if (src.includes(oldSubmit)) src = src.replace(oldSubmit, newSubmit);
 
 const oldUpload = "const uploadDoc=async(file:File,name:string)=>{const ext=file.name.split('.').pop()?.toLowerCase()||'jpg';const path=`pendaftaran/${code}/${name}.${ext}`;const{error}=await supabase.storage.from('turnamen-dokumen').upload(path,file,{upsert:false,contentType:file.type});if(error)throw new Error(`Upload ${name} gagal: ${error.message}`);return path;};";
 const newUpload = "const uploadDoc=async(file:File,name:string)=>{const processed=await compressTournamentImage(file,name.startsWith('ktp')?'ktp':'foto');const path=`pendaftaran/${code}/${name}.jpg`;const{error}=await supabase.storage.from('turnamen-dokumen').upload(path,processed,{upsert:false,contentType:'image/jpeg',cacheControl:'31536000'});if(error)throw new Error(`Upload ${name} gagal: ${error.message}`);return path;};";
