@@ -21,10 +21,9 @@ replaceOnce(appPath,
   "const ManajemenPendaftaran = lazy(() => import('./ManajemenPendaftaran'));\nconst ManajemenTurnamen = lazy(() => import('./components/ManajemenTurnamen'));",
   'admin import');
 
-// URL synchronizer and initial active-view allowlist.
-for (const marker of [
-  "'register', 'pendaftaran',",
-]) {
+// URL synchronizer and initial active-view allowlist. The tournament page is
+// subsequently converted to a standalone route by the stability patch.
+for (const marker of ["'register', 'pendaftaran',"]) {
   const src = fs.readFileSync(appPath, 'utf8');
   const count = (src.match(new RegExp(marker.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&'), 'g')) || []).length;
   if (count === 0) throw new Error('Patch tournament: App full-page registration marker missing');
@@ -32,7 +31,8 @@ for (const marker of [
   fs.writeFileSync(appPath, updated);
 }
 
-// Public render branch.
+// Public render branch for legacy builds; the final stability patch moves this
+// page to an explicit React Router route so activeView no longer owns it.
 replaceOnce(appPath,
   "{(activeView === 'register' || activeView === 'pendaftaran') && <RegistrationForm />}",
   "{(activeView === 'register' || activeView === 'pendaftaran') && <RegistrationForm />}\n                    {(activeView === 'pendaftaran-turnamen') && <PendaftaranTurnamen />}",
@@ -44,10 +44,12 @@ replaceOnce(appPath,
   "!['register', 'pendaftaran', 'pendaftaran-turnamen', 'contact', 'kontak', 'sejarah', 'visi-misi', 'dokumen-penting', 'fasilitas', 'inventaris'].includes(activeView)",
   'footer exclusion');
 
-// Admin route.
+// IMPORTANT: never share the public /pendaftaran-turnamen URL with an admin
+// route. A same-path protected route can outrank the public page and cause a
+// redirect/render bounce. Give the admin screen its own URL instead.
 replaceOnce(appPath,
   "<Route path=\"pendaftaran\" element={isAdmin ? <ManajemenPendaftaran /> : <Navigate to=\"/admin/dashboard\" replace />} />",
-  "<Route path=\"pendaftaran\" element={isAdmin ? <ManajemenPendaftaran /> : <Navigate to=\"/admin/dashboard\" replace />} />\n              <Route path=\"pendaftaran-turnamen\" element={isAdmin ? <ManajemenTurnamen /> : <Navigate to=\"/admin/dashboard\" replace />} />",
+  "<Route path=\"pendaftaran\" element={isAdmin ? <ManajemenPendaftaran /> : <Navigate to=\"/admin/dashboard\" replace />} />\n              <Route path=\"kelola-pendaftaran-turnamen\" element={isAdmin ? <ManajemenTurnamen /> : <Navigate to=\"/admin/dashboard\" replace />} />",
   'admin route');
 
 // Navbar fallback + route preloading for environments where DB navbar is empty.
@@ -64,10 +66,11 @@ replaceOnce(navPath,
   "case '/register': void import('./RegistrationForm'); break;\n      case '/pendaftaran-turnamen': void import('./PendaftaranTurnamen'); break;",
   'navbar import');
 
-// Admin sidebar entry.
+// Admin sidebar entry uses a different URL so it cannot collide with the public
+// tournament registration form.
 replaceOnce(sidebarPath,
   "{ name: 'Pendaftaran Anggota', path: 'pendaftaran', icon: FileSpreadsheet, adminOnly: true },",
-  "{ name: 'Pendaftaran Anggota', path: 'pendaftaran', icon: FileSpreadsheet, adminOnly: true },\n        { name: 'Pendaftaran Peserta Turnamen', path: 'pendaftaran-turnamen', icon: Trophy, adminOnly: true },",
+  "{ name: 'Pendaftaran Anggota', path: 'pendaftaran', icon: FileSpreadsheet, adminOnly: true },\n        { name: 'Pendaftaran Peserta Turnamen', path: 'kelola-pendaftaran-turnamen', icon: Trophy, adminOnly: true },",
   'sidebar tournament entry');
 
-console.log('Tournament registration patch applied.');
+console.log('Tournament registration patch applied with separated public/admin routes.');
