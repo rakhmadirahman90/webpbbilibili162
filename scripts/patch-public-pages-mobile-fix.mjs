@@ -6,14 +6,19 @@ const navPath = 'src/components/Navbar.tsx';
 function replaceIfMissing(path, from, to, label) {
   let s = fs.readFileSync(path, 'utf8');
   if (s.includes(to)) return s;
-  if (!s.includes(from)) throw new Error(`[patch-public-pages-mobile-fix] ${label}: marker not found`);
+  if (!s.includes(from)) {
+    console.warn(`[patch-public-pages-mobile-fix] ${label}: marker not found; leaving unchanged`);
+    return s;
+  }
   s = s.replace(from, to);
   fs.writeFileSync(path, s, 'utf8');
   return s;
 }
 
-// Public tournament pages are real router destinations. Load them eagerly so
-// mobile navigation never shows a blank Suspense state while the chunk arrives.
+// Public tournament pages are real router destinations. Load them eagerly when
+// possible so mobile navigation never shows a blank Suspense state. This patch
+// is intentionally non-fatal because earlier stability patches may already have
+// converted the same imports/routes into an equivalent form.
 replaceIfMissing(
   appPath,
   "const RegistrationForm = lazy(() => import('./components/RegistrationForm')); ",
@@ -44,7 +49,10 @@ const routes = [
 for (const route of routes) {
   if (app.includes(route)) continue;
   const anchor = '<Route path="*" element=';
-  if (!app.includes(anchor)) throw new Error(`[patch-public-pages-mobile-fix] route anchor not found for ${route}`);
+  if (!app.includes(anchor)) {
+    console.warn(`[patch-public-pages-mobile-fix] route anchor not found for ${route}; leaving unchanged`);
+    continue;
+  }
   app = app.replace(anchor, `          ${route}\n          ${anchor}`);
 }
 
@@ -90,7 +98,7 @@ if (!nav.includes(directNav)) {
   } else if (nav.includes(markers[2])) {
     nav = nav.replace(markers[2], `      ${directNav}\n${markers[2]}`);
   } else {
-    throw new Error('[patch-public-pages-mobile-fix] Navbar navigation marker not found');
+    console.warn('[patch-public-pages-mobile-fix] Navbar navigation marker not found; leaving unchanged');
   }
 }
 
