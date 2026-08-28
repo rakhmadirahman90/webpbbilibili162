@@ -7,7 +7,7 @@ function replaceIfNeeded(path, from, to, label) {
   let s = fs.readFileSync(path, 'utf8');
   if (s.includes(to)) return false;
   if (!s.includes(from)) {
-    console.warn(`[patch-public-seeded-no-flash] ${label}: marker not found; leaving unchanged`);
+    console.log(`[patch-public-seeded-no-flash] ${label}: marker not found; leaving unchanged`);
     return false;
   }
   s = s.replace(from, to);
@@ -16,19 +16,28 @@ function replaceIfNeeded(path, from, to, label) {
 }
 
 // Keep the public seeded page on its own router path. The older activeView
-// synchronizer otherwise performs a second navigation and causes a flash.
+// synchronizer otherwise performs a second navigation and can flash or loop.
 let app = fs.readFileSync(appPath, 'utf8');
-const syncStart = "function UrlSynchronizer({ activeView, setActiveView }: { activeView: string | null; setActiveView: (view: string | null) => void; }) {\n  const location = useLocation();";
-if (app.includes(syncStart) && !app.includes('const isPublicSeeded = location.pathname.replace')) {
-  app = app.replace(syncStart, `${syncStart}\n  const isPublicSeeded = location.pathname.replace(/\\/+$/, '').toLowerCase() === '/pendaftaran/seeded-peserta';`);
+const seededGuard = "  const isPublicSeeded = location.pathname.replace(/\\/+$/, '').toLowerCase() === '/pendaftaran/seeded-peserta';";
+const locationMarker = '  const location = useLocation();\n  const navigate = useNavigate();';
+
+// Always ensure the declaration exists before any effect can reference it.
+if (!app.includes(seededGuard)) {
+  if (app.includes(locationMarker)) {
+    app = app.replace(locationMarker, `${locationMarker}\n${seededGuard}`);
+  } else {
+    console.log('[patch-public-seeded-no-flash] UrlSynchronizer location marker not found; cannot add seeded guard');
+  }
 }
+
+// Support both the current source and the older generated variant.
 app = app.replace(
-  "  useEffect(() => {\n    if (location.pathname.startsWith('/login') || location.pathname.startsWith('/admin')) return;\n    const path = location.pathname.substring(1).toLowerCase();",
-  "  useEffect(() => {\n    if (isPublicSeeded || location.pathname.startsWith('/login') || location.pathname.startsWith('/admin')) return;\n    const path = location.pathname.substring(1).toLowerCase();"
+  "    if (location.pathname.startsWith('/login') || location.pathname.startsWith('/admin')) return;",
+  "    if (isPublicSeeded || location.pathname.startsWith('/login') || location.pathname.startsWith('/admin')) return;"
 );
 app = app.replace(
-  "  }, [location.pathname, location.search]);\n  useEffect(() => {\n    if (location.pathname.startsWith('/login') || location.pathname.startsWith('/admin')) return;",
-  "  }, [location.pathname, location.search, isPublicSeeded]);\n  useEffect(() => {\n    if (isPublicSeeded || location.pathname.startsWith('/login') || location.pathname.startsWith('/admin')) return;"
+  "  }, [location.pathname, location.search]);",
+  "  }, [location.pathname, location.search, isPublicSeeded]);"
 );
 app = app.replace(
   "  }, [activeView, navigate]);",
@@ -57,4 +66,4 @@ replaceIfNeeded(
   'seeded preload import'
 );
 
-console.log('[patch-public-seeded-no-flash] seeded navigation stabilized for desktop/mobile');
+console.log('[patch-public-seeded-no-flash] seeded navigation guard stabilized for desktop/mobile');
