@@ -22,21 +22,44 @@ import './seeded-mobile-responsive.css';
 
 if (typeof window !== 'undefined') {
   const syncGalleryRouteClass = () => {
-    document.body.classList.toggle(
-      'gallery-route',
-      /^\/(galeri|gallery)(?:\/|$)/i.test(window.location.pathname)
-    );
+    document.body.classList.toggle('gallery-route', /^\/(galeri|gallery)(?:\/|$)/i.test(window.location.pathname));
   };
 
   syncGalleryRouteClass();
   window.addEventListener('popstate', syncGalleryRouteClass);
 
+  // Tournament registration is a hard, isolated public page. Intercept the
+  // navbar submenu click before the legacy SPA navigation handlers can race
+  // with each other. This prevents the page from blinking or staying on home.
+  const normalize = (value: unknown) => String(value ?? '').toLowerCase().replace(/\s+/g, ' ').trim();
+  const isTournamentRegistrationTarget = (el: Element | null) => {
+    if (!el) return false;
+    const text = normalize(el.textContent);
+    const aria = normalize(el.getAttribute('aria-label'));
+    const href = normalize(el.getAttribute('href'));
+    return (
+      href === '/pendaftaran-turnamen' ||
+      href === '/pendaftaran' ||
+      text === 'formulir pendaftaran turnamen' ||
+      text.includes('formulir pendaftaran turnamen') ||
+      aria.includes('formulir pendaftaran turnamen')
+    );
+  };
+  const handleTournamentRegistrationClick = (event: MouseEvent) => {
+    if (event.defaultPrevented || event.button !== 0) return;
+    const target = event.target instanceof Element ? event.target.closest('button,a,[role="menuitem"]') : null;
+    if (!isTournamentRegistrationTarget(target)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    try { (event as any).stopImmediatePropagation?.(); } catch {}
+    const targetPath = '/pendaftaran-turnamen';
+    if (window.location.pathname !== targetPath) window.location.assign(targetPath);
+  };
+  document.addEventListener('click', handleTournamentRegistrationClick, true);
+
   window.setTimeout(() => {
-    try {
-      initializeLocalDatabase();
-    } catch (error) {
-      console.warn('[startup] local database initialization skipped:', error);
-    }
+    try { initializeLocalDatabase(); }
+    catch (error) { console.warn('[startup] local database initialization skipped:', error); }
   }, 0);
 
   installNavigationPrefetch();
