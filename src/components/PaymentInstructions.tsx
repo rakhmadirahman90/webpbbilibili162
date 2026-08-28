@@ -5,6 +5,7 @@ const QRIS_URL = `https://api.qrserver.com/v1/create-qr-code/?size=800x800&margi
 const BSI_ACCOUNT = '7372006514';
 const BSI_ACCOUNT_NAME = 'PB BILIBILI 162';
 
+// Deployment sync: keep the verified tournament payment account on the production build.
 export default function PaymentInstructions(){
   return <div className="space-y-4">
     <div className="rounded-2xl border border-amber-400/25 bg-amber-400/5 p-5">
