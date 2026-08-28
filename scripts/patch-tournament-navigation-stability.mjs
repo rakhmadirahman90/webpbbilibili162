@@ -100,6 +100,19 @@ if (nav.includes(marker) && !nav.includes("section === 'pendaftaran-turnamen'"))
     marker + "\n    if (section === 'pendaftaran-turnamen') { navigate('/pendaftaran-turnamen'); setOpenMenu(null); setMobileOpen(false); return; }"
   );
 }
+
+// Repair the JSX structure if an earlier patch left <nav> unclosed before
+// the fragment terminator. This is intentionally idempotent.
+const fragmentClose = '\n  </>;\n}';
+if (nav.includes(fragmentClose)) {
+  const tailIndex = nav.lastIndexOf(fragmentClose);
+  const beforeTail = nav.slice(0, tailIndex);
+  const afterTail = nav.slice(tailIndex);
+  if (!beforeTail.trimEnd().endsWith('</nav>')) {
+    nav = beforeTail + '\n    </nav>' + afterTail;
+  }
+}
+
 fs.writeFileSync(navPath, nav, 'utf8');
 
-console.log('[tournament-navigation-stability] race-safe synchronizer + standalone tournament route applied');
+console.log('[tournament-navigation-stability] race-safe synchronizer + standalone tournament route + navbar JSX repair applied');
