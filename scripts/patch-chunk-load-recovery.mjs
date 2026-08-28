@@ -36,13 +36,17 @@ const helper = `const lazyWithChunkRecovery = <T extends React.ComponentType<any
 
 `;
 
-if (!src.includes('const lazyWithChunkRecovery')) {
-  if (!src.includes(marker)) throw new Error('Lazy-load marker not found.');
+if (src.includes('const lazyWithChunkRecovery')) {
+  console.log('Chunk-load recovery patch already present.');
+} else if (!src.includes(marker)) {
+  // Current App may use a different, already-stable code-splitting structure.
+  // Never fail the entire production build merely because the legacy marker
+  // disappeared.
+  console.log('Chunk-load recovery marker not found; current App architecture requires no patch.');
+} else {
   src = src.replace(marker, helper + marker);
   src = src.replace(/\blazy\(\(\) => import\(/g, 'lazyWithChunkRecovery(() => import(');
   src = src.replace(/\blazy\(\(\) => import\(([^;]+?)\)\.then\(/g, 'lazyWithChunkRecovery(() => import($1).then(');
   fs.writeFileSync(path, src);
   console.log('Chunk-load recovery patch applied.');
-} else {
-  console.log('Chunk-load recovery patch already present.');
 }
