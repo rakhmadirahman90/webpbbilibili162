@@ -1,7 +1,12 @@
 import fs from 'node:fs';
-const p='src/App.tsx';
-let s=fs.readFileSync(p,'utf8');
+const app='src/App.tsx';
+let s=fs.readFileSync(app,'utf8');
 if(!s.includes("SeededTurnamenIO")) s=s.replace("const SeededTurnamen = lazy(() => import('./components/SeededTurnamen'));","const SeededTurnamen = lazy(() => import('./components/SeededTurnamen'));\nconst SeededTurnamenIO = lazy(() => import('./components/SeededTurnamenIO'));" );
 s=s.replace('<Route path="seeded-turnamen" element={isAdmin ? <SeededTurnamen /> : <Navigate to="/admin/dashboard" replace />} />','<Route path="seeded-turnamen" element={isAdmin ? <SeededTurnamenIO /> : <Navigate to="/admin/dashboard" replace />} />');
-fs.writeFileSync(p,s,'utf8');
-console.log('[patch-seeded-turnamen-io] enabled seeded import/export wrapper');
+fs.writeFileSync(app,s,'utf8');
+const data='src/components/SeededTurnamen.tsx';
+let d=fs.readFileSync(data,'utf8');
+const old=`  const loadPlayers = async () => {\n    setLoading(true);\n    setError('');\n    try {\n      const { data, error: queryError } = await supabase\n        .from('seeded_players')\n        .select('id,source_sheet,source_no,player_name,club_name,seeded_quality,division_level,tournament_qualification,region_status,validity_status,archive_category,gender,eligible_category')\n        .order('source_sheet', { ascending: true })\n        .order('source_no', { ascending: true });\n      if (queryError) throw queryError;\n      setPlayers((data || []) as Player[]);\n    } catch (err: any) {\n      console.error('Seeded database load failed:', err);\n      setError(err?.message || 'Data seeded belum dapat dimuat.');\n      setPlayers([]);\n    } finally {\n      setLoading(false);\n    }\n  };`;
+const fresh=`  const loadPlayers = async () => {\n    setLoading(true);\n    setError('');\n    try {\n      const all: Player[] = [];\n      for (let from = 0; ; from += 1000) {\n        const { data, error: queryError } = await supabase.from('seeded_players')\n          .select('id,source_sheet,source_no,player_name,club_name,seeded_quality,division_level,tournament_qualification,region_status,validity_status,archive_category,gender,eligible_category')\n          .order('source_sheet', { ascending: true })\n          .order('source_no', { ascending: true })\n          .range(from, from + 999);\n        if (queryError) throw queryError;\n        const batch = (data || []) as Player[];\n        all.push(...batch);\n        if (batch.length < 1000) break;\n      }\n      setPlayers(all);\n    } catch (err: any) {\n      console.error('Seeded database load failed:', err);\n      setError(err?.message || 'Data seeded belum dapat dimuat dari Supabase.');\n      setPlayers([]);\n    } finally {\n      setLoading(false);\n    }\n  };`;
+if(!d.includes(fresh)) { if(!d.includes(old)) throw new Error('[seeded-io] loadPlayers marker not found'); d=d.replace(old,fresh); fs.writeFileSync(data,d,'utf8'); }
+console.log('[patch-seeded-turnamen-io] enabled wrapper, import/export, and full 1103-row pagination');
