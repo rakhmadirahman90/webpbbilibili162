@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from './supabase';
-import { getSiteSetting, parsePopupList } from './utils/siteSettingsHelper';
-import popupFallback from './data/konfigurasi_popup.json';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import SambutanKetua from './components/SambutanKetua';
@@ -14,13 +12,8 @@ import PrayerTimes from './components/PrayerTimes';
 import Contact from './components/Contact';
 import Footer from './components/Footer';
 import Login from './components/Login';
-import Sidebar from './components/Sidebar';
 import ImagePopup from './components/ImagePopup';
 import JadwalLatihanView from './components/JadwalLatihanView';
-import ScheduleWidget from './components/ScheduleWidget';
-import PresenceManager from './components/PresenceManager';
-import KasRealtimeNotifier from './components/KasRealtimeNotifier';
-import PwaInstallNotification from './components/PwaInstallNotification';
 import AdminDashboard from './components/AdminDashboard';
 
 const Athletes = lazy(() => import('./components/Players'));
@@ -38,46 +31,6 @@ const PublicSeededPeserta = lazy(() => import('./components/PublicSeededPeserta'
 const PublicFAQ = lazy(() => import('./components/PublicFAQ'));
 const PublicProgram = lazy(() => import('./components/PublicProgram'));
 
-const ManajemenPendaftaran = lazy(() => import('./ManajemenPendaftaran'));
-const ManajemenAtlet = lazy(() => import('./ManajemenAtlet'));
-const AdminBerita = lazy(() => import('./components/AdminBerita'));
-const AdminMatch = lazy(() => import('./components/AdminMatch'));
-const AdminRanking = lazy(() => import('./components/AdminRanking'));
-const AdminGallery = lazy(() => import('./components/AdminGallery'));
-const AdminContact = lazy(() => import('./components/AdminContact'));
-const KelolaNavbar = lazy(() => import('./components/KelolaNavbar'));
-const ManajemenPoin = lazy(() => import('./components/ManajemenPoin'));
-const AuditLogPoin = lazy(() => import('./components/AuditLogPoin'));
-const AdminLaporan = lazy(() => import('./components/AdminLaporan'));
-const AdminLogs = lazy(() => import('./components/AdminLogs'));
-const AdminTampilan = lazy(() => import('./components/AdminTampilan'));
-const KelolaHero = lazy(() => import('./components/KelolaHero'));
-const AdminPopup = lazy(() => import('./components/AdminPopup'));
-const AdminFooter = lazy(() => import('./components/AdminFooter'));
-const AdminAbsensi = lazy(() => import('./components/AdminAbsensi'));
-const AdminInventaris = lazy(() => import('./components/AdminInventaris'));
-const AdminPrestasi = lazy(() => import('./components/AdminPrestasi'));
-const AdminFAQ = lazy(() => import('./components/AdminFAQ'));
-const AdminProgram = lazy(() => import('./components/AdminProgram'));
-const AdminAbout = lazy(() => import('./components/AdminAbout'));
-const AdminStructure = lazy(() => import('./components/AdminStructure'));
-const AdminSejarah = lazy(() => import('./components/AdminSejarah'));
-const AdminVisiMisi = lazy(() => import('./components/AdminVisiMisi'));
-const AdminFasilitas = lazy(() => import('./components/AdminFasilitas'));
-const ManajemenDokumen = lazy(() => import('./components/ManajemenDokumen'));
-const KelolaSurat = lazy(() => import('./components/KelolaSurat').then(m => ({ default: m.KelolaSurat })));
-const KasManager = lazy(() => import('./components/KasManager'));
-const ProfilAnggota = lazy(() => import('./components/ProfilAnggota'));
-const AdminUsers = lazy(() => import('./components/AdminUsers'));
-const AdminRekapKeuangan = lazy(() => import('./components/AdminRekapKeuangan'));
-const AnalisisPerforma = lazy(() => import('./components/AnalisisPerforma'));
-const TournamentLeague = lazy(() => import('./components/TournamentLeague'));
-const RaporAtlet = lazy(() => import('./components/RaporAtlet'));
-const LiveScoreWidget = lazy(() => import('./components/LiveScoreWidget'));
-const TestimonialUlasan = lazy(() => import('./components/TestimonialUlasan'));
-const FcmSettingsDashboard = lazy(() => import('./components/FcmSettingsDashboard'));
-const PwaApkManager = lazy(() => import('./components/PwaApkManager'));
-
 const ViewFallback = () => (
   <div className="w-full min-h-[300px] flex flex-col items-center justify-center p-6 text-center">
     <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mb-2" />
@@ -85,49 +38,56 @@ const ViewFallback = () => (
   </div>
 );
 
-import { X, ChevronLeft, ChevronRight, Menu, Zap, Download, ExternalLink, Volume2, Volume1, VolumeX, ArrowLeft, Plus, Minus, SlidersHorizontal } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-
-const MARS_URL = "https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/assets/Mars%20US162.mp3";
-
 function ScrollToTop() {
   const { pathname } = useLocation();
   useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
   return null;
 }
 
-function UrlSynchronizer({ activeView, setActiveView }: { activeView: string | null; setActiveView: (view: string | null) => void; }) {
+function UrlSynchronizer({ activeView, setActiveView }: { activeView: string | null; setActiveView: (view: string | null) => void }) {
   const location = useLocation();
   const navigate = useNavigate();
   const isInitialMount = useRef(true);
+  const fullPageMenus = useRef(new Set([
+    'jadwal','jadwal-latihan','schedule','kas','quiz','contact','kontak',
+    'struktur','struktur-organisasi','dokumen-penting','dokumen','documents',
+    'register','pendaftaran','pendaftaran-turnamen','pendaftaran/seeded-peserta',
+    'peringkat','rankings','ranking','atlet','players','player',
+    'tentang-kami','about','tentang','sejarah','galeri','gallery',
+    'visi-misi','visi','misi','fasilitas','inventaris','public-inventaris',
+    'berita','news','faq','sambutan','sambutan-ketua','prestasi','program'
+  ])).current;
+
   useEffect(() => {
     if (location.pathname.startsWith('/login') || location.pathname.startsWith('/admin')) return;
-    const path = location.pathname.substring(1).toLowerCase();
+    const path = location.pathname.substring(1).toLowerCase().replace(/\/$/, '');
     const params = new URLSearchParams(location.search);
-    const fullPageMenus = ['jadwal','jadwal-latihan','schedule','kas','quiz','contact','kontak','struktur','struktur-organisasi','dokumen-penting','dokumen','documents','register','pendaftaran','pendaftaran-turnamen','pendaftaran/seeded-peserta','peringkat','rankings','ranking','atlet','players','player','tentang-kami','about','tentang','sejarah','galeri','gallery','visi-misi','visi','misi','fasilitas','inventaris','public-inventaris','berita','news','faq','sambutan','sambutan-ketua'];
-    if (path) {
-      if (path === 'home' || path === 'beranda') { if (activeView !== null) setActiveView(null); }
-      else if (fullPageMenus.includes(path)) { if (activeView !== path) setActiveView(path); }
-      else if (activeView !== null) setActiveView(null);
-    } else if (params.has('newsId')) { if (activeView !== 'berita') setActiveView('berita'); }
-    else if (params.has('gallery') || params.has('galleryId') || params.has('photoId') || params.has('videoId')) { if (activeView !== 'galeri') setActiveView('galeri'); }
-    else if (activeView !== null) setActiveView(null);
-  }, [location.pathname, location.search]);
+    if (!path) {
+      if (params.has('newsId')) setActiveView('berita');
+      else if (params.has('gallery') || params.has('galleryId') || params.has('photoId') || params.has('videoId')) setActiveView('galeri');
+      else setActiveView(null);
+      return;
+    }
+    if (path === 'home' || path === 'beranda') setActiveView(null);
+    else if (fullPageMenus.has(path)) setActiveView(path);
+    else setActiveView(null);
+  }, [location.pathname, location.search, setActiveView, fullPageMenus]);
+
   useEffect(() => {
     if (location.pathname.startsWith('/login') || location.pathname.startsWith('/admin')) return;
     if (isInitialMount.current) { isInitialMount.current = false; return; }
-    const currentPath = location.pathname.substring(1).toLowerCase();
-    if (activeView) { if (currentPath !== activeView) navigate(`/${activeView}${location.search}`, { replace: false }); }
-    else if (currentPath) navigate(`/${location.search}`, { replace: false });
-  }, [activeView, navigate]);
+    const currentPath = location.pathname.substring(1).toLowerCase().replace(/\/$/, '');
+    const desired = activeView || '';
+    if (desired === 'pendaftaran-turnamen') {
+      if (currentPath !== desired) navigate('/pendaftaran-turnamen', { replace: false });
+      return;
+    }
+    if (desired && currentPath !== desired) navigate(`/${desired}${location.search}`, { replace: false });
+    else if (!desired && currentPath) navigate(`/${location.search}`, { replace: false });
+  }, [activeView, navigate, location.pathname, location.search]);
+
   return null;
 }
-
-const renderDescriptionWithLinks = (text: string) => {
-  if (!text) return null;
-  const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+)/g;
-  return text.split('\n').map((line, i) => <p key={i} className="mb-4 last:mb-0 leading-relaxed text-slate-700 text-justify whitespace-normal">{line.split(urlRegex).map((part, index) => urlRegex.test(part) ? <a key={index} href={part.startsWith('www.') ? `https://${part}` : part} target="_blank" rel="noopener noreferrer" className="text-blue-400 underline hover:text-blue-300 inline break-all whitespace-normal">{part}</a> : part)}</p>);
-};
 
 export default function App() {
   const [session, setSession] = useState<any>(null);
@@ -135,43 +95,114 @@ export default function App() {
   const [activeAboutTab, setActiveAboutTab] = useState('sejarah');
   const [activeAthleteFilter, setActiveAthleteFilter] = useState('all');
   const [activeView, setActiveView] = useState<string | null>(() => {
-    const path = window.location.pathname.substring(1).toLowerCase();
-    const fullPageMenus = ['jadwal','jadwal-latihan','schedule','kas','quiz','contact','kontak','struktur','struktur-organisasi','dokumen-penting','register','pendaftaran','pendaftaran-turnamen','pendaftaran/seeded-peserta','peringkat','rankings','ranking','atlet','players','tentang-kami','about','galeri','gallery','sejarah','visi-misi','fasilitas','inventaris','berita','news','faq'];
-    if (path && fullPageMenus.includes(path)) return path;
+    const path = window.location.pathname.substring(1).toLowerCase().replace(/\/$/, '');
+    const supported = new Set(['jadwal','jadwal-latihan','schedule','kas','quiz','contact','kontak','struktur','struktur-organisasi','dokumen-penting','dokumen','documents','register','pendaftaran','pendaftaran-turnamen','pendaftaran/seeded-peserta','peringkat','rankings','ranking','atlet','players','player','tentang-kami','about','tentang','sejarah','galeri','gallery','visi-misi','visi','misi','fasilitas','inventaris','public-inventaris','berita','news','faq','sambutan','sambutan-ketua','prestasi','program']);
+    if (supported.has(path)) return path;
     const params = new URLSearchParams(window.location.search);
+    if (params.has('newsId')) return 'berita';
     if (params.has('gallery') || params.has('galleryId') || params.has('photoId') || params.has('videoId')) return 'galeri';
     return null;
   });
+  const [notifications, setNotifications] = useState<any[]>([]);
   const [isOverlayActive, setIsOverlayActive] = useState(false);
-  useEffect(() => { const handleOpen=()=>setIsOverlayActive(true); const handleClose=()=>setIsOverlayActive(false); window.addEventListener('pb-overlay-open',handleOpen); window.addEventListener('pb-overlay-close',handleClose); return()=>{window.removeEventListener('pb-overlay-open',handleOpen);window.removeEventListener('pb-overlay-close',handleClose);}; }, []);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const wasAutoPausedRef = useRef<boolean>(false);
-  const [isMarsPlaying,setIsMarsPlaying]=useState(false); const [marsProgress,setMarsProgress]=useState(0); const [marsDuration,setMarsDuration]=useState(0); const [marsCurrentTime,setMarsCurrentTime]=useState(0);
-  const formatAudioTime=(seconds:number)=>{if(isNaN(seconds)||seconds<=0)return '0:00';const mins=Math.floor(seconds/60),secs=Math.floor(seconds%60);return `${mins}:${secs<10?'0':''}${secs}`;};
-  const [marsVolume,setMarsVolume]=useState<number>(()=>{try{const saved=localStorage.getItem('mars_audio_volume');return saved?parseFloat(saved):0.8;}catch{return 0.8;}});
-  const [isVolumeExpanded,setIsVolumeExpanded]=useState(false); const [audioToast,setAudioToast]=useState<{show:boolean;message:string;type:'play'|'mute'}>({show:false,message:'',type:'mute'});
-  useEffect(()=>{if(audioRef.current)audioRef.current.volume=marsVolume;},[marsVolume]);
-  const handleVolumeChange=(newVol:number)=>{const clamped=Math.max(0,Math.min(1,parseFloat(newVol.toFixed(2))));setMarsVolume(clamped);try{localStorage.setItem('mars_audio_volume',clamped.toString());}catch{}if(audioRef.current)audioRef.current.volume=clamped;setAudioToast({show:true,message:`Volume: ${Math.round(clamped*100)}%`,type:clamped>0?'play':'mute'});};
-  const increaseVolume=(e?:React.MouseEvent)=>{if(e)e.stopPropagation();handleVolumeChange(marsVolume+0.1);};
-  const decreaseVolume=(e?:React.MouseEvent)=>{if(e)e.stopPropagation();handleVolumeChange(marsVolume-0.1);};
-  useEffect(()=>{if(audioToast.show){const timer=setTimeout(()=>setAudioToast(prev=>({...prev,show:false})),2200);return()=>clearTimeout(timer);}},[audioToast.show,audioToast.message]);
-  useEffect(()=>{const handleMediaPlay=(e:Event)=>{const target=e.target as HTMLElement;if(target&&target!==audioRef.current&&(target.tagName==='VIDEO'||target.tagName==='AUDIO')){if(audioRef.current&&!audioRef.current.paused){audioRef.current.pause();setIsMarsPlaying(false);wasAutoPausedRef.current=true;setAudioToast({show:true,message:'Mars Di-pause (Media Diputar)',type:'mute'});}}};document.addEventListener('play',handleMediaPlay,true);return()=>document.removeEventListener('play',handleMediaPlay,true);},[]);
+  const [isMarsPlaying, setIsMarsPlaying] = useState(false);
+  const [marsVolume, setMarsVolume] = useState<number>(() => {
+    try { const saved = localStorage.getItem('mars_audio_volume'); return saved ? Math.max(0, Math.min(1, parseFloat(saved))) : 0.8; } catch { return 0.8; }
+  });
+
+  useEffect(() => {
+    let active = true;
+    supabase.auth.getSession().then(({ data }) => { if (active) { setSession(data.session || null); setLoading(false); } }).catch(() => { if (active) setLoading(false); });
+    const { data: auth } = supabase.auth.onAuthStateChange((_event, s) => setSession(s || null));
+    return () => { active = false; auth.subscription.unsubscribe(); };
+  }, []);
+
+  useEffect(() => {
+    const handleOpen = () => setIsOverlayActive(true);
+    const handleClose = () => setIsOverlayActive(false);
+    window.addEventListener('pb-overlay-open', handleOpen);
+    window.addEventListener('pb-overlay-close', handleClose);
+    return () => { window.removeEventListener('pb-overlay-open', handleOpen); window.removeEventListener('pb-overlay-close', handleClose); };
+  }, []);
+
+  useEffect(() => { if (audioRef.current) audioRef.current.volume = marsVolume; }, [marsVolume]);
+
+  const handleNavigate = (sectionId: string, subPath?: string) => {
+    const main = String(sectionId || '').toLowerCase().trim();
+    const sub = String(subPath || '').toLowerCase().trim();
+    const aliases: Record<string, string> = {
+      beranda: 'home', home: 'home', gallery: 'galeri', galeri: 'galeri',
+      rankings: 'peringkat', ranking: 'peringkat', 'ranking-atlet': 'peringkat',
+      players: 'atlet', player: 'atlet', register: 'register', pendaftaran: 'register',
+      'pendaftaran turnamen': 'pendaftaran-turnamen', 'pendaftaran-turnamen': 'pendaftaran-turnamen',
+      seeded: 'pendaftaran/seeded-peserta', 'seeded-peserta': 'pendaftaran/seeded-peserta',
+      about: 'sejarah', 'tentang-kami': 'sejarah', sejarah: 'sejarah',
+      visi: 'visi-misi', misi: 'visi-misi', 'visi-misi': 'visi-misi',
+      struktur: 'struktur-organisasi', 'struktur-organisasi': 'struktur-organisasi',
+      dokumen: 'dokumen-penting', 'dokumen-penting': 'dokumen-penting',
+      berita: 'berita', news: 'berita', prestasi: 'prestasi', program: 'program',
+      fasilitas: 'fasilitas', inventaris: 'inventaris', faq: 'faq', quiz: 'quiz',
+      jadwal: 'jadwal', 'jadwal-latihan': 'jadwal', schedule: 'jadwal',
+      contact: 'contact', kontak: 'contact', kas: 'kas', sambutan: 'sambutan', 'sambutan-ketua': 'sambutan'
+    };
+    const targetRaw = sub || main || 'home';
+    const target = aliases[targetRaw] || targetRaw;
+    if (!target || target === 'home') { setActiveView(null); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+    setActiveView(target);
+  };
+
+  const renderPublicView = () => {
+    switch (activeView) {
+      case 'atlet': case 'players': case 'player': return <Athletes />;
+      case 'peringkat': case 'rankings': case 'ranking': return <Ranking />;
+      case 'quiz': return <BadmintonQuiz />;
+      case 'galeri': case 'gallery': return <Gallery />;
+      case 'register': case 'pendaftaran': return <RegistrationForm />;
+      case 'kas': return <PublicKasView />;
+      case 'dokumen-penting': case 'dokumen': case 'documents': return <DokumenPenting />;
+      case 'struktur': case 'struktur-organisasi': return <StrukturOrganisasiPublic />;
+      case 'inventaris': case 'public-inventaris': return <PublicInventaris />;
+      case 'prestasi': return <PublicPrestasi />;
+      case 'faq': return <PublicFAQ />;
+      case 'program': return <PublicProgram />;
+      case 'jadwal': case 'jadwal-latihan': case 'schedule': return <JadwalLatihanView />;
+      case 'contact': case 'kontak': return <Contact />;
+      case 'sejarah': case 'about': case 'tentang': case 'tentang-kami': return <Sejarah />;
+      case 'visi-misi': case 'visi': case 'misi': return <VisiMisi />;
+      case 'fasilitas': return <Fasilitas />;
+      case 'berita': case 'news': return <News />;
+      case 'sambutan': case 'sambutan-ketua': return <SambutanKetua />;
+      default:
+        return <><Hero /><SambutanKetua /><Sejarah /><VisiMisi /><Fasilitas /><News /><PrayerTimes /><Contact /></>;
+    }
+  };
+
+  const renderPublicShell = () => (
+    <div className="min-h-screen bg-[#0b0e14] w-full overflow-x-hidden">
+      <ImagePopup activeView={activeView} />
+      <Navbar onNavigate={handleNavigate} />
+      <main className={activeView ? 'min-h-screen pt-16 pb-24' : ''}>
+        <Suspense fallback={<ViewFallback />}>{renderPublicView()}</Suspense>
+      </main>
+      {!['register','pendaftaran','pendaftaran-turnamen'].includes(activeView || '') && <Footer onNavigate={handleNavigate} />}
+      <audio ref={audioRef} preload="metadata" aria-hidden="true" />
+    </div>
+  );
+
+  if (loading) return <div className="min-h-screen bg-[#070d1a] flex items-center justify-center text-slate-300">Memuat aplikasi...</div>;
+
   return (
     <Router>
       <ScrollToTop />
       <UrlSynchronizer activeView={activeView} setActiveView={setActiveView} />
-      <Suspense fallback={<ViewFallback />}>
-        <Routes>
-          <Route path="/admin/*" element={<AdminDashboard />} />
-          <Route path="/login" element={<Login />} />
-          {/* Public tournament registration routes must be explicit routes. */}
-          <Route path="/pendaftaran-turnamen" element={<PendaftaranTurnamen />} />
-          <Route path="/pendaftaran" element={<PendaftaranTurnamen />} />
-          <Route path="/register" element={<RegistrationForm />} />
-          <Route path="/pendaftaran/seeded-peserta" element={<PublicSeededPeserta />} />
-          <Route path="*" element={<div className="min-h-screen"><Navbar /><Hero /><Footer /></div>} />
-        </Routes>
-      </Suspense>
+      <Routes>
+        <Route path="/admin/*" element={<AdminDashboard />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/pendaftaran-turnamen" element={<PendaftaranTurnamen />} />
+        <Route path="/pendaftaran/seeded-peserta" element={<PublicSeededPeserta />} />
+        <Route path="*" element={renderPublicShell()} />
+      </Routes>
     </Router>
   );
 }
