@@ -10,6 +10,7 @@
     <meta name="theme-color" content="#070d1a" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-touch-fullscreen" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="PB Bilibili 162" />
     <meta name="description" content="Website Resmi PB Bilibili 162. Sistem Informasi Atlet Terpadu, Manajemen Pendaftaran, Pencatatan Kas, Poin Peringkat, Galeri Kegiatan, dan Informasi Jadwal Sholat Realtime." />
@@ -72,22 +73,37 @@
         window.addEventListener('error', (event) => showBootError(event.error || event.message));
         window.addEventListener('unhandledrejection', (event) => showBootError(event.reason));
 
-        // v12: force cleanup of any stale PWA/service-worker/cache state so the
-        // current production bundle is loaded after navigation/runtime fixes.
-        const cleanupKey = 'pb162-legacy-cache-cleanup-v12';
+        // v13: invalidate legacy PWA/service-worker/cache state after the
+        // navigation contract fix. Do not block the app forever if cleanup is unavailable.
+        const cleanupKey = 'pb162-legacy-cache-cleanup-v13';
+        const reloadKey = 'pb162-legacy-cache-reload-v13';
         try {
+          const needsReload = !sessionStorage.getItem(reloadKey);
+          sessionStorage.setItem(reloadKey, '1');
           localStorage.setItem(cleanupKey, '1');
+          const cleanup = [];
           if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then((registrations) => {
-              registrations.forEach((registration) => registration.unregister());
-            }).catch(() => {});
+            cleanup.push(navigator.serviceWorker.getRegistrations().then((registrations) => Promise.all(registrations.map((registration) => registration.unregister()))).catch(() => []));
           }
           if ('caches' in window) {
-            caches.keys().then((keys) => {
-              keys.forEach((key) => caches.delete(key));
-            }).catch(() => {});
+            cleanup.push(caches.keys().then((keys) => Promise.all(keys.map((key) => caches.delete(key)))).catch(() => []));
           }
+          Promise.all(cleanup).then(() => {
+            // A single controlled reload ensures a stale service-worker response
+            // cannot keep an obsolete hashed JS bundle alive indefinitely.
+            if (needsReload && document.readyState === 'loading') window.location.reload();
+          }).catch(() => {});
         } catch (_) {}
+
+        // Recover cleanly when Vite reports a stale dynamic-import chunk after a deployment.
+        window.addEventListener('vite:preloadError', (event) => {
+          try { event.preventDefault(); } catch (_) {}
+          const key = 'pb162-vite-preload-reload-v1';
+          if (!sessionStorage.getItem(key)) {
+            sessionStorage.setItem(key, '1');
+            window.location.reload();
+          }
+        });
 
         window.setTimeout(() => {
           if (document.getElementById('boot')) showBootError('Startup timeout');
