@@ -1,11 +1,56 @@
 {
-  "name":"vite-react-typescript-starter","private":true,"version":"0.0.1","type":"module",
-  "scripts":{
-    "dev":"tsx server.ts",
-    "prebuild":"node scripts/restore-app-from-known-good.mjs && npm install tesseract.js@6.0.1 --no-save --ignore-scripts && node scripts/patch-admin-member-menus.mjs && node scripts/patch-navbar-realtime.mjs && node scripts/patch-header-datetime.mjs && node scripts/patch-kas-notifier-close.mjs && node scripts/patch-performance.mjs && node scripts/patch-public-routing.mjs && node scripts/patch-modern-public-news.mjs && node scripts/patch-news-share-preview.mjs && node scripts/patch-gallery-mobile-detail.mjs && node scripts/patch-gallery-supabase-source.mjs && node scripts/patch-gallery-album-mobile.mjs && node scripts/patch-gallery-photo-grid.mjs && node scripts/patch-gallery-share-preview.mjs && node scripts/patch-gallery-lightbox-grid.mjs && node scripts/patch-admin-berita-mobile.mjs && node scripts/patch-admin-berita-save-button.mjs && node scripts/patch-admin-berita-save-button-v2.mjs && node scripts/patch-admin-berita-supabase-edit.mjs && node scripts/patch-surat-ttd-persistence.mjs && node scripts/patch-import-surat.mjs && node scripts/patch-kelola-surat-mobile.mjs && node scripts/patch-import-surat-v2.mjs && node scripts/patch-import-surat-v3.mjs && node scripts/patch-import-surat-v4.mjs && node scripts/patch-import-surat-v5.mjs && node scripts/patch-import-surat-v6.mjs && node scripts/patch-tournament-registration.mjs && node scripts/patch-kelola-surat-import-label.mjs && node scripts/patch-kelola-surat-import-label-v2.mjs && node scripts/patch-admin-turnamen-documents.mjs && node scripts/patch-tournament-payment-methods.mjs && node scripts/patch-tournament-image-upload.mjs && node scripts/patch-tournament-ocr-safe.mjs && node scripts/patch-tournament-status-whatsapp.mjs && node scripts/patch-tournament-wa-popup.mjs && node scripts/patch-tournament-whatsapp-cta.mjs && node scripts/patch-tournament-verify-reliable.mjs && node scripts/patch-tournament-verify-reliable-v2.mjs && node scripts/patch-registration-whatsapp-direct.mjs && node scripts/patch-chunk-load-recovery.mjs && node scripts/patch-whatsapp-status-mobile.mjs && node scripts/patch-seeded-turnamen-menu.mjs && node scripts/patch-seeded-turnamen-io.mjs && node scripts/patch-seeded-quality-dropdown.mjs && node scripts/patch-seeded-generated-column.mjs && node scripts/patch-public-seeded-navbar.mjs && node scripts/patch-public-seeded-registration-separation.mjs && node scripts/patch-tournament-registration-labels.mjs && node scripts/patch-public-seeded-route.mjs && node scripts/patch-public-seeded-navigation-fix.mjs && node scripts/patch-public-pages-stability.mjs && node scripts/patch-tournament-navigation-stability.mjs && node scripts/patch-public-seeded-no-flash.mjs && node scripts/patch-public-pages-mobile-fix.mjs && node scripts/patch-mobile-tournament-submenu-click.mjs && node scripts/patch-public-standalone-stability.mjs && node scripts/patch-registration-route-final.mjs && node scripts/patch-seeded-public-visibility.mjs && node scripts/patch-runtime-navigation-guard.mjs",
-    "build":"vite build && npx --yes esbuild@0.28.2 server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
-    "lint":"eslint .","typecheck":"tsc --noEmit -p tsconfig.app.json"
+  "name": "vite-react-typescript-starter",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx server.ts",
+    "prebuild": "node scripts/restore-app-from-known-good.mjs && npm install tesseract.js@6.0.1 --no-save --ignore-scripts && node scripts/patch-admin-member-menus.mjs && node scripts/patch-navbar-realtime.mjs && node scripts/patch-header-datetime.mjs && node scripts/patch-kas-notifier-close.mjs && node scripts/patch-performance.mjs && node scripts/patch-public-routing.mjs && node scripts/patch-modern-public-news.mjs && node scripts/patch-news-share-preview.mjs && node scripts/patch-gallery-mobile-detail.mjs && node scripts/patch-gallery-supabase-source.mjs && node scripts/patch-gallery-album-mobile.mjs && node scripts/patch-gallery-photo-grid.mjs && node scripts/patch-gallery-share-preview.mjs && node scripts/patch-gallery-lightbox-grid.mjs && node scripts/patch-admin-berita-mobile.mjs && node scripts/patch-admin-berita-save-button.mjs && node scripts/patch-admin-berita-save-button-v2.mjs && node scripts/patch-admin-berita-supabase-edit.mjs && node scripts/patch-surat-ttd-persistence.mjs && node scripts/patch-import-surat.mjs && node scripts/patch-kelola-surat-mobile.mjs && node scripts/patch-import-surat-v2.mjs && node scripts/patch-import-surat-v3.mjs && node scripts/patch-import-surat-v4.mjs && node scripts/patch-import-surat-v5.mjs && node scripts/patch-import-surat-v6.mjs && node scripts/patch-tournament-registration.mjs && node scripts/patch-kelola-surat-import-label.mjs && node scripts/patch-kelola-surat-import-label-v2.mjs && node scripts/patch-admin-turnamen-documents.mjs && node scripts/patch-tournament-payment-methods.mjs && node scripts/patch-tournament-image-upload.mjs && node scripts/patch-tournament-ocr-safe.mjs && node scripts/patch-tournament-status-whatsapp.mjs && node scripts/patch-tournament-wa-popup.mjs && node scripts/patch-tournament-whatsapp-cta.mjs && node scripts/patch-tournament-verify-reliable.mjs && node scripts/patch-tournament-verify-reliable-v2.mjs && node scripts/patch-registration-whatsapp-direct.mjs && node scripts/patch-chunk-load-recovery.mjs && node scripts/patch-whatsapp-status-mobile.mjs && node scripts/patch-seeded-turnamen-menu.mjs && node scripts/patch-seeded-turnamen-io.mjs && node scripts/patch-seeded-quality-dropdown.mjs && node scripts/patch-seeded-generated-column.mjs && node scripts/patch-public-seeded-navbar.mjs && node scripts/patch-public-seeded-registration-separation.mjs && node scripts/patch-tournament-registration-labels.mjs && node scripts/patch-public-seeded-route.mjs && node scripts/patch-public-seeded-navigation-fix.mjs && node scripts/patch-public-pages-stability.mjs && node scripts/patch-tournament-navigation-stability.mjs && node scripts/patch-public-seeded-no-flash.mjs && node scripts/patch-public-pages-mobile-fix.mjs && node scripts/patch-mobile-tournament-submenu-click.mjs && node scripts/patch-public-standalone-stability.mjs && node scripts/patch-registration-route-final.mjs && node scripts/patch-seeded-public-visibility.mjs && node scripts/patch-runtime-navigation-guard.mjs",
+    "build": "vite build && npx --yes esbuild@0.28.2 server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit -p tsconfig.app.json"
   },
-  "dependencies":{"@dnd-kit/core":"^6.3.1","@dnd-kit/sortable":"^10.0.0","@dnd-kit/utilities":"^3.2.2","@google/genai":"^2.12.0","@google/generative-ai":"^0.24.1","@supabase/supabase-js":"^2.95.0","browser-image-compression":"^2.0.0","date-fns":"^4.1.0","express":"^5.2.1","file-saver":"^2.0.0","firebase":"^12.16.2","framer-motion":"^12.34.1","html2canvas":"^1.4.0","jspdf":"^4.2.1","jspdf-autotable":"^5.0.1","lucide-react":"^0.344.0","mammoth":"^1.10.0","pdfjs-dist":"^5.4.54","react":"^18.3.1","react-dom":"^18.3.1","react-easy-crop":"^5.5.6","react-router-dom":"^7.13.0","recharts":"^3.10.1","sweetalert2":"^11.26.18","swiper":"^12.1.0","tesseract.js":"^6.0.1","xlsx":"^0.18.5","uuid":"^13.0.0"},
-  "devDependencies":{"@eslint/js":"^9.9.0","@resvg/resvg-js":"^2.6.2","@types/express":"^5.2.1","@types/node":"^22.10.0","@types/react":"^18.3.5","@types/react-dom":"^18.3.1","@vitejs/plugin-react":"^4.3.1","autoprefixer":"^10.4.18","postcss":"^8.4.35","tailwindcss":"^3.4.1","typescript":"^5.5.3"}
+  "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
+    "@google/genai": "^2.12.0",
+    "@google/generative-ai": "^0.24.1",
+    "@supabase/supabase-js": "^2.95.0",
+    "browser-image-compression": "^2.0.0",
+    "date-fns": "^4.1.0",
+    "express": "^5.2.1",
+    "file-saver": "^2.0.0",
+    "firebase": "^12.16.2",
+    "framer-motion": "^12.34.1",
+    "html2canvas": "^1.4.0",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.1",
+    "lucide-react": "^0.344.0",
+    "mammoth": "^1.10.0",
+    "pdfjs-dist": "^5.4.54",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-easy-crop": "^5.5.6",
+    "react-router-dom": "^7.13.0",
+    "recharts": "^3.10.1",
+    "sweetalert2": "^11.26.18",
+    "swiper": "^12.1.0",
+    "tesseract.js": "^6.0.1",
+    "xlsx": "^0.18.5",
+    "uuid": "^13.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.9.0",
+    "@resvg/resvg-js": "^2.6.2",
+    "@types/express": "^5.0.3",
+    "@types/node": "^22.10.0",
+    "@types/react": "^18.3.5",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.1",
+    "autoprefixer": "^10.4.18",
+    "postcss": "^8.4.35",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.5.3"
+  }
 }
