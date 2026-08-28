@@ -31,8 +31,6 @@ export default function Login() {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [logoUrl, setLogoUrl] = useState('/logo_pb_bilibili_162.svg');
 
-  // Do not download the whole member table on page load. Only branding is loaded here;
-  // member data is queried narrowly when the user submits the login form.
   useEffect(() => {
     let mounted = true;
     const loadBranding = async () => {
@@ -59,10 +57,14 @@ export default function Login() {
   const handleNumpadDelete = () => setCleanPin(pinInput.slice(0, -1));
   const handleNumpadClear = () => setCleanPin('');
 
+  // Login must finish by explicitly entering the admin route. Previously the
+  // session was written but navigation was left to unrelated global listeners,
+  // which made the login flow vulnerable to stale navigation code/chunks.
   const finalizeSession = (sessionData: any) => {
     localStorage.setItem('local_admin_session', JSON.stringify(sessionData));
     sessionStorage.setItem('just_logged_in', 'true');
     window.dispatchEvent(new Event('local-session-changed'));
+    navigate('/admin', { replace: true });
   };
 
   const createMemberSession = (m: MemberRecord) => {
@@ -111,7 +113,7 @@ export default function Login() {
         if (!valid) { setErrorMsg('PIN / Passcode Administrator salah. Silakan periksa kembali.'); return; }
         saveStoredPinData('admin', { pin: pin || '160390', hasChosenPin: true, method: 'pin' });
         finalizeSession({ user: { id: `admin-pin-${Date.now()}`, email: 'admin@pbbilibili162.com', user_metadata: { role: 'admin', full_name: 'Administrator PB Bilibili 162' } } });
-        setSuccessMsg('Akses administrator berhasil. Membuka portal…'); return;
+        return;
       }
       const member = await findMember(raw);
       if (!member) { setErrorMsg(`Nama / Username “${raw}” tidak terdaftar di database PB Bilibili 162.`); return; }
@@ -121,7 +123,6 @@ export default function Login() {
       if (!valid) { setErrorMsg(`PIN / Passcode salah untuk anggota “${member.nama}”.`); return; }
       saveStoredPinData(member.nama, { pin, hasChosenPin: true, method: 'pin' });
       finalizeSession(createMemberSession(member));
-      setSuccessMsg(`Selamat datang, ${member.nama}. Membuka portal…`);
     } catch (e) { console.error('Login error:', e); setErrorMsg('Koneksi ke server sedang bermasalah. Silakan coba lagi.'); }
     finally { setLoading(false); }
   };
@@ -161,7 +162,7 @@ export default function Login() {
 
             <AnimatePresence mode="wait">
               {errorMsg && <motion.div key="error" initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-5 rounded-2xl border border-red-400/20 bg-red-500/[0.07] p-3.5 flex gap-3"><AlertCircle size={17} className="mt-0.5 shrink-0 text-red-400" /><div><p className="text-xs font-extrabold text-red-300">Akses Ditolak</p><p className="mt-0.5 text-[11px] leading-relaxed text-red-200/70">{errorMsg}</p></div></motion.div>}
-              {successMsg && <motion.div key="success" initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-5 rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.07] p-3.5 flex gap-3"><CheckCircle2 size={17} className="mt-0.5 shrink-0 text-emerald-400" /><p className="text-[11px] leading-relaxed text-emerald-200/80">{successMsg}</p></motion.div>}
+              {successMsg && <motion.div key="success" initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-5 rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.07] p-3.5 flex gap-3"><CheckCircle2 size={17} className="mt-0.5 shrink-0 text-emerald-400" /><p className="text-[11px] leading-relaxed text-emerald-200/80">{successMsg}</p></div>}
             </AnimatePresence>
 
             <form onSubmit={(e) => { e.preventDefault(); verifyAndLogin(); }} className="mt-5 space-y-4">
