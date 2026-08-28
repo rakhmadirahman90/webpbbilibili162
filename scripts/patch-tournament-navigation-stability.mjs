@@ -17,13 +17,13 @@ app = app.replace(/'pendaftaran-turnamen',\s*/g, '');
 app = app.replace(/,\s*'pendaftaran-turnamen'/g, '');
 
 // Replace the entire legacy synchronizer with a race-safe version. The old
-// two-way effects could see a stale activeView for one render after a navbar
-// navigation and immediately navigate back to the previous page. This pending
-// ref makes URL-driven state changes one-way for that render; only a genuine
-// user-driven activeView change is allowed to write a new URL.
+// two-way effects could see stale activeView state after navbar navigation and
+// immediately navigate back to the previous page.
 const syncStart = app.indexOf('function UrlSynchronizer(');
 const syncEnd = app.indexOf('\n\nconst renderDescriptionWithLinks', syncStart);
-if (syncStart < 0 || syncEnd <= syncStart) throw new Error('[tournament-navigation-stability] UrlSynchronizer not found');
+if (syncStart < 0 || syncEnd <= syncStart) {
+  throw new Error('[tournament-navigation-stability] UrlSynchronizer not found');
+}
 
 const synchronizer = `function UrlSynchronizer({ activeView, setActiveView }: { activeView: string | null; setActiveView: (view: string | null) => void; }) {
   const location = useLocation();
@@ -33,13 +33,13 @@ const synchronizer = `function UrlSynchronizer({ activeView, setActiveView }: { 
   const isStandaloneTournament = standalonePath === '/pendaftaran-turnamen';
 
   useEffect(() => {
-    const currentUrl = `${'${'}location.pathname}${'${'}location.search}`;
     if (isStandaloneTournament || location.pathname.startsWith('/login') || location.pathname.startsWith('/admin')) return;
 
     pendingUrlSync.current = true;
     const path = location.pathname.substring(1).toLowerCase();
     const params = new URLSearchParams(location.search);
     const fullPageMenus = ['jadwal','jadwal-latihan','schedule','kas','quiz','contact','kontak','struktur','struktur-organisasi','dokumen-penting','dokumen','documents','register','pendaftaran','pendaftaran/seeded-peserta','peringkat','rankings','ranking','atlet','players','player','tentang-kami','about','tentang','sejarah','galeri','gallery','visi-misi','visi','misi','fasilitas','inventaris','public-inventaris','berita','news','faq','sambutan','sambutan-ketua'];
+
     if (path) {
       if (path === 'home' || path === 'beranda') {
         if (activeView !== null) setActiveView(null);
@@ -55,8 +55,6 @@ const synchronizer = `function UrlSynchronizer({ activeView, setActiveView }: { 
     } else if (activeView !== null) {
       setActiveView(null);
     }
-
-    void currentUrl;
   }, [location.pathname, location.search]);
 
   useEffect(() => {
@@ -68,9 +66,11 @@ const synchronizer = `function UrlSynchronizer({ activeView, setActiveView }: { 
 
     const currentPath = location.pathname.substring(1).toLowerCase();
     if (activeView) {
-      if (currentPath !== activeView) navigate(`/${activeView}${location.search}`, { replace: false });
+      if (currentPath !== activeView) {
+        navigate('/' + activeView + location.search, { replace: false });
+      }
     } else if (currentPath) {
-      navigate(`/${location.search}`, { replace: false });
+      navigate('/' + location.search, { replace: false });
     }
   }, [activeView, navigate, location.pathname, location.search]);
 
@@ -85,7 +85,7 @@ const route = '          <Route path="/pendaftaran-turnamen" element={<div class
 const wildcard = '          <Route path="*" element=';
 if (!app.includes(route)) {
   if (!app.includes(wildcard)) throw new Error('[tournament-navigation-stability] wildcard route not found');
-  app = app.replace(wildcard, `${route}\n${wildcard}`);
+  app = app.replace(wildcard, route + '\n' + wildcard);
 }
 
 fs.writeFileSync(appPath, app, 'utf8');
@@ -97,7 +97,7 @@ const marker = "    const { section, tab } = resolveNavigationTarget(path, subPa
 if (nav.includes(marker) && !nav.includes("section === 'pendaftaran-turnamen'")) {
   nav = nav.replace(
     marker,
-    `${marker}\n    if (section === 'pendaftaran-turnamen') { navigate('/pendaftaran-turnamen'); setOpenMenu(null); setMobileOpen(false); return; }`
+    marker + "\n    if (section === 'pendaftaran-turnamen') { navigate('/pendaftaran-turnamen'); setOpenMenu(null); setMobileOpen(false); return; }"
   );
 }
 fs.writeFileSync(navPath, nav, 'utf8');
