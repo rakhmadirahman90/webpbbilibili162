@@ -22,6 +22,7 @@ const synchronizer = `function UrlSynchronizer({
 }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const isInitialMount = useRef(true);
   const normalizedPath = location.pathname.replace(/\\/+$/, '').toLowerCase() || '/';
   const isStandalonePublicPage =
     normalizedPath === '/register' ||
