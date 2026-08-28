@@ -12,16 +12,39 @@ if (!s.includes(next)) {
   s = s.replace(old, next);
 }
 
-// Do not run pointer-down preloading on mobile submenu taps; it can race with
-// the click/close transition on some Android browsers.
+// Mobile submenu taps use click only. Pointer-down preloading can race with the
+// drawer close/navigation transition on Android browsers.
 const oldMap = `onPointerDown={() => { preloadNavigation(menu.path, sub.path); }} onClick={(e) => handleMobileMenuClick(e, menu.path, sub.path)}`;
 const newMap = `onClick={(e) => handleMobileMenuClick(e, menu.path, sub.path, sub.label)}`;
 if (s.includes(oldMap)) s = s.replace(oldMap, newMap);
 
-// Keep the drawer in Navbar's existing top-level JSX tree. The previous portal
-// patch generated invalid nested JSX during prebuild; z-index and fixed positioning
-// are already handled by the Navbar markup, so this patch intentionally avoids
-// rewriting the JSX tree.
+// IMPORTANT: the drawer is a viewport overlay. Mount it through a React portal
+// so no transformed/overflow/stacking ancestor from the landing page can hide it.
+// The previous attempt generated invalid JSX; this version deliberately inserts
+// the raw JSX block inside a Fragment with no extra braces around the block.
+if (!s.includes("import { createPortal } from 'react-dom';")) {
+  s = s.replace(
+    "import React, { useState, useEffect, useCallback, memo } from 'react';",
+    "import React, { useState, useEffect, useCallback, memo } from 'react';\nimport { createPortal } from 'react-dom';"
+  );
+}
+
+const overlayMarker = '    <div className={`lg:hidden fixed inset-0 z-[2147483000]';
+const asideEnd = '    </aside>';
+const start = s.indexOf(overlayMarker);
+const end = start >= 0 ? s.indexOf(asideEnd, start) : -1;
+
+if (start >= 0 && end > start && !s.slice(start, end + asideEnd.length).includes('createPortal(')) {
+  const endPos = end + asideEnd.length;
+  const drawerBlock = s.slice(start, endPos);
+  const portalBlock = `{typeof document !== 'undefined' ? createPortal(<>${drawerBlock}\n    </>, document.body) : null}`;
+  s = s.slice(0, start) + portalBlock + s.slice(endPos);
+}
+
+// Stop parent click handlers from interfering with the toggle state.
+const oldToggle = 'onClick={() => setMobileOpen(v => !v)}';
+const newToggle = "onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMobileOpen(v => !v); }}";
+if (s.includes(oldToggle) && !s.includes(newToggle)) s = s.replace(oldToggle, newToggle);
 
 fs.writeFileSync(path, s, 'utf8');
-console.log('[patch-mobile-tournament-submenu-click] direct mobile tournament navigation applied safely');
+console.log('[patch-mobile-tournament-submenu-click] mobile tournament navigation + body portal sidebar applied');
