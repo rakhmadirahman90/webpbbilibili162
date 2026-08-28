@@ -22,27 +22,24 @@ const seededGuard = "  const isPublicSeeded = location.pathname.replace(/\\/+$/,
 const locationMarker = '  const location = useLocation();\n  const navigate = useNavigate();';
 
 // Always ensure the declaration exists before any effect can reference it.
-if (!app.includes(seededGuard)) {
-  if (app.includes(locationMarker)) {
-    app = app.replace(locationMarker, `${locationMarker}\n${seededGuard}`);
-  } else {
-    console.log('[patch-public-seeded-no-flash] UrlSynchronizer location marker not found; cannot add seeded guard');
-  }
+if (!app.includes(seededGuard) && app.includes(locationMarker)) {
+  app = app.replace(locationMarker, `${locationMarker}\n${seededGuard}`);
 }
 
-// Support both the current source and the older generated variant.
-app = app.replace(
-  "    if (location.pathname.startsWith('/login') || location.pathname.startsWith('/admin')) return;",
-  "    if (isPublicSeeded || location.pathname.startsWith('/login') || location.pathname.startsWith('/admin')) return;"
-);
-app = app.replace(
-  "  }, [location.pathname, location.search]);",
-  "  }, [location.pathname, location.search, isPublicSeeded]);"
-);
-app = app.replace(
-  "  }, [activeView, navigate]);",
-  "  }, [activeView, navigate, isPublicSeeded]);"
-);
+// Support both the current source and older generated variants. Apply the
+// guard to every synchronizer effect, not only the first matching occurrence.
+const normalGuard = "    if (location.pathname.startsWith('/login') || location.pathname.startsWith('/admin')) return;";
+const seededNormalGuard = "    if (isPublicSeeded || location.pathname.startsWith('/login') || location.pathname.startsWith('/admin')) return;";
+app = app.split(normalGuard).join(seededNormalGuard);
+
+const oldDeps = "  }, [location.pathname, location.search]);";
+const newDeps = "  }, [location.pathname, location.search, isPublicSeeded]);";
+app = app.split(oldDeps).join(newDeps);
+
+const oldActiveDeps = "  }, [activeView, navigate]);";
+const newActiveDeps = "  }, [activeView, navigate, isPublicSeeded]);";
+app = app.split(oldActiveDeps).join(newActiveDeps);
+
 fs.writeFileSync(appPath, app, 'utf8');
 
 // Navbar: one click should produce one direct router transition.
