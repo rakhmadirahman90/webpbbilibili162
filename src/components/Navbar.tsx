@@ -73,7 +73,9 @@ const preloadNavigation = (path: string, subPath?: string) => {
                                 ? '/jadwal'
                                 : effective === 'contact' || effective === 'kontak'
                                   ? '/contact'
-                                  : null;
+                                  : effective === 'pendaftaran-turnamen'
+                                    ? '/pendaftaran-turnamen'
+                                    : null;
     if (!target) return;
     try { warmupRouteData(target); } catch { /* prefetch must never block navigation */ }
     switch (target) {
@@ -81,6 +83,7 @@ const preloadNavigation = (path: string, subPath?: string) => {
       case '/galeri': void import('./Gallery'); break;
       case '/peringkat': void import('./Rankings'); break;
       case '/register': void import('./RegistrationForm'); break;
+      case '/pendaftaran-turnamen': void import('./PendaftaranTurnamen'); break;
       case '/prestasi': void import('./PublicPrestasi'); break;
       case '/quiz': void import('./BadmintonQuiz'); break;
       case '/faq': void import('./PublicFAQ'); break;
@@ -193,6 +196,12 @@ export default function Navbar({ onNavigate }: NavbarProps) {
   const go = (path: string, subPath?: string) => {
     const { section, tab } = resolveNavigationTarget(path, subPath);
     try {
+      if (section === 'pendaftaran-turnamen') {
+        navigate('/pendaftaran-turnamen');
+        setOpenMenu(null);
+        setMobileOpen(false);
+        return;
+      }
       if (section === 'home' || section === 'beranda') onNavigate('home');
       else onNavigate(section, tab);
     } catch (error) {
@@ -251,7 +260,6 @@ export default function Navbar({ onNavigate }: NavbarProps) {
         </div>
         <button id="mobile-sidebar-toggle-btn" type="button" onClick={() => setMobileOpen(v => !v)} aria-label={mobileOpen ? 'Tutup menu navigasi' : 'Buka menu navigasi'} aria-expanded={mobileOpen} className="lg:hidden w-11 h-11 shrink-0 rounded-2xl bg-slate-800/90 border border-white/15 flex items-center justify-center text-slate-200 shadow-lg active:scale-95 transition-transform touch-manipulation"><span className="flex flex-col gap-1.5 pointer-events-none"><i className={`block w-5 h-0.5 bg-blue-300 rounded ${mobileOpen ? 'rotate-45 translate-y-2' : ''}`} /><i className={`block w-4 h-0.5 bg-slate-300 rounded ml-auto ${mobileOpen ? 'opacity-0' : ''}`} /><i className={`block w-5 h-0.5 bg-blue-300 rounded ${mobileOpen ? '-rotate-45 -translate-y-2' : ''}`} /></span></button>
       </div>
-    </nav>
 
     <div className={`lg:hidden fixed inset-0 z-[2147483000] bg-black/70 backdrop-blur-sm transition-opacity duration-150 ${mobileOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => setMobileOpen(false)} aria-hidden="true" />
 
@@ -281,13 +289,8 @@ export default function Navbar({ onNavigate }: NavbarProps) {
           })}
         </div>
         <div className="border-t border-white/10 pt-2 mt-1 space-y-0.5">
-          {session ? <><button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMobileOpen(false); navigate('/admin/dashboard'); }} className="w-full min-h-[46px] px-3 rounded-xl text-emerald-300 hover:bg-emerald-500/10 text-left font-bold touch-manipulation"><LayoutDashboard size={16} className="inline mr-3 pointer-events-none"/>Dashboard</button><button type="button" onClick={logout} className="w-full min-h-[46px] px-3 rounded-xl text-red-300 hover:bg-red-500/10 text-left font-bold touch-manipulation"><LogOut size={16} className="inline mr-3 pointer-events-none"/>Keluar Sesi</button></> : <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMobileOpen(false); navigate('/login'); }} className="w-full min-h-[46px] px-3 rounded-xl bg-blue-500/10 border border-blue-500/15 text-blue-300 text-left font-bold touch-manipulation"><LogIn size={16} className="inline mr-3 pointer-events-none"/>Portal Login</button>}
+          {session ? <><button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMobileOpen(false); navigate('/admin/dashboard'); }} className="w-full min-h-[46px] px-3 rounded-xl text-emerald-300 hover:bg-emerald-500/10 text-left font-bold touch-manipulation"><LayoutDashboard size={15} className="inline mr-2" />Dashboard</button><button type="button" onClick={logout} className="w-full min-h-[46px] px-3 rounded-xl text-red-300 hover:bg-red-500/10 text-left font-bold touch-manipulation"><LogOut size={15} className="inline mr-2" />Keluar</button></> : <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMobileOpen(false); navigate('/login'); }} className="w-full min-h-[46px] px-3 rounded-xl text-blue-300 hover:bg-blue-500/10 text-left font-bold touch-manipulation"><LogIn size={15} className="inline mr-2" />Login</button>}
         </div>
-      </div>
-
-      <div className="shrink-0 px-3 pt-2 pb-[max(12px,env(safe-area-inset-bottom))] border-t border-white/10 bg-slate-950/95">
-        <button type="button" onClick={(e) => handleMobileMenuClick(e, 'register')} className="w-full min-h-[60px] px-3 py-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-left active:scale-[.99] transition-transform touch-manipulation"><span className="block text-[8px] uppercase tracking-[.18em] text-blue-400 pointer-events-none">Pendaftaran</span><span className="block font-bold text-white text-sm mt-0.5 truncate pointer-events-none">Gabung Atlet Baru</span></button>
-        <div className="flex justify-center gap-5 mt-2.5 text-slate-500 pointer-events-none"><Youtube size={15}/><Instagram size={15}/><Facebook size={15}/><Twitter size={15}/></div>
       </div>
     </aside>
   </>;
