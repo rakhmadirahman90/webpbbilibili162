@@ -38,6 +38,7 @@ const DokumenPenting = lazy(() => import('./components/DokumenPenting'));
 const StrukturOrganisasiPublic = lazy(() => import('./components/StrukturOrganisasiPublic'));
 const PublicInventaris = lazy(() => import('./components/PublicInventaris'));
 const PublicPrestasi = lazy(() => import('./components/PublicPrestasi'));
+const PublicSeededPeserta = lazy(() => import('./components/PublicSeededPeserta'));
 const PublicFAQ = lazy(() => import('./components/PublicFAQ'));
 const PublicProgram = lazy(() => import('./components/PublicProgram'));
 
@@ -92,67 +93,37 @@ const ViewFallback = () => (
 import { X, ChevronLeft, ChevronRight, Menu, Zap, Download, ExternalLink, Volume2, Volume1, VolumeX, ArrowLeft, Plus, Minus, SlidersHorizontal } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// --- KONSTANTA AUDIO ---
 const MARS_URL = "https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/assets/Mars%20US162.mp3";
 
-// HELPER: Auto Scroll ke atas setiap pindah route
 function ScrollToTop() {
   const { pathname } = useLocation();
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [pathname]);
+  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
   return null;
 }
 
-// HELPER: Reactively synchronize URL path/query params with App activeView
-function UrlSynchronizer({ 
-  activeView, 
-  setActiveView 
-}: { 
-  activeView: string | null;
-  setActiveView: (view: string | null) => void;
-}) {
+function UrlSynchronizer({ activeView, setActiveView }: { activeView: string | null; setActiveView: (view: string | null) => void; }) {
   const location = useLocation();
   const navigate = useNavigate();
   const isInitialMount = useRef(true);
-  
   useEffect(() => {
     if (location.pathname.startsWith('/login') || location.pathname.startsWith('/admin')) return;
     const path = location.pathname.substring(1).toLowerCase();
     const params = new URLSearchParams(location.search);
-    const fullPageMenus = [
-      'jadwal', 'jadwal-latihan', 'schedule', 'kas', 'quiz', 'contact', 'kontak',
-      'struktur', 'struktur-organisasi', 'dokumen-penting', 'dokumen', 'documents',
-      'register', 'pendaftaran', 'peringkat', 'rankings', 'ranking', 'atlet', 'players',
-      'player', 'tentang-kami', 'about', 'tentang', 'sejarah', 'galeri', 'gallery',
-      'visi-misi', 'visi', 'misi', 'fasilitas', 'inventaris', 'public-inventaris',
-      'berita', 'news', 'faq', 'sambutan', 'sambutan-ketua'
-    ];
+    const fullPageMenus = ['jadwal','jadwal-latihan','schedule','kas','quiz','contact','kontak','struktur','struktur-organisasi','dokumen-penting','dokumen','documents','register','pendaftaran','pendaftaran/seeded-peserta','peringkat','rankings','ranking','atlet','players','player','tentang-kami','about','tentang','sejarah','galeri','gallery','visi-misi','visi','misi','fasilitas','inventaris','public-inventaris','berita','news','faq','sambutan','sambutan-ketua'];
     if (path) {
-      if (path === 'home' || path === 'beranda') {
-        if (activeView !== null) setActiveView(null);
-      } else if (fullPageMenus.includes(path)) {
-        if (activeView !== path) setActiveView(path);
-      } else if (activeView !== null) setActiveView(null);
-    } else if (params.has('newsId')) {
-      if (activeView !== 'berita') setActiveView('berita');
-    } else if (params.has('gallery') || params.has('galleryId') || params.has('photoId') || params.has('videoId')) {
-      if (activeView !== 'galeri') setActiveView('galeri');
-    } else if (activeView !== null) setActiveView(null);
+      if (path === 'home' || path === 'beranda') { if (activeView !== null) setActiveView(null); }
+      else if (fullPageMenus.includes(path)) { if (activeView !== path) setActiveView(path); }
+      else if (activeView !== null) setActiveView(null);
+    } else if (params.has('newsId')) { if (activeView !== 'berita') setActiveView('berita'); }
+    else if (params.has('gallery') || params.has('galleryId') || params.has('photoId') || params.has('videoId')) { if (activeView !== 'galeri') setActiveView('galeri'); }
+    else if (activeView !== null) setActiveView(null);
   }, [location.pathname, location.search]);
-  
   useEffect(() => {
     if (location.pathname.startsWith('/login') || location.pathname.startsWith('/admin')) return;
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      return;
-    }
+    if (isInitialMount.current) { isInitialMount.current = false; return; }
     const currentPath = location.pathname.substring(1).toLowerCase();
-    if (activeView) {
-      if (currentPath !== activeView) navigate(`/${activeView}${location.search}`, { replace: false });
-    } else if (currentPath) {
-      navigate(`/${location.search}`, { replace: false });
-    }
+    if (activeView) { if (currentPath !== activeView) navigate(`/${activeView}${location.search}`, { replace: false }); }
+    else if (currentPath) navigate(`/${location.search}`, { replace: false });
   }, [activeView, navigate]);
   return null;
 }
@@ -160,17 +131,7 @@ function UrlSynchronizer({
 const renderDescriptionWithLinks = (text: string) => {
   if (!text) return null;
   const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+)/g;
-  return text.split('\n').map((line, i) => (
-    <p key={i} className="mb-4 last:mb-0 leading-relaxed text-slate-700 text-justify whitespace-normal">
-      {line.split(urlRegex).map((part, index) => {
-        if (part.match(urlRegex)) {
-          const cleanUrl = part.startsWith('www.') ? `https://${part}` : part;
-          return <a key={index} href={cleanUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 underline hover:text-blue-300 inline break-all whitespace-normal">{part}</a>;
-        }
-        return part;
-      })}
-    </p>
-  ));
+  return text.split('\n').map((line, i) => <p key={i} className="mb-4 last:mb-0 leading-relaxed text-slate-700 text-justify whitespace-normal">{line.split(urlRegex).map((part, index) => urlRegex.test(part) ? <a key={index} href={part.startsWith('www.') ? `https://${part}` : part} target="_blank" rel="noopener noreferrer" className="text-blue-400 underline hover:text-blue-300 inline break-all whitespace-normal">{part}</a> : part)}</p>);
 };
 
 export default function App() {
@@ -180,74 +141,26 @@ export default function App() {
   const [activeAthleteFilter, setActiveAthleteFilter] = useState('all');
   const [activeView, setActiveView] = useState<string | null>(() => {
     const path = window.location.pathname.substring(1).toLowerCase();
-    const fullPageMenus = ['jadwal', 'jadwal-latihan', 'schedule', 'kas', 'quiz', 'contact', 'kontak', 'struktur', 'struktur-organisasi', 'dokumen-penting', 'register', 'pendaftaran', 'peringkat', 'rankings', 'atlet', 'players', 'tentang-kami', 'about', 'galeri', 'gallery', 'sejarah', 'visi-misi', 'fasilitas', 'inventaris', 'berita', 'news', 'faq'];
+    const fullPageMenus = ['jadwal','jadwal-latihan','schedule','kas','quiz','contact','kontak','struktur','struktur-organisasi','dokumen-penting','register','pendaftaran','pendaftaran/seeded-peserta','peringkat','rankings','atlet','players','tentang-kami','about','galeri','gallery','sejarah','visi-misi','fasilitas','inventaris','berita','news','faq'];
     if (path && fullPageMenus.includes(path)) return path;
     const params = new URLSearchParams(window.location.search);
     if (params.has('gallery') || params.has('galleryId') || params.has('photoId') || params.has('videoId')) return 'galeri';
     return null;
   });
   const [isOverlayActive, setIsOverlayActive] = useState(false);
-  useEffect(() => {
-    const handleOpen = () => setIsOverlayActive(true);
-    const handleClose = () => setIsOverlayActive(false);
-    window.addEventListener('pb-overlay-open', handleOpen);
-    window.addEventListener('pb-overlay-close', handleClose);
-    return () => {
-      window.removeEventListener('pb-overlay-open', handleOpen);
-      window.removeEventListener('pb-overlay-close', handleClose);
-    };
-  }, []);
+  useEffect(() => { const handleOpen=()=>setIsOverlayActive(true); const handleClose=()=>setIsOverlayActive(false); window.addEventListener('pb-overlay-open',handleOpen); window.addEventListener('pb-overlay-close',handleClose); return()=>{window.removeEventListener('pb-overlay-open',handleOpen);window.removeEventListener('pb-overlay-close',handleClose);}; }, []);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const wasAutoPausedRef = useRef<boolean>(false);
-  const [isMarsPlaying, setIsMarsPlaying] = useState(false);
-  const [marsProgress, setMarsProgress] = useState(0);
-  const [marsDuration, setMarsDuration] = useState(0);
-  const [marsCurrentTime, setMarsCurrentTime] = useState(0);
-  const formatAudioTime = (seconds: number) => {
-    if (isNaN(seconds) || seconds <= 0) return '0:00';
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
-  };
-  const [marsVolume, setMarsVolume] = useState<number>(() => {
-    try { const saved = localStorage.getItem('mars_audio_volume'); return saved ? parseFloat(saved) : 0.8; } catch { return 0.8; }
-  });
-  const [isVolumeExpanded, setIsVolumeExpanded] = useState<boolean>(false);
-  const [audioToast, setAudioToast] = useState<{ show: boolean; message: string; type: 'play' | 'mute' }>({ show: false, message: '', type: 'mute' });
-  useEffect(() => { if (audioRef.current) audioRef.current.volume = marsVolume; }, [marsVolume]);
-  const handleVolumeChange = (newVol: number) => {
-    const clamped = Math.max(0, Math.min(1, parseFloat(newVol.toFixed(2))));
-    setMarsVolume(clamped);
-    try { localStorage.setItem('mars_audio_volume', clamped.toString()); } catch {}
-    if (audioRef.current) audioRef.current.volume = clamped;
-    const pct = Math.round(clamped * 100);
-    setAudioToast({ show: true, message: `Volume: ${pct}%`, type: clamped > 0 ? 'play' : 'mute' });
-  };
-  const increaseVolume = (e?: React.MouseEvent) => { if (e) e.stopPropagation(); handleVolumeChange(marsVolume + 0.1); };
-  const decreaseVolume = (e?: React.MouseEvent) => { if (e) e.stopPropagation(); handleVolumeChange(marsVolume - 0.1); };
-  useEffect(() => {
-    if (audioToast.show) {
-      const timer = setTimeout(() => setAudioToast(prev => ({ ...prev, show: false })), 2200);
-      return () => clearTimeout(timer);
-    }
-  }, [audioToast.show, audioToast.message]);
-  useEffect(() => {
-    const handleMediaPlay = (e: Event) => {
-      const target = e.target as HTMLElement;
-      if (target && target !== audioRef.current && (target.tagName === 'VIDEO' || target.tagName === 'AUDIO')) {
-        if (audioRef.current && !audioRef.current.paused) {
-          audioRef.current.pause(); setIsMarsPlaying(false); wasAutoPausedRef.current = true;
-          setAudioToast({ show: true, message: 'Mars Di-pause (Media Diputar)', type: 'mute' });
-        }
-      }
-    };
-    document.addEventListener('play', handleMediaPlay, true);
-    return () => document.removeEventListener('play', handleMediaPlay, true);
-  }, []);
-
-  // All remaining application logic is intentionally preserved below this point.
-  // This file is updated through the repository workflow; AdminDashboard is now eager-loaded
-  // so the production /admin boot path cannot fail on a stale AdminDashboard dynamic chunk.
+  const [isMarsPlaying,setIsMarsPlaying]=useState(false); const [marsProgress,setMarsProgress]=useState(0); const [marsDuration,setMarsDuration]=useState(0); const [marsCurrentTime,setMarsCurrentTime]=useState(0);
+  const formatAudioTime=(seconds:number)=>{if(isNaN(seconds)||seconds<=0)return '0:00';const mins=Math.floor(seconds/60),secs=Math.floor(seconds%60);return `${mins}:${secs<10?'0':''}${secs}`;};
+  const [marsVolume,setMarsVolume]=useState<number>(()=>{try{const saved=localStorage.getItem('mars_audio_volume');return saved?parseFloat(saved):0.8;}catch{return 0.8;}});
+  const [isVolumeExpanded,setIsVolumeExpanded]=useState(false); const [audioToast,setAudioToast]=useState<{show:boolean;message:string;type:'play'|'mute'}>({show:false,message:'',type:'mute'});
+  useEffect(()=>{if(audioRef.current)audioRef.current.volume=marsVolume;},[marsVolume]);
+  const handleVolumeChange=(newVol:number)=>{const clamped=Math.max(0,Math.min(1,parseFloat(newVol.toFixed(2))));setMarsVolume(clamped);try{localStorage.setItem('mars_audio_volume',clamped.toString());}catch{}if(audioRef.current)audioRef.current.volume=clamped;setAudioToast({show:true,message:`Volume: ${Math.round(clamped*100)}%`,type:clamped>0?'play':'mute'});};
+  const increaseVolume=(e?:React.MouseEvent)=>{if(e)e.stopPropagation();handleVolumeChange(marsVolume+0.1);};
+  const decreaseVolume=(e?:React.MouseEvent)=>{if(e)e.stopPropagation();handleVolumeChange(marsVolume-0.1);};
+  useEffect(()=>{if(audioToast.show){const timer=setTimeout(()=>setAudioToast(prev=>({...prev,show:false})),2200);return()=>clearTimeout(timer);}},[audioToast.show,audioToast.message]);
+  useEffect(()=>{const handleMediaPlay=(e:Event)=>{const target=e.target as HTMLElement;if(target&&target!==audioRef.current&&(target.tagName==='VIDEO'||target.tagName==='AUDIO')){if(audioRef.current&&!audioRef.current.paused){audioRef.current.pause();setIsMarsPlaying(false);wasAutoPausedRef.current=true;setAudioToast({show:true,message:'Mars Di-pause (Media Diputar)',type:'mute'});}}};document.addEventListener('play',handleMediaPlay,true);return()=>document.removeEventListener('play',handleMediaPlay,true);},[]);
   return (
     <Router>
       <ScrollToTop />
@@ -256,6 +169,7 @@ export default function App() {
         <Routes>
           <Route path="/admin/*" element={<AdminDashboard />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/pendaftaran/seeded-peserta" element={<PublicSeededPeserta />} />
           <Route path="*" element={<div className="min-h-screen"><Navbar /><Hero /><Footer /></div>} />
         </Routes>
       </Suspense>
