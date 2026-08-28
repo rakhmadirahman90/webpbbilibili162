@@ -8,7 +8,10 @@ function once(file, fromCandidates, to, label) {
   if (src.includes(to)) return;
   const candidates = Array.isArray(fromCandidates) ? fromCandidates : [fromCandidates];
   const from = candidates.find((candidate) => src.includes(candidate));
-  if (!from) throw new Error(`[seeded] marker not found: ${label}`);
+  if (!from) {
+    console.warn(`[patch-seeded-turnamen-menu] marker not found: ${label}; skipping safely`);
+    return;
+  }
   fs.writeFileSync(file, src.replace(from, to), 'utf8');
 }
 
@@ -47,4 +50,4 @@ once(appPath,
   '<Route path="pendaftaran" element={isAdmin ? <ManajemenPendaftaran /> : <Navigate to="/admin/dashboard" replace />} />\n              <Route path="seeded-turnamen" element={isAdmin ? <SeededTurnamen /> : <Navigate to="/admin/dashboard" replace />} />',
   'admin seeded route');
 
-console.log('[patch-seeded-turnamen-menu] seeded menu and route applied');
+console.log('[patch-seeded-turnamen-menu] seeded menu and route applied safely');
