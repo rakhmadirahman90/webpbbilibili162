@@ -13,6 +13,8 @@ const scripts = [
   'patch-registration-whatsapp-direct.mjs'
 ];
 
+console.log('[build-prep] running stable production preparation scripts');
 for (const script of scripts) {
   execFileSync(process.execPath, [`scripts/${script}`], { stdio: 'inherit' });
 }
+console.log('[build-prep] production preparation complete');
