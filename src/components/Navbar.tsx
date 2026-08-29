@@ -103,7 +103,7 @@ const LiveClock = memo(() => {
   const d = time.getDate();
   const date = `${d} ${months[time.getMonth()]}`;
   const clock = time.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  return <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#151d30]/80 border border-white/10 text-[9px] font-mono font-bold text-slate-300 shrink-0"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />{date}<span className="opacity-40">•</span><span className="text-blue-400">{clock}</span></div>;
+  return <div aria-label={`Tanggal ${date}, waktu ${clock}`} className="flex min-w-0 max-w-[118px] sm:max-w-none items-center gap-1 px-1.5 sm:gap-1.5 sm:px-2.5 py-1 rounded-full bg-[#151d30]/80 border border-white/10 text-[7px] sm:text-[9px] font-mono font-bold text-slate-300 shrink-0 whitespace-nowrap overflow-hidden"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" /><span className="truncate">{date}</span><span className="opacity-40 shrink-0">•</span><span className="text-blue-400 shrink-0">{clock}</span></div>;
 });
 
 interface NavbarProps { onNavigate: (sectionId: string, tabId?: string) => void; }
@@ -245,10 +245,10 @@ export default function Navbar({ onNavigate }: NavbarProps) {
 
   return <>
     <nav className="fixed top-0 left-0 right-0 h-14 lg:h-16 z-[10000] bg-slate-950/95 backdrop-blur-xl border-b border-white/10 shadow-2xl">
-      <div className="max-w-7xl mx-auto h-full px-3 sm:px-4 md:px-8 flex items-center justify-between gap-3">
-        <button type="button" onPointerDown={() => handleNavigationPointerDown('home')} onClick={() => go('home')} className="flex items-center gap-2 shrink-0 min-w-0" aria-label="Beranda PB Bilibili 162">
-          <img src={branding.logo_url} alt="PB Bilibili 162" className="w-9 h-9 lg:w-10 lg:h-10 object-contain" loading="eager" decoding="async" onError={e => { e.currentTarget.src = '/logo_pb_bilibili_162.svg'; }} />
-          <span className="hidden xs:flex flex-col text-left leading-none"><span className="font-black italic text-xs sm:text-sm lg:text-base uppercase whitespace-nowrap">{branding.brand_name_main} <b className="text-blue-500">{branding.brand_name_accent}</b></span><span className="text-[6px] sm:text-[7px] tracking-[.2em] text-slate-400 uppercase mt-1">Professional Club</span></span>
+      <div className="max-w-7xl mx-auto h-full px-2.5 sm:px-4 md:px-8 flex items-center gap-2 sm:gap-3">
+        <button type="button" onPointerDown={() => handleNavigationPointerDown('home')} onClick={() => go('home')} className="flex items-center gap-1.5 sm:gap-2 shrink-0 min-w-0" aria-label="Beranda PB Bilibili 162">
+          <img src={branding.logo_url} alt="PB Bilibili 162" className="w-9 h-9 lg:w-10 lg:h-10 object-contain shrink-0" loading="eager" decoding="async" onError={e => { e.currentTarget.src = '/logo_pb_bilibili_162.svg'; }} />
+          <span className="hidden xs:flex flex-col text-left leading-none min-w-0"><span className="font-black italic text-xs sm:text-sm lg:text-base uppercase whitespace-nowrap">{branding.brand_name_main} <b className="text-blue-500">{branding.brand_name_accent}</b></span><span className="text-[6px] sm:text-[7px] tracking-[.2em] text-slate-400 uppercase mt-1">Professional Club</span></span>
         </button>
         <LiveClock />
         <div className="hidden lg:flex items-center gap-4 xl:gap-6 ml-auto">
@@ -258,7 +258,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
           </div>})}
           {session ? <><button type="button" onClick={() => navigate('/admin/dashboard')} className="px-3 py-2 rounded-full bg-emerald-600 text-white text-[10px] font-bold uppercase"><LayoutDashboard size={13} className="inline mr-1" />Dashboard</button><button type="button" onClick={logout} className="p-2 rounded-full bg-red-500/10 text-red-300"><LogOut size={15}/></button></> : <button type="button" onClick={() => navigate('/login')} className="px-3 py-2 rounded-full bg-blue-600 text-white text-[10px] font-bold uppercase"><LogIn size={13} className="inline mr-1"/>Login</button>}
         </div>
-        <button id="mobile-sidebar-toggle-btn" type="button" onClick={() => setMobileOpen(v => !v)} aria-label={mobileOpen ? 'Tutup menu navigasi' : 'Buka menu navigasi'} aria-expanded={mobileOpen} className="lg:hidden w-11 h-11 shrink-0 rounded-2xl bg-slate-800/90 border border-white/15 flex items-center justify-center text-slate-200 shadow-lg active:scale-95 transition-transform touch-manipulation"><span className="flex flex-col gap-1.5 pointer-events-none"><i className={`block w-5 h-0.5 bg-blue-300 rounded ${mobileOpen ? 'rotate-45 translate-y-2' : ''}`} /><i className={`block w-4 h-0.5 bg-slate-300 rounded ml-auto ${mobileOpen ? 'opacity-0' : ''}`} /><i className={`block w-5 h-0.5 bg-blue-300 rounded ${mobileOpen ? '-rotate-45 -translate-y-2' : ''}`} /></span></button>
+        <button id="mobile-sidebar-toggle-btn" type="button" onClick={() => setMobileOpen(v => !v)} aria-label={mobileOpen ? 'Tutup menu navigasi' : 'Buka menu navigasi'} aria-expanded={mobileOpen} className="lg:hidden ml-auto w-11 h-11 shrink-0 rounded-2xl bg-slate-800/90 border border-white/15 flex items-center justify-center text-slate-200 shadow-lg active:scale-95 transition-transform touch-manipulation"><span className="flex flex-col gap-1.5 pointer-events-none"><i className={`block w-5 h-0.5 bg-blue-300 rounded ${mobileOpen ? 'rotate-45 translate-y-2' : ''}`} /><i className={`block w-4 h-0.5 bg-slate-300 rounded ml-auto ${mobileOpen ? 'opacity-0' : ''}`} /><i className={`block w-5 h-0.5 bg-blue-300 rounded ${mobileOpen ? '-rotate-45 -translate-y-2' : ''}`} /></span></button>
       </div>
 
     <div className={`lg:hidden fixed inset-0 z-[2147483000] bg-black/70 backdrop-blur-sm transition-opacity duration-150 ${mobileOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => setMobileOpen(false)} aria-hidden="true" />
