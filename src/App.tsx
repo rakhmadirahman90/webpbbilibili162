@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from './supabase';
+import { getSiteSetting } from './utils/siteSettingsHelper';
 import { preloadPublicExperience, preloadAdminExperience } from './utils/routePreload';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
@@ -113,17 +114,11 @@ export default function App() {
   });
 
   useEffect(() => {
-    preloadPublicExperience(supabase.from ? async (key: string) => {
-      const { data } = await supabase.from('site_settings').select('value').eq('key', key).maybeSingle();
-      return data?.value;
-    } : undefined as any);
+    preloadPublicExperience(getSiteSetting);
   }, []);
 
   useEffect(() => {
-    if (session) preloadAdminExperience(supabase.from ? async (key: string) => {
-      const { data } = await supabase.from('site_settings').select('value').eq('key', key).maybeSingle();
-      return data?.value;
-    } : undefined as any);
+    if (session) preloadAdminExperience(getSiteSetting);
   }, [session]);
 
   useEffect(() => {
