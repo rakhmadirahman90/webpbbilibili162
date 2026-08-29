@@ -45,7 +45,6 @@ img{max-width:100%;height:auto}
 }
 @media(min-width:640px) and (max-width:1023px){#atlet .swiper-slide>div{max-width:100%}}
 
-/* News + achievements: mirror the compact gallery pattern on phones. */
 @media(max-width:767px){
  #berita-section,#prestasi{width:100%;max-width:100%;overflow-x:hidden}
  #berita-section>.relative.z-10,#prestasi>.relative.z-10,#berita-section .max-w-7xl,#prestasi .max-w-7xl{width:100%;max-width:100%;min-width:0}
@@ -84,71 +83,91 @@ img{max-width:100%;height:auto}
 @media(max-width:767px){#gallery .gallery-lightbox > div:first-child button[aria-label="Kembali"]{min-height:44px!important;padding:8px 10px!important;gap:7px!important}#gallery .gallery-lightbox > div:first-child button[aria-label="Kembali"] > span{font-size:11px!important}}
 @media(min-width:768px){#gallery .gallery-lightbox > div:first-child button[aria-label="Kembali"] > span{font-size:12px!important}}
 
-/* =========================================================
-   ADMIN BERITA — MOBILE EDIT/DELETE VISIBILITY + MODAL SCROLL
-   Scoped by the existing search placeholder so public news cards are untouched.
-   ========================================================= */
 @media(max-width:767px){
-  body:has(input[placeholder="CARI JUDUL BERITA..."]) .grid > div.group {
-    position:relative;
-    padding-bottom:72px!important;
-    overflow:visible!important;
-  }
+  body:has(input[placeholder="CARI JUDUL BERITA..."]) .grid > div.group {position:relative;padding-bottom:72px!important;overflow:visible!important}
+  body:has(input[placeholder="CARI JUDUL BERITA..."]) .grid > div.group > div:last-child {position:absolute!important;top:12px;right:12px;z-index:40;display:flex!important;gap:8px!important;width:auto!important}
+  body:has(input[placeholder="CARI JUDUL BERITA..."]) .grid > div.group > div:last-child button {flex:0 0 46px!important;width:46px!important;min-width:46px!important;height:46px!important;min-height:46px!important;padding:0!important;display:flex!important;align-items:center!important;justify-content:center!important;border:1px solid rgba(255,255,255,.16)!important;box-shadow:0 8px 24px rgba(0,0,0,.45)!important;background:rgba(37,99,235,.96)!important}
+  body:has(input[placeholder="CARI JUDUL BERITA..."]) .grid > div.group > div:last-child button:last-child {background:rgba(39,39,42,.96)!important}
+  body:has(input[placeholder="CARI JUDUL BERITA..."]) .grid > div.group > div:last-child button svg {width:20px!important;height:20px!important}
+  body:has(input[placeholder="CARI JUDUL BERITA..."]) .fixed.inset-0.z-\[100\] {overflow-y:auto!important;-webkit-overflow-scrolling:touch!important;align-items:flex-start!important;padding-top:max(12px,env(safe-area-inset-top))!important;padding-bottom:max(12px,env(safe-area-inset-bottom))!important}
+  body:has(input[placeholder="CARI JUDUL BERITA..."]) .fixed.inset-0.z-\[100\] > div {width:100%!important;max-height:calc(100dvh - 24px)!important;margin:auto 0!important}
+  body:has(input[placeholder="CARI JUDUL BERITA..."]) .fixed.inset-0.z-\[100\] form.custom-scrollbar,body:has(input[placeholder="CARI JUDUL BERITA..."]) .fixed.inset-0.z-\[100\] form.overflow-y-auto {min-height:0!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch!important;overscroll-behavior:contain!important;padding-bottom:24px!important}
+}
 
-  body:has(input[placeholder="CARI JUDUL BERITA..."]) .grid > div.group > div:last-child {
-    position:absolute!important;
-    top:12px;
-    right:12px;
-    z-index:40;
-    display:flex!important;
-    gap:8px!important;
-    width:auto!important;
-  }
+/* =========================================================
+   PUBLIC TOURNAMENT REGISTRATION — STABLE SCROLL + POPUP LAYERING
+   The registration page owns the viewport scroll. Fixed overlays/popups
+   must never lock the document after they close.
+   ========================================================= */
+body:has(main.pt-16) {
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  height: auto !important;
+  min-height: 100% !important;
+  overscroll-behavior-y: auto !important;
+}
 
-  body:has(input[placeholder="CARI JUDUL BERITA..."]) .grid > div.group > div:last-child button {
-    flex:0 0 46px!important;
-    width:46px!important;
-    min-width:46px!important;
-    height:46px!important;
-    min-height:46px!important;
-    padding:0!important;
-    display:flex!important;
-    align-items:center!important;
-    justify-content:center!important;
-    border:1px solid rgba(255,255,255,.16)!important;
-    box-shadow:0 8px 24px rgba(0,0,0,.45)!important;
-    background:rgba(37,99,235,.96)!important;
-  }
+body:has(main.pt-16) #root,
+body:has(main.pt-16) #root > div {
+  min-height: 100% !important;
+  height: auto !important;
+  overflow: visible !important;
+}
 
-  body:has(input[placeholder="CARI JUDUL BERITA..."]) .grid > div.group > div:last-child button:last-child {
-    background:rgba(39,39,42,.96)!important;
-  }
+body:has(main.pt-16) main.pt-16 {
+  position: relative !important;
+  width: 100% !important;
+  min-height: calc(100dvh - 64px) !important;
+  height: auto !important;
+  overflow: visible !important;
+  touch-action: pan-y !important;
+  -webkit-overflow-scrolling: touch !important;
+}
 
-  body:has(input[placeholder="CARI JUDUL BERITA..."]) .grid > div.group > div:last-child button svg {
-    width:20px!important;
-    height:20px!important;
-  }
+body:has(main.pt-16) main.pt-16 > div {
+  overflow: visible !important;
+  height: auto !important;
+  min-height: 100% !important;
+}
 
-  body:has(input[placeholder="CARI JUDUL BERITA..."]) .fixed.inset-0.z-\[100\] {
-    overflow-y:auto!important;
-    -webkit-overflow-scrolling:touch!important;
-    align-items:flex-start!important;
-    padding-top:max(12px,env(safe-area-inset-top))!important;
-    padding-bottom:max(12px,env(safe-area-inset-bottom))!important;
-  }
+/* SweetAlert2 must sit above the registration content without changing
+   document scroll. Its backdrop is isolated from the page flow. */
+body:has(main.pt-16) .swal2-container {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 200000 !important;
+  width: 100% !important;
+  height: 100% !important;
+  padding: max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left)) !important;
+  box-sizing: border-box !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  pointer-events: auto !important;
+}
 
-  body:has(input[placeholder="CARI JUDUL BERITA..."]) .fixed.inset-0.z-\[100\] > div {
-    width:100%!important;
-    max-height:calc(100dvh - 24px)!important;
-    margin:auto 0!important;
-  }
+body:has(main.pt-16) .swal2-popup {
+  position: relative !important;
+  z-index: 200001 !important;
+  max-width: min(92vw, 520px) !important;
+  max-height: calc(100dvh - 32px) !important;
+  overflow-y: auto !important;
+  margin: auto !important;
+  box-sizing: border-box !important;
+}
 
-  body:has(input[placeholder="CARI JUDUL BERITA..."]) .fixed.inset-0.z-\[100\] form.custom-scrollbar,
-  body:has(input[placeholder="CARI JUDUL BERITA..."]) .fixed.inset-0.z-\[100\] form.overflow-y-auto {
-    min-height:0!important;
-    overflow-y:auto!important;
-    -webkit-overflow-scrolling:touch!important;
-    overscroll-behavior:contain!important;
-    padding-bottom:24px!important;
-  }
+/* Do not let a closed popup leave SweetAlert's body scroll lock behind. */
+body.swal2-shown:has(main.pt-16) {
+  overflow-y: auto !important;
+  padding-right: 0 !important;
+}
+
+@media(max-width:767px){
+  body:has(main.pt-16) .swal2-container {align-items:flex-start!important}
+  body:has(main.pt-16) .swal2-popup {width:min(94vw,460px)!important;margin:auto!important}
+  body:has(main.pt-16) main.pt-16 {padding-bottom:max(72px,env(safe-area-inset-bottom))!important}
+}
+
+@media(min-width:768px){
+  body:has(main.pt-16) .swal2-container {align-items:center!important}
+  body:has(main.pt-16) .swal2-popup {width:min(92vw,560px)!important}
 }
