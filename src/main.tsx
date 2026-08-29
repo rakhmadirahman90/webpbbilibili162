@@ -4,6 +4,7 @@ import './utils/stableNavigation.ts';
 import './utils/galleryRouteStability.ts';
 import './utils/galleryBackButtonRuntime.ts';
 import './utils/galleryFilePicker.ts';
+import './utils/publicScrollRecovery.ts';
 import App from './App.tsx';
 import ErrorBoundary from './components/ErrorBoundary.tsx';
 import { initializeLocalDatabase } from './data/localDatabase.ts';
@@ -28,9 +29,6 @@ if (typeof window !== 'undefined') {
   syncGalleryRouteClass();
   window.addEventListener('popstate', syncGalleryRouteClass);
 
-  // Tournament registration is a hard, isolated public page. Intercept the
-  // navbar submenu click before the legacy SPA navigation handlers can race
-  // with each other. This prevents the page from blinking or staying on home.
   const normalize = (value: unknown) => String(value ?? '').toLowerCase().replace(/\s+/g, ' ').trim();
   const isTournamentRegistrationTarget = (el: Element | null) => {
     if (!el) return false;
