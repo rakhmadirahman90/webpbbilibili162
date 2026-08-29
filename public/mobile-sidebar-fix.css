@@ -1,0 +1,72 @@
+/* PB Bilibili 162 — Mobile sidebar/drawer stability fix
+   Root cause: the mobile drawer is a fixed descendant of the navbar, while
+   the navbar uses backdrop-filter. On mobile browsers this can make the
+   fixed drawer resolve against/clip to the navbar instead of the viewport.
+*/
+
+@media (max-width: 1023px) {
+  /* Keep the navbar visual layer, but do not let backdrop-filter establish
+     a containing block for the full-screen fixed mobile drawer. */
+  nav:has(aside[aria-label="Menu navigasi seluler"]) {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    overflow: visible !important;
+    isolation: auto !important;
+  }
+
+  /* Full viewport drawer: never collapse to the 56/64px navbar height. */
+  nav > aside[aria-label="Menu navigasi seluler"] {
+    position: fixed !important;
+    top: 0 !important;
+    right: auto !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    width: min(86vw, 350px) !important;
+    max-width: 350px !important;
+    height: 100dvh !important;
+    min-height: 100svh !important;
+    max-height: 100dvh !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+    overscroll-behavior: contain !important;
+    -webkit-transform: translate3d(0, 0, 0);
+    transform: translate3d(0, 0, 0);
+  }
+
+  /* The menu list must own the scroll area and shrink correctly inside flex. */
+  nav > aside[aria-label="Menu navigasi seluler"] > div:nth-child(2) {
+    flex: 1 1 0% !important;
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior-y: contain !important;
+    touch-action: pan-y !important;
+    padding-bottom: max(16px, env(safe-area-inset-bottom)) !important;
+  }
+
+  /* Keep the overlay independent of the page and the browser's URL bar. */
+  nav > div.fixed:has(+ aside[aria-label="Menu navigasi seluler"]) {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100dvh !important;
+    max-height: none !important;
+  }
+
+  /* Extra protection against page wrappers clipping the open drawer. */
+  html:has(aside[aria-label="Menu navigasi seluler"]),
+  body:has(aside[aria-label="Menu navigasi seluler"]) {
+    min-height: 100%;
+  }
+}
+
+@media (max-width: 639px) {
+  nav > aside[aria-label="Menu navigasi seluler"] {
+    width: min(88vw, 350px) !important;
+  }
+}
