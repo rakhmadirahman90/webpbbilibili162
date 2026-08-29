@@ -33,9 +33,7 @@ function useTournamentRegistrationSidebarEntry(setIsSidebarOpen: React.Dispatch<
       });
       if (!targetGroup) return;
 
-      const source = Array.from(targetGroup.querySelectorAll('a')).find(link =>
-        link.getAttribute('href') === '/admin/pendaftaran'
-      ) as HTMLAnchorElement | undefined;
+      const source = Array.from(targetGroup.querySelectorAll('a')).find(link => link.getAttribute('href') === '/admin/pendaftaran') as HTMLAnchorElement | undefined;
       if (!source) return;
 
       const entry = source.cloneNode(true) as HTMLAnchorElement;
@@ -48,9 +46,7 @@ function useTournamentRegistrationSidebarEntry(setIsSidebarOpen: React.Dispatch<
       if (label) label.textContent = 'Pendaftaran Peserta Turnamen';
 
       const iconWrapper = entry.querySelector('div.p-1');
-      if (iconWrapper) {
-        iconWrapper.setAttribute('aria-hidden', 'true');
-      }
+      if (iconWrapper) iconWrapper.setAttribute('aria-hidden', 'true');
 
       entry.addEventListener('click', () => {
         if (window.innerWidth < 768) setIsSidebarOpen(false);
@@ -58,8 +54,6 @@ function useTournamentRegistrationSidebarEntry(setIsSidebarOpen: React.Dispatch<
 
       source.parentElement?.insertBefore(entry, source.nextSibling);
 
-      // Keep the visible group count accurate (6 -> 7) without changing the
-      // existing Sidebar component's visual structure.
       const header = targetGroup.querySelector('button');
       const count = header?.querySelector('span.font-mono');
       if (count) count.textContent = String(targetGroup.querySelectorAll('a').length);
@@ -69,7 +63,6 @@ function useTournamentRegistrationSidebarEntry(setIsSidebarOpen: React.Dispatch<
     const observer = new MutationObserver(() => install());
     const root = document.getElementById('admin-sidebar') || document.body;
     observer.observe(root, { childList: true, subtree: true });
-
     return () => observer.disconnect();
   }, [setIsSidebarOpen]);
 }
@@ -82,11 +75,16 @@ export default function AdminLayout({ children, email }: AdminLayoutProps) {
 
   useTournamentRegistrationSidebarEntry(setIsSidebarOpen);
 
+  // A route change must always close the mobile drawer first. This prevents
+  // the backdrop from remaining over the newly selected admin page.
+  useEffect(() => {
+    setIsSidebarOpen(false);
+  }, [location.pathname]);
+
   useEffect(() => {
     if (typeof document === 'undefined') return;
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = isSidebarOpen ? 'hidden' : previous;
-    return () => { document.body.style.overflow = previous; };
+    document.body.style.overflow = isSidebarOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
   }, [isSidebarOpen]);
 
   return (
