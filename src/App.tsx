@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { supabase } from './supabase';
 import { getSiteSetting } from './utils/siteSettingsHelper';
 import { preloadPublicExperience, preloadAdminExperience } from './utils/routePreload';
@@ -49,8 +49,6 @@ function ScrollToTop() {
 
 function UrlSynchronizer({ activeView, setActiveView }: { activeView: string | null; setActiveView: (view: string | null) => void }) {
   const location = useLocation();
-  const navigate = useNavigate();
-  const isInitialMount = useRef(true);
   const fullPageMenus = useRef(new Set([
     'jadwal','jadwal-latihan','schedule','kas','quiz','contact','kontak',
     'struktur','struktur-organisasi','dokumen-penting','dokumen','documents',
@@ -76,19 +74,10 @@ function UrlSynchronizer({ activeView, setActiveView }: { activeView: string | n
     else setActiveView(null);
   }, [location.pathname, location.search, setActiveView, fullPageMenus]);
 
-  useEffect(() => {
-    if (location.pathname.startsWith('/login') || location.pathname.startsWith('/admin')) return;
-    if (isInitialMount.current) { isInitialMount.current = false; return; }
-    const currentPath = location.pathname.substring(1).toLowerCase().replace(/\/$/, '');
-    const desired = activeView || '';
-    if (desired === 'pendaftaran-turnamen') {
-      if (currentPath !== desired) navigate('/pendaftaran-turnamen', { replace: false });
-      return;
-    }
-    if (desired && currentPath !== desired) navigate(`/${desired}${location.search}`, { replace: false });
-    else if (!desired && currentPath) navigate(`/${location.search}`, { replace: false });
-  }, [activeView, navigate, location.pathname, location.search]);
-
+  // URL is now the single source of truth for public navigation.
+  // The previous reverse-sync (state -> URL) could race with mobile clicks:
+  // activeView was still the old page for one render and immediately pushed
+  // the browser back to the old URL, producing a blink/failed navigation.
   return null;
 }
 
@@ -141,6 +130,7 @@ export default function App() {
       beranda: 'home', home: 'home', gallery: 'galeri', galeri: 'galeri',
       rankings: 'peringkat', ranking: 'peringkat', 'ranking-atlet': 'peringkat',
       players: 'atlet', player: 'atlet', register: 'register', pendaftaran: 'register',
+      'pendaftaran peserta': 'register', 'pendaftaran-peserta': 'register',
       'pendaftaran turnamen': 'pendaftaran-turnamen', 'pendaftaran-turnamen': 'pendaftaran-turnamen',
       seeded: 'pendaftaran/seeded-peserta', 'seeded-peserta': 'pendaftaran/seeded-peserta',
       about: 'sejarah', 'tentang-kami': 'sejarah', sejarah: 'sejarah',
@@ -154,7 +144,16 @@ export default function App() {
     };
     const targetRaw = sub || main || 'home';
     const target = aliases[targetRaw] || targetRaw;
-    if (!target || target === 'home') { setActiveView(null); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+    if (!target || target === 'home') {
+      setActiveView(null);
+      window.history.pushState({}, '', '/');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    const targetPath = `/${target}`;
+    window.history.pushState({}, '', targetPath);
+    window.dispatchEvent(new PopStateEvent('popstate'));
     setActiveView(target);
   };
 
@@ -185,7 +184,6 @@ export default function App() {
 
   const renderPublicShell = () => (
     <div className="min-h-screen bg-[#0b0e14] w-full overflow-x-hidden">
-      {/* Popup is intentionally restricted to the actual Beranda URL. */}
       <ImagePopup activeView={window.location.pathname === '/' ? activeView : '__NON_HOME__'} />
       <Navbar onNavigate={handleNavigate} />
       <main className={activeView ? 'min-h-screen pt-16 pb-24' : ''}>
