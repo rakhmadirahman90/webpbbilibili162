@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process';
 
 const scripts = [
+  'patch-navbar-jsx-fix.mjs',
   'patch-performance-v2.mjs',
   'patch-gallery-source.mjs',
   'patch-gallery-share-preview.mjs',
