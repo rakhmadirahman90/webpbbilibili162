@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from './supabase';
+import { preloadPublicExperience, preloadAdminExperience } from './utils/routePreload';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import SambutanKetua from './components/SambutanKetua';
@@ -110,6 +111,20 @@ export default function App() {
   const [marsVolume, setMarsVolume] = useState<number>(() => {
     try { const saved = localStorage.getItem('mars_audio_volume'); return saved ? Math.max(0, Math.min(1, parseFloat(saved))) : 0.8; } catch { return 0.8; }
   });
+
+  useEffect(() => {
+    preloadPublicExperience(supabase.from ? async (key: string) => {
+      const { data } = await supabase.from('site_settings').select('value').eq('key', key).maybeSingle();
+      return data?.value;
+    } : undefined as any);
+  }, []);
+
+  useEffect(() => {
+    if (session) preloadAdminExperience(supabase.from ? async (key: string) => {
+      const { data } = await supabase.from('site_settings').select('value').eq('key', key).maybeSingle();
+      return data?.value;
+    } : undefined as any);
+  }, [session]);
 
   useEffect(() => {
     let active = true;
