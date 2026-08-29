@@ -7,12 +7,12 @@ if (typeof window !== 'undefined') {
     if (!isPublicRoute()) return;
     const html = document.documentElement;
     const body = document.body;
-    html.style.overflowY = 'auto';
-    html.style.height = 'auto';
-    body.style.overflowY = 'auto';
-    body.style.height = 'auto';
-    body.style.touchAction = 'pan-y';
-    body.style.overscrollBehaviorY = 'auto';
+    if (html.style.overflowY !== 'auto') html.style.overflowY = 'auto';
+    if (html.style.height !== 'auto') html.style.height = 'auto';
+    if (body.style.overflowY !== 'auto') body.style.overflowY = 'auto';
+    if (body.style.height !== 'auto') body.style.height = 'auto';
+    if (body.style.touchAction !== 'pan-y') body.style.touchAction = 'pan-y';
+    if (body.style.overscrollBehaviorY !== 'auto') body.style.overscrollBehaviorY = 'auto';
   };
 
   restorePublicScroll();
@@ -20,8 +20,6 @@ if (typeof window !== 'undefined') {
   window.addEventListener('pageshow', restorePublicScroll);
   window.addEventListener('pb-overlay-close', restorePublicScroll);
 
-  // React route changes are not guaranteed to emit popstate, so re-check after
-  // navigation settles without interfering with fixed mobile navigation panels.
   const observer = new MutationObserver(() => restorePublicScroll());
   observer.observe(document.documentElement, { attributes: true, attributeFilter: ['style'] });
 
