@@ -51,6 +51,7 @@ import ManajemenPendaftaran from '../ManajemenPendaftaran';
 import ManajemenAtlet from '../ManajemenAtlet';
 import BadmintonQuiz from './BadmintonQuiz';
 import SeededTurnamen from './SeededTurnamen';
+import AdminPendaftaranTurnamen from './AdminPendaftaranTurnamen';
 
 type Props = { session: any };
 
@@ -91,6 +92,8 @@ export default function AdminRouteView({ session }: Props) {
     case 'inventaris': return isAdmin ? render(AdminInventaris) : <div className="p-4 md:p-8"><PublicInventaris /></div>;
     case 'users': return adminOnly(AdminUsers);
     case 'pendaftaran': return adminOnly(ManajemenPendaftaran);
+    case 'pendaftaran-turnamen': return adminOnly(AdminPendaftaranTurnamen);
+    case 'peserta-turnamen': return adminOnly(AdminPendaftaranTurnamen);
     case 'atlet': return adminOnly(ManajemenAtlet);
     case 'absensi': return adminOnly(AdminAbsensi);
     case 'poin': return adminOnly(ManajemenPoin);
