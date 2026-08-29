@@ -114,13 +114,8 @@ export default function App() {
     try { const saved = localStorage.getItem('mars_audio_volume'); return saved ? Math.max(0, Math.min(1, parseFloat(saved))) : 0.8; } catch { return 0.8; }
   });
 
-  useEffect(() => {
-    preloadPublicExperience(getSiteSetting);
-  }, []);
-
-  useEffect(() => {
-    if (session) preloadAdminExperience(getSiteSetting);
-  }, [session]);
+  useEffect(() => { preloadPublicExperience(getSiteSetting); }, []);
+  useEffect(() => { if (session) preloadAdminExperience(getSiteSetting); }, [session]);
 
   useEffect(() => {
     let active = true;
@@ -184,14 +179,14 @@ export default function App() {
       case 'fasilitas': return <Fasilitas />;
       case 'berita': case 'news': return <News />;
       case 'sambutan': case 'sambutan-ketua': return <SambutanKetua />;
-      default:
-        return <><Hero /><SambutanKetua /><Sejarah /><VisiMisi /><Fasilitas /><News /><PrayerTimes /><Contact /></>;
+      default: return <><Hero /><SambutanKetua /><Sejarah /><VisiMisi /><Fasilitas /><News /><PrayerTimes /><Contact /></>;
     }
   };
 
   const renderPublicShell = () => (
     <div className="min-h-screen bg-[#0b0e14] w-full overflow-x-hidden">
-      <ImagePopup activeView={activeView} />
+      {/* Popup is intentionally restricted to the actual Beranda URL. */}
+      <ImagePopup activeView={window.location.pathname === '/' ? activeView : '__NON_HOME__'} />
       <Navbar onNavigate={handleNavigate} />
       <main className={activeView ? 'min-h-screen pt-16 pb-24' : ''}>
         <Suspense fallback={<ViewFallback />}>{renderPublicView()}</Suspense>
@@ -208,14 +203,7 @@ export default function App() {
       <ScrollToTop />
       <UrlSynchronizer activeView={activeView} setActiveView={setActiveView} />
       <Routes>
-        <Route
-          path="/admin/*"
-          element={
-            <AdminLayout email={session?.user?.email || ''}>
-              <AdminDashboard />
-            </AdminLayout>
-          }
-        />
+        <Route path="/admin/*" element={<AdminLayout email={session?.user?.email || ''}><AdminDashboard /></AdminLayout>} />
         <Route path="/login" element={<Login />} />
         <Route path="/pendaftaran-turnamen" element={<PendaftaranTurnamen />} />
         <Route path="/pendaftaran/seeded-peserta" element={<PublicSeededPeserta />} />
