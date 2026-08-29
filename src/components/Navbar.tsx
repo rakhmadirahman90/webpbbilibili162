@@ -91,9 +91,7 @@ const preloadNavigation = (path: string, subPath?: string) => {
       case '/struktur-organisasi': void import('./StrukturOrganisasiPublic'); break;
       default: break;
     }
-  } catch {
-    // Navigation must always continue even if optional prefetch fails.
-  }
+  } catch { /* optional prefetch never blocks navigation */ }
 };
 
 const LiveClock = memo(() => {
@@ -159,7 +157,6 @@ export default function Navbar({ onNavigate }: NavbarProps) {
       if (Array.isArray(value) && value.length) setNavData(value);
     } catch {}
     fetchNav(); fetchBranding();
-
     const channel = supabase.channel(`navbar-realtime-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'navbar_settings' }, () => fetchNav())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, (payload: any) => {
@@ -195,21 +192,18 @@ export default function Navbar({ onNavigate }: NavbarProps) {
 
   const go = (path: string, subPath?: string) => {
     const { section, tab } = resolveNavigationTarget(path, subPath);
+    const target = section === 'home' || section === 'beranda' ? '/' : `/${section}`;
+
+    // Navigate through React Router immediately. The previous implementation
+    // waited for App state to update, which could race UrlSynchronizer on mobile
+    // and bounce /register back to the previous page (visible as a blink).
+    setOpenMenu(null);
+    setMobileOpen(false);
+
     try {
-      if (section === 'pendaftaran-turnamen') {
-        navigate('/pendaftaran-turnamen');
-        setOpenMenu(null);
-        setMobileOpen(false);
-        return;
-      }
-      if (section === 'home' || section === 'beranda') onNavigate('home');
-      else onNavigate(section, tab);
-    } catch (error) {
-      const fallback = section === 'home' || section === 'beranda' ? '/' : `/${section}`;
-      navigate(fallback);
-    } finally {
-      setOpenMenu(null);
-      setMobileOpen(false);
+      navigate(target);
+    } catch {
+      window.location.assign(target);
     }
   };
 
@@ -261,37 +255,38 @@ export default function Navbar({ onNavigate }: NavbarProps) {
         <button id="mobile-sidebar-toggle-btn" type="button" onClick={() => setMobileOpen(v => !v)} aria-label={mobileOpen ? 'Tutup menu navigasi' : 'Buka menu navigasi'} aria-expanded={mobileOpen} className="lg:hidden ml-auto w-11 h-11 shrink-0 rounded-2xl bg-slate-800/90 border border-white/15 flex items-center justify-center text-slate-200 shadow-lg active:scale-95 transition-transform touch-manipulation"><span className="flex flex-col gap-1.5 pointer-events-none"><i className={`block w-5 h-0.5 bg-blue-300 rounded ${mobileOpen ? 'rotate-45 translate-y-2' : ''}`} /><i className={`block w-4 h-0.5 bg-slate-300 rounded ml-auto ${mobileOpen ? 'opacity-0' : ''}`} /><i className={`block w-5 h-0.5 bg-blue-300 rounded ${mobileOpen ? '-rotate-45 -translate-y-2' : ''}`} /></span></button>
       </div>
 
-    <div className={`lg:hidden fixed inset-0 z-[2147483000] bg-black/70 backdrop-blur-sm transition-opacity duration-150 ${mobileOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => setMobileOpen(false)} aria-hidden="true" />
+      <div className={`lg:hidden fixed inset-0 z-[2147483000] bg-black/70 backdrop-blur-sm transition-opacity duration-150 ${mobileOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => setMobileOpen(false)} aria-hidden="true" />
 
-    <aside aria-label="Menu navigasi seluler" className={`lg:hidden fixed inset-y-0 left-0 z-[2147483001] w-[min(86vw,350px)] max-w-[350px] bg-[#0b1224] border-r border-white/10 shadow-2xl flex flex-col overflow-hidden transition-transform duration-150 ease-out ${mobileOpen ? 'translate-x-0 pointer-events-auto' : '-translate-x-full pointer-events-none'} touch-manipulation`} onClick={(e) => e.stopPropagation()}>
-      <div className="h-16 min-h-16 shrink-0 px-4 flex items-center justify-between border-b border-white/10 bg-slate-950/95">
-        <div className="flex items-center gap-2.5 min-w-0"><img src={branding.logo_url} className="w-9 h-9 object-contain shrink-0" alt="PB Bilibili 162" loading="eager"/><div className="min-w-0 font-black text-sm italic uppercase truncate">{branding.brand_name_main} <span className="text-blue-500">{branding.brand_name_accent}</span><span className="block text-[7px] tracking-[.18em] text-slate-500 not-italic mt-0.5">PROFESSIONAL CLUB</span></div></div>
-        <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMobileOpen(false); }} className="w-10 h-10 min-w-10 rounded-xl bg-slate-800 border border-white/10 flex items-center justify-center text-slate-200 active:scale-95 touch-manipulation" aria-label="Tutup menu"><X size={19} className="pointer-events-none"/></button>
-      </div>
+      <aside aria-label="Menu navigasi seluler" className={`lg:hidden fixed inset-y-0 left-0 z-[2147483001] w-[min(86vw,350px)] max-w-[350px] bg-[#0b1224] border-r border-white/10 shadow-2xl flex flex-col overflow-hidden transition-transform duration-150 ease-out ${mobileOpen ? 'translate-x-0 pointer-events-auto' : '-translate-x-full pointer-events-none'} touch-manipulation`} onClick={(e) => e.stopPropagation()}>
+        <div className="h-16 min-h-16 shrink-0 px-4 flex items-center justify-between border-b border-white/10 bg-slate-950/95">
+          <div className="flex items-center gap-2.5 min-w-0"><img src={branding.logo_url} className="w-9 h-9 object-contain shrink-0" alt="PB Bilibili 162" loading="eager"/><div className="min-w-0 font-black text-sm italic uppercase truncate">{branding.brand_name_main} <span className="text-blue-500">{branding.brand_name_accent}</span><span className="block text-[7px] tracking-[.18em] text-slate-500 not-italic mt-0.5">PROFESSIONAL CLUB</span></div></div>
+          <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMobileOpen(false); }} className="w-10 h-10 min-w-10 rounded-xl bg-slate-800 border border-white/10 flex items-center justify-center text-slate-200 active:scale-95 touch-manipulation" aria-label="Tutup menu"><X size={19} className="pointer-events-none"/></button>
+        </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 py-3 [scrollbar-width:thin] touch-pan-y">
-        <div className="space-y-0.5 pb-2">
-          {topMenus.map(menu => {
-            const subs = getSubMenus(menu.id);
-            const drop = menu.type === 'dropdown' || subs.length > 0;
-            const expanded = openMenu === menu.id;
-            return <div key={menu.id} className="rounded-xl overflow-hidden">
-              <button type="button" aria-expanded={drop ? expanded : undefined} onClick={(e) => handleMobileParentClick(e, menu, expanded, drop)} className={`w-full min-h-[48px] px-3 flex items-center justify-between gap-3 rounded-xl text-left text-[14px] leading-5 font-bold uppercase tracking-[.01em] transition-colors touch-manipulation select-none ${expanded ? 'bg-blue-600/15 text-blue-300' : 'text-slate-200 hover:bg-white/5 active:bg-white/10'}`}>
-                <span className="flex items-center gap-3 min-w-0 pointer-events-none"><span className="w-6 min-w-6 flex justify-center">{iconFor(menu.path, menu.label)}</span><span className="truncate">{menu.label}</span></span>
-                {drop && <ChevronDown size={15} className={`shrink-0 transition-transform pointer-events-none ${expanded ? 'rotate-180 text-blue-400' : 'text-slate-500'}`}/>} 
-              </button>
-              {drop && expanded && <div className="ml-4 pl-3 border-l border-blue-500/40 py-0.5 my-0.5">
-                {subs.map(sub => <button key={sub.id} type="button" onPointerDown={() => { preloadNavigation(menu.path, sub.path); }} onClick={(e) => handleMobileMenuClick(e, menu.path, sub.path)} className="w-full min-h-[44px] px-2.5 flex items-center gap-2.5 text-left text-[13px] leading-5 text-slate-300 hover:text-white hover:bg-white/5 active:bg-white/10 rounded-lg touch-manipulation select-none">
-                  <span className="w-5 min-w-5 flex justify-center pointer-events-none">{iconFor(sub.path, sub.label)}</span><span className="truncate pointer-events-none">{sub.label}</span>
-                </button>)}
-              </div>}
-            </div>;
-          })}
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 py-3 [scrollbar-width:thin] touch-pan-y">
+          <div className="space-y-0.5 pb-2">
+            {topMenus.map(menu => {
+              const subs = getSubMenus(menu.id);
+              const drop = menu.type === 'dropdown' || subs.length > 0;
+              const expanded = openMenu === menu.id;
+              return <div key={menu.id} className="rounded-xl overflow-hidden">
+                <button type="button" aria-expanded={drop ? expanded : undefined} onClick={(e) => handleMobileParentClick(e, menu, expanded, drop)} className={`w-full min-h-[48px] px-3 flex items-center justify-between gap-3 rounded-xl text-left text-[14px] leading-5 font-bold uppercase tracking-[.01em] transition-colors touch-manipulation select-none ${expanded ? 'bg-blue-600/15 text-blue-300' : 'text-slate-200 hover:bg-white/5 active:bg-white/10'}`}>
+                  <span className="flex items-center gap-3 min-w-0 pointer-events-none"><span className="w-6 min-w-6 flex justify-center">{iconFor(menu.path, menu.label)}</span><span className="truncate">{menu.label}</span></span>
+                  {drop && <ChevronDown size={15} className={`shrink-0 transition-transform pointer-events-none ${expanded ? 'rotate-180 text-blue-400' : 'text-slate-500'}`}/>} 
+                </button>
+                {drop && expanded && <div className="ml-4 pl-3 border-l border-blue-500/40 py-0.5 my-0.5">
+                  {subs.map(sub => <button key={sub.id} type="button" onPointerDown={() => preloadNavigation(menu.path, sub.path)} onClick={(e) => handleMobileMenuClick(e, menu.path, sub.path)} className="w-full min-h-[44px] px-2.5 flex items-center gap-2.5 text-left text-[13px] leading-5 text-slate-300 hover:text-white hover:bg-white/5 active:bg-white/10 rounded-lg touch-manipulation select-none">
+                    <span className="w-5 min-w-5 flex justify-center pointer-events-none">{iconFor(sub.path, sub.label)}</span><span className="truncate pointer-events-none">{sub.label}</span>
+                  </button>)}
+                </div>}
+              </div>;
+            })}
+          </div>
+          <div className="border-t border-white/10 pt-2 mt-1 space-y-0.5">
+            {session ? <><button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMobileOpen(false); navigate('/admin/dashboard'); }} className="w-full min-h-[46px] px-3 rounded-xl text-emerald-300 hover:bg-emerald-500/10 text-left font-bold touch-manipulation"><LayoutDashboard size={15} className="inline mr-2" />Dashboard</button><button type="button" onClick={logout} className="w-full min-h-[46px] px-3 rounded-xl text-red-300 hover:bg-red-500/10 text-left font-bold touch-manipulation"><LogOut size={15} className="inline mr-2" />Keluar</button></> : <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMobileOpen(false); navigate('/login'); }} className="w-full min-h-[46px] px-3 rounded-xl text-blue-300 hover:bg-blue-500/10 text-left font-bold touch-manipulation"><LogIn size={15} className="inline mr-2" />Login</button>}
+          </div>
         </div>
-        <div className="border-t border-white/10 pt-2 mt-1 space-y-0.5">
-          {session ? <><button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMobileOpen(false); navigate('/admin/dashboard'); }} className="w-full min-h-[46px] px-3 rounded-xl text-emerald-300 hover:bg-emerald-500/10 text-left font-bold touch-manipulation"><LayoutDashboard size={15} className="inline mr-2" />Dashboard</button><button type="button" onClick={logout} className="w-full min-h-[46px] px-3 rounded-xl text-red-300 hover:bg-red-500/10 text-left font-bold touch-manipulation"><LogOut size={15} className="inline mr-2" />Keluar</button></> : <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMobileOpen(false); navigate('/login'); }} className="w-full min-h-[46px] px-3 rounded-xl text-blue-300 hover:bg-blue-500/10 text-left font-bold touch-manipulation"><LogIn size={15} className="inline mr-2" />Login</button>}
-        </div>
-      </div>
-    </aside>
+      </aside>
+    </nav>
   </>;
 }
