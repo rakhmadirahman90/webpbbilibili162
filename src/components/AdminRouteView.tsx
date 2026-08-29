@@ -113,3 +113,4 @@ export default function AdminRouteView({ session }: Props) {
     default: return <Navigate to="/admin/dashboard" replace />;
   }
 }
+// Tournament registration management restored for the admin portal.
