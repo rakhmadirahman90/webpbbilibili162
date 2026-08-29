@@ -12,7 +12,8 @@ interface AdminLayoutProps {
 export default function AdminLayout({ children, email }: AdminLayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const location = useLocation();
-  const isDashboard = location.pathname === '/admin' || location.pathname === '/admin/' || location.pathname === '/admin/dashboard';
+  const adminPath = location.pathname.replace(/^\/admin\/?/, '').replace(/\/$/, '').toLowerCase();
+  const isDashboard = adminPath === '' || adminPath === 'dashboard';
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
