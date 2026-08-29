@@ -17,6 +17,7 @@ import Login from './components/Login';
 import ImagePopup from './components/ImagePopup';
 import JadwalLatihanView from './components/JadwalLatihanView';
 import AdminDashboard from './components/AdminDashboard';
+import AdminLayout from './components/AdminLayout';
 
 const Athletes = lazy(() => import('./components/Players'));
 const Ranking = lazy(() => import('./components/Rankings'));
@@ -207,7 +208,14 @@ export default function App() {
       <ScrollToTop />
       <UrlSynchronizer activeView={activeView} setActiveView={setActiveView} />
       <Routes>
-        <Route path="/admin/*" element={<AdminDashboard />} />
+        <Route
+          path="/admin/*"
+          element={
+            <AdminLayout email={session?.user?.email || ''}>
+              <AdminDashboard />
+            </AdminLayout>
+          }
+        />
         <Route path="/login" element={<Login />} />
         <Route path="/pendaftaran-turnamen" element={<PendaftaranTurnamen />} />
         <Route path="/pendaftaran/seeded-peserta" element={<PublicSeededPeserta />} />
