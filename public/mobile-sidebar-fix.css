@@ -1,12 +1,8 @@
-/* PB Bilibili 162 — Mobile sidebar/drawer stability fix
-   Root cause: the mobile drawer is a fixed descendant of the navbar, while
-   the navbar uses backdrop-filter. On mobile browsers this can make the
-   fixed drawer resolve against/clip to the navbar instead of the viewport.
-*/
+/* PB Bilibili 162 — Mobile sidebar stability fix */
 
 @media (max-width: 1023px) {
-  /* Keep the navbar visual layer, but do not let backdrop-filter establish
-     a containing block for the full-screen fixed mobile drawer. */
+  /* Do not let the Navbar's backdrop-filter create a containing block for
+     the full-screen fixed drawer on mobile browsers. */
   nav:has(aside[aria-label="Menu navigasi seluler"]) {
     -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;
@@ -14,7 +10,8 @@
     isolation: auto !important;
   }
 
-  /* Full viewport drawer: never collapse to the 56/64px navbar height. */
+  /* Full viewport drawer. IMPORTANT: do not set transform here; the React
+     class -translate-x-full must control the closed/open state. */
   nav > aside[aria-label="Menu navigasi seluler"] {
     position: fixed !important;
     top: 0 !important;
@@ -31,11 +28,10 @@
     overflow: hidden !important;
     box-sizing: border-box !important;
     overscroll-behavior: contain !important;
-    -webkit-transform: translate3d(0, 0, 0);
-    transform: translate3d(0, 0, 0);
+    will-change: transform;
   }
 
-  /* The menu list must own the scroll area and shrink correctly inside flex. */
+  /* The menu list owns the vertical scroll area. */
   nav > aside[aria-label="Menu navigasi seluler"] > div:nth-child(2) {
     flex: 1 1 0% !important;
     min-height: 0 !important;
@@ -49,7 +45,7 @@
     padding-bottom: max(16px, env(safe-area-inset-bottom)) !important;
   }
 
-  /* Keep the overlay independent of the page and the browser's URL bar. */
+  /* Full-screen backdrop. */
   nav > div.fixed:has(+ aside[aria-label="Menu navigasi seluler"]) {
     position: fixed !important;
     inset: 0 !important;
@@ -58,7 +54,6 @@
     max-height: none !important;
   }
 
-  /* Extra protection against page wrappers clipping the open drawer. */
   html:has(aside[aria-label="Menu navigasi seluler"]),
   body:has(aside[aria-label="Menu navigasi seluler"]) {
     min-height: 100%;
