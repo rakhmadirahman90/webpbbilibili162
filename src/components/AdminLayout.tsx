@@ -9,11 +9,78 @@ interface AdminLayoutProps {
   email: string;
 }
 
+/**
+ * Restores the tournament-registration shortcut into the existing sidebar.
+ * The route/component already exists, but the menu entry was missing from the
+ * current Sidebar configuration. This DOM-safe bridge keeps the existing
+ * sidebar design intact while ensuring the item is always visible.
+ */
+function useTournamentRegistrationSidebarEntry(setIsSidebarOpen: React.Dispatch<React.SetStateAction<boolean>>) {
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+
+    const install = () => {
+      const nav = document.getElementById('sidebar-navigation-menu');
+      if (!nav) return;
+
+      const already = nav.querySelector('a[data-tournament-registration-entry="true"]');
+      if (already) return;
+
+      const groups = Array.from(nav.children) as HTMLElement[];
+      const targetGroup = groups.find(group => {
+        const text = group.textContent?.replace(/\s+/g, ' ').trim().toLowerCase() || '';
+        return text.includes('kelola data & atlet');
+      });
+      if (!targetGroup) return;
+
+      const source = Array.from(targetGroup.querySelectorAll('a')).find(link =>
+        link.getAttribute('href') === '/admin/pendaftaran'
+      ) as HTMLAnchorElement | undefined;
+      if (!source) return;
+
+      const entry = source.cloneNode(true) as HTMLAnchorElement;
+      entry.setAttribute('href', '/admin/pendaftaran-turnamen');
+      entry.setAttribute('data-tournament-registration-entry', 'true');
+      entry.setAttribute('title', 'Kelola Pendaftaran Peserta Turnamen');
+      entry.classList.remove('bg-blue-600', 'border-blue-500', 'text-white');
+
+      const label = entry.querySelector('span.truncate');
+      if (label) label.textContent = 'Pendaftaran Peserta Turnamen';
+
+      const iconWrapper = entry.querySelector('div.p-1');
+      if (iconWrapper) {
+        iconWrapper.setAttribute('aria-hidden', 'true');
+      }
+
+      entry.addEventListener('click', () => {
+        if (window.innerWidth < 768) setIsSidebarOpen(false);
+      });
+
+      source.parentElement?.insertBefore(entry, source.nextSibling);
+
+      // Keep the visible group count accurate (6 -> 7) without changing the
+      // existing Sidebar component's visual structure.
+      const header = targetGroup.querySelector('button');
+      const count = header?.querySelector('span.font-mono');
+      if (count) count.textContent = String(targetGroup.querySelectorAll('a').length);
+    };
+
+    install();
+    const observer = new MutationObserver(() => install());
+    const root = document.getElementById('admin-sidebar') || document.body;
+    observer.observe(root, { childList: true, subtree: true });
+
+    return () => observer.disconnect();
+  }, [setIsSidebarOpen]);
+}
+
 export default function AdminLayout({ children, email }: AdminLayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const location = useLocation();
   const adminPath = location.pathname.replace(/^\/admin\/?/, '').replace(/\/$/, '').toLowerCase();
   const isDashboard = adminPath === '' || adminPath === 'dashboard';
+
+  useTournamentRegistrationSidebarEntry(setIsSidebarOpen);
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
