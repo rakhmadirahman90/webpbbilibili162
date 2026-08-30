@@ -58,14 +58,48 @@ function filterRegistration(rows:Row[],host:HTMLElement){
   const pay=(v:unknown)=>{const x=norm(v);return x.includes('terver')||x.includes('lunas')||x.includes('diterima')?'terverifikasi':'menunggu'};
   return rows.filter(r=>{const hay=norm([r.kode_pendaftaran,r.nama_pemain_1,r.nama_pemain_2,r.whatsapp,r.email,r.asal_pb,r.domisili,r.kategori,r.status_pendaftaran,r.status_pembayaran].map(clean).join(' '));return(!q||hay.includes(q))&&(!s[0]||s[0].value==='Semua'||clean(r.kategori)===s[0].value)&&(!s[1]||s[1].value==='Semua'||reg(r.status_pendaftaran)===s[1].value)&&(!s[2]||s[2].value==='Semua'||pay(r.status_pembayaran)===s[2].value)});
 }
+
 async function exportSeeded(host:HTMLElement,format:'xlsx'|'pdf'){
-  try{toast('Menyiapkan export seeded…');const rows=filterSeeded(await seededRows(),host);if(!rows.length)return toast('Tidak ada data seeded yang cocok.',false);
-    const mapped=rows.map((p,i)=>({No:i+1,ID_Pemain:p.id,Nama_Pemain:clean(p.player_name).toUpperCase(),Klub:clean(p.club_name)||'-',Seeded:clean(p.seeded_quality)||'-',Gender:clean(p.gender)||'-',Kategori:clean(p.eligible_category)||'-',Divisi:clean(p.division_level)||'-',Wilayah:clean(p.region_status)||'-',Validitas:clean(p.validity_status)||'-',Sumber_Data:clean(p.source_sheet)||'-',No_Sumber:p.source_no??'-'}));
-    const base=safe(`Seeded_Pemain_Bilibili_162_${stamp()}`); if(format==='xlsx'){excel(mapped,'Seeded Pemain',`${base}.xlsx`,[7,12,30,28,10,11,20,18,18,20,34,12]);toast(`Excel berhasil dibuat • ${rows.length} pemain`);return;}
-    const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});pdfHeader(doc,'SEEDED PEMAIN — PB BILIBILI 162',`${rows.length} pemain • Urutan A → B → C+ → C → C- → D • Klub & nama A–Z`);
-    autoTable(doc,{head:[['No','ID','Nama Pemain','Klub','Seeded','Gender','Kategori','Divisi','Wilayah','Validitas']],body:mapped.map(r=>[r.No,r.ID_Pemain,r.Nama_Pemain,r.Klub,r.Seeded,r.Gender,r.Kategori,r.Divisi,r.Wilayah,r.Validitas]),startY:32,margin:{left:8,right:8,bottom:9},theme:'grid',styles:{fontSize:7,cellPadding:2.1,valign:'middle'},headStyles:{fillColor:[15,23,42],textColor:255,fontStyle:'bold',fontSize:7},alternateRowStyles:{fillColor:[245,247,250]},columnStyles:{0:{cellWidth:9},1:{cellWidth:13},2:{cellWidth:38},3:{cellWidth:33},4:{cellWidth:14},5:{cellWidth:14},6:{cellWidth:26},7:{cellWidth:23},8:{cellWidth:23},9:{cellWidth:25}},didDrawPage:()=>pdfFooter(doc)});doc.save(`${base}.pdf`);toast(`PDF berhasil dibuat • ${rows.length} pemain`);
+  try{
+    toast('Menyiapkan export seeded…');
+    const rows=filterSeeded(await seededRows(),host);
+    if(!rows.length)return toast('Tidak ada data seeded yang cocok.',false);
+
+    // Export seeded sengaja dibatasi hanya 4 kolom sesuai kebutuhan:
+    // No, Nama Pemain, Klub, Seeded.
+    const mapped=rows.map((p,i)=>({
+      No:i+1,
+      Nama_Pemain:clean(p.player_name)||'-',
+      Klub:clean(p.club_name)||'-',
+      Seeded:clean(p.seeded_quality)||'-'
+    }));
+
+    const base=safe(`Seeded_Pemain_Bilibili_162_${stamp()}`);
+    if(format==='xlsx'){
+      excel(mapped,'Seeded Pemain',`${base}.xlsx`,[7,38,34,14]);
+      toast(`Excel berhasil dibuat • ${rows.length} pemain`);
+      return;
+    }
+
+    const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+    pdfHeader(doc,'SEEDED PEMAIN — PB BILIBILI 162',`${rows.length} pemain • No, Nama Pemain, Klub & Seeded`);
+    autoTable(doc,{
+      head:[['No','Nama Pemain','Klub','Seeded']],
+      body:mapped.map(r=>[r.No,r.Nama_Pemain,r.Klub,r.Seeded]),
+      startY:32,
+      margin:{left:12,right:12,bottom:9},
+      theme:'grid',
+      styles:{fontSize:9,cellPadding:3,valign:'middle'},
+      headStyles:{fillColor:[15,23,42],textColor:255,fontStyle:'bold',fontSize:9},
+      alternateRowStyles:{fillColor:[245,247,250]},
+      columnStyles:{0:{cellWidth:14},1:{cellWidth:82},2:{cellWidth:82},3:{cellWidth:35}},
+      didDrawPage:()=>pdfFooter(doc)
+    });
+    doc.save(`${base}.pdf`);
+    toast(`PDF berhasil dibuat • ${rows.length} pemain`);
   }catch(e:any){console.error(e);toast(`Export gagal: ${e?.message||'Periksa koneksi database.'}`,false)}
 }
+
 async function exportRegistration(host:HTMLElement,format:'xlsx'|'pdf'){
   try{toast('Menyiapkan export pendaftaran…');const rows=filterRegistration(await registrationRows(),host);if(!rows.length)return toast('Tidak ada data pendaftaran yang cocok.',false);
     const mapped=rows.map((r,i)=>({No:i+1,ID_Pendaftaran:r.id,Kode_Pendaftaran:clean(r.kode_pendaftaran)||'-',Nama_Pemain_1:clean(r.nama_pemain_1)||'-',Nama_Pemain_2:clean(r.nama_pemain_2)||'-',Kategori:clean(r.kategori)||'-',WhatsApp:clean(r.whatsapp)||'-',Email:clean(r.email)||'-',Asal_PB_Klub:clean(r.asal_pb)||'-',Domisili:clean(r.domisili)||'-',Biaya_Pendaftaran:Number(r.biaya_pendaftaran||0),Status_Pembayaran:clean(r.status_pembayaran)||'-',Status_Pendaftaran:clean(r.status_pendaftaran)||'Pending',Tanggal_Daftar:dateId(r.created_at),Waktu_Daftar:timeId(r.created_at)}));
