@@ -67,8 +67,44 @@
     line-height:1.2 !important;
   }
 
-  /* Compact page chrome so the table gets priority on narrow screens. */
   table[class*="min-w-[620px]"] + * { min-width:0; }
+
+  /* Seeded admin: compact landing-page-like chrome, no horizontal overflow. */
+  .seeded-admin-page { padding:8px !important; }
+  .seeded-admin-page > div { width:100% !important; max-width:100% !important; min-width:0 !important; }
+  .seeded-admin-page section { min-width:0 !important; }
+  .seeded-admin-page section:first-child { border-radius:18px !important; padding:14px !important; }
+  .seeded-admin-page section:first-child h1 { font-size:20px !important; line-height:1.15 !important; }
+  .seeded-admin-page section:first-child p { font-size:11px !important; line-height:1.45 !important; }
+  .seeded-admin-page section:nth-child(2) { padding:10px !important; }
+  .seeded-admin-page section:nth-child(2) code { font-size:9px !important; }
+  .seeded-admin-page section:nth-child(3) { padding:9px !important; }
+  .seeded-admin-page section:nth-child(3) input,
+  .seeded-admin-page section:nth-child(3) select,
+  .seeded-admin-page section:nth-child(3) button { min-height:40px !important; }
+  .seeded-admin-page table th,
+  .seeded-admin-page table td { font-size:9.5px !important; padding:6px 4px !important; }
+  .seeded-admin-page table td:last-child button { width:29px !important; min-width:29px !important; height:29px !important; min-height:29px !important; }
+
+  /* Tournament registration admin: same compact, clean mobile rhythm as the landing page. */
+  .tournament-admin-page { width:100% !important; min-width:0 !important; overflow-x:hidden !important; padding:8px !important; }
+  .tournament-admin-page > div { width:100% !important; max-width:100% !important; min-width:0 !important; }
+  .tournament-admin-page header { border-radius:18px !important; }
+  .tournament-admin-page header > div:first-child { padding:14px !important; }
+  .tournament-admin-page h1 { font-size:21px !important; line-height:1.15 !important; }
+  .tournament-admin-page p { font-size:11px !important; line-height:1.45 !important; }
+  .tournament-admin-page .grid { min-width:0 !important; }
+  .tournament-admin-page section { min-width:0 !important; }
+  .tournament-admin-page input,
+  .tournament-admin-page select,
+  .tournament-admin-page button { max-width:100% !important; }
+  .tournament-admin-page .overflow-x-auto { width:100% !important; min-width:0 !important; max-width:100% !important; }
+  .tournament-admin-page table { width:100% !important; max-width:100% !important; min-width:0 !important; table-layout:fixed !important; }
+  .tournament-admin-page table th,
+  .tournament-admin-page table td { min-width:0 !important; max-width:0 !important; overflow:hidden !important; overflow-wrap:anywhere !important; word-break:break-word !important; white-space:normal !important; font-size:9.5px !important; line-height:1.3 !important; padding:7px 4px !important; vertical-align:middle !important; }
+  .tournament-admin-page table td:last-child { width:18% !important; }
+  .tournament-admin-page table td:last-child > div { display:flex !important; flex-wrap:wrap !important; justify-content:center !important; gap:3px !important; min-width:0 !important; }
+  .tournament-admin-page table td:last-child button { width:28px !important; min-width:28px !important; height:28px !important; min-height:28px !important; padding:0 !important; }
 }
 
 @media (max-width: 430px) {
@@ -80,6 +116,10 @@
   [class*="max-w-[1450px]"] table th:nth-child(5), [class*="max-w-[1450px]"] table td:nth-child(5) { width:14%; }
   [class*="max-w-[1450px]"] table th:nth-child(7), [class*="max-w-[1450px]"] table td:nth-child(7) { width:13%; }
   [class*="max-w-[1450px]"] table th:nth-child(8), [class*="max-w-[1450px]"] table td:nth-child(8) { width:7%; }
+  .tournament-admin-page { padding:6px !important; }
+  .tournament-admin-page header > div:first-child { padding:12px !important; }
+  .tournament-admin-page h1 { font-size:19px !important; }
+  .seeded-admin-page section:first-child { padding:12px !important; }
 }
 
 @media (prefers-reduced-motion: reduce) {
