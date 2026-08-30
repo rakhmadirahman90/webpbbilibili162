@@ -9,14 +9,42 @@ interface AdminLayoutProps {
   email: string;
 }
 
+function cleanupDuplicateTournamentMenu() {
+  if (typeof document === 'undefined') return;
+  const sidebar = document.getElementById('admin-sidebar') || document.querySelector('[data-admin-sidebar]');
+  if (!sidebar) return;
+
+  const links = Array.from(sidebar.querySelectorAll('a')) as HTMLAnchorElement[];
+  const normalize = (value: string) => value.replace(/\s+/g, ' ').trim().toLowerCase();
+  const tournamentLinks = links.filter((link) => {
+    const text = normalize(link.textContent || '');
+    const href = (link.getAttribute('href') || '').toLowerCase();
+    return text === 'pendaftaran peserta turnamen' || href.endsWith('/admin/pendaftaran-turnamen') || href.endsWith('/admin/peserta-turnamen');
+  });
+
+  if (tournamentLinks.length <= 1) return;
+
+  const preferred = tournamentLinks.find((link) => (link.getAttribute('href') || '').toLowerCase().endsWith('/admin/pendaftaran-turnamen')) || tournamentLinks[0];
+  tournamentLinks.forEach((link) => {
+    if (link !== preferred) link.remove();
+  });
+
+  const groups = Array.from(sidebar.querySelectorAll('button'));
+  groups.forEach((button) => {
+    const section = button.parentElement?.parentElement;
+    if (!section) return;
+    const linksInSection = section.querySelectorAll('a').length;
+    const count = button.querySelector('.font-mono');
+    if (count) count.textContent = String(linksInSection);
+  });
+}
+
 export default function AdminLayout({ children, email }: AdminLayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const location = useLocation();
   const adminPath = location.pathname.replace(/^\/admin\/?/, '').replace(/\/$/, '').toLowerCase();
   const isDashboard = adminPath === '' || adminPath === 'dashboard';
 
-  // A route change must always close the mobile drawer first. This prevents
-  // the backdrop from remaining over the newly selected admin page.
   useEffect(() => {
     setIsSidebarOpen(false);
   }, [location.pathname]);
@@ -26,6 +54,18 @@ export default function AdminLayout({ children, email }: AdminLayoutProps) {
     document.body.style.overflow = isSidebarOpen ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
   }, [isSidebarOpen]);
+
+  useEffect(() => {
+    cleanupDuplicateTournamentMenu();
+    const observer = new MutationObserver(() => cleanupDuplicateTournamentMenu());
+    const root = document.getElementById('admin-sidebar') || document.body;
+    observer.observe(root, { childList: true, subtree: true });
+    const timer = window.setTimeout(cleanupDuplicateTournamentMenu, 1000);
+    return () => {
+      observer.disconnect();
+      window.clearTimeout(timer);
+    };
+  }, [location.pathname]);
 
   return (
     <div className="h-[100dvh] min-h-0 flex bg-[#07101f] overflow-hidden">
