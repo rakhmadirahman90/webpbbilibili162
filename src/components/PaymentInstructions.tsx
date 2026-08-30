@@ -2,7 +2,8 @@ import React from 'react';
 
 const BSI_ACCOUNT = '7372006514';
 const BSI_ACCOUNT_NAME = 'PB BILIBILI 162';
-const QRIS_IMAGE = '/qris-pb-bilibili-162.svg';
+// Cache-busted reference so the production site always loads the latest QRIS asset.
+const QRIS_IMAGE = '/qris-pb-bilibili-162.svg?v=20260830';
 
 export default function PaymentInstructions(){
   const copyAccount=async()=>{try{await navigator.clipboard?.writeText(BSI_ACCOUNT);}catch{}};
