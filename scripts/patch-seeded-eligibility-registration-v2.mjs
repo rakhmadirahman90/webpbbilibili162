@@ -6,7 +6,7 @@ const marker = 'SEEDED_ELIGIBILITY_REGISTRATION_V2';
 if (s.includes(marker)) process.exit(0);
 
 const start = s.indexOf('  const checkSeededEligibility=async(');
-const end = s.indexOf('  const updatePlayerName=', start);
+const end = s.indexOf('  const updatePlayer=', start);
 if (start < 0 || end < 0) throw new Error('[seeded-v2] checkSeededEligibility boundary not found');
 
 const replacement = `  const checkSeededEligibility=async(idx:0|1,name:string,category=form.kategori)=>{
