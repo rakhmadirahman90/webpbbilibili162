@@ -64,39 +64,13 @@ async function exportSeeded(host:HTMLElement,format:'xlsx'|'pdf'){
     toast('Menyiapkan export seeded…');
     const rows=filterSeeded(await seededRows(),host);
     if(!rows.length)return toast('Tidak ada data seeded yang cocok.',false);
-
-    // Export seeded sengaja dibatasi hanya 4 kolom sesuai kebutuhan:
-    // No, Nama Pemain, Klub, Seeded.
-    const mapped=rows.map((p,i)=>({
-      No:i+1,
-      Nama_Pemain:clean(p.player_name)||'-',
-      Klub:clean(p.club_name)||'-',
-      Seeded:clean(p.seeded_quality)||'-'
-    }));
-
+    const mapped=rows.map((p,i)=>({No:i+1,Nama_Pemain:clean(p.player_name)||'-',Klub:clean(p.club_name)||'-',Seeded:clean(p.seeded_quality)||'-'}));
     const base=safe(`Seeded_Pemain_Bilibili_162_${stamp()}`);
-    if(format==='xlsx'){
-      excel(mapped,'Seeded Pemain',`${base}.xlsx`,[7,38,34,14]);
-      toast(`Excel berhasil dibuat • ${rows.length} pemain`);
-      return;
-    }
-
+    if(format==='xlsx'){excel(mapped,'Seeded Pemain',`${base}.xlsx`,[7,38,34,14]);toast(`Excel berhasil dibuat • ${rows.length} pemain`);return;}
     const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
     pdfHeader(doc,'SEEDED PEMAIN — PB BILIBILI 162',`${rows.length} pemain • No, Nama Pemain, Klub & Seeded`);
-    autoTable(doc,{
-      head:[['No','Nama Pemain','Klub','Seeded']],
-      body:mapped.map(r=>[r.No,r.Nama_Pemain,r.Klub,r.Seeded]),
-      startY:32,
-      margin:{left:12,right:12,bottom:9},
-      theme:'grid',
-      styles:{fontSize:9,cellPadding:3,valign:'middle'},
-      headStyles:{fillColor:[15,23,42],textColor:255,fontStyle:'bold',fontSize:9},
-      alternateRowStyles:{fillColor:[245,247,250]},
-      columnStyles:{0:{cellWidth:14},1:{cellWidth:82},2:{cellWidth:82},3:{cellWidth:35}},
-      didDrawPage:()=>pdfFooter(doc)
-    });
-    doc.save(`${base}.pdf`);
-    toast(`PDF berhasil dibuat • ${rows.length} pemain`);
+    autoTable(doc,{head:[['No','Nama Pemain','Klub','Seeded']],body:mapped.map(r=>[r.No,r.Nama_Pemain,r.Klub,r.Seeded]),startY:32,margin:{left:12,right:12,bottom:9},theme:'grid',styles:{fontSize:9,cellPadding:3,valign:'middle'},headStyles:{fillColor:[15,23,42],textColor:255,fontStyle:'bold',fontSize:9},alternateRowStyles:{fillColor:[245,247,250]},columnStyles:{0:{cellWidth:14},1:{cellWidth:82},2:{cellWidth:82},3:{cellWidth:35}},didDrawPage:()=>pdfFooter(doc)});
+    doc.save(`${base}.pdf`);toast(`PDF berhasil dibuat • ${rows.length} pemain`);
   }catch(e:any){console.error(e);toast(`Export gagal: ${e?.message||'Periksa koneksi database.'}`,false)}
 }
 
@@ -112,8 +86,18 @@ function makeButton(label:string,icon:string,action:()=>void){
   const b=document.createElement('button');b.type='button';b.innerHTML=`<span style="font-size:15px">${icon}</span><span>${label}</span>`;b.style.cssText='display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:42px;padding:0 14px;border-radius:11px;border:1px solid rgba(59,130,246,.3);background:#0b1220;color:#fff;font:800 10px/1 system-ui,sans-serif;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;pointer-events:auto;position:relative;z-index:50';
   const run=(e:Event)=>{e.preventDefault();e.stopPropagation();void action()};b.addEventListener('click',run);b.addEventListener('touchend',run,{passive:false});return b;
 }
+function isAdminRoute(){
+  const path=window.location.pathname.toLowerCase().replace(/\/$/,'');
+  return path==='/admin'||path.startsWith('/admin/');
+}
 function injectToolbar(){
-  if(document.getElementById('admin-export-toolbar'))return;const text=clean(document.body.innerText);const seeded=/Seeded Resmi Bilibili 162/i.test(text);const registration=!seeded&&/Pendaftaran Peserta Turnamen|Daftar Peserta/i.test(text);if(!seeded&&!registration)return;
+  const existing=document.getElementById('admin-export-toolbar');
+  if(!isAdminRoute()){
+    existing?.remove();
+    return;
+  }
+  if(existing)return;
+  const text=clean(document.body.innerText);const seeded=/Seeded Resmi Bilibili 162/i.test(text);const registration=!seeded&&/Pendaftaran Peserta Turnamen|Daftar Peserta/i.test(text);if(!seeded&&!registration)return;
   const host=document.querySelector('main')||document.getElementById('root');if(!(host instanceof HTMLElement))return;const bar=document.createElement('div');bar.id='admin-export-toolbar';bar.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:0 0 12px;padding:10px 12px;border:1px solid rgba(59,130,246,.22);border-radius:15px;background:linear-gradient(135deg,rgba(9,22,43,.97),rgba(5,12,25,.97));box-shadow:0 10px 28px rgba(0,0,0,.12);position:relative;z-index:40;pointer-events:auto';
   const info=document.createElement('div');info.innerHTML='<div style="font:900 11px/1.2 system-ui;color:#fff;text-transform:uppercase;letter-spacing:.05em">Export Data</div><div style="margin-top:3px;font:500 10px/1.3 system-ui;color:#94a3b8">Excel & PDF • mengikuti pencarian dan filter aktif</div>';
   const actions=document.createElement('div');actions.style.cssText='display:flex;gap:7px;flex-wrap:wrap;pointer-events:auto';if(seeded){actions.append(makeButton('Excel','▣',()=>exportSeeded(host,'xlsx')),makeButton('PDF','▤',()=>exportSeeded(host,'pdf')))}else{actions.append(makeButton('Excel','▣',()=>exportRegistration(host,'xlsx')),makeButton('PDF','▤',()=>exportRegistration(host,'pdf')))}bar.append(info,actions);const first=host.querySelector('section');if(first?.parentElement)first.parentElement.insertBefore(bar,first);else host.prepend(bar);
