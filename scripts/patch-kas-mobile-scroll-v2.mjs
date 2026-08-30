@@ -4,23 +4,32 @@ const componentPath = 'src/components/KasManager.tsx';
 const layoutPath = 'src/components/AdminLayout.tsx';
 const cssPath = 'src/index.css';
 
-// The admin shell is a fixed 100dvh flex layout. KasManager must therefore
-// expose its full mobile content height to the shell's scrolling <main>,
-// rather than creating a nested/shrinking flex region.
+// Mobile Kas must use the AdminLayout page scroll. Remove the nested 85vh
+// ledger/form constraints that clip transaction history on small screens.
 let kas = fs.readFileSync(componentPath, 'utf8');
-const rootFrom = 'kas-manager-root w-full min-h-full flex flex-col';
-const rootTo = 'kas-manager-root w-full min-h-full flex flex-col';
-if (!kas.includes('kas-manager-root')) {
-  kas = kas.replace(
-    'w-full min-h-full flex flex-col',
-    rootTo
-  );
-}
+kas = kas.replace(
+  '<div className="w-full min-h-full flex flex-col p-3 sm:p-5 md:p-8 space-y-3 sm:space-y-4 md:space-y-6 overflow-y-auto select-none pb-28 md:pb-8">',
+  '<div className="kas-manager-root w-full min-h-full flex flex-col p-3 sm:p-5 md:p-8 space-y-3 sm:space-y-4 md:space-y-6 overflow-visible select-none pb-28 md:pb-8">'
+);
+kas = kas.replace(
+  'grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6 flex-1 min-h-0 items-stretch pb-10 md:pb-0',
+  'grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6 md:flex-1 md:min-h-0 items-stretch pb-10 md:pb-0'
+);
+kas = kas.replace(
+  'bg-[#0b1224]/90 border border-white/10 p-3 sm:p-5 rounded-2xl md:rounded-[2.5rem] flex flex-col h-auto max-h-[85vh] md:h-full min-h-0 overflow-y-auto shadow-xl',
+  'bg-[#0b1224]/90 border border-white/10 p-3 sm:p-5 rounded-2xl md:rounded-[2.5rem] flex flex-col h-auto max-h-none md:max-h-[85vh] md:h-full min-h-0 overflow-visible md:overflow-y-auto shadow-xl'
+);
+kas = kas.replace(
+  'bg-[#0b1224]/90 border border-white/10 rounded-2xl md:rounded-[2.5rem] overflow-hidden flex flex-col h-auto max-h-[85vh] md:h-full min-h-0 shadow-xl',
+  'bg-[#0b1224]/90 border border-white/10 rounded-2xl md:rounded-[2.5rem] overflow-visible md:overflow-hidden flex flex-col h-auto max-h-none md:max-h-[85vh] md:h-full min-h-0 shadow-xl'
+);
+kas = kas.replace(
+  '<div className="overflow-y-auto flex-1 min-h-0 divide-y divide-white/5">',
+  '<div className="overflow-visible md:overflow-y-auto md:flex-1 md:min-h-0 divide-y divide-white/5">'
+);
 fs.writeFileSync(componentPath, kas, 'utf8');
 
-// Mount the existing realtime Kas notifier on the Kas admin route. It already
-// contains the WhatsApp report CTA and FCM/realtime handling; this makes sure
-// the feature is actually active when the admin opens /admin/kas.
+// Preserve the realtime Kas notifier with its WhatsApp report CTA.
 let layout = fs.readFileSync(layoutPath, 'utf8');
 if (!layout.includes("import KasRealtimeNotifier from './KasRealtimeNotifier';")) {
   layout = layout.replace(
@@ -31,16 +40,16 @@ if (!layout.includes("import KasRealtimeNotifier from './KasRealtimeNotifier';")
 if (!layout.includes('<KasRealtimeNotifier />')) {
   layout = layout.replace(
     '<main className="admin-main flex-1 min-w-0 min-h-0 overflow-y-auto overflow-x-hidden flex flex-col overscroll-contain">',
-    '<main className="admin-main flex-1 min-w-0 min-h-0 overflow-y-auto overflow-x-hidden flex flex-col overscroll-contain">\n          {location.pathname.toLowerCase().startsWith(\'/admin/kas\') && <KasRealtimeNotifier />}'
+    '<main className="admin-main flex-1 min-w-0 min-h-0 overflow-y-auto overflow-x-hidden flex flex-col overscroll-contain">\n          {location.pathname.toLowerCase().startsWith(\'/admin/kas\') && <KasRealtimeNotifier />} '
   );
 }
 fs.writeFileSync(layoutPath, layout, 'utf8');
 
 let css = fs.readFileSync(cssPath, 'utf8');
-const marker = '/* KAS_MANAGER_MOBILE_SCROLL_V2 */';
+const marker = '/* KAS_MANAGER_MOBILE_SCROLL_V2_FINAL */';
 if (!css.includes(marker)) {
-  css += `\n\n${marker}\n/* Let the AdminLayout main element be the single vertical scroller on phones. */\n.admin-main {\n  min-height: 0 !important;\n  overscroll-behavior-y: auto !important;\n  -webkit-overflow-scrolling: touch !important;\n}\n\n@media (max-width: 767px) {\n  .admin-main {\n    height: auto !important;\n    overflow-y: auto !important;\n    overflow-x: hidden !important;\n    touch-action: pan-y !important;\n  }\n\n  .kas-manager-root {\n    display: flex !important;\n    flex-direction: column !important;\n    flex: 0 0 auto !important;\n    width: 100% !important;\n    max-width: 100% !important;\n    height: auto !important;\n    min-height: max-content !important;\n    overflow: visible !important;\n    padding-bottom: max(88px, env(safe-area-inset-bottom)) !important;\n    touch-action: pan-y !important;\n  }\n\n  .kas-manager-root > * {\n    flex: 0 0 auto !important;\n  }\n\n  .kas-manager-root > .grid {\n    flex: 0 0 auto !important;\n    height: auto !important;\n    min-height: 0 !important;\n    overflow: visible !important;\n  }\n\n  .kas-manager-root .kas-stat-grid {\n    flex: 0 0 auto !important;\n  }\n\n  .kas-manager-root .kas-date-filter {\n    flex: 0 0 auto !important;\n  }\n\n  .kas-manager-root .kas-date-controls input[type="date"] {\n    min-width: 0 !important;\n    width: 100% !important;\n    max-width: 100% !important;\n  }\n\n  /* The transaction/form panels should grow naturally on mobile. */\n  .kas-manager-root .lg\\:col-span-4,\n  .kas-manager-root .lg\\:col-span-8 {\n    min-height: 0 !important;\n    height: auto !important;\n    overflow: visible !important;\n  }\n\n  .kas-manager-root .lg\\:col-span-4 > div,\n  .kas-manager-root .lg\\:col-span-8 > div {\n    max-height: none !important;\n    height: auto !important;\n    min-height: 0 !important;\n  }\n\n  /* Keep mobile tab content usable without creating a second page scroller. */\n  .kas-manager-root [class*="overflow-y-auto"] {\n    -webkit-overflow-scrolling: touch;\n  }\n}\n\n@media (max-width: 390px) {\n  .kas-manager-root {\n    padding-left: 8px !important;\n    padding-right: 8px !important;\n    padding-bottom: max(96px, env(safe-area-inset-bottom)) !important;\n  }\n}\n`;
+  css += `\n\n${marker}\n@media (max-width: 767px) {\n  .admin-main { overflow-y:auto !important; overflow-x:hidden !important; min-height:0 !important; height:auto !important; touch-action:pan-y !important; -webkit-overflow-scrolling:touch !important; overscroll-behavior-y:auto !important; }\n  .kas-manager-root { display:block !important; width:100% !important; max-width:100% !important; height:auto !important; min-height:max-content !important; overflow:visible !important; flex:none !important; padding-bottom:max(104px,env(safe-area-inset-bottom)) !important; }\n  .kas-manager-root > .grid { display:block !important; height:auto !important; min-height:0 !important; overflow:visible !important; }\n  .kas-manager-root > .grid > div { display:block !important; width:100% !important; height:auto !important; min-height:0 !important; overflow:visible !important; margin-bottom:12px !important; }\n  .kas-manager-root > .grid > div > div { height:auto !important; max-height:none !important; min-height:0 !important; overflow:visible !important; }\n  .kas-manager-root > .grid > div > div > div.overflow-visible { height:auto !important; max-height:none !important; min-height:0 !important; overflow:visible !important; flex:none !important; }\n  .kas-manager-root input, .kas-manager-root select, .kas-manager-root textarea { font-size:16px !important; }\n  .kas-manager-root button { touch-action:manipulation !important; }\n  .kas-manager-root input[type="date"] { min-width:0 !important; width:100% !important; max-width:100% !important; }\n}\n@media (max-width:390px) { .kas-manager-root { padding-left:8px !important; padding-right:8px !important; } }\n`;
   fs.writeFileSync(cssPath, css, 'utf8');
 }
 
-console.log('[patch-kas-mobile-scroll-v2] applied single-scroll mobile layout and Kas realtime notifier');
+console.log('[patch-kas-mobile-scroll-v2] final mobile Kas scroll fix applied');
