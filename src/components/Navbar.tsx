@@ -77,7 +77,7 @@ const preloadNavigation = (path: string, subPath?: string) => {
                                     ? '/pendaftaran-turnamen'
                                     : null;
     if (!target) return;
-    try { warmupRouteData(target); } catch { /* prefetch must never block navigation */ }
+    try { warmupRouteData(target); } catch { }
     switch (target) {
       case '/atlet': void import('./Players'); break;
       case '/galeri': void import('./Gallery'); break;
@@ -91,7 +91,7 @@ const preloadNavigation = (path: string, subPath?: string) => {
       case '/struktur-organisasi': void import('./StrukturOrganisasiPublic'); break;
       default: break;
     }
-  } catch { /* optional prefetch never blocks navigation */ }
+  } catch { }
 };
 
 const LiveClock = memo(() => {
@@ -131,7 +131,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
       const value = typeof setting?.value === 'string' ? JSON.parse(setting.value) : setting?.value;
       const list = Array.isArray(value) ? value : value?.items;
       if (Array.isArray(list) && list.length) setNavData(list);
-    } catch { /* keep instant defaults */ }
+    } catch { }
   }, []);
 
   const fetchBranding = useCallback(async () => {
@@ -139,7 +139,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
       const { data } = await supabase.from('site_settings').select('value').eq('key', 'navbar_branding').maybeSingle();
       const value = typeof data?.value === 'string' ? JSON.parse(data.value) : data?.value;
       if (value) setBranding({ logo_url: value.logo_url || '/logo_pb_bilibili_162.svg', brand_name_main: value.brand_name_main || 'PB Bilibili', brand_name_accent: value.brand_name_accent || '162' });
-    } catch { /* keep defaults */ }
+    } catch { }
   }, []);
 
   useEffect(() => {
@@ -173,8 +173,13 @@ export default function Navbar({ onNavigate }: NavbarProps) {
   const getSubMenus = (parentId: string) => {
     const parent = navData.find(i => i.id === parentId || i.path === parentId || String(i.label || '').toLowerCase() === String(parentId).toLowerCase());
     const list = navData.filter(i => i?.parent_id && (i.parent_id === parentId || i.parent_id === parent?.id || i.parent_id === parent?.path || String(i.parent_id).toLowerCase() === String(parent?.label || '').toLowerCase())).sort((a,b) => (a.order_index || 0) - (b.order_index || 0));
-    if (!list.length && (parent?.path === 'atlet' || parent?.label?.toLowerCase() === 'atlet')) return ATLET_DEFAULT_SUBMENUS;
-    return list;
+    const visibleList = list.filter(i => {
+      const itemPath = normalizeNavigationPath(i?.path || '');
+      const itemLabel = String(i?.label || '').toLowerCase().trim();
+      return !(itemPath === 'seeded-peserta' || itemPath.includes('seeded-peserta') || itemLabel.includes('seeded peserta') || itemLabel.includes('daftar seeded'));
+    });
+    if (!visibleList.length && (parent?.path === 'atlet' || parent?.label?.toLowerCase() === 'atlet')) return ATLET_DEFAULT_SUBMENUS;
+    return visibleList;
   };
 
   const iconFor = (path = '', label = '') => {
@@ -191,25 +196,14 @@ export default function Navbar({ onNavigate }: NavbarProps) {
   };
 
   const go = (path: string, subPath?: string) => {
-    const { section, tab } = resolveNavigationTarget(path, subPath);
+    const { section } = resolveNavigationTarget(path, subPath);
     const target = section === 'home' || section === 'beranda' ? '/' : `/${section}`;
-
-    // Navigate through React Router immediately. The previous implementation
-    // waited for App state to update, which could race UrlSynchronizer on mobile
-    // and bounce /register back to the previous page (visible as a blink).
     setOpenMenu(null);
     setMobileOpen(false);
-
-    try {
-      navigate(target);
-    } catch {
-      window.location.assign(target);
-    }
+    try { navigate(target); } catch { window.location.assign(target); }
   };
 
-  const handleNavigationPointerDown = (path: string, subPath?: string) => {
-    preloadNavigation(path, subPath);
-  };
+  const handleNavigationPointerDown = (path: string, subPath?: string) => { preloadNavigation(path, subPath); };
 
   const handleMobileMenuClick = (event: React.MouseEvent<HTMLButtonElement>, path: string, subPath?: string) => {
     event.preventDefault();
@@ -220,10 +214,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
   const handleMobileParentClick = (event: React.MouseEvent<HTMLButtonElement>, menu: any, expanded: boolean, drop: boolean) => {
     event.preventDefault();
     event.stopPropagation();
-    if (drop) {
-      setOpenMenu(expanded ? null : menu.id);
-      return;
-    }
+    if (drop) { setOpenMenu(expanded ? null : menu.id); return; }
     go(menu.path);
   };
 
@@ -254,15 +245,12 @@ export default function Navbar({ onNavigate }: NavbarProps) {
         </div>
         <button id="mobile-sidebar-toggle-btn" type="button" onClick={() => setMobileOpen(v => !v)} aria-label={mobileOpen ? 'Tutup menu navigasi' : 'Buka menu navigasi'} aria-expanded={mobileOpen} className="lg:hidden ml-auto w-11 h-11 shrink-0 rounded-2xl bg-slate-800/90 border border-white/15 flex items-center justify-center text-slate-200 shadow-lg active:scale-95 transition-transform touch-manipulation"><span className="flex flex-col gap-1.5 pointer-events-none"><i className={`block w-5 h-0.5 bg-blue-300 rounded ${mobileOpen ? 'rotate-45 translate-y-2' : ''}`} /><i className={`block w-4 h-0.5 bg-slate-300 rounded ml-auto ${mobileOpen ? 'opacity-0' : ''}`} /><i className={`block w-5 h-0.5 bg-blue-300 rounded ${mobileOpen ? '-rotate-45 -translate-y-2' : ''}`} /></span></button>
       </div>
-
       <div className={`lg:hidden fixed inset-0 z-[2147483000] bg-black/70 backdrop-blur-sm transition-opacity duration-150 ${mobileOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => setMobileOpen(false)} aria-hidden="true" />
-
       <aside aria-label="Menu navigasi seluler" className={`lg:hidden fixed inset-y-0 left-0 z-[2147483001] w-[min(86vw,350px)] max-w-[350px] bg-[#0b1224] border-r border-white/10 shadow-2xl flex flex-col overflow-hidden transition-transform duration-150 ease-out ${mobileOpen ? 'translate-x-0 pointer-events-auto' : '-translate-x-full pointer-events-none'} touch-manipulation`} onClick={(e) => e.stopPropagation()}>
         <div className="h-16 min-h-16 shrink-0 px-4 flex items-center justify-between border-b border-white/10 bg-slate-950/95">
           <div className="flex items-center gap-2.5 min-w-0"><img src={branding.logo_url} className="w-9 h-9 object-contain shrink-0" alt="PB Bilibili 162" loading="eager"/><div className="min-w-0 font-black text-sm italic uppercase truncate">{branding.brand_name_main} <span className="text-blue-500">{branding.brand_name_accent}</span><span className="block text-[7px] tracking-[.18em] text-slate-500 not-italic mt-0.5">PROFESSIONAL CLUB</span></div></div>
           <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMobileOpen(false); }} className="w-10 h-10 min-w-10 rounded-xl bg-slate-800 border border-white/10 flex items-center justify-center text-slate-200 active:scale-95 touch-manipulation" aria-label="Tutup menu"><X size={19} className="pointer-events-none"/></button>
         </div>
-
         <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 py-3 [scrollbar-width:thin] touch-pan-y">
           <div className="space-y-0.5 pb-2">
             {topMenus.map(menu => {
@@ -275,7 +263,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
                   {drop && <ChevronDown size={15} className={`shrink-0 transition-transform pointer-events-none ${expanded ? 'rotate-180 text-blue-400' : 'text-slate-500'}`}/>} 
                 </button>
                 {drop && expanded && <div className="ml-4 pl-3 border-l border-blue-500/40 py-0.5 my-0.5">
-                  {subs.map(sub => <button key={sub.id} type="button" onPointerDown={() => preloadNavigation(menu.path, sub.path)} onClick={(e) => handleMobileMenuClick(e, menu.path, sub.path)} className="w-full min-h-[44px] px-2.5 flex items-center gap-2.5 text-left text-[13px] leading-5 text-slate-300 hover:text-white hover:bg-white/5 active:bg-white/10 rounded-lg touch-manipulation select-none">
+                  {subs.map(sub => <button key={sub.id} type="button" onClick={(e) => handleMobileMenuClick(e, menu.path, sub.path)} className="w-full min-h-[44px] px-2.5 flex items-center gap-2.5 text-left text-[13px] leading-5 text-slate-300 hover:text-white hover:bg-white/5 active:bg-white/10 rounded-lg touch-manipulation select-none">
                     <span className="w-5 min-w-5 flex justify-center pointer-events-none">{iconFor(sub.path, sub.label)}</span><span className="truncate pointer-events-none">{sub.label}</span>
                   </button>)}
                 </div>}
