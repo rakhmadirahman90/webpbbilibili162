@@ -1,0 +1,214 @@
+/* PB BILIBILI 162 — ADMIN UI SYSTEM
+   Single visual language for the admin workspace.
+   Sidebar palette: #0F172A / blue #2563EB / cyan #38BDF8 / amber #F59E0B.
+*/
+
+.admin-main {
+  background:
+    radial-gradient(circle at 8% 0%, rgba(37,99,235,.09), transparent 30%),
+    radial-gradient(circle at 92% 8%, rgba(56,189,248,.06), transparent 26%),
+    #07101f !important;
+  color: #e5edf8;
+  scrollbar-color: rgba(96,165,250,.35) transparent;
+  scrollbar-width: thin;
+}
+.admin-main::-webkit-scrollbar { width: 9px; }
+.admin-main::-webkit-scrollbar-track { background: transparent; }
+.admin-main::-webkit-scrollbar-thumb { background: rgba(96,165,250,.3); border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
+
+/* The page itself owns vertical scrolling; nested fixed-height wrappers must not clip history/forms. */
+.admin-main > * { min-width: 0; max-width: 100%; }
+.admin-main .overflow-hidden { min-width: 0; }
+.admin-main table { border-collapse: separate; border-spacing: 0; }
+.admin-main th { white-space: normal; }
+.admin-main td, .admin-main th { overflow-wrap: anywhere; }
+
+/* Shared admin surfaces. This intentionally targets common Tailwind surface tokens
+   without changing the existing page structure or functionality. */
+.admin-main [class*="bg-[#0b1224]"],
+.admin-main [class*="bg-[#0b1222]"],
+.admin-main [class*="bg-[#0f172a]"],
+.admin-main [class*="bg-slate-900"] {
+  border-color: rgba(148,163,184,.13) !important;
+}
+
+/* Improve hierarchy on headings and section labels. */
+.admin-main h1, .admin-main h2, .admin-main h3 { overflow-wrap: anywhere; }
+.admin-main h1 { letter-spacing: -.025em; }
+.admin-main h2 { letter-spacing: -.02em; }
+.admin-main label { color: #cbd5e1; }
+
+/* High-contrast controls: values are always readable on the dark admin palette. */
+.admin-main input,
+.admin-main select,
+.admin-main textarea {
+  color: #f8fafc !important;
+  -webkit-text-fill-color: #f8fafc !important;
+  caret-color: #60a5fa !important;
+  background-color: #0b1528 !important;
+  border-color: rgba(148,163,184,.24) !important;
+  opacity: 1 !important;
+}
+.admin-main input::placeholder,
+.admin-main textarea::placeholder {
+  color: #94a3b8 !important;
+  -webkit-text-fill-color: #94a3b8 !important;
+  opacity: 1 !important;
+}
+.admin-main input:focus,
+.admin-main select:focus,
+.admin-main textarea:focus {
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+  border-color: rgba(96,165,250,.8) !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(37,99,235,.13) !important;
+}
+.admin-main option { color: #0f172a !important; background: #fff !important; }
+.admin-main input:-webkit-autofill,
+.admin-main input:-webkit-autofill:hover,
+.admin-main input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #f8fafc !important;
+  -webkit-box-shadow: 0 0 0 1000px #0b1528 inset !important;
+}
+
+/* Buttons: consistent touch target and visual rhythm. */
+.admin-main button { -webkit-tap-highlight-color: transparent; }
+.admin-main button:not([aria-label]) { max-width: 100%; }
+
+/* Mobile: one clean column, natural document height, no clipped history. */
+@media (max-width: 767px) {
+  .admin-main {
+    width: 100%;
+    max-width: 100vw;
+    min-height: 0;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+  }
+
+  .admin-main > div,
+  .admin-main > section,
+  .admin-main > article {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  .admin-main .max-w-7xl,
+  .admin-main .max-w-6xl,
+  .admin-main .max-w-5xl,
+  .admin-main .max-w-4xl,
+  .admin-main .max-w-3xl,
+  .admin-main .max-w-2xl,
+  .admin-main .max-w-xl,
+  .admin-main .max-w-lg,
+  .admin-main .max-w-md {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .admin-main .grid { min-width: 0 !important; }
+  .admin-main .grid > * { min-width: 0 !important; max-width: 100%; }
+
+  /* Prevent desktop padding from squeezing mobile content. */
+  .admin-main [class*="px-8"],
+  .admin-main [class*="px-7"],
+  .admin-main [class*="px-6"] { padding-left: 14px !important; padding-right: 14px !important; }
+  .admin-main [class*="p-8"],
+  .admin-main [class*="p-7"] { padding: 14px !important; }
+
+  /* Comfortable form controls and legible entered text. */
+  .admin-main input,
+  .admin-main select,
+  .admin-main textarea {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 46px !important;
+    font-size: 15px !important;
+    line-height: 1.4 !important;
+    border-radius: 12px !important;
+  }
+  .admin-main textarea { min-height: 100px !important; }
+  .admin-main input[type="file"] { padding: 8px !important; font-size: 13px !important; }
+  .admin-main button { min-height: 44px; }
+
+  /* Date/filter rows stack instead of producing clipped right-side fields. */
+  .admin-main [class*="grid-cols-2"],
+  .admin-main [class*="grid-cols-3"],
+  .admin-main [class*="grid-cols-4"],
+  .admin-main [class*="grid-cols-5"] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  /* Horizontal data tables stay usable inside their own small scroller rather than
+     expanding the entire page. History rows are never clipped by a parent height. */
+  .admin-main .overflow-x-auto {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+  }
+  .admin-main table { width: max-content; min-width: 100%; max-width: none; }
+  .admin-main th, .admin-main td { white-space: normal; }
+
+  /* Cards use a quiet, consistent hierarchy. */
+  .admin-main [class*="rounded-3xl"],
+  .admin-main [class*="rounded-[28px]"] { border-radius: 18px !important; }
+
+  /* Fixed/sticky controls must remain inside viewport width. */
+  .admin-main .sticky { max-width: 100% !important; }
+  .admin-main [class*="w-["] { max-width: 100% !important; }
+
+  /* Modal content can scroll, while the page underneath remains stable. */
+  .admin-main [role="dialog"] {
+    max-width: calc(100vw - 20px) !important;
+    max-height: calc(100dvh - 20px) !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+  }
+}
+
+@media (max-width: 420px) {
+  .admin-main { font-size: 14px; }
+  .admin-main [class*="px-8"],
+  .admin-main [class*="px-7"],
+  .admin-main [class*="px-6"] { padding-left: 10px !important; padding-right: 10px !important; }
+  .admin-main [class*="p-8"],
+  .admin-main [class*="p-7"] { padding: 10px !important; }
+  .admin-main input,
+  .admin-main select,
+  .admin-main textarea { font-size: 14px !important; }
+}
+
+@media (min-width: 768px) {
+  .admin-main {
+    padding: 20px 24px 28px;
+  }
+  .admin-main > * { width: 100%; }
+}
+
+/* Keep the mobile admin header visually tied to the sidebar palette. */
+.admin-mobile-header {
+  background: rgba(15,23,42,.96) !important;
+  border-color: rgba(96,165,250,.16) !important;
+  color: #f8fafc !important;
+}
+.admin-mobile-header .admin-mobile-menu-btn {
+  color: #cbd5e1 !important;
+  background: rgba(30,41,59,.78) !important;
+  border: 1px solid rgba(148,163,184,.16) !important;
+}
+.admin-mobile-header .admin-mobile-menu-btn:hover { background: rgba(37,99,235,.22) !important; color: #fff !important; }
+.admin-mobile-header .admin-mobile-badge {
+  color: #93c5fd !important;
+  background: rgba(37,99,235,.13) !important;
+  border: 1px solid rgba(96,165,250,.18);
+}
