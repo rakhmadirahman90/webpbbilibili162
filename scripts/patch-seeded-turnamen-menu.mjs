@@ -20,10 +20,34 @@ function once(file, fromCandidates, to, label) {
 // Keep the admin navigation explicit and React-Router based. Older builds used
 // a DOM clone bridge for the tournament registration entry; explicit NavLinks
 // are more reliable on mobile and on direct route loads.
-once(sidebarPath,
-  "{ name: 'Pendaftaran Anggota', path: 'pendaftaran', icon: FileSpreadsheet, adminOnly: true },",
-  "{ name: 'Pendaftaran Anggota', path: 'pendaftaran', icon: FileSpreadsheet, adminOnly: true },\n        { name: 'Pendaftaran Peserta Turnamen', path: 'pendaftaran-turnamen', icon: Trophy, adminOnly: true },\n        { name: 'Seeded Resmi Bilibili 162', path: 'seeded-turnamen', icon: ShieldCheck, adminOnly: true },",
-  'admin tournament and seeded entries');
+{
+  let src = fs.readFileSync(sidebarPath, 'utf8');
+  const memberEntry = "{ name: 'Pendaftaran Anggota', path: 'pendaftaran', icon: FileSpreadsheet, adminOnly: true },";
+  const tournamentEntry = "{ name: 'Pendaftaran Peserta Turnamen', path: 'pendaftaran-turnamen', icon: Trophy, adminOnly: true },";
+  const seededEntry = "{ name: 'Seeded Peserta Bilibili 162', path: 'seeded-turnamen', icon: ShieldCheck, adminOnly: true },";
+
+  // The tournament-registration patch runs immediately before this script.
+  // Reuse that canonical entry instead of creating a second one.
+  if (!src.includes("path: 'pendaftaran-turnamen'")) {
+    if (src.includes(memberEntry)) {
+      src = src.replace(memberEntry, `${memberEntry}\n        ${tournamentEntry}`);
+    } else {
+      console.warn('[patch-seeded-turnamen-menu] Pendaftaran Anggota marker not found; tournament entry not injected');
+    }
+  }
+
+  // Add exactly one seeded-peserta entry after the canonical tournament entry.
+  if (!src.includes("path: 'seeded-turnamen'")) {
+    const anchor = src.includes(tournamentEntry) ? tournamentEntry : memberEntry;
+    if (src.includes(anchor)) {
+      src = src.replace(anchor, `${anchor}\n        ${seededEntry}`);
+    } else {
+      console.warn('[patch-seeded-turnamen-menu] menu anchor not found; seeded entry not injected');
+    }
+  }
+
+  fs.writeFileSync(sidebarPath, src, 'utf8');
+}
 
 // Normalize legacy menu path introduced by an earlier tournament patch.
 {
