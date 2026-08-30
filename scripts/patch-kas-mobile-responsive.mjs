@@ -55,8 +55,8 @@ const replacements = [
     'kas-date-filter bg-slate-900/90 border border-white/10 p-3 sm:p-4 rounded-2xl flex flex-wrap items-center justify-between gap-3 shrink-0 shadow-lg min-w-0'
   ],
   [
-    'flex items-center gap-2',
-    'kas-date-title flex items-center gap-2 min-w-0'
+    '<div className="flex items-center gap-2">\n          <Calendar size={16} className="text-blue-400 shrink-0" />',
+    '<div className="kas-date-title flex items-center gap-2 min-w-0">\n          <Calendar size={16} className="text-blue-400 shrink-0" />'
   ],
   [
     'flex flex-wrap items-center gap-2 w-full sm:w-auto',
