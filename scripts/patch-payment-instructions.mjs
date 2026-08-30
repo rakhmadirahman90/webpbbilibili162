@@ -3,6 +3,11 @@ import fs from 'node:fs';
 const file = 'src/components/PendaftaranTurnamen.tsx';
 let source = fs.readFileSync(file, 'utf8');
 
+if (source.includes('<PaymentInstructions/>')) {
+  console.log('[patch-payment-instructions] PaymentInstructions already mounted; nothing to do');
+  process.exit(0);
+}
+
 if (!source.includes("from './PaymentInstructions'")) {
   source = source.replace(
     "import Navbar from './Navbar';",
@@ -18,5 +23,5 @@ if (!pattern.test(source)) {
 }
 
 source = source.replace(pattern, replacement);
-fs.writeFileSync(file, source);
+fs.writeFileSync(file, source, 'utf8');
 console.log('[patch-payment-instructions] PaymentInstructions mounted in Step 3');
