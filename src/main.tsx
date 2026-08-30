@@ -9,6 +9,7 @@ import App from './App.tsx';
 import ErrorBoundary from './components/ErrorBoundary.tsx';
 import { initializeLocalDatabase } from './data/localDatabase.ts';
 import { installNavigationPrefetch } from './utils/navigationPrefetch.ts';
+import { installAdminExportEnhancer } from './utils/adminExportEnhancer.ts';
 import './index.css';
 import './responsive-hardening.css';
 import './professional-responsive.css';
@@ -19,7 +20,6 @@ import './gallery-back-button-fix.css';
 import './gallery-audio-hide.css';
 import './kas-notification-responsive.css';
 import './kelola-surat-mobile.css';
-import './seeded-mobile-responsive.css';
 import './tournament-mobile-input-fix.css';
 import './admin-ui-polish.css';
 
@@ -63,6 +63,7 @@ if (typeof window !== 'undefined') {
   }, 0);
 
   installNavigationPrefetch();
+  installAdminExportEnhancer();
 }
 
 createRoot(document.getElementById('root')!).render(
