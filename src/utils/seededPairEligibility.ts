@@ -9,17 +9,35 @@ type SeededPlayerRow = {
   validity_status?: string | null;
 };
 
+type PairResult = {
+  eligible: boolean;
+  reason: string;
+  players?: SeededPlayerRow[];
+  seeded?: string[];
+  databaseError?: boolean;
+};
+
 const norm = (v: unknown) => String(v ?? '')
   .trim()
   .toLocaleLowerCase('id-ID')
   .normalize('NFD')
   .replace(/[\u0300-\u036f]/g, '')
+  .replace(/[−–—]/g, '-')
   .replace(/\s+/g, ' ');
 
 const level = (v: unknown) => String(v ?? '')
   .trim()
   .toUpperCase()
   .replace(/[−–—]/g, '-');
+
+const pairKey = (category: string, player1: string, player2: string) =>
+  `${norm(category)}::${[norm(player1), norm(player2)].sort().join('::')}`;
+
+// Menyimpan hasil pasangan yang baru saja dinyatakan eligible. Ini penting agar
+// validasi otomatis di layar dan validasi saat tombol LANJUT/SIMPAN tidak saling
+// bertentangan akibat race-condition atau perbedaan hasil query.
+const eligibilityCache = new Map<string, { result: PairResult; expiresAt: number }>();
+const CACHE_TTL = 5 * 60 * 1000;
 
 /** Aturan resmi Bilibili 162 Cup I 2026. */
 export function isAllowedSeededPair(category: string, seeded1: string, seeded2: string) {
@@ -44,16 +62,21 @@ export function isAllowedSeededPair(category: string, seeded1: string, seeded2: 
 
 /**
  * Cek pasangan berdasarkan kolom database yang benar:
- * player_name / normalized_name / seeded_quality.
+ * player_name / normalized_name / seeded_quality / division_level.
+ * Hasil eligible disimpan sementara agar langkah berikutnya tidak dapat
+ * membatalkan pasangan yang sudah lolos hanya karena query kedua berbeda.
  */
-export async function checkSeededPairEligibility(category: string, player1: string, player2: string) {
+export async function checkSeededPairEligibility(category: string, player1: string, player2: string): Promise<PairResult> {
   const names = [norm(player1), norm(player2)];
   if (!names[0] || !names[1]) {
     return { eligible: false, reason: 'Nama kedua pemain wajib diisi.' };
   }
 
-  // Gunakan normalized_name terlebih dahulu agar perbedaan kapitalisasi,
-  // spasi ganda, aksen, dan tanda minus tidak membuat pemain valid hilang.
+  const key = pairKey(category, player1, player2);
+  const cached = eligibilityCache.get(key);
+  if (cached && cached.expiresAt > Date.now()) return cached.result;
+  if (cached) eligibilityCache.delete(key);
+
   let { data, error } = await supabase
     .from('seeded_players')
     .select('player_name,club_name,seeded_quality,division_level,normalized_name,validity_status')
@@ -113,7 +136,7 @@ export async function checkSeededPairEligibility(category: string, player1: stri
     const kategori = norm(category).includes('ajatappareng') ? 'Ajatappareng' : 'Lokal Parepare';
     const aturan = kategori === 'Ajatappareng'
       ? 'A + D, B + C-, atau C+ + C (urutan bebas)'
-      : 'C, C-, dan D saja; semua kombinasi di antaranya (urutan bebas)';
+      : 'C + C, C + C-, C + D, C- + C-, C- + D, atau D + D (urutan bebas)';
     return {
       eligible: false,
       reason: `Pasangan ${player1} (${s1}) + ${player2} (${s2}) tidak eligible untuk ${kategori}. Aturan: ${aturan}.`,
@@ -122,10 +145,16 @@ export async function checkSeededPairEligibility(category: string, player1: stri
     };
   }
 
-  return {
+  const result: PairResult = {
     eligible: true,
     reason: `Eligible: ${player1} (${s1}) + ${player2} (${s2}).`,
     players: [p1, p2],
     seeded: [s1, s2],
   };
+  eligibilityCache.set(key, { result, expiresAt: Date.now() + CACHE_TTL });
+  return result;
+}
+
+export function clearSeededPairEligibilityCache() {
+  eligibilityCache.clear();
 }
