@@ -62,6 +62,12 @@
     </div>
     <noscript>JavaScript diperlukan untuk menjalankan aplikasi PB Bilibili 162.</noscript>
     <script>
+      // Compatibility guard for older public seeded-peserta bundles.
+      (() => {
+        const normalizedPath = window.location.pathname.replace(/\/+$/, '').toLowerCase() || '/';
+        window.isPublicSeeded = normalizedPath === '/pendaftaran/seeded-peserta';
+      })();
+
       (() => {
         const bootError = document.getElementById('boot-error');
         const showBootError = (message) => {
@@ -73,13 +79,12 @@
         window.addEventListener('error', (event) => showBootError(event.error || event.message));
         window.addEventListener('unhandledrejection', (event) => showBootError(event.reason));
 
-        // v13: clear legacy PWA state and perform one controlled reload so an
-        // old service worker cannot keep serving an obsolete hashed JS bundle.
-        const reloadKey = 'pb162-legacy-cache-reload-v13';
+        // v14: clear legacy PWA state and perform one controlled reload.
+        const reloadKey = 'pb162-legacy-cache-reload-v14';
         try {
           const firstPass = !sessionStorage.getItem(reloadKey);
           sessionStorage.setItem(reloadKey, '1');
-          localStorage.setItem('pb162-legacy-cache-cleanup-v13', '1');
+          localStorage.setItem('pb162-legacy-cache-cleanup-v14', '1');
           const cleanup = [];
           if ('serviceWorker' in navigator) {
             cleanup.push(navigator.serviceWorker.getRegistrations().then((registrations) => Promise.all(registrations.map((registration) => registration.unregister()))).catch(() => []));
@@ -94,7 +99,7 @@
 
         window.addEventListener('vite:preloadError', (event) => {
           try { event.preventDefault(); } catch (_) {}
-          const key = 'pb162-vite-preload-reload-v1';
+          const key = 'pb162-vite-preload-reload-v2';
           if (!sessionStorage.getItem(key)) {
             sessionStorage.setItem(key, '1');
             window.location.reload();
