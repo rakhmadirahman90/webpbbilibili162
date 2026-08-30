@@ -20,6 +20,7 @@ import './gallery-audio-hide.css';
 import './kas-notification-responsive.css';
 import './kelola-surat-mobile.css';
 import './seeded-mobile-responsive.css';
+import './tournament-mobile-input-fix.css';
 
 if (typeof window !== 'undefined') {
   const syncGalleryRouteClass = () => {
