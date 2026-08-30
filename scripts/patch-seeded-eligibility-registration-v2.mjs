@@ -5,6 +5,7 @@ let s = fs.readFileSync(path, 'utf8');
 const marker = 'SEEDED_ELIGIBILITY_REGISTRATION_V2';
 if (s.includes(marker)) process.exit(0);
 
+// V2.1: current PendaftaranTurnamen uses updatePlayer as the insertion boundary.
 const start = s.indexOf('  const checkSeededEligibility=async(');
 const end = s.indexOf('  const updatePlayer=', start);
 if (start < 0 || end < 0) throw new Error('[seeded-v2] checkSeededEligibility boundary not found');
