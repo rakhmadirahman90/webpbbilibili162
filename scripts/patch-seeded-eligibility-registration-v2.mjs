@@ -5,10 +5,15 @@ let s = fs.readFileSync(path, 'utf8');
 const marker = 'SEEDED_ELIGIBILITY_REGISTRATION_V2';
 if (s.includes(marker)) process.exit(0);
 
-// V2.1: current PendaftaranTurnamen uses updatePlayer as the insertion boundary.
+// The current registration component does not contain the legacy seeded
+// eligibility state/handler. This patch must therefore be build-safe: do not
+// fail production builds when the legacy insertion boundary is absent.
 const start = s.indexOf('  const checkSeededEligibility=async(');
-const end = s.indexOf('  const updatePlayer=', start);
-if (start < 0 || end < 0) throw new Error('[seeded-v2] checkSeededEligibility boundary not found');
+const end = start >= 0 ? s.indexOf('  const updatePlayer=', start) : -1;
+if (start < 0 || end < 0) {
+  console.log('[seeded-v2] current registration architecture has no legacy eligibility boundary; skipping safely');
+  process.exit(0);
+}
 
 const replacement = `  const checkSeededEligibility=async(idx:0|1,name:string,category=form.kategori)=>{
     const clean=normalizePlayerName(name);
@@ -40,29 +45,11 @@ const replacement = `  const checkSeededEligibility=async(idx:0|1,name:string,ca
       });
       if(match){
         const level=seededLevel(match.seeded_quality||match.division_level);
-        setEligibility(p=>p.map((x,i)=>i===idx?{
-          eligible:true,
-          id:match.id,
-          player_name:match.player_name,
-          club_name:match.club_name,
-          seeded_quality:match.seeded_quality||match.division_level||'',
-          eligible_category:match.eligible_category||'',
-          tournament_qualification:match.tournament_qualification||'',
-          message:'ELIGIBLE — DATA SEEDED RESMI COCOK — LEVEL '+level
-        }:x) as [SeededEligibility|null,SeededEligibility|null]);
+        setEligibility(p=>p.map((x,i)=>i===idx?{eligible:true,id:match.id,player_name:match.player_name,club_name:match.club_name,seeded_quality:match.seeded_quality||match.division_level||'',eligible_category:match.eligible_category||'',tournament_qualification:match.tournament_qualification||'',message:'ELIGIBLE — DATA SEEDED RESMI COCOK — LEVEL '+level}:x) as [SeededEligibility|null,SeededEligibility|null]);
       }else{
         const found=(data||[])[0] as any;
         const foundLevel=found?seededLevel(found.seeded_quality||found.division_level):'';
-        setEligibility(p=>p.map((x,i)=>i===idx?{
-          eligible:false,
-          id:found?.id,
-          player_name:found?.player_name,
-          club_name:found?.club_name,
-          seeded_quality:found?.seeded_quality||found?.division_level||'',
-          message:foundLevel
-            ? 'Nama ditemukan, tetapi level '+foundLevel+' tidak tersedia untuk kategori '+category+'.'
-            : 'Nama ditemukan, tetapi level seeded tidak lengkap.'
-        }:x) as [SeededEligibility|null,SeededEligibility|null]);
+        setEligibility(p=>p.map((x,i)=>i===idx?{eligible:false,id:found?.id,player_name:found?.player_name,club_name:found?.club_name,seeded_quality:found?.seeded_quality||found?.division_level||'',message:foundLevel?'Nama ditemukan, tetapi level '+foundLevel+' tidak tersedia untuk kategori '+category+'.':'Nama ditemukan, tetapi level seeded tidak lengkap.'}:x) as [SeededEligibility|null,SeededEligibility|null]);
       }
     }catch(err:any){
       setEligibility(p=>p.map((x,i)=>i===idx?{eligible:false,message:'Pengecekan seeded gagal: '+(err?.message||'database tidak dapat diakses')}:x) as [SeededEligibility|null,SeededEligibility|null]);
