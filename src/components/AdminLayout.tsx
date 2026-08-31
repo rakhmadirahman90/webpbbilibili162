@@ -69,7 +69,9 @@ export default function AdminLayout({ children, email }: AdminLayoutProps) {
 
   return (
     <div className="h-[100dvh] min-h-0 flex bg-[#07101f] overflow-hidden">
-      <Sidebar email={email} isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+      <div className={`admin-sidebar-shell ${isSidebarOpen ? 'is-open' : 'is-closed'}`} aria-hidden={!isSidebarOpen}>
+        <Sidebar email={email} isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+      </div>
       <div className="flex-1 flex flex-col min-w-0 min-h-0 h-[100dvh] overflow-hidden bg-[#07101f]">
         <header className="admin-mobile-header md:hidden sticky top-0 flex-shrink-0 px-4 py-2.5 backdrop-blur-xl border-b flex items-center justify-between z-40 shadow-lg">
           <button type="button" onClick={() => setIsSidebarOpen(true)} className="admin-mobile-menu-btn min-w-11 min-h-11 p-2 rounded-xl transition-colors flex items-center gap-2 touch-manipulation" aria-label="Buka menu navigasi" aria-expanded={isSidebarOpen}>
