@@ -1,32 +1,20 @@
-const CACHE_NAME = 'pb-bilibili-v2-nocache';
+const CACHE_NAME = 'pb-bilibili-v3-20260831';
 
 self.addEventListener('install', (event) => {
-  // Force active service worker to take control immediately
+  // Take control as soon as the new worker is installed.
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          // Delete ALL caches to clear any stale index.html or assets
-          return caches.delete(cacheName);
-        })
-      );
-    }).then(() => {
-      return self.clients.claim();
-    })
+    caches.keys().then((cacheNames) => Promise.all(cacheNames.map((cacheName) => caches.delete(cacheName))))
+      .then(() => self.clients.claim())
   );
 });
 
 self.addEventListener('fetch', (event) => {
-  // Always prioritize the network to prevent stale index.html issues with new hashed assets.
-  // If offline, fall back to cache.
+  // Network-first so new Vite assets are picked up immediately after deployment.
   event.respondWith(
-    fetch(event.request).catch(() => {
-      return caches.match(event.request);
-    })
+    fetch(event.request).catch(() => caches.match(event.request))
   );
 });
-
