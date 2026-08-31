@@ -22,6 +22,7 @@ import './kas-notification-responsive.css';
 import './kelola-surat-mobile.css';
 import './tournament-mobile-input-fix.css';
 import './admin-ui-polish.css';
+import './tournament-admin-ui.css';
 
 if (typeof window !== 'undefined') {
   const syncGalleryRouteClass = () => {
