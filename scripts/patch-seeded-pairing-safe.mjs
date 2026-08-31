@@ -6,6 +6,20 @@ let s = fs.readFileSync(path, 'utf8');
 const marker = 'SEEDED_PAIRING_SAFE_V1';
 if (s.includes(marker)) process.exit(0);
 
+// Modern registration already uses the centralized pair validator in
+// src/utils/seededPairEligibility.ts. The legacy patch below introduced a
+// second eligibility state that could disagree with the visible green
+// "PASANGAN ELIGIBLE" result and reject LANJUT. Do not inject that legacy
+// state when the modern architecture is present.
+if (
+  s.includes('checkSeededPairEligibility') &&
+  s.includes('const [pairStatus,setPairStatus]') &&
+  !s.includes('const [eligibility,setEligibility]')
+) {
+  console.log('[pairing-safe] modern pair validator detected; skipping legacy eligibility injection');
+  process.exit(0);
+}
+
 const typeCode = [
   'type SeededEligibility = {',
   '  eligible:boolean;',
@@ -14,7 +28,7 @@ const typeCode = [
   '  club_name?:string;',
   '  seeded_quality?:string;',
   '  division_level?:string;',
-  '  eligible_category?:string;',
+  'eligible_category?:string;',
   '  tournament_qualification?:string;',
   '  message?:string;',
   '};',
