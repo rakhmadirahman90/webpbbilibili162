@@ -17,13 +17,18 @@ type PairResult = {
   databaseError?: boolean;
 };
 
+// Harus identik dengan format normalized_name yang dibuat trigger database:
+// lower(trim(player_name)) lalu semua karakter non a-z/0-9 menjadi spasi.
+// Ini membuat nama seperti "A.BARGA", "A BARGA", dan "A-BARGA"
+// dapat dicocokkan ke record seeded yang sama.
 const norm = (v: unknown) => String(v ?? '')
   .trim()
   .toLocaleLowerCase('id-ID')
   .normalize('NFD')
   .replace(/[\u0300-\u036f]/g, '')
-  .replace(/[−–—]/g, '-')
-  .replace(/\s+/g, ' ');
+  .replace(/[^a-z0-9]+/g, ' ')
+  .replace(/\s+/g, ' ')
+  .trim();
 
 const level = (v: unknown) => String(v ?? '')
   .trim()
@@ -83,7 +88,8 @@ export async function checkSeededPairEligibility(category: string, player1: stri
     .in('normalized_name', names)
     .limit(100);
 
-  // Fallback untuk record lama yang normalized_name-nya belum terisi.
+  // Fallback untuk record lama yang normalized_name-nya belum terisi atau
+  // belum mengikuti trigger terbaru.
   if (!error && (!data || data.length < 2)) {
     const fallback = await supabase
       .from('seeded_players')
