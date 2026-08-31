@@ -1,0 +1,412 @@
+/* PB BILIBILI 162 — Tournament Registration Admin UI
+   Scoped only to .tournament-admin-page so other admin screens remain unchanged.
+*/
+.tournament-admin-page {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.tournament-admin-page > div {
+  width: 100%;
+  max-width: 1440px !important;
+  margin-inline: auto;
+}
+
+.tournament-admin-page header {
+  border-radius: 24px !important;
+}
+
+.tournament-admin-page header > div:first-child {
+  padding: 28px 30px !important;
+}
+
+.tournament-admin-page header h1 {
+  letter-spacing: -0.035em;
+  line-height: 1.08;
+}
+
+.tournament-admin-page header p {
+  max-width: 760px;
+}
+
+/* Stat cards */
+.tournament-admin-page header > div:last-child {
+  gap: 10px !important;
+  padding: 14px !important;
+}
+
+.tournament-admin-page header > div:last-child > * {
+  min-height: 92px;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+}
+
+/* Search + filters */
+.tournament-admin-page > div > section:not(:last-child) {
+  border-radius: 20px !important;
+  box-shadow: 0 8px 26px rgba(15, 23, 42, 0.055) !important;
+}
+
+.tournament-admin-page input,
+.tournament-admin-page select {
+  min-height: 46px;
+}
+
+.tournament-admin-page section label {
+  min-width: 0;
+}
+
+.tournament-admin-page section input:focus,
+.tournament-admin-page section select:focus {
+  outline: none;
+}
+
+/* Participant table surface */
+.tournament-admin-page > div > section:last-child {
+  overflow: hidden;
+  border-radius: 22px !important;
+  box-shadow: 0 10px 34px rgba(15, 23, 42, 0.075) !important;
+}
+
+.tournament-admin-page > div > section:last-child > div:first-child {
+  padding: 20px 22px !important;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.tournament-admin-page > div > section:last-child .overflow-x-auto {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.tournament-admin-page > div > section:last-child table {
+  width: 100% !important;
+  min-width: 980px;
+  max-width: none;
+  table-layout: fixed;
+}
+
+.tournament-admin-page > div > section:last-child th {
+  padding: 13px 12px !important;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.09em;
+  line-height: 1.25;
+  text-transform: uppercase;
+  border-bottom: 1px solid #e2e8f0;
+  vertical-align: middle;
+}
+
+.tournament-admin-page > div > section:last-child td {
+  padding: 14px 12px !important;
+  color: #0f172a;
+  font-size: 12px !important;
+  line-height: 1.35;
+  vertical-align: middle;
+  border-bottom: 1px solid #eef2f7;
+  overflow-wrap: anywhere;
+}
+
+.tournament-admin-page > div > section:last-child tbody tr {
+  transition: background-color .16s ease;
+}
+
+.tournament-admin-page > div > section:last-child tbody tr:hover {
+  background: #f8fbff;
+}
+
+/* Stable desktop proportions: No / Peserta / Kategori / PB / Bayar / Status / Tanggal / Aksi */
+.tournament-admin-page > div > section:last-child th:nth-child(1),
+.tournament-admin-page > div > section:last-child td:nth-child(1) { width: 54px; text-align: center; }
+.tournament-admin-page > div > section:last-child th:nth-child(2),
+.tournament-admin-page > div > section:last-child td:nth-child(2) { width: 22%; }
+.tournament-admin-page > div > section:last-child th:nth-child(3),
+.tournament-admin-page > div > section:last-child td:nth-child(3) { width: 18%; }
+.tournament-admin-page > div > section:last-child th:nth-child(4),
+.tournament-admin-page > div > section:last-child td:nth-child(4) { width: 15%; }
+.tournament-admin-page > div > section:last-child th:nth-child(5),
+.tournament-admin-page > div > section:last-child td:nth-child(5) { width: 10%; }
+.tournament-admin-page > div > section:last-child th:nth-child(6),
+.tournament-admin-page > div > section:last-child td:nth-child(6) { width: 11%; }
+.tournament-admin-page > div > section:last-child th:nth-child(7),
+.tournament-admin-page > div > section:last-child td:nth-child(7) { width: 11%; }
+.tournament-admin-page > div > section:last-child th:nth-child(8),
+.tournament-admin-page > div > section:last-child td:nth-child(8) { width: 210px; }
+
+.tournament-admin-page > div > section:last-child td:nth-child(2) {
+  font-weight: 800;
+}
+
+.tournament-admin-page > div > section:last-child td:nth-child(8) > div {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px !important;
+}
+
+.tournament-admin-page > div > section:last-child td:nth-child(8) button {
+  min-height: 36px !important;
+  height: 36px;
+  padding-inline: 10px !important;
+  border-radius: 10px !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+}
+
+/* Keep the realtime badge compact and aligned */
+.tournament-admin-page > div > section:last-child .rounded-full {
+  white-space: nowrap;
+}
+
+/* Tablet */
+@media (max-width: 1100px) and (min-width: 768px) {
+  .tournament-admin-page {
+    padding: 14px !important;
+  }
+
+  .tournament-admin-page header > div:first-child {
+    padding: 22px !important;
+  }
+
+  .tournament-admin-page > div > section:last-child table {
+    min-width: 900px;
+  }
+
+  .tournament-admin-page > div > section:last-child th,
+  .tournament-admin-page > div > section:last-child td {
+    padding-inline: 9px !important;
+  }
+
+  .tournament-admin-page > div > section:last-child th:nth-child(8),
+  .tournament-admin-page > div > section:last-child td:nth-child(8) {
+    width: 176px;
+  }
+}
+
+/* Mobile: cards instead of a squeezed desktop table. */
+@media (max-width: 767px) {
+  .tournament-admin-page {
+    padding: 8px !important;
+  }
+
+  .tournament-admin-page > div {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-inline: auto;
+    gap: 12px !important;
+  }
+
+  .tournament-admin-page header {
+    border-radius: 19px !important;
+  }
+
+  .tournament-admin-page header > div:first-child {
+    padding: 16px !important;
+  }
+
+  .tournament-admin-page header h1 {
+    margin-top: 10px !important;
+    font-size: clamp(22px, 6.2vw, 29px) !important;
+  }
+
+  .tournament-admin-page header p {
+    margin-top: 7px !important;
+    font-size: 11px !important;
+    line-height: 1.5 !important;
+  }
+
+  .tournament-admin-page header > div:first-child > div:last-child,
+  .tournament-admin-page header > div:first-child button {
+    width: 100% !important;
+  }
+
+  .tournament-admin-page header > div:last-child {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    padding: 10px !important;
+    gap: 8px !important;
+  }
+
+  .tournament-admin-page header > div:last-child > * {
+    min-height: 84px;
+    border-radius: 15px;
+  }
+
+  .tournament-admin-page header > div:last-child > *:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .tournament-admin-page > div > section:not(:last-child) {
+    border-radius: 17px !important;
+    padding: 12px !important;
+  }
+
+  .tournament-admin-page > div > section:not(:last-child) > div {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 9px !important;
+  }
+
+  .tournament-admin-page > div > section:not(:last-child) input,
+  .tournament-admin-page > div > section:not(:last-child) select,
+  .tournament-admin-page > div > section:not(:last-child) button {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .tournament-admin-page > div > section:last-child {
+    border-radius: 18px !important;
+  }
+
+  .tournament-admin-page > div > section:last-child > div:first-child {
+    padding: 14px !important;
+  }
+
+  .tournament-admin-page > div > section:last-child .overflow-x-auto {
+    overflow-x: hidden !important;
+  }
+
+  .tournament-admin-page > div > section:last-child table,
+  .tournament-admin-page > div > section:last-child thead,
+  .tournament-admin-page > div > section:last-child tbody,
+  .tournament-admin-page > div > section:last-child tr,
+  .tournament-admin-page > div > section:last-child td {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+  }
+
+  .tournament-admin-page > div > section:last-child table {
+    table-layout: auto !important;
+  }
+
+  .tournament-admin-page > div > section:last-child thead {
+    display: none !important;
+  }
+
+  .tournament-admin-page > div > section:last-child tbody {
+    padding: 10px;
+  }
+
+  .tournament-admin-page > div > section:last-child tbody tr {
+    margin: 0 0 10px;
+    padding: 8px 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 7px 20px rgba(15, 23, 42, 0.055);
+  }
+
+  .tournament-admin-page > div > section:last-child tbody tr:last-child {
+    margin-bottom: 0;
+  }
+
+  .tournament-admin-page > div > section:last-child tbody td {
+    display: grid !important;
+    grid-template-columns: 92px minmax(0, 1fr);
+    align-items: start;
+    gap: 8px;
+    padding: 8px 2px !important;
+    border-bottom: 1px dashed #e5e7eb;
+    font-size: 11px !important;
+  }
+
+  .tournament-admin-page > div > section:last-child tbody td:last-child {
+    border-bottom: 0;
+    grid-template-columns: 1fr;
+    padding-top: 10px !important;
+  }
+
+  .tournament-admin-page > div > section:last-child tbody td::before {
+    color: #64748b;
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: .08em;
+    line-height: 1.35;
+    text-transform: uppercase;
+  }
+
+  .tournament-admin-page > div > section:last-child tbody td:nth-child(1)::before { content: 'No'; }
+  .tournament-admin-page > div > section:last-child tbody td:nth-child(2)::before { content: 'Peserta / Kode'; }
+  .tournament-admin-page > div > section:last-child tbody td:nth-child(3)::before { content: 'Kategori'; }
+  .tournament-admin-page > div > section:last-child tbody td:nth-child(4)::before { content: 'PB / Domisili'; }
+  .tournament-admin-page > div > section:last-child tbody td:nth-child(5)::before { content: 'Pembayaran'; }
+  .tournament-admin-page > div > section:last-child tbody td:nth-child(6)::before { content: 'Pendaftaran'; }
+  .tournament-admin-page > div > section:last-child tbody td:nth-child(7)::before { content: 'Tanggal'; }
+  .tournament-admin-page > div > section:last-child tbody td:nth-child(8)::before { content: 'Aksi'; }
+
+  .tournament-admin-page > div > section:last-child tbody td:nth-child(1) {
+    grid-template-columns: 92px minmax(0, 1fr);
+    text-align: left;
+  }
+
+  .tournament-admin-page > div > section:last-child tbody td:nth-child(1) > * {
+    justify-self: start;
+  }
+
+  .tournament-admin-page > div > section:last-child tbody td:nth-child(8) > div {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    gap: 7px !important;
+  }
+
+  .tournament-admin-page > div > section:last-child tbody td:nth-child(8) button {
+    width: 100% !important;
+    min-height: 40px !important;
+  }
+
+  /* Keep the pagination footer readable after cards. */
+  .tournament-admin-page > div > section:last-child > div:last-child {
+    flex-wrap: wrap;
+    gap: 8px !important;
+    padding: 12px !important;
+  }
+}
+
+@media (max-width: 430px) {
+  .tournament-admin-page {
+    padding: 6px !important;
+  }
+
+  .tournament-admin-page header > div:first-child {
+    padding: 14px !important;
+  }
+
+  .tournament-admin-page header h1 {
+    font-size: 21px !important;
+  }
+
+  .tournament-admin-page header > div:last-child > * {
+    min-height: 78px;
+  }
+
+  .tournament-admin-page > div > section:last-child tbody {
+    padding: 8px;
+  }
+
+  .tournament-admin-page > div > section:last-child tbody tr {
+    padding-inline: 9px;
+  }
+
+  .tournament-admin-page > div > section:last-child tbody td {
+    grid-template-columns: 82px minmax(0, 1fr);
+    font-size: 10.5px !important;
+  }
+
+  .tournament-admin-page > div > section:last-child tbody td::before {
+    font-size: 8.5px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tournament-admin-page * {
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+    animation-duration: .01ms !important;
+  }
+}
