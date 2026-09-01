@@ -11,7 +11,8 @@ const scripts = [
   'patch-admin-tournament-api.mjs',
   'patch-tournament-status-whatsapp.mjs',
   'patch-tournament-wa-popup.mjs',
-  'patch-registration-whatsapp-direct.mjs'
+  'patch-registration-whatsapp-direct.mjs',
+  'patch-payment-dashboard.mjs'
 ];
 
 console.log('[build-prep] running stable production preparation scripts');
