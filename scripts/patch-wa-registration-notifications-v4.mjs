@@ -56,7 +56,7 @@ const replacement=`function Actions({row,onDetail,onEdit,onPayment,onAccept,onRe
     }
     window.location.href=participantWA;
   };
-  return <div className={\\`flex \\${full?'w-full':'justify-end'} flex-wrap gap-1.5\\`}>
+  return <div className={'flex '+(full?'w-full':'justify-end')+' flex-wrap gap-1.5'}>
     <button title="Lihat detail & dokumen" onClick={()=>void onDetail(row)} className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-2.5 text-[10px] font-black text-blue-700 hover:bg-blue-100"><Eye size={14}/> Detail</button>
     <button title="Edit" onClick={onEdit} className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 text-[10px] font-black text-slate-600 hover:bg-slate-50"><Pencil size={14}/> Edit</button>
     {ps!=='terverifikasi'&&<button title="Verifikasi pembayaran" onClick={()=>void onPayment(row)} className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 text-[10px] font-black text-emerald-700 hover:bg-emerald-100"><CreditCard size={14}/> Bayar</button>}
