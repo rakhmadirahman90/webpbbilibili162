@@ -3,15 +3,6 @@ import fs from 'node:fs';
 const REGISTRATION_PATH = 'src/components/PendaftaranTurnamen.tsx';
 const ADMIN_PATH = 'src/components/AdminPendaftaranTurnamenModern.tsx';
 
-function normalizeWa(raw) {
-  const digits = String(raw ?? '').replace(/\D/g, '');
-  if (!digits) return '';
-  if (digits.startsWith('62')) return digits;
-  if (digits.startsWith('0')) return `62${digits.slice(1)}`;
-  if (digits.startsWith('8')) return `62${digits}`;
-  return digits;
-}
-
 function esc(value) {
   return String(value ?? '-');
 }
@@ -67,12 +58,11 @@ function buildAdminRegistrationWhatsApp(payload:any, adminPhone:string){
     src=src.replace(helperMarker,helperMarker+helpers);
   }
 
-  const oldMarker = "const wa=form.whatsapp.replace(/\\\\D/g,'').replace(/^0/,'62')||ADMIN_WA; const message=encodeURIComponent(`*PENDAFTARAN BILIBILI 162 CUP I 2026*\\\\n\\\\nKode: *${code}*\\\\nKategori: *${form.kategori}*\\\\nPasangan: *${form.nama_pemain_1.toUpperCase()} & ${form.nama_pemain_2.toUpperCase()}*\\\\nWilayah NIK P1: ${players[0].wilayah}\\\\nWilayah NIK P2: ${players[1].wilayah}\\\\nBiaya: *Rp150.000/pasang*\\\\nStatus: *MENUNGGU VERIFIKASI ADMIN*\\\\n\\\\n09-12 September 2026\\\\nGOR Titik Kumpul Soreang Parepare`);setSuccess({code});window.open(`https://wa.me/${wa}?text=${message}`,'_blank');";
   const start = src.indexOf("const wa=form.whatsapp.replace(/\\\\D/g,'').replace(/^0/,'62')||ADMIN_WA;");
   const end = src.indexOf("    }catch(err:any){",start);
   if(start<0||end<0)throw new Error('[patch-wa] Registration WhatsApp block not found.');
 
-  const replacement = `const waAdmin=normalizeTournamentWhatsAppV2(ADMIN_WA);\n      const waParticipant=normalizeTournamentWhatsAppV2(form.whatsapp);\n      const adminUrl=buildAdminRegistrationWhatsApp(payload,ADMIN_WA);\n      const participantMessage=[\n        '*PENDAFTARAN BILIBILI 162 CUP I TAHUN 2026*',\n        '',\n        'Pendaftaran pasangan Anda telah berhasil disimpan di sistem.',\n        '',\n        '• Kode Pendaftaran: *'+code+'*',\n        '• Kategori: *'+form.kategori+'*',\n        '• Pemain 1: *'+form.nama_pemain_1.toUpperCase()+'*',\n        '• Pemain 2: *'+form.nama_pemain_2.toUpperCase()+'*',\n        '• PB/Klub: *'+form.asal_pb.toUpperCase()+'*',\n        '• Status: *MENUNGGU VERIFIKASI ADMIN*',\n        '',\n        'Simpan kode ini untuk memantau pendaftaran.',\n        '*PB BILIBILI 162 CUP I*'\n      ].join('\\n');\n      const participantUrl=waParticipant?'https://wa.me/'+waParticipant+'?text='+encodeURIComponent(participantMessage):'';\n      setSuccess({code});\n      await Swal.fire({\n        icon:'success',\n        title:'Pendaftaran Berhasil',\n        html:'<div style="text-align:left;font-size:13px;line-height:1.7"><b>Kode:</b> '+code+'<br/><b>Status:</b> Menunggu Verifikasi Admin<br/><br/>Data sudah tersimpan. Gunakan tombol di bawah untuk mengirim notifikasi lengkap ke WhatsApp Admin/Panitia.</div>',\n        showConfirmButton:!!adminUrl,\n        confirmButtonText:'📱 KIRIM NOTIFIKASI KE WA ADMIN',\n        confirmButtonColor:'#16a34a',\n        showDenyButton:!!participantUrl,\n        denyButtonText:'SALIN KE WA SAYA',\n        denyButtonColor:'#2563eb',\n        showCancelButton:true,\n        cancelButtonText:'Selesai',\n        allowOutsideClick:false\n      }).then(result=>{\n        if(result.isConfirmed&&adminUrl)window.location.assign(adminUrl);\n        else if(result.isDenied&&participantUrl)window.location.assign(participantUrl);\n      });\n`;
+  const replacement = `const waParticipant=normalizeTournamentWhatsAppV2(form.whatsapp);\n      const adminUrl=buildAdminRegistrationWhatsApp(payload,ADMIN_WA);\n      const participantMessage=[\n        '*PENDAFTARAN BILIBILI 162 CUP I TAHUN 2026*',\n        '',\n        'Pendaftaran pasangan Anda telah berhasil disimpan di sistem.',\n        '',\n        '• Kode Pendaftaran: *'+code+'*',\n        '• Kategori: *'+form.kategori+'*',\n        '• Pemain 1: *'+form.nama_pemain_1.toUpperCase()+'*',\n        '• Pemain 2: *'+form.nama_pemain_2.toUpperCase()+'*',\n        '• PB/Klub: *'+form.asal_pb.toUpperCase()+'*',\n        '• Status: *MENUNGGU VERIFIKASI ADMIN*',\n        '',\n        'Simpan kode ini untuk memantau pendaftaran.',\n        '*PB BILIBILI 162 CUP I*'\n      ].join('\\n');\n      const participantUrl=waParticipant?'https://wa.me/'+waParticipant+'?text='+encodeURIComponent(participantMessage):'';\n      setSuccess({code});\n      await Swal.fire({\n        icon:'success',\n        title:'Pendaftaran Berhasil',\n        html:'<div style="text-align:left;font-size:13px;line-height:1.7"><b>Kode:</b> '+code+'<br/><b>Status:</b> Menunggu Verifikasi Admin<br/><br/>Data sudah tersimpan. Gunakan tombol di bawah untuk mengirim notifikasi lengkap ke WhatsApp Admin/Panitia.</div>',\n        showConfirmButton:!!adminUrl,\n        confirmButtonText:'📱 KIRIM NOTIFIKASI KE WA ADMIN',\n        confirmButtonColor:'#16a34a',\n        showDenyButton:!!participantUrl,\n        denyButtonText:'SALIN KE WA SAYA',\n        denyButtonColor:'#2563eb',\n        showCancelButton:true,\n        cancelButtonText:'Selesai',\n        allowOutsideClick:false\n      }).then(result=>{\n        if(result.isConfirmed&&adminUrl)window.location.assign(adminUrl);\n        else if(result.isDenied&&participantUrl)window.location.assign(participantUrl);\n      });\n`;
   src=src.slice(0,start)+replacement+src.slice(end);
   fs.writeFileSync(REGISTRATION_PATH,src);
   console.log('[patch-wa] Registration participant -> admin notification applied.');
