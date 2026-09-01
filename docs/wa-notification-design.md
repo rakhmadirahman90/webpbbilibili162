@@ -1,0 +1,1 @@
+WA registration notification design placeholder
