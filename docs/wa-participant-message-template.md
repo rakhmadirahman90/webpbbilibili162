@@ -1,0 +1,1 @@
+Participant confirmation should be sent from admin only after successful verification. It should use the registration's stored WhatsApp responsible-party number and include registration code, category, both players, clubs, and verification status.
