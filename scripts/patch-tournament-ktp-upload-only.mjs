@@ -49,7 +49,7 @@ const nextFn = [
 ].join('\n');
 src = src.slice(0, nextStart) + nextFn + src.slice(previousStart);
 
-// Replace the complete submit function with a mobile-safe sequential upload flow.
+// Replace complete submit with sequential, retryable uploads and non-fatal realtime broadcast.
 const submitStart = src.indexOf('  const submit=async()=>{');
 const goHomeStart = src.indexOf('  const goHome=', submitStart);
 if (submitStart === -1 || goHomeStart === -1) throw new Error('Tournament submit-function markers not found');
@@ -123,7 +123,7 @@ const submitFn = [
   '      const{error}=await supabase.from("pendaftaran_turnamen").insert(payload);',
   '      if(error)throw new Error("Database gagal menyimpan pendaftaran: "+error.message+(error.code?" ("+error.code+")":""));',
   '',
-  '      broadcastDataChange("pendaftaran_turnamen","INSERT",payload);',
+  '      try{await Promise.resolve(broadcastDataChange("pendaftaran_turnamen","INSERT",payload));}catch(broadcastError){console.warn("Realtime broadcast pendaftaran gagal, tetapi data sudah tersimpan:",broadcastError);}',
   '      const wa=form.whatsapp.replace(/\\D/g,"").replace(/^0/,"62")||ADMIN_WA;',
   '      const message=encodeURIComponent("*PENDAFTARAN BILIBILI 162 CUP I 2026*\\n\\nKode: *"+code+"*\\nKategori: *"+form.kategori+"*\\nPasangan: *"+form.nama_pemain_1.toUpperCase()+" & "+form.nama_pemain_2.toUpperCase()+"*\\nBiaya: *Rp150.000/pasang*\\nStatus: *MENUNGGU VERIFIKASI ADMIN*\\n\\n09-12 September 2026\\nGOR Titik Kumpul Soreang Parepare");',
   '      setSuccess({code});',
@@ -147,4 +147,4 @@ src = src.replace('Hasil pembacaan NIK', 'Status Dokumen KTP');
 src = src.replace('KTP disimpan pada penyimpanan dokumen privat dan hanya dapat diakses admin terautentikasi.', 'Dokumen KTP disimpan pada penyimpanan privat dan hanya dapat diakses admin terautentikasi.');
 
 fs.writeFileSync(path, src);
-console.log('[patch-tournament-ktp-upload-only] Sequential uploads + 3x retry + explicit stage/database errors applied.');
+console.log('[patch-tournament-ktp-upload-only] Sequential uploads + 3x retry + guarded realtime broadcast + explicit stage/database errors applied.');
