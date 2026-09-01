@@ -31,7 +31,7 @@ function buildParticipantSuccessWAUrl(row:Registration){
     '• Pembayaran: *'+String(row.status_pembayaran||'-')+'*',
     '• Status: *DITERIMA & DIVERIFIKASI*','',
     'Selamat, pasangan Anda resmi terdaftar sebagai peserta.',
-    '*09–12 September 2026 • GOR Titik Kumpul Soreang Parepare*',
+    '*08–12 September 2026 • GOR Titik Kumpul Soreang Parepare*',
     '*Panitia PB BILIBILI 162*'
   ].join('\\n');
   return 'https://wa.me/'+phone+'?text='+encodeURIComponent(message);
@@ -43,7 +43,7 @@ function buildParticipantSuccessWAUrl(row:Registration){
 }
 
 const start=src.indexOf('function Actions(');
-const end=src.indexOf('\n\nfunction DetailModal',start);
+const end=src.indexOf('\\n\\nfunction DetailModal',start);
 if(start<0||end<0)throw new Error('[patch-wa-v4] Actions boundaries not found');
 
 const replacement=`function Actions({row,onDetail,onEdit,onPayment,onAccept,onReject,onDelete,full=false}:{row:Registration,onDetail:(r:Registration)=>void,onEdit:()=>void,onPayment:(r:Registration)=>void,onAccept:()=>void,onReject:()=>void,onDelete:(r:Registration)=>void,full?:boolean}){
@@ -56,7 +56,7 @@ const replacement=`function Actions({row,onDetail,onEdit,onPayment,onAccept,onRe
     }
     window.location.href=participantWA;
   };
-  return <div className={\`flex \${full?'w-full':'justify-end'} flex-wrap gap-1.5\`}>
+  return <div className={\\`flex \\${full?'w-full':'justify-end'} flex-wrap gap-1.5\\`}>
     <button title="Lihat detail & dokumen" onClick={()=>void onDetail(row)} className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-2.5 text-[10px] font-black text-blue-700 hover:bg-blue-100"><Eye size={14}/> Detail</button>
     <button title="Edit" onClick={onEdit} className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 text-[10px] font-black text-slate-600 hover:bg-slate-50"><Pencil size={14}/> Edit</button>
     {ps!=='terverifikasi'&&<button title="Verifikasi pembayaran" onClick={()=>void onPayment(row)} className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 text-[10px] font-black text-emerald-700 hover:bg-emerald-100"><CreditCard size={14}/> Bayar</button>}
@@ -68,4 +68,4 @@ const replacement=`function Actions({row,onDetail,onEdit,onPayment,onAccept,onRe
 
 src=src.slice(0,start)+replacement+src.slice(end);
 fs.writeFileSync(path,src);
-console.log('[patch-wa-v4] visible participant WhatsApp button added for verified registrations');
+console.log('[patch-wa-v4] participant WhatsApp notification event dates set to 08–12 September 2026');
