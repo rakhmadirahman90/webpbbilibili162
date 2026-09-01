@@ -1,0 +1,1 @@
+Admin notification should be generated from the actual saved registration row and use the configured admin WhatsApp number.
