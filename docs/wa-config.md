@@ -1,0 +1,1 @@
+The admin WhatsApp number should be read from the existing site/tournament configuration when available, with a safe fallback only when explicitly configured.
