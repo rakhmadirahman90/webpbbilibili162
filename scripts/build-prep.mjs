@@ -1,5 +1,9 @@
 import { execFileSync } from 'node:child_process';
 
+// Vercel's install step follows package.json. Keep Vite available even when
+// the repository lockfile contains it but package.json temporarily omits it.
+execFileSync('npm', ['install', 'vite@5.4.2', '--no-save', '--ignore-scripts'], { stdio: 'inherit' });
+
 const scripts = [
   'patch-navbar-jsx-fix.mjs',
   'patch-performance-v2.mjs',
