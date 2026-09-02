@@ -38,6 +38,29 @@ if (typeof window !== 'undefined') {
   syncGalleryRouteClass();
   window.addEventListener('popstate', syncGalleryRouteClass);
 
+  // Mark the actual KasManager root so the scoped responsive stylesheet works
+  // reliably even though KasManager is mounted through the admin router.
+  const markKasManagerRoot = () => {
+    const isKasRoute = /^\/admin\/kas\/?$/i.test(window.location.pathname);
+    if (!isKasRoute) return;
+    const candidates = Array.from(document.querySelectorAll('div')).filter((el) => {
+      const className = typeof el.className === 'string' ? el.className : '';
+      const text = (el.textContent || '').toUpperCase();
+      return className.includes('w-full') && className.includes('min-h-full')
+        && className.includes('flex') && className.includes('flex-col')
+        && text.includes('KELOLA KAS KLUB');
+    });
+    const root = candidates[candidates.length - 1];
+    if (root) root.setAttribute('data-kas-manager', 'true');
+  };
+
+  const kasRootObserver = new MutationObserver(() => markKasManagerRoot());
+  kasRootObserver.observe(document.documentElement, { childList: true, subtree: true });
+  window.addEventListener('popstate', markKasManagerRoot);
+  window.setTimeout(markKasManagerRoot, 0);
+  window.setTimeout(markKasManagerRoot, 250);
+  window.setTimeout(markKasManagerRoot, 800);
+
   const normalize = (value: unknown) => String(value ?? '').toLowerCase().replace(/\s+/g, ' ').trim();
   const isTournamentRegistrationTarget = (el: Element | null) => {
     if (!el) return false;
