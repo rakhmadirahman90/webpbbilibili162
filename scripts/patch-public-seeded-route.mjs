@@ -37,18 +37,17 @@ if (!s.includes(acceptedRoute)) {
   }
 }
 
-// Add the accepted-participants path to both public route-recognition sets.
-const acceptedLiteral = "'pendaftaran/peserta-diterima'";
-if (!s.includes(acceptedLiteral)) {
-  s = s.replaceAll("'pendaftaran/seeded-peserta'", "'pendaftaran/seeded-peserta','pendaftaran/peserta-diterima'");
-}
+// IMPORTANT: do not use replaceAll() on the seeded path here. The same string
+// can occur as an object key in App.tsx (e.g. `seeded: 'pendaftaran/seeded-peserta'`).
+// Blind insertion of the accepted path creates invalid object syntax such as
+// `seeded: 'pendaftaran/seeded-peserta','pendaftaran/peserta-diterima': ...`.
+// The dedicated React Router route above is sufficient for direct navigation,
+// while Navbar performs direct navigation for the accepted page.
 
-// Ensure the dedicated route is handled by the public view switch as well when
-// App uses the shell path instead of the explicit Route in a future refactor.
 if (!s.includes("case 'pendaftaran/peserta-diterima'")) {
   const marker = "      case 'prestasi': return <PublicPrestasi />;";
   if (s.includes(marker)) s = s.replace(marker, "      case 'pendaftaran/peserta-diterima': return <PublicPesertaTurnamen />;\n" + marker);
 }
 
 fs.writeFileSync(path, s, 'utf8');
-console.log('[patch-public-seeded-route] public seeded + accepted participants routes applied');
+console.log('[patch-public-seeded-route] public seeded + accepted participants routes applied safely');
