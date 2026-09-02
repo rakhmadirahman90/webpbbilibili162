@@ -31,21 +31,27 @@ update('src/components/AdminRouteView.tsx', (source) => {
 });
 
 update('src/components/Sidebar.tsx', (source) => {
-  if (source.includes("path: 'laporan-iuran'")) return source;
+  // First normalize any malformed double-comma entries left by an earlier
+  // generated build transformation. This is intentionally limited to array
+  // entry endings and does not alter object literals or other syntax.
+  let next = source.replace(/\},,(?=\s*(?:\r?\n|$))/gm, '},');
 
-  // Match the Kas menu item including its existing comma, then emit both
-  // list items with exactly one comma each. This prevents malformed `},,` or
-  // an unterminated entry during the Vercel prebuild transformation.
+  if (next.includes("path: 'laporan-iuran'")) return next;
+
   const kasRegex = /(^|\n)(\s*\{[^\n]*path:\s*['"]kas['"][^\n]*\}),(?=\s*(?:\r?\n|$))/m;
-  if (!kasRegex.test(source)) {
+  if (!kasRegex.test(next)) {
     console.warn('[iuran-report-patch] path=kas menu entry not found; menu patch skipped safely');
-    return source;
+    return next;
   }
 
-  return source.replace(
+  next = next.replace(
     kasRegex,
     `$1$2,\n        { name: 'Laporan Pembayaran Iuran', path: 'laporan-iuran', icon: FileSpreadsheet, adminOnly: true },`
   );
+
+  // Final guard: never leave a `},,` token in Sidebar after this patch.
+  next = next.replace(/\},,(?=\s*(?:\r?\n|$))/gm, '},');
+  return next;
 });
 
 update('src/components/KasManager.tsx', (source) => {
@@ -66,7 +72,7 @@ update('src/components/KasManager.tsx', (source) => {
   return next;
 });
 
-update('src/components/RekapIuranSeptember.tsx', (source) => {
+update('src/RekapIuranSeptember.tsx', (source) => {
   let next = source;
   if (next.includes('data-rekap-iuran')) return next;
   const sectionMarker = '    <section className=';
