@@ -31,13 +31,13 @@ update('src/components/AdminRouteView.tsx', (source) => {
 });
 
 update('src/components/Sidebar.tsx', (source) => {
-  if (source.includes("{ name: 'Laporan Pembayaran Iuran'")) return source;
-  const sectionRegex = /(\{\s*section:\s*'Administrasi & Keuangan',[\s\S]*?items:\s*\[\s*)/;
-  if (!sectionRegex.test(source)) {
-    console.warn('[iuran-report-patch] Sidebar finance section not found; menu patch skipped safely');
+  if (source.includes("path: 'laporan-iuran'")) return source;
+  const kasRegex = /(\{[^\n]*name:\s*'Kelola Kas'[^\n]*path:\s*'kas'[^\n]*\n)/;
+  if (!kasRegex.test(source)) {
+    console.warn('[iuran-report-patch] Kelola Kas menu entry not found; menu patch skipped safely');
     return source;
   }
-  return source.replace(sectionRegex, `$1        { name: 'Laporan Pembayaran Iuran', path: 'laporan-iuran', icon: FileSpreadsheet, adminOnly: true },\n`);
+  return source.replace(kasRegex, `$1        { name: 'Laporan Pembayaran Iuran', path: 'laporan-iuran', icon: FileSpreadsheet, adminOnly: true },\n`);
 });
 
 update('src/components/KasManager.tsx', (source) => {
