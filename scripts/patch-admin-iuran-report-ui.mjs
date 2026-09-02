@@ -32,12 +32,12 @@ update('src/components/AdminRouteView.tsx', (source) => {
 
 update('src/components/Sidebar.tsx', (source) => {
   if (source.includes("path: 'laporan-iuran'")) return source;
-  const kasRegex = /(\{[^\n]*name:\s*'Kelola Kas'[^\n]*path:\s*'kas'[^\n]*\n)/;
+  const kasRegex = /(^|\n)(\s*\{[^\n]*path:\s*['"]kas['"][^\n]*\})/m;
   if (!kasRegex.test(source)) {
-    console.warn('[iuran-report-patch] Kelola Kas menu entry not found; menu patch skipped safely');
+    console.warn('[iuran-report-patch] path=kas menu entry not found; menu patch skipped safely');
     return source;
   }
-  return source.replace(kasRegex, `$1        { name: 'Laporan Pembayaran Iuran', path: 'laporan-iuran', icon: FileSpreadsheet, adminOnly: true },\n`);
+  return source.replace(kasRegex, `$1$2\n        { name: 'Laporan Pembayaran Iuran', path: 'laporan-iuran', icon: FileSpreadsheet, adminOnly: true },`);
 });
 
 update('src/components/KasManager.tsx', (source) => {
