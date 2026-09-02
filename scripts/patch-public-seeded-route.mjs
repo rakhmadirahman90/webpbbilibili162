@@ -17,9 +17,7 @@ if (!s.includes(importLine)) {
 }
 
 const acceptedImport = "const PublicPesertaTurnamen = lazy(() => import('./components/PublicPesertaTurnamen'));";
-if (!s.includes(acceptedImport)) {
-  s = s.replace(importLine, `${importLine}\n${acceptedImport}`);
-}
+if (!s.includes(acceptedImport)) s = s.replace(importLine, `${importLine}\n${acceptedImport}`);
 
 const seededRoute = '<Route path="/pendaftaran/seeded-peserta" element={<PublicSeededPeserta />} />';
 if (!s.includes(seededRoute)) {
@@ -31,25 +29,25 @@ if (!s.includes(seededRoute)) {
 
 const acceptedRoute = '<Route path="/pendaftaran/peserta-diterima" element={<PublicPesertaTurnamen />} />';
 if (!s.includes(acceptedRoute)) {
-  if (s.includes(seededRoute)) {
-    s = s.replace(seededRoute, `${seededRoute}\n        ${acceptedRoute}`);
-  } else {
+  if (s.includes(seededRoute)) s = s.replace(seededRoute, `${seededRoute}\n        ${acceptedRoute}`);
+  else {
     const anchor = '<Route path="/login" element={<Login />} />';
     if (!s.includes(anchor)) throw new Error('[patch-public-seeded-route] no stable accepted route anchor found');
     s = s.replace(anchor, `${acceptedRoute}\n          ${anchor}`);
   }
 }
 
-// Keep both dedicated public URLs recognized by UrlSynchronizer and initial state.
-const acceptedPath = "'pendaftaran/peserta-diterima'";
-if (!s.includes(acceptedPath)) {
-  const replacements = [
-    ["'pendaftaran/seeded-peserta',", "'pendaftaran/seeded-peserta','pendaftaran/peserta-diterima',"],
-    ["'pendaftaran/seeded-peserta'", "'pendaftaran/seeded-peserta','pendaftaran/peserta-diterima'"]
-  ];
-  for (const [from, to] of replacements) {
-    if (s.includes(from)) { s = s.replace(from, to); break; }
-  }
+// Add the accepted-participants path to both public route-recognition sets.
+const acceptedLiteral = "'pendaftaran/peserta-diterima'";
+if (!s.includes(acceptedLiteral)) {
+  s = s.replaceAll("'pendaftaran/seeded-peserta'", "'pendaftaran/seeded-peserta','pendaftaran/peserta-diterima'");
+}
+
+// Ensure the dedicated route is handled by the public view switch as well when
+// App uses the shell path instead of the explicit Route in a future refactor.
+if (!s.includes("case 'pendaftaran/peserta-diterima'")) {
+  const marker = "      case 'prestasi': return <PublicPrestasi />;";
+  if (s.includes(marker)) s = s.replace(marker, "      case 'pendaftaran/peserta-diterima': return <PublicPesertaTurnamen />;\n" + marker);
 }
 
 fs.writeFileSync(path, s, 'utf8');
