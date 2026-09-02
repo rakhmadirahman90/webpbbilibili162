@@ -1,0 +1,272 @@
+.iuran-report-page {
+  width: 100%;
+  max-width: 1680px;
+  margin: 0 auto;
+  padding: clamp(12px, 2vw, 28px);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-sizing: border-box;
+  color: #e5eefb;
+}
+
+.iuran-report-page *,
+.iuran-report-page *::before,
+.iuran-report-page *::after { box-sizing: border-box; }
+
+.iuran-report-header,
+.iuran-filter-card,
+.iuran-progress-card,
+.iuran-today-card,
+.iuran-table-card {
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: linear-gradient(145deg, rgba(15, 23, 42, 0.96), rgba(9, 16, 30, 0.96));
+  border-radius: 22px;
+  box-shadow: 0 18px 40px rgba(2, 8, 23, 0.18);
+}
+
+.iuran-report-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 22px;
+}
+
+.iuran-report-heading { min-width: 0; }
+.iuran-report-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #60a5fa;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+.iuran-report-heading h1 {
+  margin: 7px 0 4px;
+  font-size: clamp(22px, 3vw, 34px);
+  line-height: 1.08;
+  font-weight: 900;
+  letter-spacing: -.03em;
+}
+.iuran-report-heading p {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.iuran-report-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.iuran-btn {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: transform .15s ease, opacity .15s ease, background .15s ease;
+}
+.iuran-btn:hover:not(:disabled) { transform: translateY(-1px); }
+.iuran-btn:disabled { opacity: .45; cursor: not-allowed; }
+.iuran-btn.primary { background: #2563eb; color: #fff; }
+.iuran-btn.success { background: #059669; color: #fff; }
+.iuran-btn.secondary { background: rgba(51, 65, 85, .58); color: #e2e8f0; border-color: rgba(148, 163, 184, .15); }
+.iuran-btn.reset { width: 100%; background: rgba(30, 41, 59, .65); color: #cbd5e1; border-color: rgba(148, 163, 184, .15); }
+
+.iuran-filter-card { padding: 16px; }
+.iuran-filter-grid {
+  display: grid;
+  grid-template-columns: minmax(130px, .8fr) minmax(100px, .55fr) minmax(220px, 1.55fr) minmax(150px, .9fr) minmax(150px, .9fr) 120px;
+  gap: 10px;
+  align-items: end;
+}
+.iuran-filter-grid label { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
+.iuran-filter-grid label > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 16px;
+  color: #94a3b8;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .11em;
+  text-transform: uppercase;
+}
+.iuran-filter-grid select,
+.iuran-filter-grid input {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid rgba(148, 163, 184, .15);
+  border-radius: 12px;
+  background: #091426;
+  color: #f8fafc;
+  padding: 10px 12px;
+  outline: none;
+  font-size: 13px;
+  font-weight: 700;
+}
+.iuran-filter-grid select:focus,
+.iuran-input-wrap:focus-within { border-color: rgba(59, 130, 246, .65); box-shadow: 0 0 0 3px rgba(59, 130, 246, .12); }
+.iuran-input-wrap {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid rgba(148, 163, 184, .15);
+  border-radius: 12px;
+  background: #091426;
+  padding: 0 11px;
+}
+.iuran-input-wrap svg { flex: 0 0 auto; color: #60a5fa; }
+.iuran-input-wrap input { border: 0; background: transparent; padding: 0; box-shadow: none; min-width: 0; }
+.iuran-input-wrap button { flex: 0 0 auto; color: #64748b; background: transparent; border: 0; padding: 4px; cursor: pointer; }
+
+.iuran-summary-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; }
+.iuran-stat-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid rgba(148, 163, 184, .13);
+  border-radius: 18px;
+  background: rgba(15, 23, 42, .92);
+}
+.iuran-stat-icon {
+  width: 42px; height: 42px; border-radius: 13px;
+  display: grid; place-items: center; flex: 0 0 auto;
+}
+.iuran-stat-icon svg { width: 20px; height: 20px; }
+.iuran-stat-card > div:last-child { min-width: 0; }
+.iuran-stat-card span { display:block; color:#94a3b8; font-size:10px; font-weight:900; text-transform:uppercase; letter-spacing:.08em; }
+.iuran-stat-card strong { display:block; margin-top:4px; color:#fff; font-size:clamp(19px,2vw,26px); font-weight:900; letter-spacing:-.03em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.iuran-stat-card small { display:block; margin-top:3px; color:#64748b; font-size:10px; }
+.iuran-stat-card.blue .iuran-stat-icon { background: rgba(37,99,235,.15); color:#60a5fa; }
+.iuran-stat-card.green .iuran-stat-icon { background: rgba(16,185,129,.14); color:#34d399; }
+.iuran-stat-card.red .iuran-stat-icon { background: rgba(239,68,68,.14); color:#f87171; }
+.iuran-stat-card.purple .iuran-stat-icon { background: rgba(139,92,246,.14); color:#a78bfa; }
+
+.iuran-progress-card { padding: 17px; }
+.iuran-progress-top { display:flex; align-items:flex-end; justify-content:space-between; gap:12px; }
+.iuran-progress-top strong { display:block; font-size:13px; color:#e2e8f0; }
+.iuran-progress-top span { display:block; margin-top:3px; color:#64748b; font-size:10px; }
+.iuran-progress-top b { color:#cbd5e1; font-size:12px; white-space:nowrap; }
+.iuran-progress-track { height:10px; margin-top:12px; border-radius:99px; background:#0b1528; overflow:hidden; border:1px solid rgba(148,163,184,.08); }
+.iuran-progress-track > div { height:100%; border-radius:inherit; background:linear-gradient(90deg,#2563eb,#34d399); }
+
+.iuran-today-card { padding: 17px; }
+.iuran-section-title,
+.iuran-table-head { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.iuran-section-title h2,
+.iuran-table-head h2 { margin:0; color:#f8fafc; font-size:16px; font-weight:900; }
+.iuran-section-title p,
+.iuran-table-head p { margin:4px 0 0; color:#64748b; font-size:10px; }
+.iuran-live-badge { border:1px solid rgba(16,185,129,.22); background:rgba(16,185,129,.08); color:#34d399; border-radius:99px; padding:5px 9px; font-size:9px; font-weight:900; text-transform:uppercase; letter-spacing:.08em; }
+.iuran-today-list { margin-top:12px; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.iuran-today-item { min-width:0; display:flex; align-items:center; gap:10px; padding:10px; border-radius:14px; background:rgba(2,8,23,.34); border:1px solid rgba(148,163,184,.09); }
+.iuran-today-avatar,.iuran-athlete-avatar { display:grid; place-items:center; flex:0 0 auto; border-radius:12px; background:linear-gradient(145deg,#1d4ed8,#0f172a); color:#e0ecff; font-weight:900; }
+.iuran-today-avatar { width:38px; height:38px; }
+.iuran-today-main { min-width:0; flex:1; }
+.iuran-today-main strong { display:block; font-size:12px; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.iuran-today-main span,.iuran-today-main small { display:block; margin-top:2px; color:#64748b; font-size:9px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.iuran-today-amount { text-align:right; flex:0 0 auto; }
+.iuran-today-amount strong { display:block; color:#34d399; font-size:12px; }
+.iuran-today-amount span { display:block; margin-top:2px; color:#64748b; font-size:9px; }
+.iuran-empty-inline { padding:16px; color:#64748b; border:1px dashed rgba(148,163,184,.12); border-radius:14px; font-size:11px; }
+
+.iuran-table-card { overflow: hidden; }
+.iuran-table-head { padding:17px; border-bottom:1px solid rgba(148,163,184,.10); background:rgba(2,8,23,.22); }
+.iuran-page-count { color:#60a5fa; font-size:10px; font-weight:900; white-space:nowrap; }
+.iuran-desktop-table-wrap { width:100%; overflow:auto; }
+.iuran-table { width:100%; min-width:920px; border-collapse:collapse; }
+.iuran-table th,.iuran-table td { padding:11px 13px; border-bottom:1px solid rgba(148,163,184,.08); text-align:left; vertical-align:middle; }
+.iuran-table th { color:#64748b; font-size:9px; font-weight:900; text-transform:uppercase; letter-spacing:.08em; background:#091426; white-space:nowrap; }
+.iuran-table td { color:#cbd5e1; font-size:11px; }
+.iuran-table tr:hover td { background:rgba(59,130,246,.035); }
+.iuran-table th:first-child,.iuran-table td:first-child { width:44px; text-align:center; color:#64748b; }
+.iuran-athlete-name { color:#fff; font-weight:900; }
+.iuran-category-chip { display:inline-flex; padding:4px 8px; border-radius:99px; background:rgba(59,130,246,.08); color:#93c5fd; font-size:9px; font-weight:900; text-transform:uppercase; }
+.iuran-status { display:inline-flex; align-items:center; justify-content:center; padding:5px 8px; border-radius:99px; font-size:9px; font-weight:900; letter-spacing:.06em; }
+.iuran-status.paid { background:rgba(16,185,129,.10); color:#34d399; border:1px solid rgba(16,185,129,.16); }
+.iuran-status.unpaid { background:rgba(239,68,68,.10); color:#f87171; border:1px solid rgba(239,68,68,.16); }
+.iuran-last-payment strong { display:block; color:#e2e8f0; font-size:10px; }
+.iuran-last-payment small { display:block; margin-top:2px; max-width:200px; color:#64748b; font-size:8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.iuran-mobile-list { display:none; }
+.iuran-loading,.iuran-empty { min-height:260px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; color:#64748b; }
+.iuran-loading { color:#60a5fa; }
+.iuran-loading span,.iuran-empty span { font-size:11px; }
+.iuran-empty strong { color:#cbd5e1; font-size:13px; }
+.iuran-pagination { display:flex; align-items:center; justify-content:center; gap:10px; padding:13px; border-top:1px solid rgba(148,163,184,.08); }
+.iuran-pagination button { min-height:36px; display:inline-flex; align-items:center; gap:6px; padding:8px 10px; border:1px solid rgba(148,163,184,.12); border-radius:10px; background:#0a1425; color:#cbd5e1; font-size:9px; font-weight:900; cursor:pointer; }
+.iuran-pagination button:disabled { opacity:.35; cursor:not-allowed; }
+.iuran-pagination span { color:#64748b; font-size:10px; font-weight:900; min-width:42px; text-align:center; }
+.iuran-report-footnote { display:flex; align-items:center; gap:8px; color:#64748b; font-size:9px; padding:2px 4px 8px; }
+.spin { animation: iuranSpin .9s linear infinite; }
+@keyframes iuranSpin { to { transform:rotate(360deg); } }
+
+@media (max-width: 1100px) {
+  .iuran-filter-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .iuran-btn.reset { width:auto; min-width:120px; }
+}
+
+@media (max-width: 820px) {
+  .iuran-report-page { padding:11px; gap:11px; }
+  .iuran-report-header { align-items:flex-start; flex-direction:column; padding:15px; border-radius:18px; }
+  .iuran-report-heading h1 { font-size:21px; }
+  .iuran-report-heading p { font-size:11px; }
+  .iuran-report-actions { width:100%; justify-content:stretch; }
+  .iuran-report-actions .iuran-btn { flex:1 1 0; }
+  .iuran-filter-card { padding:12px; border-radius:17px; }
+  .iuran-filter-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .iuran-filter-grid .iuran-search-field { grid-column:1 / -1; }
+  .iuran-summary-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+  .iuran-stat-card { padding:12px; gap:9px; border-radius:15px; }
+  .iuran-stat-icon { width:36px; height:36px; border-radius:11px; }
+  .iuran-stat-card strong { font-size:18px; }
+  .iuran-stat-card small { font-size:8px; }
+  .iuran-today-list { grid-template-columns:1fr; }
+  .iuran-table-head { padding:13px; align-items:flex-start; }
+  .iuran-desktop-table-wrap { display:none; }
+  .iuran-mobile-list { display:flex; flex-direction:column; gap:8px; padding:10px; }
+  .iuran-mobile-item { padding:12px; border:1px solid rgba(148,163,184,.10); border-radius:15px; background:rgba(2,8,23,.28); }
+  .iuran-mobile-top { display:flex; align-items:center; justify-content:space-between; }
+  .iuran-mobile-no { color:#64748b; font-size:9px; font-weight:900; }
+  .iuran-mobile-athlete { display:flex; align-items:center; gap:10px; margin-top:10px; }
+  .iuran-athlete-avatar { width:40px; height:40px; }
+  .iuran-mobile-athlete strong { display:block; color:#fff; font-size:12px; }
+  .iuran-mobile-athlete span { display:block; margin-top:2px; color:#60a5fa; font-size:9px; font-weight:800; }
+  .iuran-mobile-money { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; margin-top:11px; }
+  .iuran-mobile-money > div { padding:8px; border-radius:10px; background:#0a1425; border:1px solid rgba(148,163,184,.08); }
+  .iuran-mobile-money span,.iuran-mobile-money b { display:block; }
+  .iuran-mobile-money span { color:#64748b; font-size:8px; text-transform:uppercase; font-weight:900; letter-spacing:.08em; }
+  .iuran-mobile-money b { margin-top:3px; color:#e2e8f0; font-size:10px; }
+  .iuran-mobile-last { display:flex; flex-direction:column; margin-top:9px; padding-top:9px; border-top:1px solid rgba(148,163,184,.08); }
+  .iuran-mobile-last span { color:#64748b; font-size:8px; font-weight:900; text-transform:uppercase; letter-spacing:.08em; }
+  .iuran-mobile-last strong { margin-top:2px; color:#cbd5e1; font-size:10px; }
+  .iuran-mobile-last small { margin-top:2px; color:#64748b; font-size:8px; }
+  .iuran-pagination { padding:10px; justify-content:space-between; }
+  .iuran-report-footnote { font-size:8px; }
+}
+
+@media (max-width: 480px) {
+  .iuran-filter-grid { grid-template-columns:1fr; }
+  .iuran-filter-grid .iuran-search-field { grid-column:auto; }
+  .iuran-btn { min-height:40px; padding:9px 10px; font-size:9px; }
+  .iuran-section-title h2,.iuran-table-head h2 { font-size:14px; }
+  .iuran-page-count { display:none; }
+}
