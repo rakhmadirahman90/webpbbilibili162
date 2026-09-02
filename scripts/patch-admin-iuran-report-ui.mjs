@@ -32,12 +32,12 @@ update('src/components/AdminRouteView.tsx', (source) => {
 
 update('src/components/Sidebar.tsx', (source) => {
   if (source.includes("{ name: 'Laporan Pembayaran Iuran'")) return source;
-  const menuRegex = /(\{\s*name:\s*'Kelola Kas'[^\n]*\n)/;
-  if (!menuRegex.test(source)) {
-    console.warn('[iuran-report-patch] Sidebar cash menu anchor not found; menu patch skipped safely');
+  const sectionRegex = /(\{\s*section:\s*'Administrasi & Keuangan',[\s\S]*?items:\s*\[\s*)/;
+  if (!sectionRegex.test(source)) {
+    console.warn('[iuran-report-patch] Sidebar finance section not found; menu patch skipped safely');
     return source;
   }
-  return source.replace(menuRegex, `$1        { name: 'Laporan Pembayaran Iuran', path: 'laporan-iuran', icon: FileSpreadsheet, adminOnly: true },\n`);
+  return source.replace(sectionRegex, `$1        { name: 'Laporan Pembayaran Iuran', path: 'laporan-iuran', icon: FileSpreadsheet, adminOnly: true },\n`);
 });
 
 update('src/components/KasManager.tsx', (source) => {
@@ -48,12 +48,11 @@ update('src/components/KasManager.tsx', (source) => {
     next = next.replace(importAnchor, `${importAnchor}\nimport '../kas-manager-responsive.css';`);
   }
   if (!next.includes('data-kas-manager')) {
-    const rootRegex = /(\s*<div\s+className=\"w-full min-h-full flex flex-col p-3 sm:p-5 md:p-8)/;
+    const rootRegex = /(export default function KasManager[\s\S]*?\n\s*return\s*\(\s*)<div\b/;
     if (!rootRegex.test(next)) {
-      console.warn('[iuran-report-patch] KasManager root anchor not found; responsive marker skipped safely');
+      console.warn('[iuran-report-patch] KasManager root marker not found; responsive marker skipped safely');
     } else {
-      next = next.replace(rootRegex, `$1`);
-      next = next.replace(/<div\s+className=\"w-full min-h-full flex flex-col p-3 sm:p-5 md:p-8/, '<div data-kas-manager="true" className="w-full min-h-full flex flex-col p-3 sm:p-5 md:p-8');
+      next = next.replace(rootRegex, '$1<div data-kas-manager="true" ');
     }
   }
   return next;
