@@ -6,7 +6,7 @@ let s = fs.readFileSync(path, 'utf8');
 // Mobile tournament submenu items must bypass activeView/onNavigate.
 // They are public standalone pages and must navigate directly.
 const old = `  const handleMobileMenuClick = (event: React.MouseEvent<HTMLButtonElement>, path: string, subPath?: string) => {\n    event.preventDefault();\n    event.stopPropagation();\n    go(path, subPath);\n  };`;
-const next = `  const handleMobileMenuClick = (event: React.MouseEvent<HTMLButtonElement>, path: string, subPath?: string, label?: string) => {\n    event.preventDefault();\n    event.stopPropagation();\n\n    const p = normalizeNavigationPath(path);\n    const sp = normalizeNavigationPath(subPath || '');\n    const text = String(label || '').toLowerCase().trim();\n\n    if (text.includes('daftar seeded') || sp === 'seeded-peserta' || sp.includes('seeded-peserta')) {\n      setOpenMenu(null);\n      setMobileOpen(false);\n      navigate('/pendaftaran/seeded-peserta');\n      return;\n    }\n    if (text.includes('formulir pendaftaran turnamen') || p === 'pendaftaran-turnamen' || sp === 'pendaftaran-turnamen') {\n      setOpenMenu(null);\n      setMobileOpen(false);\n      navigate('/pendaftaran-turnamen');\n      return;\n    }\n\n    go(path, subPath);\n  };`;
+const next = `  const handleMobileMenuClick = (event: React.MouseEvent<HTMLButtonElement>, path: string, subPath?: string, label?: string) => {\n    event.preventDefault();\n    event.stopPropagation();\n\n    const p = normalizeNavigationPath(path);\n    const sp = normalizeNavigationPath(subPath || '');\n    const text = String(label || '').toLowerCase().trim();\n\n    if (text.includes('daftar seeded') || sp === 'seeded-peserta' || sp.includes('seeded-peserta')) {\n      setOpenMenu(null);\n      setMobileOpen(false);\n      navigate('/pendaftaran/seeded-peserta');\n      return;\n    }\n    if (text.includes('daftar peserta diterima') || sp === 'pendaftaran/peserta-diterima' || sp.includes('peserta-diterima')) {\n      setOpenMenu(null);\n      setMobileOpen(false);\n      navigate('/pendaftaran/peserta-diterima');\n      return;\n    }\n    if (text.includes('formulir pendaftaran turnamen') || p === 'pendaftaran-turnamen' || sp === 'pendaftaran-turnamen') {\n      setOpenMenu(null);\n      setMobileOpen(false);\n      navigate('/pendaftaran-turnamen');\n      return;\n    }\n\n    go(path, subPath);\n  };`;
 if (!s.includes(next)) {
   if (!s.includes(old)) throw new Error('[patch-mobile-tournament-submenu-click] handler marker not found');
   s = s.replace(old, next);
@@ -14,8 +14,8 @@ if (!s.includes(next)) {
 
 // Mobile submenu taps use click only. Pointer-down preloading can race with the
 // drawer close/navigation transition on Android browsers.
-const oldMap = `onPointerDown={() => { preloadNavigation(menu.path, sub.path); }} onClick={(e) => handleMobileMenuClick(e, menu.path, sub.path)}`;
-const newMap = `onClick={(e) => handleMobileMenuClick(e, menu.path, sub.path, sub.label)}`;
+const oldMap = `onPointerDown={() => { preloadNavigation(menu.path, sub.path); }} onClick={(e) => handleMobileMenuClick(e, menu.path, sub.path)`;
+const newMap = `onClick={(e) => handleMobileMenuClick(e, menu.path, sub.path, sub.label)`;
 if (s.includes(oldMap)) s = s.replace(oldMap, newMap);
 
 // IMPORTANT: the drawer is a viewport overlay. Mount it through a React portal
