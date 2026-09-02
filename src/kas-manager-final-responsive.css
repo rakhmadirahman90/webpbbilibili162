@@ -287,3 +287,76 @@
 body:has([data-kas-manager]) {
   overflow-x: hidden;
 }
+
+/* KAS SCROLL FIX 2026-09-02
+ * Keep the admin page itself scrollable while making every transaction/history
+ * region an explicit local vertical scroller. This prevents records from being
+ * clipped by flex/grid parents and lets the mouse wheel, trackpad and touch scroll
+ * reach the full dataset.
+ */
+[data-kas-manager] {
+  height: auto !important;
+  min-height: max-content !important;
+  overflow-x: clip !important;
+  overflow-y: visible !important;
+  flex: none !important;
+}
+
+.admin-main:has([data-kas-manager]) {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  min-height: 0 !important;
+  overscroll-behavior-y: auto !important;
+}
+
+@media (min-width: 768px) {
+  [data-kas-manager] > .lg\:grid-cols-12 {
+    min-height: 0 !important;
+  }
+
+  [data-kas-manager] > .lg\:grid-cols-12 > * {
+    min-height: 0 !important;
+  }
+
+  /* The payment/history boxes get their own scroll area instead of clipping
+     records at the bottom of the card. */
+  [data-kas-manager] .overflow-y-auto {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    max-height: min(58vh, 560px) !important;
+    min-height: 0 !important;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(96,165,250,.45) transparent;
+  }
+
+  [data-kas-manager] .overflow-y-auto::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  [data-kas-manager] .overflow-y-auto::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  [data-kas-manager] .overflow-y-auto::-webkit-scrollbar-thumb {
+    background: rgba(96,165,250,.4);
+    border-radius: 999px;
+  }
+}
+
+@media (max-width: 767px) {
+  [data-kas-manager] {
+    height: auto !important;
+    min-height: max-content !important;
+    overflow: visible !important;
+    flex: none !important;
+  }
+
+  [data-kas-manager] .overflow-y-auto {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior-y: contain;
+    touch-action: pan-y !important;
+  }
+}
