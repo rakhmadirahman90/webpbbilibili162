@@ -1,0 +1,289 @@
+/* Final responsive polish for Admin > Kelola Kas.
+ * Scoped to the component's data-kas-manager root so public pages are untouched.
+ */
+[data-kas-manager] {
+  width: 100%;
+  max-width: 1680px;
+  margin: 0 auto;
+  padding: clamp(12px, 1.5vw, 24px);
+  box-sizing: border-box;
+  overflow-x: clip;
+}
+
+[data-kas-manager],
+[data-kas-manager] *,
+[data-kas-manager] *::before,
+[data-kas-manager] *::after {
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+[data-kas-manager] > * {
+  width: 100%;
+  max-width: 100%;
+}
+
+[data-kas-manager] h1,
+[data-kas-manager] h2,
+[data-kas-manager] h3,
+[data-kas-manager] p,
+[data-kas-manager] span,
+[data-kas-manager] label,
+[data-kas-manager] button,
+[data-kas-manager] input,
+[data-kas-manager] select,
+[data-kas-manager] textarea {
+  overflow-wrap: anywhere;
+}
+
+[data-kas-manager] button,
+[data-kas-manager] input,
+[data-kas-manager] select,
+[data-kas-manager] textarea {
+  max-width: 100%;
+}
+
+/* Desktop/tablet: balanced workspace, no oversized blank regions. */
+@media (min-width: 768px) {
+  [data-kas-manager] {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  [data-kas-manager] > .bg-gradient-to-r {
+    min-height: 0 !important;
+    padding: 20px 22px !important;
+    border-radius: 20px !important;
+  }
+
+  [data-kas-manager] > .bg-gradient-to-r h1 {
+    margin: 0;
+    line-height: 1.05;
+  }
+
+  [data-kas-manager] > .bg-gradient-to-r p {
+    margin-top: 6px;
+    line-height: 1.45;
+  }
+
+  [data-kas-manager] > .grid.grid-cols-2.md\:grid-cols-4 {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+  }
+
+  [data-kas-manager] > .grid.grid-cols-2.md\:grid-cols-4 > div {
+    min-height: 110px !important;
+    height: 100%;
+    padding: 16px !important;
+    border-radius: 18px !important;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  [data-kas-manager] > .bg-slate-900\/90 {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    gap: 14px !important;
+    min-height: 0 !important;
+    padding: 12px 14px !important;
+    align-items: center;
+  }
+
+  [data-kas-manager] > .bg-slate-900\/90 .flex-wrap {
+    min-width: 0;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  [data-kas-manager] > .bg-slate-900\/90 input[type="date"] {
+    min-width: 145px;
+    min-height: 42px;
+  }
+
+  [data-kas-manager] > .lg\:grid-cols-12 {
+    display: grid !important;
+    grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.6fr) !important;
+    gap: 16px !important;
+    align-items: start;
+  }
+
+  [data-kas-manager] > .lg\:grid-cols-12 > * {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  [data-kas-manager] .overflow-y-auto,
+  [data-kas-manager] .overflow-x-auto {
+    max-width: 100%;
+  }
+}
+
+/* Mobile: single clean column, compact cards, safe-area aware and touch friendly. */
+@media (max-width: 767px) {
+  [data-kas-manager] {
+    width: 100%;
+    padding: 8px 10px calc(22px + env(safe-area-inset-bottom));
+    gap: 10px;
+  }
+
+  [data-kas-manager] > .bg-gradient-to-r {
+    padding: 14px !important;
+    border-radius: 18px !important;
+    overflow: hidden;
+  }
+
+  [data-kas-manager] > .bg-gradient-to-r h1 {
+    font-size: clamp(20px, 6vw, 26px) !important;
+    line-height: 1.05 !important;
+  }
+
+  [data-kas-manager] > .bg-gradient-to-r p {
+    font-size: 11px !important;
+    line-height: 1.4 !important;
+  }
+
+  [data-kas-manager] > .grid.grid-cols-2.md\:grid-cols-4 {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  [data-kas-manager] > .grid.grid-cols-2.md\:grid-cols-4 > div {
+    min-height: 92px !important;
+    padding: 11px !important;
+    border-radius: 16px !important;
+    overflow: hidden;
+  }
+
+  [data-kas-manager] > .grid.grid-cols-2.md\:grid-cols-4 h2 {
+    font-size: 14px !important;
+    line-height: 1.2 !important;
+  }
+
+  [data-kas-manager] > .grid.grid-cols-2.md\:grid-cols-4 p {
+    font-size: 8px !important;
+    line-height: 1.25 !important;
+  }
+
+  [data-kas-manager] > .bg-slate-900\/90 {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 9px !important;
+    padding: 11px !important;
+    border-radius: 16px !important;
+  }
+
+  [data-kas-manager] > .bg-slate-900\/90 > * {
+    width: 100% !important;
+  }
+
+  [data-kas-manager] > .bg-slate-900\/90 .flex-wrap {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+  }
+
+  [data-kas-manager] > .bg-slate-900\/90 input[type="date"],
+  [data-kas-manager] > .bg-slate-900\/90 button {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 42px !important;
+  }
+
+  [data-kas-manager] > .lg\:grid-cols-12 {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+
+  [data-kas-manager] > .lg\:grid-cols-12 > *,
+  [data-kas-manager] > .lg\:grid-cols-12 > .lg\:col-span-4,
+  [data-kas-manager] > .lg\:grid-cols-12 > .lg\:col-span-8 {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  [data-kas-manager] > .lg\:grid-cols-12 form {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+  }
+
+  [data-kas-manager] > .lg\:grid-cols-12 form input,
+  [data-kas-manager] > .lg\:grid-cols-12 form select,
+  [data-kas-manager] > .lg\:grid-cols-12 form textarea,
+  [data-kas-manager] > .lg\:grid-cols-12 form button {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: 44px !important;
+  }
+
+  [data-kas-manager] > .lg\:grid-cols-12 form textarea {
+    min-height: 78px !important;
+  }
+
+  /* Transaction/table areas stay inside the viewport; horizontal scrolling is local only. */
+  [data-kas-manager] .overflow-x-auto {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-inline: contain;
+  }
+
+  [data-kas-manager] table {
+    max-width: none;
+    width: max-content;
+    min-width: 680px;
+  }
+
+  [data-kas-manager] .overflow-y-auto {
+    max-height: 52vh !important;
+    overscroll-behavior: contain;
+  }
+
+  [data-kas-manager] .overflow-y-auto .flex.items-center.justify-between {
+    align-items: flex-start !important;
+    gap: 8px;
+  }
+
+  [data-kas-manager] .overflow-y-auto button {
+    min-width: 36px;
+    min-height: 36px;
+  }
+}
+
+@media (max-width: 430px) {
+  [data-kas-manager] {
+    padding-inline: 8px;
+  }
+
+  [data-kas-manager] > .grid.grid-cols-2.md\:grid-cols-4 > div {
+    min-height: 86px !important;
+    padding: 9px !important;
+  }
+
+  [data-kas-manager] > .grid.grid-cols-2.md\:grid-cols-4 h2 {
+    font-size: 13px !important;
+  }
+
+  [data-kas-manager] > .bg-slate-900\/90 .flex-wrap {
+    grid-template-columns: 1fr !important;
+  }
+
+  [data-kas-manager] > .bg-gradient-to-r h1 {
+    font-size: 19px !important;
+  }
+}
+
+/* Avoid accidental body overflow caused by floating admin widgets. */
+body:has([data-kas-manager]) {
+  overflow-x: hidden;
+}
