@@ -32,12 +32,21 @@ update('src/components/AdminRouteView.tsx', (source) => {
 
 update('src/components/Sidebar.tsx', (source) => {
   if (source.includes("path: 'laporan-iuran'")) return source;
-  const kasRegex = /(^|\n)(\s*\{[^\n]*path:\s*['"]kas['"][^\n]*\})/m;
+
+  // Capture the existing comma together with the Kas entry. The previous
+  // implementation matched only up to the closing brace, leaving the
+  // original comma in place after adding a comma to the injected line and
+  // producing `},,` during Vercel's prebuild step.
+  const kasRegex = /(^|\n)(\s*\{[^\n]*path:\s*['"]kas['"][^\n]*\}),(?=\s*(?:\r?\n|$))/m;
   if (!kasRegex.test(source)) {
     console.warn('[iuran-report-patch] path=kas menu entry not found; menu patch skipped safely');
     return source;
   }
-  return source.replace(kasRegex, `$1$2\n        { name: 'Laporan Pembayaran Iuran', path: 'laporan-iuran', icon: FileSpreadsheet, adminOnly: true },`);
+
+  return source.replace(
+    kasRegex,
+    `$1$2,\n        { name: 'Laporan Pembayaran Iuran', path: 'laporan-iuran', icon: FileSpreadsheet, adminOnly: true }`
+  );
 });
 
 update('src/components/KasManager.tsx', (source) => {
