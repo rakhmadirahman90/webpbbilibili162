@@ -39,15 +39,40 @@ if (!s.includes(acceptedRoute)) {
 
 // IMPORTANT: do not use replaceAll() on the seeded path here. The same string
 // can occur as an object key in App.tsx (e.g. `seeded: 'pendaftaran/seeded-peserta'`).
-// Blind insertion of the accepted path creates invalid object syntax such as
-// `seeded: 'pendaftaran/seeded-peserta','pendaftaran/peserta-diterima': ...`.
-// The dedicated React Router route above is sufficient for direct navigation,
-// while Navbar performs direct navigation for the accepted page.
+// Blind insertion of the accepted path creates invalid object syntax. Add the
+// accepted destination only to the route/state collections where it belongs.
 
-if (!s.includes("case 'pendaftaran/peserta-diterima'")) {
-  const marker = "      case 'prestasi': return <PublicPrestasi />;";
-  if (s.includes(marker)) s = s.replace(marker, "      case 'pendaftaran/peserta-diterima': return <PublicPesertaTurnamen />;\n" + marker);
+const acceptedPath = 'pendaftaran/peserta-diterima';
+
+// UrlSynchronizer: URL -> activeView.
+const fullPageMarker = "    'register','pendaftaran','pendaftaran-turnamen','pendaftaran/seeded-peserta',";
+if (s.includes(fullPageMarker) && !s.includes("'pendaftaran/peserta-diterima'", s.indexOf(fullPageMarker))) {
+  s = s.replace(fullPageMarker, "    'register','pendaftaran','pendaftaran-turnamen','pendaftaran/seeded-peserta','pendaftaran/peserta-diterima',");
 }
 
+// Initial activeView must recognize the same path on a fresh/mobile load.
+const supportedMarker = "'register','pendaftaran','pendaftaran-turnamen','pendaftaran/seeded-peserta','peringkat'";
+if (s.includes(supportedMarker) && !s.includes("'pendaftaran/peserta-diterima'", s.indexOf(supportedMarker))) {
+  s = s.replace(supportedMarker, "'register','pendaftaran','pendaftaran-turnamen','pendaftaran/seeded-peserta','pendaftaran/peserta-diterima','peringkat'");
+}
+
+// Render the standalone accepted-participants page through the same public shell.
+const renderMarker = "      case 'prestasi': return <PublicPrestasi />;";
+if (!s.includes("case 'pendaftaran/peserta-diterima': return <PublicPesertaTurnamen />;")) {
+  if (!s.includes(renderMarker)) throw new Error('[patch-public-seeded-route] render marker not found');
+  s = s.replace(renderMarker, "      case 'pendaftaran/peserta-diterima': return <PublicPesertaTurnamen />;\n" + renderMarker);
+}
+
+// Keep a direct Router route as an additional hard fallback. This is especially
+// useful on mobile because it does not depend on activeView state synchronization.
+if (!s.includes(acceptedRoute)) throw new Error('[patch-public-seeded-route] accepted route was not applied');
+
+// If a later restore changes the formatting of the collections, use targeted
+// token insertion as a final idempotent safeguard without touching aliases.
+if (!s.includes("'pendaftaran/peserta-diterima'")) {
+  throw new Error('[patch-public-seeded-route] accepted path missing from navigation state');
+}
+
+void acceptedPath;
 fs.writeFileSync(path, s, 'utf8');
-console.log('[patch-public-seeded-route] public seeded + accepted participants routes applied safely');
+console.log('[patch-public-seeded-route] public seeded + accepted participants routes/state applied safely');
