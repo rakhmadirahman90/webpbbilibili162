@@ -27,6 +27,8 @@ import './tournament-admin-ui.css';
 import './admin-mobile-precision.css';
 import './athlete-add-responsive.css';
 import './admin-athlete-form-precision.css';
+import './kas-manager-responsive.css';
+import './kas-manager-final-responsive.css';
 
 if (typeof window !== 'undefined') {
   const syncGalleryRouteClass = () => {
