@@ -26,6 +26,7 @@ import './admin-ui-polish.css';
 import './tournament-admin-ui.css';
 import './admin-mobile-precision.css';
 import './athlete-add-responsive.css';
+import './admin-athlete-form-precision.css';
 
 if (typeof window !== 'undefined') {
   const syncGalleryRouteClass = () => {
