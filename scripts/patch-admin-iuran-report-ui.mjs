@@ -31,9 +31,7 @@ update('src/components/AdminRouteView.tsx', (source) => {
 });
 
 update('src/components/Sidebar.tsx', (source) => {
-  // First normalize any malformed double-comma entries left by an earlier
-  // generated build transformation. This is intentionally limited to array
-  // entry endings and does not alter object literals or other syntax.
+  // Normalize malformed double-comma array entries from earlier generated builds.
   let next = source.replace(/\},,(?=\s*(?:\r?\n|$))/gm, '},');
 
   if (next.includes("path: 'laporan-iuran'")) return next;
@@ -49,7 +47,7 @@ update('src/components/Sidebar.tsx', (source) => {
     `$1$2,\n        { name: 'Laporan Pembayaran Iuran', path: 'laporan-iuran', icon: FileSpreadsheet, adminOnly: true },`
   );
 
-  // Final guard: never leave a `},,` token in Sidebar after this patch.
+  // Final syntax guard: Sidebar must never contain a double comma entry ending.
   next = next.replace(/\},,(?=\s*(?:\r?\n|$))/gm, '},');
   return next;
 });
@@ -72,7 +70,7 @@ update('src/components/KasManager.tsx', (source) => {
   return next;
 });
 
-update('src/RekapIuranSeptember.tsx', (source) => {
+update('src/components/RekapIuranSeptember.tsx', (source) => {
   let next = source;
   if (next.includes('data-rekap-iuran')) return next;
   const sectionMarker = '    <section className=';
