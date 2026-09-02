@@ -1,0 +1,138 @@
+/* PB BILIBILI 162 — precision override for admin athlete/member add forms. */
+/* Defensive layer: fixes vertical/wrapped labels and oversized whitespace even when
+   the form is rendered outside the dedicated z-[200] modal selector. */
+
+.admin-main form,
+.admin-main form * {
+  box-sizing: border-box !important;
+}
+
+.admin-main form {
+  writing-mode: horizontal-tb !important;
+  text-orientation: mixed !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+.admin-main form label,
+.admin-main form legend {
+  display: block !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  writing-mode: horizontal-tb !important;
+  text-orientation: mixed !important;
+  white-space: nowrap !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+  letter-spacing: .10em !important;
+  line-height: 1.2 !important;
+}
+
+.admin-main form input,
+.admin-main form select,
+.admin-main form textarea,
+.admin-main form button {
+  writing-mode: horizontal-tb !important;
+  text-orientation: mixed !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+.admin-main form > div,
+.admin-main form section,
+.admin-main form fieldset {
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+@media (max-width: 767px) {
+  .admin-main form {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 12px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+
+  .admin-main form > div,
+  .admin-main form .grid,
+  .admin-main form [class*="grid-cols-"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 8px !important;
+    margin: 0 !important;
+  }
+
+  .admin-main form > div > div,
+  .admin-main form .grid > div,
+  .admin-main form [class*="grid-cols-"] > div {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .admin-main form label,
+  .admin-main form legend {
+    font-size: 9px !important;
+    margin: 0 0 4px !important;
+    overflow: visible !important;
+  }
+
+  .admin-main form input,
+  .admin-main form select,
+  .admin-main form textarea {
+    width: 100% !important;
+    min-height: 44px !important;
+    max-width: 100% !important;
+    padding: 9px 11px !important;
+    border-radius: 12px !important;
+    font-size: 12px !important;
+  }
+
+  .admin-main form button {
+    width: 100% !important;
+    min-height: 46px !important;
+    max-width: 100% !important;
+    border-radius: 13px !important;
+    white-space: normal !important;
+  }
+
+  /* Compact common two-option controls such as gender. */
+  .admin-main form [role="group"],
+  .admin-main form .flex.items-center,
+  .admin-main form .flex.gap-2,
+  .admin-main form .flex.gap-3 {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    flex-wrap: wrap !important;
+    gap: 7px !important;
+  }
+
+  /* Remove accidental tall spacer behavior from nested fixed/min heights. */
+  .admin-main form [class*="h-screen"],
+  .admin-main form [class*="min-h-screen"],
+  .admin-main form [class*="h-[100dvh]"],
+  .admin-main form [class*="min-h-[100dvh]"] {
+    height: auto !important;
+    min-height: 0 !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .admin-main form { padding: 10px !important; gap: 8px !important; }
+  .admin-main form label,
+  .admin-main form legend { font-size: 8px !important; letter-spacing: .08em !important; }
+  .admin-main form input,
+  .admin-main form select,
+  .admin-main form textarea { min-height: 41px !important; height: 41px !important; font-size: 11px !important; }
+  .admin-main form button { min-height: 44px !important; }
+}
