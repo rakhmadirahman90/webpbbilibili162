@@ -1,0 +1,288 @@
+/* PB BILIBILI 162 — Add Athlete modal: compact, responsive, one-screen mobile layout. */
+
+/* Scope only the Add Athlete modal (z-[200]) inside the admin workspace. */
+.admin-main [class*="z-[200]"] {
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+.admin-main [class*="z-[200]"] > .bg-white {
+  width: min(920px, calc(100vw - 32px)) !important;
+  max-width: 920px !important;
+  max-height: min(760px, calc(100dvh - 32px)) !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+  display: grid !important;
+  grid-template-columns: 260px minmax(0, 1fr) !important;
+  grid-template-rows: 1fr !important;
+  border-radius: 28px !important;
+}
+
+.admin-main [class*="z-[200]"] > .bg-white > div:first-of-type {
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  padding: 22px !important;
+  border-right: 1px solid rgb(226 232 240) !important;
+  border-bottom: 0 !important;
+  box-sizing: border-box !important;
+  gap: 12px !important;
+}
+
+.admin-main [class*="z-[200]"] > .bg-white > div:first-of-type > div:first-of-type {
+  width: 184px !important;
+  height: 230px !important;
+  flex: 0 0 auto !important;
+  margin: 0 auto 10px !important;
+  border-radius: 22px !important;
+}
+
+.admin-main [class*="z-[200]"] > .bg-white > div:first-of-type > p {
+  margin: 0 !important;
+  line-height: 1.4 !important;
+}
+
+.admin-main [class*="z-[200]"] > .bg-white > form {
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  padding: 28px !important;
+  box-sizing: border-box !important;
+  display: block !important;
+}
+
+.admin-main [class*="z-[200]"] > .bg-white > form h3 {
+  margin: 0 44px 16px 0 !important;
+  font-size: clamp(20px, 2.5vw, 28px) !important;
+  line-height: 1.05 !important;
+}
+
+.admin-main [class*="z-[200]"] > .bg-white > form > div {
+  min-width: 0 !important;
+  gap: 10px !important;
+}
+
+.admin-main [class*="z-[200]"] > .bg-white > form label {
+  writing-mode: horizontal-tb !important;
+  text-orientation: mixed !important;
+  white-space: nowrap !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+  display: block !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  line-height: 1.15 !important;
+}
+
+.admin-main [class*="z-[200]"] > .bg-white > form input,
+.admin-main [class*="z-[200]"] > .bg-white > form select,
+.admin-main [class*="z-[200]"] > .bg-white > form button {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+@media (max-width: 767px) {
+  .admin-main [class*="z-[200]"] {
+    padding: max(8px, env(safe-area-inset-top)) 8px max(8px, env(safe-area-inset-bottom)) !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .admin-main [class*="z-[200]"] > .bg-white {
+    width: min(100%, 640px) !important;
+    max-width: 100% !important;
+    max-height: calc(100dvh - 16px) !important;
+    border-radius: 22px !important;
+    grid-template-columns: 1fr !important;
+    grid-template-rows: auto minmax(0, 1fr) !important;
+  }
+
+  .admin-main [class*="z-[200]"] > .bg-white > div:first-of-type {
+    min-height: 104px !important;
+    height: 104px !important;
+    padding: 10px 14px !important;
+    border-right: 0 !important;
+    border-bottom: 1px solid rgb(226 232 240) !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 12px !important;
+  }
+
+  .admin-main [class*="z-[200]"] > .bg-white > div:first-of-type > div:first-of-type {
+    width: 72px !important;
+    height: 88px !important;
+    margin: 0 !important;
+    border-radius: 16px !important;
+    border-width: 3px !important;
+  }
+
+  .admin-main [class*="z-[200]"] > .bg-white > div:first-of-type > div:first-of-type label {
+    opacity: 1 !important;
+    background: rgb(15 23 42 / 0.46) !important;
+    font-size: 8px !important;
+    text-align: center !important;
+  }
+
+  .admin-main [class*="z-[200]"] > .bg-white > div:first-of-type > div:first-of-type label svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+
+  .admin-main [class*="z-[200]"] > .bg-white > div:first-of-type > p {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    text-align: left !important;
+    font-size: 8px !important;
+    letter-spacing: .12em !important;
+  }
+
+  .admin-main [class*="z-[200]"] > .bg-white > form {
+    padding: 12px 14px 14px !important;
+    max-height: none !important;
+    overflow-y: auto !important;
+  }
+
+  .admin-main [class*="z-[200]"] > .bg-white > form h3 {
+    margin: 0 42px 10px 0 !important;
+    font-size: 20px !important;
+    line-height: 1.05 !important;
+  }
+
+  .admin-main [class*="z-[200]"] > .bg-white > form > div {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    margin-top: 8px !important;
+  }
+
+  .admin-main [class*="z-[200]"] > .bg-white > form > div:first-of-type {
+    margin-top: 0 !important;
+  }
+
+  .admin-main [class*="z-[200]"] > .bg-white > form > div > div {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .admin-main [class*="z-[200]"] > .bg-white > form label {
+    font-size: 8px !important;
+    letter-spacing: .12em !important;
+    margin: 0 0 3px !important;
+  }
+
+  .admin-main [class*="z-[200]"] > .bg-white > form input,
+  .admin-main [class*="z-[200]"] > .bg-white > form select {
+    width: 100% !important;
+    min-height: 42px !important;
+    height: 42px !important;
+    padding: 8px 10px !important;
+    border-radius: 12px !important;
+    font-size: 11px !important;
+  }
+
+  .admin-main [class*="z-[200]"] > .bg-white > form input::placeholder {
+    font-size: 10px !important;
+  }
+
+  .admin-main [class*="z-[200]"] > .bg-white > form > div.bg-blue-50 {
+    padding: 8px !important;
+    border-radius: 14px !important;
+    margin-top: 8px !important;
+  }
+
+  .admin-main [class*="z-[200]"] > .bg-white > form > div.bg-blue-50 select,
+  .admin-main [class*="z-[200]"] > .bg-white > form > div.bg-blue-50 > div:last-child > div {
+    min-height: 40px !important;
+    height: 40px !important;
+    padding: 7px 9px !important;
+    border-radius: 10px !important;
+  }
+
+  .admin-main [class*="z-[200]"] > .bg-white > form > button[type="submit"] {
+    width: 100% !important;
+    min-height: 48px !important;
+    height: 48px !important;
+    margin-top: 10px !important;
+    padding: 0 12px !important;
+    border-radius: 14px !important;
+    font-size: 9px !important;
+    letter-spacing: .18em !important;
+  }
+
+  .admin-main [class*="z-[200]"] > .bg-white > button {
+    top: 8px !important;
+    right: 8px !important;
+    padding: 8px !important;
+    border-radius: 999px !important;
+    background: rgb(241 245 249 / .96) !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .admin-main [class*="z-[200]"] > .bg-white {
+    border-radius: 19px !important;
+  }
+
+  .admin-main [class*="z-[200]"] > .bg-white > div:first-of-type {
+    min-height: 94px !important;
+    height: 94px !important;
+    padding: 8px 11px !important;
+  }
+
+  .admin-main [class*="z-[200]"] > .bg-white > div:first-of-type > div:first-of-type {
+    width: 62px !important;
+    height: 76px !important;
+  }
+
+  .admin-main [class*="z-[200]"] > .bg-white > form {
+    padding: 10px 11px 12px !important;
+  }
+
+  .admin-main [class*="z-[200]"] > .bg-white > form > div {
+    gap: 6px !important;
+    margin-top: 6px !important;
+  }
+
+  .admin-main [class*="z-[200]"] > .bg-white > form label {
+    font-size: 7px !important;
+  }
+
+  .admin-main [class*="z-[200]"] > .bg-white > form input,
+  .admin-main [class*="z-[200]"] > .bg-white > form select {
+    min-height: 39px !important;
+    height: 39px !important;
+    padding: 7px 8px !important;
+    font-size: 10.5px !important;
+  }
+
+  .admin-main [class*="z-[200]"] > .bg-white > form > button[type="submit"] {
+    min-height: 45px !important;
+    height: 45px !important;
+    margin-top: 8px !important;
+    font-size: 8px !important;
+  }
+}
+
+@media (min-width: 768px) and (max-height: 760px) {
+  .admin-main [class*="z-[200]"] > .bg-white {
+    max-height: calc(100dvh - 24px) !important;
+  }
+
+  .admin-main [class*="z-[200]"] > .bg-white > div:first-of-type {
+    padding: 16px !important;
+  }
+
+  .admin-main [class*="z-[200]"] > .bg-white > div:first-of-type > div:first-of-type {
+    width: 150px !important;
+    height: 188px !important;
+  }
+
+  .admin-main [class*="z-[200]"] > .bg-white > form {
+    padding: 20px !important;
+  }
+}
