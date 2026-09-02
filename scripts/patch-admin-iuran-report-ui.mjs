@@ -66,4 +66,16 @@ update('src/components/KasManager.tsx', (source) => {
   return next;
 });
 
+update('src/components/RekapIuranSeptember.tsx', (source) => {
+  let next = source;
+  if (next.includes('data-rekap-iuran')) return next;
+  const sectionMarker = '    <section className=';
+  if (!next.includes(sectionMarker)) {
+    console.warn('[iuran-report-patch] RekapIuranSeptember section marker not found; responsive scope skipped safely');
+    return next;
+  }
+  next = next.replace(sectionMarker, '    <section data-rekap-iuran="true" className=');
+  return next;
+});
+
 console.log('[iuran-report-patch] complete');
