@@ -1,0 +1,192 @@
+/* Precision responsive layout for Admin > Kelola Kas > Rekap Iuran Peserta. */
+[data-rekap-iuran] {
+  width: 100%;
+  max-width: 100%;
+  margin: 0 0 12px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+[data-rekap-iuran] > * {
+  min-width: 0;
+}
+
+[data-rekap-iuran] button,
+[data-rekap-iuran] span,
+[data-rekap-iuran] div,
+[data-rekap-iuran] h2,
+[data-rekap-iuran] h3,
+[data-rekap-iuran] p {
+  min-width: 0;
+}
+
+/* Desktop: keep the recap compact enough to sit cleanly above the ledger. */
+@media (min-width: 768px) {
+  [data-rekap-iuran] > div:first-child {
+    padding: 16px 20px !important;
+  }
+
+  [data-rekap-iuran] > div:first-child h2 {
+    font-size: 22px !important;
+    line-height: 1.05 !important;
+  }
+
+  [data-rekap-iuran] > div:first-child p {
+    font-size: 11px !important;
+    line-height: 1.35 !important;
+  }
+
+  [data-rekap-iuran] > div:nth-child(2) {
+    gap: 10px !important;
+    padding: 12px 14px !important;
+  }
+
+  [data-rekap-iuran] > div:nth-child(2) > div {
+    min-height: 88px;
+    padding: 12px !important;
+    border-radius: 15px !important;
+  }
+
+  [data-rekap-iuran] > div:nth-child(2) > div > div:nth-child(2) {
+    margin-top: 5px !important;
+  }
+
+  [data-rekap-iuran] > div:nth-child(2) > div > div:nth-child(2) {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  [data-rekap-iuran] > div:nth-child(3) {
+    gap: 12px !important;
+    padding: 0 14px 14px !important;
+  }
+
+  [data-rekap-iuran] > div:nth-child(3) > div {
+    min-height: 0;
+  }
+
+  [data-rekap-iuran] > div:nth-child(3) .max-h-\[320px\] {
+    max-height: 200px !important;
+  }
+
+  [data-rekap-iuran] > div:last-child {
+    padding: 8px 14px !important;
+  }
+}
+
+/* Tablet/mobile: readable, touch-friendly, no accidental viewport overflow. */
+@media (max-width: 767px) {
+  [data-rekap-iuran] {
+    margin-bottom: 10px;
+    border-radius: 18px !important;
+  }
+
+  [data-rekap-iuran] > div:first-child {
+    padding: 13px 14px !important;
+  }
+
+  [data-rekap-iuran] > div:first-child > div {
+    gap: 10px !important;
+  }
+
+  [data-rekap-iuran] > div:first-child h2 {
+    font-size: 20px !important;
+    line-height: 1.05 !important;
+  }
+
+  [data-rekap-iuran] > div:first-child p {
+    max-width: 42rem;
+    font-size: 10px !important;
+    line-height: 1.35 !important;
+  }
+
+  [data-rekap-iuran] > div:first-child button {
+    width: 100%;
+    min-height: 42px;
+    padding-inline: 12px !important;
+  }
+
+  [data-rekap-iuran] > div:nth-child(2) {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    padding: 10px !important;
+  }
+
+  [data-rekap-iuran] > div:nth-child(2) > div {
+    min-height: 84px;
+    padding: 10px !important;
+    border-radius: 14px !important;
+  }
+
+  [data-rekap-iuran] > div:nth-child(2) > div > div:first-child {
+    gap: 5px !important;
+    font-size: 9px !important;
+    line-height: 1.2 !important;
+  }
+
+  [data-rekap-iuran] > div:nth-child(2) > div > div:nth-child(2) {
+    margin-top: 6px !important;
+    font-size: 17px !important;
+    line-height: 1.05 !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  [data-rekap-iuran] > div:nth-child(2) > div > div:nth-child(3) {
+    margin-top: 3px !important;
+    font-size: 8px !important;
+  }
+
+  [data-rekap-iuran] > div:nth-child(3) {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    padding: 0 10px 10px !important;
+  }
+
+  [data-rekap-iuran] > div:nth-child(3) > div {
+    width: 100% !important;
+    border-radius: 14px !important;
+  }
+
+  [data-rekap-iuran] > div:nth-child(3) .max-h-\[320px\] {
+    max-height: 220px !important;
+  }
+
+  [data-rekap-iuran] > div:nth-child(3) .px-4.py-3 {
+    padding: 9px 11px !important;
+  }
+
+  [data-rekap-iuran] > div:nth-child(3) .px-4.py-3 > div:first-child {
+    min-width: 0;
+  }
+
+  [data-rekap-iuran] > div:nth-child(3) .px-4.py-3 > div:first-child > div:first-child,
+  [data-rekap-iuran] > div:nth-child(3) .px-4.py-3 > div:first-child > div:last-child {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  [data-rekap-iuran] > div:last-child {
+    padding: 7px 10px !important;
+    font-size: 8px !important;
+    line-height: 1.3 !important;
+  }
+}
+
+@media (max-width: 430px) {
+  [data-rekap-iuran] > div:nth-child(2) > div {
+    min-height: 80px;
+    padding: 9px !important;
+  }
+
+  [data-rekap-iuran] > div:nth-child(2) > div > div:nth-child(2) {
+    font-size: 16px !important;
+  }
+
+  [data-rekap-iuran] > div:first-child h2 {
+    font-size: 19px !important;
+  }
+}
