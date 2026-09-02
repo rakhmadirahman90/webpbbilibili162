@@ -9,7 +9,7 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
-  CircleAlert,
+  AlertCircle,
   Download,
   FileSpreadsheet,
   FileText,
@@ -112,10 +112,6 @@ export default function AdminLaporanIuran() {
   const [categoryFilter, setCategoryFilter] = useState('SEMUA');
   const [page, setPage] = useState(1);
   const itemsPerPage = 12;
-
-  const periodStart = monthKey(selectedYear, selectedMonthIndex);
-  const periodEndDate = new Date(selectedYear, selectedMonthIndex + 1, 0);
-  const periodEnd = monthKey(periodEndDate.getFullYear(), periodEndDate.getMonth());
 
   const loadData = async (silent = false) => {
     if (!silent) setLoading(true);
@@ -419,7 +415,7 @@ export default function AdminLaporanIuran() {
       <section className="iuran-summary-grid">
         <article className="iuran-stat-card blue"><div className="iuran-stat-icon"><Users /></div><div><span>Total Atlet</span><strong>{summary.totalAthletes}</strong><small>seluruh atlet terdata</small></div></article>
         <article className="iuran-stat-card green"><div className="iuran-stat-icon"><CheckCircle2 /></div><div><span>Lunas</span><strong>{summary.lunas}</strong><small>status iuran tercapai</small></div></article>
-        <article className="iuran-stat-card red"><div className="iuran-stat-icon"><CircleAlert /></div><div><span>Belum Bayar</span><strong>{summary.belum}</strong><small>perlu ditindaklanjuti</small></div></article>
+        <article className="iuran-stat-card red"><div className="iuran-stat-icon"><AlertCircle /></div><div><span>Belum Bayar</span><strong>{summary.belum}</strong><small>perlu ditindaklanjuti</small></div></article>
         <article className="iuran-stat-card purple"><div className="iuran-stat-icon"><Wallet /></div><div><span>Total Dibayar</span><strong>{formatRupiah(summary.totalPaid)}</strong><small>target {formatRupiah(summary.totalTarget)}</small></div></article>
       </section>
 
