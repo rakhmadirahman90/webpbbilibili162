@@ -7,6 +7,7 @@ type SeededPlayerRow = {
   division_level?: string | null;
   normalized_name?: string | null;
   validity_status?: string | null;
+  eligible_category?: string | null;
 };
 
 type PairResult = {
@@ -17,10 +18,6 @@ type PairResult = {
   databaseError?: boolean;
 };
 
-// Harus identik dengan format normalized_name yang dibuat trigger database:
-// lower(trim(player_name)) lalu semua karakter non a-z/0-9 menjadi spasi.
-// Ini membuat nama seperti "A.BARGA", "A BARGA", dan "A-BARGA"
-// dapat dicocokkan ke record seeded yang sama.
 const norm = (v: unknown) => String(v ?? '')
   .trim()
   .toLocaleLowerCase('id-ID')
@@ -38,9 +35,6 @@ const level = (v: unknown) => String(v ?? '')
 const pairKey = (category: string, player1: string, player2: string) =>
   `${norm(category)}::${[norm(player1), norm(player2)].sort().join('::')}`;
 
-// Menyimpan hasil pasangan yang baru saja dinyatakan eligible. Ini penting agar
-// validasi otomatis di layar dan validasi saat tombol LANJUT/SIMPAN tidak saling
-// bertentangan akibat race-condition atau perbedaan hasil query.
 const eligibilityCache = new Map<string, { result: PairResult; expiresAt: number }>();
 const CACHE_TTL = 5 * 60 * 1000;
 
@@ -58,8 +52,7 @@ export function isAllowedSeededPair(category: string, seeded1: string, seeded2: 
   }
 
   if (cat.includes('lokal parepare')) {
-    // CC Lokal Parepare hanya mengizinkan:
-    // C- + C-, C- + D, atau D + D (urutan pemain bebas).
+    // CC Lokal Parepare hanya mengizinkan C- + C-, C- + D, atau D + D.
     return (a === 'C-' && b === 'C-')
       || (a === 'C-' && b === 'D')
       || (a === 'D' && b === 'C-')
@@ -70,16 +63,27 @@ export function isAllowedSeededPair(category: string, seeded1: string, seeded2: 
 }
 
 /**
- * Cek pasangan berdasarkan kolom database yang benar:
- * player_name / normalized_name / seeded_quality / division_level.
- * Hasil eligible disimpan sementara agar langkah berikutnya tidak dapat
- * membatalkan pasangan yang sudah lolos hanya karena query kedua berbeda.
+ * Bila satu nama memiliki beberapa record seeded, jangan mengambil record
+ * pertama secara acak. Evaluasi seluruh kandidat dan pilih kombinasi yang
+ * benar-benar eligible untuk kategori yang sedang didaftarkan.
+ *
+ * Jika eligible_category terisi pada record seeded, record tersebut hanya
+ * boleh dipakai pada kategori yang dinyatakan. Record lama yang kategorinya
+ * kosong tetap divalidasi berdasarkan aturan level seeded.
  */
+const categoryMatches = (category: string, seededCategory?: string | null) => {
+  const declared = norm(seededCategory);
+  if (!declared) return true;
+  const target = norm(category);
+  if (declared === target) return true;
+  if (declared.includes('ajatappareng') && target.includes('ajatappareng')) return true;
+  if (declared.includes('lokal parepare') && target.includes('lokal parepare')) return true;
+  return false;
+};
+
 export async function checkSeededPairEligibility(category: string, player1: string, player2: string): Promise<PairResult> {
   const names = [norm(player1), norm(player2)];
-  if (!names[0] || !names[1]) {
-    return { eligible: false, reason: 'Nama kedua pemain wajib diisi.' };
-  }
+  if (!names[0] || !names[1]) return { eligible: false, reason: 'Nama kedua pemain wajib diisi.' };
 
   const key = pairKey(category, player1, player2);
   const cached = eligibilityCache.get(key);
@@ -88,20 +92,16 @@ export async function checkSeededPairEligibility(category: string, player1: stri
 
   let { data, error } = await supabase
     .from('seeded_players')
-    .select('player_name,club_name,seeded_quality,division_level,normalized_name,validity_status')
+    .select('player_name,club_name,seeded_quality,division_level,normalized_name,validity_status,eligible_category')
     .in('normalized_name', names)
     .limit(100);
 
-  // Fallback untuk record lama yang normalized_name-nya belum terisi atau
-  // belum mengikuti trigger terbaru.
   if (!error && (!data || data.length < 2)) {
     const fallback = await supabase
       .from('seeded_players')
-      .select('player_name,club_name,seeded_quality,division_level,normalized_name,validity_status')
+      .select('player_name,club_name,seeded_quality,division_level,normalized_name,validity_status,eligible_category')
       .limit(5000);
-    if (!fallback.error) {
-      data = fallback.data;
-    }
+    if (!fallback.error) data = fallback.data;
   }
 
   if (error) {
@@ -113,56 +113,52 @@ export async function checkSeededPairEligibility(category: string, player1: stri
   }
 
   const rows = (data || []) as SeededPlayerRow[];
-  const find = (target: string) => {
-    const targetNorm = norm(target);
-    return rows.find(r => norm(r.normalized_name) === targetNorm)
-      || rows.find(r => norm(r.player_name) === targetNorm);
+  const candidates = (target: string) => rows.filter(r => {
+    const sameName = norm(r.normalized_name) === norm(target) || norm(r.player_name) === norm(target);
+    const valid = !r.validity_status || norm(r.validity_status) === 'valid';
+    return sameName && valid && categoryMatches(category, r.eligible_category);
+  });
+
+  const p1Candidates = candidates(player1);
+  const p2Candidates = candidates(player2);
+
+  if (!p1Candidates.length || !p2Candidates.length) {
+    const missing = [!p1Candidates.length ? player1 : '', !p2Candidates.length ? player2 : ''].filter(Boolean).join(' dan ');
+    return {
+      eligible: false,
+      reason: `${missing} belum ditemukan pada database seeded resmi untuk kategori ${norm(category).includes('ajatappareng') ? 'Ajatappareng' : 'Lokal Parepare'}. Pastikan nama pemain dipilih dari data seeded yang sesuai.`,
+    };
+  }
+
+  for (const p1 of p1Candidates) {
+    for (const p2 of p2Candidates) {
+      const s1 = level(p1.seeded_quality || p1.division_level);
+      const s2 = level(p2.seeded_quality || p2.division_level);
+      if (s1 && s2 && isAllowedSeededPair(category, s1, s2)) {
+        const result: PairResult = {
+          eligible: true,
+          reason: `Eligible: ${player1} (${s1}) + ${player2} (${s2}) untuk ${norm(category).includes('ajatappareng') ? 'Ajatappareng' : 'Lokal Parepare'}. Pemain boleh main rangkap di kategori lain selama pasangan dan level seeded memenuhi aturan kategori tersebut.`,
+          players: [p1, p2],
+          seeded: [s1, s2],
+        };
+        eligibilityCache.set(key, { result, expiresAt: Date.now() + CACHE_TTL });
+        return result;
+      }
+    }
+  }
+
+  const levels1 = [...new Set(p1Candidates.map(p => level(p.seeded_quality || p.division_level)).filter(Boolean))];
+  const levels2 = [...new Set(p2Candidates.map(p => level(p.seeded_quality || p.division_level)).filter(Boolean))];
+  const aturan = norm(category).includes('ajatappareng')
+    ? 'A + D, B + C-, atau C+ + C (urutan bebas)'
+    : 'C- + C-, C- + D, atau D + D (urutan bebas)';
+
+  return {
+    eligible: false,
+    reason: `Pasangan ${player1} (${levels1.join('/') || '-'}) + ${player2} (${levels2.join('/') || '-'}) tidak eligible untuk ${norm(category).includes('ajatappareng') ? 'Ajatappareng' : 'Lokal Parepare'}. Aturan: ${aturan}.`,
+    players: [p1Candidates[0], p2Candidates[0]],
+    seeded: [levels1[0] || '', levels2[0] || ''],
   };
-
-  const p1 = find(player1);
-  const p2 = find(player2);
-
-  if (!p1 || !p2) {
-    const missing = [!p1 ? player1 : '', !p2 ? player2 : ''].filter(Boolean).join(' dan ');
-    return {
-      eligible: false,
-      reason: `${missing} belum ditemukan pada database seeded resmi. Pastikan nama pemain dipilih dari data seeded.`,
-    };
-  }
-
-  const s1 = level(p1.seeded_quality || p1.division_level);
-  const s2 = level(p2.seeded_quality || p2.division_level);
-
-  if (!s1 || !s2) {
-    return {
-      eligible: false,
-      reason: `Level seeded ${player1} atau ${player2} belum tersedia pada database seeded.`,
-      players: [p1, p2],
-      seeded: [s1, s2],
-    };
-  }
-
-  if (!isAllowedSeededPair(category, s1, s2)) {
-    const kategori = norm(category).includes('ajatappareng') ? 'Ajatappareng' : 'Lokal Parepare';
-    const aturan = kategori === 'Ajatappareng'
-      ? 'A + D, B + C-, atau C+ + C (urutan bebas)'
-      : 'C- + C-, C- + D, atau D + D (urutan bebas)';
-    return {
-      eligible: false,
-      reason: `Pasangan ${player1} (${s1}) + ${player2} (${s2}) tidak eligible untuk ${kategori}. Aturan: ${aturan}.`,
-      players: [p1, p2],
-      seeded: [s1, s2],
-    };
-  }
-
-  const result: PairResult = {
-    eligible: true,
-    reason: `Eligible: ${player1} (${s1}) + ${player2} (${s2}).`,
-    players: [p1, p2],
-    seeded: [s1, s2],
-  };
-  eligibilityCache.set(key, { result, expiresAt: Date.now() + CACHE_TTL });
-  return result;
 }
 
 export function clearSeededPairEligibilityCache() {
