@@ -31,7 +31,7 @@ if (!src.includes('function SmartPlayerPhoto')) {
         if (!face || !image.naturalWidth || !image.naturalHeight) return;
         const x = Math.max(15, Math.min(85, ((face.x + face.width / 2) / image.naturalWidth) * 100));
         const y = Math.max(15, Math.min(85, ((face.y + face.height * 0.42) / image.naturalHeight) * 100));
-        if (!cancelled) setObjectPosition(\`${x.toFixed(1)}% \${y.toFixed(1)}%\`);
+        if (!cancelled) setObjectPosition(x.toFixed(1) + '% ' + y.toFixed(1) + '%');
       } catch {
         // CORS/unsupported detector: keep the safe upper-center fallback.
       }
