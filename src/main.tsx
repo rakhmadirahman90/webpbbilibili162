@@ -11,6 +11,7 @@ import { initializeLocalDatabase } from './data/localDatabase.ts';
 import { installNavigationPrefetch } from './utils/navigationPrefetch.ts';
 import { installAdminExportEnhancer } from './utils/adminExportEnhancer.ts';
 import { installRegistrationClubAutocomplete } from './utils/registrationClubAutocomplete.ts';
+import { installRegistrationPlayerAutocomplete } from './utils/registrationPlayerAutocomplete.ts';
 import './index.css';
 import './responsive-hardening.css';
 import './professional-responsive.css';
@@ -74,6 +75,7 @@ if (typeof window !== 'undefined') {
   installNavigationPrefetch();
   installAdminExportEnhancer();
   installRegistrationClubAutocomplete();
+  installRegistrationPlayerAutocomplete();
 }
 
 createRoot(document.getElementById('root')!).render(
