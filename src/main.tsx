@@ -5,6 +5,7 @@ import './utils/galleryRouteStability.ts';
 import './utils/galleryBackButtonRuntime.ts';
 import './utils/galleryFilePicker.ts';
 import './utils/publicScrollRecovery.ts';
+import { installTournamentSubmitClickFix } from './utils/tournamentSubmitClickFix.ts';
 import App from './App.tsx';
 import ErrorBoundary from './components/ErrorBoundary.tsx';
 import { initializeLocalDatabase } from './data/localDatabase.ts';
@@ -78,6 +79,7 @@ if (typeof window !== 'undefined') {
   installRegistrationClubAutocomplete();
   installRegistrationPlayerAutocomplete();
   installAdminTournamentWhatsAppNotification();
+  installTournamentSubmitClickFix();
 }
 
 createRoot(document.getElementById('root')!).render(
