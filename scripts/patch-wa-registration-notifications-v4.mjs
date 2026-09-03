@@ -4,8 +4,8 @@ const path='src/components/AdminPendaftaranTurnamenModern.tsx';
 let src=fs.readFileSync(path,'utf8');
 
 // Keep the existing participant WhatsApp notification implementation intact.
-// This patch only corrects the tournament event date and is intentionally
-// idempotent so repeated production builds cannot fail on source boundaries.
+// This patch corrects the event date and ensures every successful admin
+// verification message includes the official participant WhatsApp group.
 const before='09–12 September 2026';
 const after='08–12 September 2026';
 
@@ -18,5 +18,22 @@ src=src.split('09-12 September 2026').join('08-12 September 2026');
 src=src.split('09 — 12 September 2026').join('08 — 12 September 2026');
 src=src.split('09 – 12 September 2026').join('08 – 12 September 2026');
 
+const groupUrl='https://chat.whatsapp.com/Bs7TWJMPB2v78GTcTl30vO';
+const groupBlock=`    '',\n    '*INFO & GRUP WHATSAPP PESERTA*',\n    'Silakan bergabung ke grup WhatsApp resmi peserta PB BILIBILI 162 untuk mendapatkan informasi pertandingan, jadwal, pengumuman, dan koordinasi peserta.',\n    groupUrl`;
+
+// The v2 helper is injected before this v4 patch during production builds.
+// Replace the final Panitia line only inside the generated verification helper.
+const panitiaLine="    '*Panitia PB BILIBILI 162*'";
+if(src.includes('function buildVerifiedWAUrl') && src.includes(panitiaLine) && !src.includes(groupUrl)){
+  src=src.replace(panitiaLine, groupBlock);
+}
+
+// If the helper was already patched by an earlier build, make sure the URL is
+// present after the Panitia line without duplicating it on subsequent builds.
+if(src.includes('function buildVerifiedWAUrl') && !src.includes(groupUrl)){
+  const fallbackLine="    '*Panitia PB BILIBILI 162*'";
+  if(src.includes(fallbackLine)) src=src.replace(fallbackLine, groupBlock);
+}
+
 fs.writeFileSync(path,src);
-console.log('[patch-wa-v4] participant WhatsApp notification event dates set to 08–12 September 2026');
+console.log('[patch-wa-v4] verification notification uses 08–12 September 2026 and includes official participant WhatsApp group');
