@@ -90,12 +90,12 @@ function attach(input: HTMLInputElement, players: PlayerRecord[], index: number)
       const aq = norm(a.name) === query ? 0 : norm(a.name).startsWith(query) ? 1 : 2, bq = norm(b.name) === query ? 0 : norm(b.name).startsWith(query) ? 1 : 2;
       return aq - bq || a.name.localeCompare(b.name, 'id-ID', { sensitivity: 'base' }) || norm(a.club).localeCompare(norm(b.club), 'id-ID', { sensitivity: 'base' }) || norm(a.seeded).localeCompare(norm(b.seeded), 'id-ID', { sensitivity: 'base' });
     }).slice(0, 50);
-    if (!matches.length) { dropdown.style.display = 'none'; selectedKey = ''; status.textContent = `⚠ Pemain "${input.value.trim()}" belum ditemukan di database`; status.style.color = '#fbbf24'; return; }
+    if (!matches.length) { dropdown.style.display = 'none'; selectedKey = ''; status.textContent = `⚠ Pemain \"${input.value.trim()}\" belum ditemukan di database`; status.style.color = '#fbbf24'; return; }
     status.textContent = `${matches.length}${matches.length === 50 ? '+' : ''} pemain ditemukan di database seeded`; status.style.color = '#60a5fa'; dropdown.style.display = 'block';
     matches.forEach(player => {
       const button = document.createElement('button'); button.type = 'button';
       button.style.cssText = 'display:block;width:100%;max-width:100%;box-sizing:border-box;text-align:left;padding:10px 11px;margin:0;border:0;border-radius:10px;background:transparent;color:#fff;cursor:pointer;touch-action:manipulation;overflow:hidden;';
-      button.innerHTML = `<div style="font:900 12px/1.3 system-ui,sans-serif;white-space:normal;overflow-wrap:anywhere;">${escapeHtml(player.name)}</div><div style="margin-top:3px;color:#94a3b8;font:600 9px/1.35 system-ui,sans-serif;white-space:normal;overflow-wrap:anywhere;">${escapeHtml([player.club, player.seeded ? `Seeded ${player.seeded}` : '', player.level, player.category].filter(Boolean).join(' • '))}</div>`;
+      button.innerHTML = `<div style=\"font:900 12px/1.3 system-ui,sans-serif;white-space:normal;overflow-wrap:anywhere;\">${escapeHtml(player.name)}</div><div style=\"margin-top:3px;color:#94a3b8;font:600 9px/1.35 system-ui,sans-serif;white-space:normal;overflow-wrap:anywhere;\">${escapeHtml([player.club, player.seeded ? `Seeded ${player.seeded}` : '', player.level, player.category].filter(Boolean).join(' • '))}</div>`;
       button.addEventListener('mouseenter', () => { button.style.background = 'rgba(37,99,235,.16)'; });
       button.addEventListener('mouseleave', () => { button.style.background = 'transparent'; });
       button.addEventListener('pointerdown', event => event.preventDefault());
@@ -110,7 +110,7 @@ function attach(input: HTMLInputElement, players: PlayerRecord[], index: number)
   input.dataset.pbPlayerIndex = String(index + 1);
 }
 
-function escapeHtml(value: string) { return value.replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char] || char)); }
+function escapeHtml(value: string) { return value.replace(/[&<>'\"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', \"'\": '&#39;', '\"': '&quot;' }[char] || char)); }
 
 export function installRegistrationPlayerAutocomplete() {
   if (typeof window === 'undefined') return;
@@ -124,3 +124,56 @@ export function installRegistrationPlayerAutocomplete() {
   const schedule = () => { window.clearTimeout(timer); timer = window.setTimeout(() => void attachNow(), 150); };
   schedule(); const observer = new MutationObserver(schedule); observer.observe(document.body, { childList: true, subtree: true }); window.addEventListener('popstate', schedule); window.addEventListener('hashchange', schedule);
 }
+
+// Reliability guard for public tournament registration uploads.
+// The registration form uploads four identity files together. On mobile/spotty
+// connections, concurrent multipart uploads can surface as a generic
+// \"Failed to fetch\" even though Supabase Storage itself is healthy. Queue only
+// Storage object uploads so each file gets a clean connection, then retry
+// transient network failures with exponential backoff.
+let storageUploadQueue: Promise<void> = Promise.resolve();
+const sleep = (ms: number) => new Promise<void>(resolve => window.setTimeout(resolve, ms));
+const isTransientUploadError = (error: unknown) => {
+  const message = String((error as any)?.message || error || '').toLowerCase();
+  return message.includes('failed to fetch') || message.includes('networkerror') || message.includes('network error') || message.includes('load failed') || message.includes('fetch failed');
+};
+
+function installReliableStorageUploads() {
+  if (typeof window === 'undefined') return;
+  const storage = supabase.storage as any;
+  if (storage.__pbReliableUploadInstalled) return;
+  const originalFrom = storage.from.bind(storage);
+  storage.from = (bucketId: string) => {
+    const bucket = originalFrom(bucketId);
+    if (!bucket || typeof bucket.upload !== 'function') return bucket;
+    const originalUpload = bucket.upload.bind(bucket);
+    bucket.upload = (...args: any[]) => {
+      const run = async () => {
+        let lastError: unknown = null;
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+          try {
+            const result = await originalUpload(...args);
+            if (result?.error && isTransientUploadError(result.error) && attempt < 2) {
+              lastError = result.error;
+              await sleep(700 * (attempt + 1));
+              continue;
+            }
+            return result;
+          } catch (error) {
+            lastError = error;
+            if (!isTransientUploadError(error) || attempt >= 2) throw error;
+            await sleep(700 * (attempt + 1));
+          }
+        }
+        throw lastError instanceof Error ? lastError : new Error(String(lastError || 'Upload gagal karena gangguan jaringan.'));
+      };
+      const result = storageUploadQueue.then(run, run);
+      storageUploadQueue = result.then(() => undefined, () => undefined);
+      return result;
+    };
+    return bucket;
+  };
+  storage.__pbReliableUploadInstalled = true;
+}
+
+installReliableStorageUploads();
