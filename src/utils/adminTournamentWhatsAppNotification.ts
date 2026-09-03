@@ -1,3 +1,4 @@
+import Swal from 'sweetalert2';
 import { supabase } from '../supabase';
 
 type TournamentRegistration = {
@@ -25,13 +26,6 @@ const normalizeWhatsApp = (value?: string | null) => {
   return number;
 };
 
-const escapeHtml = (value: string) => value
-  .replace(/&/g, '&amp;')
-  .replace(/</g, '&lt;')
-  .replace(/>/g, '&gt;')
-  .replace(/"/g, '&quot;')
-  .replace(/'/g, '&#39;');
-
 const buildMessage = (row: TournamentRegistration) => {
   const names = [clean(row.nama_pemain_1), clean(row.nama_pemain_2)].filter(Boolean).join(' & ');
   return [
@@ -50,19 +44,10 @@ const buildMessage = (row: TournamentRegistration) => {
   ].join('\n');
 };
 
-const showError = (message: string) => {
-  const swal = (window as any).Swal;
-  if (swal?.fire) {
-    void swal.fire({ icon: 'error', title: 'WhatsApp belum dapat dikirim', text: message });
-    return;
-  }
-  window.alert(message);
-};
-
 const sendNotification = async (row: TournamentRegistration, button: HTMLButtonElement) => {
   const phone = normalizeWhatsApp(row.whatsapp);
   if (!phone) {
-    showError('Nomor WhatsApp penanggung jawab belum diisi pada data pendaftaran.');
+    await Swal.fire({ icon: 'error', title: 'WhatsApp belum tersedia', text: 'Nomor WhatsApp penanggung jawab belum diisi pada data pendaftaran.' });
     return;
   }
 
