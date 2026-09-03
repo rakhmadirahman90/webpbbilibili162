@@ -48,7 +48,8 @@ export function isAllowedSeededPair(category: string, seeded1: string, seeded2: 
   if (cat.includes('ajatappareng')) {
     return (a === 'A' && b === 'D') || (a === 'D' && b === 'A')
       || (a === 'B' && b === 'C-') || (a === 'C-' && b === 'B')
-      || (a === 'C+' && b === 'C') || (a === 'C' && b === 'C+');
+      || (a === 'C+' && b === 'C') || (a === 'C' && b === 'C+')
+      || (a === 'C' && b === 'C');
   }
 
   if (cat.includes('lokal parepare')) {
@@ -148,7 +149,7 @@ export async function checkSeededPairEligibility(category: string, player1: stri
   const levels1 = [...new Set(p1Candidates.map(p => level(p.seeded_quality || p.division_level)).filter(Boolean))];
   const levels2 = [...new Set(p2Candidates.map(p => level(p.seeded_quality || p.division_level)).filter(Boolean))];
   const aturan = norm(category).includes('ajatappareng')
-    ? 'A + D, B + C-, atau C+ + C (urutan bebas)'
+    ? 'A + D, B + C-, C+ + C, atau C + C (urutan bebas)'
     : 'C- + C-, C- + D, atau D + D (urutan bebas)';
 
   return {
