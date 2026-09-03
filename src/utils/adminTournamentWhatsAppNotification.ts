@@ -48,6 +48,8 @@ const buildMessage = (row: TournamentRegistration) => [
   PARTICIPANT_GROUP_URL
 ].join('\n');
 
+const WA_ICON = '<svg class="wa-verification-svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9.25" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M8.2 7.9c.25-.3.62-.43 1-.34l1.18.28c.34.08.59.32.7.65l.38 1.1c.1.28.04.59-.16.81l-.58.64c.65 1.22 1.62 2.18 2.84 2.83l.64-.58c.22-.2.53-.26.81-.16l1.1.38c.33.11.57.36.65.7l.28 1.18c.09.38-.04.75-.34 1-0.43.35-.99.52-1.55.43-4.1-.66-7.31-3.87-7.97-7.97-.09-.56.08-1.12.43-1.55Z" fill="currentColor"/></svg>';
+
 const sendNotification = async (row: TournamentRegistration, button: HTMLButtonElement) => {
   const phone = normalizeWhatsApp(row.whatsapp);
   if (!phone) {
@@ -57,7 +59,7 @@ const sendNotification = async (row: TournamentRegistration, button: HTMLButtonE
   const href = `https://wa.me/${phone}?text=${encodeURIComponent(buildMessage(row))}`;
   const original = button.innerHTML;
   button.disabled = true;
-  button.innerHTML = '<span aria-hidden="true">↗</span><span class="wa-verification-label">Membuka WA…</span>';
+  button.innerHTML = `${WA_ICON}<span class="wa-verification-label">Membuka WA…</span>`;
   try { window.open(href, '_blank', 'noopener,noreferrer'); }
   finally { window.setTimeout(() => { button.disabled=false; button.innerHTML=original; }, 900); }
 };
@@ -69,7 +71,7 @@ const createButton = (row: TournamentRegistration) => {
   button.setAttribute('aria-label','Kirim notifikasi verifikasi via WhatsApp');
   button.title='Kirim notifikasi hasil verifikasi via WhatsApp';
   button.className='admin-wa-verification-button inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 text-[10px] font-extrabold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-wait disabled:opacity-60';
-  button.innerHTML='<span class="wa-verification-icon" aria-hidden="true">↗</span><span class="wa-verification-label">WA Verifikasi</span>';
+  button.innerHTML=`${WA_ICON}<span class="wa-verification-label">WA Verifikasi</span>`;
   button.addEventListener('click',(event)=>{event.preventDefault();event.stopPropagation();void sendNotification(row,button);});
   return button;
 };
