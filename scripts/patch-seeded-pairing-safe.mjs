@@ -6,11 +6,6 @@ let s = fs.readFileSync(path, 'utf8');
 const marker = 'SEEDED_PAIRING_SAFE_V1';
 if (s.includes(marker)) process.exit(0);
 
-// Modern registration already uses the centralized pair validator in
-// src/utils/seededPairEligibility.ts. The legacy patch below introduced a
-// second eligibility state that could disagree with the visible green
-// "PASANGAN ELIGIBLE" result and reject LANJUT. Do not inject that legacy
-// state when the modern architecture is present.
 if (
   s.includes('checkSeededPairEligibility') &&
   s.includes('const [pairStatus,setPairStatus]') &&
@@ -48,12 +43,12 @@ const helperCode = [
   "  const m=raw.match(/\\b(C\\+|C-|A|B|C|D)\\b/);",
   "  return m ? m[1] : '';",
   '};',
-  "const pairRuleText = (category:string) => category===CATEGORIES[0] ? 'Ajatappareng: A + D, B + C-, atau C+ + C.' : 'Lokal CC: C + C-, C + D, C + C, C- + C-, C- + D, atau D + D.';",
+  "const pairRuleText = (category:string) => category===CATEGORIES[0] ? 'Ajatappareng: A + D, B + C-, C+ + C, C + C, atau C + D.' : 'Lokal CC: C + C-, C + D, C + C, C- + C-, C- + D, atau D + D.';",
   'const isValidSeededPair = (category:string,a:string,b:string) => {',
   "  const x=seededLevel(a), y=seededLevel(b);",
   '  if(!x || !y) return false;',
   "  const key=[x,y].sort().join('|');",
-  "  if(category===CATEGORIES[0]) return ['A|D','B|C-','C|C+'].includes(key);",
+  "  if(category===CATEGORIES[0]) return ['A|D','B|C-','C|C+','C|C','C|D'].includes(key);",
   "  return ['C|C','C|C-','C|D','C-|C-','C-|D','D|D'].includes(key);",
   '};',
   'const pairValidationMessage = (category:string,p1:any,p2:any) => {',
