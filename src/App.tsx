@@ -31,6 +31,7 @@ const StrukturOrganisasiPublic = lazy(() => import('./components/StrukturOrganis
 const PublicInventaris = lazy(() => import('./components/PublicInventaris'));
 const PublicPrestasi = lazy(() => import('./components/PublicPrestasi'));
 const PublicSeededPeserta = lazy(() => import('./components/PublicSeededPeserta'));
+const PublicPesertaTurnamen = lazy(() => import('./components/PublicPesertaTurnamen'));
 const PublicFAQ = lazy(() => import('./components/PublicFAQ'));
 const PublicProgram = lazy(() => import('./components/PublicProgram'));
 
@@ -52,7 +53,7 @@ function UrlSynchronizer({ activeView, setActiveView }: { activeView: string | n
   const fullPageMenus = useRef(new Set([
     'jadwal','jadwal-latihan','schedule','kas','quiz','contact','kontak',
     'struktur','struktur-organisasi','dokumen-penting','dokumen','documents',
-    'register','pendaftaran','pendaftaran-turnamen','pendaftaran/seeded-peserta',
+    'register','pendaftaran','pendaftaran-turnamen','pendaftaran/seeded-peserta','pendaftaran/peserta-diterima',
     'peringkat','rankings','ranking','atlet','players','player',
     'tentang-kami','about','tentang','sejarah','galeri','gallery',
     'visi-misi','visi','misi','fasilitas','inventaris','public-inventaris',
@@ -74,10 +75,6 @@ function UrlSynchronizer({ activeView, setActiveView }: { activeView: string | n
     else setActiveView(null);
   }, [location.pathname, location.search, setActiveView, fullPageMenus]);
 
-  // URL is now the single source of truth for public navigation.
-  // The previous reverse-sync (state -> URL) could race with mobile clicks:
-  // activeView was still the old page for one render and immediately pushed
-  // the browser back to the old URL, producing a blink/failed navigation.
   return null;
 }
 
@@ -88,7 +85,7 @@ export default function App() {
   const [activeAthleteFilter, setActiveAthleteFilter] = useState('all');
   const [activeView, setActiveView] = useState<string | null>(() => {
     const path = window.location.pathname.substring(1).toLowerCase().replace(/\/$/, '');
-    const supported = new Set(['jadwal','jadwal-latihan','schedule','kas','quiz','contact','kontak','struktur','struktur-organisasi','dokumen-penting','dokumen','documents','register','pendaftaran','pendaftaran-turnamen','pendaftaran/seeded-peserta','peringkat','rankings','ranking','atlet','players','player','tentang-kami','about','tentang','sejarah','galeri','gallery','visi-misi','visi','misi','fasilitas','inventaris','public-inventaris','berita','news','faq','sambutan','sambutan-ketua','prestasi','program']);
+    const supported = new Set(['jadwal','jadwal-latihan','schedule','kas','quiz','contact','kontak','struktur','struktur-organisasi','dokumen-penting','dokumen','documents','register','pendaftaran','pendaftaran-turnamen','pendaftaran/seeded-peserta','pendaftaran/peserta-diterima','peringkat','rankings','ranking','atlet','players','player','tentang-kami','about','tentang','sejarah','galeri','gallery','visi-misi','visi','misi','fasilitas','inventaris','public-inventaris','berita','news','faq','sambutan','sambutan-ketua','prestasi','program']);
     if (supported.has(path)) return path;
     const params = new URLSearchParams(window.location.search);
     if (params.has('newsId')) return 'berita';
@@ -133,6 +130,8 @@ export default function App() {
       'pendaftaran peserta': 'register', 'pendaftaran-peserta': 'register',
       'pendaftaran turnamen': 'pendaftaran-turnamen', 'pendaftaran-turnamen': 'pendaftaran-turnamen',
       seeded: 'pendaftaran/seeded-peserta', 'seeded-peserta': 'pendaftaran/seeded-peserta',
+      'peserta diterima': 'pendaftaran/peserta-diterima', 'peserta-diterima': 'pendaftaran/peserta-diterima',
+      'pendaftaran/peserta-diterima': 'pendaftaran/peserta-diterima',
       about: 'sejarah', 'tentang-kami': 'sejarah', sejarah: 'sejarah',
       visi: 'visi-misi', misi: 'visi-misi', 'visi-misi': 'visi-misi',
       struktur: 'struktur-organisasi', 'struktur-organisasi': 'struktur-organisasi',
@@ -164,6 +163,8 @@ export default function App() {
       case 'quiz': return <BadmintonQuiz />;
       case 'galeri': case 'gallery': return <Gallery />;
       case 'register': case 'pendaftaran': return <RegistrationForm />;
+      case 'pendaftaran-turnamen': return <PendaftaranTurnamen />;
+      case 'pendaftaran/peserta-diterima': return <PublicPesertaTurnamen />;
       case 'kas': return <PublicKasView />;
       case 'dokumen-penting': case 'dokumen': case 'documents': return <DokumenPenting />;
       case 'struktur': case 'struktur-organisasi': return <StrukturOrganisasiPublic />;
@@ -205,6 +206,7 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/pendaftaran-turnamen" element={<PendaftaranTurnamen />} />
         <Route path="/pendaftaran/seeded-peserta" element={<PublicSeededPeserta />} />
+        <Route path="/pendaftaran/peserta-diterima" element={<PublicPesertaTurnamen />} />
         <Route path="*" element={renderPublicShell()} />
       </Routes>
     </Router>
