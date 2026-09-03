@@ -7,8 +7,14 @@ type TournamentRegistration = {
   nama_pemain_2?: string | null;
   whatsapp?: string | null;
   kategori?: string | null;
+  asal_pb?: string | null;
+  domisili?: string | null;
+  status_pembayaran?: string | null;
   status_pendaftaran?: string | null;
+  catatan_admin?: string | null;
 };
+
+const PARTICIPANT_GROUP_URL = 'https://chat.whatsapp.com/Bs7TWJMPB2v78GTcTl30vO';
 
 const clean = (value: unknown) => String(value ?? '').trim();
 
@@ -28,19 +34,35 @@ const normalizeWhatsApp = (value?: string | null) => {
 
 const buildMessage = (row: TournamentRegistration) => {
   const names = [clean(row.nama_pemain_1), clean(row.nama_pemain_2)].filter(Boolean).join(' & ');
+  const status = clean(row.status_pendaftaran) || 'DITERIMA & DIVERIFIKASI';
+  const payment = clean(row.status_pembayaran) || '-';
+  const note = clean(row.catatan_admin) || '-';
+
   return [
-    '🏸 PB BILIBILI 162 CUP I — 2026',
+    'PENDAFTARAN BERHASIL DIVERIFIKASI',
+    'PB BILIBILI 162 CUP I TAHUN 2026',
     '',
-    'Pendaftaran turnamen Anda telah BERHASIL DIVERIFIKASI dan DITERIMA.',
+    'Halo Penanggung Jawab,',
+    'Pendaftaran pasangan Anda telah DITERIMA & DIVERIFIKASI oleh Admin.',
     '',
-    `Kode Pendaftaran: ${clean(row.kode_pendaftaran) || '-'}`,
-    `Pasangan: ${names || '-'}`,
-    `Kategori: ${clean(row.kategori) || '-'}`,
+    `* Kode: ${clean(row.kode_pendaftaran) || '-'}`,
+    `* Kategori: ${clean(row.kategori) || '-'}`,
+    `* Pemain 1: ${clean(row.nama_pemain_1) || '-'}`,
+    `* Pemain 2: ${clean(row.nama_pemain_2) || '-'}`,
+    `* PB/Klub: ${clean(row.asal_pb) || '-'}`,
+    `* Domisili: ${clean(row.domisili) || '-'}`,
+    `* Pembayaran: ${payment}`,
+    `* Status: ${status}`,
+    `* Catatan Admin: ${note}`,
     '',
-    'Terima kasih atas partisipasinya. Mohon simpan kode pendaftaran ini untuk keperluan pertandingan.',
+    'Selamat, pasangan Anda resmi terdaftar sebagai peserta pada kategori tersebut.',
     '',
-    'Salam olahraga,',
-    'Panitia PB Bilibili 162 Cup I — 2026'
+    '08–12 September 2026 • GOR Titik Kumpul Soreang Parepare',
+    'Panitia PB BILIBILI 162',
+    '',
+    '📲 INFORMASI GRUP WA PESERTA',
+    'Silakan bergabung ke Grup WhatsApp Peserta untuk mendapatkan informasi dan pembaruan turnamen:',
+    PARTICIPANT_GROUP_URL
   ].join('\n');
 };
 
@@ -115,7 +137,7 @@ export function installAdminTournamentWhatsAppNotification() {
     if (!/^\/admin\/pendaftaran-turnamen(?:\/|$)/i.test(window.location.pathname)) return;
     const { data, error } = await supabase
       .from('pendaftaran_turnamen')
-      .select('kode_pendaftaran,nama_pemain_1,nama_pemain_2,whatsapp,kategori,status_pendaftaran')
+      .select('kode_pendaftaran,nama_pemain_1,nama_pemain_2,whatsapp,kategori,asal_pb,domisili,status_pembayaran,status_pendaftaran,catatan_admin')
       .order('created_at', { ascending: false });
     if (error || !data) return;
     enhance(data as TournamentRegistration[]);
