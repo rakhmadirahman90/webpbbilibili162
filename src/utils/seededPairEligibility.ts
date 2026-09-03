@@ -62,25 +62,21 @@ export function isAllowedSeededPair(category: string, seeded1: string, seeded2: 
   return false;
 }
 
-/**
- * Bila satu nama memiliki beberapa record seeded, jangan mengambil record
- * pertama secara acak. Evaluasi seluruh kandidat dan pilih kombinasi yang
- * benar-benar eligible untuk kategori yang sedang didaftarkan.
- *
- * Jika eligible_category terisi pada record seeded, record tersebut hanya
- * boleh dipakai pada kategori yang dinyatakan. Record lama yang kategorinya
- * kosong tetap divalidasi berdasarkan aturan level seeded.
- */
 const categoryMatches = (category: string, seededCategory?: string | null) => {
   const declared = norm(seededCategory);
-  if (!declared) return true;
   const target = norm(category);
-  if (declared === target) return true;
-  if (declared.includes('ajatappareng') && target.includes('ajatappareng')) return true;
-  if (declared.includes('lokal parepare') && target.includes('lokal parepare')) return true;
-  return false;
+  if (!declared || !target) return false;
+  return declared === target
+    || (declared.includes('ajatappareng') && target.includes('ajatappareng'))
+    || (declared.includes('lokal parepare') && target.includes('lokal parepare'));
 };
 
+/**
+ * Cek pasangan berdasarkan SEMUA record seeded dengan nama tersebut.
+ * eligible_category dipakai sebagai preferensi, bukan syarat mutlak, karena
+ * data seeded lama dapat menyimpan kategori sumber yang berbeda sementara
+ * level pemain tetap sah untuk kategori lain sesuai aturan pasangan.
+ */
 export async function checkSeededPairEligibility(category: string, player1: string, player2: string): Promise<PairResult> {
   const names = [norm(player1), norm(player2)];
   if (!names[0] || !names[1]) return { eligible: false, reason: 'Nama kedua pemain wajib diisi.' };
@@ -105,28 +101,30 @@ export async function checkSeededPairEligibility(category: string, player1: stri
   }
 
   if (error) {
-    return {
-      eligible: false,
-      reason: `Database seeded tidak dapat diperiksa: ${error.message}`,
-      databaseError: true,
-    };
+    return { eligible: false, reason: `Database seeded tidak dapat diperiksa: ${error.message}`, databaseError: true };
   }
 
   const rows = (data || []) as SeededPlayerRow[];
-  const candidates = (target: string) => rows.filter(r => {
+  const allCandidates = (target: string) => rows.filter(r => {
     const sameName = norm(r.normalized_name) === norm(target) || norm(r.player_name) === norm(target);
     const valid = !r.validity_status || norm(r.validity_status) === 'valid';
-    return sameName && valid && categoryMatches(category, r.eligible_category);
+    return sameName && valid;
   });
 
-  const p1Candidates = candidates(player1);
-  const p2Candidates = candidates(player2);
+  const chooseCandidates = (target: string) => {
+    const all = allCandidates(target);
+    const preferred = all.filter(r => categoryMatches(category, r.eligible_category));
+    return preferred.length ? [...preferred, ...all.filter(r => !preferred.includes(r))] : all;
+  };
+
+  const p1Candidates = chooseCandidates(player1);
+  const p2Candidates = chooseCandidates(player2);
 
   if (!p1Candidates.length || !p2Candidates.length) {
     const missing = [!p1Candidates.length ? player1 : '', !p2Candidates.length ? player2 : ''].filter(Boolean).join(' dan ');
     return {
       eligible: false,
-      reason: `${missing} belum ditemukan pada database seeded resmi untuk kategori ${norm(category).includes('ajatappareng') ? 'Ajatappareng' : 'Lokal Parepare'}. Pastikan nama pemain dipilih dari data seeded yang sesuai.`,
+      reason: `${missing} belum ditemukan pada database seeded resmi. Pastikan nama pemain dipilih dari data seeded yang sesuai.`,
     };
   }
 
