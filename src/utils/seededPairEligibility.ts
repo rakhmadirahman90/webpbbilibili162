@@ -58,8 +58,12 @@ export function isAllowedSeededPair(category: string, seeded1: string, seeded2: 
   }
 
   if (cat.includes('lokal parepare')) {
-    const allowed = new Set(['C', 'C-', 'D']);
-    return allowed.has(a) && allowed.has(b);
+    // CC Lokal Parepare hanya mengizinkan:
+    // C- + C-, C- + D, atau D + D (urutan pemain bebas).
+    return (a === 'C-' && b === 'C-')
+      || (a === 'C-' && b === 'D')
+      || (a === 'D' && b === 'C-')
+      || (a === 'D' && b === 'D');
   }
 
   return false;
@@ -142,7 +146,7 @@ export async function checkSeededPairEligibility(category: string, player1: stri
     const kategori = norm(category).includes('ajatappareng') ? 'Ajatappareng' : 'Lokal Parepare';
     const aturan = kategori === 'Ajatappareng'
       ? 'A + D, B + C-, atau C+ + C (urutan bebas)'
-      : 'C + C, C + C-, C + D, C- + C-, C- + D, atau D + D (urutan bebas)';
+      : 'C- + C-, C- + D, atau D + D (urutan bebas)';
     return {
       eligible: false,
       reason: `Pasangan ${player1} (${s1}) + ${player2} (${s2}) tidak eligible untuk ${kategori}. Aturan: ${aturan}.`,
