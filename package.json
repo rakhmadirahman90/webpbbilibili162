@@ -22,7 +22,7 @@
     "file-saver": "^2.0.0",
     "firebase": "^12.16.2",
     "framer-motion": "^12.34.1",
-    "html2canvas": "^1.4.1",
+    "html2canvas": "^1.4.0",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.1",
     "lucide-react": "^0.344.0",
@@ -41,7 +41,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.9.0",
-    "@resvg/resvg-js": "^2.6.0",
+    "@resvg/resvg-js": "^2.6.2",
     "@types/express": "^5.0.6",
     "@types/node": "^22.10.0",
     "autoprefixer": "^10.4.18",
