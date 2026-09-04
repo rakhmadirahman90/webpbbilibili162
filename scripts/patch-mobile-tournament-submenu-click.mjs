@@ -92,3 +92,30 @@ if (s.includes(oldToggle) && !s.includes(newToggle)) s = s.replace(oldToggle, ne
 
 fs.writeFileSync(path, s, 'utf8');
 console.log('[patch-mobile-tournament-submenu-click] mobile tournament navigation + body portal sidebar applied');
+
+// The standalone Sponsorship route intentionally bypasses Navbar, so provide
+// the same always-visible Beranda affordance on desktop and mobile. This is
+// applied here because restore-app-from-known-good resets source files before
+// every production build.
+const sponsorPath = 'src/components/PublicSponsorship.tsx';
+let sponsor = fs.readFileSync(sponsorPath, 'utf8');
+if (!sponsor.includes("import { useNavigate } from 'react-router-dom';")) {
+  sponsor = sponsor.replace("import { getSiteSetting } from '../utils/siteSettingsHelper';", "import { getSiteSetting } from '../utils/siteSettingsHelper';\nimport { useNavigate } from 'react-router-dom';");
+}
+if (!sponsor.includes('Home } from')) {
+  sponsor = sponsor.replace("import { Handshake, Sparkles, RefreshCw } from 'lucide-react';", "import { Handshake, Sparkles, RefreshCw, Home } from 'lucide-react';");
+}
+if (!sponsor.includes('const navigate = useNavigate();')) {
+  sponsor = sponsor.replace('export default function PublicSponsorship() {', 'export default function PublicSponsorship() {\n  const navigate = useNavigate();');
+}
+if (!sponsor.includes('aria-label="Kembali ke Beranda"')) {
+  const mainMarker = '  return (\n    <main className="';
+  if (!sponsor.includes(mainMarker)) throw new Error('[patch-mobile-tournament-submenu-click] sponsorship main marker not found');
+  sponsor = sponsor.replace(mainMarker, '  const goHome = () => {\n    try { navigate(\'/\'); } catch { window.location.assign(\'/\'); }\n  };\n\n  return (\n    <main className="relative ');
+  sponsor = sponsor.replace(
+    '<div className="mx-auto flex min-h-[calc(100dvh-8rem)] w-full max-w-7xl flex-col justify-center">',
+    '<button type="button" onClick={goHome} aria-label="Kembali ke Beranda" title="Beranda" className="fixed left-3 top-3 z-[100] inline-flex h-11 w-11 items-center justify-center rounded-xl border border-white/15 bg-[#0b1428]/95 text-slate-300 shadow-xl backdrop-blur transition hover:border-amber-300/40 hover:bg-[#111d35] hover:text-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-300/50 sm:left-5 sm:top-5 sm:h-12 sm:w-12"><Home size={19} strokeWidth={2.2} /></button>\n      <div className="mx-auto flex min-h-[calc(100dvh-8rem)] w-full max-w-7xl flex-col justify-center">'
+  );
+}
+fs.writeFileSync(sponsorPath, sponsor, 'utf8');
+console.log('[patch-mobile-tournament-submenu-click] sponsorship Beranda icon applied for desktop + mobile');
