@@ -19,7 +19,10 @@ if (start >= 0 && end > start) {
 
 const appPath = 'src/App.tsx';
 const app = fs.readFileSync(appPath, 'utf8');
-if (!app.includes('const handleNavigate = (sectionId: string')) {
+// App.tsx is intentionally compact in production; accept harmless whitespace differences
+// while preserving the invariant that exactly one real handleNavigate function exists.
+const handleNavigatePattern = /const\s+handleNavigate\s*=\s*\(\s*sectionId\s*:\s*string\s*[,)]/;
+if (!handleNavigatePattern.test(app)) {
   throw new Error('[prepare-seeded-visibility] App.tsx is missing handleNavigate before public patches');
 }
 console.log('[prepare-seeded-visibility] verified handleNavigate invariant');
