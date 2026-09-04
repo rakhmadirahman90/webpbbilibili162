@@ -21,9 +21,13 @@ if (component.includes(oldActionsStart) && !component.includes("const accepted=r
 
 const oldDelete = "<button title=\"Hapus\" onClick={()=>void onDelete(row)} className=\"inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-2.5 text-[10px] font-black text-rose-700 hover:bg-rose-100\"><Trash2 size={14}/> Hapus</button>";
 const newDelete = "{accepted&&<button type=\"button\" data-wa-verification-button=\"1\" title=\"Kirim notifikasi hasil verifikasi via WhatsApp\" aria-label=\"Kirim notifikasi verifikasi via WhatsApp\" onClick={()=>openAdminTournamentWhatsApp(row)} className=\"admin-wa-verification-button inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 text-[10px] font-black text-emerald-700 hover:bg-emerald-100\"><MessageCircle size={14}/> WA</button>}" + oldDelete;
-if (component.includes(oldDelete) && !component.includes('onClick={()=>openAdminTournamentWhatsApp(row)}')) {
+if (component.includes(oldDelete) && !component.includes('onClick={()=>openAdminTournamentWhatsApp(row)')) {
   component = component.replace(oldDelete, newDelete);
 }
+
+// Safety hardening: the WA visibility condition must never depend on a
+// leaked/undefined identifier. Keep the condition local to each action row.
+component = component.replace(/\{accepted\s*&&/g, "{statusReg(row.status_pendaftaran)==='diterima'&&");
 
 fs.writeFileSync(componentPath, component);
 
@@ -39,4 +43,4 @@ if (!css.includes(marker)) {
 }
 fs.writeFileSync(cssPath, css);
 
-console.log('Tournament admin mobile actions and direct WhatsApp action patched.');
+console.log('Tournament admin mobile actions and direct WhatsApp action patched safely.');
