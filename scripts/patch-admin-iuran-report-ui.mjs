@@ -17,16 +17,31 @@ const update = (path, mutator) => {
 
 update('src/components/AdminRouteView.tsx', (source) => {
   let next = source;
-  const importAnchor = "import AdminRekapKeuangan from './AdminRekapKeuangan';";
-  if (!next.includes("import AdminLaporanIuran from './AdminLaporanIuran';")) {
-    if (!next.includes(importAnchor)) fail('AdminRouteView import anchor not found');
-    next = next.replace(importAnchor, `${importAnchor}\nimport AdminLaporanIuran from './AdminLaporanIuran';`);
+  const importStatement = "import AdminLaporanIuran from './AdminLaporanIuran';";
+  if (!next.includes(importStatement)) {
+    // AdminRouteView is currently generated in a compact one-line format, so
+    // do not depend on a newline-separated import anchor.
+    const anchor = "import AdminRekapKeuangan from './AdminRekapKeuangan';";
+    if (!next.includes(anchor)) fail('AdminRouteView import anchor not found');
+    next = next.replace(anchor, `${anchor} ${importStatement}`);
   }
-  if (!next.includes("case 'laporan-iuran':")) {
-    const routeRegex = /(\s*case\s+'rekap-keuangan':\s*return\s+adminOnly\(AdminRekapKeuangan\);\s*)/;
-    if (!routeRegex.test(next)) fail('AdminRouteView route anchor not found');
-    next = next.replace(routeRegex, `$1    case 'laporan-iuran': return adminOnly(AdminLaporanIuran);\n`);
+
+  if (!/case\s*['"]laporan-iuran['"]\s*:/.test(next)) {
+    // Match both compact and pretty-printed switch cases, e.g.
+    // case'rekap-keuangan':return adminOnly(AdminRekapKeuangan);
+    const routeRegex = /(case\s*['"]rekap-keuangan['"]\s*:\s*return\s+adminOnly\(AdminRekapKeuangan\);)/;
+    if (!routeRegex.test(next)) {
+      // Safe fallback: insert immediately before the first case following the
+      // rekap-keuangan route. This keeps the existing route structure intact.
+      const switchMarker = /switch\s*\(path\)\s*\{/;
+      if (!switchMarker.test(next)) fail('AdminRouteView switch anchor not found');
+      const replacement = `$&case'laporan-iuran':return adminOnly(AdminLaporanIuran);`;
+      next = next.replace(switchMarker, replacement);
+    } else {
+      next = next.replace(routeRegex, `$1case'laporan-iuran':return adminOnly(AdminLaporanIuran);`);
+    }
   }
+
   return next;
 });
 
@@ -34,20 +49,25 @@ update('src/components/Sidebar.tsx', (source) => {
   // Normalize malformed double-comma array entries from earlier generated builds.
   let next = source.replace(/\},,(?=\s*(?:\r?\n|$))/gm, '},');
 
-  if (next.includes("path: 'laporan-iuran'")) return next;
+  if (next.includes("path: 'laporan-iuran'") || next.includes('path:"laporan-iuran"')) return next;
 
   const kasRegex = /(^|\n)(\s*\{[^\n]*path:\s*['"]kas['"][^\n]*\}),(?=\s*(?:\r?\n|$))/m;
-  if (!kasRegex.test(next)) {
-    console.warn('[iuran-report-patch] path=kas menu entry not found; menu patch skipped safely');
-    return next;
+  if (kasRegex.test(next)) {
+    next = next.replace(
+      kasRegex,
+      `$1$2,\n        { name: 'Laporan Pembayaran Iuran', path: 'laporan-iuran', icon: FileSpreadsheet, adminOnly: true },`
+    );
+  } else {
+    // Compact generated Sidebar fallback: insert after the kas entry even if
+    // it shares a line with neighboring entries.
+    const compactKas = /(\{\s*name:\s*['"][^'"]*['"]\s*,\s*path:\s*['"]kas['"][^}]*\})/;
+    if (compactKas.test(next)) {
+      next = next.replace(compactKas, `$1, { name: 'Laporan Pembayaran Iuran', path: 'laporan-iuran', icon: FileSpreadsheet, adminOnly: true }`);
+    } else {
+      console.warn('[iuran-report-patch] path=kas menu entry not found; menu patch skipped safely');
+    }
   }
 
-  next = next.replace(
-    kasRegex,
-    `$1$2,\n        { name: 'Laporan Pembayaran Iuran', path: 'laporan-iuran', icon: FileSpreadsheet, adminOnly: true },`
-  );
-
-  // Final syntax guard: Sidebar must never contain a double comma entry ending.
   next = next.replace(/\},,(?=\s*(?:\r?\n|$))/gm, '},');
   return next;
 });
@@ -56,8 +76,11 @@ update('src/components/KasManager.tsx', (source) => {
   let next = source;
   const importAnchor = "import autoTable from 'jspdf-autotable';";
   if (!next.includes("import '../kas-manager-responsive.css';")) {
-    if (!next.includes(importAnchor)) fail('KasManager import anchor not found');
-    next = next.replace(importAnchor, `${importAnchor}\nimport '../kas-manager-responsive.css';`);
+    if (!next.includes(importAnchor)) {
+      console.warn('[iuran-report-patch] KasManager import anchor not found; responsive import skipped safely');
+    } else {
+      next = next.replace(importAnchor, `${importAnchor}\nimport '../kas-manager-responsive.css';`);
+    }
   }
   if (!next.includes('data-kas-manager')) {
     const rootRegex = /(export default function KasManager[\s\S]*?\n\s*return\s*\(\s*)<div\b/;
