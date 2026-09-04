@@ -124,14 +124,97 @@ function isStorageRequest(url: string): boolean {
   return url.startsWith(`${envUrl}/storage/v1/`);
 }
 
+function isRegistrationImageUpload(url: string): boolean {
+  return isStorageRequest(url) && (
+    url.includes('/storage/v1/object/turnamen-dokumen/pendaftaran/') ||
+    url.includes('/storage/v1/object/uploads/turnamen-bilibili-162/')
+  );
+}
+
+function isImageBlob(value: unknown): value is Blob {
+  return typeof Blob !== 'undefined' && value instanceof Blob && value.type.startsWith('image/');
+}
+
+async function compressRegistrationImage(blob: Blob): Promise<Blob> {
+  if (!isImageBlob(blob) || typeof window === 'undefined' || typeof document === 'undefined') return blob;
+
+  const MAX_BYTES = 1_200_000;
+  const MAX_DIMENSION = 1600;
+  if (blob.size <= MAX_BYTES) {
+    try {
+      const probe = await createImageBitmap(blob);
+      const smallEnough = Math.max(probe.width, probe.height) <= MAX_DIMENSION;
+      probe.close();
+      if (smallEnough) return blob;
+    } catch {}
+  }
+
+  try {
+    const bitmap = await createImageBitmap(blob);
+    const scale = Math.min(1, MAX_DIMENSION / Math.max(bitmap.width, bitmap.height));
+    const width = Math.max(1, Math.round(bitmap.width * scale));
+    const height = Math.max(1, Math.round(bitmap.height * scale));
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d', { alpha: false });
+    if (!ctx) {
+      bitmap.close();
+      return blob;
+    }
+    ctx.drawImage(bitmap, 0, 0, width, height);
+    bitmap.close();
+
+    let quality = 0.82;
+    let output: Blob | null = null;
+    for (let attempt = 0; attempt < 4; attempt++) {
+      output = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/jpeg', quality));
+      if (output && output.size <= MAX_BYTES) break;
+      quality -= 0.08;
+    }
+    canvas.width = 1;
+    canvas.height = 1;
+    return output && output.size < blob.size ? output : blob;
+  } catch {
+    return blob;
+  }
+}
+
+async function prepareRegistrationUpload(input: RequestInfo | URL, init?: RequestInit): Promise<{ input: RequestInfo | URL; init?: RequestInit }> {
+  if (!isRegistrationImageUpload(getFetchUrl(input)) || typeof window === 'undefined') return { input, init };
+
+  try {
+    if (init?.body && isImageBlob(init.body)) {
+      const compressed = await compressRegistrationImage(init.body);
+      const headers = new Headers(init.headers || {});
+      if (compressed !== init.body) headers.set('content-type', 'image/jpeg');
+      return { input, init: { ...init, body: compressed, headers } };
+    }
+
+    if (typeof Request !== 'undefined' && input instanceof Request && !init?.body) {
+      const request = input.clone();
+      const body = await request.blob();
+      if (!isImageBlob(body)) return { input, init };
+      const compressed = await compressRegistrationImage(body);
+      if (compressed === body) return { input, init };
+      const headers = new Headers(request.headers);
+      headers.set('content-type', 'image/jpeg');
+      return { input: new Request(request, { body: compressed, headers }), init };
+    }
+  } catch {}
+
+  return { input, init };
+}
+
 async function storageFetchWithRetry(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const maxRetries = 2;
+  const prepared = await prepareRegistrationUpload(input, init);
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      const requestInput = typeof Request !== 'undefined' && input instanceof Request
-        ? input.clone()
-        : input;
-      return await nativeFetch(requestInput, init);
+      const requestInput = typeof Request !== 'undefined' && prepared.input instanceof Request
+        ? prepared.input.clone()
+        : prepared.input;
+      return await nativeFetch(requestInput, prepared.init);
     } catch (error) {
       if (attempt >= maxRetries) throw error;
       const delay = 700 * (2 ** attempt) + Math.floor(Math.random() * 250);
