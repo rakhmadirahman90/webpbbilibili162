@@ -3,25 +3,69 @@ import fs from 'node:fs';
 const path = 'src/components/Navbar.tsx';
 let s = fs.readFileSync(path, 'utf8');
 
-// Mobile tournament submenu items must bypass activeView/onNavigate.
-// They are public standalone pages and must navigate directly.
-const old = `  const handleMobileMenuClick = (event: React.MouseEvent<HTMLButtonElement>, path: string, subPath?: string) => {\n    event.preventDefault();\n    event.stopPropagation();\n    go(path, subPath);\n  };`;
-const next = `  const handleMobileMenuClick = (event: React.MouseEvent<HTMLButtonElement>, path: string, subPath?: string, label?: string) => {\n    event.preventDefault();\n    event.stopPropagation();\n\n    const p = normalizeNavigationPath(path);\n    const sp = normalizeNavigationPath(subPath || '');\n    const text = String(label || '').toLowerCase().trim();\n\n    if (text.includes('daftar seeded') || sp === 'seeded-peserta' || sp.includes('seeded-peserta')) {\n      setOpenMenu(null);\n      setMobileOpen(false);\n      navigate('/pendaftaran/seeded-peserta');\n      return;\n    }\n    if (\n      text.includes('daftar peserta diterima') ||\n      text.includes('daftar peserta turnamen') ||\n      sp === 'pendaftaran/peserta-diterima' ||\n      sp.includes('peserta-diterima') ||\n      sp === 'pendaftaran/peserta-turnamen' ||\n      sp.includes('peserta-turnamen')\n    ) {\n      setOpenMenu(null);\n      setMobileOpen(false);\n      navigate('/pendaftaran/peserta-diterima');\n      return;\n    }\n    if (text.includes('formulir pendaftaran turnamen') || p === 'pendaftaran-turnamen' || sp === 'pendaftaran-turnamen') {\n      setOpenMenu(null);\n      setMobileOpen(false);\n      navigate('/pendaftaran-turnamen');\n      return;\n    }\n\n    go(path, subPath);\n  };`;
-if (!s.includes(next)) {
-  if (!s.includes(old)) throw new Error('[patch-mobile-tournament-submenu-click] handler marker not found');
-  s = s.replace(old, next);
+// Mobile tournament/public submenu items must bypass activeView/onNavigate.
+// This patch is intentionally compatible with the sponsorship navigation patch,
+// which may already have replaced the original handler earlier in prebuild.
+const handlerRegex = /  const handleMobileMenuClick = \(event: React\.MouseEvent<HTMLButtonElement>, path: string, subPath\?: string(?:, label\?: string)?\) => \{[\s\S]*?\n  \};/;
+const next = `  const handleMobileMenuClick = (event: React.MouseEvent<HTMLButtonElement>, path: string, subPath?: string, label?: string) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const p = normalizeNavigationPath(path || '');
+    const sp = normalizeNavigationPath(subPath || '');
+    const text = String(label || '').toLowerCase().trim();
+
+    setOpenMenu(null);
+    setMobileOpen(false);
+
+    // Public tournament pages use dedicated routes and must not be swallowed by
+    // the generic section navigation used by the main application shell.
+    if (text.includes('daftar sponsorship') || text.includes('sponsorship') || ['sponsorship', 'sponsor', 'daftar-sponsorship'].includes(sp) || ['sponsorship', 'sponsor', 'daftar-sponsorship'].includes(p)) {
+      try { navigate('/sponsorship'); } catch { window.location.assign('/sponsorship'); }
+      return;
+    }
+    if (text.includes('daftar seeded') || sp === 'seeded-peserta' || sp.includes('seeded-peserta')) {
+      try { navigate('/pendaftaran/seeded-peserta'); } catch { window.location.assign('/pendaftaran/seeded-peserta'); }
+      return;
+    }
+    if (
+      text.includes('daftar peserta diterima') ||
+      text.includes('daftar peserta turnamen') ||
+      sp === 'pendaftaran/peserta-diterima' ||
+      sp.includes('peserta-diterima') ||
+      sp === 'pendaftaran/peserta-turnamen' ||
+      sp.includes('peserta-turnamen')
+    ) {
+      try { navigate('/pendaftaran/peserta-diterima'); } catch { window.location.assign('/pendaftaran/peserta-diterima'); }
+      return;
+    }
+    if (text.includes('formulir pendaftaran turnamen') || p === 'pendaftaran-turnamen' || sp === 'pendaftaran-turnamen') {
+      try { navigate('/pendaftaran-turnamen'); } catch { window.location.assign('/pendaftaran-turnamen'); }
+      return;
+    }
+
+    go(path, subPath);
+  };`;
+
+if (handlerRegex.test(s)) {
+  s = s.replace(handlerRegex, next);
+} else {
+  throw new Error('[patch-mobile-tournament-submenu-click] mobile handler boundary not found');
 }
 
 // Mobile submenu taps use click only. Pointer-down preloading can race with the
 // drawer close/navigation transition on Android browsers.
-const oldMap = `onPointerDown={() => { preloadNavigation(menu.path, sub.path); }} onClick={(e) => handleMobileMenuClick(e, menu.path, sub.path)`;
-const newMap = `onClick={(e) => handleMobileMenuClick(e, menu.path, sub.path, sub.label)`;
-if (s.includes(oldMap)) s = s.replace(oldMap, newMap);
+s = s.replace(
+  /onPointerDown=\{\(\) => \{ preloadNavigation\(menu\.path, sub\.path\); \}\} onClick=\{\(e\) => handleMobileMenuClick\(e, menu\.path, sub\.path\)(?:, sub\.label)?\}/,
+  'onClick={(e) => handleMobileMenuClick(e, menu.path, sub.path, sub.label)}'
+);
+s = s.replace(
+  /onClick=\{\(e\) => handleMobileMenuClick\(e, menu\.path, sub\.path\)\}/,
+  'onClick={(e) => handleMobileMenuClick(e, menu.path, sub.path, sub.label)}'
+);
 
 // IMPORTANT: the drawer is a viewport overlay. Mount it through a React portal
 // so no transformed/overflow/stacking ancestor from the landing page can hide it.
-// The previous attempt generated invalid JSX; this version deliberately inserts
-// the raw JSX block inside a Fragment with no extra braces around the block.
 if (!s.includes("import { createPortal } from 'react-dom';")) {
   s = s.replace(
     "import React, { useState, useEffect, useCallback, memo } from 'react';",
