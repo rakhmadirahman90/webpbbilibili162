@@ -46,8 +46,6 @@ const MEMORY_TTL = 60_000;
 const SESSION_MAX_AGE = 30 * 60_000;
 const SESSION_PREFIX = 'pb_supabase_query_v4:';
 
-// Documents are intentionally NOT cached. The public documents page must always
-// reflect the current contents of public.documents in Supabase immediately.
 const PUBLIC_CACHE_TABLES = new Set([
   'site_settings', 'berita', 'komentar', 'galeri', 'gallery', 'hero_sliders',
   'navbar_menu', 'navbar_settings', 'page_contents',
@@ -122,6 +120,27 @@ function invalidateSupabaseReadCache() {
 
 const nativeFetch = typeof window !== 'undefined' ? window.fetch.bind(window) : fetch;
 
+function isStorageRequest(url: string): boolean {
+  return url.startsWith(`${envUrl}/storage/v1/`);
+}
+
+async function storageFetchWithRetry(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const maxRetries = 2;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const requestInput = typeof Request !== 'undefined' && input instanceof Request
+        ? input.clone()
+        : input;
+      return await nativeFetch(requestInput, init);
+    } catch (error) {
+      if (attempt >= maxRetries) throw error;
+      const delay = 700 * (2 ** attempt) + Math.floor(Math.random() * 250);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+  throw new Error('Storage request failed');
+}
+
 async function networkSupabaseGet(input: RequestInfo | URL, init?: RequestInit, memoryKey?: string, url?: string): Promise<Response> {
   const targetUrl = url || getFetchUrl(input);
   const existing = memoryKey ? inFlightQueries.get(memoryKey) : undefined;
@@ -162,15 +181,15 @@ const cachedFetch = async (input: RequestInfo | URL, init?: RequestInit): Promis
   const isSupabaseRestRead = url.startsWith(`${envUrl}/rest/v1/`) && (method === 'GET' || method === 'HEAD');
 
   if (!isSupabaseRestRead) {
-    const response = await nativeFetch(input, init);
+    const response = isStorageRequest(url)
+      ? await storageFetchWithRetry(input, init)
+      : await nativeFetch(input, init);
     if (url.startsWith(`${envUrl}/rest/v1/`) && method !== 'GET' && method !== 'HEAD') invalidateSupabaseReadCache();
     return response;
   }
 
   const table = getTableFromRestUrl(url);
 
-  // Never cache the documents table. This prevents an old empty browser/session
-  // cache from masking the real row that currently exists in Supabase.
   if (table === 'documents') {
     return networkSupabaseGet(input, init);
   }
