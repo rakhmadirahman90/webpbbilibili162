@@ -16,6 +16,7 @@ const scripts = [
   'patch-registration-whatsapp-direct.mjs',
   'patch-payment-dashboard.mjs',
   'patch-admin-participant-doc-edit-safe.mjs',
+  'patch-admin-participant-load-resilience.mjs',
   'patch-kas-modern-ui.mjs',
   'patch-kas-modern-ui-css-fix.mjs'
 ];
