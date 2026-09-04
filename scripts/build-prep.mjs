@@ -16,7 +16,8 @@ const scripts = [
   'patch-registration-whatsapp-direct.mjs',
   'patch-payment-dashboard.mjs',
   'patch-admin-participant-doc-edit-safe.mjs',
-  'patch-kas-modern-ui.mjs'
+  'patch-kas-modern-ui.mjs',
+  'patch-kas-modern-ui-css-fix.mjs'
 ];
 
 console.log('[build-prep] running stable production preparation scripts');
