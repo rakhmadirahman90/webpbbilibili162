@@ -4,7 +4,7 @@ const path = 'src/components/Navbar.tsx';
 let src = fs.readFileSync(path, 'utf8');
 
 const startMarker = "  const getSubMenus = (parentId: string) => {";
-const endMarker = "\n\n  const iconFor =";
+const endMarker = "\n  const iconFor =";
 const start = src.indexOf(startMarker);
 const end = src.indexOf(endMarker, start);
 
