@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Handshake, Sparkles, RefreshCw } from 'lucide-react';
+import { Handshake, Sparkles, RefreshCw, Home } from 'lucide-react';
 import { supabase } from '../supabase';
 import { getSiteSetting } from '../utils/siteSettingsHelper';
+import { useNavigate } from 'react-router-dom';
 
 type Sponsor = { id: string; name: string; logo_url: string; website_url?: string; tier?: string; description?: string; order_index?: number; active?: boolean };
 
@@ -18,6 +19,7 @@ const normalize = (raw: any): Sponsor[] => {
 };
 
 export default function PublicSponsorship() {
+  const navigate = useNavigate();
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -37,8 +39,21 @@ export default function PublicSponsorship() {
     return () => { window.removeEventListener('site_setting_updated', onSetting); supabase.removeChannel(channel); };
   }, [load]);
 
+  const goHome = () => {
+    try { navigate('/'); } catch { window.location.assign('/'); }
+  };
+
   return (
-    <main className="min-h-[calc(100dvh-4rem)] w-full overflow-x-hidden bg-[#050b17] px-3 py-5 text-white sm:px-5 sm:py-8">
+    <main className="relative min-h-[calc(100dvh-4rem)] w-full overflow-x-hidden bg-[#050b17] px-3 py-5 text-white sm:px-5 sm:py-8">
+      <button
+        type="button"
+        onClick={goHome}
+        aria-label="Kembali ke Beranda"
+        title="Beranda"
+        className="fixed left-3 top-3 z-[100] inline-flex h-11 w-11 items-center justify-center rounded-xl border border-white/15 bg-[#0b1428]/95 text-slate-300 shadow-xl backdrop-blur transition hover:border-amber-300/40 hover:bg-[#111d35] hover:text-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-300/50 sm:left-5 sm:top-5 sm:h-12 sm:w-12"
+      >
+        <Home size={19} strokeWidth={2.2} />
+      </button>
       <div className="mx-auto flex min-h-[calc(100dvh-8rem)] w-full max-w-7xl flex-col justify-center">
         <section className="relative overflow-hidden rounded-[2rem] border border-amber-400/20 bg-gradient-to-br from-[#101b33] via-[#0a1427] to-[#050914] px-5 py-7 shadow-2xl sm:px-8 sm:py-9">
           <div className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-amber-400/10 blur-3xl" /><div className="pointer-events-none absolute -bottom-28 -left-20 h-64 w-64 rounded-full bg-blue-500/10 blur-3xl" />
