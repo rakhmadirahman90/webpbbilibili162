@@ -25,7 +25,7 @@ const typeCode = [
   '  division_level?:string;',
   'eligible_category?:string;',
   '  tournament_qualification?:string;',
-  '  message?:string;',
+  'message?:string;',
   '};',
   ''
 ].join('\n');
@@ -43,12 +43,12 @@ const helperCode = [
   "  const m=raw.match(/\\b(C\\+|C-|A|B|C|D)\\b/);",
   "  return m ? m[1] : '';",
   '};',
-  "const pairRuleText = (category:string) => category===CATEGORIES[0] ? 'Ajatappareng: A + D, B + C-, C+ + C, C + C, atau C + D.' : 'Lokal CC: C + C-, C + D, C + C, C- + C-, C- + D, atau D + D.';",
+  "const pairRuleText = (category:string) => category===CATEGORIES[0] ? 'Ajatappareng: A + D, B + C-, B + D, C+ + C, C+ + C-, C + C, atau C + D.' : 'Lokal CC: C + C-, C + D, C + C, C- + C-, C- + D, atau D + D.';",
   'const isValidSeededPair = (category:string,a:string,b:string) => {',
   "  const x=seededLevel(a), y=seededLevel(b);",
   '  if(!x || !y) return false;',
   "  const key=[x,y].sort().join('|');",
-  "  if(category===CATEGORIES[0]) return ['A|D','B|C-','C|C+','C|C','C|D'].includes(key);",
+  "  if(category===CATEGORIES[0]) return ['A|D','B|C-','B|D','C|C+','C-|C+','C|C','C|D'].includes(key);",
   "  return ['C|C','C|C-','C|D','C-|C-','C-|D','D|D'].includes(key);",
   '};',
   'const pairValidationMessage = (category:string,p1:any,p2:any) => {',
