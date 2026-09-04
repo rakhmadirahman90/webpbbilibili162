@@ -19,7 +19,7 @@ const scripts = [
   'patch-admin-participant-load-resilience.mjs',
   'patch-supabase-fetch-timeout.mjs',
   'patch-navbar-tournament-submenus.mjs',
-  'patch-sponsorship-home-icon.mjs',
+  'patch-mobile-sponsorship-navigation.mjs',
   'patch-kas-modern-ui.mjs',
   'patch-kas-modern-ui-css-fix.mjs'
 ];
