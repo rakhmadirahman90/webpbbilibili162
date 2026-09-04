@@ -1,84 +1,57 @@
-/**
- * Utility helper to optimize image URLs for fast loading speeds by converting
- * them to next-gen formats (like WebP) and applying compression/resizing.
- */
+/** Fast image URL optimizer for public web images. */
 
-/**
- * Optimizes an image URL by turning it into a WebP format and applying smart resizing/quality parameters.
- * Supports Unsplash parameters modification and falls back to images.weserv.nl proxy for general external images.
- * 
- * @param url The raw image URL
- * @param width Optional target width for resizing
- * @param quality Compression quality (1-100), defaults to 80
- * @returns Optimized image URL
- */
-export function getOptimizedImageUrl(url: string, width?: number, quality: number = 80): string {
+export function getOptimizedImageUrl(url: string, width?: number, quality: number = 78): string {
   if (!url) return '';
-
-  // Extract first valid URL if multiple space/comma separated URLs are passed
   const trimmedUrl = url.trim().split(/[\s,]+/)[0];
   if (!trimmedUrl) return '';
 
-  // Bypass if it is a local asset, data URI (base64), SVG, or Supabase CDN URL
-  if (
-    trimmedUrl.startsWith('/') || 
-    trimmedUrl.startsWith('data:') || 
-    trimmedUrl.endsWith('.svg') ||
-    trimmedUrl.includes('.svg?') ||
-    trimmedUrl.includes('supabase.co')
-  ) {
+  // Local/data/SVG assets should stay on their native URL.
+  if (trimmedUrl.startsWith('/') || trimmedUrl.startsWith('data:') || /\.svg(?:\?|$)/i.test(trimmedUrl)) {
     return trimmedUrl;
   }
 
   try {
-    // 1. Optimize Unsplash images directly using their native API parameters
-    if (trimmedUrl.includes('images.unsplash.com')) {
-      const urlObj = new URL(trimmedUrl);
-      
-      // Force webp format and optimal compression
-      urlObj.searchParams.set('fm', 'webp');
-      urlObj.searchParams.set('q', quality.toString());
-      
-      // Handle responsive width limits if specified
-      if (width) {
-        urlObj.searchParams.set('w', width.toString());
-        urlObj.searchParams.set('fit', 'max');
-      } else {
-        // If no width specified, set a reasonable default upper bound (e.g., 1200px)
-        urlObj.searchParams.set('w', '1200');
-        urlObj.searchParams.set('fit', 'max');
-      }
-      
-      return urlObj.toString();
+    // Supabase public Storage supports server-side image transformations.
+    // Only rewrite explicitly public objects; signed/private KTP/document URLs are untouched.
+    const publicMarker = '/storage/v1/object/public/';
+    const supabaseIndex = trimmedUrl.indexOf(publicMarker);
+    if (supabaseIndex >= 0) {
+      const origin = trimmedUrl.slice(0, supabaseIndex);
+      const objectPath = trimmedUrl.slice(supabaseIndex + publicMarker.length);
+      const transformed = new URL(`${origin}/storage/v1/render/image/public/${objectPath}`);
+      if (width) transformed.searchParams.set('width', String(Math.min(Math.max(width, 160), 1600)));
+      transformed.searchParams.set('quality', String(Math.min(Math.max(quality, 45), 85)));
+      transformed.searchParams.set('resize', 'contain');
+      return transformed.toString();
     }
 
-    // 2. Optimize Supabase storage or general external images using images.weserv.nl
-    // This is a free, fast, open-source image cache & resize service that supports webp conversion
-    const cleanUrl = trimmedUrl.replace(/^https?:\/\//, '');
-    let proxyUrl = `https://images.weserv.nl/?url=${encodeURIComponent(cleanUrl)}&output=webp&q=${quality}`;
-    
-    if (width) {
-      proxyUrl += `&w=${width}`;
+    // Unsplash has native responsive WebP support.
+    if (trimmedUrl.includes('images.unsplash.com')) {
+      const imageUrl = new URL(trimmedUrl);
+      imageUrl.searchParams.set('fm', 'webp');
+      imageUrl.searchParams.set('q', String(quality));
+      imageUrl.searchParams.set('w', String(width || 1200));
+      imageUrl.searchParams.set('fit', 'max');
+      return imageUrl.toString();
     }
-    
-    return proxyUrl;
-  } catch (error) {
-    console.warn('Failed to optimize image URL:', url, error);
-    return trimmedUrl; // Fallback to raw URL on error
+
+    // External public images: use a cached WebP resize proxy.
+    const cleanUrl = trimmedUrl.replace(/^https?:\/\//, '');
+    const params = new URLSearchParams({ url: cleanUrl, output: 'webp', q: String(quality) });
+    if (width) params.set('w', String(Math.min(Math.max(width, 160), 1600)));
+    return `https://images.weserv.nl/?${params.toString()}`;
+  } catch {
+    return trimmedUrl;
   }
 }
 
-/**
- * React hook or helper function to pre-render or prefetch optimized WebP images
- * in the background for instant sliding transitions.
- */
 export function prefetchImage(url: string, width?: number): Promise<void> {
   return new Promise((resolve, reject) => {
     if (!url) return resolve();
-    const optimizedUrl = getOptimizedImageUrl(url, width);
-    const img = new Image();
-    img.src = optimizedUrl;
-    img.onload = () => resolve();
-    img.onerror = (err) => reject(err);
+    const image = new Image();
+    image.decoding = 'async';
+    image.onload = () => resolve();
+    image.onerror = reject;
+    image.src = getOptimizedImageUrl(url, width);
   });
 }
