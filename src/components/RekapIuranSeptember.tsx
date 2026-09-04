@@ -83,7 +83,7 @@ export default function RekapIuranSeptember() {
   const todayLabel = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
 
   return (
-    <section className="mb-6 rounded-3xl border border-slate-200/80 bg-white shadow-[0_20px_55px_rgba(15,23,42,.08)] overflow-hidden">
+    <section className="mb-6 rounded-3xl border border-slate-200/80 bg-white shadow-[0_20px_55px_rgba(15,23,42,.08)] overflow-visible">
       <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 px-5 py-5 md:px-7 md:py-6 text-white">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
@@ -123,12 +123,12 @@ export default function RekapIuranSeptember() {
       </div>
 
       <div className="grid gap-5 px-4 pb-5 md:grid-cols-[1.05fr_.95fr] md:px-6 md:pb-6">
-        <div className="rounded-2xl border border-slate-200 overflow-hidden">
+        <div className="rounded-2xl border border-slate-200 overflow-visible">
           <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-4 py-3">
             <div><h3 className="text-sm font-black text-slate-900">Pembayaran Hari Ini</h3><p className="text-[10px] text-slate-500">{todayLabel}</p></div>
             <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[9px] font-black text-emerald-700">{todayRows.length} TRANSAKSI</span>
           </div>
-          <div className="max-h-[320px] overflow-y-auto">
+          <div className="overflow-visible">
             {loading && !todayRows.length ? <div className="p-6 text-center text-xs text-slate-500">Memuat data pembayaran…</div> : !todayRows.length ? <div className="p-6 text-center text-xs text-slate-500">Belum ada pembayaran iuran hari ini.</div> : todayRows.map(row => (
               <div key={row.id} className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3 last:border-b-0">
                 <div className="min-w-0"><div className="truncate text-xs font-black text-slate-900">{normalizeName(row.nama_pembayar)}</div><div className="mt-0.5 text-[10px] text-slate-500">{row.tipe_anggota || 'Anggota'}{row.keterangan ? ` • ${row.keterangan}` : ''}</div></div>
@@ -138,9 +138,9 @@ export default function RekapIuranSeptember() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 overflow-hidden">
+        <div className="rounded-2xl border border-slate-200 overflow-visible">
           <div className="border-b border-slate-200 bg-slate-50 px-4 py-3"><h3 className="text-sm font-black text-slate-900">Status Iuran September</h3><p className="text-[10px] text-slate-500">Nama yang sudah tercatat membayar.</p></div>
-          <div className="max-h-[320px] overflow-y-auto">
+          <div className="overflow-visible">
             {groupedPayers.map(payer => {
               const paid = payer.total >= IURAN_MINIMUM;
               return <div key={payer.name} className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3 last:border-b-0"><div className="min-w-0"><div className="truncate text-xs font-black text-slate-900">{payer.name}</div><div className="mt-0.5 text-[9px] text-slate-400">Terakhir {new Date(`${payer.latest}T00:00:00`).toLocaleDateString('id-ID')}</div></div><div className="shrink-0 text-right"><span className={`inline-flex rounded-full px-2 py-1 text-[9px] font-black ${paid ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{paid ? 'LUNAS' : 'BELUM LENGKAP'}</span><div className="mt-1 text-[10px] font-bold text-slate-600">{money(payer.total)}</div></div></div>;
