@@ -128,7 +128,6 @@ ${marker}
 }
 @media (max-width: 767px) {
   .tournament-admin-page > div { max-width: none !important; }
-  .tournament-admin-page > div > section:last-child { display: none !important; }
 }
 \`}</style>`;
 
