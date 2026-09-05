@@ -26,12 +26,8 @@ if (!css.includes(marker)) {
   fs.writeFileSync(cssPath, css, 'utf8');
 }
 
-// This script is the final command in Vercel's legacy prebuild chain. Several
-// older seeded-menu patches rewrite Navbar.tsx, so the tournament submenu
-// patch must run here, after all of them, not only in build-prep.
 execFileSync(process.execPath, ['scripts/patch-navbar-tournament-submenus.mjs'], { stdio: 'inherit' });
-// The participant editor needs signed Storage URLs for existing private documents.
-// Run this after restore/legacy patches so the preview fix cannot be overwritten.
 execFileSync(process.execPath, ['scripts/patch-admin-participant-document-preview.mjs'], { stdio: 'inherit' });
+execFileSync(process.execPath, ['scripts/patch-seeded-export-layout.mjs'], { stdio: 'inherit' });
 
-console.log('[patch-kas-layout-final] applied page-level scrolling, final tournament navbar patch, and participant document preview patch');
+console.log('[patch-kas-layout-final] final layout, participant document preview, and seeded export patches applied');
