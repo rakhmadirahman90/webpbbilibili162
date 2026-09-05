@@ -48,6 +48,25 @@ for (const path of paths) {
     'PENDAFTARAN PESERTA - TURNAMEN BADMINTON BILIBILI CUP I TAHUN 2026'
   );
 
+  // Add live category capacity counters: each registration row represents one pair.
+  if (!src.includes('const categoryCapacity = useMemo')) {
+    const statsMarker = "  const stats = useMemo(() => ({ total: rows.length, pending: rows.filter(r => statusReg(r.status_pendaftaran) === 'pending').length, accepted: rows.filter(r => statusReg(r.status_pendaftaran) === 'diterima').length, rejected: rows.filter(r => statusReg(r.status_pendaftaran) === 'ditolak').length, paid: rows.filter(r => statusPay(r.status_pembayaran) === 'terverifikasi').length }), [rows]);";
+    const capacityCode = `${statsMarker}\n  const categoryCapacity = useMemo(() => {\n    const normalizeCategory = (value: unknown) => clean(value).toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '');\n    const ajatappareng = rows.filter(r => normalizeCategory(r.kategori).includes('ajatappareng')).length;\n    const lokalCcParepare = rows.filter(r => { const s = normalizeCategory(r.kategori); return s.includes('lokal') && s.includes('parepare'); }).length;\n    return { ajatappareng, lokalCcParepare };\n  }, [rows]);`;
+    if (src.includes(statsMarker)) src = src.replace(statsMarker, capacityCode);
+  }
+
+  // Render the two category counters directly below the overall registration stats.
+  const statsGrid = '<div className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-3 lg:grid-cols-5"><Stat label="Total Peserta" value={stats.total} icon={<Users size={17}/>} /><Stat label="Menunggu" value={stats.pending} icon={<Clock3 size={17}/>} /><Stat label="Diterima" value={stats.accepted} icon={<CheckCircle2 size={17}/>} /><Stat label="Ditolak" value={stats.rejected} icon={<XCircle size={17}/>} /><Stat label="Pembayaran OK" value={stats.paid} icon={<CreditCard size={17}/>} /></div>';
+  const statsWithCapacity = `${statsGrid}<div className="grid gap-3 border-t border-slate-200 bg-slate-50/80 p-4 sm:grid-cols-2"><CategoryCapacityCard label="Ajatappareng" current={categoryCapacity.ajatappareng} target={64} subtitle="Target 64 pasang" /><CategoryCapacityCard label="Lokal CC Parepare" current={categoryCapacity.lokalCcParepare} target={128} subtitle="Target 128 pasang" /></div>`;
+  if (src.includes(statsGrid) && !src.includes('<CategoryCapacityCard label="Ajatappareng"')) src = src.replace(statsGrid, statsWithCapacity);
+
+  // Add a compact reusable capacity card before the main component.
+  if (!src.includes('function CategoryCapacityCard')) {
+    const componentMarker = 'export default function AdminPendaftaranTurnamenModernV2() {';
+    const helper = `function CategoryCapacityCard({ label, current, target, subtitle }: { label: string; current: number; target: number; subtitle: string }) {\n  const safeTarget = Math.max(1, target);\n  const percent = Math.min(100, Math.round((current / safeTarget) * 100));\n  const remaining = Math.max(0, safeTarget - current);\n  return <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">\n    <div className="flex items-start justify-between gap-3">\n      <div><p className="text-[10px] font-black uppercase tracking-[.14em] text-slate-500">Kategori</p><h3 className="mt-1 text-sm font-black text-slate-900">{label}</h3></div>\n      <div className="text-right"><p className="text-xl font-black text-blue-700">{current}<span className="text-sm font-bold text-slate-400"> / {safeTarget}</span></p><p className="text-[10px] font-bold text-slate-500">pasang</p></div>\n    </div>\n    <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200"><div className="h-full rounded-full bg-blue-600 transition-all" style={{ width: \\`${percent}%\\` }} /></div>\n    <div className="mt-2 flex items-center justify-between text-[10px] font-bold"><span className="text-slate-500">{subtitle}</span><span className="text-blue-700">{percent}% terisi · {remaining} tersisa</span></div>\n  </div>;\n}\n\n`;
+    if (src.includes(componentMarker)) src = src.replace(componentMarker, helper + componentMarker);
+  }
+
   fs.writeFileSync(path, src, 'utf8');
-  console.log(`[patch-admin-registration-direct-client] schema/query/PDF-title patch applied to ${path}`);
+  console.log(`[patch-admin-registration-direct-client] schema/query/PDF-title/category-capacity patch applied to ${path}`);
 }
