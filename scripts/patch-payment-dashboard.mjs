@@ -19,52 +19,30 @@ if (!src.includes('totalPayment')) {
   changes++;
 }
 
-src = src.replace('grid grid-cols-2 gap-3 p-4 sm:grid-cols-3 lg:grid-cols-5', 'grid grid-cols-2 gap-3 p-4 sm:grid-cols-3 lg:grid-cols-6');
-src = src.replace('<Stat label="Pembayaran OK" value={stats.paid} icon={<CreditCard size={17}/>} />', '<Stat label="Lunas" value={stats.paid} icon={<CreditCard size={17}/>} />\n            <Stat label="Total Pembayaran" value={rupiah(stats.totalPayment)} icon={<CreditCard size={17}/>} />');
-src = src.replace("(paymentStatus === 'Semua' || statusPay(r.status_pembayaran) === paymentStatus)", "(paymentStatus === 'Semua' || paymentDisplayLabel(r.status_pembayaran) === paymentStatus)");
-src = src.replace("options={['Semua','menunggu','terverifikasi']}", "options={['Semua','Belum Lunas','Lunas']}");
-src = src.replace("update({ status_pembayaran: 'Terverifikasi' })", "update({ status_pembayaran: 'Lunas' })");
-src = src.replace("title: 'Verifikasi pembayaran?', html:", "title: 'Tandai pembayaran Lunas?', html:");
-src = src.replace("confirmButtonText: 'Verifikasi'", "confirmButtonText: 'Simpan Lunas'");
-src = src.replace("title: 'Pembayaran terverifikasi'", "title: 'Pembayaran Lunas'");
+const replacements = [
+  ['grid grid-cols-2 gap-3 p-4 sm:grid-cols-3 lg:grid-cols-5', 'grid grid-cols-2 gap-3 p-4 sm:grid-cols-3 lg:grid-cols-6'],
+  ['<Stat label="Pembayaran OK" value={stats.paid} icon={<CreditCard size={17}/>} />', '<Stat label="Lunas" value={stats.paid} icon={<CreditCard size={17}/>} />\n            <Stat label="Total Pembayaran" value={rupiah(stats.totalPayment)} icon={<CreditCard size={17}/>} />'],
+  ["(paymentStatus === 'Semua' || statusPay(r.status_pembayaran) === paymentStatus)", "(paymentStatus === 'Semua' || paymentDisplayLabel(r.status_pembayaran) === paymentStatus)"],
+  ["options={['Semua','menunggu','terverifikasi']}", "options={['Semua','Belum Lunas','Lunas']}"],
+  ["update({ status_pembayaran: 'Terverifikasi' })", "update({ status_pembayaran: 'Lunas' })"],
+  ["title: 'Verifikasi pembayaran?'", "title: 'Tandai pembayaran Lunas?'"],
+  ["confirmButtonText: 'Verifikasi'", "confirmButtonText: 'Simpan Lunas'"],
+  ["title: 'Pembayaran terverifikasi'", "title: 'Pembayaran Lunas'"]
+];
+for (const [from, to] of replacements) {
+  if (src.includes(from)) { src = src.replace(from, to); changes++; }
+}
 
 const oldRowPay = `<td className="px-4 py-4">{ps==='terverifikasi'?badge('Terverifikasi','green'):badge('Menunggu','amber')}</td>`;
 const newRowPay = `<td className="px-4 py-4"><div className="flex flex-col gap-1">{paymentDisplayLabel(row.status_pembayaran)==='Lunas'?badge('Lunas','green'):badge('Belum Lunas','amber')}<span className="whitespace-nowrap text-[10px] font-bold text-slate-500">{rupiah(row.biaya_pendaftaran)}</span></div></td>`;
 if (src.includes(oldRowPay)) { src = src.replace(oldRowPay, newRowPay); changes++; }
 
-src = src.replace("{ps==='terverifikasi'?badge('Pembayaran OK','green'):badge('Bayar Menunggu','amber')}", "{paymentDisplayLabel(row.status_pembayaran)==='Lunas'?badge('Lunas','green'):badge('Belum Lunas','amber')}");
 const oldMobileMeta = `<p className="mt-2 text-[11px] text-slate-500">{clean(row.asal_pb)||'-'} • {clean(row.domisili)||'-'}</p>`;
 const newMobileMeta = `<div className="mt-2 flex flex-col gap-0.5"><span className="text-[11px] font-black text-slate-700">Biaya pendaftaran: {rupiah(row.biaya_pendaftaran)}</span><span className="text-[11px] text-slate-500">{clean(row.asal_pb)||'-'} • {clean(row.domisili)||'-'}</span></div>`;
 if (src.includes(oldMobileMeta)) { src = src.replace(oldMobileMeta, newMobileMeta); changes++; }
 
 src = src.replace('{label:string,value:number,icon:React.ReactNode}', '{label:string,value:React.ReactNode,icon:React.ReactNode}');
 src = src.replace('className="mt-1 text-2xl font-black text-slate-900"', 'className="mt-1 whitespace-nowrap text-xl font-black text-slate-900 sm:text-2xl"');
-
-// Keep the edit participant modal readable even when global/theme CSS overrides form controls.
-const editStart = src.indexOf('function EditModal(');
-if (editStart >= 0) {
-  const editEnd = src.indexOf('\n}', editStart);
-  if (editEnd > editStart) {
-    const before = src.slice(0, editStart);
-    const editBody = src.slice(editStart, editEnd);
-    const after = src.slice(editEnd);
-    let nextEditBody = editBody
-      .replace(/text-slate-800/g, '!text-slate-900')
-      .replace(/text-slate-500/g, 'text-slate-600')
-      .replace(/bg-slate-50/g, 'bg-white');
-    nextEditBody = nextEditBody.replace(
-      '<input value={clean(row[k])}',
-      '<input style={{color:\'#0f172a\',WebkitTextFillColor:\'#0f172a\',opacity:1}} value={clean(row[k])}'
-    );
-    nextEditBody = nextEditBody.replace(
-      '<input value={clean(row.kategori)}',
-      '<input style={{color:\'#0f172a\',WebkitTextFillColor:\'#0f172a\',opacity:1}} value={clean(row.kategori)}'
-    );
-    if (nextEditBody !== editBody) { src = before + nextEditBody + after; changes++; }
-  }
-}
-
-fs.writeFileSync(componentPath, src);
 
 const exportPath = 'src/utils/adminExportEnhancer.ts';
 let exp = fs.readFileSync(exportPath, 'utf8');
@@ -74,6 +52,12 @@ if (exp.includes(oldPayFilter)) { exp = exp.replace(oldPayFilter, newPayFilter);
 const oldExportStatus = "Status_Pembayaran:clean(r.status_pembayaran)||'-'";
 const newExportStatus = "Status_Pembayaran:(/terver|lunas|diterima/i.test(clean(r.status_pembayaran))?'Lunas':'Belum Lunas')";
 if (exp.includes(oldExportStatus)) { exp = exp.replace(oldExportStatus, newExportStatus); changes++; }
+
+fs.writeFileSync(componentPath, src);
 fs.writeFileSync(exportPath, exp);
 
-console.log(`[patch-payment-dashboard] applied ${changes} payment dashboard/export changes`);
+const required = ['paymentDisplayLabel', "options={['Semua','Belum Lunas','Lunas']}", 'Tandai pembayaran Lunas?', 'Pembayaran Lunas'];
+for (const marker of required) {
+  if (!src.includes(marker)) throw new Error(`[patch-payment-dashboard] required UI marker missing after patch: ${marker}`);
+}
+console.log(`[patch-payment-dashboard] applied ${changes} changes; payment labels verified`);
