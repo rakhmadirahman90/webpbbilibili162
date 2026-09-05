@@ -14,7 +14,7 @@ if (start < 0 || end < 0) {
 const replacement = String.raw`async function resolveEditDocumentUrl(value: string | null | undefined, bucket: 'turnamen-dokumen' | 'uploads') {
   const raw = clean(value);
   if (!raw) return '';
-  if (/^https?:\\/\\//i.test(raw)) return raw;
+  if (/^https?:\/\//i.test(raw)) return raw;
   const path = storagePathFromValue(raw, bucket);
   if (!path) return '';
   const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, 3600);
