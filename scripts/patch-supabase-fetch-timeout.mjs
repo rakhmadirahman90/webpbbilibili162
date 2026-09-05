@@ -3,19 +3,20 @@ import fs from 'node:fs';
 const path = 'src/supabase.ts';
 let src = fs.readFileSync(path, 'utf8');
 
-const replacement = `    // Admin tournament reads must not inherit short-lived caller abort signals.
+const replacement = `    // Large admin reads must not inherit short-lived caller abort signals.
     // React/Supabase lifecycle events can cancel a caller while the database request
     // is still valid, which previously surfaced as "AbortError / signal is aborted"
-    // and left the admin table showing 0 rows. Give this read its own 30s deadline.
-    const isTournamentRegistrationRead = getTableFromRestUrl(targetUrl) === 'pendaftaran_turnamen';
-    const controller = (isTournamentRegistrationRead || !init?.signal) && typeof AbortController !== 'undefined'
+    // and left admin tables showing 0 rows. Give these reads their own 30s deadline.
+    const largeAdminReadTables = new Set(['pendaftaran_turnamen', 'seeded_players']);
+    const isLargeAdminRead = largeAdminReadTables.has(getTableFromRestUrl(targetUrl));
+    const controller = (isLargeAdminRead || !init?.signal) && typeof AbortController !== 'undefined'
       ? new AbortController()
       : null;
     const timeoutMs = 30_000;
     const timeout = controller
       ? (typeof window !== 'undefined' ? window.setTimeout(() => controller.abort(), timeoutMs) : setTimeout(() => controller.abort(), timeoutMs))
       : null;
-    const effectiveSignal = isTournamentRegistrationRead ? controller?.signal : (init?.signal || controller?.signal);
+    const effectiveSignal = isLargeAdminRead ? controller?.signal : (init?.signal || controller?.signal);
     try {
       const response = await nativeFetch(input, { ...init, signal: effectiveSignal });`;
 
@@ -36,7 +37,7 @@ const previous = `    // Do not abort authenticated/admin reads aggressively. A 
     try {
       const response = await nativeFetch(input, { ...init, signal: init?.signal || controller?.signal });`;
 
-if (src.includes("const isTournamentRegistrationRead = getTableFromRestUrl(targetUrl) === 'pendaftaran_turnamen';")) {
+if (src.includes("const largeAdminReadTables = new Set(['pendaftaran_turnamen', 'seeded_players']);")) {
   console.log('[patch-supabase-fetch-timeout] already applied; no-op');
 } else if (src.includes(original)) {
   src = src.replace(original, replacement);
