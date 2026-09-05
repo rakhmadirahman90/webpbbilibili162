@@ -8,8 +8,9 @@ if (!src.includes('MessageCircle } from \'lucide-react\'')) {
   src = src.replace("ShieldCheck } from 'lucide-react';", "ShieldCheck, MessageCircle } from 'lucide-react';");
 }
 
-// Build the WhatsApp URL from the participant row. This is intentionally a plain
-// anchor target so Android Chrome treats it as a normal user navigation.
+// Build one identical WhatsApp confirmation message for desktop and mobile.
+// This is intentionally a plain anchor target so Android Chrome treats it as
+// a normal user navigation and the generated text is exactly the same on both layouts.
 if (!src.includes('function buildTournamentWhatsAppUrl(row: Registration)')) {
   const marker = "function publicOrPathUrl(value?: string | null) { const v = clean(value); return /^https?:\\/\\//i.test(v) ? v : ''; }";
   const helper = `${marker}
@@ -25,29 +26,34 @@ function normalizeTournamentWhatsApp(raw: unknown) {
 function buildTournamentWhatsAppUrl(row: Registration) {
   const phone = normalizeTournamentWhatsApp(row.whatsapp);
   if (!phone || phone.length < 10) return '';
+
   const message = [
-    '*KONFIRMASI STATUS PENDAFTARAN*',
-    '*BILIBILI 162 CUP I TAHUN 2026*',
+    '*PENDAFTARAN BERHASIL DIVERIFIKASI*',
+    '*PB BILIBILI 162 CUP I TAHUN 2026*',
     '',
     'Halo Penanggung Jawab,',
-    'Pendaftaran pasangan dengan kode *' + clean(row.kode_pendaftaran) + '* telah diperbarui oleh Admin.',
+    'Pendaftaran pasangan Anda telah DITERIMA & DIVERIFIKASI oleh Admin.',
     '',
-    '*STATUS: DITERIMA & DIVERIFIKASI*',
+    '* Kode: ' + clean(row.kode_pendaftaran),
+    '* Kategori: ' + (clean(row.kategori) || '-'),
+    '* Pemain 1: ' + (clean(row.nama_pemain_1) || '-'),
+    '* Pemain 2: ' + (clean(row.nama_pemain_2) || '-'),
+    '* PB/Klub: ' + (clean(row.asal_pb) || '-'),
+    '* Domisili: ' + (clean(row.domisili) || '-'),
+    '* Pembayaran: ' + (clean(row.status_pembayaran) || '-'),
+    '* Status: Diterima',
+    '* Catatan Admin: ' + (clean(row.catatan_admin) || '-'),
     '',
-    '• Pemain 1: *' + clean(row.nama_pemain_1) + '*',
-    '• Pemain 2: *' + clean(row.nama_pemain_2) + '*',
-    '• Kategori: ' + (clean(row.kategori) || '-'),
-    '• PB/Klub: ' + (clean(row.asal_pb) || '-'),
-    '• Domisili: ' + (clean(row.domisili) || '-'),
-    '• Pembayaran: ' + (clean(row.status_pembayaran) || '-'),
+    'Selamat, pasangan Anda resmi terdaftar sebagai peserta pada kategori tersebut.',
     '',
-    'Selamat, pasangan Anda telah dinyatakan *DITERIMA* sebagai peserta Bilibili 162 Cup I 2026.',
+    '08–12 September 2026 • GOR Titik Kumpul Soreang Parepare',
+    'Panitia PB BILIBILI 162',
     '',
-    'Pelaksanaan: 09–12 September 2026',
-    'Lokasi: GOR Titik Kumpul Soreang Parepare',
-    '',
-    '*Pengurus PB BILIBILI 162*'
+    '📢 INFORMASI GRUP WA PESERTA',
+    'Silakan bergabung ke Grup WhatsApp Peserta untuk mendapatkan informasi dan pembaruan turnamen:',
+    'https://chat.whatsapp.com/Bs7TWJMPB2v78GTcTl30vO'
   ].join('\\n');
+
   return 'https://wa.me/' + phone + '?text=' + encodeURIComponent(message);
 }
 `;
@@ -87,4 +93,4 @@ src = src.replace(
 );
 
 fs.writeFileSync(file, src);
-console.log('[patch-tournament-wa-mobile-v4] Fixed build-safe WhatsApp action for desktop and mobile participant cards.');
+console.log('[patch-tournament-wa-mobile-v4] Unified verified WhatsApp message for desktop and mobile participant cards.');
