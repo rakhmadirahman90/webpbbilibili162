@@ -46,7 +46,9 @@ ${marker}
 
 const opening = 'return <div className="tournament-admin-page min-h-full bg-slate-50 p-3 text-slate-900 sm:p-5 lg:p-8">';
 if (!src.includes(opening)) throw new Error('[patch-admin-one-screen-final] opening tag not found');
-const styleNode = '<style dangerouslySetInnerHTML={{__html: cssText}} />';
+// Embed the CSS value into the generated TSX at build time. Never reference the
+// build-script variable from browser/runtime code (that caused cssText is not defined).
+const styleNode = `<style>{${JSON.stringify(cssText)}}</style>`;
 src = src.replace(opening, `${opening}${styleNode}`);
 
 fs.writeFileSync(path, src);
