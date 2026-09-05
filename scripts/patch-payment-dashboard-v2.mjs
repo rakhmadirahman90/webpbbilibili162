@@ -49,6 +49,18 @@ src = src.replace(
   'function Stat({label,value,icon}:{label:string,value:React.ReactNode,icon:React.ReactNode})'
 );
 
+// Accessibility/readability fix for the tournament registration edit modal.
+// The screenshot showed inherited white/transparent text on white inputs and document fields.
+// Keep dark header/button text-white intact; only override white text in the modal and form controls.
+const readabilityMarker = '/* tournament-edit-readable-v1 */';
+if (!src.includes(readabilityMarker)) {
+  const css = `<style>{\`\n${readabilityMarker}\n.tournament-admin-page .fixed.inset-0 input,\n.tournament-admin-page .fixed.inset-0 textarea,\n.tournament-admin-page .fixed.inset-0 select,\n.tournament-admin-page .fixed.inset-0 input.text-white,\n.tournament-admin-page .fixed.inset-0 textarea.text-white,\n.tournament-admin-page .fixed.inset-0 select.text-white { color:#111827 !important; -webkit-text-fill-color:#111827 !important; opacity:1 !important; }\n.tournament-admin-page .fixed.inset-0 input::placeholder,\n.tournament-admin-page .fixed.inset-0 textarea::placeholder { color:#64748b !important; opacity:1 !important; -webkit-text-fill-color:#64748b !important; }\n.tournament-admin-page .fixed.inset-0 .text-white:not(button):not(a):not([role=\"button\"]),\n.tournament-admin-page .fixed.inset-0 [class*=\"text-white/\"]:not(button):not(a):not([role=\"button\"]) { color:#111827 !important; }\n.tournament-admin-page .fixed.inset-0 label,\n.tournament-admin-page .fixed.inset-0 p,\n.tournament-admin-page .fixed.inset-0 small { color:#334155; }\n.tournament-admin-page .fixed.inset-0 button { -webkit-text-fill-color:currentColor; }\n\`}</style>`;
+  const rootMarker = 'return <div className="tournament-admin-page';
+  if (!src.includes(rootMarker)) throw new Error('[patch-payment-dashboard-v2] edit modal root marker not found');
+  src = src.replace(rootMarker, `${css}\n  ${rootMarker}`);
+  changes++;
+}
+
 fs.writeFileSync(componentPath, src);
 
 const required = [
@@ -58,10 +70,12 @@ const required = [
   "status_pembayaran: 'Lunas'",
   'Pembayaran Lunas',
   'text="Lunas"',
-  'text="Belum Lunas"'
+  'text="Belum Lunas"',
+  'tournament-edit-readable-v1',
+  '-webkit-text-fill-color:#111827'
 ];
 for (const marker of required) {
   if (!src.includes(marker)) throw new Error(`[patch-payment-dashboard-v2] required UI marker missing: ${marker}`);
 }
 
-console.log(`[patch-payment-dashboard-v2] applied ${changes} direct replacements; V2 payment labels verified`);
+console.log(`[patch-payment-dashboard-v2] applied ${changes} direct replacements; V2 payment labels + edit readability verified`);
