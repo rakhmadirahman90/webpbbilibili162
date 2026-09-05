@@ -8,9 +8,6 @@ if (src.includes(marker)) {
   process.exit(0);
 }
 
-// The source currently has a V1 photo resolver injected during prebuild.
-// Replace that resolver with a batched createSignedUrls request so all
-// accepted participants across every pagination page receive URLs together.
 const startNeedle = "  useEffect(() => {\n    let cancelled = false;\n    const readPhotoCache =";
 const start = src.indexOf(startNeedle);
 if (start < 0) throw new Error('[patch-public-accepted-photo-delivery-v2] V1 photo resolver not found');
@@ -60,16 +57,17 @@ const replacement = `  useEffect(() => {
       }
 
       const paths = Array.from(pathToTargets.keys());
-      const applySigned = (items: any[] | null | undefined) => {
-        for (const item of items || []) {
+      const applySignedByIndex = (chunk: string[], items: any[] | null | undefined) => {
+        // createSignedUrls returns results in the same order as the requested paths.
+        for (let index = 0; index < chunk.length; index++) {
+          const item = items?.[index];
           const signedUrl = item?.signedUrl || item?.signedURL;
-          const rawPath = item?.path || item?.name;
-          if (!signedUrl || !rawPath) continue;
-          for (const target of pathToTargets.get(rawPath) || []) next[target.id][target.key] = signedUrl;
+          if (!signedUrl) continue;
+          for (const target of pathToTargets.get(chunk[index]) || []) next[target.id][target.key] = signedUrl;
         }
       };
 
-      // Supabase supports batch signing; chunk defensively for larger tournaments.
+      // Supabase batch-signs private files. Chunks keep the request safe for larger lists.
       for (let i = 0; i < paths.length; i += 100) {
         if (cancelled) return;
         const chunk = paths.slice(i, i + 100);
@@ -77,17 +75,17 @@ const replacement = `  useEffect(() => {
           const { data, error: batchError } = await supabase.storage
             .from('turnamen-dokumen')
             .createSignedUrls(chunk, 23 * 60 * 60);
-          if (!batchError && data) applySigned(data);
-          else {
-            // Fallback keeps individual files working if a batch contains a bad object.
+          if (!batchError && data) {
+            applySignedByIndex(chunk, data);
+          } else {
             const fallback = await Promise.all(chunk.map(async raw => {
               try {
                 const { data: one, error: oneError } = await supabase.storage
                   .from('turnamen-dokumen').createSignedUrl(raw, 23 * 60 * 60);
-                return oneError ? null : { path: raw, signedUrl: one?.signedUrl };
+                return oneError ? null : one?.signedUrl || null;
               } catch { return null; }
             }));
-            applySigned(fallback);
+            applySignedByIndex(chunk, fallback.map(signedUrl => signedUrl ? { signedUrl } : null));
           }
         } catch {}
       }
@@ -102,18 +100,14 @@ const replacement = `  useEffect(() => {
 
 src = src.slice(0, start) + replacement + src.slice(end + endNeedle.length);
 
-// Make the five-column desktop layout match the reference and keep compact cards.
 src = src.replace(
   'grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5',
   'grid grid-cols-1 gap-2.5 min-[520px]:grid-cols-2 sm:gap-3 lg:grid-cols-4 xl:grid-cols-5'
 );
-
-// Force the visible participant photos to load immediately and preserve the full portrait.
 src = src.replace(/loading=\"lazy\"/g, 'loading=\"eager\"');
 src = src.replace(/className=\"h-full w-full object-cover object-center transition duration-300 group-hover:scale-\[1\.02\]\"/g,
   'className=\"h-full w-full object-contain object-center transition duration-300 group-hover:scale-[1.01]\"');
 
-// IMPORTANT: emit real newlines into the TSX source. Do not write the literal characters \\n.
 src += `\n\n${marker}\n`;
 fs.writeFileSync(path, src, 'utf8');
 console.log('[patch-public-accepted-photo-delivery-v2] all participant photo URLs batched, cached and eagerly rendered across every page');
