@@ -18,6 +18,7 @@ const scripts = [
   'patch-admin-participant-doc-edit-safe.mjs',
   'patch-admin-participant-load-resilience.mjs',
   'patch-supabase-fetch-timeout.mjs',
+  'patch-seeded-turnamen-direct-client.mjs',
   'patch-navbar-tournament-submenus.mjs',
   'patch-mobile-sponsorship-navigation.mjs',
   'patch-home-about-sections.mjs',
