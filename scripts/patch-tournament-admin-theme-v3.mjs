@@ -49,6 +49,14 @@ ${marker}
 .tournament-admin-page > div > section:not(:first-of-type) {
   border-color: rgba(148,163,184,.18) !important;
 }
+/* Dashboard statistic numbers must remain highly visible on the dark theme. */
+.tournament-admin-page > div > header > div.grid > div > :last-child,
+.tournament-admin-page > div > header > div.grid > div [class*="text-2xl"],
+.tournament-admin-page > div > header > div.grid > div [class*="text-3xl"] {
+  color: #ffffff !important;
+  opacity: 1 !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,.25) !important;
+}
 .tournament-admin-page input,
 .tournament-admin-page select,
 .tournament-admin-page button {
