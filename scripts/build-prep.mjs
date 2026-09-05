@@ -20,6 +20,7 @@ const scripts = [
   'patch-supabase-fetch-timeout.mjs',
   'patch-navbar-tournament-submenus.mjs',
   'patch-mobile-sponsorship-navigation.mjs',
+  'patch-home-about-sections.mjs',
   'patch-kas-modern-ui.mjs',
   'patch-kas-modern-ui-css-fix.mjs'
 ];
