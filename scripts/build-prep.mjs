@@ -19,6 +19,7 @@ const scripts = [
   'patch-admin-participant-load-resilience.mjs',
   'patch-supabase-fetch-timeout.mjs',
   'patch-seeded-turnamen-direct-client.mjs',
+  'patch-pendaftaran-turnamen-direct-client.mjs',
   'patch-navbar-tournament-submenus.mjs',
   'patch-mobile-sponsorship-navigation.mjs',
   'patch-home-about-sections.mjs',
