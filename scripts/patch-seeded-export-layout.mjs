@@ -32,7 +32,6 @@ const safeFileName = (v: string) => v.replace(/[^a-z0-9]+/gi, '_').replace(/^_+|
   s = s.replace("export default function SeededTurnamen()", helper + "export default function SeededTurnamen()");
 }
 
-const marker = "  const activeFilters=[gender,quality,sheet,category,club,region].filter(v=>v!=='Semua').length+(query?1:0);";
 if (!s.includes('const exportPDF = async')) {
   const exportsBlock = String.raw`
   const exportRows = useMemo(() => sortSeededForExport(filtered), [filtered]);
@@ -105,7 +104,7 @@ const toolbarAnchor = '    <section className="rounded-2xl border border-amber-4
 if (!s.includes('Export PDF') && s.includes(toolbarAnchor)) {
   const toolbar = String.raw`    <section className="rounded-2xl border border-blue-400/20 bg-slate-900/80 p-3.5 shadow-xl sm:p-4">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div><div className="text-[10px] font-black uppercase tracking-[.16em] text-blue-300">Export Data</div><div className="mt-1 text-[11px] text-slate-300">Format standar • A4 Landscape • tabel presisi • ${'{exportRows.length}'} data mengikuti filter aktif.</div></div>
+        <div><div className="text-[10px] font-black uppercase tracking-[.16em] text-blue-300">Export Data</div><div className="mt-1 text-[11px] text-slate-300">Format standar • A4 Landscape • tabel presisi • \${exportRows.length} data mengikuti filter aktif.</div></div>
         <div className="grid grid-cols-2 gap-2 sm:flex sm:shrink-0">
           <button type="button" onClick={exportPDF} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-[10px] font-black uppercase text-white shadow-lg hover:bg-blue-700"><FileDown size={16}/> Export PDF</button>
           <button type="button" onClick={exportExcel} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 text-[10px] font-black uppercase text-white shadow-lg hover:bg-emerald-700"><FileSpreadsheet size={16}/> Export Excel</button>
