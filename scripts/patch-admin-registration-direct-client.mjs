@@ -42,6 +42,12 @@ for (const path of paths) {
   // The actual database column for admin notes is catatan_admin.
   src = src.replaceAll('payload.catatan_verifikasi = note', 'payload.catatan_admin = note');
 
+  // Keep the PDF report title consistent with the official tournament name.
+  src = src.replaceAll(
+    'PENDAFTARAN PESERTA — PB BILIBILI 162',
+    'PENDAFTARAN PESERTA - TURNAMEN BADMINTON BILIBILI CUP I TAHUN 2026'
+  );
+
   fs.writeFileSync(path, src, 'utf8');
-  console.log(`[patch-admin-registration-direct-client] schema-aligned direct query applied to ${path}`);
+  console.log(`[patch-admin-registration-direct-client] schema/query/PDF-title patch applied to ${path}`);
 }
