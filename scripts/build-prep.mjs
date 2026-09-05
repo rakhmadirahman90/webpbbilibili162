@@ -23,7 +23,8 @@ const scripts = [
   'patch-home-about-sections.mjs',
   'patch-kas-modern-ui.mjs',
   'patch-kas-modern-ui-css-fix.mjs',
-  'patch-tournament-wa-mobile-v2.mjs'
+  'patch-tournament-wa-mobile-v2.mjs',
+  'patch-tournament-wa-mobile-v3.mjs'
 ];
 
 console.log('[build-prep] running stable production preparation scripts');
