@@ -3,7 +3,7 @@ import fs from 'node:fs';
 const file = 'src/components/AdminPendaftaranTurnamenModernV2.tsx';
 let src = fs.readFileSync(file, 'utf8');
 
-// Pastikan ikon WhatsApp tersedia di komponen yang benar-benar dipakai route /admin/pendaftaran-turnamen.
+// Pastikan ikon WhatsApp tersedia.
 src = src.replace(
   "ShieldCheck } from 'lucide-react';",
   "ShieldCheck, MessageCircle } from 'lucide-react';"
@@ -73,7 +73,7 @@ const end = src.indexOf(endToken, start);
 if (start < 0 || end < 0) throw new Error('Blok Actions/DetailModal V2 tidak ditemukan.');
 
 const newActions = `function Actions({onDetail,onEdit,onPayment,onAccept,onReject,onDelete,paymentVerified,registrationPending,full=false,row}:{onDetail:()=>void,onEdit:()=>void,onPayment:()=>void,onAccept:()=>void,onReject:()=>void,onDelete:()=>void,paymentVerified:boolean,registrationPending:boolean,full?:boolean,row:Registration}){
-  return <div className={\\`flex \\${full?'w-full':''} flex-wrap gap-1.5\\`}>
+  return <div className={'flex ' + (full ? 'w-full ' : '') + 'flex-wrap gap-1.5'}>
     <button type="button" title="Lihat detail & dokumen" onClick={onDetail} className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-2.5 text-[10px] font-black text-blue-700 hover:bg-blue-100"><Eye size={14}/> Detail</button>
     <button type="button" title="Edit data + foto + KTP + bukti pembayaran" onClick={onEdit} className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 text-[10px] font-black text-indigo-700 hover:bg-indigo-100"><Pencil size={14}/> Edit</button>
     {!paymentVerified&&<button type="button" title="Verifikasi pembayaran" onClick={onPayment} className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 text-[10px] font-black text-emerald-700 hover:bg-emerald-100"><CreditCard size={14}/> Bayar</button>}
@@ -86,14 +86,14 @@ const newActions = `function Actions({onDetail,onEdit,onPayment,onAccept,onRejec
 
 src = src.slice(0, start) + newActions + src.slice(end);
 
-// Ganti signature dan panggilan Actions agar row dikirim ke tombol WA.
+// Kirim row ke Actions agar tombol WA memiliki nomor WhatsApp peserta.
 src = src.replace(
-  'onDelete={onDelete} paymentVerified={ps===\\'terverifikasi\\'} registrationPending={rs===\\'pending\\'}/>',
-  'onDelete={onDelete} paymentVerified={ps===\\'terverifikasi\\'} registrationPending={rs===\\'pending\\'} row={row}/>'
+  "onDelete={onDelete} paymentVerified={ps==='terverifikasi'} registrationPending={rs==='pending'}/>",
+  "onDelete={onDelete} paymentVerified={ps==='terverifikasi'} registrationPending={rs==='pending'} row={row}/>",
 );
 src = src.replace(
-  'onDelete={onDelete} paymentVerified={ps===\\'terverifikasi\\'} registrationPending={rs===\\'pending\\'} full/>',
-  'onDelete={onDelete} paymentVerified={ps===\\'terverifikasi\\'} registrationPending={rs===\\'pending\\'} full row={row}/>'
+  "onDelete={onDelete} paymentVerified={ps==='terverifikasi'} registrationPending={rs==='pending'} full/>",
+  "onDelete={onDelete} paymentVerified={ps==='terverifikasi'} registrationPending={rs==='pending'} full row={row}/>",
 );
 
 fs.writeFileSync(file, src);
