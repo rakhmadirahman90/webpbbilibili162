@@ -86,7 +86,9 @@ ${marker}
 
 const opening = 'return <div className="tournament-admin-page min-h-full bg-slate-50 p-3 text-slate-900 sm:p-5 lg:p-8">';
 if (!src.includes(opening)) throw new Error('[patch-admin-responsive-v3] opening tag not found');
-const styleNode = '<style dangerouslySetInnerHTML={{__html: cssText}} />';
+// Embed the stylesheet as a literal JSX string. Do not reference the build-script
+// variable at runtime: doing so causes "cssText is not defined" in the browser.
+const styleNode = `<style>{${JSON.stringify(cssText)}}</style>`;
 src = src.replace(opening, `${opening}${styleNode}`);
 
 const realtime = '<span className="hidden rounded-full bg-blue-50 px-3 py-1.5 text-[10px] font-black text-blue-700 sm:inline-flex">Realtime</span>';
@@ -96,4 +98,4 @@ if (!src.includes('participant-add-btn') && src.includes(realtime)) {
 }
 
 fs.writeFileSync(path, src);
-console.log('[patch-admin-responsive-v3] final responsive participant admin layout applied');
+console.log('[patch-admin-responsive-v3] final responsive participant admin layout applied safely');
