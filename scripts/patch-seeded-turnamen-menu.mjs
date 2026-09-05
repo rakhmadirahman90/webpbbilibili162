@@ -5,111 +5,78 @@ const appPath = 'src/App.tsx';
 const adminRoutePath = 'src/components/AdminRouteView.tsx';
 const adminLayoutPath = 'src/components/AdminLayout.tsx';
 
-function once(file, fromCandidates, to, label) {
-  const src = fs.readFileSync(file, 'utf8');
-  if (src.includes(to)) return;
-  const candidates = Array.isArray(fromCandidates) ? fromCandidates : [fromCandidates];
-  const from = candidates.find((candidate) => src.includes(candidate));
-  if (!from) {
-    console.warn(`[patch-seeded-turnamen-menu] marker not found: ${label}; skipping safely`);
-    return;
-  }
-  fs.writeFileSync(file, src.replace(from, to), 'utf8');
-}
+const read = (file) => fs.readFileSync(file, 'utf8');
+const write = (file, value) => fs.writeFileSync(file, value, 'utf8');
 
-// Keep the admin navigation explicit and React-Router based. Older builds used
-// a DOM clone bridge for the tournament registration entry; explicit NavLinks
-// are more reliable on mobile and on direct route loads.
+// The production build restores several source files before applying patches.
+// Keep the seeded admin entry and route deterministic after that restore.
 {
-  let src = fs.readFileSync(sidebarPath, 'utf8');
+  let src = read(sidebarPath);
   const memberEntry = "{ name: 'Pendaftaran Anggota', path: 'pendaftaran', icon: FileSpreadsheet, adminOnly: true },";
   const tournamentEntry = "{ name: 'Pendaftaran Peserta Turnamen', path: 'pendaftaran-turnamen', icon: Trophy, adminOnly: true },";
-  const seededEntry = "{ name: 'Seeded Peserta Bilibili 162', path: 'seeded-turnamen', icon: ShieldCheck, adminOnly: true },";
+  const seededEntry = "{ name: 'Kelola Seeded Peserta', path: 'seeded-turnamen', icon: ShieldCheck, adminOnly: true },";
 
-  // The tournament-registration patch runs immediately before this script.
-  // Reuse that canonical entry instead of creating a second one.
+  src = src.replaceAll("path: 'kelola-pendaftaran-turnamen'", "path: 'pendaftaran-turnamen'");
+
+  // Normalize an older seeded label/path if it exists, without creating duplicates.
+  src = src.replace(/\{ name: 'Seeded Resmi Bilibili 162', path: 'seeded-turnamen', icon: ShieldCheck, adminOnly: true \},/g, seededEntry);
+  src = src.replace(/\{ name: 'Seeded Peserta Bilibili 162', path: 'seeded-turnamen', icon: ShieldCheck, adminOnly: true \},/g, seededEntry);
+
   if (!src.includes("path: 'pendaftaran-turnamen'")) {
-    if (src.includes(memberEntry)) {
-      src = src.replace(memberEntry, `${memberEntry}\n        ${tournamentEntry}`);
-    } else {
-      console.warn('[patch-seeded-turnamen-menu] Pendaftaran Anggota marker not found; tournament entry not injected');
-    }
+    if (src.includes(memberEntry)) src = src.replace(memberEntry, `${memberEntry}\n        ${tournamentEntry}`);
   }
 
-  // Add exactly one seeded-peserta entry after the canonical tournament entry.
   if (!src.includes("path: 'seeded-turnamen'")) {
     const anchor = src.includes(tournamentEntry) ? tournamentEntry : memberEntry;
-    if (src.includes(anchor)) {
-      src = src.replace(anchor, `${anchor}\n        ${seededEntry}`);
-    } else {
-      console.warn('[patch-seeded-turnamen-menu] menu anchor not found; seeded entry not injected');
+    if (src.includes(anchor)) src = src.replace(anchor, `${anchor}\n        ${seededEntry}`);
+  } else if (!src.includes("name: 'Kelola Seeded Peserta'")) {
+    // A legacy seeded entry exists under another label; keep one canonical entry.
+    src = src.replace(/\{ name: '[^']*Seeded[^']*', path: 'seeded-turnamen', icon: ShieldCheck, adminOnly: true \},/g, seededEntry);
+  }
+
+  write(sidebarPath, src);
+}
+
+// AdminRouteView is the authoritative renderer for /admin/* in the current app.
+// Do not rely on the standalone App route because AdminLayout intercepts /admin/*.
+{
+  let src = read(adminRoutePath);
+  const importLine = "import SeededTurnamen from './SeededTurnamen';";
+  if (!src.includes(importLine)) {
+    const marker = "import AdminSponsorship from './AdminSponsorship';";
+    if (src.includes(marker)) src = src.replace(marker, `${marker} ${importLine}`);
+  }
+
+  const seededRoute = "case'seeded':case'seeded-turnamen':case'seeded-peserta':case'seeded-peserta-turnamen':case'peserta-seeded':case'pendaftaran/seeded':case'pendaftaran/seeded-peserta':return adminOnly(SeededTurnamen);";
+  const seededRouteFormatted = "case 'seeded':\n    case 'seeded-turnamen':\n    case 'seeded-peserta':\n    case 'seeded-peserta-turnamen':\n    case 'peserta-seeded':\n    case 'pendaftaran/seeded':\n    case 'pendaftaran/seeded-peserta': return adminOnly(SeededTurnamen);";
+
+  if (src.includes(seededRoute)) {
+    src = src.replace(seededRoute, seededRouteFormatted);
+  } else {
+    const compact = /case'seeded':(?:case'[^']+':)*return adminOnly\(SeededTurnamen\);/;
+    const formatted = /case\s+'seeded':\s*(?:case\s+'[^']+':\s*)+return adminOnly\(SeededTurnamen\);/;
+    if (compact.test(src)) src = src.replace(compact, seededRouteFormatted);
+    else if (formatted.test(src)) src = src.replace(formatted, seededRouteFormatted);
+    else {
+      const quizMarker = "case'quiz':return <BadmintonQuiz/>;";
+      const quizFormatted = "case 'quiz':return <BadmintonQuiz/>;";
+      const replacement = `${seededRouteFormatted}${quizMarker}`;
+      if (src.includes(quizMarker)) src = src.replace(quizMarker, replacement);
+      else if (src.includes(quizFormatted)) src = src.replace(quizFormatted, `${seededRouteFormatted}\n    ${quizFormatted}`);
     }
   }
 
-  fs.writeFileSync(sidebarPath, src, 'utf8');
+  write(adminRoutePath, src);
 }
 
-// Normalize legacy menu path introduced by an earlier tournament patch.
+// Keep the old tournament DOM-bridge from treating the canonical link as a duplicate.
 {
-  let src = fs.readFileSync(sidebarPath, 'utf8');
-  const normalized = src.replaceAll("path: 'kelola-pendaftaran-turnamen'", "path: 'pendaftaran-turnamen'");
-  if (normalized !== src) fs.writeFileSync(sidebarPath, normalized, 'utf8');
+  let src = read(adminLayoutPath);
+  src = src.replace(
+    'a[data-tournament-registration-entry="true"]',
+    'a[data-tournament-registration-entry="true"], a[href="/admin/pendaftaran-turnamen"]'
+  );
+  write(adminLayoutPath, src);
 }
 
-// Public seeded import/route remains available; hiding its public submenu is
-// handled separately by the existing public-navigation patches.
-once(appPath,
-  [
-    "const TournamentLeague = lazy(() => import('./components/TournamentLeague'));",
-    "const PwaApkManager = lazy(() => import('./components/PwaApkManager'));",
-    "import PwaInstallNotification from './components/PwaInstallNotification';"
-  ],
-  (src => {
-    if (src.includes("const TournamentLeague = lazy(() => import('./components/TournamentLeague'));")) {
-      return "const TournamentLeague = lazy(() => import('./components/TournamentLeague'));\nconst SeededTurnamen = lazy(() => import('./components/SeededTurnamen'));";
-    }
-    if (src.includes("const PwaApkManager = lazy(() => import('./components/PwaApkManager'));")) {
-      return "const PwaApkManager = lazy(() => import('./components/PwaApkManager'));\nconst SeededTurnamen = lazy(() => import('./components/SeededTurnamen'));";
-    }
-    return "import PwaInstallNotification from './components/PwaInstallNotification';\nconst SeededTurnamen = lazy(() => import('./components/SeededTurnamen'));";
-  })(fs.readFileSync(appPath, 'utf8')),
-  'App seeded import');
-
-once(appPath,
-  [
-    '<Route path="pendaftaran" element={isAdmin ? <ManajemenPendaftaran /> : <Navigate to="/admin/dashboard" replace />} />',
-    '<Route path="pendaftaran-turnamen" element={isAdmin ? <ManajemenTurnamen /> : <Navigate to="/admin/dashboard" replace />} />'
-  ],
-  '<Route path="pendaftaran" element={isAdmin ? <ManajemenPendaftaran /> : <Navigate to="/admin/dashboard" replace />} />\n              <Route path="seeded-turnamen" element={isAdmin ? <SeededTurnamen /> : <Navigate to="/admin/dashboard" replace />} />',
-  'admin seeded route');
-
-// AdminRouteView is the authoritative renderer for /admin/* in the current
-// architecture. Support every legacy/current alias so no menu entry can fall
-// through to the dashboard.
-{
-  let src = fs.readFileSync(adminRoutePath, 'utf8');
-  const marker = "    case 'pendaftaran-turnamen': return adminOnly(AdminPendaftaranTurnamenModern);";
-  const replacement = "    case 'pendaftaran-turnamen':\n    case 'kelola-pendaftaran-turnamen':\n    case 'peserta-turnamen':\n    case 'pendaftaran-peserta': return adminOnly(AdminPendaftaranTurnamenModern);";
-  if (src.includes(marker) && !src.includes("case 'kelola-pendaftaran-turnamen':")) {
-    src = src.replace(marker, replacement);
-  }
-
-  const seededMarker = "    case 'seeded':\n    case 'pendaftaran/seeded-peserta': return adminOnly(SeededTurnamen);";
-  const seededReplacement = "    case 'seeded':\n    case 'seeded-turnamen':\n    case 'seeded-peserta':\n    case 'pendaftaran/seeded-peserta': return adminOnly(SeededTurnamen);";
-  if (src.includes(seededMarker) && !src.includes("case 'seeded-turnamen':")) {
-    src = src.replace(seededMarker, seededReplacement);
-  }
-  fs.writeFileSync(adminRoutePath, src, 'utf8');
-}
-
-// Prevent the legacy DOM bridge from creating a duplicate tournament entry
-// when the explicit Sidebar item above already exists.
-{
-  let src = fs.readFileSync(adminLayoutPath, 'utf8');
-  const old = "const already = nav.querySelector('a[data-tournament-registration-entry=\"true\"]');";
-  const fresh = "const already = nav.querySelector('a[data-tournament-registration-entry=\"true\"], a[href=\"/admin/pendaftaran-turnamen\"]');";
-  if (src.includes(old)) src = src.replace(old, fresh);
-  fs.writeFileSync(adminLayoutPath, src, 'utf8');
-}
-
-console.log('[patch-seeded-turnamen-menu] admin seeded + tournament registration navigation fixed safely');
+console.log('[patch-seeded-turnamen-menu] admin seeded peserta navigation/rendering normalized safely');
