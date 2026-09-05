@@ -9,7 +9,7 @@ if (src.includes(marker)) {
 }
 
 // The source currently has a V1 photo resolver injected during prebuild.
-// Replace that resolver with a single batched createSignedUrls request so all
+// Replace that resolver with a batched createSignedUrls request so all
 // accepted participants across every pagination page receive URLs together.
 const startNeedle = "  useEffect(() => {\n    let cancelled = false;\n    const readPhotoCache =";
 const start = src.indexOf(startNeedle);
@@ -113,6 +113,7 @@ src = src.replace(/loading=\"lazy\"/g, 'loading=\"eager\"');
 src = src.replace(/className=\"h-full w-full object-cover object-center transition duration-300 group-hover:scale-\[1\.02\]\"/g,
   'className=\"h-full w-full object-contain object-center transition duration-300 group-hover:scale-[1.01]\"');
 
-src += `\\n\\n${marker}\\n`;
+// IMPORTANT: emit real newlines into the TSX source. Do not write the literal characters \\n.
+src += `\n\n${marker}\n`;
 fs.writeFileSync(path, src, 'utf8');
 console.log('[patch-public-accepted-photo-delivery-v2] all participant photo URLs batched, cached and eagerly rendered across every page');
