@@ -29,6 +29,7 @@ import './admin-ui-polish.css';
 import './tournament-admin-ui.css';
 import './tournament-admin-modern.css';
 import './admin-mobile-precision.css';
+import './admin-wa-mobile-fix.css';
 import './athlete-add-responsive.css';
 import './admin-athlete-form-precision.css';
 import './kas-manager-responsive.css';
