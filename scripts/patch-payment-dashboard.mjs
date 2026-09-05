@@ -40,6 +40,30 @@ if (src.includes(oldMobileMeta)) { src = src.replace(oldMobileMeta, newMobileMet
 src = src.replace('{label:string,value:number,icon:React.ReactNode}', '{label:string,value:React.ReactNode,icon:React.ReactNode}');
 src = src.replace('className="mt-1 text-2xl font-black text-slate-900"', 'className="mt-1 whitespace-nowrap text-xl font-black text-slate-900 sm:text-2xl"');
 
+// Keep the edit participant modal readable even when global/theme CSS overrides form controls.
+const editStart = src.indexOf('function EditModal(');
+if (editStart >= 0) {
+  const editEnd = src.indexOf('\n}', editStart);
+  if (editEnd > editStart) {
+    const before = src.slice(0, editStart);
+    const editBody = src.slice(editStart, editEnd);
+    const after = src.slice(editEnd);
+    let nextEditBody = editBody
+      .replace(/text-slate-800/g, '!text-slate-900')
+      .replace(/text-slate-500/g, 'text-slate-600')
+      .replace(/bg-slate-50/g, 'bg-white');
+    nextEditBody = nextEditBody.replace(
+      '<input value={clean(row[k])}',
+      '<input style={{color:\'#0f172a\',WebkitTextFillColor:\'#0f172a\',opacity:1}} value={clean(row[k])}'
+    );
+    nextEditBody = nextEditBody.replace(
+      '<input value={clean(row.kategori)}',
+      '<input style={{color:\'#0f172a\',WebkitTextFillColor:\'#0f172a\',opacity:1}} value={clean(row.kategori)}'
+    );
+    if (nextEditBody !== editBody) { src = before + nextEditBody + after; changes++; }
+  }
+}
+
 fs.writeFileSync(componentPath, src);
 
 const exportPath = 'src/utils/adminExportEnhancer.ts';
