@@ -3,7 +3,6 @@ import fs from 'node:fs';
 const file = 'src/components/AdminPendaftaranTurnamenModernV2.tsx';
 let src = fs.readFileSync(file, 'utf8');
 
-// Pastikan ikon WhatsApp tersedia.
 src = src.replace(
   "ShieldCheck } from 'lucide-react';",
   "ShieldCheck, MessageCircle } from 'lucide-react';"
@@ -44,7 +43,7 @@ const helper = [
   "    '',",
   "    '• Pemain 1: *' + clean(row.nama_pemain_1) + '*',",
   "    '• Pemain 2: *' + clean(row.nama_pemain_2) + '*',",
-  "    " + "'• Kategori: ' + (clean(row.kategori) || '-')," + "",
+  "    '• Kategori: ' + (clean(row.kategori) || '-'),",
   "    '• PB/Klub: ' + (clean(row.asal_pb) || '-'),",
   "    '• Domisili: ' + (clean(row.domisili) || '-'),",
   "    '• Pembayaran: ' + (clean(row.status_pembayaran) || '-'),",
@@ -55,12 +54,12 @@ const helper = [
   "    'Lokasi: GOR Titik Kumpul Soreang Parepare',",
   "    '',",
   "    '*Pengurus PB BILIBILI 162*'",
-  '  ].join(\\'\\n\\');',
+  "  ].join('\\n');",
   '',
   "  window.location.assign('https://wa.me/' + phone + '?text=' + encodeURIComponent(message));",
   '}',
   ''
-].join('\\n');
+].join('\n');
 
 if (!src.includes('function openTournamentWhatsApp(row: Registration)')) {
   if (!src.includes(helperMarker)) throw new Error('Marker publicOrPathUrl tidak ditemukan pada V2.');
@@ -85,11 +84,10 @@ const newActions = [
   '  </div>;',
   '}',
   ''
-].join('\\n');
+].join('\n');
 
 src = src.slice(0, start) + newActions + src.slice(end);
 
-// Kirim row ke Actions agar tombol WA memiliki nomor WhatsApp peserta.
 src = src.replace(
   "onDelete={onDelete} paymentVerified={ps==='terverifikasi'} registrationPending={rs==='pending'}/>",
   "onDelete={onDelete} paymentVerified={ps==='terverifikasi'} registrationPending={rs==='pending'} row={row}/>",
