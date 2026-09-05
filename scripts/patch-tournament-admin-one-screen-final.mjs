@@ -2,7 +2,7 @@ import fs from 'node:fs';
 
 const path = 'src/components/AdminPendaftaranTurnamenModernV2.tsx';
 let src = fs.readFileSync(path, 'utf8');
-const marker = '/* __TOURNAMENT_ADMIN_ONE_SCREEN_FINAL__ */';
+const marker = '/* __TOURNAMENT_ADMIN_ONE_SCREEN_FINAL_V2__ */';
 if (src.includes(marker)) {
   console.log('[patch-admin-one-screen-final] already applied');
   process.exit(0);
@@ -10,6 +10,10 @@ if (src.includes(marker)) {
 
 const cssText = String.raw`
 ${marker}
+/* Dashboard statistic numbers: white for clear contrast on the dark navy theme. */
+.tournament-admin-page>div>header>div.grid>div>:last-child,
+.tournament-admin-page>div>header>div.grid>div [class*="text-2xl"],
+.tournament-admin-page>div>header>div.grid>div [class*="text-3xl"]{color:#fff!important;opacity:1!important;text-shadow:0 1px 2px rgba(0,0,0,.25)!important}
 /* Desktop: force the participant table to occupy exactly the available content width. */
 .tournament-admin-page>div>section:last-child{width:100%!important;max-width:100%!important;min-width:0!important;box-sizing:border-box!important;overflow:hidden!important}
 .tournament-admin-page>div>section:last-child>.overflow-x-auto{width:100%!important;max-width:100%!important;min-width:0!important;overflow:hidden!important}
@@ -52,4 +56,4 @@ const styleNode = `<style>{${JSON.stringify(cssText)}}</style>`;
 src = src.replace(opening, `${opening}${styleNode}`);
 
 fs.writeFileSync(path, src);
-console.log('[patch-admin-one-screen-final] participant table forced to exact viewport width; right-side actions contained');
+console.log('[patch-admin-one-screen-final] participant table forced to exact viewport width and dashboard stat numbers made white');
