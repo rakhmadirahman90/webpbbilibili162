@@ -11,7 +11,7 @@ const capacityState = `\n  const categoryCapacity = useMemo(() => {\n    const n
 const card = `\nfunction CategoryCapacityCard({ label, current, target, subtitle }: { label: string; current: number; target: number; subtitle: string }) {\n  const percent = Math.min(100, Math.round((current / Math.max(1, target)) * 100));\n  const remaining = Math.max(0, target - current);\n  return <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><div className="flex items-start justify-between gap-3"><div><p className="text-[10px] font-black uppercase tracking-[.14em] text-slate-500">Kategori</p><h3 className="mt-1 text-sm font-black text-slate-900">{label}</h3></div><div className="text-right"><p className="text-xl font-black text-blue-700">{current}<span className="text-sm font-bold text-slate-400"> / {target}</span></p><p className="text-[10px] font-bold text-slate-500">pasang</p></div></div><div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200"><div className="h-full rounded-full bg-blue-600" style={{width: percent + '%'}} /></div><div className="mt-2 flex items-center justify-between text-[10px] font-bold"><span className="text-slate-500">{subtitle}</span><span className="text-blue-700">{percent}% terisi · {remaining} tersisa</span></div></div>;
 }\n`;
 const cards = `\n        <div className="dashboard-category-targets grid gap-3 border-t border-slate-200 bg-slate-50/80 p-4 sm:grid-cols-2"><CategoryCapacityCard label="AD/BC-/C+C Ajatappareng" current={categoryCapacity.ajatappareng} target={64} subtitle="Target 64 pasang" /><CategoryCapacityCard label="CC Lokal Parepare" current={categoryCapacity.lokalCcParepare} target={128} subtitle="Target 128 pasang" /></div>`;
-const statContrast = `\n        <style>{\`.tournament-admin-page .dashboard-stat-grid > div { color:#0f172a !important; } .tournament-admin-page .dashboard-stat-grid > div > div:last-child, .tournament-admin-page .dashboard-stat-grid > div > p:last-child { color:#0f172a !important; text-shadow:none !important; -webkit-text-fill-color:#0f172a !important; } .tournament-admin-page .dashboard-category-targets h3 { color:#0f172a !important; }\`}</style>`;
+const statContrast = `<style>{\`.tournament-admin-page .dashboard-stat-grid > div { color:#0f172a !important; } .tournament-admin-page .dashboard-stat-grid > div > div:last-child, .tournament-admin-page .dashboard-stat-grid > div > p:last-child { color:#0f172a !important; text-shadow:none !important; -webkit-text-fill-color:#0f172a !important; } .tournament-admin-page .dashboard-category-targets h3 { color:#0f172a !important; }\`}</style>`;
 
 for (const path of paths) {
   if (!fs.existsSync(path)) continue;
@@ -37,9 +37,9 @@ for (const path of paths) {
     src = src.replaceAll('<CategoryCapacityCard label="Ajatappareng"', '<CategoryCapacityCard label="AD/BC-/C+C Ajatappareng"');
   }
   src = src.replace('grid grid-cols-2 gap-3 p-4 sm:grid-cols-3 lg:grid-cols-5', 'dashboard-stat-grid grid grid-cols-2 gap-3 p-4 sm:grid-cols-3 lg:grid-cols-5');
-  if (!src.includes('dashboard-stat-grid .')) {
-    const returnMarker = '  return <div className="tournament-admin-page';
-    if (src.includes(returnMarker)) src = src.replace(returnMarker, '  return <div className="tournament-admin-page' + statContrast + '');
+  if (!src.includes('dashboard-stat-grid .tournament-admin-stat-contrast')) {
+    const rootMarker = '  return <div className="tournament-admin-page min-h-full bg-slate-50 p-3 text-slate-900 sm:p-5 lg:p-8">';
+    if (src.includes(rootMarker)) src = src.replace(rootMarker, `${rootMarker}<div className="tournament-admin-stat-contrast">${statContrast}</div>`);
   }
   fs.writeFileSync(path, src, 'utf8');
 }
