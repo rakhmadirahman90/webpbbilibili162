@@ -69,7 +69,7 @@ export function isRegistrationDateClosed(settings: TournamentRegistrationSetting
 export async function getCategoryAvailability(category: string) {
   const settings = await getTournamentRegistrationSettings();
   const target = getCategoryTarget(settings, category);
-  if (!settings.enabled) return { settings, category, target, count: 0, remaining: target, closed: false, reason: '' };
+  if (!settings.enabled) return { settings, category, target, count: 0, remaining: 0, closed: true, reason: 'Pendaftaran turnamen sedang ditutup oleh admin.' };
   if (isRegistrationDateClosed(settings)) return { settings, category, target, count: 0, remaining: 0, closed: true, reason: `Pendaftaran turnamen sudah ditutup mulai ${settings.cutoffDate}.` };
   if (!target) return { settings, category, target: 0, count: 0, remaining: 0, closed: false, reason: '' };
   const { count, error } = await supabase
