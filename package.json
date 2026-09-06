@@ -27,6 +27,7 @@
     "lucide-react": "^0.344.0",
     "mammoth": "^1.10.0",
     "pdfjs-dist": "^5.4.54",
+    "react-router-dom": "^6.28.0",
     "sweetalert2": "^11.26.18",
     "swiper": "^12.1.0",
     "tesseract.js": "^6.0.1",
