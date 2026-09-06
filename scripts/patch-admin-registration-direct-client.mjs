@@ -5,7 +5,7 @@ const paths = [
   'src/components/AdminPendaftaranTurnamenModernV2.tsx',
 ];
 
-const select = "id,created_at,kode_pendaftaran,kategori,nama_pemain_1,nama_pemain_2,whatsapp,email,asal_pb,domisili,biaya_pendaftaran,status_pembayaran,status_pendaftaran,bukti_pembayaran_url,nik_pemain_1,nik_pemain_2,wilayah_nik_pemain_1,wilayah_nik_pemain_2,foto_pemain_1_url,foto_pemain_2_url,ktp_pemain_1_url,ktp_pemain_2_url,verifikasi_nik_status,verifikasi_nik_detail,catatan_admin";
+const select = "id,created_at,kode_pendaftaran,kategori,nama_pemain_1,nama_pemain_2,whatsapp,email,asal_pb,domisili,biaya_pendaftaran,status_pembayaran,status_pendaftaran,bukti_pembayaran_url,nik_pemain_1,nik_pemain_2,wilayah_nik_pemain_1,wilayah_nik_pemain_2,foto_pemain_1_url,foto_pemain_2_url,ktp_pemain_1,ktp_pemain_2,verifikasi_nik_status,verifikasi_nik_detail,catatan_admin";
 const load = `const { data, error } = await supabase.from('pendaftaran_turnamen').select('${select}').order('created_at', { ascending: false }).range(0, 999);`;
 const capacityState = `\n  const categoryCapacity = useMemo(() => {\n    const normalizeCategory = (value: unknown) => clean(value).toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '');\n    const ajatappareng = rows.filter(r => normalizeCategory(r.kategori).includes('ajatappareng')).length;\n    const lokalCcParepare = rows.filter(r => { const s = normalizeCategory(r.kategori); return s.includes('lokal') && s.includes('parepare'); }).length;\n    return { ajatappareng, lokalCcParepare };\n  }, [rows]);\n`;
 const paidTotalState = `\n  const totalPaidAmount = useMemo(() => rows.filter(r => statusPay(r.status_pembayaran) === 'terverifikasi').reduce((sum, r) => sum + Number(r.biaya_pendaftaran || 0), 0), [rows]);\n`;
@@ -45,9 +45,12 @@ for (const path of paths) {
     const rootMarker = '  return <div className="tournament-admin-page min-h-full bg-slate-50 p-3 text-slate-900 sm:p-5 lg:p-8">';
     if (src.includes(rootMarker)) src = src.replace(rootMarker, `${rootMarker}<div className="tournament-admin-stat-contrast">${statContrast}</div>`);
   }
+  const statMarker = '<Stat label="Pembayaran OK" value={stats.paid} icon={<CreditCard size={17}/>} />';
   if (!src.includes('<Stat label="Total Uang Lunas"')) {
-    const statMarker = '<Stat label="Pembayaran OK" value={stats.paid} icon={<CreditCard size={17}/>} />';
-    if (src.includes(statMarker)) {
+    const statRegex = /(<Stat label="Pembayaran OK"\s+value=\{stats\.paid\}\s+icon=\{<CreditCard size=\{17\}\/\>}\s*\/>)\s*(<\/div>)/;
+    if (statRegex.test(src)) {
+      src = src.replace(statRegex, `$1<Stat label="Total Uang Lunas" value={rupiah(totalPaidAmount)} icon={<CreditCard size={17}/>} />$2`);
+    } else if (src.includes(statMarker)) {
       src = src.replace(statMarker, `${statMarker}<Stat label="Total Uang Lunas" value={rupiah(totalPaidAmount)} icon={<CreditCard size={17}/>} />`);
     }
   }
