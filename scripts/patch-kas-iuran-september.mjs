@@ -1,26 +1,16 @@
 import fs from 'node:fs';
 
+// The participant dues recap now has its own admin route/menu.
+// This compatibility patch removes the old inline mount from KasManager so
+// Kelola Kas remains focused on cash transactions only.
 const path = 'src/components/KasManager.tsx';
 let source = fs.readFileSync(path, 'utf8');
-const importMarker = "import RekapIuranSeptember from './RekapIuranSeptember';";
-
-if (!source.includes(importMarker)) {
-  const anchor = "import autoTable from 'jspdf-autotable';";
-  if (!source.includes(anchor)) throw new Error('[patch-kas-iuran-september] import anchor not found');
-  source = source.replace(anchor, `${anchor}\n${importMarker}`);
+const before = source;
+source = source.replace(/\s*import\s+RekapIuranSeptember\s+from\s+['"]\.\/RekapIuranSeptember['"];?\s*/g, '\n');
+source = source.replace(/\s*<RekapIuranSeptember\s*\/?>\s*/g, '\n');
+if (source !== before) {
+  fs.writeFileSync(path, source, 'utf8');
+  console.log('[patch-kas-iuran-september] removed inline dues recap from KasManager');
+} else {
+  console.log('[patch-kas-iuran-september] inline dues recap already absent');
 }
-
-if (source.includes('<RekapIuranSeptember />')) {
-  console.log('[patch-kas-iuran-september] already applied');
-  process.exit(0);
-}
-
-const match = source.match(/(export default function KasManager[\s\S]*?\n\s*return\s*\(\s*<div[^>]*>)/);
-if (!match) {
-  console.log('[patch-kas-iuran-september] KasManager root return marker not found; no-op');
-  process.exit(0);
-}
-
-source = source.replace(match[1], `${match[1]}\n      <RekapIuranSeptember />`);
-fs.writeFileSync(path, source);
-console.log('[patch-kas-iuran-september] September dues recap + today payment panel mounted');
