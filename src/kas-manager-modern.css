@@ -1,0 +1,100 @@
+/* PB Bilibili 162 — Modern Kas Manager V6
+   Final visual layer. Loaded after all legacy Kas responsive styles. */
+[data-kas-manager="true"]{
+  width:100%!important;max-width:1500px!important;margin:0 auto!important;
+  min-width:0!important;min-height:max-content!important;height:auto!important;
+  overflow:visible!important;box-sizing:border-box;
+}
+[data-kas-manager="true"] *{box-sizing:border-box;min-width:0}
+
+/* Remove the two legacy blocks that make the page visually dense. */
+[data-kas-manager="true"] > section.grid.grid-cols-1.gap-3.lg\:grid-cols-2{display:none!important}
+[data-kas-manager="true"] > .flex.md\:hidden{display:none!important}
+
+@media (min-width:1024px){
+  [data-kas-manager="true"]{padding:18px 18px 34px!important;gap:16px!important}
+  [data-kas-manager="true"] > header{padding:20px 22px!important;border-radius:22px!important;min-height:0!important;background:linear-gradient(135deg,#0b1224,#091426)!important}
+  [data-kas-manager="true"] > header > .relative.z-10.flex{flex-direction:row!important;align-items:center!important;justify-content:space-between!important;gap:20px!important}
+  [data-kas-manager="true"] > header h1{font-size:28px!important;line-height:1.05!important}
+  [data-kas-manager="true"] .kas-stat-grid,[data-kas-manager="true"] > div.grid.grid-cols-2{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:14px!important}
+  [data-kas-manager="true"] > div.grid.grid-cols-2 > div{min-height:108px!important;padding:17px!important;border-radius:18px!important;overflow:hidden!important}
+  [data-kas-manager="true"] > div.grid.grid-cols-2 h2{font-size:20px!important;white-space:nowrap!important}
+  [data-kas-manager="true"] .kas-date-filter,[data-kas-manager="true"] > section.rounded-2xl:has(input[type="date"]){width:100%!important;margin:0!important;padding:14px 16px!important;border-radius:18px!important}
+  [data-kas-manager="true"] .kas-date-filter > div{align-items:center!important;gap:12px!important}
+  [data-kas-manager="true"] .kas-date-controls{display:flex!important;flex-wrap:wrap!important;gap:8px!important;min-width:0!important}
+  [data-kas-manager="true"] .kas-date-controls > *{min-width:0!important}
+  [data-kas-manager="true"] > .grid.min-h-0.grid-cols-1{display:flex!important;flex-direction:column!important;gap:16px!important;width:100%!important;min-height:0!important;align-items:stretch!important}
+  [data-kas-manager="true"] > .grid.min-h-0.grid-cols-1 > div:first-child,[data-kas-manager="true"] > .grid.min-h-0.grid-cols-1 > div:last-child{width:100%!important;max-width:100%!important;min-width:0!important;display:block!important}
+  [data-kas-manager="true"] > .grid.min-h-0.grid-cols-1 > div:first-child > div{width:100%!important;height:auto!important;max-height:none!important;overflow:visible!important;padding:18px!important;border-radius:20px!important;background:linear-gradient(180deg,rgba(15,23,42,.98),rgba(8,15,30,.97))!important}
+  [data-kas-manager="true"] > .grid.min-h-0.grid-cols-1 > div:first-child h3{font-size:16px!important;margin-bottom:12px!important}
+  [data-kas-manager="true"] form{display:grid!important;grid-template-columns:repeat(12,minmax(0,1fr))!important;column-gap:14px!important;row-gap:11px!important;align-items:start!important}
+  [data-kas-manager="true"] form > div.flex.rounded-xl{grid-column:9 / 13!important;grid-row:1!important;margin:0!important;align-self:end!important}
+  [data-kas-manager="true"] form > label:nth-of-type(1){grid-column:1 / 5!important;grid-row:1!important}
+  [data-kas-manager="true"] form > label:nth-of-type(2){grid-column:5 / 9!important;grid-row:1!important}
+  [data-kas-manager="true"] form > label:nth-of-type(3){grid-column:1 / 6!important;grid-row:2!important}
+  [data-kas-manager="true"] form > label:nth-of-type(4){grid-column:6 / 9!important;grid-row:2!important}
+  [data-kas-manager="true"] form > label:nth-of-type(5){grid-column:1 / 5!important;grid-row:3!important}
+  [data-kas-manager="true"] form > label:nth-of-type(6){grid-column:5 / 13!important;grid-row:3!important}
+  [data-kas-manager="true"] form > div.grid.grid-cols-2{grid-column:9 / 13!important;grid-row:2!important}
+  [data-kas-manager="true"] form > button{grid-column:1 / 13!important;grid-row:4!important;min-height:46px!important;margin-top:0!important}
+  [data-kas-manager="true"] form > label{width:100%!important;min-width:0!important}
+  [data-kas-manager="true"] form select,[data-kas-manager="true"] form input,[data-kas-manager="true"] form textarea{max-width:100%!important;min-width:0!important}
+  [data-kas-manager="true"] > .grid.min-h-0.grid-cols-1 > div:last-child > div{width:100%!important;max-width:100%!important;border-radius:20px!important;background:rgba(11,18,36,.96)!important}
+  [data-kas-manager="true"] > .grid.min-h-0.grid-cols-1 > div:last-child .overflow-x-auto{overflow-x:auto!important}
+  [data-kas-manager="true"] table{width:100%!important;min-width:780px!important;table-layout:fixed!important}
+  [data-kas-manager="true"] thead th{padding:11px 12px!important}
+  [data-kas-manager="true"] tbody td{padding:11px 12px!important;vertical-align:middle!important}
+}
+
+@media (min-width:768px) and (max-width:1023px){
+  [data-kas-manager="true"]{padding:14px 14px 30px!important;gap:14px!important}
+  [data-kas-manager="true"] > .grid.min-h-0.grid-cols-1{display:flex!important;flex-direction:column!important;gap:14px!important}
+  [data-kas-manager="true"] > .grid.min-h-0.grid-cols-1 > div:first-child,[data-kas-manager="true"] > .grid.min-h-0.grid-cols-1 > div:last-child{width:100%!important;display:block!important}
+  [data-kas-manager="true"] > .grid.min-h-0.grid-cols-1 > div:first-child > div{max-height:none!important;overflow:visible!important}
+  [data-kas-manager="true"] form{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px!important}
+  [data-kas-manager="true"] form > *{grid-column:auto!important;grid-row:auto!important}
+  [data-kas-manager="true"] form > div.flex.rounded-xl,[data-kas-manager="true"] form > button,[data-kas-manager="true"] form > label:nth-of-type(6){grid-column:1 / -1!important}
+  [data-kas-manager="true"] table{min-width:760px!important}
+}
+
+@media (max-width:767px){
+  [data-kas-manager="true"]{display:block!important;padding:10px 10px max(104px,env(safe-area-inset-bottom))!important;gap:12px!important}
+  [data-kas-manager="true"] > header{padding:14px!important;border-radius:18px!important}
+  [data-kas-manager="true"] > header h1{font-size:21px!important}
+  [data-kas-manager="true"] > header p{font-size:9px!important;line-height:1.35!important}
+  [data-kas-manager="true"] .kas-stat-grid,[data-kas-manager="true"] > div.grid.grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
+  [data-kas-manager="true"] > div.grid.grid-cols-2 > div{min-height:88px!important;padding:11px!important;border-radius:15px!important}
+  [data-kas-manager="true"] > div.grid.grid-cols-2 > div h2{font-size:13px!important;white-space:normal!important;overflow-wrap:anywhere!important}
+  [data-kas-manager="true"] > div.grid.grid-cols-2 > div p{font-size:7px!important}
+  [data-kas-manager="true"] > div.grid.grid-cols-2 > div:last-child{grid-column:1 / -1!important}
+  [data-kas-manager="true"] .kas-date-filter,[data-kas-manager="true"] > section.rounded-2xl:has(input[type="date"]){padding:12px!important;border-radius:16px!important}
+  [data-kas-manager="true"] .kas-date-filter > div{display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:9px!important}
+  [data-kas-manager="true"] .kas-date-controls{display:grid!important;grid-template-columns:1fr 1fr!important;gap:7px!important;width:100%!important}
+  [data-kas-manager="true"] .kas-date-controls > button{grid-column:1 / -1!important;width:100%!important}
+  [data-kas-manager="true"] .kas-date-input{width:100%!important}
+  [data-kas-manager="true"] > .grid.min-h-0.grid-cols-1{display:flex!important;flex-direction:column!important;gap:12px!important}
+  [data-kas-manager="true"] > .grid.min-h-0.grid-cols-1 > div:first-child,[data-kas-manager="true"] > .grid.min-h-0.grid-cols-1 > div:last-child{width:100%!important;display:block!important}
+  [data-kas-manager="true"] > .grid.min-h-0.grid-cols-1 > div:first-child > div{height:auto!important;max-height:none!important;overflow:visible!important;padding:13px!important;border-radius:17px!important}
+  [data-kas-manager="true"] form{display:flex!important;flex-direction:column!important;gap:9px!important}
+  [data-kas-manager="true"] form > *{width:100%!important;min-width:0!important}
+  [data-kas-manager="true"] form input,[data-kas-manager="true"] form select,[data-kas-manager="true"] form textarea{width:100%!important;max-width:100%!important;min-width:0!important;font-size:16px!important;min-height:44px!important}
+  [data-kas-manager="true"] form > button{min-height:48px!important}
+  [data-kas-manager="true"] > .grid.min-h-0.grid-cols-1 > div:last-child > div{border-radius:17px!important}
+  [data-kas-manager="true"] > .grid.min-h-0.grid-cols-1 > div:last-child .overflow-x-auto{overflow-x:hidden!important}
+  [data-kas-manager="true"] table{min-width:0!important;width:100%!important;table-layout:fixed!important}
+  [data-kas-manager="true"] thead{display:none!important}
+  [data-kas-manager="true"] tbody{display:block!important;width:100%!important}
+  [data-kas-manager="true"] tbody tr{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;gap:7px 10px!important;padding:12px!important;margin:0!important;border-top:1px solid rgba(255,255,255,.07)!important}
+  [data-kas-manager="true"] tbody td{display:block!important;width:auto!important;max-width:100%!important;padding:0!important;overflow-wrap:anywhere!important;white-space:normal!important}
+  [data-kas-manager="true"] tbody td:nth-child(1){grid-column:1;grid-row:1}
+  [data-kas-manager="true"] tbody td:nth-child(2){grid-column:1;grid-row:2;font-size:11px!important}
+  [data-kas-manager="true"] tbody td:nth-child(3){grid-column:1;grid-row:3}
+  [data-kas-manager="true"] tbody td:nth-child(4){grid-column:1;grid-row:4}
+  [data-kas-manager="true"] tbody td:nth-child(5){grid-column:2;grid-row:1 / span 3;align-self:center;text-align:right!important;white-space:nowrap!important}
+  [data-kas-manager="true"] tbody td:nth-child(6){grid-column:1;grid-row:5}
+  [data-kas-manager="true"] tbody td:nth-child(7){grid-column:1;grid-row:6}
+  [data-kas-manager="true"] tbody td:nth-child(8){grid-column:2;grid-row:6;align-self:end}
+  [data-kas-manager="true"] tbody td:nth-child(8)>div{display:flex!important;justify-content:flex-end!important;gap:6px!important}
+  [data-kas-manager="true"] tbody td:nth-child(8) button{width:38px!important;min-width:38px!important;height:38px!important;padding:0!important}
+  [data-kas-manager="true"] > section:last-child{border-radius:17px!important;padding:13px!important}
+}
