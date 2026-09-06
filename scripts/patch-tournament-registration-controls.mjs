@@ -25,7 +25,7 @@ update('src/components/PendaftaranTurnamen.tsx', (source) => {
   if (!next.includes('const refreshCapacity')) {
     const scanAnchor = '  const scanKTP=async(idx:0|1,file:File)=>{';
     if (!next.includes(scanAnchor)) fail('scanKTP anchor not found');
-    const block = `  const refreshCapacity=async()=>{\n    try{\n      setCapacityStatus(p=>({...p,loading:true}));\n      const result=await getCategoryAvailability(form.kategori);\n      setCapacityStatus({loading:false,closed:result.closed,count:result.count,target:result.target,remaining:result.remaining,reason:result.reason});\n    }catch(err){\n      console.error('Gagal memeriksa kuota pendaftaran:',err);\n      setCapacityStatus(p=>({...p,loading:false,reason:'Kuota sedang diperiksa. Silakan coba lagi.'}));\n    }\n  };\n\n  useEffect(()=>{\n    void refreshCapacity();\n    const onChange=()=>void refreshCapacity();\n    window.addEventListener('app_data_changed',onChange);\n    window.addEventListener('table_updated_pendaftaran_turnamen',onChange);\n    const timer=window.setInterval(()=>void refreshCapacity(),30000);\n    return()=>{window.removeEventListener('app_data_changed',onChange);window.removeEventListener('table_updated_pendaftaran_turnamen',onChange);window.clearInterval(timer);};\n  },[form.kategori]);\n\n  const capacityNotice=capacityStatus.closed\n    ? (capacityStatus.reason||'Pendaftaran untuk kategori ini sudah ditutup.')\n    : capacityStatus.target>0\n      ? \`Sisa kuota: ${capacityStatus.remaining} pasangan dari ${capacityStatus.target}.\`\n      : '';\n\n`;
+    const block = `  const refreshCapacity=async()=>{\n    try{\n      setCapacityStatus(p=>({...p,loading:true}));\n      const result=await getCategoryAvailability(form.kategori);\n      setCapacityStatus({loading:false,closed:result.closed,count:result.count,target:result.target,remaining:result.remaining,reason:result.reason});\n    }catch(err){\n      console.error('Gagal memeriksa kuota pendaftaran:',err);\n      setCapacityStatus(p=>({...p,loading:false,reason:'Kuota sedang diperiksa. Silakan coba lagi.'}));\n    }\n  };\n\n  useEffect(()=>{\n    void refreshCapacity();\n    const onChange=()=>void refreshCapacity();\n    window.addEventListener('app_data_changed',onChange);\n    window.addEventListener('table_updated_pendaftaran_turnamen',onChange);\n    const timer=window.setInterval(()=>void refreshCapacity(),30000);\n    return()=>{window.removeEventListener('app_data_changed',onChange);window.removeEventListener('table_updated_pendaftaran_turnamen',onChange);window.clearInterval(timer);};\n  },[form.kategori]);\n\n  const capacityNotice=capacityStatus.closed\n    ? (capacityStatus.reason||'Pendaftaran untuk kategori ini sudah ditutup.')\n    : capacityStatus.target>0\n      ? \`Sisa kuota: \${capacityStatus.remaining} pasangan dari \${capacityStatus.target}.\`\n      : '';\n\n`;
     next = next.replace(scanAnchor, block + scanAnchor);
   }
 
@@ -33,11 +33,9 @@ update('src/components/PendaftaranTurnamen.tsx', (source) => {
     const nextAnchor = '  const next=async()=>{';
     if (!next.includes(nextAnchor)) fail('next function anchor not found');
     next = next.replace(nextAnchor, `  const __capacityCheckBeforeNext=async()=>{\n    const availability=await getCategoryAvailability(form.kategori);\n    if(availability.closed){\n      await Swal.fire({icon:'warning',title:'Pendaftaran Kategori Ditutup',text:availability.reason||'Kuota kategori sudah penuh atau tanggal pendaftaran telah berakhir.',confirmButtonColor:'#2563eb'});\n      return false;\n    }\n    return true;\n  };\n\n  const next=async()=>{\n    if(!(await __capacityCheckBeforeNext()))return;`);
-    // The replacement already opens next's body, so do not leave the original opening brace.
-    next = next.replace('  const next=async()=>{\n    if(!(await __capacityCheckBeforeNext()))return;\n    if(step===1', '  const next=async()=>{\n    if(!(await __capacityCheckBeforeNext()))return;\n    if(step===1');
   }
 
-  if (!next.includes('const availability=await getCategoryAvailability(form.kategori);if(availability.closed)')) {
+  if (!next.includes('const availability=await getCategoryAvailability(form.kategori);if(availability.closed')) {
     const submitAnchor = '  const submit=async()=>{';
     if (!next.includes(submitAnchor)) fail('submit function anchor not found');
     next = next.replace(submitAnchor, `  const submit=async()=>{\n    const availability=await getCategoryAvailability(form.kategori);\n    if(availability.closed){\n      return Swal.fire({icon:'warning',title:'Pendaftaran Tidak Dapat Dilanjutkan',text:availability.reason||'Kategori penuh atau pendaftaran sudah ditutup.',confirmButtonColor:'#2563eb'});\n    }`);
@@ -50,7 +48,6 @@ update('src/components/PendaftaranTurnamen.tsx', (source) => {
     next = next.replace(renderAnchor, notice + renderAnchor);
   }
 
-  // Render the notice directly after the Navbar in the form page.
   if (!next.includes('{__capacityNotice}')) {
     const navbarRegex = /(return\s*<div[^>]*>\s*<Navbar[^>]*\/>)/;
     if (navbarRegex.test(next)) next = next.replace(navbarRegex, '$1{__capacityNotice}');
