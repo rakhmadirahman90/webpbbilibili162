@@ -1,352 +1,55 @@
 import fs from 'node:fs';
 
+const componentPath = 'src/components/KasManager.tsx';
 const cssPath = 'src/index.css';
+
+let src = fs.readFileSync(componentPath, 'utf8');
+
+// Stable hooks for the modern layout.
+src = src.replace(
+  '<form onSubmit={saveKas} className="space-y-3">',
+  '<form onSubmit={saveKas} className="kas-entry-form space-y-3">'
+);
+src = src.replace(
+  '<div className="flex rounded-xl border border-white/10 bg-black p-1">',
+  '<div className="kas-transaction-switch flex rounded-xl border border-white/10 bg-black p-1">'
+);
+src = src.replace(
+  '<section className="grid grid-cols-1 gap-3 lg:grid-cols-2">',
+  '<section className="kas-latest-grid grid grid-cols-1 gap-3 lg:grid-cols-2">'
+);
+src = src.replace(
+  '<div className="flex md:hidden gap-1.5 rounded-2xl border border-white/10 bg-slate-900/90 p-1.5 shadow-xl">',
+  '<div className="kas-mobile-tabs flex md:hidden gap-1.5 rounded-2xl border border-white/10 bg-slate-900/90 p-1.5 shadow-xl">'
+);
+src = src.replace(
+  '<section className="rounded-2xl border border-white/10 bg-slate-900/90 p-3 sm:p-4 shadow-lg"><div className="flex flex-wrap items-center justify-between gap-2">',
+  '<section className="kas-date-filter rounded-2xl border border-white/10 bg-slate-900/90 p-3 sm:p-4 shadow-lg"><div className="flex flex-wrap items-center justify-between gap-2">'
+);
+src = src.replace(
+  '<div className="grid min-h-0 grid-cols-1 items-stretch gap-4 lg:grid-cols-12 md:gap-6">',
+  '<div className="kas-main-content grid min-h-0 grid-cols-1 items-stretch gap-4 lg:grid-cols-12 md:gap-6">'
+);
+src = src.replace(
+  '<div className={`lg:col-span-4 ${activeMobileTab===\'form\'?\'flex\':\'hidden md:flex\'} min-h-0 flex-col`}>',
+  '<div className={`kas-form-column lg:col-span-4 ${activeMobileTab===\'form\'?\'flex\':\'hidden md:flex\'} min-h-0 flex-col`}>'
+);
+src = src.replace(
+  '<div className={`lg:col-span-8 ${activeMobileTab===\'list\'?\'block\':\'hidden md:block\'} min-w-0`}>',
+  '<div className={`kas-history-column lg:col-span-8 ${activeMobileTab===\'list\'?\'block\':\'hidden md:block\'} min-w-0`}>'
+);
+src = src.replace(
+  '<section className="rounded-2xl border border-blue-500/20 bg-gradient-to-r',
+  '<section className="kas-summary rounded-2xl border border-blue-500/20 bg-gradient-to-r'
+);
+
+fs.writeFileSync(componentPath, src, 'utf8');
+
 let css = fs.readFileSync(cssPath, 'utf8');
-const marker = '/* KAS_MODERN_UI_V2 */';
-
+const marker = '/* KAS_MODERN_UI_V5 */';
 if (!css.includes(marker)) {
-  css += `
-
-${marker}
-/*
- * PB Bilibili 162 — Kas Admin UI
- * Goals: clear hierarchy, calm density, one page scroll, responsive form/list,
- * accessible touch targets, and financial numbers that are easy to scan.
- */
-[data-kas-manager="true"] {
-  --kas-surface: rgba(11, 18, 36, .94);
-  --kas-surface-2: rgba(15, 23, 42, .82);
-  --kas-border: rgba(148, 163, 184, .13);
-  --kas-muted: #94a3b8;
-  --kas-blue: #60a5fa;
-  width: min(100%, 1500px) !important;
-  margin-inline: auto !important;
-  padding: 20px clamp(16px, 2vw, 32px) 40px !important;
-  gap: 18px !important;
-  overflow: visible !important;
-}
-
-[data-kas-manager="true"] > header {
-  min-height: 132px;
-  padding: 24px !important;
-  border-radius: 24px !important;
-  border-color: rgba(96, 165, 250, .16) !important;
-  background:
-    radial-gradient(circle at 88% 18%, rgba(59,130,246,.14), transparent 28%),
-    linear-gradient(135deg, rgba(15,23,42,.98), rgba(9,16,32,.96)) !important;
-  box-shadow: 0 18px 50px rgba(0,0,0,.22) !important;
-}
-
-[data-kas-manager="true"] > header h1 {
-  letter-spacing: -.045em !important;
-}
-
-[data-kas-manager="true"] > header input {
-  height: 38px;
-}
-
-[data-kas-manager="true"] > header button {
-  min-height: 38px;
-  transition: transform .16s ease, filter .16s ease, border-color .16s ease;
-}
-[data-kas-manager="true"] > header button:hover { transform: translateY(-1px); filter: brightness(1.06); }
-[data-kas-manager="true"] > header button:active { transform: translateY(0); }
-
-/* KPI area: consistent card anatomy and readable numerals. */
-[data-kas-manager="true"] > div.grid.grid-cols-2 {
-  gap: 12px !important;
-}
-[data-kas-manager="true"] > div.grid.grid-cols-2 > div {
-  min-height: 112px;
-  padding: 18px !important;
-  border-radius: 18px !important;
-  box-shadow: 0 10px 28px rgba(0,0,0,.12);
-  transition: transform .16s ease, border-color .16s ease;
-}
-[data-kas-manager="true"] > div.grid.grid-cols-2 > div:hover {
-  transform: translateY(-2px);
-  border-color: rgba(148,163,184,.22) !important;
-}
-[data-kas-manager="true"] > div.grid.grid-cols-2 h2 {
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -.035em;
-}
-
-/* Latest transaction cards. */
-[data-kas-manager="true"] section.grid.grid-cols-1 {
-  gap: 12px !important;
-}
-[data-kas-manager="true"] section.grid.grid-cols-1 > div {
-  min-height: 126px;
-  padding: 17px 18px !important;
-  border-radius: 18px !important;
-  background: rgba(11,18,36,.88) !important;
-}
-
-/* Date/filter toolbar: make it a true control bar instead of a loose row. */
-[data-kas-manager="true"] section.rounded-2xl:has(input[type="date"]) {
-  padding: 15px 18px !important;
-  border-radius: 18px !important;
-  background: rgba(15,23,42,.82) !important;
-  box-shadow: 0 10px 28px rgba(0,0,0,.10);
-}
-[data-kas-manager="true"] section.rounded-2xl:has(input[type="date"]) label {
-  min-height: 40px;
-  background: rgba(2,6,23,.66) !important;
-}
-[data-kas-manager="true"] section.rounded-2xl:has(input[type="date"]) button {
-  min-height: 40px;
-}
-
-/* Main work area: form and history have equal visual weight. */
-[data-kas-manager="true"] > .grid.min-h-0.grid-cols-1 {
-  align-items: start !important;
-  gap: 18px !important;
-}
-[data-kas-manager="true"] > .grid.min-h-0.grid-cols-1 > div:first-child,
-[data-kas-manager="true"] > .grid.min-h-0.grid-cols-1 > div:last-child {
-  min-width: 0 !important;
-}
-
-/* Form card — remove the cramped nested-scroll feeling from the screenshot. */
-[data-kas-manager="true"] > .grid.min-h-0.grid-cols-1 > div:first-child > div {
-  max-height: none !important;
-  overflow: visible !important;
-  padding: 20px !important;
-  border-radius: 20px !important;
-  background: linear-gradient(180deg, rgba(15,23,42,.98), rgba(8,15,30,.96)) !important;
-  box-shadow: 0 16px 42px rgba(0,0,0,.16);
-}
-[data-kas-manager="true"] > .grid.min-h-0.grid-cols-1 > div:first-child h3 {
-  font-size: 15px !important;
-  letter-spacing: -.02em;
-}
-[data-kas-manager="true"] form {
-  gap: 0 !important;
-}
-[data-kas-manager="true"] form > label {
-  display: block;
-  padding-top: 3px;
-}
-[data-kas-manager="true"] form select,
-[data-kas-manager="true"] form input:not([type="radio"]):not([type="checkbox"]) {
-  min-height: 42px;
-  border-radius: 12px !important;
-  background: rgba(2,6,23,.56) !important;
-  border-color: rgba(148,163,184,.14) !important;
-  transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
-}
-[data-kas-manager="true"] form select:focus,
-[data-kas-manager="true"] form input:focus {
-  border-color: rgba(96,165,250,.65) !important;
-  box-shadow: 0 0 0 3px rgba(59,130,246,.12) !important;
-  background: rgba(2,6,23,.78) !important;
-}
-[data-kas-manager="true"] form > button {
-  min-height: 46px;
-  margin-top: 6px;
-  border-radius: 13px !important;
-  font-size: 11px !important;
-}
-[data-kas-manager="true"] form .rounded-lg.border.border-blue-900\/30 {
-  border-radius: 10px !important;
-}
-
-/* Income/expense switch gets stronger affordance. */
-[data-kas-manager="true"] form > div.flex.rounded-xl {
-  padding: 4px !important;
-  margin-bottom: 2px;
-  background: rgba(2,6,23,.72) !important;
-}
-[data-kas-manager="true"] form > div.flex.rounded-xl button {
-  min-height: 38px;
-  border-radius: 9px !important;
-}
-
-/* History table. */
-[data-kas-manager="true"] > .grid.min-h-0.grid-cols-1 > div:last-child > div {
-  border-radius: 20px !important;
-  background: rgba(11,18,36,.94) !important;
-  box-shadow: 0 16px 42px rgba(0,0,0,.14);
-}
-[data-kas-manager="true"] table {
-  font-variant-numeric: tabular-nums;
-}
-[data-kas-manager="true"] thead th {
-  padding-top: 12px !important;
-  padding-bottom: 12px !important;
-  font-size: 9px !important;
-  letter-spacing: .08em !important;
-  white-space: nowrap;
-}
-[data-kas-manager="true"] tbody td {
-  padding-top: 12px !important;
-  padding-bottom: 12px !important;
-  vertical-align: middle;
-}
-[data-kas-manager="true"] tbody tr {
-  transition: background .14s ease;
-}
-[data-kas-manager="true"] tbody tr:hover {
-  background: rgba(59,130,246,.045) !important;
-}
-[data-kas-manager="true"] tbody td button {
-  min-width: 34px;
-  min-height: 34px;
-}
-
-/* Bottom financial summary becomes a compact executive strip. */
-[data-kas-manager="true"] > section:last-child {
-  padding: 18px 20px !important;
-  border-radius: 20px !important;
-  background: linear-gradient(135deg, rgba(15,23,42,.96), rgba(8,15,30,.96)) !important;
-}
-[data-kas-manager="true"] > section:last-child > div {
-  gap: 18px !important;
-}
-[data-kas-manager="true"] > section:last-child b {
-  font-variant-numeric: tabular-nums;
-}
-
-/* Page scrollbar is the only primary scroll. */
-[data-kas-manager="true"] .overflow-y-auto {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(96,165,250,.32) transparent;
-}
-[data-kas-manager="true"] .overflow-y-auto::-webkit-scrollbar { width: 6px; }
-[data-kas-manager="true"] .overflow-y-auto::-webkit-scrollbar-thumb {
-  background: rgba(96,165,250,.28);
-  border-radius: 999px;
-}
-
-@media (min-width: 1024px) {
-  [data-kas-manager="true"] > .grid.min-h-0.grid-cols-1 > div:first-child {
-    position: sticky;
-    top: 16px;
-    align-self: start;
-  }
-}
-
-@media (max-width: 1023px) {
-  [data-kas-manager="true"] {
-    padding: 14px 14px 90px !important;
-    gap: 14px !important;
-  }
-  [data-kas-manager="true"] > header {
-    padding: 18px !important;
-    border-radius: 18px !important;
-  }
-  [data-kas-manager="true"] > header > div.relative {
-    gap: 14px !important;
-  }
-  [data-kas-manager="true"] > header input {
-    min-height: 40px;
-  }
-  [data-kas-manager="true"] > header .relative.z-10.flex.flex-wrap {
-    width: 100%;
-  }
-  [data-kas-manager="true"] > header .relative.z-10.flex.flex-wrap > * {
-    flex: 1 1 auto;
-  }
-  [data-kas-manager="true"] > .grid.min-h-0.grid-cols-1 > div:first-child > div {
-    padding: 16px !important;
-    border-radius: 18px !important;
-  }
-}
-
-@media (max-width: 767px) {
-  [data-kas-manager="true"] {
-    padding: 10px 10px 100px !important;
-    gap: 12px !important;
-  }
-  [data-kas-manager="true"] > header {
-    min-height: 0;
-    padding: 15px !important;
-  }
-  [data-kas-manager="true"] > header h1 { font-size: 22px !important; }
-  [data-kas-manager="true"] > header p { font-size: 9px !important; }
-
-  [data-kas-manager="true"] > div.grid.grid-cols-2 {
-    grid-template-columns: repeat(2, minmax(0,1fr)) !important;
-    gap: 8px !important;
-  }
-  [data-kas-manager="true"] > div.grid.grid-cols-2 > div {
-    min-height: 92px;
-    padding: 12px !important;
-    border-radius: 15px !important;
-  }
-  [data-kas-manager="true"] > div.grid.grid-cols-2 > div p {
-    font-size: 7px !important;
-  }
-  [data-kas-manager="true"] > div.grid.grid-cols-2 > div h2 {
-    font-size: 13px !important;
-  }
-  [data-kas-manager="true"] > div.grid.grid-cols-2 > div:last-child > div {
-    font-size: 7px !important;
-  }
-
-  [data-kas-manager="true"] section.grid.grid-cols-1 > div {
-    min-height: 0;
-    padding: 13px !important;
-    border-radius: 15px !important;
-  }
-
-  [data-kas-manager="true"] section.rounded-2xl:has(input[type="date"]) {
-    padding: 12px !important;
-  }
-  [data-kas-manager="true"] section.rounded-2xl:has(input[type="date"]) > div {
-    align-items: stretch !important;
-  }
-  [data-kas-manager="true"] section.rounded-2xl:has(input[type="date"]) > div > div:last-child {
-    display: grid !important;
-    grid-template-columns: repeat(2, minmax(0,1fr));
-  }
-  [data-kas-manager="true"] section.rounded-2xl:has(input[type="date"]) label,
-  [data-kas-manager="true"] section.rounded-2xl:has(input[type="date"]) button {
-    width: 100%;
-    min-width: 0;
-  }
-
-  [data-kas-manager="true"] > .grid.min-h-0.grid-cols-1 {
-    gap: 12px !important;
-  }
-  [data-kas-manager="true"] > .grid.min-h-0.grid-cols-1 > div:first-child > div {
-    padding: 14px !important;
-  }
-  [data-kas-manager="true"] form select,
-  [data-kas-manager="true"] form input:not([type="radio"]):not([type="checkbox"]) {
-    min-height: 44px;
-  }
-  [data-kas-manager="true"] form > button {
-    min-height: 48px;
-  }
-  [data-kas-manager="true"] > .grid.min-h-0.grid-cols-1 > div:last-child > div {
-    border-radius: 16px !important;
-  }
-  [data-kas-manager="true"] > .grid.min-h-0.grid-cols-1 > div:last-child > div > div:first-child {
-    padding: 14px !important;
-  }
-  [data-kas-manager="true"] .overflow-x-auto {
-    border-radius: 0 0 16px 16px;
-    -webkit-overflow-scrolling: touch;
-  }
-  [data-kas-manager="true"] table { min-width: 760px !important; }
-
-  [data-kas-manager="true"] > section:last-child {
-    padding: 14px !important;
-  }
-  [data-kas-manager="true"] > section:last-child > div {
-    gap: 12px !important;
-  }
-}
-
-@media (max-width: 380px) {
-  [data-kas-manager="true"] > div.grid.grid-cols-2 > div { padding: 10px !important; }
-  [data-kas-manager="true"] > div.grid.grid-cols-2 > div h2 { font-size: 12px !important; }
-  [data-kas-manager="true"] section.rounded-2xl:has(input[type="date"]) > div > div:last-child { gap: 6px !important; }
-}
-`;
+  css += `\n\n${marker}\n/* Modern Kas desktop/mobile layout: normal document flow, no nested viewport panels. */\n[data-kas-manager="true"] {\n  --kas-gap: 16px;\n  box-sizing: border-box;\n  width: 100% !important;\n  max-width: 100% !important;\n  min-width: 0 !important;\n  height: auto !important;\n  min-height: max-content !important;\n  overflow: visible !important;\n}\n[data-kas-manager="true"] *,\n[data-kas-manager="true"] *::before,\n[data-kas-manager="true"] *::after { box-sizing: border-box; }\n\n.kas-latest-grid, .kas-mobile-tabs { display: none !important; }\n\n@media (min-width: 1024px) {\n  [data-kas-manager="true"] { padding: 20px 18px 32px !important; gap: 18px !important; }\n  [data-kas-manager="true"] > header { padding: 22px 24px !important; border-radius: 22px !important; }\n  [data-kas-manager="true"] > header > .relative.z-10.flex { flex-direction: row !important; align-items: center !important; }\n  [data-kas-manager="true"] .kas-stat-grid { grid-template-columns: repeat(4,minmax(0,1fr)) !important; gap: 14px !important; }\n  [data-kas-manager="true"] .kas-stat-card { min-height: 112px !important; display:flex !important; flex-direction:column !important; justify-content:center !important; }\n  [data-kas-manager="true"] .kas-latest-grid { display: none !important; }\n  [data-kas-manager="true"] .kas-mobile-tabs { display: none !important; }\n  [data-kas-manager="true"] .kas-date-filter { order: 3; width:100% !important; }\n  [data-kas-manager="true"] .kas-main-content { display: contents !important; }\n  [data-kas-manager="true"] .kas-form-column,\n  [data-kas-manager="true"] .kas-history-column { grid-column: 1 / -1 !important; width:100% !important; min-width:0 !important; }\n  [data-kas-manager="true"] .kas-form-column { order: 2; }\n  [data-kas-manager="true"] .kas-history-column { order: 4; }\n  [data-kas-manager="true"] .kas-form-column > div { max-height:none !important; height:auto !important; overflow:visible !important; border-radius:20px !important; padding:18px 20px !important; }\n  [data-kas-manager="true"] .kas-entry-form { display:grid !important; grid-template-columns:repeat(12,minmax(0,1fr)) !important; column-gap:14px !important; row-gap:12px !important; align-items:start !important; }\n  [data-kas-manager="true"] .kas-entry-form > .kas-transaction-switch { grid-column:9 / -1 !important; grid-row:1 !important; align-self:end !important; }\n  [data-kas-manager="true"] .kas-entry-form > label:nth-of-type(1) { grid-column:1 / 5 !important; grid-row:1 !important; }\n  [data-kas-manager="true"] .kas-entry-form > label:nth-of-type(2) { grid-column:5 / 9 !important; grid-row:1 !important; }\n  [data-kas-manager="true"] .kas-entry-form > label:nth-of-type(3) { grid-column:1 / 6 !important; grid-row:2 !important; }\n  [data-kas-manager="true"] .kas-entry-form > label:nth-of-type(4) { grid-column:6 / 9 !important; grid-row:2 !important; }\n  [data-kas-manager="true"] .kas-entry-form > label:nth-of-type(5) { grid-column:9 / -1 !important; grid-row:2 !important; }\n  [data-kas-manager="true"] .kas-entry-form > label:nth-of-type(6) { grid-column:1 / -1 !important; grid-row:3 !important; }\n  [data-kas-manager="true"] .kas-entry-form > button { grid-column:1 / -1 !important; grid-row:4 !important; min-height:46px !important; }\n  [data-kas-manager="true"] .kas-entry-form > div:not(.kas-transaction-switch) { grid-column:9 / -1 !important; grid-row:2 !important; }\n  [data-kas-manager="true"] .kas-history-column > div { border-radius:20px !important; }\n  [data-kas-manager="true"] .kas-history-column .overflow-x-auto { overflow-x:auto !important; }\n  [data-kas-manager="true"] .kas-history-column table { min-width:760px !important; table-layout:fixed !important; }\n  [data-kas-manager="true"] .kas-history-column th,\n  [data-kas-manager="true"] .kas-history-column td { padding:11px 12px !important; }\n}\n\n@media (min-width: 768px) and (max-width: 1023px) {\n  [data-kas-manager="true"] { padding:14px !important; }\n  [data-kas-manager="true"] .kas-latest-grid { display:none !important; }\n  [data-kas-manager="true"] .kas-main-content { display:flex !important; flex-direction:column !important; }\n  [data-kas-manager="true"] .kas-form-column, [data-kas-manager="true"] .kas-history-column { width:100% !important; }\n  [data-kas-manager="true"] .kas-form-column > div { max-height:none !important; overflow:visible !important; }\n  [data-kas-manager="true"] .kas-entry-form { display:grid !important; grid-template-columns:repeat(2,minmax(0,1fr)) !important; gap:12px !important; }\n  [data-kas-manager="true"] .kas-entry-form > * { grid-column:auto !important; grid-row:auto !important; }\n  [data-kas-manager="true"] .kas-entry-form > .kas-transaction-switch,\n  [data-kas-manager="true"] .kas-entry-form > label:nth-of-type(3),\n  [data-kas-manager="true"] .kas-entry-form > label:nth-of-type(6),\n  [data-kas-manager="true"] .kas-entry-form > button { grid-column:1 / -1 !important; }\n}\n\n@media (max-width: 767px) {\n  [data-kas-manager="true"] {\n    display:block !important;\n    width:100% !important;\n    padding:10px 10px max(104px,env(safe-area-inset-bottom)) !important;\n    overflow:visible !important;\n    background:transparent !important;\n  }\n  [data-kas-manager="true"] > header { margin-bottom:12px !important; padding:14px !important; border-radius:18px !important; }\n  [data-kas-manager="true"] > header > .relative.z-10.flex { gap:12px !important; }\n  [data-kas-manager="true"] .kas-stat-grid { display:grid !important; grid-template-columns:repeat(2,minmax(0,1fr)) !important; gap:10px !important; }\n  [data-kas-manager="true"] .kas-stat-card { min-width:0 !important; min-height:92px !important; padding:12px !important; overflow:hidden !important; }\n  [data-kas-manager="true"] .kas-stat-card h2 { font-size:15px !important; line-height:1.15 !important; white-space:normal !important; overflow-wrap:anywhere !important; }\n  [data-kas-manager="true"] .kas-stat-card p { font-size:8px !important; }\n  [data-kas-manager="true"] .kas-stat-card:nth-child(4) { grid-column:1 / -1 !important; }\n  [data-kas-manager="true"] .kas-mobile-tabs { display:flex !important; margin:12px 0 !important; position:static !important; }\n  [data-kas-manager="true"] .kas-date-filter { margin:12px 0 !important; padding:12px !important; }\n  [data-kas-manager="true"] .kas-date-filter > div { display:flex !important; flex-direction:column !important; align-items:stretch !important; gap:10px !important; }\n  [data-kas-manager="true"] .kas-date-filter .kas-date-controls { display:grid !important; grid-template-columns:1fr 1fr !important; gap:8px !important; }\n  [data-kas-manager="true"] .kas-date-filter .kas-date-controls > button { grid-column:1 / -1 !important; width:100% !important; }\n  [data-kas-manager="true"] .kas-main-content { display:flex !important; flex-direction:column !important; gap:12px !important; }\n  [data-kas-manager="true"] .kas-form-column, [data-kas-manager="true"] .kas-history-column { width:100% !important; min-width:0 !important; display:block !important; }\n  [data-kas-manager="true"] .kas-form-column > div { width:100% !important; max-height:none !important; height:auto !important; overflow:visible !important; padding:14px !important; border-radius:18px !important; }\n  [data-kas-manager="true"] .kas-entry-form { display:flex !important; flex-direction:column !important; gap:10px !important; }\n  [data-kas-manager="true"] .kas-entry-form > * { width:100% !important; min-width:0 !important; }\n  [data-kas-manager="true"] .kas-entry-form input,\n  [data-kas-manager="true"] .kas-entry-form select,\n  [data-kas-manager="true"] .kas-entry-form textarea { width:100% !important; max-width:100% !important; min-width:0 !important; font-size:16px !important; }\n  [data-kas-manager="true"] .kas-entry-form .kas-transaction-switch { display:flex !important; }\n  [data-kas-manager="true"] .kas-entry-form button { min-height:46px !important; }\n  [data-kas-manager="true"] .kas-history-column > div { width:100% !important; border-radius:18px !important; }\n  [data-kas-manager="true"] .kas-history-column .overflow-x-auto { overflow-x:hidden !important; }\n  [data-kas-manager="true"] .kas-history-column table { min-width:0 !important; width:100% !important; table-layout:fixed !important; }\n  [data-kas-manager="true"] .kas-history-column thead { display:none !important; }\n  [data-kas-manager="true"] .kas-history-column tbody { display:block !important; width:100% !important; }\n  [data-kas-manager="true"] .kas-history-column tbody tr { display:grid !important; grid-template-columns:minmax(0,1fr) auto !important; gap:7px 10px !important; width:100% !important; margin:0 !important; padding:12px !important; border-top:1px solid rgba(255,255,255,.06) !important; }\n  [data-kas-manager="true"] .kas-history-column tbody td { display:block !important; width:auto !important; min-width:0 !important; max-width:100% !important; padding:0 !important; overflow-wrap:anywhere !important; white-space:normal !important; }\n  [data-kas-manager="true"] .kas-history-column tbody td:nth-child(1) { grid-column:1; grid-row:1; }\n  [data-kas-manager="true"] .kas-history-column tbody td:nth-child(2) { grid-column:1; grid-row:2; }\n  [data-kas-manager="true"] .kas-history-column tbody td:nth-child(3) { grid-column:1; grid-row:3; }\n  [data-kas-manager="true"] .kas-history-column tbody td:nth-child(4) { grid-column:1; grid-row:4; }\n  [data-kas-manager="true"] .kas-history-column tbody td:nth-child(5) { grid-column:2; grid-row:1 / span 3; align-self:center; text-align:right !important; white-space:nowrap !important; }\n  [data-kas-manager="true"] .kas-history-column tbody td:nth-child(6) { grid-column:1; grid-row:5; }\n  [data-kas-manager="true"] .kas-history-column tbody td:nth-child(7) { grid-column:1; grid-row:6; }\n  [data-kas-manager="true"] .kas-history-column tbody td:nth-child(8) { grid-column:2; grid-row:6; align-self:end; }\n  [data-kas-manager="true"] .kas-history-column tbody td:nth-child(8) > div { justify-content:flex-end !important; gap:6px !important; }\n  [data-kas-manager="true"] .kas-history-column tbody td:nth-child(8) button { width:38px !important; min-width:38px !important; height:38px !important; padding:0 !important; }\n  [data-kas-manager="true"] .kas-summary { margin-top:12px !important; border-radius:18px !important; }\n}\n`;
   fs.writeFileSync(cssPath, css, 'utf8');
 }
 
-console.log('[patch-kas-modern-ui] applied modern finance/admin UI system');
+console.log('[patch-kas-modern-ui] modern V5 layout applied');
