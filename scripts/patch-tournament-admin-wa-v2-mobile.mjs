@@ -36,16 +36,31 @@ if (!source.includes('const totalPaidAmount = useMemo')) {
   const at = source.indexOf(marker);
   if (at >= 0) {
     source = source.slice(0, at) + "  const totalPaidAmount = useMemo(() => rows.filter(r => statusPay(r.status_pembayaran) === 'terverifikasi').reduce((sum, r) => sum + Number(r.biaya_pendaftaran || 0), 0), [rows]);\n\n" + source.slice(at);
+  } else {
+    throw new Error('V2 updateStatus marker not found; refusing to build without paid-total calculation.');
   }
 }
 
 if (!source.includes('<Stat label="Total Uang Lunas"')) {
   const stat = '<Stat label="Total Uang Lunas" value={rupiah(totalPaidAmount)} icon={<CreditCard size={17}/>} />';
-  const paymentStat = '<Stat label="Pembayaran OK" value={stats.paid} icon={<CreditCard size={17}/>} />';
-  if (source.includes(paymentStat)) {
-    source = source.replace(paymentStat, `${paymentStat}${stat}`);
+
+  // Build-prep can rewrite the payment label before this final script runs.
+  // Insert into the dedicated dashboard stat row instead of depending on one label.
+  const statRowRe = /(<div className="[^\"]*grid-cols-2[^\"]*lg:grid-cols-5[^\"]*">)(.*?)(<\/div>)/s;
+  const match = source.match(statRowRe);
+  if (match) {
+    const row = match[2];
+    const updatedRow = row + stat;
+    source = source.replace(statRowRe, `$1${updatedRow}$3`);
   } else {
-    throw new Error('V2 payment stat marker not found; refusing to build without Total Uang Lunas.');
+    // Fallback for a previous patch that already changed the grid column count.
+    const anyStatRowRe = /(<div className="[^\"]*dashboard-stat-grid[^\"]*">)(.*?)(<\/div>)/s;
+    const anyMatch = source.match(anyStatRowRe);
+    if (anyMatch) {
+      source = source.replace(anyStatRowRe, `$1${anyMatch[2]}${stat}$3`);
+    } else {
+      throw new Error('Tournament dashboard stat row not found; refusing to build without Total Uang Lunas.');
+    }
   }
 }
 
