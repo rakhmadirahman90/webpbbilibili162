@@ -306,8 +306,7 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     storage: typeof window !== 'undefined' ? window.localStorage : undefined,
   },
   global: {
-    fetch: cachedFetch,
-    headers: { 'x-application-name': 'pb-bilibili-162' }
+    fetch: cachedFetch
   },
   realtime: { params: { eventsPerSecond: 10 } }
 });
