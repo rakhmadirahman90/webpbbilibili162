@@ -76,11 +76,17 @@ const categoryMatches = (category: string, seededCategory?: string | null) => {
     || (declared.includes('lokal parepare') && target.includes('lokal parepare'));
 };
 
+const allowedLevelsForCategory = (category: string) =>
+  norm(category).includes('lokal parepare')
+    ? new Set(['C-', 'D'])
+    : new Set(['A', 'B', 'C+', 'C-', 'C', 'D']);
+
 /**
- * Cek pasangan berdasarkan SEMUA record seeded dengan nama tersebut.
- * eligible_category dipakai sebagai preferensi, bukan syarat mutlak, karena
- * data seeded lama dapat menyimpan kategori sumber yang berbeda sementara
- * level pemain tetap sah untuk kategori lain sesuai aturan pasangan.
+ * Cek pasangan berdasarkan semua record seeded dengan nama tersebut.
+ * Untuk CC Lokal Parepare, nama yang memiliki record VALID dengan level
+ * di luar C-/D tidak boleh dipaksa lolos dengan memilih duplikat nama lain
+ * yang kebetulan memiliki level D. Ini mencegah kasus satu nama tercatat
+ * di beberapa klub, misalnya AHMAD: C di RAJAWALI dan D di PB. BILI-BILI 162.
  */
 export async function checkSeededPairEligibility(category: string, player1: string, player2: string): Promise<PairResult> {
   const names = [norm(player1), norm(player2)];
@@ -131,6 +137,35 @@ export async function checkSeededPairEligibility(category: string, player1: stri
       eligible: false,
       reason: `${missing} belum ditemukan pada database seeded resmi. Pastikan nama pemain dipilih dari data seeded yang sesuai.`,
     };
+  }
+
+  // IMPORTANT: do not let a duplicate name at another club with a more
+  // permissive level bypass the category restriction for Local Parepare.
+  const allowed = allowedLevelsForCategory(category);
+  if (norm(category).includes('lokal parepare')) {
+    const invalidP1 = p1Candidates.filter(p => {
+      const l = level(p.seeded_quality || p.division_level);
+      return l && !allowed.has(l);
+    });
+    const invalidP2 = p2Candidates.filter(p => {
+      const l = level(p.seeded_quality || p.division_level);
+      return l && !allowed.has(l);
+    });
+
+    if (invalidP1.length || invalidP2.length) {
+      const details = [
+        invalidP1.length ? `${player1} (${[...new Set(invalidP1.map(p => level(p.seeded_quality || p.division_level)))].join('/')})` : '',
+        invalidP2.length ? `${player2} (${[...new Set(invalidP2.map(p => level(p.seeded_quality || p.division_level)))].join('/')})` : '',
+      ].filter(Boolean).join(' dan ');
+      const result: PairResult = {
+        eligible: false,
+        reason: `Tidak eligible untuk CC Lokal Parepare. ${details} memiliki data seeded VALID di luar level C-/D. Sistem tidak boleh memilih duplikat nama dari klub lain untuk mem-bypass batas kategori.`,
+        players: [p1Candidates[0], p2Candidates[0]],
+        seeded: [level(p1Candidates[0].seeded_quality || p1Candidates[0].division_level), level(p2Candidates[0].seeded_quality || p2Candidates[0].division_level)],
+      };
+      eligibilityCache.set(key, { result, expiresAt: Date.now() + CACHE_TTL });
+      return result;
+    }
   }
 
   for (const p1 of p1Candidates) {
