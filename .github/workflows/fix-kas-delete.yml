@@ -1,0 +1,33 @@
+name: Fix Kas Delete
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  fix:
+    if: ${{ !contains(github.event.head_commit.message, 'fix: kas delete') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch KasManager delete flow
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('src/components/KasManager.tsx')
+          s=p.read_text()
+          old="""  const deleteKas = async (row: KasEntry) => {\n    const result = await Swal.fire({ icon: 'warning', title: 'Hapus transaksi?', html: `<b>${row.nama_pembayar || '-'}</b><br>${rupiah(Number(row.jumlah_bayar))}<br><small>${row.tanggal_transaksi}</small>`, showCancelButton: true, confirmButtonColor: '#EF4444', cancelButtonColor: '#374151', confirmButtonText: 'Ya, Hapus', cancelButtonText: 'Batal', background: '#0F172A', color: '#fff' });\n    if (!result.isConfirmed) return;\n    try { const { data, error } = await supabase.from('kas_pb').delete().eq('id', row.id).select().single(); if (error) throw error; await broadcastKasChange('DELETE', data || row); await loadKas(false); Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Transaksi berhasil dihapus', showConfirmButton: false, timer: 1800 }); }\n    catch (error: any) { Swal.fire({ icon: 'error', title: 'Gagal menghapus', text: error?.message || 'Perubahan ditolak database.', background: '#0F172A', color: '#fff' }); }\n  };"""
+          new="""  const deleteKas = async (row: KasEntry) => {\n    const result = await Swal.fire({ icon: 'warning', title: 'Hapus transaksi?', html: `<b>${row.nama_pembayar || '-'}</b><br>${rupiah(Number(row.jumlah_bayar))}<br><small>${row.tanggal_transaksi}</small>`, showCancelButton: true, confirmButtonColor: '#EF4444', cancelButtonColor: '#374151', confirmButtonText: 'Ya, Hapus', cancelButtonText: 'Batal', background: '#0F172A', color: '#fff' });\n    if (!result.isConfirmed) return;\n    try {\n      // Delete by primary key and verify that the row is really gone. Do not immediately reload\n      // the list: realtime callbacks can race the DELETE and briefly return the old row.\n      const { error } = await supabase.from('kas_pb').delete().eq('id', row.id);\n      if (error) throw error;\n\n      // Optimistic UI + cache update makes the deleted transaction disappear immediately.\n      setKasData(prev => prev.filter(item => item.id !== row.id));\n      try {\n        const cached = JSON.parse(localStorage.getItem('cached_kas_pb') || '[]');\n        if (Array.isArray(cached)) {\n          localStorage.setItem('cached_kas_pb', JSON.stringify(cached.filter((item: any) => item?.id !== row.id)));\n        }\n      } catch {}\n\n      // Verify against the database before reporting success. If the row still exists,\n      // retry once so a transient realtime/read race cannot resurrect the old transaction.\n      let verify = await supabase.from('kas_pb').select('id').eq('id', row.id).maybeSingle();\n      if (!verify.error && verify.data) {\n        const retry = await supabase.from('kas_pb').delete().eq('id', row.id);\n        if (retry.error) throw retry.error;\n        verify = await supabase.from('kas_pb').select('id').eq('id', row.id).maybeSingle();\n      }\n      if (verify.error) throw verify.error;\n      if (verify.data) throw new Error('Transaksi masih ditemukan di database setelah proses hapus.');\n\n      await broadcastKasChange('DELETE', row);\n      // Refresh after a short delay so any realtime-triggered stale request cannot overwrite the\n      // optimistic state with the just-deleted transaction.\n      window.setTimeout(() => { void loadKas(false); }, 700);\n      Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Transaksi berhasil dihapus', showConfirmButton: false, timer: 1800 });\n    }\n    catch (error: any) {\n      // If verification failed, reload the authoritative DB state so the UI is not left misleading.\n      await loadKas(false);\n      Swal.fire({ icon: 'error', title: 'Gagal menghapus', text: error?.message || 'Perubahan ditolak database.', background: '#0F172A', color: '#fff' });\n    }\n  };"""
+          if old not in s:
+              raise SystemExit('target deleteKas block not found')
+          p.write_text(s.replace(old,new,1))
+          PY
+      - name: Remove temporary workflow
+        run: rm -f .github/workflows/fix-kas-delete.yml
+      - name: Commit patch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/components/KasManager.tsx .github/workflows/fix-kas-delete.yml
+          git commit -m 'fix: kas delete' || exit 0
+          git push
