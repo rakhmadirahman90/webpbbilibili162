@@ -29,6 +29,31 @@ if (!source.includes('data-wa-verification-button="v2"')) {
   source = source.replaceAll('<Actions onDetail={onDetail}', '<Actions row={row} onDetail={onDetail}');
 }
 
+// Final build-stage guard: this script runs after the registration dashboard patch.
+// Keep the paid-total stat in the actual V2 component so later patches cannot remove it.
+if (!source.includes('const totalPaidAmount = useMemo')) {
+  const marker = '  const updateStatus =';
+  const at = source.indexOf(marker);
+  if (at >= 0) {
+    source = source.slice(0, at) + "  const totalPaidAmount = useMemo(() => rows.filter(r => statusPay(r.status_pembayaran) === 'terverifikasi').reduce((sum, r) => sum + Number(r.biaya_pendaftaran || 0), 0), [rows]);\n\n" + source.slice(at);
+  }
+}
+
+if (!source.includes('<Stat label="Total Uang Lunas"')) {
+  const stat = '<Stat label="Total Uang Lunas" value={rupiah(totalPaidAmount)} icon={<CreditCard size={17}/>} />';
+  const paymentStat = '<Stat label="Pembayaran OK" value={stats.paid} icon={<CreditCard size={17}/>} />';
+  if (source.includes(paymentStat)) {
+    source = source.replace(paymentStat, `${paymentStat}${stat}`);
+  } else {
+    throw new Error('V2 payment stat marker not found; refusing to build without Total Uang Lunas.');
+  }
+}
+
+source = source.replace(
+  'grid grid-cols-2 gap-3 p-4 sm:grid-cols-3 lg:grid-cols-5',
+  'dashboard-stat-grid grid grid-cols-2 gap-3 p-4 sm:grid-cols-3 lg:grid-cols-6'
+);
+
 fs.writeFileSync(componentPath, source, 'utf8');
 
 let css = fs.readFileSync(cssPath, 'utf8');
