@@ -40,7 +40,7 @@ function exportRegistrationsExcel(rows: Registration[]) {
   const styleSheet = (ws: XLSX.WorkSheet, widths: number[], colCount: number) => {
     ws['!cols'] = widths.map(w => ({ wch: w }));
     const range = ws['!ref'] ? XLSX.utils.decode_range(ws['!ref']) : { e: { r: 0 } };
-    ws['!autofilter'] = { ref: `A1:${String.fromCharCode(64 + colCount)}${range.e.r + 1}` };
+    ws['!autofilter'] = { ref: 'A1:' + String.fromCharCode(64 + colCount) + (range.e.r + 1) };
     ws['!freeze'] = { xSplit: 0, ySplit: 1 };
   };
   styleSheet(wsLocal, [7, 30, 30, 12, 10, 10], 6);
@@ -52,7 +52,7 @@ function exportRegistrationsExcel(rows: Registration[]) {
   XLSX.utils.book_append_sheet(wb, wsSortir, 'SORTIR');
 
   const stamp = new Date().toISOString().slice(0, 10).replaceAll('-', '');
-  XLSX.writeFile(wb, `DAFTAR NAMA PESERTA BILIBILI 162 CUP I ${stamp}.xlsx`);
+  XLSX.writeFile(wb, 'DAFTAR NAMA PESERTA BILIBILI 162 CUP I ' + stamp + '.xlsx');
 }
 `;
 
