@@ -16,13 +16,31 @@ function exportRegistrationsExcel(rows: Registration[]) {
   const local = accepted.filter(r => normalize(r.kategori).includes('lokal'));
   const ajat = accepted.filter(r => normalize(r.kategori).includes('ajatappareng'));
 
-  const makeRows = (items: Registration[], ket: string) => {
+  // Format mengikuti daftar panitia: satu pasangan = dua baris,
+  // nomor hanya pada pemain pertama.
+  const makePairRows = (items: Registration[], ket: string) => {
     const out: any[][] = [['NO', 'NAME', 'CLUB', 'GENDER', 'KET', 'SEED']];
     items.forEach((r, idx) => {
-      const p1 = clean(r.nama_pemain_1) || '-';
-      const p2 = clean(r.nama_pemain_2) || '-';
-      const club = clean(r.asal_pb) || '-';
-      const seed = clean(r.seed_pemain_1 || r.seed_pemain_2 || r.seed || '');
+      const p1 = clean(r.nama_pemain_1);
+      const p2 = clean(r.nama_pemain_2);
+      const club = clean(r.asal_pb);
+      const seed = clean(r.seed_pemain_1 || r.seed_pemain_2 || r.seed);
+      out.push([idx + 1, p1, club, 'MALE', ket, seed]);
+      out.push(['', p2, club, 'MALE', ket, '']);
+    });
+    return out;
+  };
+
+  // SORTIR memakai seluruh pasangan yang sudah diterima, dengan KET
+  // yang sama persis dengan pemisahan kategori: GDAC=Lokal, GDAB=Ajatappareng.
+  const makeSortirRows = (items: Registration[]) => {
+    const out: any[][] = [['NO', 'NAME', 'CLUB', 'GENDER', 'KET', 'SEED']];
+    items.forEach((r, idx) => {
+      const ket = normalize(r.kategori).includes('ajatappareng') ? 'GDAB' : 'GDAC';
+      const p1 = clean(r.nama_pemain_1);
+      const p2 = clean(r.nama_pemain_2);
+      const club = clean(r.asal_pb);
+      const seed = clean(r.seed_pemain_1 || r.seed_pemain_2 || r.seed);
       out.push([idx + 1, p1, club, 'MALE', ket, seed]);
       out.push(['', p2, club, 'MALE', ket, '']);
     });
@@ -30,22 +48,23 @@ function exportRegistrationsExcel(rows: Registration[]) {
   };
 
   const wb = XLSX.utils.book_new();
-  const wsLocal = XLSX.utils.aoa_to_sheet(makeRows(local, 'GDAC'));
-  const wsAjat = XLSX.utils.aoa_to_sheet(makeRows(ajat, 'GDAB'));
-  const wsSortir = XLSX.utils.aoa_to_sheet([
-    ['NO', 'NAME', 'CLUB', 'GENDER', 'KET'],
-    ...accepted.map((r, i) => [i + 1, clean(r.nama_pemain_1), clean(r.asal_pb), 'MALE', normalize(r.kategori).includes('ajatappareng') ? 'GDAB' : 'GDAC'])
-  ]);
+  const wsLocal = XLSX.utils.aoa_to_sheet(makePairRows(local, 'GDAC'));
+  const wsAjat = XLSX.utils.aoa_to_sheet(makePairRows(ajat, 'GDAB'));
+  const wsSortir = XLSX.utils.aoa_to_sheet(makeSortirRows(accepted));
 
   const styleSheet = (ws: XLSX.WorkSheet, widths: number[], colCount: number) => {
     ws['!cols'] = widths.map(w => ({ wch: w }));
     const range = ws['!ref'] ? XLSX.utils.decode_range(ws['!ref']) : { e: { r: 0 } };
     ws['!autofilter'] = { ref: 'A1:' + String.fromCharCode(64 + colCount) + (range.e.r + 1) };
     ws['!freeze'] = { xSplit: 0, ySplit: 1 };
+    ws['!rows'] = Array.from({ length: range.e.r + 1 }, (_, i) => ({ hpt: i === 0 ? 22 : 20 }));
+    ws['!pageSetup'] = { orientation: 'landscape', fitToWidth: 1, fitToHeight: 0 };
+    ws['!margins'] = { left: 0.25, right: 0.25, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2 };
   };
+
   styleSheet(wsLocal, [7, 30, 30, 12, 10, 10], 6);
   styleSheet(wsAjat, [7, 30, 30, 12, 10, 10], 6);
-  styleSheet(wsSortir, [7, 30, 30, 12, 10], 5);
+  styleSheet(wsSortir, [7, 30, 30, 12, 10, 10], 6);
 
   XLSX.utils.book_append_sheet(wb, wsLocal, 'GDAC');
   XLSX.utils.book_append_sheet(wb, wsAjat, 'GDAB');
