@@ -37,15 +37,15 @@ function exportRegistrationsExcel(rows: Registration[]) {
     ...accepted.map((r, i) => [i + 1, clean(r.nama_pemain_1), clean(r.asal_pb), 'MALE', normalize(r.kategori).includes('ajatappareng') ? 'GDAB' : 'GDAC'])
   ]);
 
-  const styleSheet = (ws: XLSX.WorkSheet, widths: number[]) => {
+  const styleSheet = (ws: XLSX.WorkSheet, widths: number[], colCount: number) => {
     ws['!cols'] = widths.map(w => ({ wch: w }));
-    ws['!autofilter'] = { ref: `A1:F${ws['!ref'] ? XLSX.utils.decode_range(ws['!ref']).e.r + 1 : 1}` };
+    const range = ws['!ref'] ? XLSX.utils.decode_range(ws['!ref']) : { e: { r: 0 } };
+    ws['!autofilter'] = { ref: `A1:${String.fromCharCode(64 + colCount)}${range.e.r + 1}` };
     ws['!freeze'] = { xSplit: 0, ySplit: 1 };
   };
-  styleSheet(wsLocal, [7, 28, 26, 12, 10, 10]);
-  styleSheet(wsAjat, [7, 28, 26, 12, 10, 10]);
-  wsSortir['!cols'] = [7, 28, 26, 12, 10].map(w => ({ wch: w }));
-  wsSortir['!freeze'] = { xSplit: 0, ySplit: 1 };
+  styleSheet(wsLocal, [7, 30, 30, 12, 10, 10], 6);
+  styleSheet(wsAjat, [7, 30, 30, 12, 10, 10], 6);
+  styleSheet(wsSortir, [7, 30, 30, 12, 10], 5);
 
   XLSX.utils.book_append_sheet(wb, wsLocal, 'GDAC');
   XLSX.utils.book_append_sheet(wb, wsAjat, 'GDAB');
@@ -62,7 +62,7 @@ if (!src.includes('function exportRegistrationsExcel(')) {
 }
 
 const buttonNeedle = '<button onClick={() => void load()} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-white/10 px-4 text-xs font-black uppercase tracking-wide transition hover:bg-white/15"><RefreshCw size={15}/> Muat Ulang</button>';
-const exportButton = '<button onClick={() => exportRegistrationsExcel(rows)} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 text-xs font-black uppercase tracking-wide text-white transition hover:bg-emerald-600"><FileText size={15}/> Export Excel</button>';
+const exportButton = ' <button onClick={() => exportRegistrationsExcel(rows)} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 text-xs font-black uppercase tracking-wide text-white transition hover:bg-emerald-600"><FileText size={15}/> Export Excel</button>';
 if (!src.includes('Export Excel')) {
   src = src.replace(buttonNeedle, buttonNeedle + exportButton);
 }
