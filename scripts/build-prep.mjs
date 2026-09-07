@@ -1,7 +1,5 @@
 import { execFileSync } from 'node:child_process';
 
-execFileSync('npm', ['install', 'vite@5.4.2', '--no-save', '--ignore-scripts'], { stdio: 'inherit' });
-
 const scripts = [
   'patch-navbar-jsx-fix.mjs',
   'patch-performance-v2.mjs',
