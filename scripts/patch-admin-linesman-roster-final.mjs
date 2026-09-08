@@ -35,8 +35,6 @@ const replacement = `  const load = useCallback(async () => {
       if (paymentsResult.error) throw paymentsResult.error;
       const payments = (paymentsResult.data || []) as HonorRow[];
       const dbRoster = rosterResult.error ? [] : ((rosterResult.data || []) as Linesman[]);
-      // If the roster endpoint is blocked by RLS or unavailable, the known active roster
-      // still guarantees the complete admin list is rendered.
       const roster = dbRoster.length ? dbRoster : FALLBACK_LINESMEN;
       setLinesmen(roster);
 
@@ -49,11 +47,11 @@ const replacement = `  const load = useCallback(async () => {
           nama_linesman: name,
           pertandingan: 'BELUM DITENTUKAN',
           lapangan: null,
-          nominal_honor: 0,
+          nominal_honor: 50000,
           status_pembayaran: 'Belum Dibayar',
           tanggal_pembayaran: null,
           metode_pembayaran: 'Tunai',
-          keterangan: 'LINESMAN AKTIF; PEMBAYARAN HONOR BELUM DIISI.',
+          keterangan: 'HONOR DEFAULT RP50.000 PER HARI; PEMBAYARAN BELUM DIISI.',
           created_at: new Date(Date.now() + i).toISOString()
         };
       });
@@ -67,5 +65,10 @@ const replacement = `  const load = useCallback(async () => {
   }, []);`;
 
 source = source.slice(0, start) + replacement + source.slice(end + endMarker.length);
+
+// Ensure every newly opened honor form defaults to Rp50.000 per day.
+source = source.replace(/nominal_honor: 0/g, 'nominal_honor: 50000');
+source = source.replace(/Number\(r\.nominal_honor \|\| 0\)/g, 'Number(r.nominal_honor ?? 50000)');
+
 fs.writeFileSync(path, source);
-console.log('[linesman-roster-final] complete: complete 8-name active roster is always rendered');
+console.log('[linesman-roster-final] complete: complete 8-name active roster and Rp50.000 daily default');
