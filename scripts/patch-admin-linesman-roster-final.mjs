@@ -33,7 +33,12 @@ const replacement = `  const load = useCallback(async () => {
       const rosterPromise = supabase.from('linesman').select('id,nama,ukuran_baju,aktif').eq('aktif', true).order('nama', { ascending: true });
       const [paymentsResult, rosterResult] = await Promise.all([paymentsPromise, rosterPromise]);
       if (paymentsResult.error) throw paymentsResult.error;
-      const payments = (paymentsResult.data || []) as HonorRow[];
+      const payments = ((paymentsResult.data || []) as HonorRow[]).map(r => ({
+        ...r,
+        // A recorded payment date is definitive evidence that this honor was paid.
+        status_pembayaran: r.tanggal_pembayaran ? 'Dibayar' : r.status_pembayaran,
+        nominal_honor: Number(r.nominal_honor ?? 50000)
+      })) as HonorRow[];
       const dbRoster = rosterResult.error ? [] : ((rosterResult.data || []) as Linesman[]);
       const roster = dbRoster.length ? dbRoster : FALLBACK_LINESMEN;
       setLinesmen(roster);
@@ -85,4 +90,4 @@ if (!source.includes('<option value="Lapangan 1">Lapangan 1</option>') || !sourc
 }
 
 fs.writeFileSync(path, source);
-console.log('[linesman-roster-final] complete: complete roster, Rp50.000 daily default, tournament name, court dropdown 1-4');
+console.log('[linesman-roster-final] complete: paid status follows payment date, complete roster, Rp50.000 daily default, tournament name, court dropdown 1-4');
