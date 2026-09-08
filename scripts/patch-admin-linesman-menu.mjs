@@ -5,14 +5,18 @@ const routePath = 'src/components/AdminRouteView.tsx';
 
 function patchSidebar() {
   let src = fs.readFileSync(sidebarPath, 'utf8');
-  if (!src.includes('Banknote,')) {
+  if (!src.includes('  Banknote,')) {
     const wallet = src.indexOf('  Wallet,');
     if (wallet >= 0) src = src.slice(0, wallet) + '  Banknote,\n' + src.slice(wallet);
   }
+
+  // Remove any previous malformed/duplicate lines, then insert exactly one valid menu item.
+  src = src.replace(/\s*\{\s*name:\s*['\"]Pembayaran Honor Linesman['\"],[^\n]*\},*\s*/g, '\n');
   if (!src.includes("path: 'honor-linesman'")) {
-    const kasRe = /(\{\s*name:\s*['\"]Kelola Kas['\"],\s*path:\s*['\"]kas['\"],\s*icon:\s*Wallet,[^\n]*\})/;
-    if (kasRe.test(src)) src = src.replace(kasRe, "$1\n        { name: 'Pembayaran Honor Linesman', path: 'honor-linesman', icon: Banknote, adminOnly: true },");
-    else {
+    const kasRe = /(\{\s*name:\s*['\"]Kelola Kas['\"],\s*path:\s*['\"]kas['\"],\s*icon:\s*Wallet,[^\n]*\})\s*,*/;
+    if (kasRe.test(src)) {
+      src = src.replace(kasRe, "$1,\n        { name: 'Pembayaran Honor Linesman', path: 'honor-linesman', icon: Banknote, adminOnly: true },");
+    } else {
       const section = src.indexOf("section: 'Administrasi & Keuangan'");
       if (section >= 0) {
         const pos = src.indexOf('items:', section);
