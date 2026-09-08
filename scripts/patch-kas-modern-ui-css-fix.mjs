@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { execFileSync } from 'node:child_process';
 
 const cssPath = 'src/index.css';
 const css = fs.readFileSync(cssPath, 'utf8');
@@ -10,3 +11,5 @@ if (fixed !== css) {
 } else {
   console.log('[patch-kas-modern-ui-css-fix] no slash selector fix needed');
 }
+
+execFileSync(process.execPath, ['scripts/patch-kas-responsive-transaction-switch.mjs'], { stdio: 'inherit' });
