@@ -66,12 +66,18 @@ const replacement = `  const load = useCallback(async () => {
 
 source = source.slice(0, start) + replacement + source.slice(end + endMarker.length);
 
-// Ensure every newly opened honor form defaults to Rp50.000 per day.
 source = source.replace(/nominal_honor: 0/g, 'nominal_honor: 50000');
 source = source.replace(/Number\(r\.nominal_honor \|\| 0\)/g, 'Number(r.nominal_honor ?? 50000)');
-
-// Use the official tournament name instead of the generic placeholder everywhere in the UI.
 source = source.replace(/BELUM DITENTUKAN/g, 'Bilibili 162 Cup I');
 
+// Lapangan is a controlled choice: only Lapangan 1, 2, 3, or 4.
+source = source.replace(/<input([^>]*?)value=\{form\.lapangan\}([^>]*?)onChange=\{e => setForm\(\{ \.\.\.form, lapangan: e\.target\.value \}\)\}([^>]*?)\/>/s, '<select$1value={form.lapangan}$2onChange={e => setForm({ ...form, lapangan: e.target.value })}$3><option value="">Pilih Lapangan</option><option value="Lapangan 1">Lapangan 1</option><option value="Lapangan 2">Lapangan 2</option><option value="Lapangan 3">Lapangan 3</option><option value="Lapangan 4">Lapangan 4</option></select>');
+
+// If the exact input markup differs, inject a targeted JSX replacement based on the lapangan label.
+if (!source.includes('<option value="Lapangan 1">Lapangan 1</option>')) {
+  const lapanganInput = /(<label[^>]*>\s*<span[^>]*>\s*LAPANGAN[\s\S]*?<\/span>[\s\S]*?)(<input[^>]*name=["']lapangan["'][^>]*\/?>)/i;
+  source = source.replace(lapanganInput, '$1<select name="lapangan" value={form.lapangan} onChange={e => setForm({ ...form, lapangan: e.target.value })} className="w-full rounded-xl border border-white/10 bg-[#070d1a] px-3 py-3 text-xs text-white outline-none focus:border-blue-500"><option value="">Pilih Lapangan</option><option value="Lapangan 1">Lapangan 1</option><option value="Lapangan 2">Lapangan 2</option><option value="Lapangan 3">Lapangan 3</option><option value="Lapangan 4">Lapangan 4</option></select>');
+}
+
 fs.writeFileSync(path, source);
-console.log('[linesman-roster-final] complete: complete roster, Rp50.000 daily default, tournament name Bilibili 162 Cup I');
+console.log('[linesman-roster-final] complete: complete roster, Rp50.000 daily default, tournament name, court dropdown 1-4');
