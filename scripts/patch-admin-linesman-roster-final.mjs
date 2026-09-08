@@ -45,7 +45,7 @@ const replacement = `  const load = useCallback(async () => {
           id: 'roster-' + p.id,
           tanggal_pertandingan: today(),
           nama_linesman: name,
-          pertandingan: 'BELUM DITENTUKAN',
+          pertandingan: 'Bilibili 162 Cup I',
           lapangan: null,
           nominal_honor: 50000,
           status_pembayaran: 'Belum Dibayar',
@@ -70,5 +70,8 @@ source = source.slice(0, start) + replacement + source.slice(end + endMarker.len
 source = source.replace(/nominal_honor: 0/g, 'nominal_honor: 50000');
 source = source.replace(/Number\(r\.nominal_honor \|\| 0\)/g, 'Number(r.nominal_honor ?? 50000)');
 
+// Use the official tournament name instead of the generic placeholder everywhere in the UI.
+source = source.replace(/BELUM DITENTUKAN/g, 'Bilibili 162 Cup I');
+
 fs.writeFileSync(path, source);
-console.log('[linesman-roster-final] complete: complete 8-name active roster and Rp50.000 daily default');
+console.log('[linesman-roster-final] complete: complete roster, Rp50.000 daily default, tournament name Bilibili 162 Cup I');
