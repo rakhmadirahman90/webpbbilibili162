@@ -9,16 +9,12 @@ if (!fs.existsSync(file)) {
 let source = fs.readFileSync(file, 'utf8');
 const original = source;
 
-// Remove a previously generated invalid <style>{`...`}</style> block if a
-// failed build had written it into the working source. The responsive rules
-// below use Tailwind classes only, so no runtime CSS template is required.
-const badStyleStart = '      <style>{`\n        .admin-gallery-modal';
-const badStyleEnd = '      `}</style>\n';
-const badStart = source.indexOf(badStyleStart);
-if (badStart !== -1) {
-  const badEnd = source.indexOf(badStyleEnd, badStart);
-  if (badEnd !== -1) source = source.slice(0, badStart) + source.slice(badEnd + badStyleEnd.length);
-}
+// A previous responsive patch could leave a CSS template literal inside JSX.
+// Remove it before Vite parses the TSX. Do this structurally rather than with
+// exact indentation so the cleanup remains effective after other formatting
+// patches have touched the component.
+source = source.replace(/\s*<style>\{`[\s\S]*?\.admin-gallery-modal[\s\S]*?`\}<\/style>\s*/g, '\n');
+source = source.replace(/\s*<style>\{`[\s\S]*?admin-gallery-form[\s\S]*?`\}<\/style>\s*/g, '\n');
 
 const replacements = [
   [
@@ -67,9 +63,18 @@ for (const [from, to] of replacements) {
   if (source.includes(from)) source = source.replace(from, to);
 }
 
+// Final safety net: any gallery form input must be allowed to shrink inside
+// the mobile viewport. This avoids the exact horizontal clipping visible on
+// narrow Android screens when a long tournament title is present.
+source = source.replace(/className="([^"]*\bw-full\b)([^"]*)"/g, (full, before, after) => {
+  if (!/(input|select|textarea)/.test(full) && !/mt-2/.test(full)) return full;
+  if (/\bmin-w-0\b/.test(full) && /\bmax-w-full\b/.test(full)) return full;
+  return `className="${before} min-w-0 max-w-full${after}"`;
+});
+
 if (source !== original) {
   fs.writeFileSync(file, source);
-  console.log('[patch-admin-gallery-mobile-responsive] responsive mobile modal fix applied safely.');
+  console.log('[patch-admin-gallery-mobile-responsive] robust responsive/syntax fix applied.');
 } else {
   console.log('[patch-admin-gallery-mobile-responsive] no changes needed.');
 }
