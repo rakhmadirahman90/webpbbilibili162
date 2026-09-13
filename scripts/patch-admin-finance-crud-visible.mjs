@@ -1,29 +1,21 @@
 import fs from 'node:fs';
 
 const path = 'src/components/AdminKeuanganTurnamen.tsx';
-let s = fs.readFileSync(path, 'utf8');
+const s = fs.readFileSync(path, 'utf8');
 
-if (s.includes('ADMIN_FINANCE_CRUD_VISIBLE_V1')) {
-  console.log('Finance CRUD visible patch already applied');
-  process.exit(0);
+// The finance component now contains its CRUD controls and responsive layouts directly.
+// Keep this build step idempotent so older marker-based patching cannot break production builds.
+const required = [
+  'function FinanceModal',
+  'function Actions',
+  'function IncomeTable',
+  'function ExpenseTable',
+  'function KindTable',
+  "delete().eq('id', id).eq('tournament_id', tid)"
+];
+const missing = required.filter(marker => !s.includes(marker));
+if (missing.length) {
+  console.warn(`[patch-admin-finance-crud-visible] expected CRUD markers missing: ${missing.join(', ')}; leaving source unchanged.`);
+} else {
+  console.log('[patch-admin-finance-crud-visible] CRUD already implemented in AdminKeuanganTurnamen.tsx; no-op.');
 }
-
-const marker = "const rows = (tab === 'income' ? income : expense).filter(x => !q || JSON.stringify(x).toLowerCase().includes(q.toLowerCase()));";
-if (!s.includes(marker)) throw new Error('Finance rows marker not found');
-
-s = s.replace(marker, `${marker}\n  const filteredIncome = income.filter(x => !q || JSON.stringify(x).toLowerCase().includes(q.toLowerCase()));\n  const filteredExpense = expense.filter(x => !q || JSON.stringify(x).toLowerCase().includes(q.toLowerCase()));\n  const filteredKind = kind.filter(x => !q || JSON.stringify(x).toLowerCase().includes(q.toLowerCase()));`);
-
-const anchor = `      <div className="rounded-2xl border border-white/10 bg-slate-900/80 shadow-xl">`;
-if (!s.includes(anchor)) throw new Error('Finance tabs anchor not found');
-
-const panel = `      {/* ADMIN_FINANCE_CRUD_VISIBLE_V1 */}\n      <section className="rounded-2xl border border-emerald-400/20 bg-slate-900/80 shadow-xl overflow-hidden">\n        <div className="flex flex-col gap-3 border-b border-white/10 bg-gradient-to-r from-emerald-500/10 to-blue-500/10 p-4 sm:flex-row sm:items-center sm:justify-between">\n          <div><h2 className="text-sm font-black uppercase tracking-wide text-white">Kelola Data Keuangan</h2><p className="mt-1 text-[10px] text-slate-400">Semua transaksi turnamen tampil lengkap. Edit, hapus, atau tambah data langsung dari sini.</p></div>\n          <div className="flex flex-wrap gap-2">\n            <button onClick={() => open('income')} className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-emerald-500 px-3 text-[10px] font-black uppercase text-slate-950 hover:bg-emerald-400"><Plus size={14}/> Tambah Pemasukan</button>\n            <button onClick={() => open('expense')} className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-rose-500 px-3 text-[10px] font-black uppercase text-white hover:bg-rose-400"><Plus size={14}/> Tambah Pengeluaran</button>\n            <button onClick={() => open('kind')} className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-amber-400 px-3 text-[10px] font-black uppercase text-slate-950 hover:bg-amber-300"><Plus size={14}/> Tambah In-Kind</button>\n          </div>\n        </div>\n        <div className="border-b border-white/10 p-3">\n          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">\n            <input value={q} onChange={e => setQ(e.target.value)} placeholder="Cari pemasukan, pengeluaran, donatur, kategori..." className="min-h-10 w-full rounded-xl border border-white/10 bg-slate-950 px-3 text-xs text-white outline-none focus:border-blue-400 sm:max-w-md" />\n            <span className="text-[10px] font-bold text-slate-500">{filteredIncome.length} pemasukan • {filteredExpense.length} pengeluaran • {filteredKind.length} in-kind</span>\n          </div>\n        </div>\n        <div className="grid gap-4 p-4 xl:grid-cols-2">\n          <FinanceCrudTable title={\"PEMASUKAN\"} count={filteredIncome.length} amount={totalIn} headers={['Sumber','Klasifikasi','Tanggal','Nominal','Catatan']} rows={filteredIncome.map(x => ({ id:x.id, cells:[x.source_name, x.classification || '-', dateId(x.received_at), rupiah(Number(x.amount)), x.notes || '-'], label:x.source_name }))} onEdit={row => open('income', income.find(x => x.id === row.id))} onDelete={row => void remove('tournament_finance_income', row.id, row.label)} add={() => open('income')} />\n          <FinanceCrudTable title={\"PENGELUARAN\"} count={filteredExpense.length} amount={totalOut} headers={['Uraian','Kategori','Tanggal','Nominal','Catatan']} rows={filteredExpense.map(x => ({ id:x.id, cells:[x.description, x.category || '-', dateId(x.expense_date), rupiah(Number(x.amount)), x.notes || '-'], label:x.description }))} onEdit={row => open('expense', expense.find(x => x.id === row.id))} onDelete={row => void remove('tournament_finance_expense', row.id, row.label)} add={() => open('expense')} />\n          <div className="xl:col-span-2"><FinanceCrudTable title={\"IN-KIND / SPONSORSHIP BARANG\"} count={filteredKind.length} amount={null} headers={['Barang','Jumlah','Satuan','Donatur','Catatan']} rows={filteredKind.map(x => ({ id:x.id, cells:[x.item_name, String(x.quantity), x.unit || '-', x.donor_name || '-', x.notes || '-'], label:x.item_name }))} onEdit={row => open('kind', kind.find(x => x.id === row.id))} onDelete={row => void remove('tournament_finance_kind_in', row.id, row.label)} add={() => open('kind')} />\n          </div>\n        </div>\n      </section>\n\n`;
-s = s.replace(anchor, panel + anchor);
-
-const helper = `\nfunction FinanceCrudTable({ title, count, amount, headers, rows, onEdit, onDelete, add }) {\n  return <div className="rounded-2xl border border-white/10 bg-[#050b17] overflow-hidden">\n    <div className="flex items-center justify-between gap-2 border-b border-white/10 p-3">\n      <div><h3 className="text-xs font-black uppercase text-white">{title} <span className="text-blue-300">({count})</span></h3>{amount !== null && <p className="mt-1 text-xs font-black text-emerald-300">{rupiah(Number(amount || 0))}</p>}</div>\n      <button onClick={add} className="inline-flex min-h-9 items-center gap-1 rounded-lg border border-emerald-400/30 bg-emerald-400/10 px-3 text-[10px] font-black uppercase text-emerald-300 hover:bg-emerald-400/20"><Plus size={13}/> Tambah</button>\n    </div>\n    <div className="max-h-[460px] overflow-auto">\n      <table className="min-w-[850px] w-full text-left text-[11px]">\n        <thead className="sticky top-0 z-10 bg-slate-950"><tr>{headers.map(h => <th key={h} className="border-b border-white/10 px-3 py-2.5 font-black uppercase text-slate-500">{h}</th>)}<th className="border-b border-white/10 px-3 py-2.5 text-right font-black uppercase text-slate-500">Aksi</th></tr></thead>\n        <tbody>{rows.length ? rows.map(row => <tr key={row.id} className="border-b border-white/5 hover:bg-white/[0.03]">{row.cells.map((cell, i) => <td key={i} className={\`max-w-[260px] px-3 py-2.5 align-top text-slate-200 ${i === row.cells.length - 2 ? 'font-black text-white' : ''}\`}>{cell}</td>)}<td className="whitespace-nowrap px-3 py-2.5 text-right align-top"><div className="flex justify-end gap-1.5"><button title="Edit data" onClick={() => onEdit(row)} className="inline-flex min-h-9 min-w-9 items-center justify-center rounded-lg border border-blue-400/30 bg-blue-500/10 text-blue-300 hover:bg-blue-500/20"><Edit3 size={14}/></button><button title="Hapus data" onClick={() => onDelete(row)} className="inline-flex min-h-9 min-w-9 items-center justify-center rounded-lg border border-rose-400/30 bg-rose-500/10 text-rose-300 hover:bg-rose-500/20"><Trash2 size={14}/></button></div></td></tr>) : <tr><td colSpan={headers.length + 1} className="px-3 py-10 text-center text-xs text-slate-500">Belum ada data</td></tr>}</tbody>\n      </table>\n    </div>\n  </div>;\n}\n`;
-
-const componentEnd = s.lastIndexOf('\nfunction Card(');
-if (componentEnd < 0) throw new Error('Finance component helper anchor not found');
-s = s.slice(0, componentEnd) + helper + s.slice(componentEnd);
-
-fs.writeFileSync(path, s);
-console.log('Finance CRUD visible dashboard patch applied');
