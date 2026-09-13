@@ -30,6 +30,10 @@ if (fs.existsSync(galleryPath)) {
 if (fs.existsSync(mediaPath)) {
   let s = fs.readFileSync(mediaPath, 'utf8');
   s = s.replace(
+    "    if (!(input instanceof HTMLInputElement) || input.type !== 'file') return;\n    if ((input as any).__pbMediaRedispatch) return;",
+    "    if (!(input instanceof HTMLInputElement) || input.type !== 'file') return;\n    if ((input as any).__pbMediaRedispatch) return;\n    if (input.dataset.mediaLocalHandler === 'true') return;"
+  );
+  s = s.replace(
     "      recorder.start(1000);\n    draw();\n    await video.play();\n    await new Promise<void>(resolve => {\n      video.onended = () => resolve();\n    });",
     "      const ended = new Promise<void>(resolve => {\n        video.onended = () => resolve();\n      });\n      recorder.start(1000);\n      await video.play();\n      const drawWhilePlaying = () => {\n        if (video.ended) return;\n        ctx.drawImage(video, 0, 0, outWidth, outHeight);\n        requestAnimationFrame(drawWhilePlaying);\n      };\n      drawWhilePlaying();\n      await ended;"
   );
