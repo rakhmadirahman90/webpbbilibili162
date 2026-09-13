@@ -9,7 +9,7 @@ if (!fs.existsSync(file)) {
 let source = fs.readFileSync(file, 'utf8');
 const original = source;
 
-// Remove any previously generated CSS template literal before Vite parses TSX.
+// Remove older generated responsive style blocks if present.
 source = source.replace(/\s*<style>\{`[\s\S]*?\.admin-gallery-modal[\s\S]*?`\}<\/style>\s*/g, '\n');
 source = source.replace(/\s*<style>\{`[\s\S]*?admin-gallery-form[\s\S]*?`\}<\/style>\s*/g, '\n');
 
@@ -22,27 +22,28 @@ const replacements = [
   ['<div className="flex items-center justify-between p-5 sm:p-7 border-b border-white/10">', '<div className="flex items-center justify-between gap-3 p-4 sm:p-7 border-b border-white/10 min-w-0">'],
   ['<div><h2 className="text-xl sm:text-2xl font-black uppercase">', '<div className="min-w-0 flex-1"><h2 className="text-xl sm:text-2xl font-black uppercase break-words">'],
   ['<div className="grid grid-cols-2 gap-3">', '<div className="grid grid-cols-1 sm:grid-cols-2 gap-3 min-w-0 w-full">'],
+  ['<label className="block">', '<label className="!block w-full min-w-0">'],
+  ['<label>', '<label className="!block w-full min-w-0">'],
+  ['className="mt-2 w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-blue-500"', 'className="mt-2 w-full min-w-0 max-w-full !block bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-blue-500"'],
+  ['className="mt-2 w-full bg-black/30 border border-white/10 rounded-xl px-3 py-3 text-sm"', 'className="mt-2 w-full min-w-0 max-w-full !block bg-black/30 border border-white/10 rounded-xl px-3 py-3 text-sm"'],
 ];
-for (const [from, to] of replacements) if (source.includes(from)) source = source.replace(from, to);
 
-// Force the common field containers to stack on phones. This specifically
-// fixes the label/input layout shown on narrow Android screens.
-source = source.replace(/className="([^\"]*?)grid grid-cols-2([^\"]*)"/g, (full, before, after) => {
-  if (/sm:grid-cols-2/.test(full)) return full;
-  return `className="${before}grid-cols-1 sm:grid-cols-2${after}"`;
-});
+for (const [from, to] of replacements) {
+  if (source.includes(from)) source = source.replace(from, to);
+}
 
-// Ensure all form controls can shrink instead of preserving a long-content width.
-source = source.replace(/className="([^"]*)"/g, (full, classes) => {
-  if (!/\b(?:w-full|px-3|px-4)\b/.test(classes)) return full;
-  if (!/(input|select|textarea)/i.test(classes) && !/mt-2/.test(classes)) return full;
-  if (/\bmin-w-0\b/.test(classes)) return full;
-  return `className="${classes} min-w-0 max-w-full"`;
+// Make every gallery field control shrink to the modal width.
+source = source.replace(/className="([^"]*\bw-full\b)([^"]*)"/g, (full, before, after) => {
+  if (!/(mt-2|bg-black\/30)/.test(full)) return full;
+  let classes = `${before}${after}`;
+  if (!/\bmin-w-0\b/.test(classes)) classes += ' min-w-0';
+  if (!/\bmax-w-full\b/.test(classes)) classes += ' max-w-full';
+  return `className="${classes}"`;
 });
 
 if (source !== original) {
   fs.writeFileSync(file, source);
-  console.log('[patch-admin-gallery-mobile-responsive] mobile overflow + JSX safety fix applied.');
+  console.log('[patch-admin-gallery-mobile-responsive] forced mobile field stacking and overflow protection.');
 } else {
   console.log('[patch-admin-gallery-mobile-responsive] no changes needed.');
 }
