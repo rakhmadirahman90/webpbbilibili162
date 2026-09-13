@@ -61,9 +61,56 @@ const formatDateTime = (tx: any) => {
   return `${date}, ${d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Makassar' })} WITA`;
 };
 
-const detail = (label: string, tx: any, income: boolean) => {
-  if (!tx) return `${label}: Nihil\n`;
-  return `${label}:\n• Status: BERHASIL\n• Jenis: ${income ? 'Pemasukan' : 'Pengeluaran'}\n• Tanggal & Waktu: ${formatDateTime(tx)}\n• Nama/Keterangan: ${tx.nama_pembayar || '-'}\n• Kategori: ${tx.kategori || '-'}\n• Jumlah: ${formatRupiah(tx.jumlah_bayar)}\n`;
+const detail = (tx: any, income: boolean) => {
+  if (!tx) return 'Nihil';
+  return [
+    '• Status: ✅ BERHASIL',
+    `• Jenis: ${income ? '📥 Pemasukan' : '📤 Pengeluaran'}`,
+    `• Tanggal & Waktu: *${formatDateTime(tx)}*`,
+    `• Nama/Keterangan: *${tx.nama_pembayar || '-'}*`,
+    `• Kategori: ${tx.kategori || '-'}`,
+    `• Jumlah: *${formatRupiah(tx.jumlah_bayar)}*`,
+    `• Catatan: ${tx.keterangan || '-'}`
+  ].join('\n');
+};
+
+const buildWaText = ({
+  startDate,
+  endDate,
+  previous,
+  income,
+  expense,
+  saldo,
+  latestIncome,
+  latestExpense
+}: {
+  startDate: string;
+  endDate: string;
+  previous: number;
+  income: number;
+  expense: number;
+  saldo: number;
+  latestIncome: any;
+  latestExpense: any;
+}) => {
+  const modalTetap = 600000;
+  const bendahara = saldo - modalTetap;
+
+  return `📢 *LAPORAN REAL-TIME KAS (PB BILIBILI 162)*\n\n` +
+    `*Detail Transaksi Penerimaan Terbaru:*:\n` +
+    `${detail(latestIncome, true)}\n\n` +
+    `*Detail Transaksi Pengeluaran Terbaru:*: ${detail(latestExpense, false)}\n\n` +
+    `*Status Keuangan Klub (Filter ${startDate} s/d ${endDate}):*\n` +
+    `• Saldo Sebelumnya: ${formatRupiah(previous)}\n` +
+    `• Total Pemasukan Periode: ${formatRupiah(income)}\n` +
+    `• Total Pengeluaran Periode: ${formatRupiah(expense)}\n` +
+    `• Detail Pemasukan Terakhir: ${latestIncome ? `${latestIncome.nama_pembayar || latestIncome.kategori || '-'} — ${formatRupiah(latestIncome.jumlah_bayar)}` : 'Nihil'}\n` +
+    `• Detail Pengeluaran Terakhir: ${latestExpense ? `${latestExpense.nama_pembayar || latestExpense.kategori || '-'} — ${formatRupiah(latestExpense.jumlah_bayar)}` : 'Nihil'}\n` +
+    `• *Sisa Saldo Akhir: ${formatRupiah(saldo)}*\n` +
+    `  - Modal Tetap (Pengelola Bola): ${formatRupiah(modalTetap)}\n` +
+    `  - Kas Bendahara: ${formatRupiah(bendahara)}\n\n` +
+    `🔗 *Akses Kas Klub:* ${window.location.origin}/kas\n\n` +
+    `Admin PB Bilibili 162`;
 };
 
 /**
@@ -111,7 +158,6 @@ export const broadcastKasChange = async (
     const channel = await getGlobalChannel();
     await channel.send({ type: 'broadcast', event: 'kas-changed', payload });
   } catch (error) {
-    // Realtime broadcast is an enhancement; CRUD must remain functional if it is unavailable.
     console.warn('[KasRealtime] broadcast skipped:', error);
   }
 };
@@ -155,15 +201,16 @@ export default function KasRealtimeNotifier() {
         ? eventType === 'INSERT' ? 'TRANSAKSI KAS BARU!' : eventType === 'DELETE' ? 'TRANSAKSI KAS DIHAPUS!' : 'UPDATE KAS TERBARU!'
         : 'LAPORAN KAS TERBARU';
 
-      const waText = `📢 *${title} — PB BILIBILI 162*\n\n` +
-        detail('*Detail Penerimaan Terbaru*', latestIncome, true) + '\n' +
-        detail('*Detail Pengeluaran Terbaru*', latestExpense, false) + '\n' +
-        `*Ringkasan Periode ${startDate} s/d ${endDate}:*\n` +
-        `• Saldo Sebelumnya: ${formatRupiah(previous)}\n` +
-        `• Total Pemasukan: ${formatRupiah(income)}\n` +
-        `• Total Pengeluaran: ${formatRupiah(expense)}\n` +
-        `• *Saldo Akhir: ${formatRupiah(saldo)}*\n\n` +
-        `🔗 ${window.location.origin}/kas\n\nAdmin PB Bilibili 162`;
+      const waText = buildWaText({
+        startDate,
+        endDate,
+        previous,
+        income,
+        expense,
+        saldo,
+        latestIncome,
+        latestExpense
+      });
 
       const waHref = `https://api.whatsapp.com/send?text=${encodeURIComponent(waText)}`;
       if (mounted) {
@@ -172,8 +219,9 @@ export default function KasRealtimeNotifier() {
           title,
           html: `<div style="text-align:left;font-size:13px;line-height:1.6">` +
             `<b>Periode:</b> ${startDate} s/d ${endDate}<br/>` +
-            `<b>Pemasukan:</b> ${formatRupiah(income)}<br/>` +
-            `<b>Pengeluaran:</b> ${formatRupiah(expense)}<br/>` +
+            `<b>Saldo Sebelumnya:</b> ${formatRupiah(previous)}<br/>` +
+            `<b>Total Pemasukan:</b> ${formatRupiah(income)}<br/>` +
+            `<b>Total Pengeluaran:</b> ${formatRupiah(expense)}<br/>` +
             `<b>Saldo Akhir:</b> ${formatRupiah(saldo)}<br/><br/>` +
             `<b>Penerimaan Terbaru:</b> ${latestIncome ? `${latestIncome.nama_pembayar || latestIncome.kategori} — ${formatRupiah(latestIncome.jumlah_bayar)}` : 'Nihil'}<br/>` +
             `<b>Pengeluaran Terbaru:</b> ${latestExpense ? `${latestExpense.nama_pembayar || latestExpense.kategori} — ${formatRupiah(latestExpense.jumlah_bayar)}` : 'Nihil'}` +
@@ -190,7 +238,6 @@ export default function KasRealtimeNotifier() {
 
     const startRealtime = async () => {
       try {
-        // CRITICAL ORDER: register postgres_changes BEFORE subscribe().
         channel = supabase
           .channel('global-kas-db-changes', { config: { broadcast: { self: true } } })
           .on('postgres_changes', {
