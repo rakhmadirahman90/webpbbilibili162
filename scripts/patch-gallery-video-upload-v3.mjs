@@ -1,33 +1,18 @@
 import fs from 'node:fs';
 
-const galleryPath = 'src/components/AdminGallery.tsx';
 const mediaPath = 'src/utils/mediaCompression.ts';
 
-if (fs.existsSync(galleryPath)) {
-  let s = fs.readFileSync(galleryPath, 'utf8');
-  if (!s.includes("import { compressMediaFile, MEDIA_POLICY } from '../utils/mediaCompression';")) {
-    s = s.replace(
-      "import imageCompression from 'browser-image-compression';",
-      "import imageCompression from 'browser-image-compression';\nimport { compressMediaFile, MEDIA_POLICY } from '../utils/mediaCompression';"
-    );
-  }
-  s = s.replace("const VIDEO_MAX_SIZE = 15 * 1024 * 1024;", "const VIDEO_MAX_SOURCE_SIZE = MEDIA_POLICY.video.maxSourceBytes;\nconst VIDEO_MAX_RESULT_SIZE = MEDIA_POLICY.video.maxBytes;");
-  s = s.replace(/\n\s*\} else if \(file\.size > VIDEO_MAX_SIZE\) \{\n\s*failed\.push\(`\$\{file\.name\}: melebihi 15MB`\);\n\s*continue;\n\s*\}/, `\n        } else {\n          if (file.size > VIDEO_MAX_SOURCE_SIZE) { failed.push(\`\\${file.name}: melebihi 250MB\`); continue; }\n          try { uploadFile = await compressMediaFile(file); }\n          catch (error: any) { console.error('Gallery video compression error', error); failed.push(\`\\${file.name}: kompresi video gagal — \\${error?.message || 'format tidak didukung'}\`); continue; }\n          if (uploadFile.size > VIDEO_MAX_RESULT_SIZE) { failed.push(\`\\${file.name}: hasil kompresi masih >25MB\`); continue; }\n        }`);
-  s = s.replace('<input ref={fileInputRef}', '<input data-media-local-handler="true" ref={fileInputRef}');
-  s = s.replace('showToast(\'Video berhasil diunggah\');', 'showToast(`Video berhasil diproses & diunggah (${(uploadFileSizeLabel(uploaded[0]))})`);');
-  if (!s.includes('function uploadFileSizeLabel')) {
-    s = s.replace("export default function AdminGallery", "const uploadFileSizeLabel = (_url: string) => 'video terkompresi';\n\nexport default function AdminGallery");
-  }
-  fs.writeFileSync(galleryPath, s);
-  console.log('[patch-gallery-video-upload-v3] AdminGallery now compresses video before upload.');
+if (!fs.existsSync(mediaPath)) {
+  console.warn('[patch-gallery-video-upload-v3] mediaCompression.ts not found; skipped.');
+  process.exit(0);
 }
 
-if (fs.existsSync(mediaPath)) {
-  let s = fs.readFileSync(mediaPath, 'utf8');
-  const start = s.indexOf('async function recordVideo(');
-  const end = s.indexOf('\nexport async function compressVideo', start);
-  if (start >= 0 && end > start) {
-    const replacement = String.raw`async function recordVideo(file: File, videoBitsPerSecond: number): Promise<File> {
+let s = fs.readFileSync(mediaPath, 'utf8');
+const start = s.indexOf('async function recordVideo(');
+const end = s.indexOf('\nexport async function compressVideo', start);
+
+if (start >= 0 && end > start) {
+  const replacement = String.raw`async function recordVideo(file: File, videoBitsPerSecond: number): Promise<File> {
   const mime = pickVideoMime();
   if (!mime) throw new Error('Perangkat/browser ini belum mendukung kompresi video otomatis. Gunakan Chrome/Edge/Firefox terbaru.');
 
@@ -62,7 +47,7 @@ if (fs.existsSync(mediaPath)) {
     const canvasStream = canvas.captureStream(MEDIA_POLICY.video.fps);
     const sourceStream = typeof video.captureStream === 'function' ? video.captureStream() : null;
     if (sourceStream) {
-      for (const track of sourceStream.getAudioTracks()) canvasStream.addTrack(track);
+      sourceStream.getAudioTracks().forEach(track => canvasStream.addTrack(track));
     }
 
     const chunks: Blob[] = [];
@@ -89,7 +74,10 @@ if (fs.existsSync(mediaPath)) {
     ctx.drawImage(video, 0, 0, outWidth, outHeight);
     recorder.start(1000);
     raf = requestAnimationFrame(draw);
-    await new Promise<void>(resolve => { video.onended = () => resolve(); });
+    await new Promise<void>((resolve, reject) => {
+      video.onended = () => resolve();
+      video.onerror = () => reject(new Error('Video berhenti saat proses kompresi.'));
+    });
     cancelAnimationFrame(raf);
     if (recorder.state !== 'inactive') recorder.stop();
     const blob = await finished;
@@ -106,12 +94,13 @@ if (fs.existsSync(mediaPath)) {
   }
 }
 `;
-    s = s.slice(0, start) + replacement + s.slice(end);
-  }
-  const guard = "    if (input.dataset.mediaLocalHandler === 'true') return;";
-  if (!s.includes(guard)) {
-    s = s.replace("    if ((input as any).__pbMediaRedispatch) return;", "    if ((input as any).__pbMediaRedispatch) return;\n" + guard);
-  }
-  fs.writeFileSync(mediaPath, s);
-  console.log('[patch-gallery-video-upload-v3] MediaRecorder pipeline hardened.');
+  s = s.slice(0, start) + replacement + s.slice(end);
 }
+
+const guard = "    if (input.dataset.mediaLocalHandler === 'true') return;";
+if (!s.includes(guard)) {
+  s = s.replace("    if ((input as any).__pbMediaRedispatch) return;", "    if ((input as any).__pbMediaRedispatch) return;\n" + guard);
+}
+
+fs.writeFileSync(mediaPath, s);
+console.log('[patch-gallery-video-upload-v3] reliable MediaRecorder pipeline applied.');
