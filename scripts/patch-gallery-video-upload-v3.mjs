@@ -85,7 +85,7 @@ if (start >= 0 && end > start) {
 
     const extension = mime.startsWith('video/mp4') ? 'mp4' : 'webm';
     const base = file.name.replace(/\.[^/.]+$/, '') || 'video';
-    return new File([blob], `${base}-compressed.${extension}`, { type: blob.type, lastModified: Date.now() });
+    return new File([blob], `\${base}-compressed.\${extension}`, { type: blob.type, lastModified: Date.now() });
   } finally {
     URL.revokeObjectURL(sourceUrl);
     video.pause();
