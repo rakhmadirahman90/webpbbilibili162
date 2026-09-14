@@ -12,7 +12,7 @@ const start = s.indexOf('async function recordVideo(');
 const end = s.indexOf('\nexport async function compressVideo', start);
 
 if (start >= 0 && end > start) {
-  const replacement = String.raw`async function recordVideo(file: File, videoBitsPerSecond: number): Promise<File> {
+  const replacement = `async function recordVideo(file: File, videoBitsPerSecond: number): Promise<File> {
   const mime = pickVideoMime();
   if (!mime) throw new Error('Perangkat/browser ini belum mendukung kompresi video otomatis. Gunakan Chrome/Edge/Firefox terbaru.');
 
@@ -84,8 +84,8 @@ if (start >= 0 && end > start) {
     if (!blob.size) throw new Error('Video hasil kompresi kosong.');
 
     const extension = mime.startsWith('video/mp4') ? 'mp4' : 'webm';
-    const base = file.name.replace(/\.[^/.]+$/, '') || 'video';
-    return new File([blob], `\${base}-compressed.\${extension}`, { type: blob.type, lastModified: Date.now() });
+    const base = file.name.replace(/\\.[^/.]+$/, '') || 'video';
+    return new File([blob], base + '-compressed.' + extension, { type: blob.type, lastModified: Date.now() });
   } finally {
     URL.revokeObjectURL(sourceUrl);
     video.pause();
