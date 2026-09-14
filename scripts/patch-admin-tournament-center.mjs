@@ -21,7 +21,7 @@ const marker = '/* __ADMIN_TOURNAMENT_CENTER_V2__ */';
     }
   }
 
-  if (!alreadyHasSection && !s.includes(marker)) {
+  if (!alreadyHasSection) {
     const tournamentPaths = [
       'turnamen-liga',
       'live-score',
@@ -44,28 +44,32 @@ const marker = '/* __ADMIN_TOURNAMENT_CENTER_V2__ */';
     s = s.replace(/\n\s*\{ name: 'Turnamen & Liga', path: 'turnamen-liga', icon: Trophy, adminOnly: false \},/g, '');
     s = s.replace(/\n\s*\{ name: 'Live Score Lapangan', path: 'live-score', icon: Tv, adminOnly: false \},/g, '');
 
-    const section = `\n    {\n      section: 'Pusat Turnamen',\n      adminOnly: true,\n      items: [\n        { name: 'Dashboard Turnamen', path: 'pusat-turnamen', icon: Trophy, adminOnly: true },\n        { name: 'Atur Event Turnamen', path: 'kelola-turnamen', icon: Calendar, adminOnly: true },\n        { name: 'Pendaftaran Peserta', path: 'pendaftaran-turnamen', icon: FileSpreadsheet, adminOnly: true },\n        { name: 'Peserta Diterima', path: 'peserta-diterima', icon: UserCheck, adminOnly: true },\n        { name: 'Kelola Seeded Peserta', path: 'seeded-turnamen', icon: ShieldCheck, adminOnly: true },\n        { name: 'Turnamen & Liga', path: 'turnamen-liga', icon: Trophy, adminOnly: true },\n        { name: 'Live Score Lapangan', path: 'live-score', icon: Tv, adminOnly: true },\n        { name: 'Hasil & Skor Turnamen', path: 'skor', icon: Zap, adminOnly: true },\n        { name: 'Keuangan Turnamen', path: 'keuangan-turnamen', icon: FileSpreadsheet, adminOnly: true },\n        { name: 'Sponsorship Event', path: 'sponsorship', icon: Handshake, adminOnly: true },\n        { name: 'Laporan & Rekap Turnamen', path: 'laporan', icon: BarChart3, adminOnly: true },\n      ]\n    },`;
+    const section = `\n      {\n        section: 'Pusat Turnamen',\n        adminOnly: true,\n        items: [\n          { name: 'Dashboard Turnamen', path: 'pusat-turnamen', icon: Trophy, adminOnly: true },\n          { name: 'Atur Event Turnamen', path: 'kelola-turnamen', icon: Calendar, adminOnly: true },\n          { name: 'Pendaftaran Peserta', path: 'pendaftaran-turnamen', icon: FileSpreadsheet, adminOnly: true },\n          { name: 'Peserta Diterima', path: 'peserta-diterima', icon: UserCheck, adminOnly: true },\n          { name: 'Kelola Seeded Peserta', path: 'seeded-turnamen', icon: ShieldCheck, adminOnly: true },\n          { name: 'Turnamen & Liga', path: 'turnamen-liga', icon: Trophy, adminOnly: true },\n          { name: 'Live Score Lapangan', path: 'live-score', icon: Tv, adminOnly: true },\n          { name: 'Hasil & Skor Turnamen', path: 'skor', icon: Zap, adminOnly: true },\n          { name: 'Keuangan Turnamen', path: 'keuangan-turnamen', icon: FileSpreadsheet, adminOnly: true },\n          { name: 'Sponsorship Event', path: 'sponsorship', icon: Handshake, adminOnly: true },\n          { name: 'Laporan & Rekap Turnamen', path: 'laporan', icon: BarChart3, adminOnly: true },\n        ]\n      },`;
 
     const anchorRe = /\n\s*\{\s*\n\s*section: 'Kelola Data & Atlet',/;
     const fallbackRe = /\n\s*\{\s*\n\s*section: 'Administrasi & Keuangan',/;
+    const endMarker = '  const menuItems = allMenuItems';
 
     if (anchorRe.test(s)) {
       s = s.replace(anchorRe, `${section}$&`);
     } else if (fallbackRe.test(s)) {
-      console.warn('[patch-admin-tournament-center] Kelola Data & Atlet section not found; inserting Pusat Turnamen before Administrasi & Keuangan');
+      console.warn('[patch-admin-tournament-center] Kelola Data & Atlet section not found; inserting before Administrasi & Keuangan');
       s = s.replace(fallbackRe, `${section}$&`);
+    } else if (s.includes(endMarker)) {
+      // patch-admin-member-menus intentionally rebuilds the allMenuItems array,
+      // so its closing point is the most stable insertion anchor in production.
+      console.warn('[patch-admin-tournament-center] standard sidebar sections not found; inserting before menuItems safely');
+      s = s.replace(endMarker, `${section}\n${endMarker}`);
     } else {
-      console.warn('[patch-admin-tournament-center] sidebar anchors not found; skipping Pusat Turnamen sidebar insertion safely');
+      console.warn('[patch-admin-tournament-center] sidebar insertion anchor not found; skipping safely');
     }
   }
 
   // Only mark the sidebar as patched after the section really exists.
   if (/section:\s*'Pusat Turnamen'/.test(s)) {
     if (!s.includes(marker)) s += `\n${marker}\n`;
-    write(sidebarPath, s);
-  } else {
-    write(sidebarPath, s);
   }
+  write(sidebarPath, s);
 }
 
 // Ensure the central tournament route exists without making the build brittle.
