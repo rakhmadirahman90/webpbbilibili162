@@ -53,24 +53,31 @@ const marker = '/* __ADMIN_TOURNAMENT_CENTER_V2__ */';
 
     const anchorRe = /\n\s*\{\s*\n\s*section: 'Kelola Data & Atlet',/;
     const fallbackRe = /\n\s*\{\s*\n\s*section: 'Administrasi & Keuangan',/;
-    const arrayEndRe = /(\n\s*\];\n)(\s*const menuItems = allMenuItems)/;
 
     if (anchorRe.test(s)) {
       s = s.replace(anchorRe, `${section}$&`);
     } else if (fallbackRe.test(s)) {
       s = s.replace(fallbackRe, `${section}$&`);
-    } else if (arrayEndRe.test(s)) {
-      // Important: insert INSIDE allMenuItems, immediately before its closing ];.
-      // Never insert before `const menuItems`, which is outside the array and causes TS syntax errors.
-      console.warn('[patch-admin-tournament-center] standard sections not found; inserting inside allMenuItems before closing ];');
-      s = s.replace(arrayEndRe, `${section}$1$2`);
     } else {
-      console.warn('[patch-admin-tournament-center] sidebar insertion anchor not found; skipping safely');
+      // Last-resort insertion: locate the final `];` belonging to allMenuItems,
+      // not an intermediate conditional array such as `] : []`.
+      const allMenuStart = s.indexOf('const allMenuItems = [');
+      const menuItemsMarker = '\n  const menuItems = allMenuItems';
+      const menuItemsPos = s.indexOf(menuItemsMarker, allMenuStart);
+      const closingArrayPos = menuItemsPos > allMenuStart
+        ? s.lastIndexOf('\n  ];', menuItemsPos)
+        : -1;
+
+      if (allMenuStart >= 0 && closingArrayPos > allMenuStart) {
+        console.warn('[patch-admin-tournament-center] standard sections not found; inserting before final allMenuItems ];');
+        s = s.slice(0, closingArrayPos) + `\n${section}` + s.slice(closingArrayPos);
+      } else {
+        console.warn('[patch-admin-tournament-center] sidebar insertion anchor not found; skipping safely');
+      }
     }
   }
 
   if (/section:\s*'Pusat Turnamen'/.test(s) && !s.includes(marker)) {
-    // Marker is intentionally a comment only and remains outside generated syntax-sensitive regions.
     s += `\n${marker}\n`;
   }
   write(sidebarPath, s);
