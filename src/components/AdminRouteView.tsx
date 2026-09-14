@@ -53,6 +53,8 @@ import BadmintonQuiz from './BadmintonQuiz';
 import SeededTurnamen from './SeededTurnamen';
 import AdminPendaftaranTurnamenModernV2 from './AdminPendaftaranTurnamenModernV2';
 import AdminKelolaTurnamen from './AdminKelolaTurnamen';
+import AdminPusatTurnamen from './AdminPusatTurnamen';
+import AdminKeuanganTurnamen from './AdminKeuanganTurnamen';
 import AdminSponsorship from './AdminSponsorship';
 
 type Props = { session: any };
@@ -76,7 +78,10 @@ export default function AdminRouteView({ session }: Props) {
     case 'live-score': return render(LiveScoreWidget);
     case 'testimoni': return render(TestimonialUlasan);
 
-    // Semua modul turnamen dikonsolidasikan di navigasi Manajemen Turnamen.
+    // Pusat Turnamen: seluruh workflow event dikumpulkan dalam satu alur.
+    case 'pusat-turnamen':
+    case 'pusat-tournament':
+      return adminOnly(AdminPusatTurnamen);
     case 'kelola-turnamen':
     case 'turnamen':
     case 'tournament':
@@ -88,6 +93,7 @@ export default function AdminRouteView({ session }: Props) {
       return adminOnly(AdminPendaftaranTurnamenModernV2);
     case 'seeded':
     case 'seeded-peserta':
+    case 'seeded-turnamen':
     case 'seeded-peserta-turnamen':
     case 'peserta-seeded':
     case 'pendaftaran/seeded':
@@ -97,6 +103,8 @@ export default function AdminRouteView({ session }: Props) {
       return <TournamentLeague isAdmin={isAdmin} />;
     case 'skor':
       return adminOnly(AdminMatch);
+    case 'keuangan-turnamen':
+      return adminOnly(AdminKeuanganTurnamen);
 
     case 'jadwal': return <JadwalLatihanView />;
     case 'ranking': return isAdmin ? render(AdminRanking) : <div className="p-4 md:p-8"><Ranking /></div>;
