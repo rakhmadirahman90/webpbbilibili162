@@ -23,7 +23,8 @@ const marker = '/* __ADMIN_TOURNAMENT_CENTER_V1__ */';
     ];
 
     for (const path of tournamentPaths) {
-      const re = new RegExp(`\\n\\s*\\{ name: '[^']*', path: '${path.replace(/[-/]/g, '\\$&')}', icon: [A-Za-z0-9_]+, adminOnly: true \\},`, 'g');
+      const escaped = path.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const re = new RegExp(`\\n\\s*\\{ name: '[^']*', path: '${escaped}', icon: [A-Za-z0-9_]+, adminOnly: true \\},`, 'g');
       s = s.replace(re, '');
     }
 
@@ -31,12 +32,12 @@ const marker = '/* __ADMIN_TOURNAMENT_CENTER_V1__ */';
     s = s.replace(/\n\s*\{ name: 'Turnamen & Liga', path: 'turnamen-liga', icon: Trophy, adminOnly: false \},/g, '');
     s = s.replace(/\n\s*\{ name: 'Live Score Lapangan', path: 'live-score', icon: Tv, adminOnly: false \},/g, '');
 
-    const anchor = "    { \n      section: 'Kelola Data & Atlet',";
-    if (!s.includes(anchor)) throw new Error('[patch-admin-tournament-center] Kelola Data & Atlet section not found');
+    const anchorRe = /\n\s*\{\s*\n\s*section: 'Kelola Data & Atlet',/;
+    if (!anchorRe.test(s)) throw new Error('[patch-admin-tournament-center] Kelola Data & Atlet section not found');
 
-    const section = `    {\n      section: 'Pusat Turnamen',\n      adminOnly: true,\n      items: [\n        { name: 'Dashboard Turnamen', path: 'pusat-turnamen', icon: Trophy, adminOnly: true },\n        { name: 'Atur Event Turnamen', path: 'kelola-turnamen', icon: Calendar, adminOnly: true },\n        { name: 'Pendaftaran Peserta Turnamen', path: 'pendaftaran-turnamen', icon: FileSpreadsheet, adminOnly: true },\n        { name: 'Kelola Seeded Peserta', path: 'seeded-turnamen', icon: ShieldCheck, adminOnly: true },\n        { name: 'Live Score Lapangan', path: 'live-score', icon: Tv, adminOnly: true },\n        { name: 'Hasil & Skor Turnamen', path: 'skor', icon: Zap, adminOnly: true },\n        { name: 'Keuangan Turnamen', path: 'keuangan-turnamen', icon: FileSpreadsheet, adminOnly: true },\n        { name: 'Sponsorship Event', path: 'sponsorship', icon: Handshake, adminOnly: true },\n        { name: 'Laporan & Rekap Turnamen', path: 'laporan', icon: BarChart3, adminOnly: true },\n      ]\n    },\n`;
+    const section = `\n    {\n      section: 'Pusat Turnamen',\n      adminOnly: true,\n      items: [\n        { name: 'Dashboard Turnamen', path: 'pusat-turnamen', icon: Trophy, adminOnly: true },\n        { name: 'Atur Event Turnamen', path: 'kelola-turnamen', icon: Calendar, adminOnly: true },\n        { name: 'Pendaftaran Peserta Turnamen', path: 'pendaftaran-turnamen', icon: FileSpreadsheet, adminOnly: true },\n        { name: 'Kelola Seeded Peserta', path: 'seeded-turnamen', icon: ShieldCheck, adminOnly: true },\n        { name: 'Live Score Lapangan', path: 'live-score', icon: Tv, adminOnly: true },\n        { name: 'Hasil & Skor Turnamen', path: 'skor', icon: Zap, adminOnly: true },\n        { name: 'Keuangan Turnamen', path: 'keuangan-turnamen', icon: FileSpreadsheet, adminOnly: true },\n        { name: 'Sponsorship Event', path: 'sponsorship', icon: Handshake, adminOnly: true },\n        { name: 'Laporan & Rekap Turnamen', path: 'laporan', icon: BarChart3, adminOnly: true },\n      ]\n    },`;
 
-    s = s.replace(anchor, `${section}${anchor}`);
+    s = s.replace(anchorRe, `${section}$&`);
     s += `\n${marker}\n`;
     write(sidebarPath, s);
   }
