@@ -51,16 +51,14 @@ const marker = '/* __ADMIN_TOURNAMENT_CENTER_V2__ */';
       ]
     },`;
 
-    const anchorRe = /\n\s*\{\s*\n\s*section: 'Kelola Data & Atlet',/;
-    const fallbackRe = /\n\s*\{\s*\n\s*section: 'Administrasi & Keuangan',/;
+    // patch-admin-member-menus runs earlier in prebuild and rebuilds the sidebar.
+    // Put Pusat Turnamen immediately after Portal Utama so it is visible near the top.
+    const portalAnchorRe = /(\n\s*\{\s*\n\s*section: 'Portal Utama',[\s\S]*?\n\s*\]\s*\n\s*\},)/;
 
-    if (anchorRe.test(s)) {
-      s = s.replace(anchorRe, `${section}$&`);
-    } else if (fallbackRe.test(s)) {
-      s = s.replace(fallbackRe, `${section}$&`);
+    if (portalAnchorRe.test(s)) {
+      s = s.replace(portalAnchorRe, `$&${section}`);
     } else {
-      // Last-resort insertion: locate the final `];` belonging to allMenuItems,
-      // not an intermediate conditional array such as `] : []`.
+      // Safe fallback: find the final closing ]; of allMenuItems before menuItems.
       const allMenuStart = s.indexOf('const allMenuItems = [');
       const menuItemsMarker = '\n  const menuItems = allMenuItems';
       const menuItemsPos = s.indexOf(menuItemsMarker, allMenuStart);
@@ -69,7 +67,7 @@ const marker = '/* __ADMIN_TOURNAMENT_CENTER_V2__ */';
         : -1;
 
       if (allMenuStart >= 0 && closingArrayPos > allMenuStart) {
-        console.warn('[patch-admin-tournament-center] standard sections not found; inserting before final allMenuItems ];');
+        console.warn('[patch-admin-tournament-center] Portal Utama anchor not found; inserting before final allMenuItems ];');
         s = s.slice(0, closingArrayPos) + `\n${section}` + s.slice(closingArrayPos);
       } else {
         console.warn('[patch-admin-tournament-center] sidebar insertion anchor not found; skipping safely');
