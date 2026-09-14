@@ -7,7 +7,7 @@ import Swal from 'sweetalert2';
 import {
   Plus, Trash2, Image as ImageIcon, Video, Upload, X, Loader2,
   CheckCircle2, ChevronLeft, ChevronRight, Edit3, Link as LinkIcon,
-  PlayCircle
+  PlayCircle, CalendarDays, Info, Send, ChevronDown
 } from 'lucide-react';
 
 interface GalleryItem {
@@ -26,22 +26,13 @@ const IMAGE_SOURCE_MAX_SIZE = 50 * 1024 * 1024;
 const IMAGE_HARD_MAX_BYTES = 5 * 1024 * 1024;
 const VIDEO_MAX_SIZE = 15 * 1024 * 1024;
 
-const splitMediaUrls = (value = '') =>
-  value.split(/\s*,\s*|\r?\n/).map(v => v.trim()).filter(Boolean);
+const splitMediaUrls = (value = '') => value.split(/\s*,\s*|\r?\n/).map(v => v.trim()).filter(Boolean);
 const joinMediaUrls = (urls: string[]) => urls.filter(Boolean).join(', ');
 const isSupabaseMedia = (url: string) => url.includes('supabase.co/storage/');
-
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-/**
- * Compress locally without a Web Worker. On some Android browsers the worker
- * script used by browser-image-compression can fail with "Failed to fetch".
- * Keeping compression on the main thread is slower but considerably more
- * reliable for the gallery upload flow.
- */
 const compressGalleryImage = async (file: File): Promise<File> => {
   if (!file.type.startsWith('image/') || file.type === 'image/gif' || file.type === 'image/svg+xml') return file;
-
   const options = {
     maxSizeMB: 4.5,
     maxWidthOrHeight: 4096,
@@ -50,9 +41,7 @@ const compressGalleryImage = async (file: File): Promise<File> => {
     fileType: 'image/webp' as const,
     preserveExif: false,
   };
-
   let compressed = await imageCompression(file, options);
-
   if (compressed.size > IMAGE_HARD_MAX_BYTES) {
     compressed = await imageCompression(file, {
       ...options,
@@ -61,14 +50,9 @@ const compressGalleryImage = async (file: File): Promise<File> => {
       initialQuality: 0.88,
     });
   }
-
   if (compressed.size >= file.size && file.size <= IMAGE_HARD_MAX_BYTES) return file;
-
   const baseName = file.name.replace(/\.[^/.]+$/, '') || 'foto-gallery';
-  return new File([compressed], `${baseName}.webp`, {
-    type: 'image/webp',
-    lastModified: Date.now(),
-  });
+  return new File([compressed], `${baseName}.webp`, { type: 'image/webp', lastModified: Date.now() });
 };
 
 const uploadGalleryFile = async (file: File, path: string) => {
@@ -92,8 +76,10 @@ const uploadGalleryFile = async (file: File, path: string) => {
 
 export default function AdminGallery({ session }: { session?: any }) {
   const userRole = session?.user?.user_metadata?.role || (() => {
-    const raw = localStorage.getItem('local_admin_session');
-    try { return JSON.parse(raw || '{}')?.user?.user_metadata?.role || 'admin'; } catch { return 'admin'; }
+    try {
+      const raw = localStorage.getItem('local_admin_session');
+      return JSON.parse(raw || '{}')?.user?.user_metadata?.role || 'admin';
+    } catch { return 'admin'; }
   })();
   const isAdmin = userRole === 'admin';
 
@@ -169,6 +155,7 @@ export default function AdminGallery({ session }: { session?: any }) {
     setPreviewIndex(0);
     setEditingId(null);
     setVideoInputMethod('file');
+    setDragActive(false);
   };
 
   const openCreate = () => {
@@ -187,16 +174,21 @@ export default function AdminGallery({ session }: { session?: any }) {
       category: item.category || 'Pertandingan', description: item.description || '',
       is_local: item.is_local ?? true
     });
-    setVideoInputMethod(item.type === 'video' && item.url.includes('youtube.com') ? 'link' : 'file');
+    setVideoInputMethod(item.type === 'video' && /youtube\.com|youtu\.be/i.test(item.url) ? 'link' : 'file');
     setIsModalOpen(true);
   };
 
-  const closeModal = () => { setIsModalOpen(false); resetForm(); };
+  const closeModal = () => {
+    if (isUploading) return;
+    setIsModalOpen(false);
+    resetForm();
+  };
 
   const getYouTubeID = (url: string) => {
     const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([^#&?\s]+)/i);
     return match?.[1]?.length === 11 ? match[1] : null;
   };
+
   const processVideoUrl = (url: string) => {
     const id = getYouTubeID(url.trim());
     return id ? `https://www.youtube.com/embed/${id}` : url.trim();
@@ -208,45 +200,26 @@ export default function AdminGallery({ session }: { session?: any }) {
     try {
       const uploaded: string[] = [];
       const failed: string[] = [];
-
       for (const file of files) {
         const expectedImage = formData.type === 'image';
         if (expectedImage && !file.type.startsWith('image/')) { failed.push(`${file.name}: bukan foto`); continue; }
         if (!expectedImage && !file.type.startsWith('video/')) { failed.push(`${file.name}: bukan video`); continue; }
-
         let uploadFile = file;
         if (expectedImage) {
-          if (file.size > IMAGE_SOURCE_MAX_SIZE) {
-            failed.push(`${file.name}: melebihi 50MB`);
-            continue;
-          }
-          try {
-            uploadFile = await compressGalleryImage(file);
-          } catch (compressionError: any) {
-            failed.push(`${file.name}: kompresi gagal`);
-            console.error('Gallery compression error', compressionError);
-            continue;
-          }
-          if (uploadFile.size > IMAGE_HARD_MAX_BYTES) {
-            failed.push(`${file.name}: hasil kompresi masih >5MB`);
-            continue;
-          }
+          if (file.size > IMAGE_SOURCE_MAX_SIZE) { failed.push(`${file.name}: melebihi 50MB`); continue; }
+          try { uploadFile = await compressGalleryImage(file); }
+          catch (error) { console.error('Gallery compression error', error); failed.push(`${file.name}: kompresi gagal`); continue; }
+          if (uploadFile.size > IMAGE_HARD_MAX_BYTES) { failed.push(`${file.name}: hasil kompresi masih >5MB`); continue; }
         } else if (file.size > VIDEO_MAX_SIZE) {
-          failed.push(`${file.name}: melebihi 15MB`);
-          continue;
+          failed.push(`${file.name}: melebihi 15MB`); continue;
         }
-
         const ext = uploadFile.type === 'image/webp'
           ? 'webp'
           : uploadFile.name.split('.').pop()?.toLowerCase() || (expectedImage ? 'jpg' : 'mp4');
         const id = crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
         const path = `uploads/${id}.${ext}`;
         const result = await uploadGalleryFile(uploadFile, path);
-        if (result.error) {
-          console.error('Gallery storage upload error', result.error);
-          failed.push(`${file.name}: ${result.error.message || 'upload gagal'}`);
-          continue;
-        }
+        if (result.error) { failed.push(`${file.name}: ${result.error.message || 'upload gagal'}`); continue; }
         const { data } = supabase.storage.from('gallery').getPublicUrl(path);
         if (data?.publicUrl) uploaded.push(data.publicUrl);
       }
@@ -273,15 +246,11 @@ export default function AdminGallery({ session }: { session?: any }) {
           html: `<div style="text-align:left;font-size:13px">${failed.map(v => `<div>• ${v}</div>`).join('')}</div>`,
         });
       } else if (!uploaded.length) {
-        await Swal.fire({ icon: 'error', title: 'Upload gagal', text: 'Tidak ada foto yang berhasil diproses.' });
+        await Swal.fire({ icon: 'error', title: 'Upload gagal', text: 'Tidak ada media yang berhasil diproses.' });
       }
     } catch (error: any) {
       console.error('Gallery upload failed', error);
-      await Swal.fire({
-        icon: 'error',
-        title: 'Upload gagal',
-        text: error?.message || 'Gagal mengunggah foto. Periksa koneksi internet dan coba lagi.',
-      });
+      await Swal.fire({ icon: 'error', title: 'Upload gagal', text: error?.message || 'Gagal mengunggah media. Periksa koneksi internet dan coba lagi.' });
     } finally {
       setIsUploading(false);
       setDragActive(false);
@@ -290,6 +259,7 @@ export default function AdminGallery({ session }: { session?: any }) {
   };
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => uploadFiles(Array.from(e.target.files || []));
+
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setDragActive(false);
@@ -336,14 +306,16 @@ export default function AdminGallery({ session }: { session?: any }) {
 
     let finalUrl = formData.type === 'image' ? joinMediaUrls(albumUrls) : formData.url.trim();
     if (formData.type === 'video' && videoInputMethod === 'link') {
-      const id = getYouTubeID(finalUrl);
-      if (!id) return Swal.fire({ icon: 'warning', title: 'Link YouTube tidak valid' });
+      if (!getYouTubeID(finalUrl)) return Swal.fire({ icon: 'warning', title: 'Link YouTube tidak valid' });
       finalUrl = processVideoUrl(finalUrl);
     }
 
     const payload = {
-      title: formData.title.trim(), type: formData.type, url: finalUrl,
-      category: formData.category, description: formData.description.trim(),
+      title: formData.title.trim(),
+      type: formData.type,
+      url: finalUrl,
+      category: formData.category,
+      description: formData.description.trim(),
       is_local: formData.type === 'image' ? true : videoInputMethod === 'file'
     };
 
@@ -383,54 +355,132 @@ export default function AdminGallery({ session }: { session?: any }) {
   };
 
   const currentPreview = albumUrls[previewIndex] || '';
+  const previewCount = formData.type === 'image' ? albumUrls.length : formData.url ? 1 : 0;
 
   return (
-    <div className="min-h-screen bg-[#070d1a] text-white p-4 sm:p-6 md:p-10 font-sans overflow-x-hidden">
-      <div className="max-w-6xl mx-auto">
-        {successMsg && <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[300] bg-blue-600 text-white px-5 py-3 rounded-2xl font-black text-[10px] uppercase flex items-center gap-2 shadow-2xl"><CheckCircle2 size={17}/> {successMsg}</div>}
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 mb-8 md:mb-12">
-          <div><h1 className="text-4xl sm:text-5xl md:text-6xl font-black italic tracking-tighter uppercase leading-none">MANAGE <span className="text-blue-600">GALLERY</span></h1><div className="flex items-center gap-3 mt-4"><span className="h-px w-8 bg-blue-600"/><p className="text-zinc-500 text-[9px] sm:text-[10px] font-black uppercase tracking-[0.25em]">Cloud Media Management v4.1</p></div></div>
-          {isAdmin && <button onClick={openCreate} className="w-full sm:w-auto flex items-center justify-center gap-3 bg-white text-black hover:bg-blue-600 hover:text-white px-7 py-4 rounded-2xl font-black uppercase text-[10px]"><Plus size={18}/> Tambah {activeTab === 'image' ? 'Foto / Album' : 'Video'}</button>}
+    <div className="min-h-screen overflow-x-hidden bg-[#070d1a] p-4 font-sans text-white sm:p-6 md:p-10">
+      <div className="mx-auto max-w-7xl">
+        {successMsg && (
+          <div className="fixed left-1/2 top-5 z-[400] flex max-w-[calc(100vw-24px)] -translate-x-1/2 items-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-[10px] font-black uppercase text-white shadow-2xl">
+            <CheckCircle2 size={17} /> <span className="truncate">{successMsg}</span>
+          </div>
+        )}
+
+        <div className="mb-8 flex flex-col items-start justify-between gap-6 md:mb-10 lg:flex-row lg:items-end">
+          <div className="min-w-0">
+            <h1 className="text-4xl font-black italic uppercase leading-none tracking-tighter sm:text-5xl md:text-6xl">MANAGE <span className="text-blue-600">GALLERY</span></h1>
+            <div className="mt-4 flex items-center gap-3"><span className="h-px w-8 bg-blue-600" /><p className="text-[9px] font-black uppercase tracking-[0.25em] text-zinc-500 sm:text-[10px]">Cloud Media Management v5</p></div>
+          </div>
+          {isAdmin && <button onClick={openCreate} className="flex w-full items-center justify-center gap-3 rounded-2xl bg-white px-7 py-4 text-[10px] font-black uppercase text-black transition hover:bg-blue-600 hover:text-white sm:w-auto"><Plus size={18} /> Tambah {activeTab === 'image' ? 'Foto / Album' : 'Video'}</button>}
         </div>
 
-        <div className="flex w-full sm:w-fit gap-2 mb-8 bg-zinc-900/60 p-2 rounded-2xl border border-white/5">
-          <button onClick={() => setActiveTab('image')} className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 sm:px-8 py-4 rounded-xl font-black text-[10px] uppercase ${activeTab === 'image' ? 'bg-blue-600 text-white' : 'text-zinc-500'}`}><ImageIcon size={16}/> Photography</button>
-          <button onClick={() => setActiveTab('video')} className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 sm:px-8 py-4 rounded-xl font-black text-[10px] uppercase ${activeTab === 'video' ? 'bg-blue-600 text-white' : 'text-zinc-500'}`}><Video size={16}/> Videography</button>
+        <div className="mb-8 flex w-full gap-2 rounded-2xl border border-white/5 bg-zinc-900/60 p-2 sm:w-fit">
+          <button onClick={() => setActiveTab('image')} className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-5 py-4 text-[10px] font-black uppercase sm:flex-none sm:px-8 ${activeTab === 'image' ? 'bg-blue-600 text-white' : 'text-zinc-500'}`}><ImageIcon size={16} /> Photography</button>
+          <button onClick={() => setActiveTab('video')} className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-5 py-4 text-[10px] font-black uppercase sm:flex-none sm:px-8 ${activeTab === 'video' ? 'bg-blue-600 text-white' : 'text-zinc-500'}`}><Video size={16} /> Videography</button>
         </div>
 
-        {loading ? <div className="min-h-[400px] flex items-center justify-center"><Loader2 className="animate-spin text-blue-600" size={44}/></div> : <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-7">
-            {paginatedItems.length === 0 ? <div className="col-span-full py-20 text-center border border-dashed border-white/10 rounded-3xl"><ImageIcon className="mx-auto text-zinc-600 mb-4" size={44}/><p className="text-zinc-500 text-xs font-black uppercase tracking-widest">Belum ada {activeTab === 'image' ? 'album foto' : 'video'}</p></div> : paginatedItems.map(item => {
+        {loading ? <div className="flex min-h-[400px] items-center justify-center"><Loader2 className="animate-spin text-blue-600" size={44} /></div> : <>
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 md:gap-7">
+            {paginatedItems.length === 0 ? <div className="col-span-full rounded-3xl border border-dashed border-white/10 py-20 text-center"><ImageIcon className="mx-auto mb-4 text-zinc-600" size={44} /><p className="text-xs font-black uppercase tracking-widest text-zinc-500">Belum ada {activeTab === 'image' ? 'album foto' : 'video'}</p></div> : paginatedItems.map(item => {
               const urls = item.type === 'image' ? splitMediaUrls(item.url) : [item.url];
               const cover = urls[0] || '';
-              return <article key={item.id} className="overflow-hidden rounded-3xl bg-[#0d1423] border border-white/10 shadow-xl">
-                <div className="relative aspect-[4/3] bg-black overflow-hidden">{item.type === 'image' && cover ? <img src={cover} alt={item.title} className="w-full h-full object-cover" loading="lazy"/> : <div className="w-full h-full flex items-center justify-center bg-zinc-900"><PlayCircle size={58} className="text-blue-500"/></div>}<div className="absolute top-3 left-3 px-3 py-2 rounded-xl bg-blue-600 text-white text-[9px] font-black uppercase">{item.category}</div>{item.type === 'image' && <div className="absolute bottom-3 left-3 px-3 py-2 rounded-xl bg-black/75 text-white text-[10px] font-black"><ImageIcon size={13} className="inline mr-1"/>{urls.length} FOTO</div>}</div>
-                <div className="p-5"><h3 className="font-black text-base sm:text-lg leading-tight line-clamp-2">{item.title}</h3><p className="mt-2 text-xs text-zinc-500 line-clamp-2">{item.description || 'Dokumentasi PB BILIBILI 162'}</p>{item.type === 'image' && urls.length > 1 && <p className="mt-3 text-[9px] font-black uppercase tracking-widest text-blue-400">Album aktivitas · {urls.length} foto terkait</p>}{isAdmin && <div className="grid grid-cols-2 gap-2 mt-5"><button onClick={() => openEdit(item)} className="flex items-center justify-center gap-2 py-3 rounded-xl bg-white/5 hover:bg-blue-600 text-[9px] font-black uppercase"><Edit3 size={14}/> Kelola Album</button><button onClick={() => handleDelete(item)} className="flex items-center justify-center gap-2 py-3 rounded-xl bg-red-500/10 hover:bg-red-600 text-red-400 hover:text-white text-[9px] font-black uppercase"><Trash2 size={14}/> Hapus</button></div>}</div>
+              return <article key={item.id} className="overflow-hidden rounded-3xl border border-white/10 bg-[#0d1423] shadow-xl">
+                <div className="relative aspect-[4/3] overflow-hidden bg-black">{item.type === 'image' && cover ? <img src={cover} alt={item.title} className="h-full w-full object-cover" loading="lazy" /> : <div className="flex h-full w-full items-center justify-center bg-zinc-900"><PlayCircle size={58} className="text-blue-500" /></div>}<div className="absolute left-3 top-3 rounded-xl bg-blue-600 px-3 py-2 text-[9px] font-black uppercase text-white">{item.category}</div>{item.type === 'image' && <div className="absolute bottom-3 left-3 rounded-xl bg-black/75 px-3 py-2 text-[10px] font-black text-white"><ImageIcon size={13} className="mr-1 inline" />{urls.length} FOTO</div>}</div>
+                <div className="p-5"><h3 className="line-clamp-2 text-base font-black leading-tight sm:text-lg">{item.title}</h3><p className="mt-2 line-clamp-2 text-xs text-zinc-500">{item.description || 'Dokumentasi PB BILIBILI 162'}</p>{item.type === 'image' && urls.length > 1 && <p className="mt-3 text-[9px] font-black uppercase tracking-widest text-blue-400">Album aktivitas · {urls.length} foto terkait</p>}{isAdmin && <div className="mt-5 grid grid-cols-2 gap-2"><button onClick={() => openEdit(item)} className="flex items-center justify-center gap-2 rounded-xl bg-white/5 py-3 text-[9px] font-black uppercase hover:bg-blue-600"><Edit3 size={14} /> Kelola Album</button><button onClick={() => handleDelete(item)} className="flex items-center justify-center gap-2 rounded-xl bg-red-500/10 py-3 text-[9px] font-black uppercase text-red-400 hover:bg-red-600 hover:text-white"><Trash2 size={14} /> Hapus</button></div>}</div>
               </article>;
             })}
           </div>
-          {totalPages > 1 && <div className="flex items-center justify-center gap-2 mt-8"><button disabled={currentPage === 1} onClick={() => setCurrentPage(p => Math.max(1, p - 1))} className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 disabled:opacity-30"><ChevronLeft size={18} className="mx-auto"/></button>{Array.from({length: totalPages}, (_, i) => i + 1).map(p => <button key={p} onClick={() => setCurrentPage(p)} className={`w-10 h-10 rounded-xl text-xs font-black ${p === currentPage ? 'bg-blue-600' : 'bg-white/5 border border-white/10'}`}>{p}</button>)}<button disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 disabled:opacity-30"><ChevronRight size={18} className="mx-auto"/></button></div>}
+          {totalPages > 1 && <div className="mt-8 flex items-center justify-center gap-2"><button disabled={currentPage === 1} onClick={() => setCurrentPage(p => Math.max(1, p - 1))} className="h-10 w-10 rounded-xl bg-white/5 disabled:opacity-30"><ChevronLeft size={18} className="mx-auto" /></button>{Array.from({ length: totalPages }, (_, i) => i + 1).map(p => <button key={p} onClick={() => setCurrentPage(p)} className={`h-10 w-10 rounded-xl text-xs font-black ${p === currentPage ? 'bg-blue-600' : 'border border-white/10 bg-white/5'}`}>{p}</button>)}<button disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} className="h-10 w-10 rounded-xl bg-white/5 disabled:opacity-30"><ChevronRight size={18} className="mx-auto" /></button></div>}
         </>}
       </div>
 
-      {isModalOpen && <div className="fixed inset-0 z-[250] bg-black/80 backdrop-blur-md p-3 sm:p-6 overflow-y-auto"><div className="min-h-full flex items-start sm:items-center justify-center py-3 sm:py-8"><form onSubmit={handleSubmit} className="w-full max-w-4xl rounded-3xl bg-[#0d1423] border border-white/10 shadow-2xl overflow-hidden">
-        <div className="flex items-center justify-between p-5 sm:p-7 border-b border-white/10"><div><h2 className="text-xl sm:text-2xl font-black uppercase">{editingId ? 'Kelola Album' : 'Tambah Album'}</h2><p className="text-[9px] text-zinc-500 font-black uppercase tracking-widest mt-1">{formData.type === 'image' ? 'Foto otomatis dikompresi sebelum upload' : 'Video aktivitas PB BILIBILI 162'}</p></div><button type="button" onClick={closeModal} className="p-3 rounded-xl bg-white/5"><X size={20}/></button></div>
-        <div className="p-5 sm:p-7 grid lg:grid-cols-[1fr_1.05fr] gap-7"><div className="space-y-5">
-          <label className="block"><span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Judul Aktivitas</span><input value={formData.title} onChange={e => setFormData(p => ({...p, title:e.target.value}))} className="mt-2 w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-blue-500" placeholder="Contoh: Musyawarah Kota PBSI Parepare 2026"/></label>
-          <div className="grid grid-cols-2 gap-3"><label><span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Jenis</span><select value={formData.type} onChange={e => { const type = e.target.value as 'image'|'video'; setFormData(p => ({...p,type,url:type==='image'?joinMediaUrls(albumUrls):''})); if(type!=='image') setAlbumUrls([]); }} className="mt-2 w-full bg-black/30 border border-white/10 rounded-xl px-3 py-3 text-sm"><option value="image">Foto / Album</option><option value="video">Video</option></select></label><label><span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Kategori</span><select value={formData.category} onChange={e => setFormData(p => ({...p,category:e.target.value}))} className="mt-2 w-full bg-black/30 border border-white/10 rounded-xl px-3 py-3 text-sm">{categories.map(c => <option key={c}>{c}</option>)}</select></label></div>
-          <label className="block"><span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Keterangan</span><textarea value={formData.description} onChange={e => setFormData(p => ({...p,description:e.target.value}))} rows={4} className="mt-2 w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-sm resize-none" placeholder="Keterangan aktivitas..."/></label>
-          {formData.type === 'image' ? <>
-            <div onDragOver={e => {e.preventDefault();setDragActive(true)}} onDragLeave={() => setDragActive(false)} onDrop={handleDrop} onClick={() => !isUploading && fileInputRef.current?.click()} className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer ${dragActive ? 'border-blue-500 bg-blue-500/10' : 'border-white/10 hover:border-blue-500/60'} ${isUploading ? 'opacity-60 pointer-events-none' : ''}`}><input ref={fileInputRef} type="file" accept="image/*" multiple hidden onChange={handleFileInput}/>{isUploading ? <Loader2 className="mx-auto mb-3 text-blue-500 animate-spin" size={28}/> : <Upload className="mx-auto mb-3 text-blue-500" size={28}/>}<p className="font-black text-xs uppercase">{isUploading ? 'Memproses & mengunggah foto...' : 'Upload Banyak Foto Sekaligus'}</p><p className="text-[10px] text-zinc-500 mt-1">Otomatis kompres kualitas tinggi · sumber maksimal 50MB/foto</p></div>
-            <div className="rounded-2xl bg-black/20 border border-white/5 p-4"><div className="flex items-center justify-between mb-3"><span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Foto Album</span><span className="text-[9px] font-black text-blue-400">{albumUrls.length} FOTO</span></div>{albumUrls.length ? <div className="grid grid-cols-3 gap-2">{albumUrls.map((url,i)=><div key={`${url}-${i}`} className={`relative aspect-square rounded-xl overflow-hidden border ${i===0?'border-blue-500':'border-white/10'}`}><img src={url} alt={`Foto ${i+1}`} className="w-full h-full object-cover"/><div className="absolute top-1 left-1 px-1.5 py-1 rounded-md bg-black/70 text-[8px] font-black">{i===0?'UTAMA':i+1}</div><div className="absolute bottom-1 left-1 right-1 flex gap-1"><button type="button" onClick={e=>{e.stopPropagation();makeCover(i)}} className="flex-1 bg-blue-600/90 rounded-md py-1 text-[7px] font-black">{i===0?'UTAMA':'JADIKAN UTAMA'}</button><button type="button" onClick={e=>{e.stopPropagation();removeAlbumPhoto(i)}} className="bg-red-600/90 rounded-md px-2 py-1"><Trash2 size={10}/></button></div></div>)}</div> : <p className="text-center py-6 text-zinc-600 text-[10px] font-black uppercase">Belum ada foto</p>}</div>
-          </> : <>
-            <div className="flex gap-2 bg-black/20 p-1 rounded-xl"><button type="button" onClick={()=>setVideoInputMethod('file')} className={`flex-1 py-3 rounded-lg text-[9px] font-black uppercase ${videoInputMethod==='file'?'bg-blue-600':'text-zinc-500'}`}>Upload Video</button><button type="button" onClick={()=>setVideoInputMethod('link')} className={`flex-1 py-3 rounded-lg text-[9px] font-black uppercase ${videoInputMethod==='link'?'bg-blue-600':'text-zinc-500'}`}>Link YouTube</button></div>
-            {videoInputMethod==='file' ? <div onClick={()=>!isUploading&&fileInputRef.current?.click()} className="border-2 border-dashed border-white/10 rounded-2xl p-8 text-center cursor-pointer hover:border-blue-500/60"><input ref={fileInputRef} type="file" accept="video/*" hidden onChange={handleFileInput}/><Upload className="mx-auto mb-3 text-blue-500" size={30}/><p className="font-black text-xs uppercase">Pilih Video</p><p className="text-[10px] text-zinc-500 mt-1">Maksimal 15MB</p></div> : <div className="relative"><LinkIcon className="absolute left-3 top-3.5 text-zinc-500" size={17}/><input value={formData.url} onChange={e=>setFormData(p=>({...p,url:e.target.value}))} className="w-full bg-black/30 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-sm" placeholder="https://youtube.com/watch?v=..."/></div>}
-            {formData.url && <div className="text-[9px] text-green-400 font-bold break-all">Video siap digunakan</div>}
-          </>}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-[250] overflow-hidden bg-black/80 backdrop-blur-md">
+          <div className="flex h-[100dvh] w-full items-center justify-center p-0 sm:p-3 md:p-5">
+            <form onSubmit={handleSubmit} className="flex h-full max-h-[100dvh] w-full min-w-0 flex-col overflow-hidden rounded-none border border-white/10 bg-[#0b1424] shadow-2xl sm:h-[calc(100dvh-24px)] sm:max-h-[900px] sm:max-w-[1400px] sm:rounded-3xl md:h-[calc(100dvh-40px)]">
+              <header className="flex shrink-0 items-center justify-between gap-4 border-b border-white/10 bg-[#0d1729] px-4 py-4 sm:px-6 sm:py-5 md:px-7 md:py-6">
+                <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-600/20 sm:h-12 sm:w-12"><ImageIcon size={22} /></div>
+                  <div className="min-w-0"><h2 className="truncate text-xl font-black uppercase tracking-tight sm:text-2xl">{editingId ? 'Kelola Album' : 'Tambah Album'}</h2><p className="mt-1 truncate text-[8px] font-black uppercase tracking-[0.16em] text-zinc-500 sm:text-[9px]">{formData.type === 'image' ? 'Foto otomatis dikompresi sebelum upload' : 'Video aktivitas PB BILIBILI 162'}</p></div>
+                </div>
+                <button type="button" onClick={closeModal} disabled={isUploading} aria-label="Tutup" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/5 text-zinc-300 transition hover:bg-white/10 hover:text-white disabled:opacity-40 sm:h-11 sm:w-11"><X size={20} /></button>
+              </header>
+
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+                <div className="grid min-w-0 grid-cols-1 gap-5 p-4 sm:gap-6 sm:p-6 lg:grid-cols-[minmax(0,1.08fr)_minmax(360px,.92fr)] lg:p-7">
+                  <section className="min-w-0 space-y-5">
+                    <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
+                      <label className="block min-w-0 sm:col-span-2"><span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Judul Aktivitas <b className="text-blue-500">*</b></span><input value={formData.title} onChange={e => setFormData(p => ({ ...p, title: e.target.value }))} className="mt-2 block h-12 w-full min-w-0 rounded-xl border border-white/10 bg-[#08111f] px-4 text-sm outline-none transition focus:border-blue-500" placeholder="Contoh: Musyawarah Kota PBSI Parepare 2026" /></label>
+
+                      <label className="block min-w-0"><span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Jenis <b className="text-blue-500">*</b></span><div className="relative mt-2"><ImageIcon size={17} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" /><select value={formData.type} onChange={e => { const type = e.target.value as 'image' | 'video'; setFormData(p => ({ ...p, type, url: type === 'image' ? joinMediaUrls(albumUrls) : '' })); if (type !== 'image') setAlbumUrls([]); }} className="block h-12 w-full min-w-0 appearance-none rounded-xl border border-white/10 bg-[#08111f] pl-10 pr-10 text-sm outline-none focus:border-blue-500"><option value="image">Foto / Album</option><option value="video">Video</option></select><ChevronDown size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500" /></div></label>
+
+                      <label className="block min-w-0"><span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Kategori <b className="text-blue-500">*</b></span><div className="relative mt-2"><select value={formData.category} onChange={e => setFormData(p => ({ ...p, category: e.target.value }))} className="block h-12 w-full min-w-0 appearance-none rounded-xl border border-white/10 bg-[#08111f] px-4 pr-10 text-sm outline-none focus:border-blue-500">{categories.map(c => <option key={c}>{c}</option>)}</select><ChevronDown size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500" /></div></label>
+                    </div>
+
+                    <label className="block"><div className="flex items-center justify-between"><span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Keterangan Aktivitas</span><span className="text-[10px] text-zinc-600">{formData.description.length}/500</span></div><textarea maxLength={500} value={formData.description} onChange={e => setFormData(p => ({ ...p, description: e.target.value }))} rows={4} className="mt-2 block min-h-[120px] w-full resize-none rounded-xl border border-white/10 bg-[#08111f] px-4 py-3 text-sm outline-none focus:border-blue-500" placeholder="Tuliskan keterangan aktivitas..." /></label>
+
+                    <section className="min-w-0">
+                      <div className="mb-2 flex items-center justify-between"><span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Unggah Media <b className="text-blue-500">*</b></span>{isUploading && <span className="flex items-center gap-2 text-[9px] font-black uppercase text-blue-400"><Loader2 size={13} className="animate-spin" /> Memproses...</span>}</div>
+
+                      {formData.type === 'image' ? <>
+                        <div className="mb-3 grid grid-cols-2 gap-2 rounded-xl border border-white/10 bg-[#07101d] p-1"><button type="button" className="flex h-10 items-center justify-center gap-2 rounded-lg bg-blue-600 text-xs font-black text-white"><ImageIcon size={15} /> Foto</button><button type="button" onClick={() => setFormData(p => ({ ...p, type: 'video', url: '' }))} className="flex h-10 items-center justify-center gap-2 rounded-lg text-xs font-black text-zinc-400 hover:bg-white/5 hover:text-white"><Video size={15} /> Video</button></div>
+                        <div onDragOver={e => { e.preventDefault(); if (!isUploading) setDragActive(true); }} onDragLeave={() => setDragActive(false)} onDrop={handleDrop} onClick={() => !isUploading && fileInputRef.current?.click()} className={`flex min-h-[155px] w-full cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-4 py-7 text-center transition sm:min-h-[170px] ${dragActive ? 'border-blue-400 bg-blue-500/10' : 'border-blue-500/60 bg-blue-500/[0.03] hover:bg-blue-500/[0.07]'} ${isUploading ? 'pointer-events-none opacity-60' : ''}`}>
+                          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600/10 text-blue-500"><Upload size={28} /></div>
+                          <p className="text-sm font-black uppercase">Pilih atau seret & lepas foto di sini</p>
+                          <p className="mt-1 max-w-lg text-xs text-zinc-400">Upload banyak foto sekaligus (JPG, JPEG, PNG, WEBP)</p>
+                          <p className="mt-1 text-[10px] text-zinc-600">Otomatis kompres kualitas tinggi · Maksimal 50MB/foto</p>
+                        </div>
+                        <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple className="hidden" onChange={handleFileInput} />
+
+                        {albumUrls.length > 0 && <div className="mt-3 flex min-w-0 gap-3 overflow-x-auto pb-1">
+                          {albumUrls.map((url, index) => <div key={`${url}-${index}`} className="group relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-white/10 bg-black sm:h-24 sm:w-24"><button type="button" onClick={() => setPreviewIndex(index)} className="absolute inset-0 z-10" aria-label={`Preview foto ${index + 1}`} /><img src={url} alt={`Foto ${index + 1}`} className={`h-full w-full object-cover ${previewIndex === index ? 'ring-2 ring-blue-500' : ''}`} /><button type="button" onClick={e => { e.stopPropagation(); removeAlbumPhoto(index); }} className="absolute right-1 top-1 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-black/80 text-white hover:bg-red-600"><X size={13} /></button>{index === 0 && <span className="absolute bottom-1 left-1 z-20 rounded bg-blue-600 px-1.5 py-1 text-[7px] font-black uppercase">Cover</span>}<button type="button" onClick={e => { e.stopPropagation(); makeCover(index); }} className={`absolute bottom-1 right-1 z-20 rounded bg-black/70 px-1.5 py-1 text-[7px] font-black uppercase text-white ${index === 0 ? 'hidden' : 'opacity-0 group-hover:opacity-100'}`}>Cover</button></div>)}
+                          <button type="button" onClick={() => fileInputRef.current?.click()} className="flex h-20 w-20 shrink-0 flex-col items-center justify-center rounded-xl border border-dashed border-white/15 bg-white/[0.02] text-[8px] font-black uppercase text-zinc-400 hover:border-blue-500 hover:text-blue-400 sm:h-24 sm:w-24"><Plus size={22} /><span className="mt-1">Tambah Foto</span></button>
+                        </div>}
+                      </> : <>
+                        <div className="mb-3 grid grid-cols-2 gap-2 rounded-xl border border-white/10 bg-[#07101d] p-1"><button type="button" onClick={() => setFormData(p => ({ ...p, type: 'image', url: joinMediaUrls(albumUrls) }))} className="flex h-10 items-center justify-center gap-2 rounded-lg text-xs font-black text-zinc-400 hover:bg-white/5 hover:text-white"><ImageIcon size={15} /> Foto</button><button type="button" className="flex h-10 items-center justify-center gap-2 rounded-lg bg-blue-600 text-xs font-black text-white"><Video size={15} /> Video</button></div>
+                        <div className="mb-3 grid grid-cols-2 gap-2 rounded-xl bg-white/[0.03] p-1"><button type="button" onClick={() => setVideoInputMethod('file')} className={`flex h-9 items-center justify-center gap-2 rounded-lg text-[10px] font-black uppercase ${videoInputMethod === 'file' ? 'bg-white/10 text-white' : 'text-zinc-500'}`}><Upload size={13} /> Upload File</button><button type="button" onClick={() => setVideoInputMethod('link')} className={`flex h-9 items-center justify-center gap-2 rounded-lg text-[10px] font-black uppercase ${videoInputMethod === 'link' ? 'bg-white/10 text-white' : 'text-zinc-500'}`}><LinkIcon size={13} /> Link YouTube</button></div>
+
+                        {videoInputMethod === 'file' ? <>
+                          <div onDragOver={e => { e.preventDefault(); if (!isUploading) setDragActive(true); }} onDragLeave={() => setDragActive(false)} onDrop={handleDrop} onClick={() => !isUploading && fileInputRef.current?.click()} className={`flex min-h-[155px] w-full cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-4 py-7 text-center transition sm:min-h-[170px] ${dragActive ? 'border-blue-400 bg-blue-500/10' : 'border-blue-500/60 bg-blue-500/[0.03] hover:bg-blue-500/[0.07]'} ${isUploading ? 'pointer-events-none opacity-60' : ''}`}>
+                            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600/10 text-blue-500"><Video size={28} /></div>
+                            <p className="text-sm font-black uppercase">Pilih atau seret & lepas video</p>
+                            <p className="mt-1 text-xs text-zinc-400">MP4, MOV, WEBM · Maksimal 15MB</p>
+                          </div>
+                          <input ref={fileInputRef} type="file" accept="video/mp4,video/webm,video/quicktime" className="hidden" onChange={handleFileInput} />
+                        </> : <div><div className="relative"><LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={16} /><input value={formData.url} onChange={e => setFormData(p => ({ ...p, url: e.target.value, is_local: false }))} className="h-12 w-full rounded-xl border border-white/10 bg-[#08111f] pl-10 pr-4 text-sm outline-none focus:border-blue-500" placeholder="https://www.youtube.com/watch?v=..." /></div><p className="mt-2 text-[10px] text-zinc-600">Link YouTube akan otomatis diubah menjadi embed saat disimpan.</p></div>}
+
+                        {formData.type === 'video' && formData.url && videoInputMethod === 'file' && <div className="mt-3 overflow-hidden rounded-xl border border-white/10 bg-black"><video src={formData.url} controls className="max-h-56 w-full object-contain" /></div>}
+                      </>}
+                    </section>
+                  </section>
+
+                  <aside className="min-w-0 lg:sticky lg:top-0 lg:self-start">
+                    <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#07101d]">
+                      <div className="border-b border-white/10 px-4 py-4 sm:px-5"><p className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Preview Landing Page</p><p className="mt-1 text-sm font-black">Foto pertama = cover aktivitas</p></div>
+                      <div className="p-4 sm:p-5">
+                        {formData.type === 'image' ? <div className="overflow-hidden rounded-2xl border border-white/10 bg-black">
+                          <div className="relative aspect-[16/10] w-full bg-[#0d1729]">{currentPreview ? <img src={currentPreview} alt="Preview" className="h-full w-full object-cover" /> : <div className="flex h-full w-full flex-col items-center justify-center text-zinc-600"><ImageIcon size={44} /><span className="mt-2 text-[10px] font-black uppercase tracking-widest">Preview akan tampil di sini</span></div>}{currentPreview && <div className="absolute bottom-3 left-3 rounded-full bg-blue-600 px-3 py-1.5 text-[9px] font-black uppercase">{formData.category}</div>}{previewCount > 0 && <div className="absolute bottom-3 right-3 flex items-center gap-1 rounded-full bg-black/75 px-3 py-1.5 text-[9px] font-black"><ImageIcon size={12} /> {previewCount} foto</div>}</div>
+                          <div className="p-4 sm:p-5"><h3 className="line-clamp-2 text-lg font-black leading-tight">{formData.title || 'Judul aktivitas Anda'}</h3><p className="mt-2 line-clamp-3 text-xs leading-relaxed text-zinc-400">{formData.description || 'Keterangan aktivitas akan tampil di halaman utama setelah album disimpan.'}</p><div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[9px] font-bold uppercase tracking-wide text-zinc-500"><span className="flex items-center gap-1.5"><ImageIcon size={13} /> Foto / Album</span><span className="flex items-center gap-1.5"><CalendarDays size={13} /> {new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}</span></div></div>
+                        </div> : <div className="overflow-hidden rounded-2xl border border-white/10 bg-black"><div className="aspect-video w-full bg-black">{formData.url && videoInputMethod === 'link' && getYouTubeID(formData.url) ? <iframe title="Preview video" src={processVideoUrl(formData.url)} className="h-full w-full" allowFullScreen /> : formData.url ? <video src={formData.url} controls className="h-full w-full object-contain" /> : <div className="flex h-full w-full flex-col items-center justify-center text-zinc-600"><PlayCircle size={46} /><span className="mt-2 text-[10px] font-black uppercase tracking-widest">Preview video akan tampil di sini</span></div>}</div><div className="p-4 sm:p-5"><h3 className="line-clamp-2 text-lg font-black">{formData.title || 'Judul video Anda'}</h3><p className="mt-2 line-clamp-3 text-xs text-zinc-400">{formData.description || 'Keterangan video akan tampil di halaman utama.'}</p></div></div>}
+
+                        <div className="mt-4 flex gap-3 rounded-xl border border-blue-500/20 bg-blue-500/[0.04] p-3 text-[10px] leading-relaxed text-zinc-400"><Info size={16} className="mt-0.5 shrink-0 text-blue-400" /><span>{formData.type === 'image' ? 'Foto pertama digunakan sebagai cover aktivitas. Anda dapat mengubah cover dengan tombol Cover pada thumbnail.' : 'Video dapat berasal dari file lokal atau link YouTube. Pastikan media sudah ter-upload/terhubung sebelum menyimpan.'}</span></div>
+                      </div>
+                    </div>
+                  </aside>
+                </div>
+              </div>
+
+              <footer className="shrink-0 border-t border-white/10 bg-[#0b1424] p-3 sm:px-6 sm:py-4 md:px-7">
+                <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <button type="button" onClick={closeModal} disabled={isUploading} className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-6 text-xs font-black uppercase text-zinc-300 hover:bg-white/10 disabled:opacity-40 sm:w-auto"><X size={16} /> Batal</button>
+                  <button type="submit" disabled={isUploading} className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-7 text-xs font-black uppercase text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"><Send size={16} /> {isUploading ? 'Memproses...' : editingId ? 'Simpan Perubahan' : 'Simpan Album'}</button>
+                </div>
+                <div className="mt-3 hidden items-center gap-2 rounded-xl bg-white/[0.025] px-4 py-2 text-[9px] text-zinc-500 sm:flex"><Info size={14} className="shrink-0 text-blue-400" /> Tips: Pilih banyak foto sekaligus. Foto akan dikompresi otomatis agar ukuran lebih ringan tanpa mengganggu kualitas secara signifikan.</div>
+              </footer>
+            </form>
+          </div>
         </div>
-        <div className="rounded-3xl bg-black/20 border border-white/5 p-4 sm:p-5 min-h-[300px]"><div className="flex items-center justify-between mb-4"><div><p className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Preview Landing Page</p><p className="text-xs font-bold text-white mt-1">Foto pertama = cover aktivitas</p></div>{formData.type==='image'&&albumUrls.length>1&&<div className="text-[9px] font-black text-zinc-500">{previewIndex+1}/{albumUrls.length}</div>}</div>{formData.type==='image'&&currentPreview?<div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-black"><img src={currentPreview} alt="Preview" className="w-full h-full object-contain"/>{albumUrls.length>1&&<><button type="button" onClick={()=>setPreviewIndex(i=>(i-1+albumUrls.length)%albumUrls.length)} className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/70"><ChevronLeft size={18}/></button><button type="button" onClick={()=>setPreviewIndex(i=>(i+1)%albumUrls.length)} className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/70"><ChevronRight size={18}/></button></>}</div>:formData.type==='video'&&formData.url?<div className="aspect-video rounded-2xl overflow-hidden bg-black flex items-center justify-center"><PlayCircle size={60} className="text-blue-500"/></div>:<div className="h-full min-h-[280px] flex flex-col items-center justify-center text-zinc-600"><ImageIcon size={46}/><p className="mt-3 text-[10px] font-black uppercase">Preview akan tampil di sini</p></div>}{formData.type==='image'&&albumUrls.length>1&&<div className="grid grid-cols-6 gap-1.5 mt-3">{albumUrls.map((url,i)=><button type="button" key={`${url}-thumb-${i}`} onClick={()=>setPreviewIndex(i)} className={`aspect-square rounded-lg overflow-hidden border-2 ${i===previewIndex?'border-blue-500':'border-transparent'}`}><img src={url} alt="thumb" className="w-full h-full object-cover"/></button>)}</div>}</div></div>
-        <div className="flex flex-col-reverse sm:flex-row gap-3 p-5 sm:p-7 border-t border-white/10"><button type="button" onClick={closeModal} className="flex-1 py-4 rounded-xl bg-white/5 text-xs font-black uppercase">Batal</button><button type="submit" disabled={isUploading} className="flex-1 py-4 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-xs font-black uppercase flex items-center justify-center gap-2">{isUploading?<Loader2 className="animate-spin" size={16}/>:<CheckCircle2 size={16}/>} {editingId?'Simpan Perubahan':'Publikasikan Album'}</button></div>
-      </form></div></div>}
+      )}
     </div>
   );
 }
