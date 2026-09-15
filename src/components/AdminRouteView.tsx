@@ -56,6 +56,7 @@ import AdminKelolaTurnamen from './AdminKelolaTurnamen';
 import AdminPusatTurnamen from './AdminPusatTurnamen';
 import AdminKeuanganTurnamen from './AdminKeuanganTurnamen';
 import AdminSponsorship from './AdminSponsorship';
+import AdminKategoriPertandingan from './AdminKategoriPertandingan';
 
 type Props = { session: any };
 
@@ -91,6 +92,10 @@ export default function AdminRouteView({ session }: Props) {
     case 'peserta-turnamen':
     case 'peserta-diterima':
       return adminOnly(AdminPendaftaranTurnamenModernV2);
+    case 'kategori-pertandingan':
+    case 'kategori-turnamen':
+    case 'atur-kategori-pertandingan':
+      return adminOnly(AdminKategoriPertandingan);
     case 'seeded':
     case 'seeded-peserta':
     case 'seeded-turnamen':
