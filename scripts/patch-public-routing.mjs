@@ -45,6 +45,25 @@ patchFile(app, [
       /(\s*\{\(activeView === 'berita' \|\| activeView === 'news'\) && <News \/>\})/,
       `$1\n                    {(activeView === 'prestasi') && <PublicPrestasi />}\n                    {(activeView === 'program') && <PublicProgram onNavigate={(path) => handleNavigate(path)} />}`
     )
+  },
+  {
+    label: 'import active tournament gate',
+    test: code => !code.includes("import PublicTournamentGate from './components/PublicTournamentGate';"),
+    replace: code => code.replace(
+      "import Navbar from './components/Navbar';",
+      "import Navbar from './components/Navbar';\nimport PublicTournamentGate from './components/PublicTournamentGate';"
+    )
+  },
+  {
+    label: 'gate public tournament views',
+    test: code => !code.includes('<PublicTournamentGate>'),
+    replace: code => code
+      .replace(/return <PublicPesertaTurnamen\/>;/g, 'return <PublicTournamentGate><PublicPesertaTurnamen /></PublicTournamentGate>;')
+      .replace(/return <PublicSponsorship\/>;/g, 'return <PublicTournamentGate><PublicSponsorship /></PublicTournamentGate>;')
+      .replace(/<Route path="\/pendaftaran-turnamen" element={<Suspense fallback={<ViewFallback\/>}><PendaftaranTurnamen\/><\/Suspense>}\/>/g, '<Route path="/pendaftaran-turnamen" element={<Suspense fallback={<ViewFallback />}><PublicTournamentGate><PendaftaranTurnamen /></PublicTournamentGate></Suspense>} />')
+      .replace(/<Route path="\/pendaftaran\/seeded-peserta" element={<Suspense fallback={<ViewFallback\/>}><PublicSeededPeserta\/><\/Suspense>}\/>/g, '<Route path="/pendaftaran/seeded-peserta" element={<Suspense fallback={<ViewFallback />}><PublicTournamentGate><PublicSeededPeserta /></PublicTournamentGate></Suspense>} />')
+      .replace(/<Route path="\/pendaftaran\/peserta-diterima" element={<Suspense fallback={<ViewFallback\/>}><PublicPesertaTurnamen\/><\/Suspense>}\/>/g, '<Route path="/pendaftaran/peserta-diterima" element={<Suspense fallback={<ViewFallback />}><PublicTournamentGate><PublicPesertaTurnamen /></PublicTournamentGate></Suspense>} />')
+      .replace(/<Route path="\/sponsorship" element={<Suspense fallback={<ViewFallback\/>}><PublicSponsorship\/><\/Suspense>}\/>/g, '<Route path="/sponsorship" element={<Suspense fallback={<ViewFallback />}><PublicTournamentGate><PublicSponsorship /></PublicTournamentGate></Suspense>} />')
   }
 ]);
 
@@ -69,4 +88,18 @@ patchFile(navbar, [
   }
 ]);
 
-console.log('[patch-public-routing] Public routing patch completed safely.');
+const publicParticipants = 'src/components/PublicPesertaTurnamen.tsx';
+patchFile(publicParticipants, [
+  {
+    label: 'filter accepted participants to active tournament',
+    test: code => !code.includes('__PB_ACTIVE_TOURNAMENT_FILTER__'),
+    replace: code => {
+      const needle = "        const all: Registration[] = [];\n        for (let from = 0; ; from += 1000) {\n          const { data, error: e } = await supabase\n            .from('pendaftaran_turnamen')\n            .select('*')\n            .order('created_at', { ascending: true })\n            .range(from, from + 999);";
+      const replacement = "        // __PB_ACTIVE_TOURNAMENT_FILTER__\n        const { data: activeTournament, error: activeTournamentError } = await supabase\n          .from('seeded_tournaments')\n          .select('id')\n          .eq('is_active', true)\n          .order('event_start', { ascending: false, nullsFirst: false })\n          .limit(1)\n          .maybeSingle();\n        if (activeTournamentError) throw activeTournamentError;\n        if (!activeTournament?.id) {\n          if (mountedRef.current) setRows([]);\n          return;\n        }\n        const all: Registration[] = [];\n        for (let from = 0; ; from += 1000) {\n          const { data, error: e } = await supabase\n            .from('pendaftaran_turnamen')\n            .select('*')\n            .eq('tournament_id', activeTournament.id)\n            .order('created_at', { ascending: true })\n            .range(from, from + 999);";
+      if (!code.includes(needle)) return code;
+      return code.replace(needle, replacement);
+    }
+  }
+]);
+
+console.log('[patch-public-routing] Public routing and active-tournament visibility patch completed safely.');
