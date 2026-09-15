@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { CalendarOff, RefreshCw, Trophy } from 'lucide-react';
+import { CalendarOff, RefreshCw, Trophy, Home } from 'lucide-react';
 import { supabase } from '../supabase';
 
 type ActiveTournament = {
@@ -18,6 +18,13 @@ export default function PublicTournamentGate({ children }: { children: React.Rea
   const [tournament, setTournament] = useState<ActiveTournament | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  const goHome = useCallback(() => {
+    try {
+      window.dispatchEvent(new CustomEvent('pb-navigate-home'));
+    } catch { }
+    window.location.assign('/');
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -57,7 +64,17 @@ export default function PublicTournamentGate({ children }: { children: React.Rea
   if (loading) return <main className="min-h-[60vh] flex items-center justify-center bg-[#050b17] px-4 text-slate-300"><div className="flex items-center gap-2 text-xs font-bold"><RefreshCw size={15} className="animate-spin text-blue-400"/> Memeriksa event turnamen...</div></main>;
 
   if (!tournament) return (
-    <main className="min-h-[65vh] w-full bg-[#050b17] px-4 py-12 text-white sm:px-6 sm:py-20">
+    <main className="relative min-h-[65vh] w-full bg-[#050b17] px-4 py-12 text-white sm:px-6 sm:py-20">
+      <button
+        type="button"
+        onClick={goHome}
+        aria-label="Kembali ke Beranda"
+        title="Beranda"
+        className="absolute left-4 top-4 z-20 inline-flex h-11 w-11 items-center justify-center rounded-xl border border-blue-400/30 bg-slate-900/90 text-blue-300 shadow-lg backdrop-blur-md transition-all hover:border-blue-300 hover:bg-blue-500/15 hover:text-white active:scale-95 sm:left-6 sm:top-6"
+      >
+        <Home size={21} strokeWidth={2.5} />
+      </button>
+
       <div className="mx-auto max-w-3xl rounded-3xl border border-blue-400/20 bg-gradient-to-br from-[#0b1730] via-[#0a1429] to-[#050914] p-7 text-center shadow-2xl sm:p-12">
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-blue-400/20 bg-blue-500/10 text-blue-300"><CalendarOff size={30}/></div>
         <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-amber-400/20 bg-amber-400/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-amber-300"><Trophy size={14}/> Informasi Turnamen</div>
