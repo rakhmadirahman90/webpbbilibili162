@@ -64,23 +64,27 @@ export default function PublicTournamentGate({ children }: { children: React.Rea
   if (loading) return <main className="min-h-[60vh] flex items-center justify-center bg-[#050b17] px-4 text-slate-300"><div className="flex items-center gap-2 text-xs font-bold"><RefreshCw size={15} className="animate-spin text-blue-400"/> Memeriksa event turnamen...</div></main>;
 
   if (!tournament) return (
-    <main className="relative min-h-[65vh] w-full bg-[#050b17] px-4 py-12 text-white sm:px-6 sm:py-20">
-      <button
-        type="button"
-        onClick={goHome}
-        aria-label="Kembali ke Beranda"
-        title="Beranda"
-        className="absolute left-4 top-4 z-20 inline-flex h-11 w-11 items-center justify-center rounded-xl border border-blue-400/30 bg-slate-900/90 text-blue-300 shadow-lg backdrop-blur-md transition-all hover:border-blue-300 hover:bg-blue-500/15 hover:text-white active:scale-95 sm:left-6 sm:top-6"
-      >
-        <Home size={21} strokeWidth={2.5} />
-      </button>
+    <main className="min-h-[65vh] w-full bg-[#050b17] px-4 py-8 text-white sm:px-6 sm:py-12">
+      <div className="mx-auto w-full max-w-3xl">
+        <div className="mb-5 flex w-full items-center justify-start">
+          <button
+            type="button"
+            onClick={goHome}
+            aria-label="Kembali ke Beranda"
+            title="Beranda"
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-blue-400/30 bg-slate-900/95 text-blue-300 shadow-md backdrop-blur-md transition-all hover:border-blue-300 hover:bg-blue-500/15 hover:text-white active:scale-95 sm:h-11 sm:w-11"
+          >
+            <Home size={20} strokeWidth={2.5} />
+          </button>
+        </div>
 
-      <div className="mx-auto max-w-3xl rounded-3xl border border-blue-400/20 bg-gradient-to-br from-[#0b1730] via-[#0a1429] to-[#050914] p-7 text-center shadow-2xl sm:p-12">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-blue-400/20 bg-blue-500/10 text-blue-300"><CalendarOff size={30}/></div>
-        <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-amber-400/20 bg-amber-400/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-amber-300"><Trophy size={14}/> Informasi Turnamen</div>
-        <h1 className="mt-4 text-2xl font-black uppercase tracking-tight sm:text-4xl">Belum Ada Event yang Berlangsung</h1>
-        <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-slate-400">Saat ini belum ada event turnamen yang sedang berlangsung. Data turnamen akan ditampilkan kembali setelah admin mengaktifkan event berikutnya.</p>
-        {error && <p className="mt-4 text-[10px] text-slate-600">Status event sementara tidak tersedia.</p>}
+        <div className="w-full rounded-3xl border border-blue-400/20 bg-gradient-to-br from-[#0b1730] via-[#0a1429] to-[#050914] p-7 text-center shadow-2xl sm:p-12">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-blue-400/20 bg-blue-500/10 text-blue-300"><CalendarOff size={30}/></div>
+          <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-amber-400/20 bg-amber-400/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-amber-300"><Trophy size={14}/> Informasi Turnamen</div>
+          <h1 className="mt-4 text-2xl font-black uppercase tracking-tight sm:text-4xl">Belum Ada Event yang Berlangsung</h1>
+          <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-slate-400">Saat ini belum ada event turnamen yang sedang berlangsung. Data turnamen akan ditampilkan kembali setelah admin mengaktifkan event berikutnya.</p>
+          {error && <p className="mt-4 text-[10px] text-slate-600">Status event sementara tidak tersedia.</p>}
+        </div>
       </div>
     </main>
   );
