@@ -56,8 +56,11 @@ src = src.slice(0, start) + replacement + src.slice(end);
 
 const preloadOld = `                                  : effective === 'pendaftaran-turnamen'\n                                    ? '/pendaftaran-turnamen'\n                                    : null;`;
 const preloadNew = `                                  : (effective === 'pendaftaran-turnamen' || effective === 'pendaftaran/seeded-peserta' || effective === 'pendaftaran/peserta-diterima' || effective === 'sponsorship')\n                                    ? (effective === 'sponsorship' ? '/sponsorship' : effective === 'pendaftaran/seeded-peserta' ? '/pendaftaran/seeded-peserta' : effective === 'pendaftaran/peserta-diterima' ? '/pendaftaran/peserta-diterima' : '/pendaftaran-turnamen')\n                                    : null;`;
-if (src.includes(preloadOld)) src = src.replace(preloadOld, preloadNew);
-else if (!src.includes("effective === 'sponsorship' ? '/sponsorship'")) throw new Error('[patch-navbar-tournament-submenus] preload mapping not found');
+if (src.includes(preloadOld)) {
+  src = src.replace(preloadOld, preloadNew);
+} else if (!src.includes("effective === 'sponsorship'") || !src.includes("'/sponsorship'")) {
+  throw new Error('[patch-navbar-tournament-submenus] preload mapping not found');
+}
 
 fs.writeFileSync(path, src, 'utf8');
 console.log('[patch-navbar-tournament-submenus] applied deterministic tournament submenu: Form + Seeded + Diterima + Sponsorship');
