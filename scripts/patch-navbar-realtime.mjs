@@ -65,4 +65,29 @@ if (players.includes(legacyPlayersEffect)) {
 }
 
 fs.writeFileSync(playersFile, players, 'utf8');
+
+// Public Prestasi: keep each winner result full-width on phones and use a
+// portrait-safe photo frame. object-contain prevents faces from being cropped
+// when the uploaded source photo is landscape or has a different aspect ratio.
+const prestasiFile = path.resolve('src/components/PublicPrestasi.tsx');
+let prestasi = fs.readFileSync(prestasiFile, 'utf8');
+const legacyResultsGrid = '<div className="grid grid-cols-2 md:grid-cols-4 gap-3">';
+const fixedResultsGrid = '<div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-3">';
+if (prestasi.includes(legacyResultsGrid)) {
+  prestasi = prestasi.replace(legacyResultsGrid, fixedResultsGrid);
+  console.log('[patch-navbar-realtime] made public winner cards single-column on phones');
+} else if (prestasi.includes('grid-cols-1 sm:grid-cols-2 xl:grid-cols-4')) {
+  console.log('[patch-navbar-realtime] public winner grid already responsive');
+}
+
+const legacyPhoto = 'className="w-full h-full object-cover" loading="lazy"';
+const fixedPhoto = 'className="w-full h-full object-contain bg-black" loading="lazy"';
+if (prestasi.includes(legacyPhoto)) {
+  prestasi = prestasi.replace(legacyPhoto, fixedPhoto);
+  console.log('[patch-navbar-realtime] changed public winner photos to portrait-safe contain mode');
+} else if (prestasi.includes('object-contain bg-black')) {
+  console.log('[patch-navbar-realtime] public winner photos already use contain mode');
+}
+
+fs.writeFileSync(prestasiFile, prestasi, 'utf8');
 console.log('[patch-navbar-realtime] athlete desktop/mobile submenu navigation is canonical');
