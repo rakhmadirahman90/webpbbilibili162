@@ -19,6 +19,26 @@ if (!prestasi.includes(prestasiMarker)) {
   console.log('[patch-public-accepted-photo-refresh-v3] fixed Prestasi accepted-registration photo query');
 }
 
+// Prestasi is now dedicated to the BILIBILI 162 CUP I champions section.
+// Remove the old generic achievement cards (the section showing "Tingkat", medal
+// totals, and legacy sample achievements) so they cannot appear below the tournament results.
+let prestasiClean = fs.readFileSync(prestasiPath, 'utf8');
+const legacyCardsMarker = '/* __PUBLIC_PRESTASI_LEGACY_CARDS_REMOVED_V1__ */';
+if (!prestasiClean.includes(legacyCardsMarker)) {
+  const legacyStartNeedle = '\n        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">';
+  const legacyStart = prestasiClean.indexOf(legacyStartNeedle);
+  const legacyEndNeedle = '\n      </div>\n    </section>';
+  const legacyEnd = legacyStart >= 0 ? prestasiClean.indexOf(legacyEndNeedle, legacyStart) : -1;
+
+  if (legacyStart >= 0 && legacyEnd >= 0) {
+    prestasiClean = prestasiClean.slice(0, legacyStart) + `\n        ${legacyCardsMarker}\n` + prestasiClean.slice(legacyEnd);
+    fs.writeFileSync(prestasiPath, prestasiClean, 'utf8');
+    console.log('[patch-public-accepted-photo-refresh-v3] removed legacy Prestasi achievement cards');
+  } else {
+    console.log('[patch-public-accepted-photo-refresh-v3] legacy Prestasi cards not found; no removal needed');
+  }
+}
+
 const path = 'src/components/PublicPesertaTurnamen.tsx';
 let src = fs.readFileSync(path, 'utf8');
 const marker = '/* __PUBLIC_ACCEPTED_PHOTO_REFRESH_V3__ */';
