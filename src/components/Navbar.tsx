@@ -57,9 +57,6 @@ const ensureCanonicalNavigation = (items: any[]) => {
   }
   const hasHome = result.some(i => isTopLevelMenuItem(i) && normalizeNavigationPath(i.path) === 'home');
   if (!hasHome) result.unshift(DEFAULT_NAV_ITEMS[0]);
-  // Sponsorship is intentionally kept only where the admin configured it.
-  // The landing top-level "Daftar Sponsor" is temporarily disabled.
-  // This preserves the "Daftar Sponsorship" item under "Pendaftaran Peserta".
   return result.sort((a, b) => (Number(a.order_index) || 0) - (Number(b.order_index) || 0));
 };
 
@@ -275,7 +272,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
         <div className="hidden lg:flex items-center gap-4 xl:gap-6 ml-auto min-w-0">
           {topMenus.map(menu => { const subs = getSubMenus(menu.id); const drop = menu.type === 'dropdown' || subs.length > 0; return <div key={menu.id} className="relative" onMouseEnter={() => drop && setOpenMenu(menu.id)} onMouseLeave={() => drop && setOpenMenu(null)}>
             <button type="button" onPointerDown={() => handleNavigationPointerDown(menu.path)} onClick={() => !drop && go(menu.path)} className="h-16 flex items-center gap-1.5 text-[11px] xl:text-xs font-bold uppercase tracking-wide text-slate-300 hover:text-white transition-colors whitespace-nowrap">{menu.path === 'home' || menu.path === 'beranda' ? <Home size={14} className="text-blue-400" /> : null}{menu.label}{drop && <ChevronDown size={12} className={openMenu === menu.id ? 'rotate-180' : ''} />}</button>
-            {drop && openMenu === menu.id && <div className="absolute top-full left-0 w-64 pt-2"><div className="rounded-xl border border-white/10 bg-slate-900/98 shadow-2xl overflow-hidden">{subs.map(sub => <button key={sub.id} type="button" onPointerDown={() => handleNavigationPointerDown(menu.path, sub.path)} onClick={() => go(menu.path, sub.path)} className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-slate-300 hover:bg-blue-500/10 hover:text-white">{iconFor(sub.path, sub.label)}<span>{sub.label}</span></button>)}</div></div>}
+            {drop && openMenu === menu.id && <div className="absolute top-full left-0 w-64 pt-2"><div className="rounded-xl border border-white/10 bg-slate-900/98 shadow-2xl overflow-hidden">{subs.map(sub => { const isChampionMenu = String(sub.id || '') === 'peserta-juara' || String(sub.label || '').trim().toLowerCase() === 'daftar peserta juara'; const subTarget = isChampionMenu ? 'prestasi' : sub.path; return <button key={sub.id} type="button" onPointerDown={() => handleNavigationPointerDown(menu.path, subTarget)} onClick={() => go(menu.path, subTarget)} className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-slate-300 hover:bg-blue-500/10 hover:text-white">{iconFor(sub.path, sub.label)}<span>{sub.label}</span></button>; })}</div></div>}
           </div>})}
           {session ? <><button type="button" onClick={() => navigate('/admin/dashboard')} className="px-3 py-2 rounded-full bg-emerald-600 text-white text-[10px] font-bold uppercase"><LayoutDashboard size={13} className="inline mr-1" />Dashboard</button><button type="button" onClick={logout} className="p-2 rounded-full bg-red-500/10 text-red-300"><LogOut size={15}/></button></> : <button type="button" onClick={() => navigate('/login')} className="px-3 py-2 rounded-full bg-blue-600 text-white text-[10px] font-bold uppercase"><LogIn size={13} className="inline mr-1"/>Login</button>}
         </div>
@@ -299,9 +296,9 @@ export default function Navbar({ onNavigate }: NavbarProps) {
                   {drop && <ChevronDown size={15} className={`shrink-0 transition-transform pointer-events-none ${expanded ? 'rotate-180 text-blue-400' : 'text-slate-500'}`}/>} 
                 </button>
                 {drop && expanded && <div className="ml-4 pl-3 border-l border-blue-500/40 py-0.5 my-0.5">
-                  {subs.map(sub => <button key={sub.id} type="button" onClick={(e) => handleMobileMenuClick(e, menu.path, sub.path)} className="w-full min-h-[44px] px-2.5 flex items-center gap-2.5 text-left text-[13px] leading-5 text-slate-300 hover:text-white hover:bg-white/5 active:bg-white/10 rounded-lg touch-manipulation select-none">
+                  {subs.map(sub => { const isChampionMenu = String(sub.id || '') === 'peserta-juara' || String(sub.label || '').trim().toLowerCase() === 'daftar peserta juara'; const subTarget = isChampionMenu ? 'prestasi' : sub.path; return <button key={sub.id} type="button" onPointerDown={() => handleNavigationPointerDown(menu.path, subTarget)} onClick={(e) => handleMobileMenuClick(e, menu.path, subTarget)} className="w-full min-h-[44px] px-2.5 flex items-center gap-2.5 text-left text-[13px] leading-5 text-slate-300 hover:text-white hover:bg-white/5 active:bg-white/10 rounded-lg touch-manipulation select-none">
                     <span className="w-5 min-w-5 flex justify-center pointer-events-none">{iconFor(sub.path, sub.label)}</span><span className="truncate pointer-events-none">{sub.label}</span>
-                  </button>)}
+                  </button>; })}
                 </div>}
               </div>;
             })}
