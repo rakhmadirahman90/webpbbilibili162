@@ -13,10 +13,7 @@
   order: 1;
 }
 
-/*
- * Photo correction for AJP winners.
- * Keep the public player names fixed while swapping the two photos again.
- */
+/* Photo correction for AJP winners. Keep the public player names fixed. */
 #prestasi .prestasi-events > .prestasi-event-card:nth-child(2) .prestasi-results > .prestasi-result-card:nth-child(2) .prestasi-player-grid > :first-child {
   order: 1;
 }
@@ -25,12 +22,13 @@
   order: 2;
 }
 
+/* Nugi–Saldi: photo kiri = Saldi, photo kanan = Nugi. */
 #prestasi .prestasi-events > .prestasi-event-card:nth-child(2) .prestasi-results > .prestasi-result-card:nth-child(3) .prestasi-player-grid > :first-child {
-  order: 1;
+  order: 2;
 }
 
 #prestasi .prestasi-events > .prestasi-event-card:nth-child(2) .prestasi-results > .prestasi-result-card:nth-child(3) .prestasi-player-grid > :last-child {
-  order: 2;
+  order: 1;
 }
 
 /* Keep requested public names fixed to the visual positions. */
