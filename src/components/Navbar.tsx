@@ -240,7 +240,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
     try { navigate(target); } catch { window.location.assign(target); }
   };
 
-  const handleNavigationPointerDown = (path: string, subPath?: string) => { preloadNavigation(path, subPath); };
+  const handleNavigationPointerDown = (path: string, subPath?: string) => { if (normalizeNavigationPath(subPath || '') === 'prestasi') return; preloadNavigation(path, subPath); };
 
   const handleMobileMenuClick = (event: React.MouseEvent<HTMLButtonElement>, path: string, subPath?: string) => {
     event.preventDefault();
