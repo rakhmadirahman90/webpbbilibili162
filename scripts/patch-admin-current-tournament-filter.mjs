@@ -2,8 +2,17 @@ import fs from 'node:fs';
 
 const file = 'src/components/AdminPendaftaranTurnamenModernV2.tsx';
 let s = fs.readFileSync(file, 'utf8');
+
+const makeShowAll = () => {
+  s = s.replace("const [tournamentFilter, setTournamentFilter] = useState('current');", "const [tournamentFilter, setTournamentFilter] = useState('all');");
+  s = s.replaceAll("setPaymentStatus('Semua');setTournamentFilter('current')", "setPaymentStatus('Semua');setTournamentFilter('all')");
+  s = s.replace('Tampilan default difokuskan pada turnamen yang sedang diselenggarakan.', 'Tampilkan seluruh data pendaftaran peserta dari database. Filter turnamen dapat digunakan bila diperlukan.');
+};
+
 if (s.includes('ADMIN_CURRENT_TOURNAMENT_FILTER_V1')) {
-  console.log('[patch-admin-current-tournament-filter] already applied');
+  makeShowAll();
+  fs.writeFileSync(file, s, 'utf8');
+  console.log('[patch-admin-current-tournament-filter] already applied; default changed to all');
   process.exit(0);
 }
 
@@ -47,5 +56,6 @@ const headerReplace = "<p className=\"mt-2 max-w-3xl text-xs leading-5 text-slat
 if (!s.includes(headerNeedle)) throw new Error('header text not found');
 s = s.replace(headerNeedle, headerReplace);
 
-fs.writeFileSync(file, s);
-console.log('[patch-admin-current-tournament-filter] applied');
+makeShowAll();
+fs.writeFileSync(file, s, 'utf8');
+console.log('[patch-admin-current-tournament-filter] applied with all-data default');
