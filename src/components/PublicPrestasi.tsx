@@ -172,52 +172,52 @@ export default function PublicPrestasi() {
   return (
     <section id="prestasi" className="py-20 relative overflow-hidden">
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-3xl h-64 bg-yellow-500/10 rounded-full blur-[100px] pointer-events-none" />
-      <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
-        <div className="text-center max-w-4xl mx-auto mb-12">
-          <motion.div initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-yellow-500/10 border border-yellow-500/25 text-yellow-400 text-xs font-black uppercase tracking-widest mb-4"><Star size={14}/> Prestasi</motion.div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="text-center max-w-4xl mx-auto mb-8 md:mb-12">
+          <motion.div initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}} className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 rounded-full bg-yellow-500/10 border border-yellow-500/25 text-yellow-400 text-[10px] sm:text-xs font-black uppercase tracking-widest mb-4"><Star size={14}/> Prestasi</motion.div>
           <motion.h2 initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}} className="text-3xl md:text-4xl lg:text-5xl font-black text-white italic uppercase tracking-tighter mb-4">Apresiasi <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-amber-600">Juara</span></motion.h2>
-          <motion.p initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}} className="text-slate-400">Daftar juara BILIBILI 162 CUP I Tahun 2026 terintegrasi dengan data peserta diterima. Foto ditampilkan dari berkas pasangan yang diunggah saat pendaftaran.</motion.p>
+          <motion.p initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}} className="text-sm sm:text-base text-slate-400 leading-relaxed">Daftar juara BILIBILI 162 CUP I Tahun 2026 terintegrasi dengan data peserta diterima. Foto ditampilkan dari berkas pasangan yang diunggah saat pendaftaran.</motion.p>
         </div>
 
-        <div className="mb-12">
-          <div className="text-center mb-7">
-            <div className="inline-flex items-center gap-2 text-yellow-400 mb-2"><Crown size={21}/><span className="text-xl md:text-2xl font-black uppercase tracking-tight">Juara BILIBILI 162 CUP I Tahun 2026</span></div>
-            <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-slate-400 mt-2">
+        <div className="mb-10 md:mb-12">
+          <div className="text-center mb-5 md:mb-7">
+            <div className="inline-flex items-center gap-2 text-yellow-400 mb-2 max-w-full"><Crown size={19} className="shrink-0"/><span className="text-base sm:text-xl md:text-2xl font-black uppercase tracking-tight leading-tight">Juara BILIBILI 162 CUP I Tahun 2026</span></div>
+            <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-[10px] sm:text-xs text-slate-400 mt-2">
               <span className="inline-flex items-center gap-1.5"><CalendarDays size={14} className="text-yellow-400"/>08–12 September 2026</span>
               <span className="inline-flex items-center gap-1.5"><MapPin size={14} className="text-yellow-400"/>GOR Titik Kumpul Soreang, Parepare</span>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-7">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 md:gap-7">
             {championEvents.map((event, index) => (
-              <motion.article key={event.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: index * 0.08 }} className={`relative overflow-hidden rounded-3xl border p-5 md:p-6 shadow-2xl ${event.id.includes('ajatappareng') ? 'border-orange-500/30 bg-gradient-to-br from-orange-500/10 via-black/60 to-amber-500/5' : 'border-blue-500/30 bg-gradient-to-br from-blue-600/10 via-black/60 to-cyan-500/5'}`}>
+              <motion.article key={event.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: index * 0.08 }} className={`relative overflow-hidden rounded-3xl border p-4 sm:p-5 md:p-6 shadow-2xl ${event.id.includes('ajatappareng') ? 'border-orange-500/30 bg-gradient-to-br from-orange-500/10 via-black/60 to-amber-500/5' : 'border-blue-500/30 bg-gradient-to-br from-blue-600/10 via-black/60 to-cyan-500/5'}`}>
                 <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-yellow-500/10 blur-3xl pointer-events-none" />
-                <div className="relative z-10 flex items-center justify-between gap-4 mb-5">
-                  <div>
-                    <div className="text-[10px] font-black uppercase tracking-[0.22em] text-yellow-400 mb-1">BILIBILI 162 CUP I TAHUN 2026</div>
-                    <h4 className="text-xl md:text-2xl font-black text-white leading-tight">{event.category}</h4>
+                <div className="relative z-10 flex items-start sm:items-center justify-between gap-3 mb-5">
+                  <div className="min-w-0">
+                    <div className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.18em] sm:tracking-[0.22em] text-yellow-400 mb-1">BILIBILI 162 CUP I TAHUN 2026</div>
+                    <h4 className="text-lg sm:text-xl md:text-2xl font-black text-white leading-tight">{event.category}</h4>
                   </div>
-                  <Trophy size={30} className="text-yellow-400 shrink-0" />
+                  <Trophy size={28} className="text-yellow-400 shrink-0 mt-1" />
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
                   {event.results.map((result, resultIndex) => {
                     const Icon = result.icon;
                     const hasPhotos = Boolean(result.photo1 || result.photo2);
                     return (
                       <div key={`${event.id}-${result.rank}-${result.players}-${resultIndex}`} className={`rounded-2xl border overflow-hidden bg-black/45 ${result.rank === 'JUARA I' ? 'border-yellow-500/50' : result.rank === 'JUARA II' ? 'border-sky-400/30' : 'border-orange-500/30'}`}>
                         <div className="px-3 pt-3 text-center">
-                          <div className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-yellow-400"><Icon size={13}/>{result.rank}</div>
+                          <div className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-yellow-400"><Icon size={13}/>{result.rank}</div>
                         </div>
-                        <div className="grid grid-cols-2 gap-1.5 p-2">
+                        <div className="grid grid-cols-2 gap-2 p-2 sm:p-2.5">
                           {[result.photo1, result.photo2].map((photo, photoIndex) => (
-                            <div key={photoIndex} className="aspect-[3/4] rounded-xl overflow-hidden bg-slate-900 border border-white/10 flex items-center justify-center">
-                              {photo ? <img src={photo} alt={`${result.players} - pemain ${photoIndex + 1}`} className="w-full h-full object-cover" loading="lazy" /> : <div className="text-center px-1"><div className="text-2xl opacity-50">🏸</div><div className="text-[8px] text-slate-500 mt-1">{hasPhotos ? 'Foto tidak tersedia' : 'Memuat foto...'}</div></div>}
+                            <div key={photoIndex} className="aspect-[3/4] rounded-xl overflow-hidden bg-slate-950 border border-white/10 flex items-center justify-center">
+                              {photo ? <img src={photo} alt={`${result.players} - pemain ${photoIndex + 1}`} className="w-full h-full object-contain bg-slate-950 p-0.5" loading="lazy" /> : <div className="text-center px-1"><div className="text-2xl opacity-50">🏸</div><div className="text-[8px] text-slate-500 mt-1">{hasPhotos ? 'Foto tidak tersedia' : 'Memuat foto...'}</div></div>}
                             </div>
                           ))}
                         </div>
                         <div className="px-3 pb-4 text-center">
-                          <div className="text-sm md:text-base font-black text-white leading-tight">{result.players}</div>
+                          <div className="text-sm sm:text-base font-black text-white leading-tight">{result.players}</div>
                           <div className="mt-1 text-[10px] text-slate-300 leading-snug">{result.club}</div>
                           {result.sourceRowId && <div className="mt-2 text-[8px] uppercase tracking-wider text-emerald-400">✓ Data peserta diterima</div>}
                         </div>
@@ -225,15 +225,15 @@ export default function PublicPrestasi() {
                     );
                   })}
                 </div>
-                <div className="relative z-10 mt-5 pt-4 border-t border-white/10 flex flex-wrap items-center gap-2 text-xs text-slate-400"><Medal size={15} className="text-yellow-400" /> Foto & identitas pasangan disinkronkan dari data pendaftaran peserta diterima.</div>
+                <div className="relative z-10 mt-4 md:mt-5 pt-3 md:pt-4 border-t border-white/10 flex flex-wrap items-center gap-2 text-[10px] sm:text-xs text-slate-400"><Medal size={15} className="text-yellow-400 shrink-0" /> Foto & identitas pasangan disinkronkan dari data pendaftaran peserta diterima.</div>
               </motion.article>
             ))}
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
           {current.map((item, index) => (
-            <motion.div key={item.id ?? `${item.nama_kejuaraan}-${index}`} initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}} transition={{delay:index*.05}} className="bg-black/40 backdrop-blur-sm border border-white/10 rounded-3xl p-6 relative overflow-hidden group hover:border-yellow-500/30 transition-colors">
+            <motion.div key={item.id ?? `${item.nama_kejuaraan}-${index}`} initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}} transition={{delay:index*.05}} className="bg-black/40 backdrop-blur-sm border border-white/10 rounded-3xl p-5 sm:p-6 relative overflow-hidden group hover:border-yellow-500/30 transition-colors">
               <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-500/5 rounded-full blur-2xl" />
               <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-yellow-500/20 to-amber-500/10 flex flex-col items-center justify-center border border-yellow-500/20 mb-6"><Trophy size={20} className="text-yellow-500 mb-0.5"/><span className="text-[9px] font-black text-yellow-500 leading-none">{item.tahun}</span></div>
               <h3 className="text-xl font-bold text-white mb-1">{item.nama_kejuaraan}</h3>
