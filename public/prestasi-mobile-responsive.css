@@ -33,13 +33,13 @@
   order: 2;
 }
 
-/* Keep each player's public name fixed in its current position. */
+/* Keep requested public names fixed to the visual positions. */
 #prestasi .prestasi-events > .prestasi-event-card:nth-child(2) .prestasi-results > .prestasi-result-card:nth-child(2) .prestasi-player-grid > :first-child .prestasi-player-name {
   font-size: 0;
 }
 
 #prestasi .prestasi-events > .prestasi-event-card:nth-child(2) .prestasi-results > .prestasi-result-card:nth-child(2) .prestasi-player-grid > :first-child .prestasi-player-name::after {
-  content: "Ahmad Halim";
+  content: "Gusmulyadi";
   font-size: 11px;
 }
 
@@ -48,7 +48,7 @@
 }
 
 #prestasi .prestasi-events > .prestasi-event-card:nth-child(2) .prestasi-results > .prestasi-result-card:nth-child(2) .prestasi-player-grid > :last-child .prestasi-player-name::after {
-  content: "Gusmulyadi";
+  content: "Ahmad Halim";
   font-size: 11px;
 }
 
