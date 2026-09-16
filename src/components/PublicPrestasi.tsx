@@ -6,18 +6,23 @@ import { getSiteSetting } from '../utils/siteSettingsHelper';
 
 const PAGE_SIZE = 6;
 
-const BILIBILI_162_CUP_CHAMPIONS = [
+const BILIBILI_162_CUP_RESULTS = [
   {
-    id: 'bilibili-162-cup-cc-local-champion',
+    id: 'bilibili-162-cup-cc-local',
     category: 'Ganda Putra CC — Lokal Parepare',
-    champions: 'Tison & Kambo',
-    club: 'PB Sari Indah',
+    results: [
+      { rank: 'JUARA I', players: 'Tison & Kambo', club: 'PB Sari Indah', icon: Trophy },
+      { rank: 'JUARA II', players: 'Muslim & Sam', club: 'Rajawali 42', icon: Medal },
+      { rank: 'JUARA III BERSAMA', players: 'Denis & Yusuf', club: 'PB Bilibili 162', icon: Medal },
+      { rank: 'JUARA III BERSAMA', players: 'Ome & Ardi', club: 'Rajawali 42', icon: Medal },
+    ],
   },
   {
-    id: 'bilibili-162-cup-ajatappareng-champion',
+    id: 'bilibili-162-cup-ajatappareng',
     category: 'Ganda Putra AD/BC-/C+C — Ajatappareng',
-    champions: 'Andi M. Fahrul & Ichal Bin Tura',
-    club: 'Juara I Kategori Ajatappareng',
+    results: [
+      { rank: 'JUARA I', players: 'Andi M. Fahrul & Ichal Bin Tura', club: 'Juara I Kategori Ajatappareng', icon: Trophy },
+    ],
   },
 ];
 
@@ -85,35 +90,29 @@ export default function PublicPrestasi() {
             <Crown size={20} className="text-yellow-400" />
             <h3 className="text-xl md:text-2xl font-black text-white uppercase tracking-tight text-center">Juara BILIBILI 162 CUP I Tahun 2026</h3>
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {BILIBILI_162_CUP_CHAMPIONS.map((item, index) => (
-              <motion.article
-                key={item.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.08 }}
-                className="relative overflow-hidden rounded-3xl border border-yellow-500/25 bg-gradient-to-br from-yellow-500/10 via-black/50 to-amber-500/5 p-6 md:p-7 shadow-xl"
-              >
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            {BILIBILI_162_CUP_RESULTS.map((event, index) => (
+              <motion.article key={event.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: index * 0.08 }} className="relative overflow-hidden rounded-3xl border border-yellow-500/25 bg-gradient-to-br from-yellow-500/10 via-black/50 to-amber-500/5 p-6 md:p-7 shadow-xl">
                 <div className="absolute -right-10 -top-10 w-32 h-32 rounded-full bg-yellow-500/10 blur-2xl pointer-events-none" />
-                <div className="flex items-start gap-4">
-                  <div className="w-14 h-14 shrink-0 rounded-2xl bg-yellow-500/15 border border-yellow-500/30 flex items-center justify-center">
-                    <Trophy size={27} className="text-yellow-400" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-[10px] font-black uppercase tracking-widest text-yellow-400 mb-1">JUARA I</div>
-                    <h4 className="text-lg md:text-xl font-black text-white leading-tight">{item.category}</h4>
-                  </div>
+                <h4 className="text-lg md:text-xl font-black text-white leading-tight mb-5">{event.category}</h4>
+                <div className="space-y-3">
+                  {event.results.map((result, resultIndex) => {
+                    const Icon = result.icon;
+                    return (
+                      <div key={`${event.id}-${result.rank}-${result.players}-${resultIndex}`} className={`rounded-2xl border p-4 ${result.rank === 'JUARA I' ? 'border-yellow-500/30 bg-yellow-500/10' : result.rank === 'JUARA II' ? 'border-slate-400/20 bg-slate-400/5' : 'border-amber-600/20 bg-amber-600/5'}`}>
+                        <div className="flex items-start gap-3">
+                          <div className="w-10 h-10 shrink-0 rounded-xl bg-black/25 border border-white/10 flex items-center justify-center"><Icon size={19} className={result.rank === 'JUARA I' ? 'text-yellow-400' : result.rank === 'JUARA II' ? 'text-slate-300' : 'text-amber-500'} /></div>
+                          <div className="min-w-0 flex-1">
+                            <div className="text-[10px] font-black uppercase tracking-widest text-yellow-400 mb-1">{result.rank}</div>
+                            <div className="text-lg font-black text-white leading-tight">{result.players}</div>
+                            <div className="mt-1 text-sm text-slate-300">{result.club}</div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-                <div className="mt-6 rounded-2xl border border-yellow-500/15 bg-black/25 p-5">
-                  <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">Pasangan Juara</div>
-                  <div className="text-xl md:text-2xl font-black text-yellow-300 leading-tight">{item.champions}</div>
-                  <div className="mt-2 text-sm text-slate-300">{item.club}</div>
-                </div>
-                <div className="mt-4 flex items-center gap-2 text-xs text-slate-400">
-                  <Medal size={15} className="text-yellow-400" />
-                  BILIBILI 162 CUP I • 08–12 September 2026 • GOR Titik Kumpul Soreang
-                </div>
+                <div className="mt-4 flex items-center gap-2 text-xs text-slate-400"><Medal size={15} className="text-yellow-400" /> BILIBILI 162 CUP I • 08–12 September 2026 • GOR Titik Kumpul Soreang</div>
               </motion.article>
             ))}
           </div>
