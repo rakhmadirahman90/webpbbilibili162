@@ -4,10 +4,11 @@ import imageCompression from 'browser-image-compression';
  * PB Bilibili 162 media-storage policy.
  * Images are normalized to WebP. Videos are re-encoded only when they exceed
  * the gallery upload limit, with safe fallbacks for mobile browsers.
+ * Video storage/upload limit: 30 MB.
  */
 export const MEDIA_POLICY = {
   image: { maxSourceBytes: 60 * 1024 * 1024, maxBytes: 2 * 1024 * 1024, maxDimension: 2400, quality: 0.84 },
-  video: { maxSourceBytes: 250 * 1024 * 1024, maxBytes: 15 * 1024 * 1024, maxWidth: 1280, maxHeight: 720, videoBitsPerSecond: 1_400_000, lowVideoBitsPerSecond: 900_000, audioBitsPerSecond: 64_000, fps: 30 },
+  video: { maxSourceBytes: 250 * 1024 * 1024, maxBytes: 30 * 1024 * 1024, maxWidth: 1280, maxHeight: 720, videoBitsPerSecond: 1_400_000, lowVideoBitsPerSecond: 900_000, audioBitsPerSecond: 64_000, fps: 30 },
 } as const;
 
 const sleep = (ms: number) => new Promise<void>(resolve => window.setTimeout(resolve, ms));
@@ -147,7 +148,7 @@ export async function compressVideo(file: File): Promise<File> {
   if (!isVideoFile(file)) return file;
   if (file.size > MEDIA_POLICY.video.maxSourceBytes) throw new Error(`${file.name}: ukuran video sumber melebihi 250 MB.`);
 
-  // Critical mobile fix: videos already within the gallery limit must never
+  // Critical mobile fix: videos already within the 30 MB gallery limit must never
   // pass through MediaRecorder. This avoids zero-byte results on Android/iOS.
   if (file.size <= MEDIA_POLICY.video.maxBytes) return file;
 
@@ -162,7 +163,7 @@ export async function compressVideo(file: File): Promise<File> {
     console.warn('[media-compression] low bitrate video pass failed', error);
   }
 
-  throw new Error(`${file.name}: video lebih dari 15 MB dan tidak dapat dikompresi oleh browser ini. Silakan gunakan video di bawah 15 MB atau browser Chrome/Edge/Firefox terbaru.`);
+  throw new Error(`${file.name}: video lebih dari 30 MB dan tidak dapat dikompresi oleh browser ini. Silakan gunakan video di bawah 30 MB atau browser Chrome/Edge/Firefox terbaru.`);
 }
 
 export async function compressMediaFile(file: File): Promise<File> {
