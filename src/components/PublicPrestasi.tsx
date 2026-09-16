@@ -205,19 +205,35 @@ export default function PublicPrestasi() {
                     const Icon = result.icon;
                     const hasPhotos = Boolean(result.photo1 || result.photo2);
                     return (
-                      <div key={`${event.id}-${result.rank}-${result.players}-${resultIndex}`} className={`rounded-2xl border overflow-hidden bg-black/45 ${result.rank === 'JUARA I' ? 'border-yellow-500/50' : result.rank === 'JUARA II' ? 'border-sky-400/30' : 'border-orange-500/30'}`}>
-                        <div className="px-3 pt-3 text-center">
-                          <div className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-yellow-400"><Icon size={13}/>{result.rank}</div>
+                      <div key={`${event.id}-${result.rank}-${result.players}-${resultIndex}`} className={`rounded-2xl border overflow-hidden bg-black/45 shadow-lg ${result.rank === 'JUARA I' ? 'border-yellow-500/50' : result.rank === 'JUARA II' ? 'border-sky-400/30' : 'border-orange-500/30'}`}>
+                        <div className="px-3 pt-3 pb-1 text-center min-h-[34px] flex items-center justify-center">
+                          <div className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-yellow-400 leading-tight"><Icon size={13} className="shrink-0"/>{result.rank}</div>
                         </div>
+
                         <div className="grid grid-cols-2 gap-2 p-2 sm:p-2.5">
                           {[result.photo1, result.photo2].map((photo, photoIndex) => (
-                            <div key={photoIndex} className="aspect-[3/4] rounded-xl overflow-hidden bg-slate-950 border border-white/10 flex items-center justify-center">
-                              {photo ? <img src={photo} alt={`${result.players} - pemain ${photoIndex + 1}`} className="w-full h-full object-contain bg-slate-950 p-0.5" loading="lazy" /> : <div className="text-center px-1"><div className="text-2xl opacity-50">🏸</div><div className="text-[8px] text-slate-500 mt-1">{hasPhotos ? 'Foto tidak tersedia' : 'Memuat foto...'}</div></div>}
+                            <div key={photoIndex} className="relative aspect-[4/5] sm:aspect-[3/4] rounded-xl overflow-hidden bg-slate-950 border border-white/10 flex items-center justify-center shadow-inner">
+                              {photo ? (
+                                <img
+                                  src={photo}
+                                  alt={`${result.players} - pemain ${photoIndex + 1}`}
+                                  className="w-full h-full object-contain object-top bg-slate-950"
+                                  loading="lazy"
+                                  decoding="async"
+                                  draggable={false}
+                                />
+                              ) : (
+                                <div className="text-center px-1">
+                                  <div className="text-2xl opacity-50">🏸</div>
+                                  <div className="text-[8px] text-slate-500 mt-1">{hasPhotos ? 'Foto tidak tersedia' : 'Memuat foto...'}</div>
+                                </div>
+                              )}
                             </div>
                           ))}
                         </div>
-                        <div className="px-3 pb-4 text-center">
-                          <div className="text-sm sm:text-base font-black text-white leading-tight">{result.players}</div>
+
+                        <div className="px-3 pb-4 text-center min-h-[82px] flex flex-col justify-start">
+                          <div className="text-sm sm:text-base font-black text-white leading-tight break-words">{result.players}</div>
                           <div className="mt-1 text-[10px] text-slate-300 leading-snug">{result.club}</div>
                           {result.sourceRowId && <div className="mt-2 text-[8px] uppercase tracking-wider text-emerald-400">✓ Data peserta diterima</div>}
                         </div>
@@ -225,7 +241,11 @@ export default function PublicPrestasi() {
                     );
                   })}
                 </div>
-                <div className="relative z-10 mt-4 md:mt-5 pt-3 md:pt-4 border-t border-white/10 flex flex-wrap items-center gap-2 text-[10px] sm:text-xs text-slate-400"><Medal size={15} className="text-yellow-400 shrink-0" /> Foto & identitas pasangan disinkronkan dari data pendaftaran peserta diterima.</div>
+
+                <div className="relative z-10 mt-4 md:mt-5 pt-3 md:pt-4 border-t border-white/10 flex flex-wrap items-center gap-2 text-[10px] sm:text-xs text-slate-400 leading-relaxed">
+                  <Medal size={15} className="text-yellow-400 shrink-0" />
+                  <span>Foto & identitas pasangan disinkronkan dari data pendaftaran peserta diterima.</span>
+                </div>
               </motion.article>
             ))}
           </div>
