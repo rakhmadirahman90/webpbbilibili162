@@ -233,6 +233,10 @@ export default function Navbar({ onNavigate }: NavbarProps) {
     const target = section === 'home' || section === 'beranda' ? '/' : `/${section}`;
     setOpenMenu(null);
     setMobileOpen(false);
+    if (section === 'prestasi') {
+      window.location.assign('/prestasi');
+      return;
+    }
     try { navigate(target); } catch { window.location.assign(target); }
   };
 
