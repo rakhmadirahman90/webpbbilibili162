@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, memo } from 'react';
-import { Globe, ChevronDown, Menu, X, MapPin, UserPlus, FileText, Trophy, BrainCircuit, Youtube, Instagram, Facebook, Twitter, Radio, LogIn, LayoutDashboard, LogOut, Timer, HelpCircle, Info, Users, Award, Image as ImageIcon, Building2, Target, Shield, Newspaper, Sparkles } from 'lucide-react';
+import { Globe, Home, ChevronDown, Menu, X, MapPin, UserPlus, FileText, Trophy, BrainCircuit, Youtube, Instagram, Facebook, Twitter, Radio, LogIn, LayoutDashboard, LogOut, Timer, HelpCircle, Info, Users, Award, Image as ImageIcon, Building2, Target, Shield, Newspaper, Sparkles } from 'lucide-react';
 import { supabase, warmupRouteData } from '../supabase';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
@@ -22,9 +22,10 @@ export const DEFAULT_NAV_ITEMS = [
   { id: 'ranking', label: 'Ranking & Poin Atlet', path: 'peringkat', type: 'link', parent_id: 'atlet', order_index: 4 },
   { id: 'register', label: 'Pendaftaran Atlet Baru', path: 'register', type: 'link', parent_id: 'atlet', order_index: 5 },
   { id: 'galeri', label: 'Galeri', path: 'gallery', type: 'link', parent_id: null, order_index: 5 },
-  { id: 'jadwal', label: 'Jadwal Latihan', path: 'jadwal', type: 'link', parent_id: null, order_index: 6 },
-  { id: 'contact', label: 'Hubungi Kami', path: 'contact', type: 'link', parent_id: null, order_index: 7 },
-  { id: 'faq', label: 'FAQ', path: 'faq', type: 'link', parent_id: null, order_index: 8 }
+  { id: 'sponsor', label: 'Daftar Sponsor', path: 'sponsorship', type: 'link', parent_id: null, order_index: 6 },
+  { id: 'jadwal', label: 'Jadwal Latihan', path: 'jadwal', type: 'link', parent_id: null, order_index: 7 },
+  { id: 'contact', label: 'Hubungi Kami', path: 'contact', type: 'link', parent_id: null, order_index: 8 },
+  { id: 'faq', label: 'FAQ', path: 'faq', type: 'link', parent_id: null, order_index: 9 }
 ];
 
 export const ATLET_DEFAULT_SUBMENUS = DEFAULT_NAV_ITEMS.filter(i => i.parent_id === 'atlet');
@@ -36,6 +37,35 @@ const normalizeNavigationPath = (value = '') => {
   if (['quiz', 'quiz-badminton', 'kuis', 'kuis-badminton'].includes(p)) return 'quiz';
   if (['beranda', 'home'].includes(p)) return 'home';
   return p;
+};
+
+const ensureCanonicalNavigation = (items: any[]) => {
+  const source = Array.isArray(items) && items.length ? items : DEFAULT_NAV_ITEMS;
+  const result: any[] = [];
+  const seen = new Set<string>();
+  for (const item of source) {
+    if (!item || !item.path || !item.label) continue;
+    const key = `${String(item.parent_id || '')}|${normalizeNavigationPath(item.path)}|${String(item.label).trim().toLowerCase()}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push({ ...item });
+  }
+
+  const hasHome = result.some(i => isTopLevelMenuItem(i) && normalizeNavigationPath(i.path) === 'home');
+  if (!hasHome) result.unshift(DEFAULT_NAV_ITEMS[0]);
+
+  const hasSponsor = result.some(i => {
+    const path = normalizeNavigationPath(i.path || '');
+    const label = String(i.label || '').trim().toLowerCase();
+    return isTopLevelMenuItem(i) && (path === 'sponsorship' || path === 'sponsor' || label === 'sponsor' || label === 'daftar sponsor');
+  });
+  if (!hasSponsor) {
+    const topOrders = result.filter(isTopLevelMenuItem).map(i => Number(i.order_index) || 0);
+    const maxOrder = topOrders.length ? Math.max(...topOrders) : 0;
+    result.push({ ...DEFAULT_NAV_ITEMS.find(i => i.id === 'sponsor'), order_index: maxOrder + 1 });
+  }
+
+  return result.sort((a, b) => (Number(a.order_index) || 0) - (Number(b.order_index) || 0));
 };
 
 const preloadNavigation = (path: string, subPath?: string) => {
@@ -75,7 +105,9 @@ const preloadNavigation = (path: string, subPath?: string) => {
                                   ? '/contact'
                                   : effective === 'pendaftaran-turnamen'
                                     ? '/pendaftaran-turnamen'
-                                    : null;
+                                    : effective === 'sponsorship' || effective === 'sponsor'
+                                      ? '/sponsorship'
+                                      : null;
     if (!target) return;
     try { warmupRouteData(target); } catch { }
     switch (target) {
@@ -126,11 +158,20 @@ export default function Navbar({ onNavigate }: NavbarProps) {
   const fetchNav = useCallback(async () => {
     try {
       const { data } = await supabase.from('navbar_settings').select('*').order('order_index', { ascending: true });
-      if (Array.isArray(data) && data.length) { setNavData(data); localStorage.setItem('site_setting_navbar_items', JSON.stringify(data)); return; }
+      if (Array.isArray(data) && data.length) {
+        const next = ensureCanonicalNavigation(data);
+        setNavData(next);
+        localStorage.setItem('site_setting_navbar_items', JSON.stringify(next));
+        return;
+      }
       const { data: setting } = await supabase.from('site_settings').select('value').eq('key', 'navbar_items').maybeSingle();
       const value = typeof setting?.value === 'string' ? JSON.parse(setting.value) : setting?.value;
       const list = Array.isArray(value) ? value : value?.items;
-      if (Array.isArray(list) && list.length) setNavData(list);
+      if (Array.isArray(list) && list.length) {
+        const next = ensureCanonicalNavigation(list);
+        setNavData(next);
+        localStorage.setItem('site_setting_navbar_items', JSON.stringify(next));
+      }
     } catch { }
   }, []);
 
@@ -154,7 +195,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
     try {
       const cached = localStorage.getItem('site_setting_navbar_items');
       const value = cached ? JSON.parse(cached) : null;
-      if (Array.isArray(value) && value.length) setNavData(value);
+      if (Array.isArray(value) && value.length) setNavData(ensureCanonicalNavigation(value));
     } catch {}
     fetchNav(); fetchBranding();
     const channel = supabase.channel(`navbar-realtime-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`)
@@ -184,7 +225,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
 
   const iconFor = (path = '', label = '') => {
     const p = path.toLowerCase(), l = label.toLowerCase();
-    const C = p.includes('jadwal') ? Timer : p.includes('berita') ? Newspaper : p.includes('prestasi') ? Award : p.includes('atlet') || l.includes('atlet') ? Users : p.includes('peringkat') || p.includes('rank') ? Trophy : p.includes('quiz') || p.includes('kuis') ? BrainCircuit : p.includes('gallery') || p.includes('galeri') ? ImageIcon : p.includes('contact') || l.includes('hubungi') ? MapPin : p.includes('faq') ? HelpCircle : p.includes('fasilitas') ? Building2 : p.includes('visi') ? Target : p.includes('struktur') ? Users : p.includes('dokumen') ? FileText : p.includes('tentang') || p === 'about' ? Shield : p === 'quiz' ? BrainCircuit : p === 'home' ? Globe : Sparkles;
+    const C = p.includes('jadwal') ? Timer : p.includes('berita') ? Newspaper : p.includes('prestasi') ? Award : p.includes('atlet') || l.includes('atlet') ? Users : p.includes('peringkat') || p.includes('rank') ? Trophy : p.includes('quiz') || p.includes('kuis') ? BrainCircuit : p.includes('gallery') || p.includes('galeri') ? ImageIcon : p.includes('contact') || l.includes('hubungi') ? MapPin : p.includes('faq') ? HelpCircle : p.includes('fasilitas') ? Building2 : p.includes('visi') ? Target : p.includes('struktur') ? Users : p.includes('dokumen') ? FileText : p.includes('tentang') || p === 'about' ? Shield : p === 'quiz' ? BrainCircuit : p === 'home' ? Home : p.includes('sponsorship') || p.includes('sponsor') || l.includes('sponsor') ? Sparkles : Sparkles;
     return <C size={15} className="shrink-0 text-blue-400" />;
   };
 
@@ -229,16 +270,16 @@ export default function Navbar({ onNavigate }: NavbarProps) {
   const topMenus = navData.filter(isTopLevelMenuItem).sort((a,b) => (a.order_index || 0) - (b.order_index || 0));
 
   return <>
-    <nav className="fixed top-0 left-0 right-0 h-14 lg:h-16 z-[10000] bg-slate-950/95 backdrop-blur-xl border-b border-white/10 shadow-2xl">
-      <div className="max-w-7xl mx-auto h-full px-2.5 sm:px-4 md:px-8 flex items-center gap-2 sm:gap-3">
+    <nav className="fixed top-0 left-0 right-0 h-14 lg:h-16 z-[10000] bg-slate-950/95 backdrop-blur-xl border-b border-white/10 shadow-2xl" aria-label="Navigasi utama PB Bilibili 162">
+      <div className="max-w-7xl mx-auto h-full px-2.5 sm:px-4 md:px-8 flex items-center gap-2 sm:gap-3 min-w-0">
         <button type="button" onPointerDown={() => handleNavigationPointerDown('home')} onClick={() => go('home')} className="flex items-center gap-1.5 sm:gap-2 shrink-0 min-w-0" aria-label="Beranda PB Bilibili 162">
           <img src={branding.logo_url} alt="PB Bilibili 162" className="w-9 h-9 lg:w-10 lg:h-10 object-contain shrink-0" loading="eager" decoding="async" onError={e => { e.currentTarget.src = '/logo_pb_bilibili_162.svg'; }} />
           <span className="hidden xs:flex flex-col text-left leading-none min-w-0"><span className="font-black italic text-xs sm:text-sm lg:text-base uppercase whitespace-nowrap">{branding.brand_name_main} <b className="text-blue-500">{branding.brand_name_accent}</b></span><span className="text-[6px] sm:text-[7px] tracking-[.2em] text-slate-400 uppercase mt-1">Professional Club</span></span>
         </button>
         <LiveClock />
-        <div className="hidden lg:flex items-center gap-4 xl:gap-6 ml-auto">
+        <div className="hidden lg:flex items-center gap-4 xl:gap-6 ml-auto min-w-0">
           {topMenus.map(menu => { const subs = getSubMenus(menu.id); const drop = menu.type === 'dropdown' || subs.length > 0; return <div key={menu.id} className="relative" onMouseEnter={() => drop && setOpenMenu(menu.id)} onMouseLeave={() => drop && setOpenMenu(null)}>
-            <button type="button" onPointerDown={() => handleNavigationPointerDown(menu.path)} onClick={() => !drop && go(menu.path)} className="h-16 flex items-center gap-1.5 text-[11px] xl:text-xs font-bold uppercase tracking-wide text-slate-300 hover:text-white transition-colors">{menu.label}{drop && <ChevronDown size={12} className={openMenu === menu.id ? 'rotate-180' : ''} />}</button>
+            <button type="button" onPointerDown={() => handleNavigationPointerDown(menu.path)} onClick={() => !drop && go(menu.path)} className="h-16 flex items-center gap-1.5 text-[11px] xl:text-xs font-bold uppercase tracking-wide text-slate-300 hover:text-white transition-colors whitespace-nowrap">{menu.path === 'home' || menu.path === 'beranda' ? <Home size={14} className="text-blue-400" /> : null}{menu.label}{drop && <ChevronDown size={12} className={openMenu === menu.id ? 'rotate-180' : ''} />}</button>
             {drop && openMenu === menu.id && <div className="absolute top-full left-0 w-64 pt-2"><div className="rounded-xl border border-white/10 bg-slate-900/98 shadow-2xl overflow-hidden">{subs.map(sub => <button key={sub.id} type="button" onPointerDown={() => handleNavigationPointerDown(menu.path, sub.path)} onClick={() => go(menu.path, sub.path)} className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-slate-300 hover:bg-blue-500/10 hover:text-white">{iconFor(sub.path, sub.label)}<span>{sub.label}</span></button>)}</div></div>}
           </div>})}
           {session ? <><button type="button" onClick={() => navigate('/admin/dashboard')} className="px-3 py-2 rounded-full bg-emerald-600 text-white text-[10px] font-bold uppercase"><LayoutDashboard size={13} className="inline mr-1" />Dashboard</button><button type="button" onClick={logout} className="p-2 rounded-full bg-red-500/10 text-red-300"><LogOut size={15}/></button></> : <button type="button" onClick={() => navigate('/login')} className="px-3 py-2 rounded-full bg-blue-600 text-white text-[10px] font-bold uppercase"><LogIn size={13} className="inline mr-1"/>Login</button>}
