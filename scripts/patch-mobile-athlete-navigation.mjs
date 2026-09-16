@@ -68,3 +68,31 @@ if (source !== original) {
 } else {
   console.log('[patch-mobile-athlete-navigation] no changes needed.');
 }
+
+// App.tsx is the canonical public navigation state machine. Desktop Navbar
+// clicks eventually call onNavigate(), so athlete submenu filters must be
+// preserved in the URL rather than being converted to unsupported /senior or
+// /muda routes.
+const appFile = 'src/App.tsx';
+if (fs.existsSync(appFile)) {
+  let app = fs.readFileSync(appFile, 'utf8');
+  const appOriginal = app;
+  const legacyTargetRaw = "const targetRaw=sub||main||'home';";
+  const fixedTargetRaw = "const athleteFilter=['semua','senior','muda'].includes(sub)&&(main==='atlet'||main==='players'||main==='player')?sub:'';const targetRaw=athleteFilter?'atlet':sub||main||'home';";
+  if (app.includes(legacyTargetRaw) && !app.includes("const athleteFilter=['semua','senior','muda'].includes(sub)")) {
+    app = app.replace(legacyTargetRaw, fixedTargetRaw);
+  }
+
+  const legacyTargetPath = 'const targetPath=`/${target}`;';
+  const fixedTargetPath = "const targetPath=athleteFilter?`/atlet?filter=${encodeURIComponent(athleteFilter)}`:`/${target}`;";
+  if (app.includes(legacyTargetPath) && !app.includes("athleteFilter?`/atlet?filter=")) {
+    app = app.replace(legacyTargetPath, fixedTargetPath);
+  }
+
+  if (app !== appOriginal) {
+    fs.writeFileSync(appFile, app, 'utf8');
+    console.log('[patch-mobile-athlete-navigation] App.tsx now preserves athlete submenu filter in URL.');
+  } else {
+    console.log('[patch-mobile-athlete-navigation] App.tsx athlete filter routing already patched or pattern not found.');
+  }
+}
