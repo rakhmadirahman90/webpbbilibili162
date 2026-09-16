@@ -1,22 +1,21 @@
 import fs from 'node:fs';
 
 const mediaPath = 'src/utils/mediaCompression.ts';
+const galleryPath = 'src/components/AdminGallery.tsx';
 
 if (!fs.existsSync(mediaPath)) {
-  console.warn('[patch-gallery-video-upload-v3] mediaCompression.ts not found; skipped.');
-  process.exit(0);
-}
+  console.warn('[patch-gallery-video-upload-v3] mediaCompression.ts not found; media patch skipped.');
+} else {
+  let s = fs.readFileSync(mediaPath, 'utf8');
 
-let s = fs.readFileSync(mediaPath, 'utf8');
+  // mediaCompression.ts is now canonical. Do not overwrite the mobile-safe
+  // implementation during every Vercel build. Only normalize legacy limits.
+  const canonicalMarker = 'PB_MEDIA_COMPRESSION_V2';
+  const start = s.indexOf('async function recordVideo(');
+  const end = s.indexOf('\nexport async function compressVideo', start);
 
-// mediaCompression.ts is now canonical. Do not overwrite the mobile-safe
-// implementation during every Vercel build.
-const canonicalMarker = 'PB_MEDIA_COMPRESSION_V2';
-const start = s.indexOf('async function recordVideo(');
-const end = s.indexOf('\nexport async function compressVideo', start);
-
-if (!s.includes(canonicalMarker) && start >= 0 && end > start) {
-  const replacement = `async function recordVideo(file: File, videoBitsPerSecond: number): Promise<File> {
+  if (!s.includes(canonicalMarker) && start >= 0 && end > start) {
+    const replacement = `async function recordVideo(file: File, videoBitsPerSecond: number): Promise<File> {
   const mime = pickVideoMime();
   if (!mime) throw new Error('Browser tidak mendukung kompresi video otomatis. Gunakan Chrome/Edge/Firefox terbaru.');
 
@@ -101,13 +100,26 @@ if (!s.includes(canonicalMarker) && start >= 0 && end > start) {
   }
 }
 `;
-  s = s.slice(0, start) + replacement + s.slice(end);
+    s = s.slice(0, start) + replacement + s.slice(end);
+  }
+
+  // Legacy builds may still carry the 15 MB constant.
+  s = s.replace(/maxBytes:\s*15\s*\*\s*1024\s*\*\s*1024/g, 'maxBytes: 30 * 1024 * 1024');
+  s = s.replace(/video lebih dari 15 MB/g, 'video lebih dari 30 MB');
+  s = s.replace(/di bawah 15 MB/g, 'di bawah 30 MB');
+
+  fs.writeFileSync(mediaPath, s);
+  console.log('[patch-gallery-video-upload-v3] video media policy normalized to 30 MB.');
 }
 
-const guard = "    if (input.dataset.mediaLocalHandler === 'true') return;";
-if (!s.includes(guard)) {
-  s = s.replace("    if ((input as any).__pbMediaRedispatch) return;", "    if ((input as any).__pbMediaRedispatch) return;\n" + guard);
+if (fs.existsSync(galleryPath)) {
+  let s = fs.readFileSync(galleryPath, 'utf8');
+  // AdminGallery has its own client-side validation and helper text.
+  s = s.replace(/const VIDEO_MAX_SIZE = 15 \* 1024 \* 1024;/g, 'const VIDEO_MAX_SIZE = 30 * 1024 * 1024;');
+  s = s.replace(/melebihi 15MB/g, 'melebihi 30MB');
+  s = s.replace(/Maksimal 15MB/g, 'Maksimal 30MB');
+  fs.writeFileSync(galleryPath, s);
+  console.log('[patch-gallery-video-upload-v3] AdminGallery video limit normalized to 30 MB.');
+} else {
+  console.warn('[patch-gallery-video-upload-v3] AdminGallery.tsx not found; gallery validation patch skipped.');
 }
-
-fs.writeFileSync(mediaPath, s);
-console.log('[patch-gallery-video-upload-v3] reliable MediaRecorder pipeline preserved safely.');
