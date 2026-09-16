@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Trophy, Medal, Star, Crown, CalendarDays, MapPin, Users, Award } from 'lucide-react';
+import { Trophy, Medal, Star, Crown, CalendarDays, MapPin, Users, Award, MessageCircle } from 'lucide-react';
 import { supabase } from '../supabase';
 
 const TOURNAMENT_ID = 2;
@@ -185,6 +185,33 @@ export default function PublicPrestasi() {
     }),
   })), [acceptedParticipants, signedPhotos]);
 
+  const whatsappShareUrl = useMemo(() => {
+    const lines = [
+      '🏸 *PRESTASI PB BILIBILI 162*',
+      '',
+      '🏆 *BILIBILI 162 CUP I TAHUN 2026*',
+      '📅 08–12 September 2026',
+      '📍 GOR Titik Kumpul Soreang, Parepare',
+      '',
+      '🥇 *KATEGORI AJATAPPARENG*',
+      '• Juara I: Andi M. Fahrul & Ichal Bin Tura (Ayah E) — PB Bulu Putih',
+      '• Juara II: Ahmad Halim & Gusmulyadi — PB Barokah',
+      '• Juara III Bersama: Nugi & Saldi — THE GADE',
+      '• Juara III Bersama: Haykal & Restu — PB ROVIDA',
+      '',
+      '🥇 *KATEGORI LOKAL PAREPARE*',
+      '• Juara I: Tison & Kambo — PB Sari Indah',
+      '• Juara II: Muslim & Sam — Rajawali 42',
+      '• Juara III Bersama: Denis & Yusuf — PB Bilibili 162',
+      '• Juara III Bersama: Ome & Ardi — Rajawali 42',
+      '',
+      'Selamat kepada seluruh juara! Tetap junjung tinggi sportivitas dan terus berprestasi. 🏸🏆',
+      '',
+      `Lihat dokumentasi lengkap: ${typeof window !== 'undefined' ? window.location.href : 'https://pbilibili162.99apps.id'}`,
+    ];
+    return `https://wa.me/?text=${encodeURIComponent(lines.join('\n'))}`;
+  }, []);
+
   return (
     <section id="prestasi" className="prestasi-modern-page">
       <style>{`
@@ -248,6 +275,7 @@ export default function PublicPrestasi() {
         #prestasi .prestasi-footer-title { display:flex; align-items:center; gap:8px; color:#f4b400; font-size:clamp(13px, 1.7vw, 19px); font-weight:950; text-transform:uppercase; white-space:nowrap; }
         #prestasi .prestasi-footer-title span { color:#fff; }
         #prestasi .prestasi-footer-copy { margin:9px auto 0; text-align:center; color:#8fa3b8; font-size:11px; line-height:1.6; }
+        #prestasi .prestasi-share-mobile { display:none; }
         @media (min-width:1280px) {
           #prestasi .prestasi-shell { width:min(1320px, calc(100% - 48px)); }
           #prestasi .prestasi-events { gap:18px; }
@@ -267,10 +295,17 @@ export default function PublicPrestasi() {
           #prestasi .prestasi-kicker { font-size:9px; padding:7px 11px; }
           #prestasi .prestasi-title { font-size:clamp(30px, 11vw, 45px); margin-top:12px; }
           #prestasi .prestasi-subtitle { font-size:11px; line-height:1.55; }
-          #prestasi .prestasi-event-heading { margin-bottom:18px; }
+          #prestasi .prestasi-event-heading { margin-bottom:14px; }
           #prestasi .prestasi-event-title { font-size:clamp(18px, 6vw, 25px); gap:7px; }
           #prestasi .prestasi-event-title svg { width:19px; height:19px; }
           #prestasi .prestasi-meta { font-size:9px; gap:6px 12px; }
+          #prestasi .prestasi-share-mobile { display:flex; align-items:center; gap:10px; width:100%; margin:0 auto 18px; padding:12px; border:1px solid rgba(37,211,102,.25); border-radius:16px; background:linear-gradient(135deg,rgba(37,211,102,.10),rgba(3,16,29,.92)); box-shadow:0 10px 28px rgba(0,0,0,.20); }
+          #prestasi .prestasi-share-copy { flex:1; min-width:0; text-align:left; }
+          #prestasi .prestasi-share-title { margin:0; color:#fff; font-size:11px; line-height:1.25; font-weight:950; }
+          #prestasi .prestasi-share-desc { margin:3px 0 0; color:#8fa3b8; font-size:8px; line-height:1.35; }
+          #prestasi .prestasi-share-button { display:inline-flex; align-items:center; justify-content:center; gap:6px; flex:none; min-height:38px; padding:0 13px; border-radius:12px; background:#25D366; color:#06101d; text-decoration:none; font-size:10px; font-weight:950; box-shadow:0 7px 18px rgba(37,211,102,.18); -webkit-tap-highlight-color:transparent; }
+          #prestasi .prestasi-share-button:active { transform:scale(.97); }
+          #prestasi .prestasi-share-button svg { width:16px; height:16px; }
           #prestasi .prestasi-events { gap:14px; }
           #prestasi .prestasi-event-card { border-radius:20px; }
           #prestasi .prestasi-event-head { padding:14px 14px 12px; }
@@ -290,6 +325,10 @@ export default function PublicPrestasi() {
         }
         @media (max-width:380px) {
           #prestasi .prestasi-shell { width:calc(100% - 14px); }
+          #prestasi .prestasi-share-mobile { padding:10px; gap:7px; margin-bottom:14px; }
+          #prestasi .prestasi-share-title { font-size:10px; }
+          #prestasi .prestasi-share-desc { font-size:7px; }
+          #prestasi .prestasi-share-button { min-height:36px; padding:0 10px; font-size:9px; }
           #prestasi .prestasi-event-name { font-size:16px; }
           #prestasi .prestasi-results { gap:6px; padding:7px; }
           #prestasi .prestasi-rank { margin:6px 5px 5px; font-size:6.5px; }
@@ -314,6 +353,18 @@ export default function PublicPrestasi() {
             <span><MapPin size={13} /> GOR Titik Kumpul Soreang, Parepare</span>
             <span><Users size={13} /> 2 Kategori Pertandingan</span>
           </div>
+        </div>
+
+        <div className="prestasi-share-mobile" aria-label="Bagikan prestasi ke WhatsApp">
+          <MessageCircle size={22} color="#25D366" aria-hidden="true" />
+          <div className="prestasi-share-copy">
+            <p className="prestasi-share-title">Bagikan Prestasi ke WhatsApp</p>
+            <p className="prestasi-share-desc">Kirim rekap lengkap juara Ajatappareng & Lokal Parepare beserta tautan halaman ini.</p>
+          </div>
+          <a className="prestasi-share-button" href={whatsappShareUrl} target="_blank" rel="noopener noreferrer" aria-label="Bagikan rekap prestasi melalui WhatsApp">
+            <MessageCircle size={16} />
+            <span>Share WA</span>
+          </a>
         </div>
 
         <div className="prestasi-events">
