@@ -69,6 +69,23 @@
         window.isPublicSeeded = normalizedPath === '/pendaftaran/seeded-peserta';
       })();
 
+      // Hard navigation fallback: this remains effective even if an older cached React bundle
+      // still handles the submenu click incorrectly.
+      (() => {
+        const openPrestasi = (event) => {
+          try {
+            const path = event.composedPath ? event.composedPath() : [];
+            const hit = path.find((node) => node && node.nodeType === 1 && typeof node.textContent === 'string' && node.textContent.trim().toLowerCase() === 'daftar peserta juara');
+            if (!hit) return;
+            event.preventDefault();
+            event.stopPropagation();
+            window.location.assign('/prestasi?from=daftar-peserta-juara');
+          } catch (_) {}
+        };
+        window.addEventListener('click', openPrestasi, true);
+        window.addEventListener('pointerup', openPrestasi, true);
+      })();
+
       (() => {
         const bootError = document.getElementById('boot-error');
         const showBootError = (message) => {
@@ -80,12 +97,12 @@
         window.addEventListener('error', (event) => showBootError(event.error || event.message));
         window.addEventListener('unhandledrejection', (event) => showBootError(event.reason));
 
-        // v14: clear legacy PWA state and perform one controlled reload.
-        const reloadKey = 'pb162-legacy-cache-reload-v14';
+        // v15: clear legacy PWA state and perform one controlled reload.
+        const reloadKey = 'pb162-legacy-cache-reload-v15';
         try {
           const firstPass = !sessionStorage.getItem(reloadKey);
           sessionStorage.setItem(reloadKey, '1');
-          localStorage.setItem('pb162-legacy-cache-cleanup-v14', '1');
+          localStorage.setItem('pb162-legacy-cache-cleanup-v15', '1');
           const cleanup = [];
           if ('serviceWorker' in navigator) {
             cleanup.push(navigator.serviceWorker.getRegistrations().then((registrations) => Promise.all(registrations.map((registration) => registration.unregister()))).catch(() => []));
