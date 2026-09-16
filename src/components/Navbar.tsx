@@ -22,7 +22,6 @@ export const DEFAULT_NAV_ITEMS = [
   { id: 'ranking', label: 'Ranking & Poin Atlet', path: 'peringkat', type: 'link', parent_id: 'atlet', order_index: 4 },
   { id: 'register', label: 'Pendaftaran Atlet Baru', path: 'register', type: 'link', parent_id: 'atlet', order_index: 5 },
   { id: 'galeri', label: 'Galeri', path: 'gallery', type: 'link', parent_id: null, order_index: 5 },
-  { id: 'sponsor', label: 'Daftar Sponsor', path: 'sponsorship', type: 'link', parent_id: null, order_index: 6 },
   { id: 'jadwal', label: 'Jadwal Latihan', path: 'jadwal', type: 'link', parent_id: null, order_index: 7 },
   { id: 'contact', label: 'Hubungi Kami', path: 'contact', type: 'link', parent_id: null, order_index: 8 },
   { id: 'faq', label: 'FAQ', path: 'faq', type: 'link', parent_id: null, order_index: 9 }
@@ -54,16 +53,9 @@ const ensureCanonicalNavigation = (items: any[]) => {
   const hasHome = result.some(i => isTopLevelMenuItem(i) && normalizeNavigationPath(i.path) === 'home');
   if (!hasHome) result.unshift(DEFAULT_NAV_ITEMS[0]);
 
-  const hasSponsor = result.some(i => {
-    const path = normalizeNavigationPath(i.path || '');
-    const label = String(i.label || '').trim().toLowerCase();
-    return isTopLevelMenuItem(i) && (path === 'sponsorship' || path === 'sponsor' || label === 'sponsor' || label === 'daftar sponsor');
-  });
-  if (!hasSponsor) {
-    const topOrders = result.filter(isTopLevelMenuItem).map(i => Number(i.order_index) || 0);
-    const maxOrder = topOrders.length ? Math.max(...topOrders) : 0;
-    result.push({ ...DEFAULT_NAV_ITEMS.find(i => i.id === 'sponsor'), order_index: maxOrder + 1 });
-  }
+  // Sponsorship is intentionally kept only where the admin configured it.
+  // The landing top-level "Daftar Sponsor" is temporarily disabled.
+  // This preserves the "Daftar Sponsorship" item under "Pendaftaran Peserta".
 
   return result.sort((a, b) => (Number(a.order_index) || 0) - (Number(b.order_index) || 0));
 };
