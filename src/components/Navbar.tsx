@@ -21,6 +21,12 @@ export const DEFAULT_NAV_ITEMS = [
   { id: 'muda', label: 'Atlet Muda / Taruna', path: 'Muda', type: 'link', parent_id: 'atlet', order_index: 3 },
   { id: 'ranking', label: 'Ranking & Poin Atlet', path: 'peringkat', type: 'link', parent_id: 'atlet', order_index: 4 },
   { id: 'register', label: 'Pendaftaran Atlet Baru', path: 'register', type: 'link', parent_id: 'atlet', order_index: 5 },
+  { id: 'pendaftaran-peserta', label: 'Pendaftaran Peserta', path: 'pendaftaran-turnamen', type: 'dropdown', parent_id: null, order_index: 6 },
+  { id: 'form-pendaftaran-peserta', label: 'Form Pendaftaran Peserta', path: 'pendaftaran-turnamen', type: 'link', parent_id: 'pendaftaran-peserta', order_index: 1 },
+  { id: 'seeded-peserta', label: 'Daftar Seeded Peserta', path: 'pendaftaran/seeded-peserta', type: 'link', parent_id: 'pendaftaran-peserta', order_index: 2 },
+  { id: 'peserta-diterima', label: 'Daftar Peserta Diterima', path: 'pendaftaran/peserta-diterima', type: 'link', parent_id: 'pendaftaran-peserta', order_index: 3 },
+  { id: 'sponsorship', label: 'Daftar Sponsorship', path: 'sponsorship', type: 'link', parent_id: 'pendaftaran-peserta', order_index: 4 },
+  { id: 'peserta-juara', label: 'Daftar Peserta Juara', path: 'prestasi', type: 'link', parent_id: 'pendaftaran-peserta', order_index: 5 },
   { id: 'galeri', label: 'Galeri', path: 'gallery', type: 'link', parent_id: null, order_index: 5 },
   { id: 'jadwal', label: 'Jadwal Latihan', path: 'jadwal', type: 'link', parent_id: null, order_index: 7 },
   { id: 'contact', label: 'Hubungi Kami', path: 'contact', type: 'link', parent_id: null, order_index: 8 },
@@ -49,14 +55,11 @@ const ensureCanonicalNavigation = (items: any[]) => {
     seen.add(key);
     result.push({ ...item });
   }
-
   const hasHome = result.some(i => isTopLevelMenuItem(i) && normalizeNavigationPath(i.path) === 'home');
   if (!hasHome) result.unshift(DEFAULT_NAV_ITEMS[0]);
-
   // Sponsorship is intentionally kept only where the admin configured it.
   // The landing top-level "Daftar Sponsor" is temporarily disabled.
   // This preserves the "Daftar Sponsorship" item under "Pendaftaran Peserta".
-
   return result.sort((a, b) => (Number(a.order_index) || 0) - (Number(b.order_index) || 0));
 };
 
