@@ -94,3 +94,26 @@ src = src.slice(0, start) + replacement + src.slice(end + endNeedle.length);
 src += `\n\n${marker}\n`;
 fs.writeFileSync(path, src, 'utf8');
 console.log('[patch-public-accepted-photo-refresh-v3] disabled stale row-id photo cache and always signs current database photo paths');
+
+// Prestasi uses the same accepted-registration photo source. Its earlier query
+// referenced legacy columns foto_pemain_1/foto_pemain_2 which are not present in
+// pendaftaran_turnamen; that makes Supabase reject the whole query and no photos load.
+const prestasiPath = 'src/components/PublicPrestasi.tsx';
+let prestasi = fs.readFileSync(prestasiPath, 'utf8');
+const prestasiMarker = '/* __PUBLIC_PRESTASI_PHOTO_FIX_V1__ */';
+if (!prestasi.includes(prestasiMarker)) {
+  const badSelect = "select('id,tournament_id,status_pendaftaran,nama_pemain_1,nama_pemain_2,asal_pb,foto_pemain_1_url,foto_pemain_2_url,foto_pemain_1,foto_pemain_2')";
+  const goodSelect = "select('id,tournament_id,status_pendaftaran,nama_pemain_1,nama_pemain_2,asal_pb,foto_pemain_1_url,foto_pemain_2_url')";
+  if (prestasi.includes(badSelect)) {
+    prestasi = prestasi.replace(badSelect, goodSelect);
+  }
+  prestasi = prestasi.replace(
+    "if (item?.signedUrl) next[paths[index]] = item.signedUrl;",
+    "const signedUrl = item?.signedUrl || item?.signedURL;\n        if (signedUrl) next[paths[index]] = signedUrl;"
+  );
+  prestasi = prestasi.replace("\n\nexport default function PublicPrestasi()", `\n\n${prestasiMarker}\n\nexport default function PublicPrestasi()`);
+  fs.writeFileSync(prestasiPath, prestasi, 'utf8');
+  console.log('[patch-public-accepted-photo-refresh-v3] fixed Prestasi accepted-registration photo query');
+} else {
+  console.log('[patch-public-accepted-photo-refresh-v3] Prestasi photo fix already present');
+}
