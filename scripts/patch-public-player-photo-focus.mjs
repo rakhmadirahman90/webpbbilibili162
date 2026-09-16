@@ -70,5 +70,16 @@ if (src.includes(old)) {
   else console.warn('[patch-public-player-photo-focus] player photo img marker not found; leaving current photo renderer unchanged.');
 }
 
+// Internal build markers must never be emitted as visible text on the public page.
+const prestasiPath = 'src/components/PublicPrestasi.tsx';
+if (fs.existsSync(prestasiPath)) {
+  const prestasiMarker = '/* __PUBLIC_PRESTASI_LEGACY_CARDS_REMOVED_V1__ */';
+  const prestasi = fs.readFileSync(prestasiPath, 'utf8');
+  if (prestasi.includes(prestasiMarker)) {
+    fs.writeFileSync(prestasiPath, prestasi.replaceAll(prestasiMarker, ''), 'utf8');
+    console.log('[patch-public-player-photo-focus] removed internal Prestasi marker');
+  }
+}
+
 fs.writeFileSync(path, src, 'utf8');
 console.log('[patch-public-player-photo-focus] full-photo fit + face-aware focus applied safely.');
