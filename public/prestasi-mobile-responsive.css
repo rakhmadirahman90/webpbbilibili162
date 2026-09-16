@@ -13,6 +13,28 @@
   order: 1;
 }
 
+/*
+ * Photo correction for AJP winners.
+ * The registration records for these two pairs store player 1/player 2
+ * in the opposite order from the public Prestasi card names. Swap only
+ * the two photo tiles; names, clubs and source data remain unchanged.
+ */
+#prestasi .prestasi-events > .prestasi-event-card:nth-child(2) .prestasi-results > .prestasi-result-card:nth-child(2) .prestasi-player-grid > :first-child {
+  order: 2;
+}
+
+#prestasi .prestasi-events > .prestasi-event-card:nth-child(2) .prestasi-results > .prestasi-result-card:nth-child(2) .prestasi-player-grid > :last-child {
+  order: 1;
+}
+
+#prestasi .prestasi-events > .prestasi-event-card:nth-child(2) .prestasi-results > .prestasi-result-card:nth-child(3) .prestasi-player-grid > :first-child {
+  order: 2;
+}
+
+#prestasi .prestasi-events > .prestasi-event-card:nth-child(2) .prestasi-results > .prestasi-result-card:nth-child(3) .prestasi-player-grid > :last-child {
+  order: 1;
+}
+
 @media (max-width: 767px) {
   #prestasi {
     padding-top: 3.25rem !important;
