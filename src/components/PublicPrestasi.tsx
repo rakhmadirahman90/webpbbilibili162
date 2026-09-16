@@ -1,10 +1,25 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Trophy, Medal, Star, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Trophy, Medal, Star, ChevronLeft, ChevronRight, Crown } from 'lucide-react';
 import { supabase } from '../supabase';
 import { getSiteSetting } from '../utils/siteSettingsHelper';
 
 const PAGE_SIZE = 6;
+
+const BILIBILI_162_CUP_CHAMPIONS = [
+  {
+    id: 'bilibili-162-cup-cc-local-champion',
+    category: 'Ganda Putra CC — Lokal Parepare',
+    champions: 'Tison & Kambo',
+    club: 'PB Sari Indah',
+  },
+  {
+    id: 'bilibili-162-cup-ajatappareng-champion',
+    category: 'Ganda Putra AD/BC-/C+C — Ajatappareng',
+    champions: 'Andi M. Fahrul & Ichal Bin Tura',
+    club: 'Juara I Kategori Ajatappareng',
+  },
+];
 
 export default function PublicPrestasi() {
   const [prestasi, setPrestasi] = useState<any[]>([]);
@@ -39,7 +54,7 @@ export default function PublicPrestasi() {
           { id:'p2', nama_kejuaraan:'Kejuaraan Provinsi (Kejurprov) Sulsel', tingkat:'Provinsi', tahun:2023, medali_emas:0, medali_perak:1, medali_perunggu:2, atlet_berprestasi:'Ganda Putra: Candra/Deni (Perak)' },
           { id:'p3', nama_kejuaraan:'Sirkuit Nasional (Sirnas) B Sulawesi', tingkat:'Nasional', tahun:2022, medali_emas:1, medali_perak:1, medali_perunggu:1, atlet_berprestasi:'Eka (Emas - Tunggal Taruna Putri)' },
           { id:'p4', nama_kejuaraan:'Walikota Cup Makassar (Ganda Campuran)', tingkat:'Provinsi', tahun:2024, medali_emas:1, medali_perak:0, medali_perunggu:0, atlet_berprestasi:'Fajar/Gita (Emas)' },
-          { id:'p5', nama_kejuaraan:'O2SN Tingkat SMA se-Sulsel', tingkat:'Provinsi', tahun:2023, medali_emas:2, medali_perak:1, medali_perunggu:0, atlet_berprestasi:'Hadi (Emas), Indah (Emas)' }
+          { id:'p5', nama_kejuaraan:'O2SN Tingkat SMA se-Sulsel', tingkat:'Provinsi', tahun:2023, medali_emas:2, medali_perak:1, medali_perunggu:0, atlet_berprestasi:'Hadi (Emas), Indah (Emas)'}
         ]);
       }
     };
@@ -63,6 +78,45 @@ export default function PublicPrestasi() {
           <motion.div initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}} className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-xs font-black uppercase tracking-widest mb-4"><Star size={14}/> Prestasi</motion.div>
           <motion.h2 initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}} className="text-3xl md:text-4xl lg:text-5xl font-black text-white italic uppercase tracking-tighter mb-4">Apresiasi <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-amber-600">Juara</span></motion.h2>
           <motion.p initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}} className="text-slate-400">Dedikasi dan kerja keras menghasilkan prestasi. Berikut adalah beberapa pencapaian terbaik atlet kami di berbagai kejuaraan.</motion.p>
+        </div>
+
+        <div className="mb-12">
+          <div className="flex items-center justify-center gap-2 mb-6">
+            <Crown size={20} className="text-yellow-400" />
+            <h3 className="text-xl md:text-2xl font-black text-white uppercase tracking-tight text-center">Juara BILIBILI 162 CUP I Tahun 2026</h3>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {BILIBILI_162_CUP_CHAMPIONS.map((item, index) => (
+              <motion.article
+                key={item.id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.08 }}
+                className="relative overflow-hidden rounded-3xl border border-yellow-500/25 bg-gradient-to-br from-yellow-500/10 via-black/50 to-amber-500/5 p-6 md:p-7 shadow-xl"
+              >
+                <div className="absolute -right-10 -top-10 w-32 h-32 rounded-full bg-yellow-500/10 blur-2xl pointer-events-none" />
+                <div className="flex items-start gap-4">
+                  <div className="w-14 h-14 shrink-0 rounded-2xl bg-yellow-500/15 border border-yellow-500/30 flex items-center justify-center">
+                    <Trophy size={27} className="text-yellow-400" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-[10px] font-black uppercase tracking-widest text-yellow-400 mb-1">JUARA I</div>
+                    <h4 className="text-lg md:text-xl font-black text-white leading-tight">{item.category}</h4>
+                  </div>
+                </div>
+                <div className="mt-6 rounded-2xl border border-yellow-500/15 bg-black/25 p-5">
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">Pasangan Juara</div>
+                  <div className="text-xl md:text-2xl font-black text-yellow-300 leading-tight">{item.champions}</div>
+                  <div className="mt-2 text-sm text-slate-300">{item.club}</div>
+                </div>
+                <div className="mt-4 flex items-center gap-2 text-xs text-slate-400">
+                  <Medal size={15} className="text-yellow-400" />
+                  BILIBILI 162 CUP I • 08–12 September 2026 • GOR Titik Kumpul Soreang
+                </div>
+              </motion.article>
+            ))}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
