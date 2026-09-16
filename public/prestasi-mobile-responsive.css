@@ -22,7 +22,7 @@
   order: 2;
 }
 
-/* Nugi–Saldi: photo kiri = Saldi, photo kanan = Nugi. */
+/* Nugi–Saldi: photo kiri = Nugi, photo kanan = Saldi. */
 #prestasi .prestasi-events > .prestasi-event-card:nth-child(2) .prestasi-results > .prestasi-result-card:nth-child(3) .prestasi-player-grid > :first-child {
   order: 2;
 }
