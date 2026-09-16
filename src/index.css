@@ -12,9 +12,84 @@
 }
 
 .font-serif { font-family: 'Times New Roman', 'Tinos', 'Georgia', serif; }
-body { overflow-x:hidden; -webkit-tap-highlight-color:transparent; }
+body { overflow-x:hidden; -webkit-tap-highlight-color:transparent }
 .hide-scrollbar::-webkit-scrollbar{display:none}.hide-scrollbar{-ms-overflow-style:none;scrollbar-width:none}
 img{max-width:100%;height:auto}
+
+/* =========================================================
+   PUBLIC DESKTOP NAVBAR — HIGH CONTRAST DROPDOWNS
+   Keep submenu visually separated from the page/hero underneath.
+   ========================================================= */
+@media (min-width: 1024px) {
+  nav[aria-label="Navigasi utama PB Bilibili 162"] .absolute.top-full.left-0.w-64 {
+    z-index: 10050 !important;
+    padding-top: 8px !important;
+    isolation: isolate !important;
+  }
+
+  nav[aria-label="Navigasi utama PB Bilibili 162"] .absolute.top-full.left-0.w-64 > div {
+    position: relative !important;
+    z-index: 10051 !important;
+    background: #07101f !important;
+    background-color: #07101f !important;
+    border: 1px solid rgba(96, 165, 250, .38) !important;
+    border-top: 2px solid rgba(59, 130, 246, .72) !important;
+    border-radius: 14px !important;
+    box-shadow: 0 22px 55px rgba(0, 0, 0, .72), 0 8px 24px rgba(2, 6, 23, .65) !important;
+    overflow: hidden !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  nav[aria-label="Navigasi utama PB Bilibili 162"] .absolute.top-full.left-0.w-64 > div::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: rgba(147, 197, 253, .7);
+    pointer-events: none;
+  }
+
+  nav[aria-label="Navigasi utama PB Bilibili 162"] .absolute.top-full.left-0.w-64 button {
+    position: relative !important;
+    z-index: 1 !important;
+    min-height: 46px !important;
+    color: #e2e8f0 !important;
+    background: #07101f !important;
+    border-bottom: 1px solid rgba(148, 163, 184, .10) !important;
+    font-weight: 700 !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,.55);
+    transition: background-color .15s ease, color .15s ease, padding-left .15s ease !important;
+  }
+
+  nav[aria-label="Navigasi utama PB Bilibili 162"] .absolute.top-full.left-0.w-64 button:last-child {
+    border-bottom: 0 !important;
+  }
+
+  nav[aria-label="Navigasi utama PB Bilibili 162"] .absolute.top-full.left-0.w-64 button:hover,
+  nav[aria-label="Navigasi utama PB Bilibili 162"] .absolute.top-full.left-0.w-64 button:focus-visible {
+    color: #ffffff !important;
+    background: #123b78 !important;
+    outline: none !important;
+    padding-left: 18px !important;
+  }
+
+  nav[aria-label="Navigasi utama PB Bilibili 162"] .absolute.top-full.left-0.w-64 button:focus-visible {
+    box-shadow: inset 3px 0 0 #60a5fa !important;
+  }
+
+  nav[aria-label="Navigasi utama PB Bilibili 162"] .absolute.top-full.left-0.w-64 button svg {
+    color: #60a5fa !important;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,.45));
+  }
+
+  nav[aria-label="Navigasi utama PB Bilibili 162"] .absolute.top-full.left-0.w-64 button:hover svg,
+  nav[aria-label="Navigasi utama PB Bilibili 162"] .absolute.top-full.left-0.w-64 button:focus-visible svg {
+    color: #bfdbfe !important;
+  }
+}
 
 @media(max-width:1023px){
  #mobile-sidebar-toggle-btn{position:absolute;top:50%;right:max(12px,env(safe-area-inset-right));transform:translateY(-50%);width:44px;height:44px;min-width:44px;min-height:44px;margin:0;z-index:10001;border-radius:14px;display:flex;align-items:center;justify-content:center;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
