@@ -16,8 +16,7 @@
 /*
  * Photo correction for AJP winners.
  * The registration records for these two pairs store player 1/player 2
- * in the opposite order from the public Prestasi card names. Swap only
- * the two photo tiles; names, clubs and source data remain unchanged.
+ * in the opposite order from the public Prestasi card names.
  */
 #prestasi .prestasi-events > .prestasi-event-card:nth-child(2) .prestasi-results > .prestasi-result-card:nth-child(2) .prestasi-player-grid > :first-child {
   order: 2;
@@ -33,6 +32,43 @@
 
 #prestasi .prestasi-events > .prestasi-event-card:nth-child(2) .prestasi-results > .prestasi-result-card:nth-child(3) .prestasi-player-grid > :last-child {
   order: 1;
+}
+
+/* Keep each player's public name aligned with the corrected photo tile. */
+#prestasi .prestasi-events > .prestasi-event-card:nth-child(2) .prestasi-results > .prestasi-result-card:nth-child(2) .prestasi-player-grid > :first-child .prestasi-player-name {
+  font-size: 0;
+}
+
+#prestasi .prestasi-events > .prestasi-event-card:nth-child(2) .prestasi-results > .prestasi-result-card:nth-child(2) .prestasi-player-grid > :first-child .prestasi-player-name::after {
+  content: "Ahmad Halim";
+  font-size: 11px;
+}
+
+#prestasi .prestasi-events > .prestasi-event-card:nth-child(2) .prestasi-results > .prestasi-result-card:nth-child(2) .prestasi-player-grid > :last-child .prestasi-player-name {
+  font-size: 0;
+}
+
+#prestasi .prestasi-events > .prestasi-event-card:nth-child(2) .prestasi-results > .prestasi-result-card:nth-child(2) .prestasi-player-grid > :last-child .prestasi-player-name::after {
+  content: "Gusmulyadi";
+  font-size: 11px;
+}
+
+#prestasi .prestasi-events > .prestasi-event-card:nth-child(2) .prestasi-results > .prestasi-result-card:nth-child(3) .prestasi-player-grid > :first-child .prestasi-player-name {
+  font-size: 0;
+}
+
+#prestasi .prestasi-events > .prestasi-event-card:nth-child(2) .prestasi-results > .prestasi-result-card:nth-child(3) .prestasi-player-grid > :first-child .prestasi-player-name::after {
+  content: "Nugi";
+  font-size: 11px;
+}
+
+#prestasi .prestasi-events > .prestasi-event-card:nth-child(2) .prestasi-results > .prestasi-result-card:nth-child(3) .prestasi-player-grid > :last-child .prestasi-player-name {
+  font-size: 0;
+}
+
+#prestasi .prestasi-events > .prestasi-event-card:nth-child(2) .prestasi-results > .prestasi-result-card:nth-child(3) .prestasi-player-grid > :last-child .prestasi-player-name::after {
+  content: "Saldi";
+  font-size: 11px;
 }
 
 @media (max-width: 767px) {
