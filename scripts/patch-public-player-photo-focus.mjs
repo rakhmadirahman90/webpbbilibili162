@@ -18,8 +18,7 @@ if (!src.includes('function SmartPlayerPhoto')) {
         const detector = new Detector({ fastMode: true, maxDetectedFaces: 3 });
         const faces = await detector.detect(image);
         if (!faces?.length || cancelled) return;
-        const face = faces.map((item: any) => item?.boundingBox).filter(Boolean)
-          .sort((a: any, b: any) => (b.width * b.height) - (a.width * a.height))[0];
+        const face = faces.map((item: any) => item?.boundingBox).filter(Boolean).sort((a: any, b: any) => (b.width * b.height) - (a.width * a.height))[0];
         if (!face || !image.naturalWidth || !image.naturalHeight) return;
         const x = Math.max(20, Math.min(80, ((face.x + face.width / 2) / image.naturalWidth) * 100));
         const y = Math.max(18, Math.min(62, ((face.y + face.height * 0.35) / image.naturalHeight) * 100));
