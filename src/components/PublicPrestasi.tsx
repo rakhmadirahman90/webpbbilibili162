@@ -1,34 +1,82 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Trophy, Medal, Star, ChevronLeft, ChevronRight, Crown } from 'lucide-react';
+import { Trophy, Medal, Star, ChevronLeft, ChevronRight, Crown, CalendarDays, MapPin } from 'lucide-react';
 import { supabase } from '../supabase';
 import { getSiteSetting } from '../utils/siteSettingsHelper';
 
 const PAGE_SIZE = 6;
+const TOURNAMENT_ID = 2;
+const PHOTO_BUCKET = 'turnamen-dokumen';
+
+const normalizeName = (value: string = '') =>
+  value.toUpperCase().replace(/[^A-Z0-9]/g, '');
 
 const BILIBILI_162_CUP_RESULTS = [
   {
     id: 'bilibili-162-cup-cc-local',
     category: 'Ganda Putra CC — Lokal Parepare',
     results: [
-      { rank: 'JUARA I', players: 'Tison & Kambo', club: 'PB Sari Indah', icon: Trophy },
-      { rank: 'JUARA II', players: 'Muslim & Sam', club: 'Rajawali 42', icon: Medal },
-      { rank: 'JUARA III BERSAMA', players: 'Denis & Yusuf', club: 'PB Bilibili 162', icon: Medal },
-      { rank: 'JUARA III BERSAMA', players: 'Ome & Ardi', club: 'Rajawali 42', icon: Medal },
+      { rank: 'JUARA I', players: 'Tison & Kambo', aliases: [['TISON', 'KAMBO']], club: 'PB Sari Indah', icon: Trophy },
+      { rank: 'JUARA II', players: 'Muslim & Sam', aliases: [['MUSLIM', 'SAM']], club: 'Rajawali 42', icon: Medal },
+      { rank: 'JUARA III BERSAMA', players: 'Denis & Yusuf', aliases: [['DENIS', 'YUSUF']], club: 'PB Bilibili 162', icon: Medal },
+      { rank: 'JUARA III BERSAMA', players: 'Ome & Ardi', aliases: [['OME', 'ARDI']], club: 'Rajawali 42', icon: Medal },
     ],
   },
   {
     id: 'bilibili-162-cup-ajatappareng',
     category: 'Ganda Putra AD/BC-/C+C — Ajatappareng',
     results: [
-      { rank: 'JUARA I', players: 'Andi M. Fahrul & Ichal Bin Tura', club: 'Juara I Kategori Ajatappareng', icon: Trophy },
+      {
+        rank: 'JUARA I',
+        players: 'Andi M. Fahrul & Ichal Bin Tura (Ayah E)',
+        aliases: [['ANDIMFAHRUL', 'ICHALBINTURA']],
+        club: 'PB Bulu Putih',
+        icon: Trophy,
+      },
+      {
+        rank: 'JUARA II',
+        players: 'Ahmad Halim & Gusmulyadi',
+        aliases: [['AHMADHALIM', 'GUSMULYADI']],
+        club: 'PB Barokah',
+        icon: Medal,
+      },
+      {
+        rank: 'JUARA III BERSAMA',
+        players: 'Nugi & Saldi',
+        aliases: [['NUGI', 'SALDI']],
+        club: 'THE GADE',
+        icon: Medal,
+      },
+      {
+        rank: 'JUARA III BERSAMA',
+        players: 'Haykal & Restu',
+        aliases: [['HAYKAL', 'RESTU']],
+        club: 'PB ROVIDA',
+        icon: Medal,
+      },
     ],
   },
 ];
 
+function pairMatches(row: any, aliases: string[][] = []) {
+  const a = normalizeName(row?.nama_pemain_1);
+  const b = normalizeName(row?.nama_pemain_2);
+  return aliases.some(([first, second]) => {
+    const f = normalizeName(first);
+    const s = normalizeName(second);
+    return (a.includes(f) && b.includes(s)) || (a.includes(s) && b.includes(f));
+  });
+}
+
+function getPhotoPath(row: any, player: 1 | 2) {
+  return row?.[`foto_pemain_${player}_url`] || row?.[`foto_pemain_${player}`] || '';
+}
+
 export default function PublicPrestasi() {
   const [prestasi, setPrestasi] = useState<any[]>([]);
   const [page, setPage] = useState(1);
+  const [acceptedParticipants, setAcceptedParticipants] = useState<any[]>([]);
+  const [signedPhotos, setSignedPhotos] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const fetchPrestasi = async () => {
@@ -66,6 +114,54 @@ export default function PublicPrestasi() {
     fetchPrestasi();
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    const fetchAcceptedParticipants = async () => {
+      const { data, error } = await supabase
+        .from('pendaftaran_turnamen')
+        .select('id,tournament_id,status_pendaftaran,nama_pemain_1,nama_pemain_2,asal_pb,foto_pemain_1_url,foto_pemain_2_url,foto_pemain_1,foto_pemain_2')
+        .eq('tournament_id', TOURNAMENT_ID)
+        .eq('status_pendaftaran', 'Diterima');
+
+      if (cancelled || error) return;
+      setAcceptedParticipants(data || []);
+
+      const paths = Array.from(new Set((data || []).flatMap(row => [getPhotoPath(row, 1), getPhotoPath(row, 2)]).filter(Boolean)));
+      if (!paths.length) return;
+
+      const { data: signed, error: signedError } = await supabase
+        .storage
+        .from(PHOTO_BUCKET)
+        .createSignedUrls(paths, 60 * 60);
+
+      if (cancelled || signedError || !signed) return;
+      const next: Record<string, string> = {};
+      signed.forEach((item: any, index: number) => {
+        if (item?.signedUrl) next[paths[index]] = item.signedUrl;
+      });
+      setSignedPhotos(next);
+    };
+
+    fetchAcceptedParticipants();
+    return () => { cancelled = true; };
+  }, []);
+
+  const championEvents = useMemo(() => BILIBILI_162_CUP_RESULTS.map(event => ({
+    ...event,
+    results: event.results.map(result => {
+      const row = acceptedParticipants.find(candidate => pairMatches(candidate, result.aliases));
+      const photo1Path = row ? getPhotoPath(row, 1) : '';
+      const photo2Path = row ? getPhotoPath(row, 2) : '';
+      return {
+        ...result,
+        sourceRowId: row?.id,
+        sourceNames: row ? `${row.nama_pemain_1} & ${row.nama_pemain_2}` : '',
+        photo1: signedPhotos[photo1Path] || '',
+        photo2: signedPhotos[photo2Path] || '',
+      };
+    }),
+  })), [acceptedParticipants, signedPhotos]);
+
   const totalPages = Math.max(1, Math.ceil(prestasi.length / PAGE_SIZE));
   const current = useMemo(() => prestasi.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), [prestasi, page]);
 
@@ -73,46 +169,63 @@ export default function PublicPrestasi() {
     if (page > totalPages) setPage(totalPages);
   }, [page, totalPages]);
 
-  if (!prestasi.length) return null;
-
   return (
     <section id="prestasi" className="py-20 relative overflow-hidden">
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-3xl h-64 bg-yellow-500/10 rounded-full blur-[100px] pointer-events-none" />
       <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <motion.div initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}} className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-xs font-black uppercase tracking-widest mb-4"><Star size={14}/> Prestasi</motion.div>
+        <div className="text-center max-w-4xl mx-auto mb-12">
+          <motion.div initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-yellow-500/10 border border-yellow-500/25 text-yellow-400 text-xs font-black uppercase tracking-widest mb-4"><Star size={14}/> Prestasi</motion.div>
           <motion.h2 initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}} className="text-3xl md:text-4xl lg:text-5xl font-black text-white italic uppercase tracking-tighter mb-4">Apresiasi <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-amber-600">Juara</span></motion.h2>
-          <motion.p initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}} className="text-slate-400">Dedikasi dan kerja keras menghasilkan prestasi. Berikut adalah beberapa pencapaian terbaik atlet kami di berbagai kejuaraan.</motion.p>
+          <motion.p initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}} className="text-slate-400">Daftar juara BILIBILI 162 CUP I Tahun 2026 terintegrasi dengan data peserta diterima. Foto ditampilkan dari berkas pasangan yang diunggah saat pendaftaran.</motion.p>
         </div>
 
         <div className="mb-12">
-          <div className="flex items-center justify-center gap-2 mb-6">
-            <Crown size={20} className="text-yellow-400" />
-            <h3 className="text-xl md:text-2xl font-black text-white uppercase tracking-tight text-center">Juara BILIBILI 162 CUP I Tahun 2026</h3>
+          <div className="text-center mb-7">
+            <div className="inline-flex items-center gap-2 text-yellow-400 mb-2"><Crown size={21}/><span className="text-xl md:text-2xl font-black uppercase tracking-tight">Juara BILIBILI 162 CUP I Tahun 2026</span></div>
+            <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-slate-400 mt-2">
+              <span className="inline-flex items-center gap-1.5"><CalendarDays size={14} className="text-yellow-400"/>08–12 September 2026</span>
+              <span className="inline-flex items-center gap-1.5"><MapPin size={14} className="text-yellow-400"/>GOR Titik Kumpul Soreang, Parepare</span>
+            </div>
           </div>
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            {BILIBILI_162_CUP_RESULTS.map((event, index) => (
-              <motion.article key={event.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: index * 0.08 }} className="relative overflow-hidden rounded-3xl border border-yellow-500/25 bg-gradient-to-br from-yellow-500/10 via-black/50 to-amber-500/5 p-6 md:p-7 shadow-xl">
-                <div className="absolute -right-10 -top-10 w-32 h-32 rounded-full bg-yellow-500/10 blur-2xl pointer-events-none" />
-                <h4 className="text-lg md:text-xl font-black text-white leading-tight mb-5">{event.category}</h4>
-                <div className="space-y-3">
+
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-7">
+            {championEvents.map((event, index) => (
+              <motion.article key={event.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: index * 0.08 }} className={`relative overflow-hidden rounded-3xl border p-5 md:p-6 shadow-2xl ${event.id.includes('ajatappareng') ? 'border-orange-500/30 bg-gradient-to-br from-orange-500/10 via-black/60 to-amber-500/5' : 'border-blue-500/30 bg-gradient-to-br from-blue-600/10 via-black/60 to-cyan-500/5'}`}>
+                <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-yellow-500/10 blur-3xl pointer-events-none" />
+                <div className="relative z-10 flex items-center justify-between gap-4 mb-5">
+                  <div>
+                    <div className="text-[10px] font-black uppercase tracking-[0.22em] text-yellow-400 mb-1">BILIBILI 162 CUP I TAHUN 2026</div>
+                    <h4 className="text-xl md:text-2xl font-black text-white leading-tight">{event.category}</h4>
+                  </div>
+                  <Trophy size={30} className="text-yellow-400 shrink-0" />
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {event.results.map((result, resultIndex) => {
                     const Icon = result.icon;
+                    const hasPhotos = Boolean(result.photo1 || result.photo2);
                     return (
-                      <div key={`${event.id}-${result.rank}-${result.players}-${resultIndex}`} className={`rounded-2xl border p-4 ${result.rank === 'JUARA I' ? 'border-yellow-500/30 bg-yellow-500/10' : result.rank === 'JUARA II' ? 'border-slate-400/20 bg-slate-400/5' : 'border-amber-600/20 bg-amber-600/5'}`}>
-                        <div className="flex items-start gap-3">
-                          <div className="w-10 h-10 shrink-0 rounded-xl bg-black/25 border border-white/10 flex items-center justify-center"><Icon size={19} className={result.rank === 'JUARA I' ? 'text-yellow-400' : result.rank === 'JUARA II' ? 'text-slate-300' : 'text-amber-500'} /></div>
-                          <div className="min-w-0 flex-1">
-                            <div className="text-[10px] font-black uppercase tracking-widest text-yellow-400 mb-1">{result.rank}</div>
-                            <div className="text-lg font-black text-white leading-tight">{result.players}</div>
-                            <div className="mt-1 text-sm text-slate-300">{result.club}</div>
-                          </div>
+                      <div key={`${event.id}-${result.rank}-${result.players}-${resultIndex}`} className={`rounded-2xl border overflow-hidden bg-black/45 ${result.rank === 'JUARA I' ? 'border-yellow-500/50' : result.rank === 'JUARA II' ? 'border-sky-400/30' : 'border-orange-500/30'}`}>
+                        <div className="px-3 pt-3 text-center">
+                          <div className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-yellow-400"><Icon size={13}/>{result.rank}</div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-1.5 p-2">
+                          {[result.photo1, result.photo2].map((photo, photoIndex) => (
+                            <div key={photoIndex} className="aspect-[3/4] rounded-xl overflow-hidden bg-slate-900 border border-white/10 flex items-center justify-center">
+                              {photo ? <img src={photo} alt={`${result.players} - pemain ${photoIndex + 1}`} className="w-full h-full object-cover" loading="lazy" /> : <div className="text-center px-1"><div className="text-2xl opacity-50">🏸</div><div className="text-[8px] text-slate-500 mt-1">{hasPhotos ? 'Foto tidak tersedia' : 'Memuat foto...'}</div></div>}
+                            </div>
+                          ))}
+                        </div>
+                        <div className="px-3 pb-4 text-center">
+                          <div className="text-sm md:text-base font-black text-white leading-tight">{result.players}</div>
+                          <div className="mt-1 text-[10px] text-slate-300 leading-snug">{result.club}</div>
+                          {result.sourceRowId && <div className="mt-2 text-[8px] uppercase tracking-wider text-emerald-400">✓ Data peserta diterima</div>}
                         </div>
                       </div>
                     );
                   })}
                 </div>
-                <div className="mt-4 flex items-center gap-2 text-xs text-slate-400"><Medal size={15} className="text-yellow-400" /> BILIBILI 162 CUP I • 08–12 September 2026 • GOR Titik Kumpul Soreang</div>
+                <div className="relative z-10 mt-5 pt-4 border-t border-white/10 flex flex-wrap items-center gap-2 text-xs text-slate-400"><Medal size={15} className="text-yellow-400" /> Foto & identitas pasangan disinkronkan dari data pendaftaran peserta diterima.</div>
               </motion.article>
             ))}
           </div>
