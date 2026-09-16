@@ -1,0 +1,155 @@
+/* PB BILIBILI 162 — Prestasi mobile responsive hardening */
+
+#prestasi {
+  overflow-x: clip;
+}
+
+@media (max-width: 767px) {
+  #prestasi {
+    padding-top: 3.25rem !important;
+    padding-bottom: 3.5rem !important;
+  }
+
+  #prestasi > .max-w-7xl {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+    box-sizing: border-box !important;
+  }
+
+  #prestasi > .max-w-7xl > div:first-child {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-bottom: 2rem !important;
+  }
+
+  #prestasi > .max-w-7xl > div:first-child h2 {
+    font-size: clamp(2rem, 9vw, 2.65rem) !important;
+    line-height: 1.05 !important;
+    letter-spacing: -0.045em !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  #prestasi > .max-w-7xl > div:first-child p {
+    font-size: 0.84rem !important;
+    line-height: 1.65 !important;
+    max-width: 100% !important;
+  }
+
+  /* Keep the two tournament categories vertically stacked on phones. */
+  #prestasi .mb-10 > .grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 16px !important;
+    width: 100% !important;
+  }
+
+  #prestasi .mb-10 {
+    margin-bottom: 2.75rem !important;
+  }
+
+  #prestasi .mb-10 > .text-center {
+    margin-bottom: 1.25rem !important;
+  }
+
+  #prestasi .mb-10 > .text-center > div:first-child {
+    max-width: 100% !important;
+    justify-content: center !important;
+    align-items: flex-start !important;
+  }
+
+  #prestasi .mb-10 > .text-center > div:first-child span {
+    font-size: 1rem !important;
+    line-height: 1.25 !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  #prestasi .mb-10 > .text-center > div:last-child {
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 6px !important;
+    font-size: 0.68rem !important;
+  }
+
+  #prestasi article {
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 14px !important;
+    border-radius: 22px !important;
+    box-sizing: border-box !important;
+  }
+
+  #prestasi article > .relative.z-10 {
+    align-items: flex-start !important;
+    margin-bottom: 14px !important;
+  }
+
+  #prestasi article > .relative.z-10 h4 {
+    font-size: 1.08rem !important;
+    line-height: 1.2 !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  /* Each placing gets its own readable row; no tiny four-column cards. */
+  #prestasi article > .grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  #prestasi article > .grid > div {
+    min-width: 0 !important;
+    border-radius: 17px !important;
+  }
+
+  /* Preserve the two-player photo arrangement inside every result card. */
+  #prestasi article > .grid > div > .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 7px !important;
+  }
+
+  #prestasi article img {
+    max-width: 100% !important;
+  }
+
+  #prestasi article > .grid > div > .grid > div {
+    min-width: 0 !important;
+    aspect-ratio: 4 / 5 !important;
+  }
+
+  #prestasi article > .grid > div > div:last-child {
+    min-height: auto !important;
+    padding-bottom: 13px !important;
+  }
+
+  #prestasi article > .grid > div > div:last-child > div:first-child {
+    font-size: 0.86rem !important;
+    line-height: 1.25 !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  #prestasi article > .grid > div > div:last-child > div:last-child {
+    font-size: 0.66rem !important;
+    line-height: 1.35 !important;
+  }
+}
+
+@media (max-width: 380px) {
+  #prestasi > .max-w-7xl {
+    padding-left: 11px !important;
+    padding-right: 11px !important;
+  }
+
+  #prestasi article {
+    padding: 12px !important;
+  }
+
+  #prestasi article > .relative.z-10 h4 {
+    font-size: 1rem !important;
+  }
+
+  #prestasi article > .grid > div > div:last-child > div:first-child {
+    font-size: 0.8rem !important;
+  }
+}
