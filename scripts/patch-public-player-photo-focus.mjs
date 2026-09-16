@@ -35,18 +35,16 @@ if (!src.includes('function SmartPlayerPhoto')) {
   if (!src.includes(anchor)) throw new Error('[patch-public-player-photo-focus] directUrl anchor not found');
   src = src.replace(anchor, helper + anchor);
 }
-const old = `<img src={url} alt={\\`Foto \\${name}\\`} loading="lazy" className="h-full w-full object-cover object-center transition duration-300 group-hover:scale-[1.02]"/>`;
-const newer = `<SmartPlayerPhoto src={url} alt={\\`Foto \\${name}\\`} />`;
-if (src.includes(old)) src = src.replace(old, newer);
-else if (!src.includes('<SmartPlayerPhoto src={url}')) {
-  const broad = /<img src=\\{url\\} alt=\\{\\`Foto \\$\\{name\\}\\`\\} loading="lazy" className="[^"]*"\\/>/;
+const newer = '<SmartPlayerPhoto src={url} alt={`Foto ${name}`} />';
+if (!src.includes('<SmartPlayerPhoto src={url}')) {
+  const broad = /<img src=\{url\} alt=\{`Foto \$\{name\}`} loading="lazy" className="[^\"]*"\/>/;
   if (broad.test(src)) src = src.replace(broad, newer);
 }
 
 const cssPath = 'src/index.css';
 if (fs.existsSync(cssPath)) {
   let css = fs.readFileSync(cssPath, 'utf8');
-  const marker = '/* __PUBLIC_PRESTASI_CARD_FIT_V3__ */';
+  const marker = '/* __PUBLIC_PRESTASI_CARD_FIT_V4__ */';
   if (!css.includes(marker)) {
     css += `\n\n${marker}
 #prestasi { width: 100%; max-width: 100%; overflow-x: clip; }
@@ -59,27 +57,17 @@ if (fs.existsSync(cssPath)) {
 #prestasi article .aspect-\\[3\\/4\\] > * { width: 100% !important; max-width: 100% !important; height: 100% !important; min-width: 0 !important; }
 #prestasi article .aspect-\\[3\\/4\\] img { width: 100% !important; max-width: none !important; height: 100% !important; min-width: 0 !important; display: block; object-fit: cover !important; object-position: 50% 22% !important; }
 @media (max-width: 767px) {
-  #prestasi { padding-left: 0; padding-right: 0; }
-  #prestasi > .max-w-7xl, #prestasi > .relative.z-10 { min-width: 0 !important; }
   #prestasi .max-w-7xl { padding-left: 1rem !important; padding-right: 1rem !important; }
-  #prestasi .text-center { min-width: 0; }
   #prestasi article { border-radius: 1.25rem !important; padding: .875rem !important; }
-  #prestasi article > .relative.z-10 { min-width: 0 !important; }
-  #prestasi article > .relative.z-10 h4 { font-size: 1rem !important; line-height: 1.2 !important; overflow-wrap: anywhere; }
   #prestasi article > .grid.grid-cols-2.md\\:grid-cols-4 { grid-template-columns: 1fr !important; gap: .75rem !important; }
-  #prestasi article > .grid.grid-cols-2.md\\:grid-cols-4 > div { border-radius: .9rem !important; }
   #prestasi article > .grid.grid-cols-2.md\\:grid-cols-4 > div > .grid.grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: .5rem !important; padding: .5rem !important; }
   #prestasi article .aspect-\\[3\\/4\\] { aspect-ratio: 3 / 4 !important; }
   #prestasi article .aspect-\\[3\\/4\\] img { object-position: 50% 20% !important; }
-  #prestasi article .px-3.pb-4 { padding-left: .625rem !important; padding-right: .625rem !important; padding-bottom: .75rem !important; }
   #prestasi article .text-sm.md\\:text-base { font-size: .78rem !important; line-height: 1.2 !important; overflow-wrap: anywhere; }
   #prestasi article .text-\\[10px\\] { font-size: .58rem !important; line-height: 1.25 !important; }
-  #prestasi > .relative.z-10 > .mb-12 > .text-center { margin-bottom: 1rem !important; }
-  #prestasi > .relative.z-10 > .mb-12 > .text-center .text-xl { font-size: 1rem !important; line-height: 1.2 !important; }
 }
-@media (min-width: 768px) {
+@media (min-width: 768px) and (max-width: 1279px) {
   #prestasi article > .grid.grid-cols-2.md\\:grid-cols-4 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
-  #prestasi article .aspect-\\[3\\/4\\] img { object-position: 50% 22% !important; }
 }
 @media (min-width: 1280px) {
   #prestasi article > .grid.grid-cols-2.md\\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
@@ -88,11 +76,10 @@ if (fs.existsSync(cssPath)) {
   #prestasi .max-w-7xl { padding-left: .75rem !important; padding-right: .75rem !important; }
   #prestasi article { padding: .7rem !important; }
   #prestasi article > .grid.grid-cols-2.md\\:grid-cols-4 > div > .grid.grid-cols-2 { gap: .35rem !important; padding: .4rem !important; }
-  #prestasi article .text-sm.md\\:text-base { font-size: .72rem !important; }
 }
 `;
     fs.writeFileSync(cssPath, css, 'utf8');
   }
 }
 fs.writeFileSync(path, src, 'utf8');
-console.log('[patch-public-player-photo-focus] responsive photo cards and face focus applied.');
+console.log('[patch-public-player-photo-focus] responsive photo cards and face focus applied safely.');
