@@ -1,20 +1,33 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Trophy, Medal, Star, ChevronLeft, ChevronRight, Crown, CalendarDays, MapPin } from 'lucide-react';
+import { Trophy, Medal, Star, Crown, CalendarDays, MapPin, Users, Award } from 'lucide-react';
 import { supabase } from '../supabase';
-import { getSiteSetting } from '../utils/siteSettingsHelper';
 
-const PAGE_SIZE = 6;
 const TOURNAMENT_ID = 2;
 const PHOTO_BUCKET = 'turnamen-dokumen';
 
-const normalizeName = (value: string = '') =>
-  value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+type ChampionResult = {
+  rank: 'JUARA I' | 'JUARA II' | 'JUARA III BERSAMA';
+  players: string;
+  aliases: string[][];
+  club: string;
+  icon: typeof Trophy;
+};
 
-const BILIBILI_162_CUP_RESULTS = [
+type ChampionEvent = {
+  id: string;
+  category: string;
+  region: string;
+  accent: 'blue' | 'orange';
+  results: ChampionResult[];
+};
+
+const BILIBILI_162_CUP_RESULTS: ChampionEvent[] = [
   {
     id: 'bilibili-162-cup-cc-local',
-    category: 'Ganda Putra CC — Lokal Parepare',
+    category: 'Ganda Putra CC',
+    region: 'KATEGORI LOKAL PAREPARE',
+    accent: 'orange',
     results: [
       { rank: 'JUARA I', players: 'Tison & Kambo', aliases: [['TISON', 'KAMBO']], club: 'PB Sari Indah', icon: Trophy },
       { rank: 'JUARA II', players: 'Muslim & Sam', aliases: [['MUSLIM', 'SAM']], club: 'Rajawali 42', icon: Medal },
@@ -24,41 +37,21 @@ const BILIBILI_162_CUP_RESULTS = [
   },
   {
     id: 'bilibili-162-cup-ajatappareng',
-    category: 'Ganda Putra AD/BC-/C+C — Ajatappareng',
+    category: 'Ganda Putra AD/BC-/C+C',
+    region: 'KATEGORI AJATAPPARENG',
+    accent: 'blue',
     results: [
-      {
-        rank: 'JUARA I',
-        players: 'Andi M. Fahrul & Ichal Bin Tura (Ayah E)',
-        aliases: [['ANDIMFAHRUL', 'ICHALBINTURA']],
-        club: 'PB Bulu Putih',
-        icon: Trophy,
-      },
-      {
-        rank: 'JUARA II',
-        players: 'Ahmad Halim & Gusmulyadi',
-        aliases: [['AHMADHALIM', 'GUSMULYADI']],
-        club: 'PB Barokah',
-        icon: Medal,
-      },
-      {
-        rank: 'JUARA III BERSAMA',
-        players: 'Nugi & Saldi',
-        aliases: [['NUGI', 'SALDI']],
-        club: 'THE GADE',
-        icon: Medal,
-      },
-      {
-        rank: 'JUARA III BERSAMA',
-        players: 'Haykal & Restu',
-        aliases: [['HAYKAL', 'RESTU']],
-        club: 'PB ROVIDA',
-        icon: Medal,
-      },
+      { rank: 'JUARA I', players: 'Andi M. Fahrul & Ichal Bin Tura (Ayah E)', aliases: [['ANDIMFAHRUL', 'ICHALBINTURA']], club: 'PB Bulu Putih', icon: Trophy },
+      { rank: 'JUARA II', players: 'Ahmad Halim & Gusmulyadi', aliases: [['AHMADHALIM', 'GUSMULYADI']], club: 'PB Barokah', icon: Medal },
+      { rank: 'JUARA III BERSAMA', players: 'Nugi & Saldi', aliases: [['NUGI', 'SALDI']], club: 'THE GADE', icon: Medal },
+      { rank: 'JUARA III BERSAMA', players: 'Haykal & Restu', aliases: [['HAYKAL', 'RESTU']], club: 'PB ROVIDA', icon: Medal },
     ],
   },
 ];
 
-function pairMatches(row: any, aliases: string[][] = []) {
+const normalizeName = (value = '') => value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+function pairMatches(row: any, aliases: string[][]) {
   const a = normalizeName(row?.nama_pemain_1);
   const b = normalizeName(row?.nama_pemain_2);
   return aliases.some(([first, second]) => {
@@ -68,55 +61,82 @@ function pairMatches(row: any, aliases: string[][] = []) {
   });
 }
 
-function getPhotoPath(row: any, player: 1 | 2) {
+function photoPath(row: any, player: 1 | 2) {
   return row?.[`foto_pemain_${player}_url`] || row?.[`foto_pemain_${player}`] || '';
 }
 
+function facePosition(face: any, width: number, height: number) {
+  if (!face || !width || !height) return '50% 28%';
+  const box = face.boundingBox || face;
+  const x = Number(box.x ?? box.left ?? 0) + Number(box.width ?? 0) / 2;
+  const y = Number(box.y ?? box.top ?? 0) + Number(box.height ?? 0) / 2;
+  const px = Math.max(15, Math.min(85, (x / width) * 100));
+  const py = Math.max(15, Math.min(60, (y / height) * 100));
+  return `${px}% ${py}%`;
+}
+
+function PlayerPhoto({ src, alt }: { src: string; alt: string }) {
+  const [position, setPosition] = useState('50% 28%');
+
+  const detectFace = async (event: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = event.currentTarget;
+    const FaceDetectorCtor = (window as any).FaceDetector;
+    if (!FaceDetectorCtor || !img.naturalWidth || !img.naturalHeight) return;
+    try {
+      const detector = new FaceDetectorCtor({ fastMode: true, maxDetectedFaces: 1 });
+      const faces = await detector.detect(img);
+      if (faces?.[0]) setPosition(facePosition(faces[0], img.naturalWidth, img.naturalHeight));
+    } catch {
+      // Browser does not support FaceDetector; keep the safe portrait fallback.
+    }
+  };
+
+  if (!src) {
+    return (
+      <div className="prestasi-photo-empty">
+        <Award size={22} />
+        <span>Foto belum tersedia</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="prestasi-photo-frame">
+      <img src={src} alt={alt} className="prestasi-photo-blur" aria-hidden="true" />
+      <img
+        src={src}
+        alt={alt}
+        className="prestasi-photo-main"
+        style={{ objectPosition: position }}
+        onLoad={detectFace}
+        loading="lazy"
+        decoding="async"
+        draggable={false}
+      />
+      <div className="prestasi-photo-shade" />
+    </div>
+  );
+}
+
+function RankBadge({ result }: { result: ChampionResult }) {
+  const Icon = result.icon;
+  const rankClass = result.rank === 'JUARA I' ? 'rank-gold' : result.rank === 'JUARA II' ? 'rank-silver' : 'rank-bronze';
+  return (
+    <div className={`prestasi-rank ${rankClass}`}>
+      <Icon size={15} />
+      <span>{result.rank}</span>
+    </div>
+  );
+}
+
 export default function PublicPrestasi() {
-  const [prestasi, setPrestasi] = useState<any[]>([]);
-  const [page, setPage] = useState(1);
   const [acceptedParticipants, setAcceptedParticipants] = useState<any[]>([]);
   const [signedPhotos, setSignedPhotos] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    const fetchPrestasi = async () => {
-      try {
-        const data = await getSiteSetting('prestasi_list');
-        if (Array.isArray(data) && data.length) {
-          setPrestasi(data);
-          localStorage.setItem('prestasi_local_v3', JSON.stringify(data));
-          return;
-        }
-        const { data: sb1 } = await supabase.from('prestasi').select('*').order('tahun', { ascending: false });
-        if (sb1?.length) {
-          setPrestasi(sb1);
-          localStorage.setItem('prestasi_local_v3', JSON.stringify(sb1));
-          return;
-        }
-        const { data: sb2 } = await supabase.from('prestasi_klub').select('*').order('tahun', { ascending: false });
-        if (sb2?.length) {
-          setPrestasi(sb2);
-          localStorage.setItem('prestasi_local_v3', JSON.stringify(sb2));
-          return;
-        }
-        throw new Error('No data');
-      } catch {
-        const local = JSON.parse(localStorage.getItem('prestasi_local_v3') || '[]');
-        setPrestasi(local.length ? local : [
-          { id:'p1', nama_kejuaraan:'Kejurkot Parepare (Tunggal Putra Dewasa)', tingkat:'Kabupaten/Kota', tahun:2023, medali_emas:1, medali_perak:0, medali_perunggu:1, atlet_berprestasi:'Andi (Emas), Budi (Perunggu)' },
-          { id:'p2', nama_kejuaraan:'Kejuaraan Provinsi (Kejurprov) Sulsel', tingkat:'Provinsi', tahun:2023, medali_emas:0, medali_perak:1, medali_perunggu:2, atlet_berprestasi:'Ganda Putra: Candra/Deni (Perak)' },
-          { id:'p3', nama_kejuaraan:'Sirkuit Nasional (Sirnas) B Sulawesi', tingkat:'Nasional', tahun:2022, medali_emas:1, medali_perak:1, medali_perunggu:1, atlet_berprestasi:'Eka (Emas - Tunggal Taruna Putri)' },
-          { id:'p4', nama_kejuaraan:'Walikota Cup Makassar (Ganda Campuran)', tingkat:'Provinsi', tahun:2024, medali_emas:1, medali_perak:0, medali_perunggu:0, atlet_berprestasi:'Fajar/Gita (Emas)' },
-          { id:'p5', nama_kejuaraan:'O2SN Tingkat SMA se-Sulsel', tingkat:'Provinsi', tahun:2023, medali_emas:2, medali_perak:1, medali_perunggu:0, atlet_berprestasi:'Hadi (Emas), Indah (Emas)'}
-        ]);
-      }
-    };
-    fetchPrestasi();
-  }, []);
-
-  useEffect(() => {
     let cancelled = false;
-    const fetchAcceptedParticipants = async () => {
+
+    const loadWinners = async () => {
       const { data, error } = await supabase
         .from('pendaftaran_turnamen')
         .select('id,tournament_id,status_pendaftaran,nama_pemain_1,nama_pemain_2,asal_pb,foto_pemain_1_url,foto_pemain_2_url,foto_pemain_1,foto_pemain_2')
@@ -126,7 +146,11 @@ export default function PublicPrestasi() {
       if (cancelled || error) return;
       setAcceptedParticipants(data || []);
 
-      const paths = Array.from(new Set((data || []).flatMap(row => [getPhotoPath(row, 1), getPhotoPath(row, 2)]).filter(Boolean)));
+      const paths = Array.from(new Set(
+        (data || [])
+          .flatMap(row => [photoPath(row, 1), photoPath(row, 2)])
+          .filter(Boolean)
+      ));
       if (!paths.length) return;
 
       const { data: signed, error: signedError } = await supabase
@@ -137,12 +161,13 @@ export default function PublicPrestasi() {
       if (cancelled || signedError || !signed) return;
       const next: Record<string, string> = {};
       signed.forEach((item: any, index: number) => {
-        if (item?.signedUrl) next[paths[index]] = item.signedUrl;
+        const url = item?.signedUrl || item?.signedURL || '';
+        if (url) next[paths[index]] = url;
       });
       setSignedPhotos(next);
     };
 
-    fetchAcceptedParticipants();
+    loadWinners();
     return () => { cancelled = true; };
   }, []);
 
@@ -150,131 +175,194 @@ export default function PublicPrestasi() {
     ...event,
     results: event.results.map(result => {
       const row = acceptedParticipants.find(candidate => pairMatches(candidate, result.aliases));
-      const photo1Path = row ? getPhotoPath(row, 1) : '';
-      const photo2Path = row ? getPhotoPath(row, 2) : '';
+      const p1 = row ? photoPath(row, 1) : '';
+      const p2 = row ? photoPath(row, 2) : '';
       return {
         ...result,
-        sourceRowId: row?.id,
-        sourceNames: row ? `${row.nama_pemain_1} & ${row.nama_pemain_2}` : '',
-        photo1: signedPhotos[photo1Path] || '',
-        photo2: signedPhotos[photo2Path] || '',
+        photo1: signedPhotos[p1] || '',
+        photo2: signedPhotos[p2] || '',
       };
     }),
   })), [acceptedParticipants, signedPhotos]);
 
-  const totalPages = Math.max(1, Math.ceil(prestasi.length / PAGE_SIZE));
-  const current = useMemo(() => prestasi.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), [prestasi, page]);
-
-  useEffect(() => {
-    if (page > totalPages) setPage(totalPages);
-  }, [page, totalPages]);
-
   return (
-    <section id="prestasi" className="py-20 relative overflow-hidden">
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-3xl h-64 bg-yellow-500/10 rounded-full blur-[100px] pointer-events-none" />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="text-center max-w-4xl mx-auto mb-8 md:mb-12">
-          <motion.div initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}} className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 rounded-full bg-yellow-500/10 border border-yellow-500/25 text-yellow-400 text-[10px] sm:text-xs font-black uppercase tracking-widest mb-4"><Star size={14}/> Prestasi</motion.div>
-          <motion.h2 initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}} className="text-3xl md:text-4xl lg:text-5xl font-black text-white italic uppercase tracking-tighter mb-4">Apresiasi <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-amber-600">Juara</span></motion.h2>
-          <motion.p initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}} className="text-sm sm:text-base text-slate-400 leading-relaxed">Daftar juara BILIBILI 162 CUP I Tahun 2026 terintegrasi dengan data peserta diterima. Foto ditampilkan dari berkas pasangan yang diunggah saat pendaftaran.</motion.p>
+    <section id="prestasi" className="prestasi-modern-page">
+      <style>{`
+        #prestasi.prestasi-modern-page {
+          --navy: #061426;
+          --navy-2: #0a2038;
+          --panel: rgba(5, 19, 34, .96);
+          --line: rgba(148, 163, 184, .18);
+          --gold: #f4b400;
+          width: 100%; max-width: 100%; min-width: 0; overflow-x: clip;
+          box-sizing: border-box; color: #fff; background: #06101d;
+          position: relative; isolation: isolate;
+          padding: clamp(28px, 5vw, 64px) 0 54px;
+        }
+        #prestasi.prestasi-modern-page *, #prestasi.prestasi-modern-page *::before, #prestasi.prestasi-modern-page *::after { box-sizing: border-box; }
+        #prestasi .prestasi-bg-glow { position:absolute; inset:0; pointer-events:none; overflow:hidden; z-index:-1; }
+        #prestasi .prestasi-bg-glow::before { content:""; position:absolute; width:70vw; height:40vw; max-height:520px; left:15%; top:8%; background:radial-gradient(circle, rgba(0,118,255,.16), transparent 68%); filter:blur(35px); }
+        #prestasi .prestasi-shell { width:min(1280px, calc(100% - 32px)); margin:0 auto; min-width:0; }
+        #prestasi .prestasi-hero { text-align:center; max-width:960px; margin:0 auto clamp(24px, 4vw, 42px); }
+        #prestasi .prestasi-kicker { display:inline-flex; align-items:center; gap:8px; padding:8px 14px; border:1px solid rgba(244,180,0,.28); background:rgba(244,180,0,.08); color:#f6c33b; border-radius:999px; font-size:11px; font-weight:900; letter-spacing:.18em; text-transform:uppercase; }
+        #prestasi .prestasi-title { margin:14px 0 8px; font-size:clamp(34px, 5vw, 64px); line-height:.98; font-weight:950; font-style:italic; letter-spacing:-.045em; text-transform:uppercase; }
+        #prestasi .prestasi-title span { color:#f4b400; }
+        #prestasi .prestasi-subtitle { margin:0 auto; max-width:760px; color:#9fb0c3; font-size:clamp(12px, 1.5vw, 16px); line-height:1.65; }
+        #prestasi .prestasi-event-heading { text-align:center; margin-bottom:24px; }
+        #prestasi .prestasi-event-title { display:flex; align-items:center; justify-content:center; gap:10px; margin:0; font-size:clamp(20px, 2.7vw, 34px); line-height:1.12; font-weight:950; text-transform:uppercase; letter-spacing:-.02em; }
+        #prestasi .prestasi-event-title svg { color:var(--gold); flex:none; }
+        #prestasi .prestasi-meta { display:flex; flex-wrap:wrap; justify-content:center; gap:8px 18px; margin-top:10px; color:#aab9ca; font-size:12px; }
+        #prestasi .prestasi-meta span { display:inline-flex; align-items:center; gap:6px; }
+        #prestasi .prestasi-meta svg { color:#1890ff; }
+        #prestasi .prestasi-events { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; min-width:0; }
+        #prestasi .prestasi-event-card { min-width:0; max-width:100%; overflow:hidden; border:1px solid var(--line); border-radius:24px; background:linear-gradient(145deg, rgba(8,30,54,.98), rgba(3,12,23,.98)); box-shadow:0 20px 55px rgba(0,0,0,.26); }
+        #prestasi .prestasi-event-card.orange { border-color:rgba(245,158,11,.28); background:linear-gradient(145deg, rgba(57,31,8,.82), rgba(3,12,23,.98)); }
+        #prestasi .prestasi-event-card.blue { border-color:rgba(14,126,255,.34); }
+        #prestasi .prestasi-event-head { padding:18px 20px 16px; display:flex; align-items:center; justify-content:space-between; gap:12px; border-bottom:1px solid rgba(255,255,255,.08); }
+        #prestasi .prestasi-event-head-copy { min-width:0; }
+        #prestasi .prestasi-event-region { color:#f6c33b; font-size:9px; font-weight:900; letter-spacing:.2em; text-transform:uppercase; margin-bottom:5px; }
+        #prestasi .prestasi-event-name { margin:0; font-size:clamp(18px, 2vw, 25px); line-height:1.12; font-weight:950; overflow-wrap:anywhere; }
+        #prestasi .prestasi-event-icon { width:42px; height:42px; display:grid; place-items:center; border-radius:13px; color:#fff; background:rgba(16,118,255,.16); border:1px solid rgba(16,118,255,.3); flex:none; }
+        #prestasi .orange .prestasi-event-icon { background:rgba(245,158,11,.13); border-color:rgba(245,158,11,.3); color:#ffc64a; }
+        #prestasi .prestasi-results { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; padding:14px; min-width:0; }
+        #prestasi .prestasi-result-card { min-width:0; max-width:100%; overflow:hidden; border:1px solid rgba(255,255,255,.1); border-radius:18px; background:rgba(2,10,19,.72); }
+        #prestasi .prestasi-rank { min-height:35px; margin:10px 10px 8px; border-radius:10px; display:flex; align-items:center; justify-content:center; gap:6px; padding:6px 7px; font-size:9px; line-height:1.1; font-weight:950; letter-spacing:.08em; text-align:center; text-transform:uppercase; }
+        #prestasi .rank-gold { color:#17130a; background:linear-gradient(90deg,#d99d00,#ffd447,#d99d00); }
+        #prestasi .rank-silver { color:#eaf0f7; background:linear-gradient(90deg,#405268,#9aa9ba,#405268); }
+        #prestasi .rank-bronze { color:#fff4ea; background:linear-gradient(90deg,#5a3827,#9b6445,#5a3827); }
+        #prestasi .prestasi-player-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; padding:0 10px; min-width:0; }
+        #prestasi .prestasi-player { min-width:0; text-align:center; }
+        #prestasi .prestasi-photo-frame { position:relative; width:100%; aspect-ratio:4/5; min-width:0; overflow:hidden; border-radius:12px; border:1px solid rgba(255,255,255,.11); background:#020a13; isolation:isolate; }
+        #prestasi .prestasi-photo-blur { position:absolute; inset:-12%; width:124%; height:124%; object-fit:cover; filter:blur(12px); opacity:.35; transform:scale(1.04); }
+        #prestasi .prestasi-photo-main { position:absolute; inset:0; width:100%; height:100%; max-width:none; object-fit:contain; object-position:50% 28%; display:block; z-index:1; }
+        #prestasi .prestasi-photo-shade { position:absolute; inset:auto 0 0; height:32%; z-index:2; background:linear-gradient(transparent,rgba(0,0,0,.48)); pointer-events:none; }
+        #prestasi .prestasi-photo-empty { width:100%; aspect-ratio:4/5; border-radius:12px; border:1px dashed rgba(148,163,184,.18); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; color:#64748b; font-size:8px; }
+        #prestasi .prestasi-player-name { margin-top:8px; min-height:34px; display:flex; align-items:flex-start; justify-content:center; font-size:11px; line-height:1.18; font-weight:900; overflow-wrap:anywhere; }
+        #prestasi .prestasi-player-club { margin:5px 0 11px; min-height:25px; display:flex; align-items:center; justify-content:center; padding:4px 7px; border-radius:999px; border:1px solid rgba(47,115,183,.32); color:#c7d8e9; background:rgba(10,38,64,.7); font-size:8px; line-height:1.15; font-weight:800; overflow-wrap:anywhere; }
+        #prestasi .prestasi-result-card:has(.rank-gold) { border-color:rgba(244,180,0,.34); }
+        #prestasi .prestasi-result-card:has(.rank-silver) { border-color:rgba(148,163,184,.23); }
+        #prestasi .prestasi-result-card:has(.rank-bronze) { border-color:rgba(180,101,58,.28); }
+        #prestasi .prestasi-footer { display:flex; align-items:center; justify-content:center; gap:12px; margin:34px auto 0; max-width:980px; text-align:center; }
+        #prestasi .prestasi-footer-line { height:1px; flex:1; background:linear-gradient(90deg,transparent,rgba(148,163,184,.65)); }
+        #prestasi .prestasi-footer-line:last-child { transform:scaleX(-1); }
+        #prestasi .prestasi-footer-title { display:flex; align-items:center; gap:8px; color:#f4b400; font-size:clamp(13px, 1.7vw, 19px); font-weight:950; text-transform:uppercase; white-space:nowrap; }
+        #prestasi .prestasi-footer-title span { color:#fff; }
+        #prestasi .prestasi-footer-copy { margin:9px auto 0; text-align:center; color:#8fa3b8; font-size:11px; line-height:1.6; }
+        @media (min-width:1280px) {
+          #prestasi .prestasi-shell { width:min(1320px, calc(100% - 48px)); }
+          #prestasi .prestasi-events { gap:18px; }
+          #prestasi .prestasi-results { grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; padding:12px; }
+          #prestasi .prestasi-event-head { padding:16px 18px 14px; }
+          #prestasi .prestasi-rank { margin:8px 8px 7px; font-size:8px; min-height:32px; }
+          #prestasi .prestasi-player-grid { gap:5px; padding:0 8px; }
+          #prestasi .prestasi-player-name { font-size:10px; }
+          #prestasi .prestasi-player-club { font-size:7px; margin-bottom:8px; }
+        }
+        @media (max-width:1023px) {
+          #prestasi .prestasi-events { grid-template-columns:1fr; max-width:760px; margin:0 auto; }
+        }
+        @media (max-width:767px) {
+          #prestasi.prestasi-modern-page { padding:24px 0 40px; }
+          #prestasi .prestasi-shell { width:min(100% - 20px, 620px); }
+          #prestasi .prestasi-kicker { font-size:9px; padding:7px 11px; }
+          #prestasi .prestasi-title { font-size:clamp(30px, 11vw, 45px); margin-top:12px; }
+          #prestasi .prestasi-subtitle { font-size:11px; line-height:1.55; }
+          #prestasi .prestasi-event-heading { margin-bottom:18px; }
+          #prestasi .prestasi-event-title { font-size:clamp(18px, 6vw, 25px); gap:7px; }
+          #prestasi .prestasi-event-title svg { width:19px; height:19px; }
+          #prestasi .prestasi-meta { font-size:9px; gap:6px 12px; }
+          #prestasi .prestasi-events { gap:14px; }
+          #prestasi .prestasi-event-card { border-radius:20px; }
+          #prestasi .prestasi-event-head { padding:14px 14px 12px; }
+          #prestasi .prestasi-event-region { font-size:8px; letter-spacing:.15em; }
+          #prestasi .prestasi-event-name { font-size:18px; }
+          #prestasi .prestasi-event-icon { width:36px; height:36px; border-radius:11px; }
+          #prestasi .prestasi-results { grid-template-columns:1fr 1fr; gap:8px; padding:9px; }
+          #prestasi .prestasi-rank { min-height:31px; margin:7px 7px 6px; padding:5px 4px; font-size:7px; letter-spacing:.045em; }
+          #prestasi .prestasi-player-grid { gap:5px; padding:0 7px; }
+          #prestasi .prestasi-photo-frame, #prestasi .prestasi-photo-empty { aspect-ratio:4/5; border-radius:10px; }
+          #prestasi .prestasi-player-name { margin-top:6px; min-height:31px; font-size:9px; }
+          #prestasi .prestasi-player-club { min-height:23px; margin:4px 0 7px; padding:3px 5px; font-size:7px; }
+          #prestasi .prestasi-footer { margin-top:24px; gap:7px; }
+          #prestasi .prestasi-footer-title { font-size:11px; gap:5px; }
+          #prestasi .prestasi-footer-title svg { width:14px; }
+          #prestasi .prestasi-footer-copy { font-size:9px; padding:0 14px; }
+        }
+        @media (max-width:380px) {
+          #prestasi .prestasi-shell { width:calc(100% - 14px); }
+          #prestasi .prestasi-event-name { font-size:16px; }
+          #prestasi .prestasi-results { gap:6px; padding:7px; }
+          #prestasi .prestasi-rank { margin:6px 5px 5px; font-size:6.5px; }
+          #prestasi .prestasi-player-grid { gap:4px; padding:0 5px; }
+          #prestasi .prestasi-player-name { font-size:8px; }
+          #prestasi .prestasi-player-club { font-size:6.5px; }
+        }
+      `}</style>
+
+      <div className="prestasi-bg-glow" aria-hidden="true" />
+      <div className="prestasi-shell">
+        <header className="prestasi-hero">
+          <div className="prestasi-kicker"><Trophy size={14} /> Prestasi</div>
+          <h1 className="prestasi-title">Apresiasi <span>Juara</span></h1>
+          <p className="prestasi-subtitle">Dokumentasi juara BILIBILI 162 CUP I Tahun 2026 dalam tampilan yang ringkas, modern, dan responsif.</p>
+        </header>
+
+        <div className="prestasi-event-heading">
+          <h2 className="prestasi-event-title"><Crown size={24} /> Juara BILIBILI 162 CUP I Tahun 2026</h2>
+          <div className="prestasi-meta">
+            <span><CalendarDays size={13} /> 08–12 September 2026</span>
+            <span><MapPin size={13} /> GOR Titik Kumpul Soreang, Parepare</span>
+            <span><Users size={13} /> 2 Kategori Pertandingan</span>
+          </div>
         </div>
 
-        <div className="mb-10 md:mb-12">
-          <div className="text-center mb-5 md:mb-7">
-            <div className="inline-flex items-center gap-2 text-yellow-400 mb-2 max-w-full"><Crown size={19} className="shrink-0"/><span className="text-base sm:text-xl md:text-2xl font-black uppercase tracking-tight leading-tight">Juara BILIBILI 162 CUP I Tahun 2026</span></div>
-            <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-[10px] sm:text-xs text-slate-400 mt-2">
-              <span className="inline-flex items-center gap-1.5"><CalendarDays size={14} className="text-yellow-400"/>08–12 September 2026</span>
-              <span className="inline-flex items-center gap-1.5"><MapPin size={14} className="text-yellow-400"/>GOR Titik Kumpul Soreang, Parepare</span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 md:gap-7">
-            {championEvents.map((event, index) => (
-              <motion.article key={event.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: index * 0.08 }} className={`relative overflow-hidden rounded-3xl border p-4 sm:p-5 md:p-6 shadow-2xl ${event.id.includes('ajatappareng') ? 'border-orange-500/30 bg-gradient-to-br from-orange-500/10 via-black/60 to-amber-500/5' : 'border-blue-500/30 bg-gradient-to-br from-blue-600/10 via-black/60 to-cyan-500/5'}`}>
-                <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-yellow-500/10 blur-3xl pointer-events-none" />
-                <div className="relative z-10 flex items-start sm:items-center justify-between gap-3 mb-5">
-                  <div className="min-w-0">
-                    <div className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.18em] sm:tracking-[0.22em] text-yellow-400 mb-1">BILIBILI 162 CUP I TAHUN 2026</div>
-                    <h4 className="text-lg sm:text-xl md:text-2xl font-black text-white leading-tight">{event.category}</h4>
-                  </div>
-                  <Trophy size={28} className="text-yellow-400 shrink-0 mt-1" />
+        <div className="prestasi-events">
+          {championEvents.map((event, index) => (
+            <motion.article
+              key={event.id}
+              initial={{ opacity: 0, y: 18 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: .12 }}
+              transition={{ duration: .38, delay: index * .06 }}
+              className={`prestasi-event-card ${event.accent}`}
+            >
+              <div className="prestasi-event-head">
+                <div className="prestasi-event-head-copy">
+                  <div className="prestasi-event-region">{event.region}</div>
+                  <h3 className="prestasi-event-name">{event.category}</h3>
                 </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-                  {event.results.map((result, resultIndex) => {
-                    const Icon = result.icon;
-                    const hasPhotos = Boolean(result.photo1 || result.photo2);
-                    return (
-                      <div key={`${event.id}-${result.rank}-${result.players}-${resultIndex}`} className={`rounded-2xl border overflow-hidden bg-black/45 shadow-lg ${result.rank === 'JUARA I' ? 'border-yellow-500/50' : result.rank === 'JUARA II' ? 'border-sky-400/30' : 'border-orange-500/30'}`}>
-                        <div className="px-3 pt-3 pb-1 text-center min-h-[34px] flex items-center justify-center">
-                          <div className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-yellow-400 leading-tight"><Icon size={13} className="shrink-0"/>{result.rank}</div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-2 p-2 sm:p-2.5">
-                          {[result.photo1, result.photo2].map((photo, photoIndex) => (
-                            <div key={photoIndex} className="relative aspect-[4/5] sm:aspect-[3/4] rounded-xl overflow-hidden bg-slate-950 border border-white/10 flex items-center justify-center shadow-inner">
-                              {photo ? (
-                                <img
-                                  src={photo}
-                                  alt={`${result.players} - pemain ${photoIndex + 1}`}
-                                  className="w-full h-full object-contain object-top bg-slate-950"
-                                  loading="lazy"
-                                  decoding="async"
-                                  draggable={false}
-                                />
-                              ) : (
-                                <div className="text-center px-1">
-                                  <div className="text-2xl opacity-50">🏸</div>
-                                  <div className="text-[8px] text-slate-500 mt-1">{hasPhotos ? 'Foto tidak tersedia' : 'Memuat foto...'}</div>
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-
-                        <div className="px-3 pb-4 text-center min-h-[82px] flex flex-col justify-start">
-                          <div className="text-sm sm:text-base font-black text-white leading-tight break-words">{result.players}</div>
-                          <div className="mt-1 text-[10px] text-slate-300 leading-snug">{result.club}</div>
-                          {result.sourceRowId && <div className="mt-2 text-[8px] uppercase tracking-wider text-emerald-400">✓ Data peserta diterima</div>}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <div className="relative z-10 mt-4 md:mt-5 pt-3 md:pt-4 border-t border-white/10 flex flex-wrap items-center gap-2 text-[10px] sm:text-xs text-slate-400 leading-relaxed">
-                  <Medal size={15} className="text-yellow-400 shrink-0" />
-                  <span>Foto & identitas pasangan disinkronkan dari data pendaftaran peserta diterima.</span>
-                </div>
-              </motion.article>
-            ))}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
-          {current.map((item, index) => (
-            <motion.div key={item.id ?? `${item.nama_kejuaraan}-${index}`} initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}} transition={{delay:index*.05}} className="bg-black/40 backdrop-blur-sm border border-white/10 rounded-3xl p-5 sm:p-6 relative overflow-hidden group hover:border-yellow-500/30 transition-colors">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-500/5 rounded-full blur-2xl" />
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-yellow-500/20 to-amber-500/10 flex flex-col items-center justify-center border border-yellow-500/20 mb-6"><Trophy size={20} className="text-yellow-500 mb-0.5"/><span className="text-[9px] font-black text-yellow-500 leading-none">{item.tahun}</span></div>
-              <h3 className="text-xl font-bold text-white mb-1">{item.nama_kejuaraan}</h3>
-              <p className="text-sm text-yellow-500/80 mb-5">Tingkat {item.tingkat}</p>
-              <div className="flex justify-between items-center bg-white/5 rounded-2xl p-3 border border-white/5 mb-5">
-                <div className="text-center"><Medal size={20} className="text-yellow-400 mx-auto mb-1"/><div className="text-lg font-black text-white">{item.medali_emas ?? 0}</div><div className="text-[9px] uppercase tracking-wider text-slate-500">Emas</div></div>
-                <div className="w-px h-10 bg-white/10"/>
-                <div className="text-center"><Medal size={20} className="text-slate-300 mx-auto mb-1"/><div className="text-lg font-black text-white">{item.medali_perak ?? 0}</div><div className="text-[9px] uppercase tracking-wider text-slate-500">Perak</div></div>
-                <div className="w-px h-10 bg-white/10"/>
-                <div className="text-center"><Medal size={20} className="text-amber-600 mx-auto mb-1"/><div className="text-lg font-black text-white">{item.medali_perunggu ?? 0}</div><div className="text-[9px] uppercase tracking-wider text-slate-500">Prgg</div></div>
+                <div className="prestasi-event-icon"><Trophy size={21} /></div>
               </div>
-              {item.atlet_berprestasi && <div><div className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Atlet Peraih Medali:</div><div className="text-sm text-slate-300 leading-relaxed">{item.atlet_berprestasi}</div></div>}
-            </motion.div>
+
+              <div className="prestasi-results">
+                {event.results.map((result, resultIndex) => (
+                  <div className="prestasi-result-card" key={`${event.id}-${result.rank}-${resultIndex}`}>
+                    <RankBadge result={result} />
+                    <div className="prestasi-player-grid">
+                      <div className="prestasi-player">
+                        <PlayerPhoto src={result.photo1} alt={`${result.players} - pemain 1`} />
+                        <div className="prestasi-player-name">{result.players.split(' & ')[0]}</div>
+                        <div className="prestasi-player-club">{result.club}</div>
+                      </div>
+                      <div className="prestasi-player">
+                        <PlayerPhoto src={result.photo2} alt={`${result.players} - pemain 2`} />
+                        <div className="prestasi-player-name">{result.players.split(' & ').slice(1).join(' & ')}</div>
+                        <div className="prestasi-player-club">{result.club}</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.article>
           ))}
         </div>
 
-        {totalPages > 1 && <div className="pagination flex items-center justify-center gap-2 mt-8" aria-label="Pagination prestasi">
-          <button onClick={() => setPage(p => Math.max(1,p-1))} disabled={page===1} className="min-w-10 min-h-10 rounded-xl border border-white/10 bg-white/5 disabled:opacity-40" aria-label="Halaman sebelumnya"><ChevronLeft size={18}/></button>
-          {Array.from({length:totalPages},(_,i)=>i+1).map(p => <button key={p} onClick={() => setPage(p)} className={`min-w-10 min-h-10 rounded-xl border text-sm font-bold ${p===page?'bg-yellow-500/20 border-yellow-500/40 text-yellow-400':'border-white/10 bg-white/5 text-slate-300'}`}>{p}</button>)}
-          <button onClick={() => setPage(p => Math.min(totalPages,p+1))} disabled={page===totalPages} className="min-w-10 min-h-10 rounded-xl border border-white/10 bg-white/5 disabled:opacity-40" aria-label="Halaman berikutnya"><ChevronRight size={18}/></button>
-        </div>}
+        <div className="prestasi-footer" aria-label="Ucapan selamat">
+          <div className="prestasi-footer-line" />
+          <div className="prestasi-footer-title"><Trophy size={17} /> <span>Selamat kepada para juara</span></div>
+          <div className="prestasi-footer-line" />
+        </div>
+        <p className="prestasi-footer-copy">Teruslah berlatih, junjung tinggi sportivitas, dan sampai jumpa di turnamen berikutnya.</p>
       </div>
     </section>
   );
