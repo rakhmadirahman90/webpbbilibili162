@@ -1,0 +1,106 @@
+/* PB Bilibili 162 — landing/navigation visual + responsive audit */
+:root {
+  --pb-bg: #070d1a;
+  --pb-surface: #0b1224;
+  --pb-surface-2: #111a2d;
+  --pb-blue: #2563eb;
+  --pb-blue-soft: rgba(59,130,246,.14);
+  --pb-border: rgba(148,163,184,.16);
+}
+
+nav[aria-label="Navigasi utama PB Bilibili 162"] {
+  background: rgba(7,13,26,.96) !important;
+  border-bottom-color: var(--pb-border) !important;
+}
+
+/* Tailwind xs: is not configured; restore the intended brand breakpoint. */
+@media (min-width: 640px) {
+  nav[aria-label="Navigasi utama PB Bilibili 162"]
+    > div > button[aria-label="Beranda PB Bilibili 162"] > span {
+    display: flex !important;
+  }
+}
+
+/* 1024–1279px: keep touch-first navigation so the 9-item desktop menu never squeezes. */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  nav[aria-label="Navigasi utama PB Bilibili 162"] [class~="lg:flex"] {
+    display: none !important;
+  }
+  nav[aria-label="Navigasi utama PB Bilibili 162"] button[class~="lg:hidden"] {
+    display: flex !important;
+  }
+  nav[aria-label="Navigasi utama PB Bilibili 162"] > [class~="lg:hidden"] {
+    display: block !important;
+  }
+  nav[aria-label="Navigasi utama PB Bilibili 162"] aside[class~="lg:hidden"] {
+    display: flex !important;
+  }
+  nav[aria-label="Navigasi utama PB Bilibili 162"] .absolute.top-full.left-0.w-64 {
+    display: none !important;
+  }
+  #mobile-sidebar-toggle-btn {
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
+    min-height: 44px !important;
+  }
+}
+
+/* Desktop: compact the menu slightly so 1280px laptops still have comfortable spacing. */
+@media (min-width: 1280px) {
+  nav[aria-label="Navigasi utama PB Bilibili 162"]
+    > div > [class~="xl:gap-6"] {
+    gap: .8rem !important;
+  }
+  nav[aria-label="Navigasi utama PB Bilibili 162"]
+    > div > [class~="xl:gap-6"] > div > button {
+    font-size: 10.5px !important;
+    letter-spacing: .045em !important;
+  }
+  nav[aria-label="Navigasi utama PB Bilibili 162"]
+    > div > [class~="xl:gap-6"] > div > button,
+  nav[aria-label="Navigasi utama PB Bilibili 162"]
+    > div > [class~="xl:gap-6"] > button {
+    white-space: nowrap !important;
+  }
+}
+
+/* One visual language for desktop dropdowns and the mobile drawer. */
+nav[aria-label="Navigasi utama PB Bilibili 162"] .bg-slate-900\/98,
+nav[aria-label="Navigasi utama PB Bilibili 162"] aside {
+  background-color: var(--pb-surface) !important;
+}
+nav[aria-label="Navigasi utama PB Bilibili 162"] .absolute.top-full.left-0.w-64 > div {
+  border-color: rgba(96,165,250,.30) !important;
+  background: var(--pb-surface) !important;
+}
+nav[aria-label="Navigasi utama PB Bilibili 162"] aside {
+  border-right-color: rgba(96,165,250,.20) !important;
+}
+nav[aria-label="Navigasi utama PB Bilibili 162"] aside > div:first-child {
+  background: var(--pb-bg) !important;
+}
+
+/* Safe-area and scroll behavior for the drawer. */
+@media (max-width: 1279px) {
+  nav[aria-label="Navigasi utama PB Bilibili 162"] aside {
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    padding-bottom: env(safe-area-inset-bottom) !important;
+  }
+  nav[aria-label="Navigasi utama PB Bilibili 162"] aside > div:nth-child(2) {
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    overscroll-behavior: contain !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  nav[aria-label="Navigasi utama PB Bilibili 162"] aside button {
+    touch-action: manipulation !important;
+  }
+}
+
+html, body, #root {
+  max-width: 100%;
+  overflow-x: hidden;
+}
