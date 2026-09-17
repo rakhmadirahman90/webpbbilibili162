@@ -16,6 +16,7 @@ import { installRegistrationClubAutocomplete } from './utils/registrationClubAut
 import { installRegistrationPlayerAutocomplete } from './utils/registrationPlayerAutocomplete.ts';
 import { installAdminTournamentWhatsAppNotification } from './utils/adminTournamentWhatsAppNotification.ts';
 import './index.css';
+import './landing-navigation-audit.css';
 import './responsive-hardening.css';
 import './professional-responsive.css';
 import './news-footer-fix.css';
