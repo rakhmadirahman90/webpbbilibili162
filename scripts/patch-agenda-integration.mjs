@@ -1,0 +1,10 @@
+import fs from 'node:fs';
+const path='src/App.tsx';
+let s=fs.readFileSync(path,'utf8');
+if(!s.includes("from './components/AgendaPB162'")) s=s.replace("import JadwalLatihanView from './components/JadwalLatihanView';","import JadwalLatihanView from './components/JadwalLatihanView';\nimport AgendaPB162 from './components/AgendaPB162';");
+s=s.replace("['jadwal','jadwal-latihan','schedule'","['agenda','jadwal','jadwal-latihan','schedule'");
+s=s.replace("{beranda:'home',home:'home',gallery:","{beranda:'home',home:'home',agenda:'agenda',gallery:");
+s=s.replace("const renderPublicView=()=>{switch(activeView){case'atlet':", "const renderPublicView=()=>{switch(activeView){case'agenda':return <AgendaPB162/>;case'atlet':");
+s=s.replace("<News/><PrayerTimes/>","<News/><AgendaPB162 compact/><PrayerTimes/>");
+fs.writeFileSync(path,s);
+console.log('[patch-agenda-integration] realtime agenda integrated into public App.');
