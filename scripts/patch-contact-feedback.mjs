@@ -9,22 +9,32 @@ function replaceOnce(path, find, replacement, label) {
   console.log(`[patch-contact-feedback] ${label} applied`);
 }
 
-replaceOnce(
+function replaceRegexOnce(path, regex, replacement, label) {
+  let s = fs.readFileSync(path, 'utf8');
+  if (s.includes("ContactFeedbackForm")) return;
+  if (!regex.test(s)) throw new Error(`[patch-contact-feedback] ${label} marker not found`);
+  s = s.replace(regex, replacement);
+  fs.writeFileSync(path, s, 'utf8');
+  console.log(`[patch-contact-feedback] ${label} applied`);
+}
+
+replaceRegexOnce(
   'src/App.tsx',
-  "import Contact from './components/Contact';",
+  /import\s+Contact\s+from\s+['\"]\.\/components\/Contact['\"];?/,
   "import Contact from './components/Contact';\nimport ContactFeedbackForm from './components/ContactFeedbackForm';",
   'ContactFeedbackForm import'
 );
-replaceOnce(
+
+replaceRegexOnce(
   'src/App.tsx',
-  "case'contact':case'kontak':return <Contact/>;",
+  /case\s*['\"]contact['\"]\s*:\s*case\s*['\"]kontak['\"]\s*:\s*return\s*<Contact\s*\/?>\s*;/,
   "case'contact':case'kontak':return <><Contact/><ContactFeedbackForm/></>;",
   'public contact feedback form'
 );
 
-replaceOnce(
+replaceRegexOnce(
   'src/components/AdminRouteView.tsx',
-  "import { KelolaSurat } from './KelolaSurat';",
+  /import\s+\{\s*KelolaSurat\s*\}\s+from\s+['\"]\.\/KelolaSurat['\"];?/,
   "import { KelolaSurat } from './KelolaSurat';\nimport KelolaSuratTerintegrasi from './KelolaSuratTerintegrasi';",
   'integrated surat import'
 );
