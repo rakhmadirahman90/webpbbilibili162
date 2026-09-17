@@ -13,20 +13,12 @@ function normalizeUrl(raw: string) {
   return `${PUBLIC_DOMAIN}${value.startsWith('/') ? '' : '/'}${value}`;
 }
 function youtubeId(raw: string) {
-  const match = String(raw || '').match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([^#&?\/]+)/i);
+  const match = String(raw || '').match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([^#&?\/\s]+)/i);
   return match?.[1] || '';
 }
-function previewImage(raw: string, type: string, thumbnailRaw = '') {
-  const candidates = String(raw || '').split(/[\s,]+/).map(normalizeUrl).filter(Boolean);
-  const thumbnail = normalizeUrl(thumbnailRaw);
-  const videoThumb = type === 'video' ? (() => {
-    const id = youtubeId(raw);
-    return id ? `https://img.youtube.com/vi/${id}/hqdefault.jpg` : '';
-  })() : '';
-  const all = type === 'video' ? [thumbnail, videoThumb, ...candidates] : candidates;
-  return all.find(url => url && !/logo_pb_bilibili|\/logo(?:[./]|$)|favicon|placeholder|\.svg(?:$|\?)/i.test(url)) || '';
+function crawler(ua: string) {
+  return /WhatsApp|facebookexternalhit|Facebot|Twitterbot|LinkedInBot|TelegramBot|Slackbot|Discordbot|Googlebot|bingbot/i.test(ua);
 }
-function crawler(ua: string) { return /WhatsApp|facebookexternalhit|Facebot|Twitterbot|LinkedInBot|TelegramBot|Slackbot|Discordbot|Googlebot|bingbot/i.test(ua); }
 
 async function loadGallery(id: string) {
   const urls = Array.from(new Set([process.env.VITE_SUPABASE_URL, process.env.VITE_SUPABASE_PROJECT_URL, process.env.SUPABASE_URL, DEFAULT_SUPABASE_URL].filter(Boolean).map(v => String(v).replace(/\/$/, ''))));
@@ -56,16 +48,19 @@ export default async function handler(req: any, res: any) {
   try {
     const gallery = await loadGallery(id).catch(() => null);
     const queryTitle = String(req.query?.title || '').trim();
-    const queryImage = String(req.query?.image || '').trim();
-    const queryType = String(req.query?.type || '').trim();
-    const photoTitle = (queryTitle || String(gallery?.title || gallery?.judul || '').replace(/\s+/g, ' ').trim() || 'Dokumentasi PB Bilibili 162');
+    const queryType = String(req.query?.type || '').trim().toLowerCase();
+    const photoTitle = queryTitle || String(gallery?.title || gallery?.judul || '').replace(/\s+/g, ' ').trim() || 'Dokumentasi PB Bilibili 162';
+    const mediaType = queryType || String(gallery?.type || gallery?.media_type || '').trim().toLowerCase();
     const shareTitle = `Lihat dokumentasi \"${photoTitle}\" dari PB Bilibili 162:`;
-    const rawUrl = queryImage || String(gallery?.url || gallery?.image_url || gallery?.foto_url || gallery?.media_url || '');
-    const image = previewImage(rawUrl, queryType || String(gallery?.type || gallery?.media_type || ''), String(gallery?.thumbnail_url || gallery?.thumbnail || ''));
-    const version = String(req.query?.v || '21').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 24) || '21';
+    const version = String(req.query?.v || '23').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 24) || '23';
     const detailUrl = `${PUBLIC_DOMAIN}/galeri?gallery=${encodeURIComponent(id)}`;
-    const cacheImage = image ? `${image}${image.includes('?') ? '&' : '?'}gallery_share=${version}` : '';
-    const mime = /\.png(?:$|\?)/i.test(image) ? 'image/png' : /\.webp(?:$|\?)/i.test(image) ? 'image/webp' : 'image/jpeg';
+
+    // Always use the same-origin image proxy for social previews. This makes
+    // photos and videos behave identically and prevents MP4 URLs from being
+    // incorrectly sent to og:image.
+    const previewUrl = `${PUBLIC_DOMAIN}/api/gallery-share-image?id=${encodeURIComponent(id)}&v=${encodeURIComponent(version)}`;
+    const rawUrl = String(req.query?.image || gallery?.url || gallery?.image_url || gallery?.foto_url || gallery?.media_url || '');
+    const youtube = mediaType === 'video' ? youtubeId(rawUrl) : '';
     const ua = String(req.headers?.['user-agent'] || '');
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -74,7 +69,14 @@ export default async function handler(req: any, res: any) {
     res.setHeader('Surrogate-Control', 'no-store');
     res.setHeader('Vary', 'User-Agent, Accept-Encoding');
 
-    return res.status(200).send(`<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(shareTitle)}</title><meta name="description" content="${esc(shareTitle)}"><meta property="og:type" content="article"><meta property="og:url" content="${esc(detailUrl)}"><meta property="og:title" content="${esc(shareTitle)}"><meta property="og:description" content="${esc(shareTitle)}"><meta property="og:site_name" content="PB Bilibili 162">${cacheImage ? `<meta property="og:image" content="${esc(cacheImage)}"><meta property="og:image:url" content="${esc(cacheImage)}"><meta property="og:image:secure_url" content="${esc(cacheImage)}"><meta property="og:image:type" content="${mime}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="900"><meta property="og:image:alt" content="${esc(photoTitle)}"><meta name="twitter:image" content="${esc(cacheImage)}">` : ''}<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${esc(shareTitle)}"><meta name="twitter:description" content="${esc(shareTitle)}"><link rel="canonical" href="${esc(detailUrl)}"></head><body><h1>${esc(shareTitle)}</h1>${cacheImage ? `<img src="${esc(cacheImage)}" alt="${esc(photoTitle)}" style="max-width:100%;height:auto">` : ''}${crawler(ua) ? '' : `<script>location.replace(${JSON.stringify(detailUrl)})</script>`}</body></html>`);
+    const videoMeta = mediaType === 'video'
+      ? `<meta property="og:video" content="${esc(rawUrl)}"><meta property="og:video:secure_url" content="${esc(rawUrl)}"><meta property="og:video:type" content="video/mp4">`
+      : '';
+    const youtubeMeta = youtube
+      ? `<meta property="og:video:url" content="https://www.youtube.com/watch?v=${esc(youtube)}"><meta property="og:video:secure_url" content="https://www.youtube.com/watch?v=${esc(youtube)}">`
+      : '';
+
+    return res.status(200).send(`<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(shareTitle)}</title><meta name="description" content="${esc(shareTitle)}"><meta property="og:type" content="${mediaType === 'video' ? 'video.other' : 'article'}"><meta property="og:url" content="${esc(detailUrl)}"><meta property="og:title" content="${esc(shareTitle)}"><meta property="og:description" content="${esc(shareTitle)}"><meta property="og:site_name" content="PB Bilibili 162"><meta property="og:image" content="${esc(previewUrl)}"><meta property="og:image:url" content="${esc(previewUrl)}"><meta property="og:image:secure_url" content="${esc(previewUrl)}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="900"><meta property="og:image:alt" content="${esc(photoTitle)}"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${esc(shareTitle)}"><meta name="twitter:description" content="${esc(shareTitle)}"><meta name="twitter:image" content="${esc(previewUrl)}"><link rel="canonical" href="${esc(detailUrl)}">${videoMeta}${youtubeMeta}</head><body style="margin:0;background:#070d1a;color:#fff;font-family:system-ui,sans-serif"><main style="max-width:900px;margin:0 auto;padding:24px"><h1>${esc(shareTitle)}</h1><img src="${esc(previewUrl)}" alt="${esc(photoTitle)}" style="display:block;width:100%;max-width:1200px;height:auto;border-radius:16px">${mediaType === 'video' ? `<p style="opacity:.75">▶ Video dokumentasi tersedia di halaman galeri.</p>` : ''}</main>${crawler(ua) ? '' : `<script>location.replace(${JSON.stringify(detailUrl)})</script>`}</body></html>`);
   } catch (error) {
     console.error('[share-galeri]', error);
     return res.status(500).send('Gagal menyiapkan pratinjau dokumentasi');
