@@ -4,16 +4,16 @@ const path = 'src/components/Navbar.tsx';
 let s = fs.readFileSync(path, 'utf8');
 
 const anchor = "{ id: 'informasi', label: 'Informasi', path: 'informasi', type: 'dropdown', parent_id: null, order_index: 2 },";
-const agendaItem = "{ id: 'agenda', label: 'Agenda', path: 'agenda', type: 'link', parent_id: 'informasi', order_index: 1 },";
-const beritaItem = "{ id: 'berita', label: 'Berita', path: 'berita', type: 'link', parent_id: 'informasi', order_index: 2 },";
-const jadwalItem = "{ id: 'jadwal', label: 'Jadwal Latihan', path: 'jadwal', type: 'link', parent_id: 'informasi', order_index: 3 },";
-const prestasiItem = "{ id: 'prestasi', label: 'Prestasi', path: 'prestasi', type: 'link', parent_id: 'informasi', order_index: 4 },";
+const agendaItem = "{ id: 'agenda', label: 'Agenda', path: 'agenda', type: 'link', parent_id: 'informasi', order_index: 1 }";
+const beritaItem = "{ id: 'berita', label: 'Berita', path: 'berita', type: 'link', parent_id: 'informasi', order_index: 2 }";
+const jadwalItem = "{ id: 'jadwal', label: 'Jadwal Latihan', path: 'jadwal', type: 'link', parent_id: 'informasi', order_index: 3 }";
+const prestasiItem = "{ id: 'prestasi', label: 'Prestasi', path: 'prestasi', type: 'link', parent_id: 'informasi', order_index: 4 }";
 
 // Remove every canonical Agenda/Jadwal/Informasi-child definition from the build-time source.
 s = s.replace(/\n\s*\{[^\n]*id:\s*['\"](agenda|jadwal|berita|prestasi)['\"][^\n]*\},?/g, '');
 
 if (!s.includes(anchor)) throw new Error('[patch-agenda-navigation] Informasi menu anchor not found');
-s = s.replace(anchor, `${anchor}\n  ${agendaItem}\n  ${beritaItem}\n  ${jadwalItem}\n  ${prestasiItem}`);
+s = s.replace(anchor, `${anchor}\n  ${agendaItem},\n  ${beritaItem},\n  ${jadwalItem},\n  ${prestasiItem},`);
 
 // Normalize database-driven navigation without depending on the database parent's UUID.
 const marker = "  if (!hasHome) result.unshift(DEFAULT_NAV_ITEMS[0]);";
@@ -26,14 +26,14 @@ const guard = `  const infoParent = result.find(i => normalizeNavigationPath(i.p
   const cleaned = result.filter(item => {
     const p = normalizeNavigationPath(item?.path || '');
     const topLevel = isTopLevelMenuItem(item);
-    return !(canonicalInfoPaths.has(p) && (isInfoParent(item) || topLevel && (p === 'agenda' || p === 'jadwal')));
+    return !(canonicalInfoPaths.has(p) && (isInfoParent(item) || (topLevel && (p === 'agenda' || p === 'jadwal'))));
   });
   const infoParentId = infoParent?.id || 'informasi';
   const infoDefaults = [
-    { ...${agendaItem}, parent_id: infoParentId },
-    { ...${beritaItem}, parent_id: infoParentId },
-    { ...${jadwalItem}, parent_id: infoParentId },
-    { ...${prestasiItem}, parent_id: infoParentId },
+    { id: 'agenda', label: 'Agenda', path: 'agenda', type: 'link', parent_id: infoParentId, order_index: 1 },
+    { id: 'berita', label: 'Berita', path: 'berita', type: 'link', parent_id: infoParentId, order_index: 2 },
+    { id: 'jadwal', label: 'Jadwal Latihan', path: 'jadwal', type: 'link', parent_id: infoParentId, order_index: 3 },
+    { id: 'prestasi', label: 'Prestasi', path: 'prestasi', type: 'link', parent_id: infoParentId, order_index: 4 },
   ];
   for (const def of infoDefaults) cleaned.push(def);
   result.length = 0;
