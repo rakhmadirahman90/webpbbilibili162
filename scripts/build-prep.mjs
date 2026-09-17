@@ -21,6 +21,7 @@ const scripts = [
   'patch-navbar-tournament-submenus.mjs',
   'patch-mobile-sponsorship-navigation.mjs',
   'patch-home-about-sections.mjs',
+  'patch-agenda-integration.mjs',
   'patch-kas-modern-ui.mjs',
   'patch-kas-modern-ui-css-fix.mjs',
   'patch-tournament-wa-mobile-v4.mjs'
