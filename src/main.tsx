@@ -7,6 +7,7 @@ import './utils/galleryFilePicker.ts';
 import './utils/publicScrollRecovery.ts';
 import { installTournamentSubmitClickFix } from './utils/tournamentSubmitClickFix.ts';
 import { installGlobalMediaCompression } from './utils/mediaCompression.ts';
+import { installAdminAgendaMenu } from './utils/adminAgendaMenu.ts';
 import App from './App.tsx';
 import ErrorBoundary from './components/ErrorBoundary.tsx';
 import { initializeLocalDatabase } from './data/localDatabase.ts';
@@ -46,6 +47,7 @@ if (typeof window !== 'undefined') {
 
   syncGalleryRouteClass();
   window.addEventListener('popstate', syncGalleryRouteClass);
+  installAdminAgendaMenu();
 
   const normalize = (value: unknown) => String(value ?? '').toLowerCase().replace(/\s+/g, ' ').trim();
   const isTournamentRegistrationTarget = (el: Element | null) => {
