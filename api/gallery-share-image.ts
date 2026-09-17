@@ -1,5 +1,6 @@
 const DEFAULT_SUPABASE_URL = 'https://missjyvqfehamtpyodjr.supabase.co';
 const DEFAULT_SUPABASE_KEY = 'sb_publishable_trhfpzLX50WdkdaItRPFMQ_ewQF0fgn';
+const PUBLIC_DOMAIN = 'https://pbilibili162.99apps.id';
 
 function normalizeUrl(raw: string) {
   const value = String(raw || '').trim();
@@ -7,6 +8,15 @@ function normalizeUrl(raw: string) {
   if (/^https?:\/\//i.test(value)) return value;
   if (value.startsWith('//')) return `https:${value}`;
   return value;
+}
+
+function youtubeId(raw: string) {
+  const match = String(raw || '').match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([^#&?\/\s]+)/i);
+  return match?.[1] || '';
+}
+
+function looksLikeImage(url: string) {
+  return /\.(?:jpe?g|png|webp|gif)(?:$|[?#])/i.test(url);
 }
 
 async function loadGallery(id: string) {
@@ -43,6 +53,19 @@ async function loadGallery(id: string) {
   return null;
 }
 
+async function fetchImage(url: string) {
+  if (!url) return null;
+  try {
+    const upstream = await fetch(url, { cache: 'no-store' });
+    if (!upstream.ok) return null;
+    const contentType = upstream.headers.get('content-type') || '';
+    if (!contentType.toLowerCase().startsWith('image/')) return null;
+    return { bytes: Buffer.from(await upstream.arrayBuffer()), contentType };
+  } catch {
+    return null;
+  }
+}
+
 export default async function handler(req: any, res: any) {
   if (req.method !== 'GET') return res.status(405).send('Method Not Allowed');
   const id = String(req.query?.id || '').trim();
@@ -53,27 +76,52 @@ export default async function handler(req: any, res: any) {
     if (!gallery) return res.status(404).send('Dokumentasi tidak ditemukan');
 
     const raw = String(gallery.url || gallery.image_url || gallery.foto_url || gallery.media_url || '');
-    const firstImage = raw.split(/[\s,]+/).map(normalizeUrl).find(Boolean) || '';
-    if (!firstImage) return res.status(404).send('Foto utama tidak ditemukan');
+    const type = String(gallery.type || gallery.media_type || '').toLowerCase();
+    const thumbnailRaw = String(gallery.thumbnail_url || gallery.thumbnail || gallery.poster_url || gallery.preview_url || '');
+    const rawCandidates = raw.split(/[\s,]+/).map(normalizeUrl).filter(Boolean);
+    const youtubeThumbnail = youtubeId(raw) ? `https://img.youtube.com/vi/${youtubeId(raw)}/hqdefault.jpg` : '';
 
-    const upstream = await fetch(firstImage, { cache: 'no-store' });
-    if (!upstream.ok) return res.status(502).send(`Gagal mengambil foto utama (${upstream.status})`);
+    // For photos use the first actual image. For videos prefer an explicitly
+    // stored poster/thumbnail, then a YouTube thumbnail, then any image URL.
+    const candidates = type === 'video'
+      ? [thumbnailRaw, youtubeThumbnail, ...rawCandidates.filter(looksLikeImage)]
+      : rawCandidates;
 
-    const contentType = upstream.headers.get('content-type') || 'image/jpeg';
-    if (!contentType.toLowerCase().startsWith('image/')) return res.status(415).send('Media utama bukan gambar');
+    let selected = '';
+    let media = null;
+    for (const candidate of candidates) {
+      const image = await fetchImage(candidate);
+      if (image) {
+        selected = candidate;
+        media = image;
+        break;
+      }
+    }
 
-    const bytes = Buffer.from(await upstream.arrayBuffer());
+    // A video uploaded directly to Supabase may not have a thumbnail yet.
+    // Keep the social share valid by falling back to the official club image
+    // rather than exposing an MP4 URL as og:image.
+    if (!media) {
+      const fallback = `${PUBLIC_DOMAIN}/logo_pb_bilibili_162.png?gallery_share_fallback=${encodeURIComponent(id)}`;
+      media = await fetchImage(fallback);
+      selected = fallback;
+    }
+
+    if (!media) return res.status(404).send('Gambar pratinjau tidak tersedia');
+
     const title = String(gallery.title || gallery.judul || 'PB Bilibili 162').replace(/[\r\n]+/g, ' ').trim();
-    const ext = contentType.includes('png') ? 'png' : contentType.includes('webp') ? 'webp' : 'jpg';
+    const contentType = media.contentType.toLowerCase();
+    const ext = contentType.includes('png') ? 'png' : contentType.includes('webp') ? 'webp' : contentType.includes('gif') ? 'gif' : 'jpg';
 
-    res.setHeader('Content-Type', contentType);
-    res.setHeader('Content-Length', String(bytes.length));
+    res.setHeader('Content-Type', media.contentType);
+    res.setHeader('Content-Length', String(media.bytes.length));
     res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(title).slice(0, 80)}.${ext}"`);
     res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=300, stale-while-revalidate=60');
     res.setHeader('Access-Control-Allow-Origin', '*');
-    return res.status(200).send(bytes);
+    res.setHeader('X-Gallery-Preview-Source', selected || 'fallback');
+    return res.status(200).send(media.bytes);
   } catch (error) {
     console.error('[gallery-share-image]', error);
-    return res.status(500).send('Gagal menyiapkan foto untuk WhatsApp');
+    return res.status(500).send('Gagal menyiapkan gambar pratinjau');
   }
 }
