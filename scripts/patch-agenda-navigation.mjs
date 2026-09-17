@@ -13,7 +13,8 @@ if (!s.includes("id: 'agenda'")) {
 
 // Keep the public navigation resilient when navbar_settings is populated but does not yet contain Agenda.
 const marker = "  if (!hasHome) result.unshift(DEFAULT_NAV_ITEMS[0]);";
-const guard = "  const hasAgenda = result.some(i => isTopLevelMenuItem(i) === false && String(i.parent_id || '') === 'informasi' && normalizeNavigationPath(i.path) === 'agenda');\n  if (!hasAgenda) result.push(DEFAULT_NAV_ITEMS.find(i => i.id === 'agenda') || ${item});";
+const guard = `  const hasAgenda = result.some(i => !isTopLevelMenuItem(i) && String(i.parent_id || '') === 'informasi' && normalizeNavigationPath(i.path) === 'agenda');
+  if (!hasAgenda) result.push(DEFAULT_NAV_ITEMS.find(i => i.id === 'agenda') || ${item});`;
 if (!s.includes('const hasAgenda = result.some')) {
   if (!s.includes(marker)) throw new Error('[patch-agenda-navigation] canonical navigation marker not found');
   s = s.replace(marker, `${guard}\n${marker}`);
