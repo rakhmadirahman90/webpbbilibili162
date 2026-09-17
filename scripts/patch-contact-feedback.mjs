@@ -1,56 +1,53 @@
 import fs from 'node:fs';
 
-function replaceOnce(path, find, replacement, label) {
-  let s = fs.readFileSync(path, 'utf8');
-  if (s.includes(replacement)) return;
-  if (!s.includes(find)) throw new Error(`[patch-contact-feedback] ${label} marker not found`);
-  s = s.replace(find, replacement);
-  fs.writeFileSync(path, s, 'utf8');
-  console.log(`[patch-contact-feedback] ${label} applied`);
+function read(path) { return fs.readFileSync(path, 'utf8'); }
+function write(path, content) { fs.writeFileSync(path, content, 'utf8'); }
+
+// App: add the public form import without relying on the exact formatting of previous patches.
+{
+  const path = 'src/App.tsx';
+  let s = read(path);
+  if (!s.includes('ContactFeedbackForm')) {
+    const m = s.match(/import React[^\n]*\n/);
+    if (!m) throw new Error('[patch-contact-feedback] React import not found');
+    s = s.replace(m[0], `${m[0]}import ContactFeedbackForm from './components/ContactFeedbackForm';\n`);
+  }
+  if (!s.includes('<ContactFeedbackForm/>')) {
+    const before = s;
+    s = s.replace(/<Contact\s*\/>/g, '<><Contact/><ContactFeedbackForm/></>');
+    if (s === before) throw new Error('[patch-contact-feedback] Contact render marker not found');
+  }
+  write(path, s);
+  console.log('[patch-contact-feedback] public Contact form wired');
 }
 
-function replaceRegexOnce(path, regex, replacement, label, alreadyMarker = replacement) {
-  let s = fs.readFileSync(path, 'utf8');
-  if (alreadyMarker && s.includes(alreadyMarker)) return;
-  if (!regex.test(s)) throw new Error(`[patch-contact-feedback] ${label} marker not found`);
-  s = s.replace(regex, replacement);
-  fs.writeFileSync(path, s, 'utf8');
-  console.log(`[patch-contact-feedback] ${label} applied`);
+// Admin route: use the existing /admin/surat route and wrap KelolaSurat with the integrated inbox.
+{
+  const path = 'src/components/AdminRouteView.tsx';
+  let s = read(path);
+  if (!s.includes('KelolaSuratTerintegrasi')) {
+    const m = s.match(/import[^\n]*KelolaSurat[^\n]*\n/);
+    if (!m) throw new Error('[patch-contact-feedback] KelolaSurat import marker not found');
+    s = s.replace(m[0], `${m[0]}import KelolaSuratTerintegrasi from './KelolaSuratTerintegrasi';\n`);
+  }
+  if (!s.includes('case \'surat\': return adminOnly(KelolaSuratTerintegrasi);')) {
+    const before = s;
+    s = s.replace(/case\s*['\"]surat['\"]\s*:\s*return\s+adminOnly\(KelolaSurat\)\s*;/, "case 'surat': return adminOnly(KelolaSuratTerintegrasi);");
+    if (s === before) throw new Error('[patch-contact-feedback] surat route marker not found');
+  }
+  write(path, s);
+  console.log('[patch-contact-feedback] admin surat integration wired');
 }
 
-replaceRegexOnce(
-  'src/App.tsx',
-  /import\s+Contact\s+from\s+['\"]\.\/components\/Contact['\"];?/,
-  "import Contact from './components/Contact';\nimport ContactFeedbackForm from './components/ContactFeedbackForm';",
-  'ContactFeedbackForm import',
-  "import ContactFeedbackForm from './components/ContactFeedbackForm';"
-);
-
-replaceRegexOnce(
-  'src/App.tsx',
-  /case\s*['\"]contact['\"]\s*:\s*case\s*['\"]kontak['\"]\s*:\s*return\s*<Contact\s*\/?>\s*;/,
-  "case'contact':case'kontak':return <><Contact/><ContactFeedbackForm/></>;",
-  'public contact feedback form',
-  "case'contact':case'kontak':return <><Contact/><ContactFeedbackForm/></>;"
-);
-
-replaceRegexOnce(
-  'src/components/AdminRouteView.tsx',
-  /import\s+\{\s*KelolaSurat\s*\}\s+from\s+['\"]\.\/KelolaSurat['\"];?/,
-  "import { KelolaSurat } from './KelolaSurat';\nimport KelolaSuratTerintegrasi from './KelolaSuratTerintegrasi';",
-  'integrated surat import',
-  "import KelolaSuratTerintegrasi from './KelolaSuratTerintegrasi';"
-);
-replaceOnce(
-  'src/components/AdminRouteView.tsx',
-  "case 'surat': return adminOnly(KelolaSurat);",
-  "case 'surat': return adminOnly(KelolaSuratTerintegrasi);",
-  'integrated surat route'
-);
-
-replaceOnce(
-  'src/components/Sidebar.tsx',
-  "{ name: 'Kelola Surat', path: 'surat', icon: Mail, adminOnly: true },",
-  "{ name: 'Kelola Surat & Masukan', path: 'surat', icon: Mail, adminOnly: true },",
-  'sidebar surat label'
-);
+// Sidebar: keep one admin entry, but make the integration visible.
+{
+  const path = 'src/components/Sidebar.tsx';
+  let s = read(path);
+  if (!s.includes('Kelola Surat & Masukan')) {
+    const before = s;
+    s = s.replace(/\{\s*name:\s*['\"]Kelola Surat['\"]\s*,\s*path:\s*['\"]surat['\"]\s*,\s*icon:\s*Mail\s*,\s*adminOnly:\s*true\s*\},/, "{ name: 'Kelola Surat & Masukan', path: 'surat', icon: Mail, adminOnly: true },");
+    if (s === before) throw new Error('[patch-contact-feedback] sidebar surat marker not found');
+  }
+  write(path, s);
+  console.log('[patch-contact-feedback] sidebar label wired');
+}
