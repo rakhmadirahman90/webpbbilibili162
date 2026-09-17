@@ -1,6 +1,6 @@
 const PUBLIC_DOMAIN = 'https://pbilibili162.99apps.id';
 const DEFAULT_SUPABASE_URL = 'https://missjyvqfehamtpyodjr.supabase.co';
-const DEFAULT_SUPABASE_KEY = 'sb_publishable_trhfpzLX50WdkdaItRPFMQ_ewQF0fgn';
+const DEFAULT_SUPABASE_KEY = 'sb_publishable_trhfpzLX50WdkdaItRPFMQ_ewQF0f0gn';
 
 function esc(value: unknown) {
   return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;').replace(/'/g, '&#039;');
@@ -52,12 +52,9 @@ export default async function handler(req: any, res: any) {
     const photoTitle = queryTitle || String(gallery?.title || gallery?.judul || '').replace(/\s+/g, ' ').trim() || 'Dokumentasi PB Bilibili 162';
     const mediaType = queryType || String(gallery?.type || gallery?.media_type || '').trim().toLowerCase();
     const shareTitle = `Lihat dokumentasi \"${photoTitle}\" dari PB Bilibili 162:`;
-    const version = String(req.query?.v || '23').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 24) || '23';
+    const version = String(req.query?.v || '24').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 24) || '24';
     const detailUrl = `${PUBLIC_DOMAIN}/galeri?gallery=${encodeURIComponent(id)}`;
 
-    // Always use the same-origin image proxy for social previews. This makes
-    // photos and videos behave identically and prevents MP4 URLs from being
-    // incorrectly sent to og:image.
     const previewUrl = `${PUBLIC_DOMAIN}/api/gallery-share-image?id=${encodeURIComponent(id)}&v=${encodeURIComponent(version)}`;
     const rawUrl = String(req.query?.image || gallery?.url || gallery?.image_url || gallery?.foto_url || gallery?.media_url || '');
     const youtube = mediaType === 'video' ? youtubeId(rawUrl) : '';
