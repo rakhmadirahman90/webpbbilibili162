@@ -25,7 +25,8 @@ const scripts = [
   'patch-agenda-integration.mjs',
   'patch-kas-modern-ui.mjs',
   'patch-kas-modern-ui-css-fix.mjs',
-  'patch-tournament-wa-mobile-v4.mjs'
+  'patch-tournament-wa-mobile-v4.mjs',
+  'patch-contact-feedback.mjs'
 ];
 
 console.log('[build-prep] running stable production preparation scripts');
