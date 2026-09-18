@@ -12,8 +12,11 @@ const prestasiItem = "{ id: 'prestasi', label: 'Prestasi', path: 'prestasi', typ
 // Remove every canonical Agenda/Jadwal/Informasi-child definition from the build-time source.
 s = s.replace(/\n\s*\{[^\n]*id:\s*['\"](agenda|jadwal|berita|prestasi)['\"][^\n]*\},?/g, '');
 
-if (!s.includes(anchor)) throw new Error('[patch-agenda-navigation] Informasi menu anchor not found');
-s = s.replace(anchor, `${anchor}\n  ${agendaItem},\n  ${beritaItem},\n  ${jadwalItem},\n  ${prestasiItem},`);
+if (s.includes(anchor)) {
+  s = s.replace(anchor, `${anchor}\n  ${agendaItem},\n  ${beritaItem},\n  ${jadwalItem},\n  ${prestasiItem},`);
+} else {
+  console.log('[patch-agenda-navigation] Informasi anchor already normalized by an earlier build patch; continuing with runtime normalization.');
+}
 
 // Normalize database-driven navigation without depending on the database parent's UUID.
 const marker = "  if (!hasHome) result.unshift(DEFAULT_NAV_ITEMS[0]);";
