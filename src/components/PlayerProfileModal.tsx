@@ -111,7 +111,7 @@ export default function PlayerProfileModal({ player, globalRank, onClose }: Prop
 
       const pId = player.pendaftaran_id || player.id;
       const [profileRes, matchRes, auditRes, galleryRes, newsRes, raporRes, rankingsRes, attendanceRes] = await Promise.allSettled([
-        supabase.from('pendaftaran').select('id,nama,kategori,kategori_atlet,domisili,foto_url,jenis_kelamin,pengalaman,status,tanggal_registrasi,created_at').eq('id', pId).maybeSingle(),
+        supabase.from('pendaftaran').select('id,nama,kategori,kategori_atlet,domisili,foto_url,jenis_kelamin,pengalaman,status,tanggal_registrasi,created_at,nama_panggilan,nama_punggung,tempat_lahir,tanggal_lahir,tahun_bergabung,tangan_dominan,hobi,makanan_favorit').eq('id', pId).maybeSingle(),
         supabase.from('pertandingan').select('id,pendaftaran_id,kategori_kegiatan,hasil,keterangan,created_at').eq('pendaftaran_id', pId).order('created_at', { ascending: false }),
         supabase.from('audit_poin').select('id,created_at,perubahan,poin_sebelum,poin_sesudah,tipe_kegiatan').ilike('atlet_nama', name.trim()).order('created_at', { ascending: false }).limit(12),
         supabase.from('gallery').select('id,title,type,url,description,category,created_at,thumbnail_url').order('created_at', { ascending: false }).limit(100),
@@ -370,15 +370,37 @@ export default function PlayerProfileModal({ player, globalRank, onClose }: Prop
                   </div>
                 </div>
 
-                {/* Field pada contoh profil yang belum tersedia pada skema database saat ini.
-                    Sengaja tidak diisi dengan data perkiraan agar profil tetap 100% sesuai database. */}
-                <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-5">
-                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">Data Tambahan</p>
-                  <p className="mt-2 text-xs leading-6 text-slate-500">
-                    Nama panggilan, nama punggung, tempat/tanggal lahir, tahun bergabung, tangan dominan,
-                    hobi, dan makanan favorit belum tersedia sebagai kolom pada tabel <span className="font-mono text-slate-400">pendaftaran</span>.
-                    Sistem tidak akan mengarang nilai untuk field tersebut.
-                  </p>
+                {/* BIODATA TAMBAHAN — field tersimpan di tabel pendaftaran */}
+                <div className="relative overflow-hidden rounded-3xl border border-blue-500/20 bg-[#071a33]">
+                  <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-blue-600" />
+                  <div className="p-6 sm:p-7 pl-7 sm:pl-9 space-y-5">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-300">Data Profil Atlet</p>
+                      <p className="mt-1 text-[11px] text-slate-400">Data tersimpan pada database dan dapat diperbarui melalui administrasi atlet.</p>
+                    </div>
+
+                    {[
+                      ['Nama Panggilan', profile?.nama_panggilan],
+                      ['Nama Punggung', profile?.nama_punggung],
+                      ['Tempat/Tgl. Lahir', [
+                        profile?.tempat_lahir,
+                        profile?.tanggal_lahir
+                          ? new Date(profile.tanggal_lahir).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+                          : ''
+                      ].filter(Boolean).join(', ')],
+                      ['Tahun Bergabung', profile?.tahun_bergabung],
+                      ['Tangan', profile?.tangan_dominan],
+                      ['Hobi', profile?.hobi],
+                      ['Makanan Favorit', profile?.makanan_favorit],
+                    ].map(([label, value]) => (
+                      <div key={String(label)} className="border-b border-blue-500/10 pb-4 last:border-b-0 last:pb-0">
+                        <p className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-slate-300">{label} :</p>
+                        <p className="mt-1.5 text-base sm:text-lg font-medium text-white leading-7 break-words">
+                          {value !== undefined && value !== null && String(value).trim() !== '' ? String(value) : 'Belum diisi'}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
