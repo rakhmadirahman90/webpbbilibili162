@@ -110,8 +110,16 @@ export default function PlayerProfileModal({ player, globalRank, onClose }: Prop
       setError(null);
 
       const pId = player.pendaftaran_id || player.id;
+      // Ambil profil berdasarkan ID terlebih dahulu. Jika ID dari sumber ranking tidak cocok,
+      // fallback ke nama atlet agar biodata tetap terbaca.
+      const profileLookup = async () => {
+        const fields = 'id,nama,kategori,kategori_atlet,domisili,foto_url,jenis_kelamin,pengalaman,status,tanggal_registrasi,created_at,nama_panggilan,nama_punggung,tempat_lahir,tanggal_lahir,tahun_bergabung,tangan_dominan,hobi,makanan_favorit,updated_at';
+        const byId = await supabase.from('pendaftaran').select(fields).eq('id', pId).maybeSingle();
+        if (byId.data) return byId;
+        return await supabase.from('pendaftaran').select(fields).ilike('nama', name.trim()).maybeSingle();
+      };
       const [profileRes, matchRes, auditRes, galleryRes, newsRes, raporRes, rankingsRes, attendanceRes] = await Promise.allSettled([
-        supabase.from('pendaftaran').select('id,nama,kategori,kategori_atlet,domisili,foto_url,jenis_kelamin,pengalaman,status,tanggal_registrasi,created_at,nama_panggilan,nama_punggung,tempat_lahir,tanggal_lahir,tahun_bergabung,tangan_dominan,hobi,makanan_favorit,updated_at').eq('id', pId).maybeSingle(),
+        profileLookup(),
         supabase.from('pertandingan').select('id,pendaftaran_id,kategori_kegiatan,hasil,keterangan,created_at').eq('pendaftaran_id', pId).order('created_at', { ascending: false }),
         supabase.from('audit_poin').select('id,created_at,perubahan,poin_sebelum,poin_sesudah,tipe_kegiatan').ilike('atlet_nama', name.trim()).order('created_at', { ascending: false }).limit(12),
         supabase.from('gallery').select('id,title,type,url,description,category,created_at,thumbnail_url').order('created_at', { ascending: false }).limit(100),
@@ -123,7 +131,10 @@ export default function PlayerProfileModal({ player, globalRank, onClose }: Prop
 
       if (cancelled) return;
 
-      if (profileRes.status === 'fulfilled') setProfile(profileRes.value.data || null);
+      if (profileRes.status === 'fulfilled') {
+        setProfile(profileRes.value.data || null);
+        if (profileRes.value.error) console.warn('Profil atlet tidak terbaca:', profileRes.value.error.message);
+      }
       if (matchRes.status === 'fulfilled') setMatches(matchRes.value.data || []);
       if (auditRes.status === 'fulfilled') setAudit(auditRes.value.data || []);
 
