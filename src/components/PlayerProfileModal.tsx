@@ -254,7 +254,12 @@ export default function PlayerProfileModal({ player, globalRank, onClose }: Prop
 
   const photos = useMemo(() => gallery.filter(item => item.type === 'image'), [gallery]);
   const videos = useMemo(() => gallery.filter(item => item.type === 'video'), [gallery]);
-  const achievementItems = String(profile?.prestasi || '').split(/\n+/).map((item: string) => item.trim()).filter(Boolean);
+  const legacyAchievement = String(profile?.pengalaman || '').split(/\n\s*Prestasi:/i)[0].trim();
+  const storedAchievements = String(profile?.prestasi || '').split(/\n+/).map((item: string) => item.trim()).filter(Boolean);
+  const achievementItems = [
+    ...(legacyAchievement && /^(pernah|juara|meraih|prestasi)/i.test(legacyAchievement) ? [legacyAchievement] : []),
+    ...storedAchievements
+  ].filter((item, index, arr) => arr.indexOf(item) === index);
   const physicalMetrics = rapor ? [['Stamina', rapor.fisik?.stamina], ['Kecepatan', rapor.fisik?.kecepatan], ['Kekuatan', rapor.fisik?.kekuatan], ['Kelincahan', rapor.fisik?.kelincahan], ['Kelenturan', rapor.fisik?.kelenturan]] : [];
   const technicalMetrics = rapor ? [['Lob', rapor.teknik?.lob], ['Smash', rapor.teknik?.smash], ['Netting', rapor.teknik?.netting], ['Drop Shot', rapor.teknik?.dropShot], ['Backhand', rapor.teknik?.backhand], ['Service', rapor.teknik?.service]] : [];
   const allMetrics = [...physicalMetrics, ...technicalMetrics].map(([,v]) => Number(v)).filter(Number.isFinite);
@@ -551,95 +556,180 @@ export default function PlayerProfileModal({ player, globalRank, onClose }: Prop
 
             {tab === 'prestasi' && (
               <div className="mt-7 space-y-5">
-                <div className="rounded-3xl border border-amber-500/20 bg-gradient-to-br from-amber-500/10 to-transparent p-5">
-                  <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-2xl bg-amber-500/10 border border-amber-500/20 grid place-items-center text-amber-300"><Trophy size={22} /></div>
-                    <div>
-                      <p className="text-[10px] font-black uppercase tracking-widest text-amber-300">Prestasi & Rekam Pertandingan</p>
-                      <p className="text-sm text-slate-400 mt-1">Riwayat prestasi dan pertandingan disusun dalam daftar yang rapi.</p>
+                <section className="rounded-[1.75rem] border border-amber-500/20 bg-gradient-to-br from-[#101827] via-[#0b1527] to-[#071226] overflow-hidden shadow-xl">
+                  <div className="px-5 sm:px-6 py-5 border-b border-amber-500/10 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-12 h-12 shrink-0 rounded-2xl bg-amber-500/10 border border-amber-500/20 grid place-items-center text-amber-300 shadow-lg">
+                        <Trophy size={23} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm sm:text-base font-black uppercase tracking-wide text-white">Prestasi & Rekam Pertandingan</p>
+                        <p className="text-[9px] sm:text-[10px] text-slate-400 mt-1 uppercase tracking-wider">Daftar prestasi, turnamen & hasil pertandingan</p>
+                      </div>
+                    </div>
+                    <div className="shrink-0 rounded-2xl border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-center">
+                      <p className="text-[8px] uppercase tracking-widest text-slate-500 font-black">Total Prestasi</p>
+                      <div className="flex items-center justify-center gap-1.5 mt-0.5">
+                        <Trophy size={14} className="text-amber-300" />
+                        <span className="text-lg font-black text-white">{achievementItems.length}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <section className="rounded-3xl border border-white/10 bg-white/[0.035] overflow-hidden">
-                  <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between gap-3">
+                  <div className="px-5 sm:px-6 pt-5">
                     <div className="flex items-center gap-3">
-                      <Trophy size={19} className="text-amber-300" />
+                      <span className="w-1 h-7 rounded-full bg-amber-400 shrink-0" />
                       <div>
-                        <p className="text-xs font-black uppercase tracking-widest text-slate-200">Daftar Prestasi</p>
-                        <p className="text-[9px] text-slate-500 mt-1">Prestasi yang tercatat pada profil atlet</p>
+                        <p className="text-sm font-black uppercase tracking-wide text-amber-300">Daftar Prestasi</p>
+                        <p className="text-[9px] text-slate-500 mt-0.5">Riwayat prestasi yang tersimpan pada profil atlet</p>
                       </div>
                     </div>
-                    <span className="rounded-full bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 text-[9px] font-black text-amber-300">{achievementItems.length}</span>
                   </div>
-                  <div className="divide-y divide-white/5">
-                    {achievementItems.length > 0 ? achievementItems.map((item: string, index: number) => (
-                      <div key={index + item} className="px-5 py-4 flex items-start gap-3">
-                        <div className="mt-0.5 w-8 h-8 shrink-0 rounded-xl bg-amber-500/10 border border-amber-500/20 grid place-items-center text-amber-300">
-                          <Award size={16} />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-[9px] font-black uppercase tracking-widest text-amber-300">Prestasi #{index + 1}</p>
-                          <p className="mt-1 text-sm leading-6 text-slate-200 break-words">{item}</p>
+
+                  <div className="px-5 sm:px-6 py-2">
+                    {achievementItems.length > 0 ? (
+                      <div className="divide-y divide-white/10">
+                        {achievementItems.map((item: string, index: number) => (
+                          <div key={index + item} className="py-5 flex items-start gap-3 sm:gap-4">
+                            <div className="mt-0.5 w-9 h-9 shrink-0 rounded-xl bg-amber-500/10 border border-amber-500/20 grid place-items-center text-amber-300">
+                              <span className="text-xs font-black">{index + 1}</span>
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-[9px] font-black uppercase tracking-[0.16em] text-amber-300">Prestasi #{index + 1}</p>
+                              <p className="mt-1.5 text-sm sm:text-[15px] leading-6 font-semibold text-slate-100 break-words">{item}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="py-10 text-center text-slate-500 text-xs font-bold uppercase tracking-widest">
+                        Belum ada prestasi yang tercatat.
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mx-5 sm:mx-6 border-t border-white/10" />
+
+                  <div className="px-5 sm:px-6 pt-5">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <span className="w-1 h-7 rounded-full bg-emerald-400 shrink-0" />
+                        <div>
+                          <p className="text-sm font-black uppercase tracking-wide text-emerald-300">Rekam Pertandingan</p>
+                          <p className="text-[9px] text-slate-500 mt-0.5">Hasil pertandingan terbaru</p>
                         </div>
                       </div>
-                    )) : (
-                      <div className="px-5 py-10 text-center text-slate-500 text-xs font-bold uppercase tracking-widest">Belum ada prestasi yang tercatat.</div>
+                      <span className="rounded-full bg-blue-500/10 border border-blue-500/20 px-3 py-1.5 text-[9px] font-black text-blue-300">
+                        {matches.length} Pertandingan
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="px-5 sm:px-6 py-4">
+                    {matches.length > 0 ? (
+                      <div className="rounded-2xl border border-white/10 overflow-hidden">
+                        <div className="divide-y divide-white/10">
+                          {matches.map((match, index) => {
+                            const result = norm(match.hasil || '');
+                            const isWin = result.includes('menang');
+                            const isLoss = result.includes('kalah');
+                            const resultLabel = isWin ? 'Menang' : isLoss ? 'Kalah' : (match.hasil || 'Belum ada hasil');
+                            const resultClass = isWin
+                              ? 'text-emerald-300 bg-emerald-500/10 border-emerald-500/30'
+                              : isLoss
+                                ? 'text-red-300 bg-red-500/10 border-red-500/30'
+                                : 'text-slate-300 bg-white/5 border-white/10';
+
+                            return (
+                              <div key={match.id} className="px-3 sm:px-4 py-4 bg-[#09162b]">
+                                <div className="flex items-start gap-3">
+                                  <div className="mt-0.5 w-8 h-8 shrink-0 rounded-xl bg-blue-500/10 border border-blue-500/20 grid place-items-center text-blue-300 text-[10px] font-black">
+                                    {index + 1}
+                                  </div>
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                                      <div className="min-w-0">
+                                        <p className="text-xs font-black uppercase text-slate-200 break-words">
+                                          {match.kategori_kegiatan || 'Pertandingan'}
+                                        </p>
+                                        {match.created_at && (
+                                          <p className="mt-1 text-[9px] text-slate-500 inline-flex items-center gap-1.5">
+                                            <Calendar size={12} />
+                                            {new Date(match.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                                          </p>
+                                        )}
+                                      </div>
+                                      <span className={'self-start rounded-full border px-3 py-1.5 text-[9px] font-black uppercase tracking-wider ' + resultClass}>
+                                        {resultLabel}
+                                      </span>
+                                    </div>
+                                    {match.keterangan && (
+                                      <p className="mt-2 text-xs leading-5 text-slate-400 break-words">
+                                        {match.keterangan}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="rounded-2xl border border-dashed border-white/10 p-10 text-center text-slate-500 text-xs font-bold uppercase tracking-widest">
+                        Belum ada rekam pertandingan.
+                      </div>
                     )}
                   </div>
                 </section>
 
                 <div className="grid grid-cols-3 gap-2">
-                  <div className="rounded-2xl bg-white/[0.04] border border-white/10 p-4 text-center"><Award className="mx-auto text-blue-400" size={19}/><p className="text-lg font-black mt-2">{matches.length}</p><p className="text-[8px] uppercase text-slate-500 font-black">Pertandingan</p></div>
-                  <div className="rounded-2xl bg-white/[0.04] border border-white/10 p-4 text-center"><Trophy className="mx-auto text-amber-400" size={19}/><p className="text-lg font-black mt-2">{audit.filter(x => x.perubahan > 0).length}</p><p className="text-[8px] uppercase text-slate-500 font-black">Perolehan Poin</p></div>
-                  <div className="rounded-2xl bg-white/[0.04] border border-white/10 p-4 text-center"><History className="mx-auto text-emerald-400" size={19}/><p className="text-lg font-black mt-2">{audit.length}</p><p className="text-[8px] uppercase text-slate-500 font-black">Aktivitas</p></div>
+                  <div className="rounded-2xl bg-white/[0.04] border border-white/10 p-4 text-center">
+                    <Award className="mx-auto text-blue-400" size={19}/>
+                    <p className="text-lg font-black mt-2">{matches.length}</p>
+                    <p className="text-[8px] uppercase text-slate-500 font-black">Pertandingan</p>
+                  </div>
+                  <div className="rounded-2xl bg-white/[0.04] border border-white/10 p-4 text-center">
+                    <Trophy className="mx-auto text-amber-400" size={19}/>
+                    <p className="text-lg font-black mt-2">{audit.filter(x => x.perubahan > 0).length}</p>
+                    <p className="text-[8px] uppercase text-slate-500 font-black">Perolehan Poin</p>
+                  </div>
+                  <div className="rounded-2xl bg-white/[0.04] border border-white/10 p-4 text-center">
+                    <History className="mx-auto text-emerald-400" size={19}/>
+                    <p className="text-lg font-black mt-2">{audit.length}</p>
+                    <p className="text-[8px] uppercase text-slate-500 font-black">Aktivitas</p>
+                  </div>
                 </div>
 
-                <section className="rounded-3xl border border-blue-500/15 bg-[#08162b] overflow-hidden">
-                  <div className="px-5 py-4 border-b border-blue-500/10 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <Calendar size={19} className="text-blue-300" />
+                {audit.length > 0 && (
+                  <section className="rounded-3xl border border-white/10 bg-white/[0.035] overflow-hidden">
+                    <div className="px-5 py-4 border-b border-white/10 flex items-center gap-3">
+                      <History size={18} className="text-emerald-300" />
                       <div>
-                        <p className="text-xs font-black uppercase tracking-widest text-slate-200">Rekam Pertandingan</p>
-                        <p className="text-[9px] text-slate-500 mt-1">Riwayat pertandingan terbaru</p>
+                        <p className="text-xs font-black uppercase tracking-widest text-slate-200">Aktivitas Poin</p>
+                        <p className="text-[9px] text-slate-500 mt-1">Perubahan poin yang tercatat</p>
                       </div>
                     </div>
-                    <span className="rounded-full bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 text-[9px] font-black text-blue-300">{matches.length}</span>
-                  </div>
-                  <div className="divide-y divide-white/5">
-                    {matches.length > 0 ? matches.map((match, index) => (
-                      <div key={match.id} className="px-5 py-4 flex items-start gap-3">
-                        <div className="mt-0.5 w-8 h-8 shrink-0 rounded-xl bg-blue-500/10 border border-blue-500/20 grid place-items-center text-blue-300 text-[10px] font-black">{index + 1}</div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0">
-                              <p className="text-xs font-black uppercase text-slate-200 break-words">{match.kategori_kegiatan || 'Pertandingan'}</p>
-                              <p className="text-sm font-bold text-blue-300 mt-1 break-words">{match.hasil || 'Hasil belum dicatat'}</p>
+                    <div className="divide-y divide-white/5">
+                      {audit.slice(0, 6).map(log => {
+                        const gain = Number(log.perubahan) > 0;
+                        return (
+                          <div key={log.id} className="px-5 py-3.5 flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-3 min-w-0">
+                              {gain ? <ArrowUpRight size={17} className="text-emerald-400"/> : <ArrowDownRight size={17} className="text-red-400"/>}
+                              <div className="min-w-0">
+                                <p className="text-xs font-bold truncate">{log.tipe_kegiatan || 'Aktivitas'}</p>
+                                <p className="text-[9px] text-slate-500">{new Date(log.created_at).toLocaleDateString('id-ID')}</p>
+                              </div>
                             </div>
-                            {match.created_at && <span className="text-[9px] text-slate-500 shrink-0 whitespace-nowrap">{new Date(match.created_at).toLocaleDateString('id-ID')}</span>}
+                            <span className={'text-xs font-black ' + (gain ? 'text-emerald-400' : 'text-red-400')}>
+                              {gain ? '+' : ''}{log.perubahan}
+                            </span>
                           </div>
-                          {match.keterangan && <p className="text-xs leading-5 text-slate-400 mt-2 break-words">{match.keterangan}</p>}
-                        </div>
-                      </div>
-                    )) : (
-                  <div className="rounded-2xl border border-dashed border-white/10 p-10 text-center text-slate-500 text-xs font-bold uppercase tracking-widest">Belum ada rekam pertandingan.</div>
-                    )}
-                  </div>
-                </section>
-
-                {audit.length > 0 && (
-                  <div className="space-y-2">
-                    {audit.slice(0, 6).map(log => {
-                      const gain = Number(log.perubahan) > 0;
-                      return <div key={log.id} className="rounded-2xl border border-white/10 bg-white/[0.025] p-3 flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-3 min-w-0">
-                          {gain ? <ArrowUpRight size={17} className="text-emerald-400"/> : <ArrowDownRight size={17} className="text-red-400"/>}
-                          <div className="min-w-0"><p className="text-xs font-bold truncate">{log.tipe_kegiatan || 'Aktivitas'}</p><p className="text-[9px] text-slate-500">{new Date(log.created_at).toLocaleDateString('id-ID')}</p></div>
-                        </div>
-                        <span className={`text-xs font-black ${gain ? 'text-emerald-400' : 'text-red-400'}`}>{gain ? '+' : ''}{log.perubahan}</span>
-                      </div>;
-                    })}
-                  </div>
+                        );
+                      })}
+                    </div>
+                  </section>
                 )}
               </div>
             )}
