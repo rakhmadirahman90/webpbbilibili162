@@ -15,14 +15,14 @@ export default function PublicFAQ() {
         const data = await getSiteSetting('faq_list');
         if (data && Array.isArray(data) && data.length > 0) {
           setFaqs(data);
-          localStorage.setItem('faq_local_v3', JSON.stringify(data));
+          
           return;
         }
 
         const { data: dbFaqs } = await supabase.from('faq').select('*').order('urutan', { ascending: true });
         if (dbFaqs && Array.isArray(dbFaqs) && dbFaqs.length > 0) {
           setFaqs(dbFaqs);
-          localStorage.setItem('faq_local_v3', JSON.stringify(dbFaqs));
+          
           return;
         }
 
