@@ -139,7 +139,7 @@ export default function PlayerProfileModal({ player, globalRank, onClose }: Prop
       // Ambil profil berdasarkan ID terlebih dahulu. Jika ID dari sumber ranking tidak cocok,
       // fallback ke nama atlet agar biodata tetap terbaca.
       const profileLookup = async () => {
-        const fields = 'id,nama,kategori,kategori_atlet,domisili,foto_url,jenis_kelamin,pengalaman,prestasi,status,tanggal_registrasi,created_at,nama_panggilan,nama_punggung,tempat_lahir,tanggal_lahir,tahun_bergabung,tangan_dominan,hobi,makanan_favorit,updated_at';
+        const fields = 'id,nama,kategori,kategori_atlet,domisili,foto_url,jenis_kelamin,pengalaman,prestasi,status,alasan_status,tanggal_registrasi,created_at,nama_panggilan,nama_punggung,tempat_lahir,tanggal_lahir,tahun_bergabung,tangan_dominan,hobi,makanan_favorit,updated_at';
         const byId = await supabase.from('pendaftaran').select(fields).eq('id', pId).maybeSingle();
         if (byId.data) return byId;
         return await supabase.from('pendaftaran').select(fields).ilike('nama', name.trim()).maybeSingle();
