@@ -83,6 +83,8 @@ const preloadNavigation = (path: string, subPath?: string) => {
                 ? '/quiz'
                 : effective === 'faq'
                   ? '/faq'
+                  : effective === 'masukan-usulan'
+                    ? '/masukan-usulan'
                   : effective === 'berita' || effective === 'news'
                     ? '/berita'
                     : effective === 'dokumen' || effective === 'dokumen-penting' || effective === 'documents'
