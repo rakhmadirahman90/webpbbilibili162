@@ -29,7 +29,6 @@ import {
   Scissors,
   Plus,
   Upload,
-  Power,
 } from 'lucide-react';
 
 /* Removed Registrant interface */
@@ -97,23 +96,6 @@ export default function ManajemenAtlet() {
 
   const BUCKET_NAME = 'atlet_photos';
 
-  const STATUS_OPTIONS = [
-    { value: 'aktif', label: 'Aktif' },
-    { value: 'tidak aktif', label: 'Tidak Aktif' },
-  ];
-
-  const INACTIVE_REASON_OPTIONS = [
-    { value: '', label: 'Pilih alasan...' },
-    { value: 'Pindah Alamat', label: 'Pindah Alamat' },
-    { value: 'Meninggal Dunia', label: 'Meninggal Dunia' },
-    { value: 'Pindah Kerja', label: 'Pindah Kerja' },
-    { value: 'Pensiun', label: 'Pensiun' },
-    { value: 'Cedera / Istirahat', label: 'Cedera / Istirahat' },
-    { value: 'Mengundurkan Diri', label: 'Mengundurkan Diri' },
-    { value: 'Tidak Aktif Sementara', label: 'Tidak Aktif Sementara' },
-    { value: 'Alasan Lainnya', label: 'Alasan Lainnya' },
-  ];
-
   useEffect(() => {
     fetchAtlets();
 
@@ -122,152 +104,486 @@ export default function ManajemenAtlet() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'pendaftaran' }, () => fetchAtlets())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'atlet_stats' }, () => fetchAtlets())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'rankings' }, () => fetchAtlets())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'seeded_players' }, () => fetchAtlets())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'pendaftaran_turnamen' }, () => fetchAtlets())
       .subscribe();
 
-    return (
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  const fetchAtlets = async () => {
+    setLoading(true);
+    try {
+      const [pendaftaranRes, rankingsRes, statsRes] = await Promise.allSettled([
+        supabase.from('pendaftaran').select('*').order('nama', { ascending: true }),
+        supabase.from('rankings').select('*').order('total_points', { ascending: false }),
+        supabase.from('atlet_stats').select('pendaftaran_id, points, total_points, seed')
+      ]);
+
+      const pendaftaran = pendaftaranRes.status === 'fulfilled' && pendaftaranRes.value.data ? pendaftaranRes.value.data : [];
+      const rankings = rankingsRes.status === 'fulfilled' && rankingsRes.value.data ? rankingsRes.value.data : [];
+      const stats = statsRes.status === 'fulfilled' && statsRes.value.data ? statsRes.value.data : [];
+      const { data: cup1Rows, error: cup1Error } = await supabase.from('v_bilibili_162_cup1_athlete_seeded').select('*');
+      if (cup1Error) console.warn('Cup I seeded integration:', cup1Error.message);
+      const cup1Map = new Map((cup1Rows || []).map((row: any) => [row.pendaftaran_id, row]));
+      setCup1SeededMap(cup1Map);
+
+      // Buat Map untuk mempercepat pencarian statistik berdasarkan ID
+      const statsMap = new Map(stats?.map((s: any) => [s.pendaftaran_id, s]));
+
+      if (pendaftaran && pendaftaran.length > 0) {
+        const formatted = pendaftaran.map((atlet: any) => {
+          // Cari posisi di tabel rankings (berdasarkan nama)
+          const rankPosisi = rankings?.findIndex(
+            (r: any) =>
+              (r.pendaftaran_id && r.pendaftaran_id === atlet.id) ||
+              (r.player_name || r.nama)?.trim().toLowerCase() ===
+              atlet.nama?.trim().toLowerCase()
+          );
+
+          const rankingMatch = rankPosisi !== -1 ? rankings[rankPosisi] : null;
+
+          // Ambil data dari atlet_stats berdasarkan ID
+          const stat = statsMap.get(atlet.id);
+          const cup1 = cup1Map.get(atlet.id);
+          const integratedSeed = cup1?.seeded_quality || 'D';
+
+          // LOGIKA PERHITUNGAN TOTAL POIN AKHIR
+          const basePoints = Number(stat?.points || 0);
+          const addedPoints = Number(stat?.total_points || 0);
+          const calculatedTotal = basePoints + addedPoints;
+
+          return {
+            ...atlet,
+            points: stat ? calculatedTotal : rankingMatch?.total_points || 0,
+            raw_base_points: basePoints,
+            raw_added_points: addedPoints,
+            rank: rankPosisi !== -1 ? rankPosisi + 1 : 0,
+            seed: integratedSeed,
+            seeded_cup1: Boolean(cup1?.is_seeded),
+            seeded_participated: Boolean(cup1?.participated),
+            seeded_player_name: cup1?.seeded_player_name || null,
+            seeded_club_name: cup1?.seeded_club_name || null,
+            seeded_division: cup1?.division_level || integratedSeed,
+            seeded_partners: Array.isArray(cup1?.partners) ? cup1.partners : [],
+            seeded_source_no: cup1?.source_no || null,
+            foto_url: atlet.foto_url || rankingMatch?.photo_url || '',
+            bio: rankingMatch?.bio || 'No biography available.',
+            prestasi: rankingMatch?.achievement || 'Regular Player',
+          };
+        });
+
+        setAtlets(formatted);
+      } else if (rankings && rankings.length > 0) {
+        const fromRankings = rankings.map((r: any, idx: number) => ({
+          id: r.pendaftaran_id || r.id || `r-${idx}`,
+          nama: r.player_name || r.nama || 'Atlet',
+          kategori_atlet: r.category || 'SENIOR',
+          points: Number(r.total_points || r.poin || 0),
+          raw_base_points: Number(r.poin || 0),
+          raw_added_points: Number(r.bonus || 0),
+          rank: idx + 1,
+          seed: r.seed || 'D',
+          foto_url: r.photo_url || '',
+          bio: r.bio || 'No biography available.',
+          prestasi: r.achievement || 'Regular Player'
+        }));
+        setAtlets(fromRankings);
+      } else {
+        setAtlets([]);
+      }
+    } catch (err: any) {
+      console.error('Sync Error:', err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // --- UPDATE LOGIKA SEED SESUAI INSTRUKSI BARU ---
+  const handleSeedChange = (seed: string, isEditing: boolean = false) => {
+    const seedConfig: Record<string, { base: number; age: string }> = {
+      A: { base: 10000, age: 'SENIOR' },
+      'B+': { base: 8500, age: 'SENIOR' },
+      'B-': { base: 7000, age: 'SENIOR' },
+      C: { base: 5500, age: 'MUDA' },
+      UNSEEDED: { base: 0, age: 'SENIOR' },
+    };
+
+    const config = seedConfig[seed] || seedConfig['UNSEEDED'];
+
+    if (isEditing) {
+      setEditingStats((prev) => ({
+        ...prev,
+        seed,
+        points: config.base,
+        kategori: config.age,
+      }));
+    } else {
+      setNewAtlet((prev) => ({
+        ...prev,
+        seed,
+        points: config.base,
+        kategori: config.age,
+      }));
+    }
+  };
+
+  const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        setImageToCrop(reader.result as string);
+        setIsCropping(true);
+      };
+    }
+  };
+
+  const onCropComplete = useCallback((_area: any, areaPixels: any) => {
+    setCroppedAreaPixels(areaPixels);
+  }, []);
+
+  const handleUploadCroppedImage = async () => {
+    if (!imageToCrop || !croppedAreaPixels) return;
+    setUploadingImage(true);
+    try {
+      const image = await createImage(imageToCrop);
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      canvas.width = croppedAreaPixels.width;
+      canvas.height = croppedAreaPixels.height;
+
+      ctx?.drawImage(
+        image,
+        croppedAreaPixels.x,
+        croppedAreaPixels.y,
+        croppedAreaPixels.width,
+        croppedAreaPixels.height,
+        0,
+        0,
+        croppedAreaPixels.width,
+        croppedAreaPixels.height
+      );
+
+      const blob = await new Promise<Blob>((resolve) =>
+        canvas.toBlob((b) => resolve(b!), 'image/jpeg', 0.8)
+      );
+      const fileName = `atlet-${Date.now()}-${(newAtlet.nama || 'temp')
+        .replace(/\s+/g, '-')
+        .toLowerCase()}.jpg`;
+
+      const { error } = await supabase.storage
+        .from(BUCKET_NAME)
+        .upload(fileName, blob);
+
+      if (error) throw error;
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from(BUCKET_NAME).getPublicUrl(fileName);
+
+      setNewAtlet((prev) => ({ ...prev, foto_url: publicUrl }));
+      setIsCropping(false);
+      setImageToCrop(null);
+
+      setNotifMessage('Foto Berhasil Diunggah!');
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 3000);
+    } catch (err: any) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Upload Gagal',
+        text: "Upload Gagal! Pastikan Bucket '" + BUCKET_NAME + "' sudah dibuat di Supabase Storage.",
+        confirmButtonColor: '#EF4444',
+        background: '#0F172A',
+        color: '#fff'
+      });
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleAddNewAtlet = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isSubmitting) return;
+
+    setIsSaving(true);
+    setIsSubmitting(true);
+
+    try {
+      const cleanName = newAtlet.nama.trim();
+
+      // 1. Simpan ke pendaftaran
+      const { error: pError } = await supabase.from('pendaftaran').upsert(
+        {
+          nama: cleanName,
+          whatsapp: newAtlet.whatsapp,
+          kategori: newAtlet.kategori,
+          domisili: newAtlet.domisili,
+          foto_url: newAtlet.foto_url,
+          status: 'verified',
+        },
+        { onConflict: 'nama' }
+      );
+
+      if (pError) throw pError;
+
+      // 2. Simpan ke rankings
+      const { error: rError } = await supabase.from('rankings').upsert(
+        {
+          player_name: cleanName,
+          category: newAtlet.kategori,
+          seed: newAtlet.seed,
+          total_points: newAtlet.points,
+          photo_url: newAtlet.foto_url,
+          bio: newAtlet.bio,
+          achievement: newAtlet.prestasi,
+        },
+        { onConflict: 'player_name' }
+      );
+
+      if (rError) throw rError;
+
+      setNotifMessage('Atlet Berhasil Ditambahkan!');
+      setShowSuccess(true);
+      setIsAddModalOpen(false);
+
+      setNewAtlet({
+        nama: '',
+        whatsapp: '',
+        kategori: 'SENIOR',
+        domisili: '',
+        seed: 'UNSEEDED',
+        points: 0,
+        bio: 'Atlet PB Bilibili 162',
+        prestasi: 'Regular Player',
+        foto_url: '',
+      });
+
+      await fetchAtlets();
+      setTimeout(() => setShowSuccess(false), 3000);
+    } catch (err: any) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Gagal Menyimpan',
+        text: err.message,
+        confirmButtonColor: '#EF4444',
+        background: '#0F172A',
+        color: '#fff'
+      });
+    } finally {
+      setIsSaving(false);
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleUpdateStats = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingStats || !editingStats.nama || isSubmitting) return;
+
+    setIsSaving(true);
+    setIsSubmitting(true);
+    try {
+      // Update pendaftaran (kategori mungkin berubah berdasarkan seed)
+      await supabase
+        .from('pendaftaran')
+        .update({ kategori: editingStats.kategori })
+        .eq('nama', editingStats.nama);
+
+      // Update rankings
+      const { error: rankError } = await supabase.from('rankings').upsert(
+        {
+          player_name: editingStats.nama,
+          category: editingStats.kategori,
+          seed: editingStats.seed,
+          total_points: editingStats.points,
+        },
+        { onConflict: 'player_name' }
+      );
+
+      if (rankError) throw rankError;
+
+      await fetchAtlets();
+      setNotifMessage('Data Performa Diperbarui!');
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 3000);
+      setIsEditModalOpen(false);
+      setSelectedAtlet(null);
+    } catch (err: any) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Gagal Menyimpan Performa',
+        text: err.message,
+        confirmButtonColor: '#EF4444',
+        background: '#0F172A',
+        color: '#fff'
+      });
+    } finally {
+      setIsSaving(false);
+      setIsSubmitting(false);
+    }
+  };
+
+  const filteredAtlets = atlets.filter((a) =>
+    a.nama?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredAtlets.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredAtlets.length / itemsPerPage);
+
+  return (
     <div className="min-h-full flex flex-col bg-[#061225] font-sans text-white pb-24 lg:pb-6">
-      {/* HERO / HEADER */}
-      <div className="relative overflow-hidden border-b border-blue-500/10 bg-gradient-to-br from-[#071a36] via-[#08172d] to-[#050d1b]">
-        <div className="absolute -right-24 -top-24 w-80 h-80 rounded-full bg-blue-600/15 blur-3xl" />
-        <div className="absolute left-1/3 -bottom-32 w-96 h-60 rounded-full bg-cyan-500/10 blur-3xl" />
-        <div className="relative max-w-7xl mx-auto px-4 md:px-8 py-5 md:py-8">
-          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-5">
+      {/* HEADER SECTION */}
+      <div className="flex-shrink-0 p-3 md:p-8 pb-3 bg-[#07172b] border-b border-blue-500/10">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-3 mb-4">
             <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-blue-400/20 bg-blue-500/10 text-blue-300 mb-3">
-                <Sparkles size={13} />
-                <span className="text-[9px] font-black uppercase tracking-[0.25em]">Pro Database System</span>
+              <div className="flex items-center gap-2 mb-1">
+                <Sparkles size={16} className="text-blue-600 animate-pulse" />
+                <p className="text-slate-500 text-[10px] font-black tracking-[0.3em] uppercase">
+                  Pro Database System
+                </p>
               </div>
-              <h1 className="text-3xl md:text-5xl font-black italic uppercase tracking-tighter leading-none">
-                Manajemen <span className="text-blue-400">Atlet</span>
+              <h1 className="text-3xl font-black text-white italic uppercase tracking-tighter">
+                Manajemen <span className="text-blue-600">Atlet</span>
               </h1>
-              <p className="mt-2 text-xs md:text-sm text-slate-400 max-w-xl">
-                Kelola database atlet PB BILIBILI 162 dengan data seeded BILIBILI 162 CUP I yang terintegrasi.
-              </p>
             </div>
-            <button
-              onClick={() => setIsAddModalOpen(true)}
-              className="w-full lg:w-auto bg-blue-600 hover:bg-blue-500 text-white px-7 py-4 rounded-2xl shadow-xl shadow-blue-950/40 flex items-center justify-center gap-2 transition-all active:scale-[.98]"
-            >
-              <Plus size={19} />
-              <span className="font-black uppercase text-xs tracking-[0.18em]">Tambah Atlet</span>
-            </button>
-          </div>
 
-          {/* SUMMARY CARDS */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-6">
-            {[
-              { label: 'Total Atlet', value: atlets.length, icon: Users, cls: 'text-blue-300 bg-blue-500/10 border-blue-400/20' },
-              { label: 'Aktif', value: atlets.filter(a => String(a.status || 'aktif').toLowerCase() === 'aktif').length, icon: ShieldCheck, cls: 'text-emerald-300 bg-emerald-500/10 border-emerald-400/20' },
-              { label: 'Tidak Aktif', value: atlets.filter(a => String(a.status || '').toLowerCase() !== 'aktif').length, icon: Power, cls: 'text-rose-300 bg-rose-500/10 border-rose-400/20' },
-              { label: 'Seeded CUP I', value: atlets.filter(a => Boolean((a as any).seeded_cup1)).length, icon: Trophy, cls: 'text-amber-300 bg-amber-500/10 border-amber-400/20' }
-            ].map(({label,value,icon:Icon,cls}) => (
-              <div key={label} className="rounded-2xl border border-white/10 bg-white/[0.035] backdrop-blur-sm p-4">
-                <div className="flex items-center justify-between gap-2">
-                  <span className={`w-9 h-9 rounded-xl border grid place-items-center ${cls}`}><Icon size={17}/></span>
-                  <span className="text-2xl md:text-3xl font-black">{value}</span>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
+              <button
+                onClick={() => setIsAddModalOpen(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl shadow-xl shadow-blue-200 flex items-center justify-center gap-2 transition-all active:scale-95 group w-full sm:w-auto"
+              >
+                <Plus
+                  size={18}
+                  className="group-hover:rotate-90 transition-transform"
+                />
+                <span className="font-black uppercase text-xs tracking-widest">
+                  Tambah Atlet
+                </span>
+              </button>
+
+              <div className="bg-white/[0.04] px-6 py-3 rounded-2xl border border-white/10 flex items-center justify-around sm:justify-center gap-4">
+                <div className="text-center">
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                    Total
+                  </p>
+                  <p className="text-xl font-black text-white leading-none">
+                    {atlets.length}
+                  </p>
                 </div>
-                <p className="mt-2 text-[9px] font-black uppercase tracking-[0.18em] text-slate-500">{label}</p>
+                <div className="w-[1px] h-8 bg-slate-200"></div>
+                <div className="text-center">
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                    Top Tier
+                  </p>
+                  <p className="text-xl font-black text-blue-300 leading-none">
+                    {atlets.filter((a) => a.rank <= 10 && a.rank > 0).length}
+                  </p>
+                </div>
               </div>
-            ))}
+            </div>
           </div>
-        </div>
-      </div>
 
-      {/* SEARCH / FILTER */}
-      <div className="sticky top-0 z-20 border-b border-blue-500/10 bg-[#061225]/95 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 py-4">
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-300" size={19} />
+          <div className="relative group">
+            <Search
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-300 group-focus-within:text-blue-400 transition-colors"
+              size={18}
+            />
             <input
               type="text"
-              placeholder="Cari nama atlet, nickname, atau kategori..."
-              className="w-full pl-12 pr-5 py-4 bg-[#0b1b34] rounded-2xl border border-blue-500/20 text-white placeholder:text-slate-500 focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all text-xs font-bold"
-              value={searchTerm}
+              placeholder="CARI NAMA ATLET..."
+              className="w-full pl-12 pr-6 py-3.5 bg-[#0b1b34] rounded-2xl border border-blue-500/20 shadow-lg focus:ring-4 focus:ring-blue-100 transition-all font-black uppercase text-xs tracking-widest placeholder:text-slate-500 outline-none"
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <div className="flex flex-wrap items-center gap-2 mt-3">
-            <span className="text-[9px] font-black uppercase tracking-widest text-slate-500 mr-1">Status</span>
-            <span className="px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-400/20 text-[9px] font-black text-blue-300">{atlets.length} Semua</span>
-            <span className="px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-400/20 text-[9px] font-black text-emerald-300">{atlets.filter(a => String(a.status || 'aktif').toLowerCase() === 'aktif').length} Aktif</span>
-            <span className="px-3 py-1.5 rounded-full bg-rose-500/10 border border-rose-400/20 text-[9px] font-black text-rose-300">{atlets.filter(a => String(a.status || '').toLowerCase() !== 'aktif').length} Tidak Aktif</span>
-            <span className="ml-auto px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-400/20 text-[9px] font-black text-amber-300">
-              Seeded CUP I: {atlets.filter(a => Boolean((a as any).seeded_cup1)).length}
-            </span>
-          </div>
         </div>
       </div>
 
-      {/* ATHLETE LIST */}
-      <div className="flex-1 px-4 md:px-8 py-5">
+      {/* MAIN LIST SECTION */}
+      <div className="flex-1 px-3 md:px-8 py-4">
         <div className="max-w-7xl mx-auto">
-          {loading ? (
-            <div className="rounded-3xl border border-blue-500/10 bg-[#0b1b34] py-28 text-center">
-              <Loader2 className="animate-spin mx-auto text-blue-400 mb-4" size={38} />
-              <p className="text-[10px] font-black uppercase italic tracking-[0.3em] text-slate-500">Mengakses Server...</p>
-            </div>
-          ) : currentItems.length > 0 ? (
-            <div className="space-y-3">
-              {currentItems.map((atlet) => {
-                const isActive = String(atlet.status || 'aktif').toLowerCase() === 'aktif';
-                const cup1 = (atlet as any);
-                const reason = cup1.alasan_status;
-                return (
-                  <motion.div
-                    key={atlet.id}
-                    whileHover={{ y: -2 }}
-                    onClick={() => setSelectedAtlet(atlet)}
-                    className="group cursor-pointer rounded-2xl border border-white/10 bg-gradient-to-r from-[#0c203b] to-[#0a172c] hover:border-blue-400/30 shadow-lg shadow-black/10 overflow-hidden"
-                  >
-                    <div className="flex flex-col md:flex-row md:items-center gap-4 p-4">
-                      <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <div className="shrink-0 w-12 h-12 md:w-16 md:h-16 rounded-2xl overflow-hidden bg-[#132947] border border-white/10">
-                          {atlet.foto_url ? (
-                            <img src={atlet.foto_url} loading="lazy" decoding="async" className="w-full h-full object-cover object-[center_25%]" alt={atlet.nama} />
-                          ) : (
-                            <User className="w-full h-full p-3 text-slate-500" />
-                          )}
-                        </div>
-                        <div className="min-w-0">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="text-base md:text-lg font-black uppercase truncate">{atlet.nama}</h3>
-                            <span className={`px-2.5 py-1 rounded-full text-[8px] font-black uppercase border ${isActive ? 'bg-emerald-500/10 text-emerald-300 border-emerald-400/20' : 'bg-rose-500/10 text-rose-300 border-rose-400/20'}`}>
-                              {isActive ? 'Aktif' : 'Tidak Aktif'}
-                            </span>
-                          </div>
-                          <p className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-500 mt-1">{atlet.kategori || 'SENIOR'} • Rank #{atlet.rank > 0 ? atlet.rank : '—'}</p>
-                          <div className="flex flex-wrap gap-2 mt-2">
-                            <span className="px-2.5 py-1 rounded-lg bg-blue-500/10 border border-blue-400/15 text-[8px] font-black uppercase text-blue-300">Seed {atlet.seed || 'D'}</span>
-                            {cup1.seeded_cup1 && <span className="px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-400/15 text-[8px] font-black uppercase text-amber-300">CUP I • {cup1.seeded_division || atlet.seed}</span>}
-                            {cup1.seeded_partners?.length > 0 && <span className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-[8px] font-bold text-slate-400">Partner: {cup1.seeded_partners.join(', ')}</span>}
-                          </div>
-                          {!isActive && reason && <p className="mt-2 text-[9px] font-semibold text-rose-300">• {reason}</p>}
-                        </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {loading ? (
+              <div className="col-span-full py-32 text-center">
+                <Loader2
+                  className="animate-spin m-auto text-blue-600 mb-4"
+                  size={40}
+                />
+                <p className="font-black text-slate-300 uppercase italic tracking-[0.3em]">
+                  Mengakses Server...
+                </p>
+              </div>
+            ) : currentItems.length > 0 ? (
+              currentItems.map((atlet, index) => (
+                <motion.div
+                  key={atlet.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.35, delay: index * 0.04 }}
+                  onClick={() => setSelectedAtlet(atlet)}
+                  className="bg-gradient-to-br from-[#0c203b] to-[#08162a] p-4 rounded-[2rem] shadow-xl shadow-black/20 hover:shadow-2xl hover:-translate-y-2 transition-all cursor-pointer group border border-white/10 hover:border-blue-400/30 relative overflow-hidden"
+                >
+                  <div className="relative aspect-[4/5] rounded-[1.5rem] overflow-hidden mb-4 bg-[#132947] shadow-inner">
+                    {atlet.foto_url ? (
+                      <img
+                        src={atlet.foto_url}
+                        loading="lazy"
+                        decoding="async"
+                        className="w-full h-full object-cover object-[center_25%] group-hover:scale-110 transition-transform duration-700"
+                        alt={atlet.nama}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-slate-200">
+                        <User className="text-slate-500" size={50} />
                       </div>
-
-                      <div className="flex items-center justify-between md:justify-end gap-3 md:min-w-[300px]">
-                        <div className="text-left md:text-right">
-                          <p className="text-[8px] font-black uppercase tracking-widest text-slate-500">Poin</p>
-                          <p className="text-xl font-black text-blue-300">{Number(atlet.points || 0).toLocaleString('id-ID')}</p>
-                        </div>
-                        <div className="flex gap-2">
-                          <button onClick={(e) => { e.stopPropagation(); setSelectedAtlet(atlet); }} className="w-10 h-10 rounded-xl border border-blue-400/20 bg-blue-500/5 text-blue-300 grid place-items-center hover:bg-blue-500/15"><Award size={17}/></button>
-                          <button onClick={(e) => { e.stopPropagation(); setEditingStats(atlet); setIsEditModalOpen(true); }} className="w-10 h-10 rounded-xl border border-white/10 bg-white/5 text-slate-300 grid place-items-center hover:bg-white/10"><Edit3 size={17}/></button>
-                        </div>
+                    )}
+                    <div className="absolute top-3 left-3 bg-blue-950/80 backdrop-blur-xl text-white text-[8px] font-black px-3 py-1 rounded-full border border-white/20 uppercase">
+                      #{atlet.rank > 0 ? atlet.rank : '??'} GLOBAL
+                    </div>
+                  </div>
+                  <div className="px-1">
+                    <p className="text-[9px] font-black text-blue-600 uppercase tracking-[0.2em] mb-0.5">
+                      {atlet.kategori}
+                    </p>
+                    <h3 className="text-base font-black text-white uppercase italic truncate mb-3">
+                      {atlet.nama}
+                    </h3>
+                    <div className="flex justify-between items-center bg-white/[0.04] p-2.5 rounded-xl border border-white/5">
+                      <div>
+                        <p className="text-[8px] font-black text-slate-400 uppercase">
+                          Points
+                        </p>
+                        <p className="text-xs font-black text-white">
+                          {atlet.points.toLocaleString()}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[8px] font-black text-slate-400 uppercase">
+                          Seed
+                        </p>
+                        <p className="text-[9px] font-black text-blue-300 italic uppercase">
+                          {atlet.seed}
+                        </p>
                       </div>
                     </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="rounded-3xl border border-blue-500/10 bg-[#0b1b34] py-28 text-center">
-              <Users className="mx-auto text-slate-600 mb-4" size={42} />
-              <p className="font-black text-slate-500 uppercase tracking-widest">Data Tidak Ditemukan</p>
-            </div>
-          )}
+                  </div>
+                </motion.div>
+              ))
+            ) : (
+              <div className="col-span-full py-32 text-center text-slate-400 font-bold uppercase tracking-widest">
+                Data Tidak Ditemukan
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -295,7 +611,7 @@ export default function ManajemenAtlet() {
                   className={`w-10 h-10 rounded-xl font-black text-[10px] transition-all border ${
                     currentPage === i + 1
                       ? 'bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-950/40'
-                      : 'bg-[#0b1b34] text-slate-500 border-white/10 hover:border-blue-400/30 hover:text-blue-300'
+                      : 'bg-[#0b1b34] text-slate-500 border-white/10 hover:border-blue-400/30'
                   }`}
                 >
                   {i + 1}
@@ -317,7 +633,7 @@ export default function ManajemenAtlet() {
           <div className="hidden md:block">
             <button
               onClick={() => fetchAtlets()}
-              className="flex items-center gap-2 text-[10px] font-black text-blue-300 uppercase tracking-widest hover:text-white transition-colors"
+              className="flex items-center gap-2 text-[10px] font-black text-blue-300 uppercase tracking-widest hover:text-white transition-opacity"
             >
               <RefreshCcw size={14} /> Refresh Data
             </button>
@@ -545,37 +861,6 @@ export default function ManajemenAtlet() {
                 Edit <span className="text-blue-600">Performance</span>
               </h3>
               <form onSubmit={handleUpdateStats} className="space-y-5">
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Power size={16} className="text-blue-600" />
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Status Keanggotaan Atlet</span>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Status</label>
-                      <select
-                        className="w-full mt-1 px-4 py-3 bg-white border border-slate-200 rounded-xl font-black text-xs uppercase"
-                        value={String((editingStats as any).status || 'aktif').toLowerCase()}
-                        onChange={(e) => setEditingStats({ ...editingStats, status: e.target.value, alasan_status: e.target.value === 'aktif' ? '' : ((editingStats as any).alasan_status || '') } as any)}
-                      >
-                        {STATUS_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
-                      </select>
-                    </div>
-                    {String((editingStats as any).status || 'aktif').toLowerCase() === 'tidak aktif' && (
-                      <div>
-                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Alasan Tidak Aktif</label>
-                        <select
-                          required
-                          className="w-full mt-1 px-4 py-3 bg-white border border-slate-200 rounded-xl font-black text-xs"
-                          value={String((editingStats as any).alasan_status || '')}
-                          onChange={(e) => setEditingStats({ ...editingStats, alasan_status: e.target.value } as any)}
-                        >
-                          {INACTIVE_REASON_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
-                        </select>
-                      </div>
-                    )}
-                  </div>
-                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
