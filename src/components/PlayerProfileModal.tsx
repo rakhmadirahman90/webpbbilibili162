@@ -334,10 +334,10 @@ export default function PlayerProfileModal({ player, globalRank, onClose }: Prop
 
                 {/* BIODATA — seluruh nilai berasal dari record pendaftaran/rankings */}
                 <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-black">
-                  <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-red-600" />
+                  <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-blue-600" />
                   <div className="p-6 sm:p-7 pl-7 sm:pl-9 space-y-6">
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-red-400">Biodata Atlet</p>
+                      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-300">Biodata Atlet</p>
                       <p className="mt-1 text-[11px] text-slate-500">Data ditampilkan langsung dari database PB BILIBILI 162.</p>
                     </div>
 
