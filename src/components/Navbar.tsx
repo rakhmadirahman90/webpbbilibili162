@@ -19,6 +19,7 @@ export const DEFAULT_NAV_ITEMS = [
   { id: 'semua-atlet', label: 'Semua Atlet', path: 'Semua', type: 'link', parent_id: 'atlet', order_index: 1, is_active: true },
   { id: 'senior', label: 'Atlet Senior', path: 'Senior', type: 'link', parent_id: 'atlet', order_index: 2, is_active: true },
   { id: 'muda', label: 'Atlet Muda / Taruna', path: 'Muda', type: 'link', parent_id: 'atlet', order_index: 3, is_active: true },
+  { id: 'ranking', label: 'Ranking & Poin Atlet', path: 'peringkat', type: 'link', parent_id: 'atlet', order_index: 4, is_active: true },
   { id: 'register', label: 'Pendaftaran Atlet Baru', path: 'register', type: 'link', parent_id: 'atlet', order_index: 5, is_active: true },
   { id: 'pendaftaran-peserta', label: 'Pendaftaran Peserta', path: 'pendaftaran-turnamen', type: 'dropdown', parent_id: null, order_index: 6, is_active: true },
   { id: 'form-pendaftaran-peserta', label: 'Form Pendaftaran Peserta', path: 'pendaftaran-turnamen', type: 'link', parent_id: 'pendaftaran-peserta', order_index: 1, is_active: true },
@@ -187,12 +188,9 @@ export default function Navbar({ onNavigate }: NavbarProps) {
   }, [syncSession]);
 
   useEffect(() => {
-    try {
-      const cached = localStorage.getItem('site_setting_navbar_items_v3');
-      const value = cached ? JSON.parse(cached) : null;
-      if (Array.isArray(value) && value.length) setNavData(ensureCanonicalNavigation(value));
-    } catch {}
-    fetchNav(); fetchBranding();
+    // Always hydrate navigation from the live database; never paint an old cached menu.
+    fetchNav();
+    fetchBranding();
     const channel = supabase.channel(`navbar-realtime-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'navbar_settings' }, () => fetchNav())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, (payload: any) => {
