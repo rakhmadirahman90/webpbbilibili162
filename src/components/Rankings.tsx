@@ -38,6 +38,7 @@ interface PlayerRanking {
   id: string;
   pendaftaran_id?: string;
   status?: string;
+  alasan_status?: string;
   player_name: string;
   category: string;
   seed: string;
@@ -380,7 +381,7 @@ const Rankings: React.FC = () => {
       const [rankingsRes, statsRes, pendaftaranRes, seededRes] = await Promise.allSettled([
         supabase.from('rankings').select('*'),
         supabase.from('atlet_stats').select('pendaftaran_id, player_name, points, total_points, seed'),
-        supabase.from('pendaftaran').select('id, nama, foto_url, kategori_atlet, status'),
+        supabase.from('pendaftaran').select('id, nama, foto_url, kategori_atlet, status, alasan_status'),
         supabase.from('v_bilibili_162_cup1_athlete_seeded').select('*'),
       ]);
 
@@ -427,6 +428,7 @@ const Rankings: React.FC = () => {
           id: profile.id || rankItem?.id || `p-${nameKey}`,
           pendaftaran_id: profile.id,
           status: profile.status || 'aktif',
+          alasan_status: profile.alasan_status || undefined,
           player_name: rawName.trim().toUpperCase(),
           photo_url: profile.foto_url || rankItem?.photo_url || undefined,
           poin: basePoints,
@@ -468,6 +470,7 @@ const Rankings: React.FC = () => {
           id: rankItem.id || `r-${nameKey}`,
           pendaftaran_id: rankItem.pendaftaran_id,
           status: 'aktif',
+          alasan_status: undefined,
           player_name: rawName.trim().toUpperCase(),
           photo_url: rankItem.photo_url || undefined,
           poin: basePoints,
@@ -526,8 +529,8 @@ const Rankings: React.FC = () => {
       const syncedData = Array.from(playerMap.values());
       const sortedData = syncedData.sort((a, b) => {
         // Atlet aktif selalu ditampilkan lebih dahulu; atlet tidak aktif berada paling belakang.
-        const aInactive = String(a.status || '').toLowerCase() === 'tidak aktif' ? 1 : 0;
-        const bInactive = String(b.status || '').toLowerCase() === 'tidak aktif' ? 1 : 0;
+        const aInactive = String(a.status || '').toLowerCase() === 'aktif' ? 0 : 1;
+        const bInactive = String(b.status || '').toLowerCase() === 'aktif' ? 0 : 1;
         if (aInactive !== bInactive) return aInactive - bInactive;
         return b.total_points - a.total_points;
       });
