@@ -379,9 +379,7 @@ export default function News() {
           views: Number(item.views) || 0
         }));
         setBeritaList(formattedData as Berita[]);
-        try {
-          localStorage.setItem('cached_berita_list', JSON.stringify(formattedData));
-        } catch (e) {}
+        
       } else {
         setBeritaList([]);
       }
