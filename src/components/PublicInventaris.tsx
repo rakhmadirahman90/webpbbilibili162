@@ -16,11 +16,8 @@ export default function PublicInventaris() {
       setItems(rows);
       
     } catch (error) {
-      console.error('Gagal memuat inventaris publik:', error);
-      try {
-        const cached = JSON.parse(localStorage.getItem('inventaris_local_v5') || localStorage.getItem('inventaris_local_v4') || localStorage.getItem('inventaris_local_v3') || '[]');
-        setItems(Array.isArray(cached) ? cached : []);
-      } catch { setItems([]); }
+      console.error('[inventaris] fresh data load failed:', error);
+      setItems([]);
     } finally { setLoading(false); }
   };
   useEffect(() => {
