@@ -13,23 +13,7 @@ interface Member {
   sort_order: number;
 }
 
-const CACHE_KEY = 'cached_organizational_structure';
 const LEGACY_CACHE_KEY = 'structure_local_v3';
-
-function readCachedMembers(): Member[] {
-  if (typeof window === 'undefined') return [];
-  for (const key of [CACHE_KEY, LEGACY_CACHE_KEY]) {
-    try {
-      const raw = window.localStorage.getItem(key);
-      if (!raw) continue;
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed as Member[];
-    } catch {
-      // Ignore malformed local cache.
-    }
-  }
-  return [];
-}
 
 function normalizeMembers(rows: unknown): Member[] {
   if (!Array.isArray(rows)) return [];
@@ -128,7 +112,7 @@ export default function StrukturOrganisasiPublic() {
       if (!active || next.length === 0) return;
       setMembers((current) => {
         if (JSON.stringify(current) === JSON.stringify(next)) return current;
-        try { window.localStorage.setItem(CACHE_KEY, JSON.stringify(next)); } catch { /* optional cache */ }
+        
         return next;
       });
     };
@@ -153,7 +137,7 @@ export default function StrukturOrganisasiPublic() {
 
     const scheduleRefresh = () => {
       if (refreshTimer) clearTimeout(refreshTimer);
-      refreshTimer = setTimeout(() => void loadFromSupabase(), 250);
+      void loadFromSupabase();
     };
 
     void loadFromSupabase();
