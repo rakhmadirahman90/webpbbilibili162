@@ -272,7 +272,7 @@ export default function ManajemenAtlet() {
       </div>
 
       {/* FOOTER PAGINATION */}
-      <div className="fixed lg:relative bottom-16 lg:bottom-0 left-0 right-0 bg-white border-t border-slate-100 p-3 md:p-4 z-20">
+      <div className="fixed lg:relative bottom-16 lg:bottom-0 left-0 right-0 bg-[#07172b]/95 backdrop-blur-xl border-t border-blue-500/10 p-3 md:p-4 z-20">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest hidden md:block">
             Halaman {currentPage} dari {totalPages}
@@ -282,7 +282,7 @@ export default function ManajemenAtlet() {
             <button
               onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
               disabled={currentPage === 1}
-              className="p-3 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-blue-600 hover:text-white disabled:opacity-30 transition-all shadow-sm"
+              className="p-3 rounded-xl bg-[#0b1b34] border border-white/10 text-slate-400 hover:bg-blue-600 hover:text-white disabled:opacity-30 transition-all"
             >
               <ChevronLeft size={20} />
             </button>
@@ -294,8 +294,8 @@ export default function ManajemenAtlet() {
                   onClick={() => setCurrentPage(i + 1)}
                   className={`w-10 h-10 rounded-xl font-black text-[10px] transition-all border ${
                     currentPage === i + 1
-                      ? 'bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-200'
-                      : 'bg-white text-slate-400 border-slate-200 hover:border-blue-300'
+                      ? 'bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-950/40'
+                      : 'bg-[#0b1b34] text-slate-500 border-white/10 hover:border-blue-400/30 hover:text-blue-300'
                   }`}
                 >
                   {i + 1}
@@ -317,7 +317,7 @@ export default function ManajemenAtlet() {
           <div className="hidden md:block">
             <button
               onClick={() => fetchAtlets()}
-              className="flex items-center gap-2 text-[10px] font-black text-blue-600 uppercase tracking-widest hover:opacity-70 transition-opacity"
+              className="flex items-center gap-2 text-[10px] font-black text-blue-300 uppercase tracking-widest hover:text-white transition-colors"
             >
               <RefreshCcw size={14} /> Refresh Data
             </button>
