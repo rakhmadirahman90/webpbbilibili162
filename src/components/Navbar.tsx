@@ -366,9 +366,28 @@ export default function Navbar({ onNavigate }: NavbarProps) {
                   {drop && <ChevronDown size={15} className={`shrink-0 transition-transform pointer-events-none ${expanded ? 'rotate-180 text-blue-400' : 'text-slate-500'}`}/>} 
                 </button>
                 {drop && expanded && <div className="ml-4 pl-3 border-l border-blue-500/40 py-0.5 my-0.5">
-                  {subs.map(sub => { const isChampionMenu = String(sub.id || '') === 'peserta-juara' || String(sub.label || '').trim().toLowerCase() === 'daftar peserta juara'; const subTarget = isChampionMenu ? 'prestasi' : sub.path; return <button key={sub.id} type="button" onPointerDown={() => handleNavigationPointerDown(menu.path, subTarget)} onClick={(e) => handleMobileMenuClick(e, menu.path, subTarget)} className="w-full min-h-[44px] px-2.5 flex items-center gap-2.5 text-left text-[13px] leading-5 text-slate-300 hover:text-white hover:bg-white/5 active:bg-white/10 rounded-lg touch-manipulation select-none">
-                    <span className="w-5 min-w-5 flex justify-center pointer-events-none">{iconFor(sub.path, sub.label)}</span><span className="truncate pointer-events-none">{sub.label}</span>
-                  </button>; })}
+                  {subs.map(sub => {
+                    const isChampionMenu = String(sub.id || '') === 'peserta-juara' || String(sub.label || '').trim().toLowerCase() === 'daftar peserta juara';
+                    const subTarget = isChampionMenu ? 'prestasi' : sub.path;
+                    const canonicalSub = normalizeNavigationPath(subTarget || '');
+                    const isDirectAthletePage = canonicalSub === 'peringkat' || canonicalSub === 'register' || canonicalSub === 'pendaftaran';
+                    if (isDirectAthletePage) {
+                      const href = canonicalSub === 'peringkat' ? '/peringkat' : '/register';
+                      return <a
+                        key={sub.id}
+                        href={href}
+                        onPointerDown={() => handleNavigationPointerDown(menu.path, subTarget)}
+                        onClick={() => { setMobileOpen(false); setMobileOpenMenu(null); }}
+                        className="w-full min-h-[44px] px-2.5 flex items-center gap-2.5 text-left text-[13px] leading-5 text-slate-300 hover:text-white hover:bg-white/5 active:bg-white/10 rounded-lg touch-manipulation select-none"
+                      >
+                        <span className="w-5 min-w-5 flex justify-center pointer-events-none">{iconFor(sub.path, sub.label)}</span>
+                        <span className="truncate pointer-events-none">{sub.label}</span>
+                      </a>;
+                    }
+                    return <button key={sub.id} type="button" onPointerDown={() => handleNavigationPointerDown(menu.path, subTarget)} onClick={(e) => handleMobileMenuClick(e, menu.path, subTarget)} className="w-full min-h-[44px] px-2.5 flex items-center gap-2.5 text-left text-[13px] leading-5 text-slate-300 hover:text-white hover:bg-white/5 active:bg-white/10 rounded-lg touch-manipulation select-none">
+                      <span className="w-5 min-w-5 flex justify-center pointer-events-none">{iconFor(sub.path, sub.label)}</span><span className="truncate pointer-events-none">{sub.label}</span>
+                    </button>;
+                  })}
                 </div>}
               </div>;
             })}
