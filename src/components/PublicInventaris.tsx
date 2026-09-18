@@ -14,7 +14,7 @@ export default function PublicInventaris() {
       if (error) throw error;
       const rows = (data || []) as Item[];
       setItems(rows);
-      localStorage.setItem('inventaris_local_v5', JSON.stringify(rows));
+      
     } catch (error) {
       console.error('Gagal memuat inventaris publik:', error);
       try {
