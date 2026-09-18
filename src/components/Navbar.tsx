@@ -271,13 +271,9 @@ export default function Navbar({ onNavigate }: NavbarProps) {
     const target = section === 'home' || section === 'beranda' ? '/' : `/${section}`;
     setOpenMenu(null);
     setMobileOpen(false);
-    // Ranking & Pendaftaran Atlet wajib membuka route publik secara penuh.
-    // Hard navigation dipakai agar klik dari drawer/sidebar mobile tidak berhenti
-    // di state halaman sebelumnya atau terpengaruh bundle/cache React yang lama.
-    if (section === 'prestasi' || section === 'peringkat' || section === 'register') {
-      window.location.assign(target);
-      return;
-    }
+    // Gunakan React Router untuk submenu publik. Hard reload di /peringkat
+    // atau /register dapat melewati SPA fallback Vercel dan menghasilkan halaman
+    // kosong/404. Jalur ini aman untuk desktop maupun drawer mobile.
     try { navigate(target); } catch { window.location.assign(target); }
   };
 
@@ -286,6 +282,23 @@ export default function Navbar({ onNavigate }: NavbarProps) {
   const handleMobileMenuClick = (event: React.MouseEvent<HTMLButtonElement>, path: string, subPath?: string) => {
     event.preventDefault();
     event.stopPropagation();
+
+    // Kunci target submenu Atlet berdasarkan path kanonis agar klik dari
+    // sidebar mobile tidak pernah jatuh kembali ke /atlet.
+    const targetPath = normalizeNavigationPath(subPath || path || '');
+    if (targetPath === 'peringkat') {
+      setMobileOpen(false);
+      setMobileOpenMenu(null);
+      navigate('/peringkat');
+      return;
+    }
+    if (targetPath === 'register' || targetPath === 'pendaftaran') {
+      setMobileOpen(false);
+      setMobileOpenMenu(null);
+      navigate('/register');
+      return;
+    }
+
     go(path, subPath);
   };
 
