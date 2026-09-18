@@ -155,7 +155,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
       if (Array.isArray(data) && data.length) {
         const next = ensureCanonicalNavigation(data);
         setNavData(next);
-        localStorage.setItem('site_setting_navbar_items_v2', JSON.stringify(next));
+        localStorage.setItem('site_setting_navbar_items_v3', JSON.stringify(next));
         return;
       }
       const { data: setting } = await supabase.from('site_settings').select('value').eq('key', 'navbar_items').maybeSingle();
@@ -164,7 +164,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
       if (Array.isArray(list) && list.length) {
         const next = ensureCanonicalNavigation(list);
         setNavData(next);
-        localStorage.setItem('site_setting_navbar_items_v2', JSON.stringify(next));
+        localStorage.setItem('site_setting_navbar_items_v3', JSON.stringify(next));
       }
     } catch { }
   }, []);
@@ -187,7 +187,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
 
   useEffect(() => {
     try {
-      const cached = localStorage.getItem('site_setting_navbar_items_v2');
+      const cached = localStorage.getItem('site_setting_navbar_items_v3');
       const value = cached ? JSON.parse(cached) : null;
       if (Array.isArray(value) && value.length) setNavData(ensureCanonicalNavigation(value));
     } catch {}
