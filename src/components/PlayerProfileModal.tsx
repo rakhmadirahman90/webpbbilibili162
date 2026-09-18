@@ -350,67 +350,6 @@ export default function PlayerProfileModal({ player, globalRank, onClose }: Prop
 
             {tab === 'performa' && (
               <div className="mt-7 space-y-5">
-                {rapor ? (
-                  <>
-                    <div className="rounded-3xl border border-blue-500/20 bg-blue-500/5 p-5">
-                      <div className="flex items-center justify-between gap-4">
-                        <div>
-                          <p className="text-[10px] font-black uppercase tracking-widest text-blue-400">Rapor Atlet Terintegrasi</p>
-                          <p className="text-sm text-slate-300 mt-1">Data performa diambil dari Rapor Atlet pada panel admin.</p>
-                        </div>
-                        <div className="w-16 h-16 rounded-2xl bg-blue-600/15 border border-blue-500/25 grid place-items-center shrink-0">
-                          <div className="text-center"><p className="text-2xl font-black text-blue-300">{performanceScore}</p><p className="text-[7px] font-black uppercase text-slate-500">Skor</p></div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 text-center"><p className="text-xl font-black text-emerald-400">{totalWins}</p><p className="text-[8px] uppercase tracking-widest text-slate-500 font-black mt-1">Menang</p></div>
-                      <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 text-center"><p className="text-xl font-black text-red-400">{totalLosses}</p><p className="text-[8px] uppercase tracking-widest text-slate-500 font-black mt-1">Kalah</p></div>
-                      <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 text-center"><p className="text-xl font-black text-blue-300">{winRate}%</p><p className="text-[8px] uppercase tracking-widest text-slate-500 font-black mt-1">Win Rate</p></div>
-                    </div>
-
-                    <div className="rounded-3xl border border-white/10 bg-white/[0.035] p-5">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-300 mb-4">Performa Fisik</p>
-                      <div className="space-y-3">
-                        {physicalMetrics.map(([label, value]) => <div key={String(label)}>
-                          <div className="flex justify-between text-[10px] font-black uppercase"><span className="text-slate-400">{String(label)}</span><span className="text-blue-300">{Number(value) || 0}</span></div>
-                          <div className="mt-1.5 h-2 rounded-full bg-slate-800 overflow-hidden"><div className="h-full rounded-full bg-blue-500" style={{ width: Math.max(0, Math.min(100, Number(value) || 0)) + '%' }} /></div>
-                        </div>)}
-                      </div>
-                    </div>
-
-                    <div className="rounded-3xl border border-white/10 bg-white/[0.035] p-5">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-300 mb-4">Performa Teknik</p>
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-                        {technicalMetrics.map(([label, value]) => <div key={String(label)}>
-                          <div className="flex justify-between text-[10px] font-black uppercase"><span className="text-slate-400">{String(label)}</span><span className="text-amber-300">{Number(value) || 0}</span></div>
-                          <div className="mt-1.5 h-2 rounded-full bg-slate-800 overflow-hidden"><div className="h-full rounded-full bg-amber-500" style={{ width: Math.max(0, Math.min(100, Number(value) || 0)) + '%' }} /></div>
-                        </div>)}
-                      </div>
-                    </div>
-
-                    <div className="rounded-3xl border border-white/10 bg-white/[0.035] p-5">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Riwayat Menang / Kalah</p>
-                      <div className="space-y-2">
-                        {(rapor.winLossHistory || []).map((m) => <div key={m.bulan} className="flex items-center gap-3">
-                          <span className="w-9 text-[9px] font-black uppercase text-slate-500">{m.bulan}</span>
-                          <div className="flex-1 h-2 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-emerald-500 rounded-full" style={{ width: Math.min(100, Number(m.menang || 0) * 10) + '%' }} /></div>
-                          <span className="text-[9px] font-black text-emerald-400">{m.menang}W</span><span className="text-[9px] font-black text-red-400">{m.kalah}L</span>
-                        </div>)}
-                      </div>
-                    </div>
-
-                    {rapor.updatedAt && <p className="text-[9px] text-slate-500 text-right">Rapor diperbarui: {new Date(rapor.updatedAt).toLocaleDateString('id-ID')}</p>}
-                  </>
-                ) : (
-                  <div className="py-16 text-center border border-dashed border-white/10 rounded-3xl"><Activity className="mx-auto text-slate-600" size={36}/><p className="mt-3 text-xs font-black uppercase tracking-widest text-slate-500">Data performa belum tersedia</p><p className="mt-2 text-[10px] text-slate-600">Admin dapat mengisi Rapor Atlet melalui menu Rapor Atlet.</p></div>
-                )}
-              </div>
-            )}
-
-            {tab === 'performa' && (
-              <div className="mt-7 space-y-5">
                 <div className="rounded-3xl border border-blue-500/20 bg-gradient-to-br from-blue-500/10 via-transparent to-indigo-500/5 p-5">
                   <div className="flex items-center justify-between gap-4">
                     <div><p className="text-[10px] font-black uppercase tracking-widest text-blue-400">Analisis Performa & Statistik Atlet</p><p className="text-sm text-slate-300 mt-1">Ringkasan individual dari modul analitik admin dan Rapor Atlet.</p></div>
@@ -422,7 +361,7 @@ export default function PlayerProfileModal({ player, globalRank, onClose }: Prop
                   {[
                     ['Pertandingan', displayAnalytics.matchesPlayed, 'text-blue-300'],
                     ['Win Rate', displayAnalytics.winRate + '%', 'text-emerald-400'],
-                    ['Kehadiran', displayAnalytics.attendanceRate + '%', 'text-indigo-300'],
+                    ['Kehadiran', displayAnalytics.attendanceRate === null ? '—' : displayAnalytics.attendanceRate + '%', 'text-indigo-300'],
                     ['Streak', displayAnalytics.streak + ' Win', 'text-amber-400']
                   ].map(([label,value,cls]) => <div key={String(label)} className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 text-center"><p className={'text-xl font-black '+String(cls)}>{String(value)}</p><p className="text-[8px] uppercase tracking-widest text-slate-500 font-black mt-1">{String(label)}</p></div>)}
                 </div>
