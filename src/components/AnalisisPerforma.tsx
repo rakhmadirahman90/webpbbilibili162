@@ -32,6 +32,7 @@ import {
   Calendar
 } from 'lucide-react';
 import { supabase } from '../supabase';
+import { loadAthletePerformanceData, buildAggregateMonthlyTrend, AthletePerformance } from '../utils/athletePerformance';
 
 interface PlayerStats {
   id: string;
@@ -49,109 +50,73 @@ interface PlayerStats {
   poin: number;
 }
 
-const DUMMY_PLAYERS: PlayerStats[] = [
-  { id: '1', nama: 'Fajar Alfian', matchesPlayed: 34, winRate: 76, attendanceRate: 92, stamina: 88, speed: 85, power: 80, technique: 90, agility: 87, streak: 5, poin: 1450 },
-  { id: '2', nama: 'Anthony Sinisuka Ginting', matchesPlayed: 40, winRate: 82, attendanceRate: 88, stamina: 92, speed: 95, power: 85, technique: 94, agility: 96, streak: 8, poin: 1680 },
-  { id: '3', nama: 'Jonatan Christie', matchesPlayed: 38, winRate: 74, attendanceRate: 95, stamina: 94, speed: 86, power: 89, technique: 88, agility: 85, streak: 3, poin: 1510 },
-  { id: '4', nama: 'Kevin Sanjaya Sukamuljo', matchesPlayed: 45, winRate: 88, attendanceRate: 80, stamina: 85, speed: 98, power: 82, technique: 99, agility: 98, streak: 12, poin: 1890 },
-  { id: '5', nama: 'Marcus Fernaldi Gideon', matchesPlayed: 42, winRate: 80, attendanceRate: 85, stamina: 89, speed: 88, power: 94, technique: 87, agility: 89, streak: 4, poin: 1610 },
-  { id: '6', nama: 'Hendra Setiawan', matchesPlayed: 50, winRate: 70, attendanceRate: 99, stamina: 78, speed: 75, power: 80, technique: 98, agility: 80, streak: 2, poin: 1400 },
-  { id: '7', nama: 'Mohammad Ahsan', matchesPlayed: 48, winRate: 72, attendanceRate: 98, stamina: 80, speed: 78, power: 85, technique: 96, agility: 82, streak: 1, poin: 1420 },
-];
-
-const MONTHLY_PROGRESS_DATA = [
-  { month: 'Jan', kehadiran: 85, turnamen_winrate: 60, skor_avg: 70 },
-  { month: 'Feb', Kehadiran: 90, turnamen_winrate: 65, skor_avg: 72 },
-  { month: 'Mar', Kehadiran: 92, turnamen_winrate: 70, skor_avg: 78 },
-  { month: 'Apr', Kehadiran: 88, turnamen_winrate: 68, skor_avg: 75 },
-  { month: 'Mei', Kehadiran: 94, turnamen_winrate: 74, skor_avg: 82 },
-  { month: 'Jun', Kehadiran: 95, turnamen_winrate: 80, skor_avg: 88 },
-];
-
 export default function AnalisisPerforma() {
-  const [players, setPlayers] = useState<PlayerStats[]>(DUMMY_PLAYERS);
-  const [selectedPlayer1Id, setSelectedPlayer1Id] = useState<string>('2');
-  const [selectedPlayer2Id, setSelectedPlayer2Id] = useState<string>('4');
+  const [players, setPlayers] = useState<AthletePerformance[]>([]);
+  const [selectedPlayer1Id, setSelectedPlayer1Id] = useState<string>('');
+  const [selectedPlayer2Id, setSelectedPlayer2Id] = useState<string>('');
+  const [monthlyTrend, setMonthlyTrend] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   useEffect(() => {
+    let cancelled = false;
+
     const fetchRealData = async () => {
       setLoading(true);
       try {
-        const [rankingsRes, pendaftaranRes] = await Promise.all([
-          supabase.from('rankings').select('*').order('total_points', { ascending: false }),
-          supabase.from('pendaftaran').select('id, nama')
-        ]);
+        const mapped = await loadAthletePerformanceData();
+        if (cancelled) return;
 
-        const rankingsData = rankingsRes.data || [];
-        const pendaftaranData = pendaftaranRes.data || [];
+        setPlayers(mapped);
+        setMonthlyTrend(buildAggregateMonthlyTrend(mapped));
 
-        if (rankingsData && rankingsData.length > 0) {
-          const filteredRankings = pendaftaranData.length > 0
-            ? rankingsData.filter((r) => {
-                const nameKey = (r.player_name || r.nama || '').trim().toLowerCase();
-                return pendaftaranData.some(
-                  (p) =>
-                    (r.pendaftaran_id && p.id === r.pendaftaran_id) ||
-                    (p.nama && p.nama.trim().toLowerCase() === nameKey)
-                );
-              })
-            : rankingsData;
-
-          const mapped: PlayerStats[] = filteredRankings.map((r, index) => {
-            const hash = r.id ? r.id.charCodeAt(0) + r.id.charCodeAt(r.id.length - 1) : index;
-            const matchesPlayed = 20 + (hash % 25);
-            const winRate = 60 + (hash % 30);
-            const attendanceRate = 80 + (hash % 20);
-            const stamina = 75 + (hash % 25);
-            const speed = 70 + (hash % 28);
-            const power = 75 + (hash % 23);
-            const technique = 80 + (hash % 20);
-            const agility = 75 + (hash % 25);
-            const streak = 1 + (hash % 8);
-
-            return {
-              id: r.id || String(index + 1),
-              nama: r.player_name || r.nama || 'Atlet',
-              matchesPlayed,
-              winRate,
-              attendanceRate,
-              stamina,
-              speed,
-              power,
-              technique,
-              agility,
-              streak,
-              foto_url: r.photo_url || r.foto_url,
-              poin: r.total_points || r.poin || 0
-            };
-          });
-          setPlayers(mapped);
-          if (mapped.length > 1) {
-            setSelectedPlayer1Id(mapped[0].id);
-            setSelectedPlayer2Id(mapped[1].id);
-          }
+        if (mapped.length > 0) {
+          setSelectedPlayer1Id(prev => mapped.some(p => p.id === prev) ? prev : mapped[0].id);
+          setSelectedPlayer2Id(prev => mapped.some(p => p.id === prev) ? prev : (mapped[1]?.id || mapped[0].id));
+        } else {
+          setSelectedPlayer1Id('');
+          setSelectedPlayer2Id('');
         }
       } catch (err) {
-        console.error('Error fetching analytics from DB:', err);
+        console.error('Error fetching real athlete performance data:', err);
+        if (!cancelled) {
+          setPlayers([]);
+          setMonthlyTrend([]);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
     fetchRealData();
 
-    // Subscribe to real-time changes
     const channel = supabase
-      .channel('rankings-realtime-analisis')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'rankings' }, () => {
-        fetchRealData();
+      .channel('athlete-performance-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'rankings' }, fetchRealData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'atlet_stats' }, fetchRealData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pendaftaran' }, fetchRealData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pertandingan' }, fetchRealData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, (payload: any) => {
+        if (!payload?.new?.key || ['rapor_atlet_data', 'absensi_list', 'users_list'].includes(payload.new.key)) {
+          fetchRealData();
+        }
       })
       .subscribe();
 
+    const onSettingUpdate = (event: any) => {
+      const key = event?.detail?.key;
+      if (!key || ['rapor_atlet_data', 'absensi_list', 'users_list'].includes(key)) fetchRealData();
+    };
+    window.addEventListener('site_setting_updated', onSettingUpdate);
+    window.addEventListener('online', fetchRealData);
+    window.addEventListener('focus', fetchRealData);
+
     return () => {
+      cancelled = true;
       supabase.removeChannel(channel);
+      window.removeEventListener('site_setting_updated', onSettingUpdate);
+      window.removeEventListener('online', fetchRealData);
+      window.removeEventListener('focus', fetchRealData);
     };
   }, []);
 
@@ -159,11 +124,11 @@ export default function AnalisisPerforma() {
   const p2 = players.find(p => p.id === selectedPlayer2Id) || players[1] || players[0];
 
   const radarData = [
-    { subject: 'Stamina', [p1?.nama || 'Atlet A']: p1?.stamina || 80, [p2?.nama || 'Atlet B']: p2?.stamina || 75 },
-    { subject: 'Kecepatan', [p1?.nama || 'Atlet A']: p1?.speed || 85, [p2?.nama || 'Atlet B']: p2?.speed || 80 },
-    { subject: 'Kekuatan', [p1?.nama || 'Atlet A']: p1?.power || 80, [p2?.nama || 'Atlet B']: p2?.power || 85 },
-    { subject: 'Teknik', [p1?.nama || 'Atlet A']: p1?.technique || 90, [p2?.nama || 'Atlet B']: p2?.technique || 88 },
-    { subject: 'Kelincahan', [p1?.nama || 'Atlet A']: p1?.agility || 88, [p2?.nama || 'Atlet B']: p2?.agility || 85 },
+    { subject: 'Stamina', [p1?.nama || 'Atlet A']: p1?.stamina ?? 0, [p2?.nama || 'Atlet B']: p2?.stamina ?? 0 },
+    { subject: 'Kecepatan', [p1?.nama || 'Atlet A']: p1?.speed ?? 0, [p2?.nama || 'Atlet B']: p2?.speed ?? 0 },
+    { subject: 'Kekuatan', [p1?.nama || 'Atlet A']: p1?.power ?? 0, [p2?.nama || 'Atlet B']: p2?.power ?? 0 },
+    { subject: 'Teknik', [p1?.nama || 'Atlet A']: p1?.technique ?? 0, [p2?.nama || 'Atlet B']: p2?.technique ?? 0 },
+    { subject: 'Kelincahan', [p1?.nama || 'Atlet A']: p1?.agility ?? 0, [p2?.nama || 'Atlet B']: p2?.agility ?? 0 },
   ];
 
   const filteredPlayers = players.filter(p => p && p.nama && p.nama.toLowerCase().includes((searchQuery || '').toLowerCase()));
@@ -177,9 +142,10 @@ export default function AnalisisPerforma() {
     ? players.reduce((prev, current) => (prev && current && (prev.streak || 0) > (current.streak || 0)) ? prev : current, players[0]) 
     : null;
 
-  const avgAttendance = players.length > 0 
-    ? Math.round(players.reduce((sum, p) => sum + (p?.attendanceRate || 0), 0) / players.length) 
-    : 0;
+  const attendancePlayers = players.filter(p => p.attendanceRate !== null && p.attendanceTotal > 0);
+  const avgAttendance = attendancePlayers.length > 0
+    ? Math.round(attendancePlayers.reduce((sum, p) => sum + (p.attendanceRate || 0), 0) / attendancePlayers.length)
+    : null;
 
   return (
     <div className="space-y-6">
@@ -252,7 +218,7 @@ export default function AnalisisPerforma() {
           </div>
           <div>
             <div className="text-[9px] font-black uppercase text-slate-500 tracking-wider">Rata-rata Kehadiran</div>
-            <div className="text-base font-black text-white">{avgAttendance}% Konsisten</div>
+            <div className="text-base font-black text-white">{avgAttendance === null ? '—' : `${avgAttendance}%`} {avgAttendance === null ? 'Belum Ada Data' : 'Konsisten'}</div>
           </div>
         </div>
       </div>
@@ -315,7 +281,7 @@ export default function AnalisisPerforma() {
                   <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', color: '#fff', fontSize: '10px' }} />
                   <Legend wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }} />
                 </RadarChart>
-              </ResponsiveContainer>
+              </ResponsiveContainer>}
             </div>
 
             {/* Numerical KPI Bars comparison */}
@@ -483,8 +449,9 @@ export default function AnalisisPerforma() {
           </div>
 
           <div className="h-[280px] w-full">
+          {monthlyTrend.length === 0 && <div className="h-full grid place-items-center text-[10px] font-black uppercase tracking-widest text-slate-600">Belum ada riwayat pertandingan di database</div>}
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={MONTHLY_PROGRESS_DATA} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <AreaChart data={monthlyTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorKehadiran" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#10b981" stopOpacity={0.2}/>
@@ -500,7 +467,7 @@ export default function AnalisisPerforma() {
                 <YAxis stroke="#94a3b8" fontSize={10} fontWeight="bold" />
                 <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', color: '#fff' }} />
                 <Legend wrapperStyle={{ fontSize: '10px' }} />
-                <Area type="monotone" dataKey="Kehadiran" stroke="#10b981" fillOpacity={1} fill="url(#colorKehadiran)" name="Persentase Kehadiran (%)" strokeWidth={2.5} />
+                <Area type="monotone" connectNulls dataKey="Kehadiran" stroke="#10b981" fillOpacity={1} fill="url(#colorKehadiran)" name="Persentase Kehadiran (%)" strokeWidth={2.5} />
                 <Area type="monotone" dataKey="turnamen_winrate" stroke="#3b82f6" fillOpacity={1} fill="url(#colorWinrate)" name="Tingkat Kemenangan (%)" strokeWidth={2.5} />
               </AreaChart>
             </ResponsiveContainer>
