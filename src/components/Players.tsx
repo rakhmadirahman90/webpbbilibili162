@@ -329,42 +329,84 @@ const Players: React.FC<{ initialFilter?: string }> = ({
               <p className="text-xs font-black uppercase tracking-widest text-zinc-500">Sinkronisasi Database...</p>
             </div>
           ) : (
-            <div className="flex-1 overflow-hidden relative group/slider min-h-0">
+            <div className="relative w-full">
               {filteredPlayers.length > 0 ? (
-                <Swiper key={`${currentAgeGroup}-${filteredPlayers.length}`} modules={[Navigation, Pagination, Autoplay]} spaceBetween={25} slidesPerView={1.05} speed={400} grabCursor={true} autoplay={{ delay: 4000, disableOnInteraction: true }} navigation={{ prevEl: prevRef.current, nextEl: nextRef.current }} onBeforeInit={(swiper) => {
-                  // @ts-ignore
-                  swiper.params.navigation.prevEl = prevRef.current;
-                  // @ts-ignore
-                  swiper.params.navigation.nextEl = nextRef.current;
-                }} breakpoints={{ 640: { slidesPerView: 2.5 }, 1024: { slidesPerView: 4 } }} className="h-full">
-                  {filteredPlayers.map((player) => (
-                    <SwiperSlide key={player.id}>
-                      <motion.div whileHover={{ y: -10 }} onClick={() => setSelectedPlayer(player)} className="group cursor-pointer relative aspect-[3/4.2] rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden bg-[#1a1d26] border border-white/5 hover:border-blue-600/50 transition-all duration-500 shadow-2xl w-full">
+                <>
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <p className="text-[10px] sm:text-xs font-bold text-zinc-500 uppercase tracking-[0.18em]">
+                      Menampilkan <span className="text-blue-400">{filteredPlayers.length}</span> atlet
+                    </p>
+                    <span className="hidden sm:block text-[10px] text-zinc-600 uppercase tracking-widest">
+                      Klik kartu untuk melihat profil
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-5">
+                    {filteredPlayers.map((player, index) => (
+                      <motion.article
+                        key={player.id}
+                        initial={{ opacity: 0, y: 16 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.28, delay: Math.min(index * 0.025, 0.3) }}
+                        whileHover={{ y: -5 }}
+                        whileTap={{ scale: 0.985 }}
+                        onClick={() => setSelectedPlayer(player)}
+                        className="group relative cursor-pointer overflow-hidden rounded-xl sm:rounded-2xl bg-[#141a27] border border-white/8 hover:border-blue-500/60 shadow-lg hover:shadow-blue-900/20 transition-all duration-300 aspect-[1/1.08] sm:aspect-[1/1.02] lg:aspect-[1/1.08]"
+                      >
                         {player.img ? (
-                          <LazyImage src={player.img} className="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 group-hover:scale-110 transition-all duration-700" alt={player.name} containerClassName="w-full h-full" width={400} />
+                          <LazyImage
+                            src={player.img}
+                            className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.035]"
+                            alt={player.name}
+                            containerClassName="w-full h-full"
+                            width={500}
+                          />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-[#1a1d26] text-slate-600"><User size={60} /></div>
+                          <div className="w-full h-full flex items-center justify-center bg-[#1a1d26] text-slate-600">
+                            <User size={54} />
+                          </div>
                         )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#0b0e14] via-[#0b0e14]/20 to-transparent opacity-90 group-hover:opacity-100 transition-opacity" />
-                        <div className="absolute bottom-5 sm:bottom-8 left-5 sm:left-8 right-5 sm:right-8 transform group-hover:-translate-y-2 transition-transform duration-500">
-                          <div className="flex items-center gap-2 mb-2"><div className="w-2 h-2 rounded-full bg-blue-600 shadow-[0_0_8px_rgba(37,99,235,0.8)]" /><p className="text-blue-500 text-[9px] font-black uppercase tracking-widest">{player.ageGroup.toUpperCase()}</p></div>
-                          <h3 className="text-lg sm:text-xl md:text-2xl font-black uppercase italic mb-3 sm:mb-4 leading-tight group-hover:text-blue-500 transition-colors line-clamp-2">{player.name}</h3>
-                          <div className="flex justify-between items-center text-[10px] font-black pt-3 sm:pt-4 border-t border-white/5"><span className="text-white/30 uppercase tracking-tighter truncate max-w-[45%]">{player.displaySeed}</span><span className="bg-blue-600/10 text-blue-500 px-2.5 sm:px-3 py-1 rounded-full border border-blue-600/20 whitespace-nowrap">{player.displayPoints.toLocaleString()} PTS</span></div>
+
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#070b13] via-[#070b13]/10 to-transparent" />
+                        <div className="absolute inset-x-0 bottom-0 p-3 sm:p-4 lg:p-5">
+                          <div className="flex items-center gap-1.5 mb-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_7px_rgba(59,130,246,.9)]" />
+                            <span className="text-blue-300 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.16em]">
+                              {player.ageGroup}
+                            </span>
+                          </div>
+                          <h3 className="text-sm sm:text-base lg:text-lg font-black uppercase leading-tight tracking-tight text-white line-clamp-2 group-hover:text-blue-300 transition-colors">
+                            {player.name}
+                          </h3>
+                          <div className="mt-2 pt-2 border-t border-white/10 flex items-center justify-between gap-2">
+                            <span className="text-[8px] sm:text-[9px] text-zinc-400 font-bold uppercase truncate">
+                              {player.displaySeed}
+                            </span>
+                            <span className="shrink-0 px-2 py-1 rounded-full bg-blue-600/20 border border-blue-500/30 text-blue-300 text-[8px] sm:text-[9px] font-black">
+                              {player.displayPoints.toLocaleString()} PTS
+                            </span>
+                          </div>
                         </div>
-                      </motion.div>
-                    </SwiperSlide>
-                  ))}
-                </Swiper>
+
+                        <div className="absolute top-2.5 right-2.5 sm:top-3 sm:right-3 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-black/45 backdrop-blur-md border border-white/15 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <User size={13} className="text-white" />
+                        </div>
+                      </motion.article>
+                    ))}
+                  </div>
+                </>
               ) : (
-                <div className="py-32 text-center bg-[#1a1d26]/50 rounded-[3rem] border border-white/5">
+                <div className="py-24 text-center bg-[#141a27]/60 rounded-2xl sm:rounded-3xl border border-white/8">
                   <Search className="mx-auto text-slate-600 mb-4" size={48} />
-                  <p className="text-slate-500 font-black uppercase italic tracking-widest">Atlet tidak ditemukan</p>
-                  <button onClick={() => {setCurrentAgeGroup('Semua'); setSearchTerm('');}} className="mt-6 px-8 py-3 bg-blue-600 text-white rounded-full text-[10px] font-black uppercase hover:bg-blue-700 transition-all shadow-xl shadow-blue-600/20">Lihat Semua Atlet</button>
+                  <p className="text-slate-500 font-black uppercase italic tracking-widest text-xs sm:text-sm">Atlet tidak ditemukan</p>
+                  <button
+                    onClick={() => { setCurrentAgeGroup('Semua'); setSearchTerm(''); }}
+                    className="mt-6 px-7 py-3 bg-blue-600 text-white rounded-full text-[10px] font-black uppercase hover:bg-blue-700 transition-all shadow-xl shadow-blue-600/20"
+                  >
+                    Lihat Semua Atlet
+                  </button>
                 </div>
               )}
-
-              <button ref={prevRef} aria-label="Atlet sebelumnya" className="absolute -left-2 md:-left-6 top-1/2 -translate-y-1/2 z-20 w-10 md:w-14 h-10 md:h-14 bg-[#1a1d26]/80 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center opacity-100 md:opacity-0 group-hover/slider:opacity-100 transition-all hover:bg-blue-600 text-white shadow-2xl"><ChevronLeft size={24} /></button>
-              <button ref={nextRef} aria-label="Atlet berikutnya" className="absolute -right-2 md:-right-6 top-1/2 -translate-y-1/2 z-20 w-10 md:w-14 h-10 md:h-14 bg-[#1a1d26]/80 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center opacity-100 md:opacity-0 group-hover/slider:opacity-100 transition-all hover:bg-blue-600 text-white shadow-2xl"><ChevronRight size={24} /></button>
             </div>
           )}
         </div>
