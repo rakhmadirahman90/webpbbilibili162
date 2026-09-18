@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from "../supabase";
 import { getSiteSetting } from '../utils/siteSettingsHelper';
-import { DEFAULT_BERITA, DEFAULT_KOMENTAR } from '../data/localDatabase';
+import { DEFAULT_KOMENTAR } from '../data/localDatabase';
 import { motion, AnimatePresence } from 'framer-motion';
 import Swal from 'sweetalert2';
 import LazyImage from './LazyImage';
@@ -383,32 +383,11 @@ export default function News() {
           localStorage.setItem('cached_berita_list', JSON.stringify(formattedData));
         } catch (e) {}
       } else {
-        // Fallback to local cached database
-        const localCached = localStorage.getItem('cached_berita_list') || localStorage.getItem('berita_local_v3');
-        if (localCached) {
-          try {
-            const parsed = JSON.parse(localCached);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              setBeritaList(parsed as Berita[]);
-              return;
-            }
-          } catch (e) {}
-        }
-        setBeritaList(DEFAULT_BERITA as Berita[]);
+        setBeritaList([]);
       }
     } catch (err) {
       console.error("Gagal memuat berita:", err);
-      const localCached = localStorage.getItem('cached_berita_list') || localStorage.getItem('berita_local_v3');
-      if (localCached) {
-        try {
-          const parsed = JSON.parse(localCached);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setBeritaList(parsed as Berita[]);
-            return;
-          }
-        } catch (e) {}
-      }
-      setBeritaList(DEFAULT_BERITA as Berita[]);
+      setBeritaList([]);
     } finally {
       setLoading(false);
     }
@@ -425,13 +404,11 @@ export default function News() {
       if (!error && data && data.length > 0) {
         setComments(data);
       } else {
-        const localComments = DEFAULT_KOMENTAR.filter(c => c.berita_id === beritaId);
-        setComments(localComments);
+        setComments([]);
       }
     } catch (err) {
       console.error("Gagal memuat komentar:", err);
-      const localComments = DEFAULT_KOMENTAR.filter(c => c.berita_id === beritaId);
-      setComments(localComments);
+      setComments([]);
     }
   };
 
