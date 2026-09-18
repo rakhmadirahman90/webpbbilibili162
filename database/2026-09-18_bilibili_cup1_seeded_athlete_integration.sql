@@ -72,12 +72,12 @@ select j.pendaftaran_id,j.nama,
   s.validity_status,
   s.source_sheet,
   s.source_no,
-  (s.id is not null) as is_seeded
+  (j.registration_count is not null and s.id is not null) as is_seeded
 from joined j
 left join lateral (
   select s.*
   from seeded s
-  where s.seed_key=j.seed_match_key
+  where j.registration_count is not null and s.seed_key=j.seed_match_key
   order by
     case when replace(replace(replace(upper(coalesce(s.club_name,'')),'.',''),'-',''),' ','') like '%BILIBILI162%' then 0 else 1 end,
     case when s.source_no is null then 1 else 0 end,
