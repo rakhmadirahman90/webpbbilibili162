@@ -26,7 +26,7 @@ export default function PublicSponsorship() {
   const load = useCallback(async () => {
     setRefreshing(true);
     try { setSponsors(normalize(await getSiteSetting('sponsorship_list'))); }
-    catch { try { setSponsors(normalize(localStorage.getItem('site_setting_sponsorship_list'))); } catch {} }
+    catch { setSponsors([]); }
     finally { setLoading(false); setRefreshing(false); }
   }, []);
   useEffect(() => {
