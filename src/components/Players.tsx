@@ -192,47 +192,16 @@ const Players: React.FC<{ initialFilter?: string }> = ({
       });
 
       const resultPlayers = Array.from(playerMap.values());
-      if (resultPlayers.length > 0) {
-        setDbPlayers(resultPlayers);
-        try {
-          localStorage.setItem('cached_pendaftaran_players', JSON.stringify(resultPlayers));
-        } catch (e) {}
-      } else {
-        const localList = DEFAULT_PENDAFTARAN.map(p => {
-          const rank = DEFAULT_RANKINGS.find(r => r.pendaftaran_id === p.id || r.player_name.toLowerCase() === p.nama.toLowerCase());
-          return {
-            id: p.id,
-            pendaftaran_id: p.id,
-            pendaftaran: p,
-            points: rank?.poin || 1200,
-            total_points: rank?.bonus || 100,
-            display_points: rank?.total_points || 1300,
-            seed: rank?.seed || 'Non-Seed',
-            bio: p.pengalaman || 'Dedikasi dan semangat tinggi untuk membawa nama baik PB Bilibili 162.',
-            status: p.status || 'Active'
-          };
-        });
-        setDbPlayers(localList);
+      // Live database is authoritative. Never render an older browser snapshot.
+      setDbPlayers(resultPlayers);
+      if (pendaftaranRes.status === 'rejected' && statsRes.status === 'rejected' && rankingsRes.status === 'rejected') {
+        throw new Error('Semua sumber data atlet tidak dapat diakses.');
       }
     } catch (err) {
       console.error('Database Error:', err);
-      const localList = DEFAULT_PENDAFTARAN.map(p => {
-        const rank = DEFAULT_RANKINGS.find(r => r.pendaftaran_id === p.id || r.player_name.toLowerCase() === p.nama.toLowerCase());
-        return {
-          id: p.id,
-          pendaftaran_id: p.id,
-          pendaftaran: p,
-          points: rank?.poin || 1200,
-          total_points: rank?.bonus || 100,
-          display_points: rank?.total_points || 1300,
-          seed: rank?.seed || 'Non-Seed',
-          bio: p.pengalaman || 'Dedikasi dan semangat tinggi untuk membawa nama baik PB Bilibili 162.',
-          status: p.status || 'Active'
-        };
-      });
-      setDbPlayers(localList);
-    } finally {
-      setTimeout(() => setIsLoading(false), 300);
+      setDbPlayers([]);
+        } finally {
+      setIsLoading(false);
     }
   }, []);
 
