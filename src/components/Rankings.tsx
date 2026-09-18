@@ -37,6 +37,7 @@ import {
 interface PlayerRanking {
   id: string;
   pendaftaran_id?: string;
+  status?: string;
   player_name: string;
   category: string;
   seed: string;
@@ -379,7 +380,7 @@ const Rankings: React.FC = () => {
       const [rankingsRes, statsRes, pendaftaranRes, seededRes] = await Promise.allSettled([
         supabase.from('rankings').select('*'),
         supabase.from('atlet_stats').select('pendaftaran_id, player_name, points, total_points, seed'),
-        supabase.from('pendaftaran').select('id, nama, foto_url, kategori_atlet'),
+        supabase.from('pendaftaran').select('id, nama, foto_url, kategori_atlet, status'),
         supabase.from('v_bilibili_162_cup1_athlete_seeded').select('*'),
       ]);
 
@@ -425,6 +426,7 @@ const Rankings: React.FC = () => {
         playerMap.set(nameKey, {
           id: profile.id || rankItem?.id || `p-${nameKey}`,
           pendaftaran_id: profile.id,
+          status: profile.status || 'aktif',
           player_name: rawName.trim().toUpperCase(),
           photo_url: profile.foto_url || rankItem?.photo_url || undefined,
           poin: basePoints,
@@ -465,6 +467,7 @@ const Rankings: React.FC = () => {
         playerMap.set(nameKey, {
           id: rankItem.id || `r-${nameKey}`,
           pendaftaran_id: rankItem.pendaftaran_id,
+          status: 'aktif',
           player_name: rawName.trim().toUpperCase(),
           photo_url: rankItem.photo_url || undefined,
           poin: basePoints,
@@ -500,6 +503,7 @@ const Rankings: React.FC = () => {
         playerMap.set(nameKey, {
           id: stat.pendaftaran_id || `s-${nameKey}`,
           pendaftaran_id: stat.pendaftaran_id,
+          status: 'aktif',
           player_name: rawName.trim().toUpperCase(),
           photo_url: undefined,
           poin: basePoints,
@@ -520,7 +524,13 @@ const Rankings: React.FC = () => {
       });
 
       const syncedData = Array.from(playerMap.values());
-      const sortedData = syncedData.sort((a, b) => b.total_points - a.total_points);
+      const sortedData = syncedData.sort((a, b) => {
+        // Atlet aktif selalu ditampilkan lebih dahulu; atlet tidak aktif berada paling belakang.
+        const aInactive = String(a.status || '').toLowerCase() === 'tidak aktif' ? 1 : 0;
+        const bInactive = String(b.status || '').toLowerCase() === 'tidak aktif' ? 1 : 0;
+        if (aInactive !== bInactive) return aInactive - bInactive;
+        return b.total_points - a.total_points;
+      });
 
       // Supabase is authoritative. Do not render cached or bundled ranking snapshots.
       setDbRankings(sortedData);
