@@ -205,16 +205,32 @@ export default function Navbar({ onNavigate }: NavbarProps) {
 
   const getSubMenus = (parentId: string) => {
     const parent = navData.find(i => i.id === parentId || i.path === parentId || String(i.label || '').toLowerCase() === String(parentId).toLowerCase());
-    const list = navData.filter(i => i?.is_active !== false && i?.parent_id && (i.parent_id === parentId || i.parent_id === parent?.id || i.parent_id === parent?.path || String(i.parent_id).toLowerCase() === String(parent?.label || '').toLowerCase())).sort((a,b) => (a.order_index || 0) - (b.order_index || 0));
-    const visibleList = list.filter(i => {
+    const matchesParent = (item: any) => item?.parent_id && (
+      item.parent_id === parentId ||
+      item.parent_id === parent?.id ||
+      item.parent_id === parent?.path ||
+      String(item.parent_id).toLowerCase() === String(parent?.label || '').toLowerCase()
+    );
+    const list = navData.filter(matchesParent)
+      .filter((item: any) => item?.is_active !== false)
+      .sort((a,b) => (a.order_index || 0) - (b.order_index || 0));
+
+    if (parent?.path === 'atlet' || String(parent?.label || '').toLowerCase().trim() === 'atlet') {
+      const defaults = ATLET_DEFAULT_SUBMENUS.filter((item: any) => item?.is_active !== false);
+      const key = (item: any) => normalizeNavigationPath(item?.path || '') || String(item?.label || '').toLowerCase().trim();
+      const merged = [...list];
+      for (const fallback of defaults) {
+        if (!merged.some((item: any) => key(item) === key(fallback))) merged.push({ ...fallback });
+      }
+      return merged.sort((a: any, b: any) => (a.order_index || 0) - (b.order_index || 0));
+    }
+
+    return list.filter(i => {
       const itemPath = normalizeNavigationPath(i?.path || '');
       const itemLabel = String(i?.label || '').toLowerCase().trim();
       return !(itemPath === 'seeded-peserta' || itemPath.includes('seeded-peserta') || itemLabel.includes('seeded peserta') || itemLabel.includes('daftar seeded'));
     });
-    if (!visibleList.length && (parent?.path === 'atlet' || parent?.label?.toLowerCase() === 'atlet')) return ATLET_DEFAULT_SUBMENUS.filter(i => i?.is_active !== false);
-    return visibleList;
   };
-
   const iconFor = (path = '', label = '') => {
     const p = path.toLowerCase(), l = label.toLowerCase();
     const C = p.includes('jadwal') ? Timer : p.includes('berita') ? Newspaper : p.includes('prestasi') ? Award : p.includes('atlet') || l.includes('atlet') ? Users : p.includes('peringkat') || p.includes('rank') ? Trophy : p.includes('quiz') || p.includes('kuis') ? BrainCircuit : p.includes('gallery') || p.includes('galeri') ? ImageIcon : p.includes('contact') || l.includes('hubungi') ? MapPin : p.includes('faq') ? HelpCircle : p.includes('fasilitas') ? Building2 : p.includes('visi') ? Target : p.includes('struktur') ? Users : p.includes('dokumen') ? FileText : p.includes('tentang') || p === 'about' ? Shield : p === 'quiz' ? BrainCircuit : p === 'home' ? Home : p.includes('sponsorship') || p.includes('sponsor') || l.includes('sponsor') ? Sparkles : Sparkles;
