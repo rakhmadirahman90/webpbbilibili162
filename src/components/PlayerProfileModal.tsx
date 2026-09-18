@@ -67,6 +67,31 @@ type AuditItem = {
   tipe_kegiatan?: string;
 };
 
+type SeededCup1Data = {
+  pendaftaran_id: string;
+  nama: string;
+  tournament_id: number;
+  tournament_name: string;
+  tournament_period: string;
+  venue: string;
+  participated: boolean;
+  registration_count: number;
+  partners?: string[] | null;
+  registration_codes?: string[] | null;
+  registration_categories?: string[] | null;
+  seeded_player_id?: number | null;
+  seeded_player_name?: string | null;
+  seeded_club_name?: string | null;
+  seeded_quality?: string | null;
+  division_level?: string | null;
+  tournament_qualification?: string | null;
+  region_status?: string | null;
+  validity_status?: string | null;
+  source_sheet?: string | null;
+  source_no?: number | null;
+  is_seeded: boolean;
+};
+
 const norm = (v = '') => v.toLowerCase().trim();
 
 const containsPlayer = (item: any, name: string) => {
@@ -98,6 +123,7 @@ export default function PlayerProfileModal({ player, globalRank, onClose }: Prop
   const [error, setError] = useState<string | null>(null);
   const [rapor, setRapor] = useState<RaporData | null>(null);
   const [analytics, setAnalytics] = useState<any>(null);
+  const [seededCup1, setSeededCup1] = useState<SeededCup1Data | null>(null);
 
   const name = player?.player_name || '';
 
@@ -118,7 +144,12 @@ export default function PlayerProfileModal({ player, globalRank, onClose }: Prop
         if (byId.data) return byId;
         return await supabase.from('pendaftaran').select(fields).ilike('nama', name.trim()).maybeSingle();
       };
-      const [profileRes, matchRes, auditRes, galleryRes, newsRes, raporRes, rankingsRes, attendanceRes] = await Promise.allSettled([
+      const seededLookup = async () => {
+        const byId = await supabase.from('v_bilibili_162_cup1_athlete_seeded').select('*').eq('pendaftaran_id', pId).maybeSingle();
+        if (byId.data) return byId;
+        return await supabase.from('v_bilibili_162_cup1_athlete_seeded').select('*').ilike('nama', name.trim()).maybeSingle();
+      };
+      const [profileRes, matchRes, auditRes, galleryRes, newsRes, raporRes, rankingsRes, attendanceRes, seededRes] = await Promise.allSettled([
         profileLookup(),
         supabase.from('pertandingan').select('id,pendaftaran_id,kategori_kegiatan,hasil,keterangan,created_at').eq('pendaftaran_id', pId).order('created_at', { ascending: false }),
         supabase.from('audit_poin').select('id,created_at,perubahan,poin_sebelum,poin_sesudah,tipe_kegiatan').ilike('atlet_nama', name.trim()).order('created_at', { ascending: false }).limit(12),
@@ -126,7 +157,8 @@ export default function PlayerProfileModal({ player, globalRank, onClose }: Prop
         supabase.from('berita').select('id,judul,ringkasan,konten,kategori,gambar_url,tanggal').order('tanggal', { ascending: false }).limit(100),
         import('../utils/siteSettingsHelper').then(({ getSiteSetting }) => getSiteSetting('rapor_atlet_data')),
         supabase.from('rankings').select('*').eq('player_name', name.trim()).maybeSingle(),
-        import('../utils/siteSettingsHelper').then(({ getSiteSetting }) => getSiteSetting('absensi_list'))
+        import('../utils/siteSettingsHelper').then(({ getSiteSetting }) => getSiteSetting('absensi_list')),
+        seededLookup()
       ]);
 
       if (cancelled) return;
@@ -137,6 +169,7 @@ export default function PlayerProfileModal({ player, globalRank, onClose }: Prop
       }
       if (matchRes.status === 'fulfilled') setMatches(matchRes.value.data || []);
       if (auditRes.status === 'fulfilled') setAudit(auditRes.value.data || []);
+      if (seededRes.status === 'fulfilled') setSeededCup1((seededRes.value.data || null) as SeededCup1Data | null);
 
       if (galleryRes.status === 'fulfilled') {
         const rows = galleryRes.value.data || [];
@@ -231,6 +264,8 @@ export default function PlayerProfileModal({ player, globalRank, onClose }: Prop
       .on('postgres_changes', { event: '*', schema: 'public', table: 'atlet_stats' }, load)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'pendaftaran' }, load)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'pertandingan' }, load)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'seeded_players' }, load)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pendaftaran_turnamen' }, load)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, (payload: any) => {
         if (!payload?.new?.key || ['rapor_atlet_data', 'absensi_list', 'users_list'].includes(payload.new.key)) load();
       })
@@ -469,6 +504,46 @@ export default function PlayerProfileModal({ player, globalRank, onClose }: Prop
                       </div>
                     </section>
                   </div>
+
+                  <section className="rounded-[1.75rem] border border-amber-400/20 bg-gradient-to-br from-[#111b2f] via-[#0b172b] to-[#071226] overflow-hidden shadow-lg">
+                    <div className="px-5 py-4 border-b border-amber-400/10 flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-400/20 grid place-items-center text-amber-300">
+                        <Trophy size={19} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm sm:text-base font-black text-white">Seeded BILIBILI 162 CUP I</p>
+                        <p className="text-[9px] uppercase tracking-widest text-amber-300 mt-0.5">Terintegrasi dengan data turnamen 08–12 September 2026</p>
+                      </div>
+                    </div>
+                    <div className="p-4 sm:p-5">
+                      {seededCup1?.participated ? (
+                        <div className="space-y-3">
+                          <div className="flex flex-wrap gap-2">
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/20 bg-emerald-500/10 px-3 py-1.5 text-[9px] font-black uppercase tracking-wider text-emerald-300">
+                              <ShieldCheck size={13} /> Peserta Terdaftar
+                            </span>
+                            {seededCup1.is_seeded && <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/20 bg-amber-500/10 px-3 py-1.5 text-[9px] font-black uppercase tracking-wider text-amber-300"><Trophy size={13} /> Seeded</span>}
+                          </div>
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            <div className="rounded-2xl border border-white/10 bg-black/20 p-3"><p className="text-[8px] font-black uppercase tracking-widest text-slate-500">Kualitas</p><p className="mt-1 text-sm font-black text-amber-300">{seededCup1.seeded_quality || 'Belum ditetapkan'}</p></div>
+                            <div className="rounded-2xl border border-white/10 bg-black/20 p-3"><p className="text-[8px] font-black uppercase tracking-widest text-slate-500">Divisi</p><p className="mt-1 text-sm font-black text-white">{seededCup1.division_level || '—'}</p></div>
+                            <div className="rounded-2xl border border-white/10 bg-black/20 p-3"><p className="text-[8px] font-black uppercase tracking-widest text-slate-500">Pendaftaran</p><p className="mt-1 text-sm font-black text-white">{seededCup1.registration_count}</p></div>
+                            <div className="rounded-2xl border border-white/10 bg-black/20 p-3"><p className="text-[8px] font-black uppercase tracking-widest text-slate-500">No. Sumber</p><p className="mt-1 text-sm font-black text-white">{seededCup1.source_no ?? '—'}</p></div>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                            <div className="rounded-xl border border-white/5 bg-white/[.025] p-3"><span className="text-slate-500">Nama seeded:</span> <b className="text-white">{seededCup1.seeded_player_name || 'Belum ada padanan'}</b></div>
+                            <div className="rounded-xl border border-white/5 bg-white/[.025] p-3"><span className="text-slate-500">PB/klub pada data seeded:</span> <b className="text-white">{seededCup1.seeded_club_name || '—'}</b></div>
+                          </div>
+                          {seededCup1.partners?.length ? <p className="text-xs leading-5 text-slate-300"><span className="text-slate-500">Pasangan turnamen:</span> {seededCup1.partners.join(', ')}</p> : null}
+                        </div>
+                      ) : (
+                        <div className="rounded-2xl border border-dashed border-white/10 bg-black/15 p-5 text-center">
+                          <p className="text-xs font-black uppercase tracking-widest text-slate-400">Belum tercatat sebagai peserta BILIBILI 162 CUP I</p>
+                          <p className="mt-1.5 text-[10px] leading-5 text-slate-600">Data seeded tidak akan ditempelkan ke profil apabila nama atlet tidak tercatat pada pendaftaran turnamen.</p>
+                        </div>
+                      )}
+                    </div>
+                  </section>
 
                   <section className="rounded-[1.75rem] border border-white/10 bg-gradient-to-r from-white/[0.035] to-blue-500/[0.035] overflow-hidden">
                     <div className="px-5 py-4 border-b border-white/10 flex items-center gap-3">
