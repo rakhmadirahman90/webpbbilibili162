@@ -318,32 +318,67 @@ export default function PlayerProfileModal({ player, globalRank, onClose }: Prop
 
             {tab === 'profil' && (
               <div className="mt-7 space-y-5">
-                <div className="overflow-hidden rounded-3xl border border-white/10 bg-[#0a1930]">
-                  {player.photo_url ? (
-                    <img src={player.photo_url} alt={name} className="w-full max-h-[420px] object-contain bg-[#0d2b55]" />
+                <div className="overflow-hidden rounded-3xl border border-white/10 bg-black">
+                  {profile?.foto_url || player.photo_url ? (
+                    <img
+                      src={profile?.foto_url || player.photo_url}
+                      alt={profile?.nama || name}
+                      className="w-full max-h-[430px] object-contain bg-[#0b1930]"
+                    />
                   ) : (
-                    <div className="h-72 flex items-center justify-center text-slate-500"><User size={72} /></div>
+                    <div className="h-72 flex items-center justify-center text-slate-500">
+                      <User size={72} />
+                    </div>
                   )}
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  {[
-                    ['Domisili', profile?.domisili || '—'],
-                    ['Jenis Kelamin', profile?.jenis_kelamin || 'Putra'],
-                    ['Kategori Atlet', profile?.kategori_atlet || player.category || '—'],
-                    ['Seed', player.seed || 'Non-Seed'],
-                  ].map(([label, value]) => (
-                    <div key={label} className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-                      <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">{label}</p>
-                      <p className="mt-1 text-sm font-bold text-slate-200 break-words">{value}</p>
+                {/* BIODATA — seluruh nilai berasal dari record pendaftaran/rankings */}
+                <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-black">
+                  <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-red-600" />
+                  <div className="p-6 sm:p-7 pl-7 sm:pl-9 space-y-6">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-red-400">Biodata Atlet</p>
+                      <p className="mt-1 text-[11px] text-slate-500">Data ditampilkan langsung dari database PB BILIBILI 162.</p>
                     </div>
-                  ))}
+
+                    {[
+                      ['Nama Atlet', profile?.nama || name],
+                      ['Kategori / Sektor', profile?.kategori || player.category || '—'],
+                      ['Kategori Atlet', profile?.kategori_atlet || player.category || '—'],
+                      ['Domisili', profile?.domisili || '—'],
+                      ['Jenis Kelamin', profile?.jenis_kelamin || '—'],
+                      ['Status', profile?.status || '—'],
+                      ['Tanggal Registrasi', profile?.tanggal_registrasi
+                        ? new Date(profile.tanggal_registrasi).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+                        : '—'],
+                      ['Pengalaman', profile?.pengalaman || 'Belum diisi pada database'],
+                    ].map(([label, value]) => (
+                      <div key={String(label)} className="border-b border-white/10 pb-4 last:border-b-0 last:pb-0">
+                        <p className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-slate-300">{label} :</p>
+                        <p className="mt-1.5 text-base sm:text-lg font-medium text-white leading-7 break-words">{String(value)}</p>
+                      </div>
+                    ))}
+
+                    <div className="pt-1 flex flex-wrap gap-2">
+                      <span className="rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1.5 text-[9px] font-black uppercase tracking-widest text-blue-300">
+                        {player.seed || 'Non-Seed'}
+                      </span>
+                      <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-[9px] font-black uppercase tracking-widest text-amber-300">
+                        {Number(player.total_points || 0).toLocaleString('id-ID')} PTS
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-5">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-2">Profil & Pengalaman</p>
-                  <p className="text-sm leading-7 text-slate-300">{profile?.pengalaman || 'Data pengalaman atlet belum diisi.'}</p>
-                  {player.updated_at && <p className="mt-3 text-[10px] text-slate-500">Pembaruan peringkat: {new Date(player.updated_at).toLocaleDateString('id-ID')}</p>}
+                {/* Field pada contoh profil yang belum tersedia pada skema database saat ini.
+                    Sengaja tidak diisi dengan data perkiraan agar profil tetap 100% sesuai database. */}
+                <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-5">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">Data Tambahan</p>
+                  <p className="mt-2 text-xs leading-6 text-slate-500">
+                    Nama panggilan, nama punggung, tempat/tanggal lahir, tahun bergabung, tangan dominan,
+                    hobi, dan makanan favorit belum tersedia sebagai kolom pada tabel <span className="font-mono text-slate-400">pendaftaran</span>.
+                    Sistem tidak akan mengarang nilai untuk field tersebut.
+                  </p>
                 </div>
               </div>
             )}
