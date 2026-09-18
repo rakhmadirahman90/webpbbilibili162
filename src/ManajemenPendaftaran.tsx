@@ -618,47 +618,47 @@ const totalSeniorPutri = registrants.filter(r =>
   }
 };
   return (
-    <div className="min-h-full flex flex-col bg-slate-50 text-slate-900 font-sans pb-24 lg:pb-6">
-      <div className="flex-1 flex flex-col max-w-[1400px] w-full mx-auto px-3 py-3 md:px-8 md:py-6">
+    <div className="min-h-full flex flex-col bg-[#061225] text-white font-sans pb-8 lg:pb-6">
+      <div className="flex-1 flex flex-col max-w-[1500px] w-full mx-auto px-3 py-4 md:px-8 md:py-6">
         
         {/* HEADER */}
         <header className="flex flex-col lg:flex-row justify-between items-center gap-4 mb-6">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-blue-600 rounded-2xl shadow-lg shadow-blue-200">
+            <div className="p-3 bg-blue-600 rounded-2xl shadow-lg shadow-blue-950/40">
               <Users className="text-white" size={24} />
             </div>
             <div>
-              <h1 className="text-xl md:text-3xl font-black tracking-tight text-slate-900 uppercase italic leading-none">
+              <h1 className="text-xl md:text-3xl font-black tracking-tight text-white uppercase italic leading-none">
                 Manajemen <span className="text-blue-600">Pendaftaran</span>
               </h1>
-              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Database & Administrasi Real-time</p>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Database & Administrasi Real-time</p>
             </div>
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-2">
-            <button onClick={() => setIsAddModalOpen(true)} className="flex items-center gap-2 bg-blue-600 text-white px-5 py-3 rounded-xl font-bold text-[10px] tracking-widest hover:bg-slate-900 transition-all active:scale-95 shadow-lg shadow-blue-100">
+            <button onClick={() => setIsAddModalOpen(true)} className="flex items-center gap-2 bg-blue-600 text-white px-5 py-3 rounded-xl font-bold text-[10px] tracking-widest hover:bg-slate-900 transition-all active:scale-95 shadow-lg shadow-blue-950/30">
               <Plus size={16} /> TAMBAH ATLET
             </button>
 
-            <button onClick={downloadTemplate} className="flex items-center gap-2 bg-indigo-500 text-white px-5 py-3 rounded-xl font-bold text-[10px] tracking-widest hover:bg-indigo-600 transition-all active:scale-95 shadow-lg shadow-indigo-100">
+            <button onClick={downloadTemplate} className="flex items-center gap-2 bg-[#173b73] text-blue-100 border border-blue-400/20 px-5 py-3 rounded-xl font-bold text-[10px] tracking-widest hover:bg-blue-600 transition-all active:scale-95 shadow-lg shadow-blue-950/20">
               <Download size={16} /> TEMPLATE IMPORT
             </button>
 
-            <label className="flex items-center gap-2 bg-amber-500 text-white px-5 py-3 rounded-xl font-bold text-[10px] tracking-widest hover:bg-amber-600 transition-all active:scale-95 shadow-lg shadow-amber-100 cursor-pointer">
+            <label className="flex items-center gap-2 bg-[#b7791f] text-white px-5 py-3 rounded-xl font-bold text-[10px] tracking-widest hover:bg-[#d08a22] transition-all active:scale-95 shadow-lg shadow-amber-950/20 cursor-pointer">
               <Upload size={16} /> IMPORT EXCEL
               <input type="file" className="hidden" accept=".xlsx, .xls" onChange={handleImportExcel} />
             </label>
 
-            <div className="h-10 w-[1px] bg-slate-200 mx-1 hidden sm:block"></div>
+            <div className="h-10 w-px bg-white/10 mx-1 hidden sm:block"></div>
              
-            <button onClick={exportToExcel} className="p-3 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-600 hover:text-white transition-all" title="Export Excel">
+            <button onClick={exportToExcel} className="p-3 bg-emerald-500/10 text-emerald-300 border border-emerald-400/20 rounded-xl hover:bg-emerald-600 hover:text-white transition-all" title="Export Excel">
               <FileSpreadsheet size={20} />
             </button>
-            <button onClick={exportToPDF} className="p-3 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-600 hover:text-white transition-all" title="Export PDF">
+            <button onClick={exportToPDF} className="p-3 bg-rose-500/10 text-rose-300 border border-rose-400/20 rounded-xl hover:bg-rose-600 hover:text-white transition-all" title="Export PDF">
               <FileText size={20} />
             </button>
 
-            <button onClick={fetchData} className="p-3 bg-slate-900 text-white rounded-xl hover:bg-blue-600 transition-all">
+            <button onClick={fetchData} className="p-3 bg-[#0b1b34] text-white border border-white/10 rounded-xl hover:bg-blue-600 transition-all">
               <RefreshCcw size={20} className={loading ? 'animate-spin' : ''} />
             </button>
           </div>
@@ -667,12 +667,12 @@ const totalSeniorPutri = registrants.filter(r =>
         {/* --- STATISTIK LENGKAP (RESPONSIVE GRID) --- */}
         <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 lg:gap-4 mb-6">
           {/* Card Total */}
-          <div className="bg-white p-4 rounded-[1.2rem] border border-slate-100 shadow-sm flex items-center justify-between col-span-2 md:col-span-1">
+          <div className="bg-[#0c203b] p-4 rounded-2xl border border-white/10 shadow-lg shadow-black/20 flex items-center justify-between col-span-2 md:col-span-1">
             <div>
               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Total Pendaftar</p>
-              <p className="text-2xl font-black text-slate-900 mt-0.5">{totalPendaftar}</p>
+              <p className="text-2xl font-black text-white mt-0.5">{totalPendaftar}</p>
             </div>
-            <div className="p-3 bg-slate-100 text-slate-600 rounded-xl">
+            <div className="p-3 bg-white/5 text-blue-200 rounded-xl border border-white/10">
               <Users size={20} />
             </div>
           </div>
@@ -683,7 +683,7 @@ const totalSeniorPutri = registrants.filter(r =>
               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Atlet Putra</p>
               <p className="text-2xl font-black text-blue-600 mt-0.5">{totalPutra}</p>
             </div>
-            <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
+            <div className="p-3 bg-blue-500/10 text-blue-300 rounded-xl border border-blue-400/15">
               <User size={20} />
             </div>
           </div>
@@ -694,7 +694,7 @@ const totalSeniorPutri = registrants.filter(r =>
               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Atlet Putri</p>
               <p className="text-2xl font-black text-rose-600 mt-0.5">{totalPutri}</p>
             </div>
-            <div className="p-3 bg-rose-50 text-rose-600 rounded-xl">
+            <div className="p-3 bg-rose-500/10 text-rose-300 rounded-xl border border-rose-400/15">
               <User size={20} />
             </div>
           </div>
@@ -703,10 +703,10 @@ const totalSeniorPutri = registrants.filter(r =>
           <div className="bg-white p-4 rounded-[1.2rem] border border-slate-100 shadow-sm flex items-center justify-between">
             <div>
               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Atlet Muda</p>
-              <p className="text-2xl font-black text-indigo-600 mt-0.5 leading-none">{totalMuda}</p>
+              <p className="text-2xl font-black text-blue-300 mt-0.5 leading-none">{totalMuda}</p>
               <p className="text-[8px] font-bold text-slate-400 mt-1 uppercase tracking-wider">PA: <span className="text-blue-500">{totalMudaPutra}</span> | PI: <span className="text-rose-500">{totalMudaPutri}</span></p>
             </div>
-            <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
+            <div className="p-3 bg-blue-500/10 text-blue-300 rounded-xl border border-blue-400/15">
               <Activity size={20} />
             </div>
           </div>
@@ -718,7 +718,7 @@ const totalSeniorPutri = registrants.filter(r =>
               <p className="text-2xl font-black text-emerald-600 mt-0.5 leading-none">{totalSenior}</p>
               <p className="text-[8px] font-bold text-slate-400 mt-1 uppercase tracking-wider">PA: <span className="text-blue-500">{totalSeniorPutra}</span> | PI: <span className="text-rose-500">{totalSeniorPutri}</span></p>
             </div>
-            <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
+            <div className="p-3 bg-emerald-500/10 text-emerald-300 rounded-xl border border-emerald-400/15">
               <Activity size={20} />
             </div>
           </div>
@@ -730,39 +730,39 @@ const totalSeniorPutri = registrants.filter(r =>
             <button
               type="button"
               onClick={() => { setStatusFilter('semua'); setCurrentPage(1); }}
-              className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${statusFilter === 'semua' ? 'bg-slate-900 text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
+              className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${statusFilter === 'semua' ? 'bg-blue-600 text-white shadow-md shadow-blue-950/30' : 'bg-[#0c203b] text-slate-300 hover:bg-[#132b4d] border border-white/10'}`}
             >
-              Semua Pendaftar <span className="px-2 py-0.5 rounded-full text-[9px] bg-slate-200 text-slate-800 ml-1">{totalPendaftar}</span>
+              Semua Pendaftar <span className="px-2 py-0.5 rounded-full text-[9px] bg-white/10 text-slate-200 ml-1">{totalPendaftar}</span>
             </button>
             <button
               type="button"
               onClick={() => { setStatusFilter('pending'); setCurrentPage(1); }}
-              className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${statusFilter === 'pending' ? 'bg-amber-500 text-white shadow-md' : 'bg-white text-amber-600 hover:bg-amber-50 border border-amber-200'}`}
+              className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${statusFilter === 'pending' ? 'bg-amber-600 text-white shadow-md' : 'bg-[#0c203b] text-amber-300 hover:bg-amber-500/10 border border-amber-400/20'}`}
             >
-              <Clock size={12} /> Menunggu Verifikasi <span className={`px-2 py-0.5 rounded-full text-[9px] ${statusFilter === 'pending' ? 'bg-amber-600 text-white' : 'bg-amber-100 text-amber-800'} ml-1`}>{totalPending}</span>
+              <Clock size={12} /> Menunggu Verifikasi <span className={`px-2 py-0.5 rounded-full text-[9px] ${statusFilter === 'pending' ? 'bg-amber-600 text-white' : 'bg-amber-500/15 text-amber-200'} ml-1`}>{totalPending}</span>
             </button>
             <button
               type="button"
               onClick={() => { setStatusFilter('diterima'); setCurrentPage(1); }}
-              className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${statusFilter === 'diterima' ? 'bg-emerald-600 text-white shadow-md' : 'bg-white text-emerald-600 hover:bg-emerald-50 border border-emerald-200'}`}
+              className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${statusFilter === 'diterima' ? 'bg-emerald-600 text-white shadow-md' : 'bg-[#0c203b] text-emerald-300 hover:bg-emerald-500/10 border border-emerald-400/20'}`}
             >
-              <CheckCircle2 size={12} /> Diterima <span className={`px-2 py-0.5 rounded-full text-[9px] ${statusFilter === 'diterima' ? 'bg-emerald-700 text-white' : 'bg-emerald-100 text-emerald-800'} ml-1`}>{totalDiterima}</span>
+              <CheckCircle2 size={12} /> Diterima <span className={`px-2 py-0.5 rounded-full text-[9px] ${statusFilter === 'diterima' ? 'bg-emerald-700 text-white' : 'bg-emerald-500/15 text-emerald-200'} ml-1`}>{totalDiterima}</span>
             </button>
             <button
               type="button"
               onClick={() => { setStatusFilter('ditolak'); setCurrentPage(1); }}
-              className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${statusFilter === 'ditolak' ? 'bg-rose-600 text-white shadow-md' : 'bg-white text-rose-600 hover:bg-rose-50 border border-rose-200'}`}
+              className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${statusFilter === 'ditolak' ? 'bg-rose-600 text-white shadow-md' : 'bg-[#0c203b] text-rose-300 hover:bg-rose-500/10 border border-rose-400/20'}`}
             >
-              <XCircle size={12} /> Ditolak <span className={`px-2 py-0.5 rounded-full text-[9px] ${statusFilter === 'ditolak' ? 'bg-rose-700 text-white' : 'bg-rose-100 text-rose-800'} ml-1`}>{totalDitolak}</span>
+              <XCircle size={12} /> Ditolak <span className={`px-2 py-0.5 rounded-full text-[9px] ${statusFilter === 'ditolak' ? 'bg-rose-700 text-white' : 'bg-rose-500/15 text-rose-200'} ml-1`}>{totalDitolak}</span>
             </button>
           </div>
 
-          <div className="relative rounded-2xl bg-white border border-slate-200 shadow-sm transition-all focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-50">
+          <div className="relative rounded-2xl bg-[#0b1b34] border border-white/10 shadow-lg transition-all focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20">
             <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <input 
               type="text"
               placeholder="Cari berdasarkan nama, kategori umur, nomor WA, atau kota domisili..."
-              className="w-full pl-12 pr-6 py-3 bg-transparent outline-none font-bold text-sm placeholder:text-slate-300"
+              className="w-full pl-12 pr-6 py-3 bg-transparent outline-none font-bold text-sm placeholder:text-slate-500"
               value={searchTerm}
               onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
             />
@@ -770,12 +770,12 @@ const totalSeniorPutri = registrants.filter(r =>
         </section>
 
         {/* TABLE SECTION (RESPONSIVE NO SCROLL ON DESKTOP) */}
-        <section className="bg-white rounded-[1.5rem] md:rounded-[2rem] border border-slate-100 shadow-xl overflow-hidden mb-4">
+        <section className="bg-[#0b1b34] rounded-2xl md:rounded-[2rem] border border-white/10 shadow-2xl shadow-black/20 overflow-hidden mb-4">
           {/* DESKTOP TABLE VIEW */}
           <div className="hidden lg:block overflow-x-auto flex-1">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="bg-slate-900 text-white whitespace-nowrap sticky top-0 z-10">
+                <tr className="bg-[#07172b] text-white whitespace-nowrap sticky top-0 z-10">
                   <th className="px-3 py-4 font-bold uppercase text-[9px] tracking-widest text-center w-10">No</th>
                   <th className="px-3 py-4 font-bold uppercase text-[9px] tracking-widest">Profil Atlet</th>
                   <th className="px-2 py-4 font-bold uppercase text-[9px] tracking-widest">Status Verifikasi</th>
@@ -788,13 +788,13 @@ const totalSeniorPutri = registrants.filter(r =>
                   <th className="px-4 py-4 font-bold uppercase text-[9px] tracking-widest text-right">Aksi</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-white/5">
                 {loading && registrants.length === 0 ? (
                   <tr><td colSpan={10} className="py-20 text-center text-slate-400 font-bold uppercase text-[10px] tracking-widest">Memuat Database Atlet...</td></tr>
                 ) : currentItems.length === 0 ? (
                   <tr><td colSpan={10} className="py-20 text-center text-slate-400 font-bold uppercase text-[10px] tracking-widest">Tidak ada data atlet ditemukan</td></tr>
                 ) : currentItems.map((item, index) => (
-                  <tr key={item.id} className="hover:bg-blue-50/40 even:bg-slate-50/30 transition-all duration-200 group">
+                  <tr key={item.id} className="hover:bg-blue-500/10 even:bg-white/[0.015] transition-all duration-200 group">
                     
                     <td className="px-2 py-3 text-center">
                       <span className="text-[10px] font-black text-slate-300 group-hover:text-blue-600 transition-colors">
@@ -806,7 +806,7 @@ const totalSeniorPutri = registrants.filter(r =>
                       <div className="flex items-center gap-3">
                         <div 
                           onClick={() => item.foto_url && setPreviewImage(item.foto_url)}
-                          className="w-10 h-10 rounded-xl bg-slate-200 border border-slate-100 shadow-sm overflow-hidden flex-shrink-0 cursor-zoom-in hover:opacity-80 transition-opacity"
+                          className="w-10 h-10 rounded-xl bg-[#132947] border border-white/10 shadow-sm overflow-hidden flex-shrink-0 cursor-zoom-in hover:opacity-80 transition-opacity"
                         >
                           {item.foto_url ? (
                             <img src={item.foto_url} loading="lazy" decoding="async" className="w-full h-full object-cover object-top" alt={item.nama} />
@@ -815,7 +815,7 @@ const totalSeniorPutri = registrants.filter(r =>
                           )}
                         </div>
                         <div className="flex flex-col min-w-[100px] max-w-[180px]">
-                          <h4 className="font-black text-slate-800 text-[11px] uppercase leading-tight truncate" title={item.nama}>{item.nama || 'No Name'}</h4>
+                          <h4 className="font-black text-white text-[11px] uppercase leading-tight truncate" title={item.nama}>{item.nama || 'No Name'}</h4>
                           <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">UID: {item.id.split('-')[0]}</span>
                         </div>
                       </div>
@@ -824,43 +824,43 @@ const totalSeniorPutri = registrants.filter(r =>
                     {/* STATUS VERIFIKASI */}
                     <td className="px-2 py-3 whitespace-nowrap">
                       {(!item.status || item.status === 'Pending' || item.status === 'Menunggu') && (
-                        <span className="px-2.5 py-1 rounded-md text-[8px] font-black uppercase tracking-widest bg-amber-100 text-amber-700 border border-amber-300 animate-pulse inline-flex items-center gap-1">
+                        <span className="px-2.5 py-1 rounded-md text-[8px] font-black uppercase tracking-widest bg-amber-500/15 text-amber-300 border border-amber-300 animate-pulse inline-flex items-center gap-1">
                           <Clock size={10} /> MENUNGGU
                         </span>
                       )}
                       {item.status === 'Diterima' && (
-                        <span className="px-2.5 py-1 rounded-md text-[8px] font-black uppercase tracking-widest bg-emerald-100 text-emerald-700 border border-emerald-300 inline-flex items-center gap-1">
+                        <span className="px-2.5 py-1 rounded-md text-[8px] font-black uppercase tracking-widest bg-emerald-500/15 text-emerald-300 border border-emerald-400/15 border border-emerald-300 inline-flex items-center gap-1">
                           <CheckCircle2 size={10} /> DITERIMA
                         </span>
                       )}
                       {item.status === 'Ditolak' && (
-                        <span className="px-2.5 py-1 rounded-md text-[8px] font-black uppercase tracking-widest bg-rose-100 text-rose-700 border border-rose-300 inline-flex items-center gap-1">
+                        <span className="px-2.5 py-1 rounded-md text-[8px] font-black uppercase tracking-widest bg-rose-500/15 text-rose-300 border border-rose-400/15 border border-rose-300 inline-flex items-center gap-1">
                           <XCircle size={10} /> DITOLAK
                         </span>
                       )}
                     </td>
 
                     <td className="px-2 py-3 whitespace-nowrap">
-                      <span className={`px-2.5 py-1 rounded-md text-[8px] font-black uppercase tracking-widest ${item.jenis_kelamin === 'Putra' ? 'bg-blue-100 text-blue-700' : 'bg-rose-100 text-rose-700'}`}>
+                      <span className={`px-2.5 py-1 rounded-md text-[8px] font-black uppercase tracking-widest ${item.jenis_kelamin === 'Putra' ? 'bg-blue-500/15 text-blue-300 border border-blue-400/15' : 'bg-rose-100 text-rose-700'}`}>
                         {item.jenis_kelamin || '-'}
                       </span>
                     </td>
 
                     <td className="px-2 py-3 whitespace-nowrap">
-                      <span className="text-[10px] font-bold text-slate-700 uppercase">
+                      <span className="text-[10px] font-bold text-slate-300 uppercase">
                         {item.kategori || '-'}
                       </span>
                     </td>
 
                     {/* KATEGORI ATLET (MUDA/SENIOR) */}
                     <td className="px-2 py-3 whitespace-nowrap">
-                      <span className={`px-2 py-1 rounded-md text-[8px] font-black uppercase tracking-widest ${item.kategori_atlet === 'Muda' ? 'bg-indigo-100 text-indigo-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                      <span className={`px-2 py-1 rounded-md text-[8px] font-black uppercase tracking-widest ${item.kategori_atlet === 'Muda' ? 'bg-blue-500/15 text-blue-300 border border-blue-400/15' : 'bg-emerald-100 text-emerald-700'}`}>
                         {item.kategori_atlet || 'MUDA'}
                       </span>
                     </td>
 
                     <td className="px-2 py-3 whitespace-nowrap">
-                      <a href={`https://wa.me/${(item.whatsapp || '').replace(/\D/g, '')}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 font-bold text-slate-600 hover:text-green-600 text-[10px] transition-colors">
+                      <a href={`https://wa.me/${(item.whatsapp || '').replace(/\D/g, '')}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 font-bold text-slate-300 hover:text-green-400 text-[10px] transition-colors">
                         <Phone size={10} className="text-green-500" /> {item.whatsapp || '-'}
                       </a>
                     </td>
@@ -872,7 +872,7 @@ const totalSeniorPutri = registrants.filter(r =>
                     </td>
 
                     <td className="px-2 py-3 whitespace-nowrap">
-                      <div className="inline-flex items-center gap-1.5 text-slate-600 font-bold text-[9px] uppercase tracking-wider">
+                      <div className="inline-flex items-center gap-1.5 text-slate-300 font-bold text-[9px] uppercase tracking-wider">
                         <Calendar size={10} className="text-blue-500" /> {new Date(item.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
                       </div>
                     </td>
@@ -895,21 +895,21 @@ const totalSeniorPutri = registrants.filter(r =>
                         </button>
                         <button 
                           onClick={() => handleSendAccountHistory(item)} 
-                          className="p-1.5 bg-green-50 text-green-600 rounded-lg hover:bg-green-600 hover:text-white transition-all shadow-sm border border-green-200"
+                          className="p-1.5 bg-emerald-500/10 text-emerald-300 border border-emerald-400/20 rounded-lg hover:bg-green-600 hover:text-white transition-all shadow-sm border border-green-200"
                           title="Kirim Rincian Akun Ke WA Atlet"
                         >
                           <MessageSquare size={13} />
                         </button>
                         <button 
                           onClick={() => { setEditingItem(item); setIsEditModalOpen(true); }} 
-                          className="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+                          className="p-1.5 bg-blue-500/10 text-blue-300 border border-blue-400/20 rounded-lg hover:bg-blue-600 hover:text-white transition-all shadow-sm"
                           title="Edit Data"
                         >
                           <Edit3 size={13} />
                         </button>
                         <button 
                           onClick={() => handleDelete(item.id, item.nama, item.foto_url)} 
-                          className="p-1.5 bg-slate-100 text-slate-600 rounded-lg hover:bg-rose-600 hover:text-white transition-all shadow-sm"
+                          className="p-1.5 bg-white/5 text-slate-300 border border-white/10 rounded-lg hover:bg-rose-600 hover:text-white transition-all shadow-sm"
                           title="Hapus Data"
                         >
                           <Trash2 size={13} />
@@ -934,24 +934,24 @@ const totalSeniorPutri = registrants.filter(r =>
               </div>
             ) : (
               currentItems.map((item, index) => (
-                <div key={item.id} className="p-4 flex flex-col gap-3 hover:bg-blue-50/20 transition-all duration-200">
+                <div key={item.id} className="p-4 flex flex-col gap-3 hover:bg-blue-500/10 transition-all duration-200">
                   <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-1 rounded-md">
+                    <span className="text-[10px] font-black text-blue-600 bg-blue-500/15 px-2 py-1 rounded-md border border-blue-400/15">
                       #{String((currentPage - 1) * itemsPerPage + index + 1).padStart(2, '0')}
                     </span>
                     <div className="flex items-center gap-1.5">
                       {(!item.status || item.status === 'Pending' || item.status === 'Menunggu') && (
-                        <span className="px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-amber-100 text-amber-700 border border-amber-300 animate-pulse inline-flex items-center gap-1">
+                        <span className="px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-amber-500/15 text-amber-300 border border-amber-400/30 animate-pulse inline-flex items-center gap-1">
                           <Clock size={9} /> MENUNGGU
                         </span>
                       )}
                       {item.status === 'Diterima' && (
-                        <span className="px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-emerald-100 text-emerald-700 border border-emerald-300 inline-flex items-center gap-1">
+                        <span className="px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-emerald-500/15 text-emerald-300 border border-emerald-400/30 inline-flex items-center gap-1">
                           <CheckCircle2 size={9} /> DITERIMA
                         </span>
                       )}
                       {item.status === 'Ditolak' && (
-                        <span className="px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-rose-100 text-rose-700 border border-rose-300 inline-flex items-center gap-1">
+                        <span className="px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-rose-500/15 text-rose-300 border border-rose-400/30 inline-flex items-center gap-1">
                           <XCircle size={9} /> DITOLAK
                         </span>
                       )}
@@ -964,7 +964,7 @@ const totalSeniorPutri = registrants.filter(r =>
                   <div className="flex items-center gap-3">
                     <div 
                       onClick={() => item.foto_url && setPreviewImage(item.foto_url)}
-                      className="w-12 h-12 rounded-xl bg-slate-200 border border-slate-100 shadow-sm overflow-hidden flex-shrink-0 cursor-zoom-in"
+                      className="w-12 h-12 rounded-xl bg-[#132947] border border-white/10 shadow-sm overflow-hidden flex-shrink-0 cursor-zoom-in"
                     >
                       {item.foto_url ? (
                         <img src={item.foto_url} loading="lazy" decoding="async" className="w-full h-full object-cover object-top" alt={item.nama} />
@@ -981,7 +981,7 @@ const totalSeniorPutri = registrants.filter(r =>
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-1 pt-1.5 border-t border-slate-100 text-[10px]">
+                  <div className="flex flex-col gap-1 pt-1.5 border-t border-white/10 text-[10px]">
                     <div className="flex justify-between items-center">
                       <span className="text-slate-400 font-bold uppercase tracking-wider text-[9px]">WhatsApp</span>
                       <a href={`https://wa.me/${(item.whatsapp || '').replace(/\D/g, '')}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-bold text-slate-600 hover:text-green-600 transition-colors">
@@ -990,12 +990,12 @@ const totalSeniorPutri = registrants.filter(r =>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-slate-400 font-bold uppercase tracking-wider text-[9px]">Tanggal</span>
-                      <span className="text-slate-600 font-bold">{new Date(item.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                      <span className="text-slate-300 font-bold">{new Date(item.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
                     </div>
                   </div>
 
                   {/* ACTION BUTTONS */}
-                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-dashed border-slate-100">
+                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-dashed border-white/10">
                     <button 
                       onClick={() => handleVerifyStatus(item, 'Diterima')} 
                       className="py-1.5 bg-emerald-50 hover:bg-emerald-600 text-emerald-600 hover:text-white rounded-lg transition-all font-bold text-[9px] uppercase tracking-widest border border-emerald-200 flex items-center justify-center gap-1"
@@ -1034,7 +1034,7 @@ const totalSeniorPutri = registrants.filter(r =>
         </section>
 
         {/* PAGINATION */}
-        <footer className="flex flex-col sm:flex-row justify-between items-center gap-4 px-8 py-4 bg-slate-900 rounded-3xl text-white shadow-2xl">
+        <footer className="flex flex-col sm:flex-row justify-between items-center gap-4 px-8 py-4 bg-[#07172b] rounded-2xl text-white shadow-2xl shadow-black/20 border border-white/10">
           <div className="flex flex-col text-center sm:text-left">
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400">Navigasi Data</p>
             <p className="text-[9px] font-bold text-slate-400 uppercase mt-0.5">Halaman {currentPage} Dari {totalPages || 1}</p>
@@ -1045,7 +1045,7 @@ const totalSeniorPutri = registrants.filter(r =>
             </button>
             <div className="flex gap-1.5">
               {[...Array(totalPages || 0)].map((_, i) => (
-                 <button key={i} onClick={() => setCurrentPage(i + 1)} className={`w-8 h-8 rounded-lg text-xs font-black transition-all ${currentPage === i + 1 ? 'bg-blue-600 text-white scale-110 shadow-lg shadow-blue-500/50' : 'bg-white/5 hover:bg-white/10 text-white/50'}`}>
+                 <button key={i} onClick={() => setCurrentPage(i + 1)} className={`w-8 h-8 rounded-lg text-xs font-black transition-all ${currentPage === i + 1 ? 'bg-blue-600 text-white scale-110 shadow-lg shadow-blue-500/50' : 'bg-white/5 hover:bg-blue-500/20 text-slate-400'}`}>
                     {i + 1}
                  </button>
               ))}
