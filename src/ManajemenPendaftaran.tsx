@@ -841,7 +841,7 @@ const totalSeniorPutri = registrants.filter(r =>
                     </td>
 
                     <td className="px-2 py-3 whitespace-nowrap">
-                      <span className={`px-2.5 py-1 rounded-md text-[8px] font-black uppercase tracking-widest ${item.jenis_kelamin === 'Putra' ? 'bg-blue-500/15 text-blue-300 border border-blue-400/15' : 'bg-rose-100 text-rose-700'}`}>
+                      <span className={`px-2.5 py-1 rounded-md text-[8px] font-black uppercase tracking-widest ${item.jenis_kelamin === 'Putra' ? 'bg-blue-500/15 text-blue-300 border border-blue-400/15' : 'bg-rose-500/15 text-rose-300 border border-rose-400/15'}`}>
                         {item.jenis_kelamin || '-'}
                       </span>
                     </td>
@@ -854,7 +854,7 @@ const totalSeniorPutri = registrants.filter(r =>
 
                     {/* KATEGORI ATLET (MUDA/SENIOR) */}
                     <td className="px-2 py-3 whitespace-nowrap">
-                      <span className={`px-2 py-1 rounded-md text-[8px] font-black uppercase tracking-widest ${item.kategori_atlet === 'Muda' ? 'bg-blue-500/15 text-blue-300 border border-blue-400/15' : 'bg-emerald-100 text-emerald-700'}`}>
+                      <span className={`px-2 py-1 rounded-md text-[8px] font-black uppercase tracking-widest ${item.kategori_atlet === 'Muda' ? 'bg-blue-500/15 text-blue-300 border border-blue-400/15' : 'bg-emerald-500/15 text-emerald-300 border border-emerald-400/15'}`}>
                         {item.kategori_atlet || 'MUDA'}
                       </span>
                     </td>
@@ -881,21 +881,21 @@ const totalSeniorPutri = registrants.filter(r =>
                       <div className="flex justify-end items-center gap-1">
                         <button 
                           onClick={() => handleVerifyStatus(item, 'Diterima')} 
-                          className="p-1.5 bg-emerald-500/10 text-emerald-300 rounded-lg hover:bg-emerald-600 hover:text-white transition-all shadow-sm border border-emerald-200"
+                          className="p-1.5 bg-emerald-500/10 text-emerald-300 rounded-lg hover:bg-emerald-600 hover:text-white transition-all shadow-sm border border-emerald-400/20"
                           title="Verifikasi & Terima Atlet"
                         >
                           <CheckCircle2 size={13} />
                         </button>
                         <button 
                           onClick={() => handleVerifyStatus(item, 'Ditolak')} 
-                          className="p-1.5 bg-rose-500/10 text-rose-300 rounded-lg hover:bg-rose-600 hover:text-white transition-all shadow-sm border border-rose-200"
+                          className="p-1.5 bg-rose-500/10 text-rose-300 rounded-lg hover:bg-rose-600 hover:text-white transition-all shadow-sm border border-rose-400/20"
                           title="Tolak Pendaftaran"
                         >
                           <XCircle size={13} />
                         </button>
                         <button 
                           onClick={() => handleSendAccountHistory(item)} 
-                          className="p-1.5 bg-emerald-500/10 text-emerald-300 border border-emerald-400/20 rounded-lg hover:bg-green-600 hover:text-white transition-all shadow-sm border border-green-200"
+                          className="p-1.5 bg-emerald-500/10 text-emerald-300 border border-emerald-400/20 rounded-lg hover:bg-green-600 hover:text-white transition-all shadow-sm border border-emerald-400/20"
                           title="Kirim Rincian Akun Ke WA Atlet"
                         >
                           <MessageSquare size={13} />
@@ -923,7 +923,7 @@ const totalSeniorPutri = registrants.filter(r =>
           </div>
 
           {/* MOBILE CARD VIEW */}
-          <div className="lg:hidden divide-y divide-slate-100">
+          <div className="lg:hidden space-y-2 py-2">
             {loading && registrants.length === 0 ? (
               <div className="py-16 text-center text-slate-400 font-bold uppercase text-[10px] tracking-widest">
                 Memuat Database Atlet...
@@ -955,7 +955,7 @@ const totalSeniorPutri = registrants.filter(r =>
                           <XCircle size={9} /> DITOLAK
                         </span>
                       )}
-                      <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${item.jenis_kelamin === 'Putra' ? 'bg-blue-100 text-blue-700' : 'bg-rose-100 text-rose-700'}`}>
+                      <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${item.jenis_kelamin === 'Putra' ? 'bg-blue-500/15 text-blue-300 border border-blue-400/15' : 'bg-rose-100 text-rose-700'}`}>
                         {item.jenis_kelamin || '-'}
                       </span>
                     </div>
@@ -1016,18 +1016,18 @@ const totalSeniorPutri = registrants.filter(r =>
                     </button>
                     <button 
                       onClick={() => { setEditingItem(item); setIsEditModalOpen(true); }} 
-                      className="py-2.5 bg-blue-500/10 hover:bg-blue-600 text-blue-300 hover:text-white rounded-lg transition-all font-bold text-[9px] uppercase tracking-widest border border-blue-100 flex items-center justify-center gap-1"
+                      className="py-2.5 bg-blue-500/10 hover:bg-blue-600 text-blue-300 hover:text-white rounded-lg transition-all font-bold text-[9px] uppercase tracking-widest border border-blue-400/20 flex items-center justify-center gap-1"
                     >
                       <Edit3 size={11} /> Edit
                     </button>
                     <button 
                       onClick={() => handleDelete(item.id, item.nama, item.foto_url)} 
-                      className="py-2.5 bg-white/5 hover:bg-rose-600 text-slate-300 hover:text-white rounded-lg transition-all font-bold text-[9px] uppercase tracking-widest border border-slate-200 flex items-center justify-center gap-1"
+                      className="py-2.5 bg-white/5 hover:bg-rose-600 text-slate-300 hover:text-white rounded-lg transition-all font-bold text-[9px] uppercase tracking-widest border border-white/10 flex items-center justify-center gap-1"
                     >
                       <Trash2 size={11} /> Hapus
                     </button>
                   </div>
-                </div>
+                </article>
               ))
             )}
           </div>
