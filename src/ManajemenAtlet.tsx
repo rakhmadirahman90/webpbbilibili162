@@ -90,6 +90,7 @@ export default function ManajemenAtlet() {
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
   const [isCropping, setIsCropping] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [cup1SeededMap, setCup1SeededMap] = useState<Map<string, any>>(new Map());
 
   const [showSuccess, setShowSuccess] = useState(false);
   const [notifMessage, setNotifMessage] = useState('');
@@ -144,6 +145,12 @@ export default function ManajemenAtlet() {
       const pendaftaran = pendaftaranRes.status === 'fulfilled' && pendaftaranRes.value.data ? pendaftaranRes.value.data : [];
       const rankings = rankingsRes.status === 'fulfilled' && rankingsRes.value.data ? rankingsRes.value.data : [];
       const stats = statsRes.status === 'fulfilled' && statsRes.value.data ? statsRes.value.data : [];
+      const { data: cup1Rows, error: cup1Error } = await supabase
+        .from('v_bilibili_162_cup1_athlete_seeded')
+        .select('*');
+      if (cup1Error) console.warn('Cup I seeded integration:', cup1Error.message);
+      const cup1Map = new Map((cup1Rows || []).map((row: any) => [row.pendaftaran_id, row]));
+      setCup1SeededMap(cup1Map);
 
       // Buat Map untuk mempercepat pencarian statistik berdasarkan ID
       const statsMap = new Map(stats?.map((s: any) => [s.pendaftaran_id, s]));
@@ -162,6 +169,8 @@ export default function ManajemenAtlet() {
 
           // Ambil data dari atlet_stats berdasarkan ID
           const stat = statsMap.get(atlet.id);
+          const cup1 = cup1Map.get(atlet.id);
+          const integratedSeed = cup1?.seeded_quality || 'D';
 
           // LOGIKA PERHITUNGAN TOTAL POIN AKHIR
           const basePoints = Number(stat?.points || 0);
@@ -174,7 +183,14 @@ export default function ManajemenAtlet() {
             raw_base_points: basePoints,
             raw_added_points: addedPoints,
             rank: rankPosisi !== -1 ? rankPosisi + 1 : 0,
-            seed: stat?.seed || rankingMatch?.seed || 'UNSEEDED',
+            seed: integratedSeed,
+            seeded_cup1: Boolean(cup1?.is_seeded),
+            seeded_participated: Boolean(cup1?.participated),
+            seeded_player_name: cup1?.seeded_player_name || null,
+            seeded_club_name: cup1?.seeded_club_name || null,
+            seeded_division: cup1?.division_level || integratedSeed,
+            seeded_partners: Array.isArray(cup1?.partners) ? cup1.partners : [],
+            seeded_source_no: cup1?.source_no || null,
             foto_url: atlet.foto_url || rankingMatch?.photo_url || '',
             bio: rankingMatch?.bio || 'No biography available.',
             prestasi: rankingMatch?.achievement || 'Regular Player',
@@ -572,6 +588,12 @@ export default function ManajemenAtlet() {
                     <p className="text-[9px] font-black text-blue-600 uppercase tracking-[0.2em] mb-0.5">
                       {atlet.kategori}
                     </p>
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <span className="text-[8px] font-black uppercase tracking-widest text-blue-700 bg-blue-50 border border-blue-100 px-2 py-1 rounded-full">
+                        Seed CUP I: {atlet.seed || 'D'}
+                      </span>
+                      {atlet.seeded_cup1 && <span className="text-[8px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-1 rounded-full">Terintegrasi</span>}
+                    </div>
                     <h3 className="text-base font-black text-slate-900 uppercase italic truncate mb-3">
                       {atlet.nama}
                     </h3>
