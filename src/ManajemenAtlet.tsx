@@ -29,6 +29,7 @@ import {
   Scissors,
   Plus,
   Upload,
+  Power,
 } from 'lucide-react';
 
 /* Removed Registrant interface */
@@ -94,6 +95,23 @@ export default function ManajemenAtlet() {
   const [notifMessage, setNotifMessage] = useState('');
 
   const BUCKET_NAME = 'atlet_photos';
+
+  const STATUS_OPTIONS = [
+    { value: 'aktif', label: 'Aktif' },
+    { value: 'tidak aktif', label: 'Tidak Aktif' },
+  ];
+
+  const INACTIVE_REASON_OPTIONS = [
+    { value: '', label: 'Pilih alasan...' },
+    { value: 'Pindah Alamat', label: 'Pindah Alamat' },
+    { value: 'Meninggal Dunia', label: 'Meninggal Dunia' },
+    { value: 'Pindah Kerja', label: 'Pindah Kerja' },
+    { value: 'Pensiun', label: 'Pensiun' },
+    { value: 'Cedera / Istirahat', label: 'Cedera / Istirahat' },
+    { value: 'Mengundurkan Diri', label: 'Mengundurkan Diri' },
+    { value: 'Tidak Aktif Sementara', label: 'Tidak Aktif Sementara' },
+    { value: 'Alasan Lainnya', label: 'Alasan Lainnya' },
+  ];
 
   useEffect(() => {
     fetchAtlets();
@@ -313,7 +331,7 @@ export default function ManajemenAtlet() {
           kategori: newAtlet.kategori,
           domisili: newAtlet.domisili,
           foto_url: newAtlet.foto_url,
-          status: 'verified',
+          status: 'aktif',
         },
         { onConflict: 'nama' }
       );
@@ -376,11 +394,25 @@ export default function ManajemenAtlet() {
     setIsSaving(true);
     setIsSubmitting(true);
     try {
-      // Update pendaftaran (kategori mungkin berubah berdasarkan seed)
-      await supabase
+      // Update master atlet: kategori + status + alasan status.
+      const editData: any = editingStats;
+      const nextStatus = String(editData.status || 'aktif').toLowerCase();
+      const nextReason = nextStatus === 'tidak aktif'
+        ? (editData.alasan_status || 'Alasan Lainnya')
+        : null;
+
+      const { error: profileError } = await supabase
         .from('pendaftaran')
-        .update({ kategori: editingStats.kategori })
-        .eq('nama', editingStats.nama);
+        .update({
+          kategori: editData.kategori,
+          status: nextStatus,
+          alasan_status: nextReason,
+        })
+        .eq('id', editData.id || '')
+        .select('id,status,alasan_status')
+        .single();
+
+      if (profileError) throw profileError;
 
       // Update rankings
       const { error: rankError } = await supabase.from('rankings').upsert(
@@ -847,6 +879,37 @@ export default function ManajemenAtlet() {
                 Edit <span className="text-blue-600">Performance</span>
               </h3>
               <form onSubmit={handleUpdateStats} className="space-y-5">
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Power size={16} className="text-blue-600" />
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Status Keanggotaan Atlet</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Status</label>
+                      <select
+                        className="w-full mt-1 px-4 py-3 bg-white border border-slate-200 rounded-xl font-black text-xs uppercase"
+                        value={String((editingStats as any).status || 'aktif').toLowerCase()}
+                        onChange={(e) => setEditingStats({ ...editingStats, status: e.target.value, alasan_status: e.target.value === 'aktif' ? '' : ((editingStats as any).alasan_status || '') } as any)}
+                      >
+                        {STATUS_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+                      </select>
+                    </div>
+                    {String((editingStats as any).status || 'aktif').toLowerCase() === 'tidak aktif' && (
+                      <div>
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Alasan Tidak Aktif</label>
+                        <select
+                          required
+                          className="w-full mt-1 px-4 py-3 bg-white border border-slate-200 rounded-xl font-black text-xs"
+                          value={String((editingStats as any).alasan_status || '')}
+                          onChange={(e) => setEditingStats({ ...editingStats, alasan_status: e.target.value } as any)}
+                        >
+                          {INACTIVE_REASON_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+                        </select>
+                      </div>
+                    )}
+                  </div>
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
