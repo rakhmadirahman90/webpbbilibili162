@@ -204,31 +204,51 @@ export default function Navbar({ onNavigate }: NavbarProps) {
   }, [fetchNav, fetchBranding]);
 
   const getSubMenus = (parentId: string) => {
-    const parent = navData.find(i => i.id === parentId || i.path === parentId || String(i.label || '').toLowerCase() === String(parentId).toLowerCase());
-    const matchesParent = (item: any) => item?.parent_id && (
-      item.parent_id === parentId ||
-      item.parent_id === parent?.id ||
-      item.parent_id === parent?.path ||
-      String(item.parent_id).toLowerCase() === String(parent?.label || '').toLowerCase()
+    const requested = String(parentId || '').trim().toLowerCase();
+    const parent = navData.find(i =>
+      String(i?.id || '').toLowerCase() === requested ||
+      String(i?.path || '').toLowerCase() === requested ||
+      String(i?.label || '').trim().toLowerCase() === requested
     );
-    const list = navData.filter(matchesParent)
-      .filter((item: any) => item?.is_active !== false)
-      .sort((a,b) => (a.order_index || 0) - (b.order_index || 0));
 
-    if (parent?.path === 'atlet' || String(parent?.label || '').toLowerCase().trim() === 'atlet') {
+    const parentIsAtlet =
+      requested === 'atlet' ||
+      String(parent?.path || '').toLowerCase() === 'atlet' ||
+      String(parent?.label || '').trim().toLowerCase() === 'atlet';
+
+    if (parentIsAtlet) {
+      const dbChildren = navData.filter((item: any) => {
+        if (item?.is_active === false) return false;
+        const pid = String(item?.parent_id || '').trim().toLowerCase();
+        return pid === requested ||
+          pid === String(parent?.id || '').toLowerCase() ||
+          pid === String(parent?.path || '').toLowerCase() ||
+          pid === String(parent?.label || '').trim().toLowerCase();
+      });
       const defaults = ATLET_DEFAULT_SUBMENUS.filter((item: any) => item?.is_active !== false);
-      const key = (item: any) => normalizeNavigationPath(item?.path || '') || String(item?.label || '').toLowerCase().trim();
-      const merged = [...list];
+      const key = (item: any) => normalizeNavigationPath(item?.path || '') || String(item?.label || '').trim().toLowerCase();
+      const merged = [...dbChildren];
       for (const fallback of defaults) {
         if (!merged.some((item: any) => key(item) === key(fallback))) merged.push({ ...fallback });
       }
-      return merged.sort((a: any, b: any) => (a.order_index || 0) - (b.order_index || 0));
+      return merged.sort((x: any, y: any) => (Number(x.order_index) || 0) - (Number(y.order_index) || 0));
     }
 
-    return list.filter(i => {
-      const itemPath = normalizeNavigationPath(i?.path || '');
-      const itemLabel = String(i?.label || '').toLowerCase().trim();
-      return !(itemPath === 'seeded-peserta' || itemPath.includes('seeded-peserta') || itemLabel.includes('seeded peserta') || itemLabel.includes('daftar seeded'));
+    const list = navData
+      .filter((item: any) => item?.is_active !== false && item?.parent_id)
+      .filter((item: any) => {
+        const pid = String(item.parent_id || '').trim().toLowerCase();
+        return pid === requested ||
+          pid === String(parent?.id || '').toLowerCase() ||
+          pid === String(parent?.path || '').toLowerCase() ||
+          pid === String(parent?.label || '').trim().toLowerCase();
+      })
+      .sort((x: any, y: any) => (Number(x.order_index) || 0) - (Number(y.order_index) || 0));
+
+    return list.filter((item: any) => {
+      const p = normalizeNavigationPath(item?.path || '');
+      const l = String(item?.label || '').toLowerCase().trim();
+      return !(p.includes('seeded-peserta') || l.includes('seeded peserta') || l.includes('daftar seeded'));
     });
   };
   const iconFor = (path = '', label = '') => {
