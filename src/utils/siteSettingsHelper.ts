@@ -294,7 +294,7 @@ export function applyCacheBustingToHeroSlides(slides: any[], configTimestamp?: s
 }
 
 // In-memory cache for 0ms ultra-fast sync access
-const siteSettingsMemoryCache = new Map<string, any>();
+// Fresh-data policy: site settings are never served from browser memory/localStorage.
 
 function sanitizeKeyConfig(key: string, val: any) {
   if (key === 'hero_config') {
@@ -357,155 +357,42 @@ function sanitizeKeyConfig(key: string, val: any) {
 }
 
 async function fetchFreshSiteSetting(key: string) {
-  let dbVal: any = null;
-  let dbUpdatedAt: string | null = null;
-
-  // Parallelize Supabase & Express API requests with 1.5s max timeout
-  const supabasePromise = (async () => {
-    try {
-      const { data, error } = await supabase
-        .from('site_settings')
-        .select('value, updated_at')
-        .eq('key', key)
-        .maybeSingle();
-
-      if (!error && data?.value !== undefined && data.value !== null) {
-        dbVal = data.value;
-        if (typeof dbVal === 'string') {
-          try {
-            dbVal = JSON.parse(dbVal);
-          } catch {
-            dbVal = data.value;
-          }
-        }
-        dbUpdatedAt = data.updated_at || null;
-        if (dbVal && typeof dbVal === 'object') {
-          dbVal = { ...dbVal, updated_at: dbVal.updated_at || dbUpdatedAt || new Date().toISOString() };
-        }
-      }
-    } catch (err) {
-      console.warn("[siteSettingsHelper] Error querying Supabase for key " + key, err);
-    }
-  })();
-
-  let serverVal: any = null;
-  const apiPromise = (async () => {
-    try {
-      const apiRes = await fetch(`/api/site-settings?key=${key}`);
-      if (apiRes.ok) {
-        const apiData = await apiRes.json();
-        if (apiData && apiData.value !== undefined && apiData.value !== null) {
-          serverVal = apiData.value;
-        }
-      }
-    } catch (e) {}
-  })();
-
-  let localVal: any = null;
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timeout = controller ? window.setTimeout(() => controller.abort(), 3000) : null;
   try {
-    const rawLocal = localStorage.getItem(`site_setting_${key}`);
-    if (rawLocal !== null) {
-      try {
-        localVal = typeof rawLocal === 'string' ? JSON.parse(rawLocal) : rawLocal;
-      } catch {
-        localVal = rawLocal;
-      }
+    const { data, error } = await supabase
+      .from('site_settings')
+      .select('value, updated_at')
+      .eq('key', key)
+      .maybeSingle();
+
+    if (timeout) window.clearTimeout(timeout);
+    if (error) throw error;
+
+    let value = data?.value ?? null;
+    if (typeof value === 'string') {
+      try { value = JSON.parse(value); } catch {}
     }
-  } catch (e) {}
 
-  const timeoutPromise = new Promise(resolve => setTimeout(resolve, 4500));
-  await Promise.race([
-    Promise.allSettled([supabasePromise, apiPromise]),
-    timeoutPromise
-  ]);
-
-  const getTimestamp = (val: any) => {
-    if (!val) return 0;
-    const parsed = typeof val === 'string' ? (() => { try { return JSON.parse(val); } catch { return {}; } })() : val;
-    if (parsed && typeof parsed === 'object' && parsed.updated_at) {
-      const t = new Date(parsed.updated_at).getTime();
-      if (!isNaN(t)) return t;
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      value = { ...value, updated_at: value.updated_at || data?.updated_at || new Date().toISOString() };
     }
-    return 0;
-  };
 
-  const serverTs = getTimestamp(serverVal);
-  const dbTs = getTimestamp(dbVal);
-  const localTs = getTimestamp(localVal);
+    const finalValue = sanitizeKeyConfig(key, value);
+    if (finalValue !== null && finalValue !== undefined) return finalValue;
 
-  const maxTs = Math.max(dbTs, serverTs, localTs);
-  let bestVal: any = null;
-
-  if (dbVal !== null && dbVal !== undefined) {
-    // If Supabase returned valid database content, prioritize it unless server/local has a strictly newer timestamp
-    if (maxTs > dbTs && (localTs === maxTs || serverTs === maxTs)) {
-      bestVal = serverTs === maxTs && serverVal !== null ? serverVal : (localVal !== null ? localVal : dbVal);
-    } else {
-      bestVal = dbVal;
-    }
-  } else if (maxTs > 0) {
-    if (serverTs === maxTs && serverVal !== null && serverVal !== undefined) {
-      bestVal = serverVal;
-    } else if (localTs === maxTs && localVal !== null && localVal !== undefined) {
-      bestVal = localVal;
-    } else {
-      bestVal = serverVal || localVal;
-    }
-  } else {
-    bestVal = dbVal !== null && dbVal !== undefined ? dbVal : (serverVal !== null && serverVal !== undefined ? serverVal : localVal);
+    if (key === 'hero_config') return sanitizeKeyConfig(key, DEFAULT_HERO_CONFIG);
+    return null;
+  } catch (error) {
+    if (timeout) window.clearTimeout(timeout);
+    console.warn('[siteSettingsHelper] Fresh data request failed:', key, error);
+    if (key === 'hero_config') return sanitizeKeyConfig(key, DEFAULT_HERO_CONFIG);
+    return null;
   }
-
-  const finalVal = sanitizeKeyConfig(key, bestVal || (key === 'hero_config' ? DEFAULT_HERO_CONFIG : null));
-  if (finalVal) {
-    siteSettingsMemoryCache.set(key, finalVal);
-    try {
-      localStorage.setItem(`site_setting_${key}`, typeof finalVal === 'string' ? finalVal : JSON.stringify(finalVal));
-    } catch (e) {}
-  }
-  return finalVal;
 }
 
-// Background non-blocking revalidation
-function refreshSiteSettingInBackground(key: string) {
-  setTimeout(() => {
-    fetchFreshSiteSetting(key).then(newVal => {
-      if (newVal) {
-        siteSettingsMemoryCache.set(key, newVal);
-        window.dispatchEvent(new CustomEvent('site_setting_updated', { detail: { key, value: newVal } }));
-      }
-    }).catch(() => {});
-  }, 100);
-}
-
-/**
- * Safely reads a setting with 0ms memory & LocalStorage cache lookup and non-blocking background sync.
- */
 export async function getSiteSetting(key: string) {
-  if (siteSettingsMemoryCache.has(key)) {
-    const cached = siteSettingsMemoryCache.get(key);
-    refreshSiteSettingInBackground(key);
-    return cached;
-  }
-
-  let localVal: any = null;
-  try {
-    const rawLocal = localStorage.getItem(`site_setting_${key}`);
-    if (rawLocal !== null) {
-      try {
-        localVal = typeof rawLocal === 'string' ? JSON.parse(rawLocal) : rawLocal;
-      } catch {
-        localVal = rawLocal;
-      }
-    }
-  } catch (e) {}
-
-  if (localVal !== null && localVal !== undefined) {
-    const sanitized = sanitizeKeyConfig(key, localVal);
-    siteSettingsMemoryCache.set(key, sanitized);
-    refreshSiteSettingInBackground(key);
-    return sanitized;
-  }
-
+  // IMPORTANT: never return memory/localStorage cache. Every read starts from the current database.
   return await fetchFreshSiteSetting(key);
 }
 
