@@ -442,9 +442,9 @@ export default function ManajemenAtlet() {
   return (
     <div className="min-h-full flex flex-col bg-[#061225] font-sans text-white pb-24 lg:pb-6">
       {/* HEADER SECTION */}
-      <div className="flex-shrink-0 p-3 md:p-8 pb-3 bg-[#07172b] border-b border-blue-500/10">
+      <div className="flex-shrink-0 px-3 py-4 md:p-8 md:pb-5 bg-[#07172b] border-b border-blue-500/10">
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-3 mb-4">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-4 mb-4">
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <Sparkles size={16} className="text-blue-600 animate-pulse" />
@@ -452,15 +452,15 @@ export default function ManajemenAtlet() {
                   Pro Database System
                 </p>
               </div>
-              <h1 className="text-3xl font-black text-white italic uppercase tracking-tighter">
+              <h1 className="text-2xl md:text-3xl font-black text-white italic uppercase tracking-tighter">
                 Manajemen <span className="text-blue-600">Atlet</span>
               </h1>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex items-stretch sm:items-center gap-3 w-full lg:w-auto">
               <button
                 onClick={() => setIsAddModalOpen(true)}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl shadow-xl shadow-blue-200 flex items-center justify-center gap-2 transition-all active:scale-95 group w-full sm:w-auto"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-3.5 rounded-2xl shadow-xl shadow-blue-950/30 flex items-center justify-center gap-2 transition-all active:scale-[0.98] group w-full lg:w-auto min-h-[52px]"
               >
                 <Plus
                   size={18}
@@ -471,7 +471,7 @@ export default function ManajemenAtlet() {
                 </span>
               </button>
 
-              <div className="bg-white/[0.04] px-6 py-3 rounded-2xl border border-white/10 flex items-center justify-around sm:justify-center gap-4">
+              <div className="bg-[#0b1b34] px-5 py-3 rounded-2xl border border-white/10 flex items-center justify-around sm:justify-center gap-5 min-h-[52px]">
                 <div className="text-center">
                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
                     Total
@@ -480,7 +480,7 @@ export default function ManajemenAtlet() {
                     {atlets.length}
                   </p>
                 </div>
-                <div className="w-[1px] h-8 bg-slate-200"></div>
+                <div className="w-px h-8 bg-white/15"></div>
                 <div className="text-center">
                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
                     Top Tier
@@ -501,7 +501,7 @@ export default function ManajemenAtlet() {
             <input
               type="text"
               placeholder="CARI NAMA ATLET..."
-              className="w-full pl-12 pr-6 py-3.5 bg-[#0b1b34] rounded-2xl border border-blue-500/20 shadow-lg focus:ring-4 focus:ring-blue-100 transition-all font-black uppercase text-xs tracking-widest placeholder:text-slate-500 outline-none"
+              className="w-full pl-12 pr-6 py-4 bg-[#0b1b34] rounded-2xl border border-blue-500/20 shadow-lg focus:ring-2 focus:ring-blue-500/30 transition-all font-black uppercase text-xs tracking-widest placeholder:text-slate-500 outline-none"
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
@@ -509,9 +509,9 @@ export default function ManajemenAtlet() {
       </div>
 
       {/* MAIN LIST SECTION */}
-      <div className="flex-1 px-3 md:px-8 py-4">
+      <div className="flex-1 px-3 md:px-8 py-5 md:py-7">
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-5">
             {loading ? (
               <div className="col-span-full py-32 text-center">
                 <Loader2
@@ -530,15 +530,15 @@ export default function ManajemenAtlet() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.35, delay: index * 0.04 }}
                   onClick={() => setSelectedAtlet(atlet)}
-                  className="bg-gradient-to-br from-[#0c203b] to-[#08162a] p-4 rounded-[2rem] shadow-xl shadow-black/20 hover:shadow-2xl hover:-translate-y-2 transition-all cursor-pointer group border border-white/10 hover:border-blue-400/30 relative overflow-hidden"
+                  className="bg-gradient-to-br from-[#102847] to-[#08162a] p-3 md:p-4 rounded-3xl md:rounded-[2rem] shadow-lg shadow-black/20 hover:shadow-2xl hover:-translate-y-1 transition-all cursor-pointer group border border-white/10 hover:border-blue-400/30 relative overflow-hidden flex gap-3 sm:block"
                 >
-                  <div className="relative aspect-[4/5] rounded-[1.5rem] overflow-hidden mb-4 bg-[#132947] shadow-inner">
+                  <div className="relative w-28 h-36 sm:w-full sm:h-auto sm:aspect-[4/5] shrink-0 rounded-2xl sm:rounded-[1.5rem] overflow-hidden sm:mb-4 bg-[#132947] shadow-inner">
                     {atlet.foto_url ? (
                       <img
                         src={atlet.foto_url}
                         loading="lazy"
                         decoding="async"
-                        className="w-full h-full object-cover object-[center_25%] group-hover:scale-110 transition-transform duration-700"
+                        className="w-full h-full object-cover object-[center_25%] group-hover:scale-105 transition-transform duration-500"
                         alt={atlet.nama}
                       />
                     ) : (
@@ -550,14 +550,27 @@ export default function ManajemenAtlet() {
                       #{atlet.rank > 0 ? atlet.rank : '??'} GLOBAL
                     </div>
                   </div>
-                  <div className="px-1">
-                    <p className="text-[9px] font-black text-blue-600 uppercase tracking-[0.2em] mb-0.5">
+                  <div className="px-0.5 sm:px-1 min-w-0 flex-1 flex flex-col justify-center sm:block">
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                    <p className="text-[8px] font-black text-blue-300 uppercase tracking-[0.15em] truncate">
                       {atlet.kategori}
                     </p>
-                    <h3 className="text-base font-black text-white uppercase italic truncate mb-3">
+                    <span className={`text-[8px] font-black uppercase px-2 py-1 rounded-full border shrink-0 ${
+                      String(atlet.status || '').toLowerCase() === 'aktif' || String(atlet.status || '').toLowerCase() === 'verified'
+                        ? 'text-emerald-300 bg-emerald-500/10 border-emerald-400/20'
+                        : 'text-amber-300 bg-amber-500/10 border-amber-400/20'
+                    }`}>
+                      {String(atlet.status || 'aktif').toLowerCase() === 'aktif' || String(atlet.status || '').toLowerCase() === 'verified' ? 'AKTIF' : 'TIDAK AKTIF'}
+                    </span>
+                  </div>
+                  <p className="hidden">
+
+                      {atlet.kategori}
+                    </p>
+                    <h3 className="text-sm md:text-base font-black text-white uppercase italic truncate mb-2 sm:mb-3">
                       {atlet.nama}
                     </h3>
-                    <div className="flex justify-between items-center bg-white/[0.04] p-2.5 rounded-xl border border-white/5">
+                    <div className="flex justify-between items-center bg-black/10 p-2.5 rounded-xl border border-white/5 mt-auto">
                       <div>
                         <p className="text-[8px] font-black text-slate-400 uppercase">
                           Points
@@ -571,7 +584,7 @@ export default function ManajemenAtlet() {
                           Seed
                         </p>
                         <p className="text-[9px] font-black text-blue-300 italic uppercase">
-                          {atlet.seed}
+                          {atlet.seed || 'D'}
                         </p>
                       </div>
                     </div>
@@ -588,13 +601,13 @@ export default function ManajemenAtlet() {
       </div>
 
       {/* FOOTER PAGINATION */}
-      <div className="fixed lg:relative bottom-16 lg:bottom-0 left-0 right-0 bg-[#07172b]/95 backdrop-blur-xl border-t border-blue-500/10 p-3 md:p-4 z-20">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest hidden md:block">
+      <div className="relative mt-2 bg-[#07172b] border-y border-blue-500/10 px-3 py-4 md:px-4 md:py-5">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between gap-3 items-center">
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest hidden sm:block">
             Halaman {currentPage} dari {totalPages}
           </p>
 
-          <div className="flex items-center gap-2 m-auto md:m-0">
+          <div className="flex items-center gap-1.5 max-w-full overflow-x-auto pb-1 m-auto sm:m-0">
             <button
               onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
               disabled={currentPage === 1}
@@ -603,7 +616,7 @@ export default function ManajemenAtlet() {
               <ChevronLeft size={20} />
             </button>
 
-            <div className="flex gap-1">
+            <div className="flex gap-1 shrink-0">
               {[...Array(totalPages)].map((_, i) => (
                 <button
                   key={i + 1}
@@ -624,13 +637,13 @@ export default function ManajemenAtlet() {
                 setCurrentPage((prev) => Math.min(prev + 1, totalPages))
               }
               disabled={currentPage === totalPages}
-              className="p-3 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-blue-600 hover:text-white disabled:opacity-30 transition-all shadow-sm"
+              className="p-3 rounded-xl bg-[#0b1b34] border border-white/10 text-slate-400 hover:bg-blue-600 hover:text-white disabled:opacity-30 transition-all shrink-0"
             >
               <ChevronRight size={20} />
             </button>
           </div>
 
-          <div className="hidden md:block">
+          <div className="hidden sm:block">
             <button
               onClick={() => fetchAtlets()}
               className="flex items-center gap-2 text-[10px] font-black text-blue-300 uppercase tracking-widest hover:text-white transition-opacity"
