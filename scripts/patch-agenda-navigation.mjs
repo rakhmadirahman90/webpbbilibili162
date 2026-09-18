@@ -26,16 +26,21 @@ const guard = `  const infoParent = result.find(i => normalizeNavigationPath(i.p
   const cleaned = result.filter(item => {
     const p = normalizeNavigationPath(item?.path || '');
     const topLevel = isTopLevelMenuItem(item);
-    return !(canonicalInfoPaths.has(p) && (isInfoParent(item) || (topLevel && (p === 'agenda' || p === 'jadwal'))));
+    // Remove only duplicate top-level Agenda/Jadwal. Keep existing Information children
+    // so the admin-controlled is_active flag is never overwritten during production build.
+    return !(canonicalInfoPaths.has(p) && topLevel && (p === 'agenda' || p === 'jadwal'));
   });
   const infoParentId = infoParent?.id || 'informasi';
   const infoDefaults = [
-    { id: 'agenda', label: 'Agenda', path: 'agenda', type: 'link', parent_id: infoParentId, order_index: 1 },
-    { id: 'berita', label: 'Berita', path: 'berita', type: 'link', parent_id: infoParentId, order_index: 2 },
-    { id: 'jadwal', label: 'Jadwal Latihan', path: 'jadwal', type: 'link', parent_id: infoParentId, order_index: 3 },
-    { id: 'prestasi', label: 'Prestasi', path: 'prestasi', type: 'link', parent_id: infoParentId, order_index: 4 },
+    { id: 'agenda', label: 'Agenda', path: 'agenda', type: 'link', parent_id: infoParentId, order_index: 1, is_active: true },
+    { id: 'berita', label: 'Berita', path: 'berita', type: 'link', parent_id: infoParentId, order_index: 2, is_active: true },
+    { id: 'jadwal', label: 'Jadwal Latihan', path: 'jadwal', type: 'link', parent_id: infoParentId, order_index: 3, is_active: true },
+    { id: 'prestasi', label: 'Prestasi', path: 'prestasi', type: 'link', order_index: 4, is_active: true },
   ];
-  for (const def of infoDefaults) cleaned.push(def);
+  for (const def of infoDefaults) {
+    const existing = cleaned.find(item => normalizeNavigationPath(item?.path || '') === def.path && isInfoParent(item));
+    if (!existing) cleaned.push(def);
+  }
   result.length = 0;
   result.push(...cleaned);`;
 if (!s.includes('const infoParent = result.find')) {
