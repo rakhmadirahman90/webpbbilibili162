@@ -618,25 +618,25 @@ const totalSeniorPutri = registrants.filter(r =>
   }
 };
   return (
-    <div className="min-h-full flex flex-col bg-[#061225] text-white font-sans pb-8 lg:pb-6">
-      <div className="flex-1 flex flex-col max-w-[1500px] w-full mx-auto px-3 py-4 md:px-8 md:py-6">
+    <div className="min-h-full flex flex-col bg-[#061225] text-white font-sans pb-6 lg:pb-8">
+      <div className="flex-1 flex flex-col max-w-[1500px] w-full mx-auto px-3 sm:px-4 md:px-8 py-4 sm:py-5 md:py-7">
         
         {/* HEADER */}
-        <header className="flex flex-col lg:flex-row justify-between items-center gap-4 mb-6">
-          <div className="flex items-center gap-3">
+        <header className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-5 md:mb-6">
+          <div className="flex items-center gap-3 min-w-0">
             <div className="p-3 bg-blue-600 rounded-2xl shadow-lg shadow-blue-950/40">
               <Users className="text-white" size={24} />
             </div>
             <div>
-              <h1 className="text-xl md:text-3xl font-black tracking-tight text-white uppercase italic leading-none">
-                Manajemen <span className="text-blue-600">Pendaftaran</span>
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight text-white uppercase italic leading-none">
+                Manajemen <span className="text-blue-400">Pendaftaran</span>
               </h1>
               <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Database & Administrasi Real-time</p>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            <button onClick={() => setIsAddModalOpen(true)} className="flex items-center gap-2 bg-blue-600 text-white px-5 py-3 rounded-xl font-bold text-[10px] tracking-widest hover:bg-slate-900 transition-all active:scale-95 shadow-lg shadow-blue-950/30">
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-stretch sm:items-center justify-center lg:justify-end gap-2 w-full lg:w-auto">
+            <button onClick={() => setIsAddModalOpen(true)} className="flex items-center gap-2 bg-blue-600 text-white px-3 sm:px-5 py-3 rounded-xl font-bold text-[9px] sm:text-[10px] tracking-widest hover:bg-slate-900 transition-all active:scale-95 shadow-lg shadow-blue-950/30">
               <Plus size={16} /> TAMBAH ATLET
             </button>
 
@@ -649,7 +649,7 @@ const totalSeniorPutri = registrants.filter(r =>
               <input type="file" className="hidden" accept=".xlsx, .xls" onChange={handleImportExcel} />
             </label>
 
-            <div className="h-10 w-px bg-white/10 mx-1 hidden sm:block"></div>
+            <div className="h-10 w-px bg-white/10 mx-1 hidden lg:block"></div>
              
             <button onClick={exportToExcel} className="p-3 bg-emerald-500/10 text-emerald-300 border border-emerald-400/20 rounded-xl hover:bg-emerald-600 hover:text-white transition-all" title="Export Excel">
               <FileSpreadsheet size={20} />
@@ -665,9 +665,9 @@ const totalSeniorPutri = registrants.filter(r =>
         </header>
 
         {/* --- STATISTIK LENGKAP (RESPONSIVE GRID) --- */}
-        <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 lg:gap-4 mb-6">
+        <section className="grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4 mb-5 md:mb-6">
           {/* Card Total */}
-          <div className="bg-[#0c203b] p-4 rounded-2xl border border-white/10 shadow-lg shadow-black/20 flex items-center justify-between col-span-2 md:col-span-1">
+          <div className="bg-[#0c203b] p-4 rounded-2xl border border-white/10 shadow-lg shadow-black/20 flex items-center justify-between col-span-2 lg:col-span-1">
             <div>
               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Total Pendaftar</p>
               <p className="text-2xl font-black text-white mt-0.5">{totalPendaftar}</p>
@@ -678,10 +678,10 @@ const totalSeniorPutri = registrants.filter(r =>
           </div>
           
           {/* Card Putra */}
-          <div className="bg-white p-4 rounded-[1.2rem] border border-slate-100 shadow-sm flex items-center justify-between">
+          <div className="bg-[#0c203b] p-3.5 md:p-4 rounded-2xl border border-white/10 shadow-lg shadow-black/20 flex items-center justify-between">
             <div>
               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Atlet Putra</p>
-              <p className="text-2xl font-black text-blue-600 mt-0.5">{totalPutra}</p>
+              <p className="text-2xl font-black text-blue-300 mt-0.5">{totalPutra}</p>
             </div>
             <div className="p-3 bg-blue-500/10 text-blue-300 rounded-xl border border-blue-400/15">
               <User size={20} />
@@ -692,7 +692,7 @@ const totalSeniorPutri = registrants.filter(r =>
           <div className="bg-white p-4 rounded-[1.2rem] border border-slate-100 shadow-sm flex items-center justify-between">
             <div>
               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Atlet Putri</p>
-              <p className="text-2xl font-black text-rose-600 mt-0.5">{totalPutri}</p>
+              <p className="text-2xl font-black text-rose-300 mt-0.5">{totalPutri}</p>
             </div>
             <div className="p-3 bg-rose-500/10 text-rose-300 rounded-xl border border-rose-400/15">
               <User size={20} />
@@ -704,7 +704,7 @@ const totalSeniorPutri = registrants.filter(r =>
             <div>
               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Atlet Muda</p>
               <p className="text-2xl font-black text-blue-300 mt-0.5 leading-none">{totalMuda}</p>
-              <p className="text-[8px] font-bold text-slate-400 mt-1 uppercase tracking-wider">PA: <span className="text-blue-500">{totalMudaPutra}</span> | PI: <span className="text-rose-500">{totalMudaPutri}</span></p>
+              <p className="text-[8px] font-bold text-slate-400 mt-1 uppercase tracking-wider">PA: <span className="text-blue-300">{totalMudaPutra}</span> | PI: <span className="text-rose-300">{totalMudaPutri}</span></p>
             </div>
             <div className="p-3 bg-blue-500/10 text-blue-300 rounded-xl border border-blue-400/15">
               <Activity size={20} />
@@ -715,7 +715,7 @@ const totalSeniorPutri = registrants.filter(r =>
           <div className="bg-white p-4 rounded-[1.2rem] border border-slate-100 shadow-sm flex items-center justify-between">
             <div>
               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Atlet Senior</p>
-              <p className="text-2xl font-black text-emerald-600 mt-0.5 leading-none">{totalSenior}</p>
+              <p className="text-2xl font-black text-emerald-300 mt-0.5 leading-none">{totalSenior}</p>
               <p className="text-[8px] font-bold text-slate-400 mt-1 uppercase tracking-wider">PA: <span className="text-blue-500">{totalSeniorPutra}</span> | PI: <span className="text-rose-500">{totalSeniorPutri}</span></p>
             </div>
             <div className="p-3 bg-emerald-500/10 text-emerald-300 rounded-xl border border-emerald-400/15">
@@ -725,12 +725,12 @@ const totalSeniorPutri = registrants.filter(r =>
         </section>
 
         {/* SEARCH BAR & STATUS FILTER */}
-        <section className="mb-6 space-y-3">
-          <div className="flex flex-wrap items-center gap-2">
+        <section className="mb-5 md:mb-6 space-y-3">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-1 px-1 snap-x">
             <button
               type="button"
               onClick={() => { setStatusFilter('semua'); setCurrentPage(1); }}
-              className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${statusFilter === 'semua' ? 'bg-blue-600 text-white shadow-md shadow-blue-950/30' : 'bg-[#0c203b] text-slate-300 hover:bg-[#132b4d] border border-white/10'}`}
+              className={`px-3.5 py-2.5 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${statusFilter === 'semua' ? 'bg-blue-600 text-white shadow-md shadow-blue-950/30' : 'bg-[#0c203b] text-slate-300 hover:bg-[#132b4d] border border-white/10'}`}
             >
               Semua Pendaftar <span className="px-2 py-0.5 rounded-full text-[9px] bg-white/10 text-slate-200 ml-1">{totalPendaftar}</span>
             </button>
@@ -762,7 +762,7 @@ const totalSeniorPutri = registrants.filter(r =>
             <input 
               type="text"
               placeholder="Cari berdasarkan nama, kategori umur, nomor WA, atau kota domisili..."
-              className="w-full pl-12 pr-6 py-3 bg-transparent outline-none font-bold text-sm placeholder:text-slate-500"
+              className="w-full pl-11 pr-4 sm:pr-6 py-3.5 bg-transparent outline-none font-bold text-sm placeholder:text-slate-500"
               value={searchTerm}
               onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
             />
@@ -770,13 +770,13 @@ const totalSeniorPutri = registrants.filter(r =>
         </section>
 
         {/* TABLE SECTION (RESPONSIVE NO SCROLL ON DESKTOP) */}
-        <section className="bg-[#0b1b34] rounded-2xl md:rounded-[2rem] border border-white/10 shadow-2xl shadow-black/20 overflow-hidden mb-4">
+        <section className="bg-[#0b1b34] rounded-2xl md:rounded-[1.75rem] border border-white/10 shadow-2xl shadow-black/20 overflow-hidden mb-4">
           {/* DESKTOP TABLE VIEW */}
-          <div className="hidden lg:block overflow-x-auto flex-1">
-            <table className="w-full text-left border-collapse text-xs">
+          <div className="hidden lg:block overflow-x-auto">
+            <table className="w-full min-w-[1050px] text-left border-collapse text-xs">
               <thead>
                 <tr className="bg-[#07172b] text-white whitespace-nowrap sticky top-0 z-10">
-                  <th className="px-3 py-4 font-bold uppercase text-[9px] tracking-widest text-center w-10">No</th>
+                  <th className="px-3 py-3.5.5 font-bold uppercase text-[9px] tracking-widest text-center w-10">No</th>
                   <th className="px-3 py-4 font-bold uppercase text-[9px] tracking-widest">Profil Atlet</th>
                   <th className="px-2 py-4 font-bold uppercase text-[9px] tracking-widest">Status Verifikasi</th>
                   <th className="px-2 py-4 font-bold uppercase text-[9px] tracking-widest">Gender</th>
@@ -796,7 +796,7 @@ const totalSeniorPutri = registrants.filter(r =>
                 ) : currentItems.map((item, index) => (
                   <tr key={item.id} className="hover:bg-blue-500/10 even:bg-white/[0.015] transition-all duration-200 group">
                     
-                    <td className="px-2 py-3 text-center">
+                    <td className="px-2.5 py-3.5 text-center">
                       <span className="text-[10px] font-black text-slate-300 group-hover:text-blue-600 transition-colors">
                         {String((currentPage - 1) * itemsPerPage + index + 1).padStart(2, '0')}
                       </span>
@@ -822,7 +822,7 @@ const totalSeniorPutri = registrants.filter(r =>
                     </td>
 
                     {/* STATUS VERIFIKASI */}
-                    <td className="px-2 py-3 whitespace-nowrap">
+                    <td className="px-2.5 py-3.5 whitespace-nowrap">
                       {(!item.status || item.status === 'Pending' || item.status === 'Menunggu') && (
                         <span className="px-2.5 py-1 rounded-md text-[8px] font-black uppercase tracking-widest bg-amber-500/15 text-amber-300 border border-amber-300 animate-pulse inline-flex items-center gap-1">
                           <Clock size={10} /> MENUNGGU
@@ -877,18 +877,18 @@ const totalSeniorPutri = registrants.filter(r =>
                       </div>
                     </td>
 
-                    <td className="px-3 py-3 whitespace-nowrap">
+                    <td className="px-3 py-3.5 whitespace-nowrap">
                       <div className="flex justify-end items-center gap-1">
                         <button 
                           onClick={() => handleVerifyStatus(item, 'Diterima')} 
-                          className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-600 hover:text-white transition-all shadow-sm border border-emerald-200"
+                          className="p-1.5 bg-emerald-500/10 text-emerald-300 rounded-lg hover:bg-emerald-600 hover:text-white transition-all shadow-sm border border-emerald-200"
                           title="Verifikasi & Terima Atlet"
                         >
                           <CheckCircle2 size={13} />
                         </button>
                         <button 
                           onClick={() => handleVerifyStatus(item, 'Ditolak')} 
-                          className="p-1.5 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-600 hover:text-white transition-all shadow-sm border border-rose-200"
+                          className="p-1.5 bg-rose-500/10 text-rose-300 rounded-lg hover:bg-rose-600 hover:text-white transition-all shadow-sm border border-rose-200"
                           title="Tolak Pendaftaran"
                         >
                           <XCircle size={13} />
@@ -934,8 +934,8 @@ const totalSeniorPutri = registrants.filter(r =>
               </div>
             ) : (
               currentItems.map((item, index) => (
-                <div key={item.id} className="p-4 flex flex-col gap-3 hover:bg-blue-500/10 transition-all duration-200">
-                  <div className="flex justify-between items-center">
+                <article key={item.id} className="m-2 rounded-2xl border border-white/10 bg-[#0c203b] p-3.5 sm:p-4 flex flex-col gap-3 hover:bg-[#102847] transition-all duration-200 shadow-lg shadow-black/10">
+                  <div className="flex justify-between items-center gap-2">
                     <span className="text-[10px] font-black text-blue-600 bg-blue-500/15 px-2 py-1 rounded-md border border-blue-400/15">
                       #{String((currentPage - 1) * itemsPerPage + index + 1).padStart(2, '0')}
                     </span>
@@ -964,7 +964,7 @@ const totalSeniorPutri = registrants.filter(r =>
                   <div className="flex items-center gap-3">
                     <div 
                       onClick={() => item.foto_url && setPreviewImage(item.foto_url)}
-                      className="w-12 h-12 rounded-xl bg-[#132947] border border-white/10 shadow-sm overflow-hidden flex-shrink-0 cursor-zoom-in"
+                      className="w-14 h-14 rounded-2xl bg-[#132947] border border-white/10 shadow-sm overflow-hidden flex-shrink-0 cursor-zoom-in"
                     >
                       {item.foto_url ? (
                         <img src={item.foto_url} loading="lazy" decoding="async" className="w-full h-full object-cover object-top" alt={item.nama} />
@@ -973,8 +973,8 @@ const totalSeniorPutri = registrants.filter(r =>
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-black text-slate-800 text-xs uppercase leading-tight truncate">{item.nama || 'No Name'}</h4>
-                      <p className="text-[9px] font-bold text-slate-500 mt-0.5 uppercase tracking-wider">{item.kategori || '-'}</p>
+                      <h4 className="font-black text-white text-sm uppercase leading-tight truncate">{item.nama || 'No Name'}</h4>
+                      <p className="text-[9px] font-bold text-slate-400 mt-0.5 uppercase tracking-wider">{item.kategori || '-'}</p>
                       <div className="inline-flex items-center gap-1 mt-0.5 text-slate-400 uppercase text-[8px] font-bold">
                         <MapPin size={9} className="text-rose-500 shrink-0" /> {item.domisili || '-'}
                       </div>
@@ -995,34 +995,34 @@ const totalSeniorPutri = registrants.filter(r =>
                   </div>
 
                   {/* ACTION BUTTONS */}
-                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-dashed border-white/10">
+                  <div className="grid grid-cols-2 gap-2 pt-3 border-t border-dashed border-white/10">
                     <button 
                       onClick={() => handleVerifyStatus(item, 'Diterima')} 
-                      className="py-1.5 bg-emerald-50 hover:bg-emerald-600 text-emerald-600 hover:text-white rounded-lg transition-all font-bold text-[9px] uppercase tracking-widest border border-emerald-200 flex items-center justify-center gap-1"
+                      className="py-2.5 bg-emerald-500/10 hover:bg-emerald-600 text-emerald-300 hover:text-white rounded-lg transition-all font-bold text-[9px] uppercase tracking-widest border border-emerald-200 flex items-center justify-center gap-1"
                     >
                       <CheckCircle2 size={11} /> Terima
                     </button>
                     <button 
                       onClick={() => handleVerifyStatus(item, 'Ditolak')} 
-                      className="py-1.5 bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white rounded-lg transition-all font-bold text-[9px] uppercase tracking-widest border border-rose-200 flex items-center justify-center gap-1"
+                      className="py-2.5 bg-rose-500/10 hover:bg-rose-600 text-rose-300 hover:text-white rounded-lg transition-all font-bold text-[9px] uppercase tracking-widest border border-rose-200 flex items-center justify-center gap-1"
                     >
                       <XCircle size={11} /> Tolak
                     </button>
                     <button 
                       onClick={() => handleSendAccountHistory(item)} 
-                      className="py-1.5 bg-green-50 hover:bg-green-600 text-green-600 hover:text-white rounded-lg transition-all font-bold text-[9px] uppercase tracking-widest border border-green-200 flex items-center justify-center gap-1 col-span-2"
+                      className="py-2.5 bg-emerald-500/10 hover:bg-emerald-600 text-emerald-300 hover:text-white rounded-lg transition-all font-bold text-[9px] uppercase tracking-widest border border-green-200 flex items-center justify-center gap-1 col-span-2"
                     >
                       <MessageSquare size={11} /> Kirim Akun Ke WA Atlet
                     </button>
                     <button 
                       onClick={() => { setEditingItem(item); setIsEditModalOpen(true); }} 
-                      className="py-1.5 bg-blue-50 hover:bg-blue-600 text-blue-600 hover:text-white rounded-lg transition-all font-bold text-[9px] uppercase tracking-widest border border-blue-100 flex items-center justify-center gap-1"
+                      className="py-2.5 bg-blue-500/10 hover:bg-blue-600 text-blue-300 hover:text-white rounded-lg transition-all font-bold text-[9px] uppercase tracking-widest border border-blue-100 flex items-center justify-center gap-1"
                     >
                       <Edit3 size={11} /> Edit
                     </button>
                     <button 
                       onClick={() => handleDelete(item.id, item.nama, item.foto_url)} 
-                      className="py-1.5 bg-slate-100 hover:bg-rose-600 text-slate-600 hover:text-white rounded-lg transition-all font-bold text-[9px] uppercase tracking-widest border border-slate-200 flex items-center justify-center gap-1"
+                      className="py-2.5 bg-white/5 hover:bg-rose-600 text-slate-300 hover:text-white rounded-lg transition-all font-bold text-[9px] uppercase tracking-widest border border-slate-200 flex items-center justify-center gap-1"
                     >
                       <Trash2 size={11} /> Hapus
                     </button>
@@ -1034,18 +1034,18 @@ const totalSeniorPutri = registrants.filter(r =>
         </section>
 
         {/* PAGINATION */}
-        <footer className="flex flex-col sm:flex-row justify-between items-center gap-4 px-8 py-4 bg-[#07172b] rounded-2xl text-white shadow-2xl shadow-black/20 border border-white/10">
+        <footer className="flex flex-col sm:flex-row justify-between items-center gap-4 px-3 sm:px-5 py-4 bg-[#07172b] rounded-2xl text-white shadow-2xl shadow-black/20 border border-white/10">
           <div className="flex flex-col text-center sm:text-left">
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400">Navigasi Data</p>
             <p className="text-[9px] font-bold text-slate-400 uppercase mt-0.5">Halaman {currentPage} Dari {totalPages || 1}</p>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <button onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} disabled={currentPage === 1} className="p-2 bg-white/10 rounded-xl disabled:opacity-20 hover:bg-white/20 transition-all active:scale-90">
               <ChevronLeft size={16} />
             </button>
-            <div className="flex gap-1.5">
+            <div className="flex gap-1.5 max-w-[58vw] overflow-x-auto py-1">
               {[...Array(totalPages || 0)].map((_, i) => (
-                 <button key={i} onClick={() => setCurrentPage(i + 1)} className={`w-8 h-8 rounded-lg text-xs font-black transition-all ${currentPage === i + 1 ? 'bg-blue-600 text-white scale-110 shadow-lg shadow-blue-500/50' : 'bg-white/5 hover:bg-blue-500/20 text-slate-400'}`}>
+                 <button key={i} onClick={() => setCurrentPage(i + 1)} className={`w-9 h-9 rounded-lg shrink-0 text-xs font-black transition-all ${currentPage === i + 1 ? 'bg-blue-600 text-white scale-110 shadow-lg shadow-blue-500/50' : 'bg-white/5 hover:bg-blue-500/20 text-slate-400'}`}>
                     {i + 1}
                  </button>
               ))}
