@@ -332,76 +332,169 @@ export default function PlayerProfileModal({ player, globalRank, onClose }: Prop
                   )}
                 </div>
 
-                {/* BIODATA — seluruh nilai berasal dari record pendaftaran/rankings */}
-                <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-black">
-                  <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-blue-600" />
-                  <div className="p-6 sm:p-7 pl-7 sm:pl-9 space-y-6">
-                    <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-300">Biodata Atlet</p>
-                      <p className="mt-1 text-[11px] text-slate-500">Data ditampilkan langsung dari database PB BILIBILI 162.</p>
-                    </div>
-
-                    {[
-                      ['Nama Atlet', profile?.nama || name],
-                      ['Kategori / Sektor', profile?.kategori || player.category || '—'],
-                      ['Kategori Atlet', profile?.kategori_atlet || player.category || '—'],
-                      ['Domisili', profile?.domisili || '—'],
-                      ['Jenis Kelamin', profile?.jenis_kelamin || '—'],
-                      ['Status', profile?.status || '—'],
-                      ['Tanggal Registrasi', profile?.tanggal_registrasi
-                        ? new Date(profile.tanggal_registrasi).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
-                        : '—'],
-                      ['Pengalaman', profile?.pengalaman || 'Belum diisi pada database'],
-                    ].map(([label, value]) => (
-                      <div key={String(label)} className="border-b border-white/10 pb-4 last:border-b-0 last:pb-0">
-                        <p className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-slate-300">{label} :</p>
-                        <p className="mt-1.5 text-base sm:text-lg font-medium text-white leading-7 break-words">{String(value)}</p>
+                {/* PROFIL ATLET — ringkas, terstruktur, responsif */}
+                <div className="mt-7 space-y-5">
+                  <div className="relative overflow-hidden rounded-[2rem] border border-blue-500/20 bg-gradient-to-br from-[#0b2345] via-[#071a33] to-[#06101f] shadow-xl">
+                    <div className="absolute -right-16 -top-20 w-48 h-48 rounded-full bg-blue-500/10 blur-2xl" />
+                    <div className="relative p-5 sm:p-6">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-5">
+                        <div className="w-28 h-28 sm:w-32 sm:h-32 shrink-0 rounded-3xl overflow-hidden border border-blue-400/20 bg-[#0b1930] shadow-lg">
+                          {profile?.foto_url || player.photo_url ? (
+                            <img
+                              src={profile?.foto_url || player.photo_url}
+                              alt={profile?.nama || name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full grid place-items-center text-slate-600">
+                              <User size={52} />
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap gap-2 mb-2">
+                            <span className="rounded-full border border-blue-400/25 bg-blue-500/10 px-3 py-1 text-[9px] font-black uppercase tracking-widest text-blue-300">
+                              Profil Atlet
+                            </span>
+                            {profile?.status && (
+                              <span className="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-3 py-1 text-[9px] font-black uppercase tracking-widest text-emerald-300">
+                                {profile.status}
+                              </span>
+                            )}
+                          </div>
+                          <h3 className="text-2xl sm:text-3xl font-black uppercase tracking-tight break-words">
+                            {profile?.nama || name}
+                          </h3>
+                          <p className="mt-1 text-xs font-semibold text-slate-400 uppercase tracking-wide">
+                            {profile?.kategori_atlet || profile?.kategori || player.category || 'Atlet PB BILIBILI 162'}
+                          </p>
+                          <div className="mt-4 flex flex-wrap gap-2">
+                            <span className="inline-flex items-center gap-1.5 rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-[10px] font-bold text-slate-300">
+                              <MapPin size={13} className="text-blue-400" />
+                              {profile?.domisili || 'Domisili belum diisi'}
+                            </span>
+                            <span className="inline-flex items-center gap-1.5 rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-[10px] font-bold text-slate-300">
+                              <Trophy size={13} className="text-amber-400" />
+                              {Number(player.total_points || 0).toLocaleString('id-ID')} PTS
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                    ))}
 
-                    <div className="pt-1 flex flex-wrap gap-2">
-                      <span className="rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1.5 text-[9px] font-black uppercase tracking-widest text-blue-300">
-                        {player.seed || 'Non-Seed'}
-                      </span>
-                      <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-[9px] font-black uppercase tracking-widest text-amber-300">
-                        {Number(player.total_points || 0).toLocaleString('id-ID')} PTS
-                      </span>
+                      <div className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        {[
+                          ['Sektor', profile?.kategori || player.category || '—'],
+                          ['Tangan', profile?.tangan_dominan || '—'],
+                          ['Gabung', profile?.tahun_bergabung || '—'],
+                          ['Peringkat', globalRank > 0 ? '#' + globalRank : '—']
+                        ].map(([label, value]) => (
+                          <div key={String(label)} className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                            <p className="text-[8px] font-black uppercase tracking-widest text-slate-500">{label}</p>
+                            <p className="mt-1 text-sm font-black text-white truncate">{String(value)}</p>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* BIODATA TAMBAHAN — field tersimpan di tabel pendaftaran */}
-                <div className="relative overflow-hidden rounded-3xl border border-blue-500/20 bg-[#071a33]">
-                  <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-blue-600" />
-                  <div className="p-6 sm:p-7 pl-7 sm:pl-9 space-y-5">
-                    <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-300">Data Profil Atlet</p>
-                      <p className="mt-1 text-[11px] text-slate-400">Data tersimpan pada database dan dapat diperbarui melalui administrasi atlet.</p>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <section className="rounded-[1.75rem] border border-white/10 bg-white/[0.035] overflow-hidden">
+                      <div className="px-5 py-4 border-b border-white/10 flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 grid place-items-center text-blue-300">
+                          <User size={18} />
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-300">Biodata Atlet</p>
+                          <p className="text-[10px] text-slate-500 mt-0.5">Identitas dasar dan keanggotaan</p>
+                        </div>
+                      </div>
+                      <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {[
+                          ['Nama Lengkap', profile?.nama || name],
+                          ['Nama Panggilan', profile?.nama_panggilan],
+                          ['Jenis Kelamin', profile?.jenis_kelamin],
+                          ['Tempat Lahir', profile?.tempat_lahir],
+                          ['Tanggal Lahir', profile?.tanggal_lahir
+                            ? new Date(profile.tanggal_lahir).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+                            : ''],
+                          ['Domisili', profile?.domisili],
+                          ['Kategori / Sektor', profile?.kategori || player.category],
+                          ['Kategori Atlet', profile?.kategori_atlet || player.category],
+                          ['Status', profile?.status],
+                        ].map(([label, value]) => (
+                          <div key={String(label)} className="rounded-2xl border border-white/8 bg-slate-950/35 p-3.5 min-w-0">
+                            <p className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-slate-500">{label}</p>
+                            <p className="mt-1.5 text-sm font-bold text-slate-100 leading-5 break-words">
+                              {value !== undefined && value !== null && String(value).trim() !== '' ? String(value) : 'Belum diisi'}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+
+                    <section className="rounded-[1.75rem] border border-blue-500/15 bg-[#071a33]/80 overflow-hidden">
+                      <div className="px-5 py-4 border-b border-blue-500/10 flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 grid place-items-center text-blue-300">
+                          <Activity size={18} />
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-300">Data Profil Atlet</p>
+                          <p className="text-[10px] text-slate-500 mt-0.5">Informasi personal, permainan, dan preferensi</p>
+                        </div>
+                      </div>
+                      <div className="p-5 space-y-3">
+                        {[
+                          ['Nama Punggung', profile?.nama_punggung],
+                          ['Tahun Bergabung', profile?.tahun_bergabung],
+                          ['Tangan Dominan', profile?.tangan_dominan],
+                          ['Hobi', profile?.hobi],
+                          ['Makanan Favorit', profile?.makanan_favorit],
+                          ['Tanggal Registrasi', profile?.tanggal_registrasi
+                            ? new Date(profile.tanggal_registrasi).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+                            : ''],
+                        ].map(([label, value]) => (
+                          <div key={String(label)} className="flex items-start justify-between gap-4 rounded-2xl border border-blue-500/10 bg-black/15 px-4 py-3">
+                            <div className="min-w-0">
+                              <p className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-slate-500">{label}</p>
+                              <p className="mt-1 text-sm font-bold text-white leading-5 break-words">
+                                {value !== undefined && value !== null && String(value).trim() !== '' ? String(value) : 'Belum diisi'}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  </div>
+
+                  <section className="rounded-[1.75rem] border border-white/10 bg-gradient-to-r from-white/[0.035] to-blue-500/[0.035] overflow-hidden">
+                    <div className="px-5 py-4 border-b border-white/10 flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 grid place-items-center text-amber-300">
+                        <History size={18} />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-200">Ringkasan Keanggotaan</p>
+                        <p className="text-[10px] text-slate-500 mt-0.5">Informasi registrasi dan pengalaman atlet</p>
+                      </div>
                     </div>
-
-                    {[
-                      ['Nama Panggilan', profile?.nama_panggilan],
-                      ['Nama Punggung', profile?.nama_punggung],
-                      ['Tempat/Tgl. Lahir', [
-                        profile?.tempat_lahir,
-                        profile?.tanggal_lahir
-                          ? new Date(profile.tanggal_lahir).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
-                          : ''
-                      ].filter(Boolean).join(', ')],
-                      ['Tahun Bergabung', profile?.tahun_bergabung],
-                      ['Tangan', profile?.tangan_dominan],
-                      ['Hobi', profile?.hobi],
-                      ['Makanan Favorit', profile?.makanan_favorit],
-                    ].map(([label, value]) => (
-                      <div key={String(label)} className="border-b border-blue-500/10 pb-4 last:border-b-0 last:pb-0">
-                        <p className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-slate-300">{label} :</p>
-                        <p className="mt-1.5 text-base sm:text-lg font-medium text-white leading-7 break-words">
-                          {value !== undefined && value !== null && String(value).trim() !== '' ? String(value) : 'Belum diisi'}
+                    <div className="p-5">
+                      <div className="rounded-2xl bg-slate-950/40 border border-white/5 p-4">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">Pengalaman</p>
+                        <p className="mt-2 text-sm leading-6 text-slate-200">
+                          {profile?.pengalaman || 'Belum diisi pada database.'}
                         </p>
                       </div>
-                    ))}
-                  </div>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <span className="inline-flex items-center gap-1.5 rounded-xl border border-blue-500/20 bg-blue-500/5 px-3 py-2 text-[9px] font-black uppercase tracking-widest text-blue-300">
+                          <ShieldCheck size={12} /> Data terintegrasi
+                        </span>
+                        <span className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[9px] font-black uppercase tracking-widest text-slate-400">
+                          <Clock size={12} /> Diperbarui real-time
+                        </span>
+                      </div>
+                    </div>
+                  </section>
                 </div>
+
               </div>
             )}
 
