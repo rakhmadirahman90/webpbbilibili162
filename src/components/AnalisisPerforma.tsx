@@ -281,7 +281,7 @@ export default function AnalisisPerforma() {
                   <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', color: '#fff', fontSize: '10px' }} />
                   <Legend wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }} />
                 </RadarChart>
-              </ResponsiveContainer>}
+              </ResponsiveContainer>
             </div>
 
             {/* Numerical KPI Bars comparison */}
