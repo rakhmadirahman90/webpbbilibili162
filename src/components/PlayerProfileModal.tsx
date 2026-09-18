@@ -213,7 +213,28 @@ export default function PlayerProfileModal({ player, globalRank, onClose }: Prop
     };
 
     load();
-    return () => { cancelled = true; };
+
+    const channel = supabase
+      .channel(`athlete-profile-realtime-${player.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'rankings' }, load)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'atlet_stats' }, load)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pendaftaran' }, load)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pertandingan' }, load)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, (payload: any) => {
+        if (!payload?.new?.key || ['rapor_atlet_data', 'absensi_list', 'users_list'].includes(payload.new.key)) load();
+      })
+      .subscribe();
+
+    const refresh = () => load();
+    window.addEventListener('focus', refresh);
+    window.addEventListener('online', refresh);
+
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(channel);
+      window.removeEventListener('focus', refresh);
+      window.removeEventListener('online', refresh);
+    };
   }, [player, name]);
 
   useEffect(() => {
