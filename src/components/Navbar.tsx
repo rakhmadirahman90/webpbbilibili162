@@ -5,31 +5,31 @@ import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 
 export const DEFAULT_NAV_ITEMS = [
-  { id: 'home', label: 'Beranda', path: 'home', type: 'link', parent_id: null, order_index: 0 },
-  { id: 'about', label: 'Tentang Kami', path: 'about', type: 'dropdown', parent_id: null, order_index: 1 },
-  { id: 'sejarah', label: 'Sejarah', path: 'sejarah', type: 'link', parent_id: 'about', order_index: 1 },
-  { id: 'visi', label: 'Visi & Misi', path: 'visi-misi', type: 'link', parent_id: 'about', order_index: 2 },
-  { id: 'fasilitas', label: 'Fasilitas', path: 'fasilitas', type: 'link', parent_id: 'about', order_index: 3 },
-  { id: 'struktur', label: 'Struktur Organisasi', path: 'struktur-organisasi', type: 'link', parent_id: 'about', order_index: 4 },
-  { id: 'dokumen', label: 'Dokumen Penting', path: 'dokumen-penting', type: 'link', parent_id: 'about', order_index: 5 },
-  { id: 'informasi', label: 'Informasi', path: 'informasi', type: 'dropdown', parent_id: null, order_index: 2 },
-  { id: 'berita', label: 'Berita', path: 'berita', type: 'link', parent_id: 'informasi', order_index: 1 },
-  { id: 'prestasi', label: 'Prestasi', path: 'prestasi', type: 'link', parent_id: 'informasi', order_index: 2 },
-  { id: 'atlet', label: 'Atlet', path: 'atlet', type: 'dropdown', parent_id: null, order_index: 3 },
-  { id: 'semua-atlet', label: 'Semua Atlet', path: 'Semua', type: 'link', parent_id: 'atlet', order_index: 1 },
-  { id: 'senior', label: 'Atlet Senior', path: 'Senior', type: 'link', parent_id: 'atlet', order_index: 2 },
-  { id: 'muda', label: 'Atlet Muda / Taruna', path: 'Muda', type: 'link', parent_id: 'atlet', order_index: 3 },
-  { id: 'ranking', label: 'Ranking & Poin Atlet', path: 'peringkat', type: 'link', parent_id: 'atlet', order_index: 4 },
-  { id: 'register', label: 'Pendaftaran Atlet Baru', path: 'register', type: 'link', parent_id: 'atlet', order_index: 5 },
-  { id: 'pendaftaran-peserta', label: 'Pendaftaran Peserta', path: 'pendaftaran-turnamen', type: 'dropdown', parent_id: null, order_index: 6 },
-  { id: 'form-pendaftaran-peserta', label: 'Form Pendaftaran Peserta', path: 'pendaftaran-turnamen', type: 'link', parent_id: 'pendaftaran-peserta', order_index: 1 },
-  { id: 'seeded-peserta', label: 'Daftar Seeded Peserta', path: 'pendaftaran/seeded-peserta', type: 'link', parent_id: 'pendaftaran-peserta', order_index: 2 },
-  { id: 'peserta-diterima', label: 'Daftar Peserta Diterima', path: 'pendaftaran/peserta-diterima', type: 'link', parent_id: 'pendaftaran-peserta', order_index: 3 },
-  { id: 'sponsorship', label: 'Daftar Sponsorship', path: 'sponsorship', type: 'link', parent_id: 'pendaftaran-peserta', order_index: 4 },
-  { id: 'peserta-juara', label: 'Daftar Peserta Juara', path: 'prestasi', type: 'link', parent_id: 'pendaftaran-peserta', order_index: 5 },
-  { id: 'galeri', label: 'Galeri', path: 'gallery', type: 'link', parent_id: null, order_index: 5 },
-  { id: 'jadwal', label: 'Jadwal Latihan', path: 'jadwal', type: 'link', parent_id: null, order_index: 7 },
-  { id: 'contact', label: 'Hubungi Kami', path: 'contact', type: 'link', parent_id: null, order_index: 8 },
+  { id: 'home', label: 'Beranda', path: 'home', type: 'link', parent_id: null, order_index: 0, is_active: true },
+  { id: 'about', label: 'Tentang Kami', path: 'about', type: 'dropdown', parent_id: null, order_index: 1, is_active: true },
+  { id: 'sejarah', label: 'Sejarah', path: 'sejarah', type: 'link', parent_id: 'about', order_index: 1, is_active: true },
+  { id: 'visi', label: 'Visi & Misi', path: 'visi-misi', type: 'link', parent_id: 'about', order_index: 2, is_active: true },
+  { id: 'fasilitas', label: 'Fasilitas', path: 'fasilitas', type: 'link', parent_id: 'about', order_index: 3, is_active: true },
+  { id: 'struktur', label: 'Struktur Organisasi', path: 'struktur-organisasi', type: 'link', parent_id: 'about', order_index: 4, is_active: true },
+  { id: 'dokumen', label: 'Dokumen Penting', path: 'dokumen-penting', type: 'link', parent_id: 'about', order_index: 5, is_active: true },
+  { id: 'informasi', label: 'Informasi', path: 'informasi', type: 'dropdown', parent_id: null, order_index: 2, is_active: true },
+  { id: 'berita', label: 'Berita', path: 'berita', type: 'link', parent_id: 'informasi', order_index: 1, is_active: true },
+  { id: 'prestasi', label: 'Prestasi', path: 'prestasi', type: 'link', parent_id: 'informasi', order_index: 2, is_active: true },
+  { id: 'atlet', label: 'Atlet', path: 'atlet', type: 'dropdown', parent_id: null, order_index: 3, is_active: true },
+  { id: 'semua-atlet', label: 'Semua Atlet', path: 'Semua', type: 'link', parent_id: 'atlet', order_index: 1, is_active: true },
+  { id: 'senior', label: 'Atlet Senior', path: 'Senior', type: 'link', parent_id: 'atlet', order_index: 2, is_active: true },
+  { id: 'muda', label: 'Atlet Muda / Taruna', path: 'Muda', type: 'link', parent_id: 'atlet', order_index: 3, is_active: true },
+  { id: 'ranking', label: 'Ranking & Poin Atlet', path: 'peringkat', type: 'link', parent_id: 'atlet', order_index: 4, is_active: true },
+  { id: 'register', label: 'Pendaftaran Atlet Baru', path: 'register', type: 'link', parent_id: 'atlet', order_index: 5, is_active: true },
+  { id: 'pendaftaran-peserta', label: 'Pendaftaran Peserta', path: 'pendaftaran-turnamen', type: 'dropdown', parent_id: null, order_index: 6, is_active: true },
+  { id: 'form-pendaftaran-peserta', label: 'Form Pendaftaran Peserta', path: 'pendaftaran-turnamen', type: 'link', parent_id: 'pendaftaran-peserta', order_index: 1, is_active: true },
+  { id: 'seeded-peserta', label: 'Daftar Seeded Peserta', path: 'pendaftaran/seeded-peserta', type: 'link', parent_id: 'pendaftaran-peserta', order_index: 2, is_active: true },
+  { id: 'peserta-diterima', label: 'Daftar Peserta Diterima', path: 'pendaftaran/peserta-diterima', type: 'link', parent_id: 'pendaftaran-peserta', order_index: 3, is_active: true },
+  { id: 'sponsorship', label: 'Daftar Sponsorship', path: 'sponsorship', type: 'link', parent_id: 'pendaftaran-peserta', order_index: 4, is_active: true },
+  { id: 'peserta-juara', label: 'Daftar Peserta Juara', path: 'prestasi', type: 'link', parent_id: 'pendaftaran-peserta', order_index: 5, is_active: true },
+  { id: 'galeri', label: 'Galeri', path: 'gallery', type: 'link', parent_id: null, order_index: 5, is_active: true },
+  { id: 'jadwal', label: 'Jadwal Latihan', path: 'jadwal', type: 'link', parent_id: null, order_index: 7, is_active: true },
+  { id: 'contact', label: 'Hubungi Kami', path: 'contact', type: 'link', parent_id: null, order_index: 8, is_active: true },
   { id: 'faq', label: 'FAQ', path: 'faq', type: 'link', parent_id: null, order_index: 9 }
 ];
 
@@ -263,7 +263,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
     setSession(null); navigate('/login', { replace: true });
   };
 
-  const topMenus = navData.filter(isTopLevelMenuItem).sort((a,b) => (a.order_index || 0) - (b.order_index || 0));
+  const topMenus = navData.filter(i => i?.is_active !== false && isTopLevelMenuItem(i)).sort((a,b) => (a.order_index || 0) - (b.order_index || 0));
 
   return <>
     <nav className="fixed top-0 left-0 right-0 h-14 lg:h-16 z-[10000] bg-slate-950/95 backdrop-blur-xl border-b border-white/10 shadow-2xl" aria-label="Navigasi utama PB Bilibili 162">
