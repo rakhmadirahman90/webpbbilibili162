@@ -122,6 +122,8 @@ export default function ManajemenAtlet() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'pendaftaran' }, () => fetchAtlets())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'atlet_stats' }, () => fetchAtlets())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'rankings' }, () => fetchAtlets())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'seeded_players' }, () => fetchAtlets())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pendaftaran_turnamen' }, () => fetchAtlets())
       .subscribe();
 
     return () => {
