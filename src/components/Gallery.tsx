@@ -8,8 +8,6 @@ import { getOptimizedImageUrl } from '../utils/imageOptimizer';
 import { getSiteSetting } from '../utils/siteSettingsHelper';
 import { DEFAULT_GALLERY } from '../data/localDatabase';
 
-const CACHE_KEY = 'cached_gallery';
-const LEGACY_CACHE_KEY = 'gallery_local_v3';
 const ITEMS_PER_PAGE = 6;
 const PUBLIC_DOMAIN = 'https://pbilibili162.99apps.id';
 
@@ -79,45 +77,16 @@ export default function Gallery() {
     fetchInFlight.current = true;
     try {
       const { data: sbData, error: sbError } = await supabase.from('gallery').select('*').order('created_at', { ascending: false });
-      if (!sbError && Array.isArray(sbData) && sbData.length > 0) {
+      if (!sbError && Array.isArray(sbData)) {
         applyGallery(sbData as GalleryItem[]);
-        try { localStorage.setItem(CACHE_KEY, JSON.stringify(sbData)); } catch {}
         return;
       }
-      const legacy = await getSiteSetting('gallery_list');
-      if (Array.isArray(legacy) && legacy.length > 0) {
-        applyGallery(legacy as GalleryItem[]);
-        try { localStorage.setItem(CACHE_KEY, JSON.stringify(legacy)); } catch {}
-        return;
-      }
-      if (initial) {
-        try {
-          const cached = localStorage.getItem(CACHE_KEY) || localStorage.getItem(LEGACY_CACHE_KEY);
-          if (cached) {
-            const parsed = JSON.parse(cached);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              applyGallery(parsed as GalleryItem[]);
-              return;
-            }
-          }
-        } catch {}
-        applyGallery(DEFAULT_GALLERY as GalleryItem[]);
-      }
+      // Never render stale browser cache. Only use bundled defaults when the live
+      // database is unavailable and contains no current data.
+      if (initial) applyGallery(DEFAULT_GALLERY as GalleryItem[]);
     } catch (error) {
-      console.error('Error fetching gallery:', error);
-      if (initial) {
-        try {
-          const cached = localStorage.getItem(CACHE_KEY) || localStorage.getItem(LEGACY_CACHE_KEY);
-          if (cached) {
-            const parsed = JSON.parse(cached);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              applyGallery(parsed as GalleryItem[]);
-              return;
-            }
-          }
-        } catch {}
-        applyGallery(DEFAULT_GALLERY as GalleryItem[]);
-      }
+      console.error('Error fetching current gallery:', error);
+      if (initial) applyGallery(DEFAULT_GALLERY as GalleryItem[]);
     } finally {
       fetchInFlight.current = false;
       if (initial) setLoading(false);
