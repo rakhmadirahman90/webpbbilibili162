@@ -420,7 +420,7 @@ const Rankings: React.FC = () => {
         const cup1 = seededById.get(String(profile.id)) || seededByName.get(nameKey);
         // Seeded BILIBILI 162 CUP I adalah sumber kebenaran untuk badge seeded.
         // Jika atlet tidak tercatat seeded pada CUP I, jangan mewarisi seed lama.
-        const cup1Seed = cup1?.is_seeded && cup1?.seeded_quality ? String(cup1.seeded_quality).toUpperCase() : 'Non-Seed';
+        const cup1Seed = cup1?.seeded_quality ? String(cup1.seeded_quality).toUpperCase() : 'D';
 
         playerMap.set(nameKey, {
           id: profile.id || rankItem?.id || `p-${nameKey}`,
@@ -460,7 +460,7 @@ const Rankings: React.FC = () => {
         const finalTotal = Number(rankItem.total_points) || calculatedTotal;
 
         const cup1 = seededById.get(String(rankItem.pendaftaran_id || '')) || seededByName.get(nameKey);
-        const cup1Seed = cup1?.is_seeded && cup1?.seeded_quality ? String(cup1.seeded_quality).toUpperCase() : 'Non-Seed';
+        const cup1Seed = cup1?.seeded_quality ? String(cup1.seeded_quality).toUpperCase() : 'D';
 
         playerMap.set(nameKey, {
           id: rankItem.id || `r-${nameKey}`,
@@ -495,7 +495,7 @@ const Rankings: React.FC = () => {
         const finalTotal = basePoints + addedPoints;
 
         const cup1 = seededById.get(String(stat.pendaftaran_id || '')) || seededByName.get(nameKey);
-        const cup1Seed = cup1?.is_seeded && cup1?.seeded_quality ? String(cup1.seeded_quality).toUpperCase() : 'Non-Seed';
+        const cup1Seed = cup1?.seeded_quality ? String(cup1.seeded_quality).toUpperCase() : 'D';
 
         playerMap.set(nameKey, {
           id: stat.pendaftaran_id || `s-${nameKey}`,
