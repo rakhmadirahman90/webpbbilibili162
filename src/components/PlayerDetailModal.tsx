@@ -1,5 +1,8 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { X, User, Trophy, Instagram, Music2, CalendarDays, MapPin, Hand, Utensils, Heart, Award, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  X, User, Trophy, Instagram, Music2, CalendarDays, MapPin, Hand,
+  Utensils, Heart, Award, ChevronLeft, ChevronRight, Shield, Medal
+} from "lucide-react";
 import { useMemo, useEffect, useState } from "react";
 import LazyImage from "./LazyImage";
 
@@ -12,26 +15,27 @@ const pick = (obj: any, keys: string[], fallback = "-") => {
 };
 
 export const PlayerDetailModal = ({ player, processedPlayers, onClose }: any) => {
-  const [activeTab, setActiveTab] = useState<'profil' | 'stats'>('profil');
+  const [activeTab, setActiveTab] = useState<"profil" | "stats">("profil");
 
   useEffect(() => {
-    setActiveTab('profil');
+    setActiveTab("profil");
   }, [player]);
 
-  const rank = Math.max(1, processedPlayers.findIndex((x: any) => x.id === player?.id) + 1);
+  const rankIndex = processedPlayers.findIndex((x: any) => x.id === player?.id);
+  const rank = rankIndex >= 0 ? rankIndex + 1 : "-";
   const info = player?.pendaftaran || {};
 
   const profile = useMemo(() => ({
-    nickname: pick(info, ['nama_panggilan', 'nama_panggilan_atlet', 'panggilan'], player?.name?.split(" ")[0] || "-"),
-    backName: pick(info, ['nama_punggung', 'nomor_punggung', 'nama_jersey']),
-    birth: pick(info, ['tempat_tgl_lahir', 'tempat_tanggal_lahir', 'ttl', 'tanggal_lahir']),
-    sector: pick(info, ['sektor', 'sektor_utama', 'jenis_kelamin'], player?.ageGroup === 'Muda' ? 'Atlet Muda' : 'Tunggal Putra'),
-    joined: pick(info, ['tahun_bergabung', 'tahun_masuk', 'bergabung']),
-    hand: pick(info, ['tangan', 'tangan_dominan', 'dominant_hand']),
-    hobby: pick(info, ['hobi', 'hobby']),
-    food: pick(info, ['makanan_favorit', 'makanan_favorite', 'favorite_food']),
-    instagram: pick(info, ['instagram', 'instagram_url', 'ig'], ''),
-    tiktok: pick(info, ['tiktok', 'tiktok_url'], ''),
+    nickname: pick(info, ["nama_panggilan", "nama_panggilan_atlet", "panggilan"], player?.name?.split(" ")[0] || "-"),
+    backName: pick(info, ["nama_punggung", "nomor_punggung", "nama_jersey"]),
+    birth: pick(info, ["tempat_tgl_lahir", "tempat_tanggal_lahir", "ttl", "tanggal_lahir"]),
+    sector: pick(info, ["sektor", "sektor_utama"], player?.ageGroup === "Muda" ? "Atlet Muda" : "Tunggal Putra"),
+    joined: pick(info, ["tahun_bergabung", "tahun_masuk", "bergabung"]),
+    hand: pick(info, ["tangan", "tangan_dominan", "dominant_hand"]),
+    hobby: pick(info, ["hobi", "hobby"]),
+    food: pick(info, ["makanan_favorit", "makanan_favorite", "favorite_food"]),
+    instagram: pick(info, ["instagram", "instagram_url", "ig"], ""),
+    tiktok: pick(info, ["tiktok", "tiktok_url"], ""),
   }), [info, player]);
 
   if (!player) return null;
@@ -40,8 +44,7 @@ export const PlayerDetailModal = ({ player, processedPlayers, onClose }: any) =>
     const index = processedPlayers.findIndex((x: any) => x.id === player.id);
     if (index < 0 || !processedPlayers.length) return;
     const next = (index + direction + processedPlayers.length) % processedPlayers.length;
-    // Keep navigation inside the modal without exposing stale browser data.
-    window.dispatchEvent(new CustomEvent('pb-player-navigate', { detail: processedPlayers[next] }));
+    window.dispatchEvent(new CustomEvent("pb-player-navigate", { detail: processedPlayers[next] }));
   };
 
   const openSocial = (url: string) => {
@@ -50,17 +53,18 @@ export const PlayerDetailModal = ({ player, processedPlayers, onClose }: any) =>
     window.open(normalized, "_blank", "noopener,noreferrer");
   };
 
+  const points = Number(player.displayPoints || 0).toLocaleString();
   const statItems = [
-    ['Total Poin', Number(player.displayPoints || 0).toLocaleString(), 'PTS'],
-    ['Peringkat Klub', `#${rank}`, ''],
-    ['Seed', player.displaySeed || 'UNSEEDED', ''],
-    ['Status', player.status || 'Active', ''],
+    ["Total Poin", points, "PTS", Trophy],
+    ["Peringkat", rank === "-" ? "-" : `#${rank}`, "", Medal],
+    ["Seed", player.displaySeed || "UNSEEDED", "", Shield],
+    ["Status", player.status || "Active", "", User],
   ];
 
   const fields = [
     [User, "Nama Panggilan", profile.nickname],
     [Award, "Nama Punggung", profile.backName],
-    [MapPin, "Tempat/Tgl.Lahir", profile.birth],
+    [MapPin, "Tempat/Tgl. Lahir", profile.birth],
     [Trophy, "Sektor", profile.sector],
     [CalendarDays, "Tahun Bergabung", profile.joined],
     [Hand, "Tangan", profile.hand],
@@ -74,142 +78,215 @@ export const PlayerDetailModal = ({ player, processedPlayers, onClose }: any) =>
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[110000] bg-black/90 backdrop-blur-sm overflow-y-auto"
+        className="fixed inset-0 z-[110000] bg-[#02050b]/90 backdrop-blur-md overflow-y-auto overscroll-contain"
         onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
       >
         <motion.div
-          initial={{ opacity: 0, y: 28 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 28 }}
-          transition={{ duration: 0.3 }}
-          className="min-h-[100dvh] w-full bg-[#050505] text-white overflow-hidden"
+          exit={{ opacity: 0, y: 20 }}
+          transition={{ duration: 0.25 }}
+          className="min-h-[100dvh] w-full bg-[#05070c] text-white overflow-hidden"
         >
-          {/* Header */}
-          <header className="sticky top-0 z-50 h-16 sm:h-20 bg-[#0b1224]/95 backdrop-blur-md border-b border-red-400/20 flex items-center justify-between px-4 sm:px-8">
-            <div className="font-black tracking-tight text-xl sm:text-3xl italic">PB <span className="text-white">BILIBILI 162</span></div>
-            <div className="flex items-center gap-2">
-              <button onClick={() => goToPlayer(-1)} className="hidden sm:flex w-10 h-10 rounded-full border border-white/20 items-center justify-center hover:bg-white/15 transition" aria-label="Atlet sebelumnya"><ChevronLeft size={20}/></button>
-              <button onClick={() => goToPlayer(1)} className="hidden sm:flex w-10 h-10 rounded-full border border-white/20 items-center justify-center hover:bg-white/15 transition" aria-label="Atlet berikutnya"><ChevronRight size={20}/></button>
-              <button onClick={onClose} className="w-10 h-10 rounded-full bg-black/30 border border-white/20 flex items-center justify-center hover:bg-white hover:text-black transition" aria-label="Tutup profil"><X size={21}/></button>
+          {/* HEADER */}
+          <header className="sticky top-0 z-[60] h-[72px] sm:h-[82px] bg-[#071126]/95 backdrop-blur-xl border-b border-blue-500/15">
+            <div className="max-w-7xl mx-auto h-full px-5 sm:px-8 lg:px-10 flex items-center justify-between">
+              <div>
+                <div className="text-xl sm:text-3xl font-black italic tracking-tight leading-none">
+                  PB <span className="text-blue-400">BILIBILI 162</span>
+                </div>
+                <div className="hidden sm:block mt-1 text-[9px] uppercase tracking-[0.3em] text-zinc-500 font-bold">
+                  Athlete Profile
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button onClick={() => goToPlayer(-1)} className="hidden sm:flex w-10 h-10 rounded-full border border-white/10 bg-white/[0.03] items-center justify-center hover:bg-blue-600/15 hover:border-blue-500/40 transition" aria-label="Atlet sebelumnya">
+                  <ChevronLeft size={19} />
+                </button>
+                <button onClick={() => goToPlayer(1)} className="hidden sm:flex w-10 h-10 rounded-full border border-white/10 bg-white/[0.03] items-center justify-center hover:bg-blue-600/15 hover:border-blue-500/40 transition" aria-label="Atlet berikutnya">
+                  <ChevronRight size={19} />
+                </button>
+                <button onClick={onClose} className="w-11 h-11 sm:w-12 sm:h-12 rounded-full border border-white/15 bg-black/25 flex items-center justify-center hover:bg-blue-600 hover:border-blue-500 transition" aria-label="Tutup profil">
+                  <X size={22} />
+                </button>
+              </div>
             </div>
           </header>
 
-          {/* Profile navigation */}
-          <nav className="bg-[#080808] border-b border-white/10 px-4 sm:px-10">
-            <div className="max-w-7xl mx-auto flex gap-7 sm:gap-12 overflow-x-auto no-scrollbar">
-              {[
-                ['profil', 'Profil'],
-                ['stats', 'Statistik'],
-              ].map(([id, label]) => (
-                <button key={id} onClick={() => setActiveTab(id as 'profil' | 'stats')} className={`relative py-4 sm:py-5 text-sm sm:text-base font-bold whitespace-nowrap transition-colors ${activeTab === id ? 'text-white' : 'text-zinc-500 hover:text-zinc-200'}`}>
-                  {label}
-                  {activeTab === id && <span className="absolute left-0 right-0 bottom-0 h-1 bg-blue-600 rounded-full" />}
-                </button>
-              ))}
+          {/* TABS */}
+          <nav className="sticky top-[72px] sm:top-[82px] z-50 bg-[#05070c]/96 backdrop-blur-xl border-b border-white/8">
+            <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10">
+              <div className="flex gap-8 sm:gap-12">
+                {[
+                  ["profil", "Profil"],
+                  ["stats", "Statistik"],
+                ].map(([id, label]) => (
+                  <button
+                    key={id}
+                    onClick={() => setActiveTab(id as "profil" | "stats")}
+                    className={`relative py-4 sm:py-5 text-sm sm:text-base font-bold transition-colors ${activeTab === id ? "text-white" : "text-zinc-500 hover:text-zinc-200"}`}
+                  >
+                    {label}
+                    {activeTab === id && <span className="absolute left-0 right-0 bottom-0 h-[3px] bg-blue-500 rounded-full shadow-[0_0_14px_rgba(59,130,246,.65)]" />}
+                  </button>
+                ))}
+              </div>
             </div>
           </nav>
 
-          {activeTab === 'profil' ? (
+          {activeTab === "profil" ? (
             <>
-              {/* Hero */}
-              <section className="relative min-h-[510px] sm:min-h-[620px] lg:min-h-[700px] overflow-hidden bg-[radial-gradient(circle_at_70%_35%,rgba(37,99,235,.22),transparent_34%),linear-gradient(120deg,#111,#050505_62%,#151515)]">
-                <div className="absolute inset-0 opacity-20 bg-[linear-gradient(135deg,transparent_35%,rgba(37,99,235,.25)_36%,transparent_38%,transparent_60%,rgba(255,255,255,.06)_61%,transparent_63%)]" />
-                <div className="absolute -right-24 top-20 w-[420px] h-[420px] rounded-full border border-blue-600/20 blur-[1px]" />
-                <div className="absolute left-6 sm:left-10 bottom-10 text-[70px] sm:text-[130px] font-black italic text-white/[0.025] leading-none select-none">PB 162</div>
-
-                <div className="relative max-w-7xl mx-auto min-h-[510px] sm:min-h-[620px] lg:min-h-[700px] px-6 sm:px-10 flex items-center">
-                  <div className="relative z-20 w-full lg:w-1/2 pt-10 lg:pt-0">
-                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-600/10 border border-blue-600/30 text-blue-400 text-[10px] font-black uppercase tracking-[0.22em] mb-5">
-                      {player.ageGroup || 'Atlet'} • PB Bilibili 162
-                    </div>
-                    <h1 className="text-5xl sm:text-7xl lg:text-8xl font-black uppercase italic tracking-tighter leading-[.88]">{player.name}</h1>
-                    <p className="mt-5 text-base sm:text-2xl text-zinc-300 uppercase tracking-[0.12em] max-w-xl">{profile.backName !== '-' ? profile.backName : 'Atlet PB Bilibili 162'}</p>
-                    <div className="mt-8 flex flex-wrap gap-2">
-                      <span className="px-4 py-2 rounded-full bg-white/8 border border-white/10 text-xs font-bold">{profile.sector}</span>
-                      <span className="px-4 py-2 rounded-full bg-blue-600/15 border border-blue-600/30 text-blue-300 text-xs font-bold">{Number(player.displayPoints || 0).toLocaleString()} PTS</span>
-                    </div>
-                  </div>
-
-                  <div className="absolute inset-x-0 bottom-0 lg:left-[44%] lg:right-0 h-[72%] sm:h-[82%] lg:h-full flex items-end justify-center lg:justify-end">
-                    {player.img ? (
-                      <LazyImage src={player.img} className="w-auto h-full max-w-[94%] lg:max-w-none object-contain object-bottom drop-shadow-[0_25px_45px_rgba(0,0,0,.75)]" alt={player.name} containerClassName="h-full w-full flex items-end justify-center lg:justify-end" width={700} />
-                    ) : (
-                      <div className="w-64 h-80 flex items-center justify-center text-zinc-700"><User size={100}/></div>
-                    )}
-                  </div>
+              {/* HERO */}
+              <section className="relative overflow-hidden bg-[#05070c]">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_72%_48%,rgba(37,99,235,.18),transparent_30%),linear-gradient(120deg,#05070c_0%,#071126_55%,#03050a_100%)]" />
+                <div className="absolute inset-0 opacity-[0.12] bg-[linear-gradient(125deg,transparent_0%,transparent_47%,rgba(59,130,246,.45)_48%,transparent_49%,transparent_67%,rgba(255,255,255,.06)_68%,transparent_69%)]" />
+                <div className="absolute -right-40 top-24 w-[520px] h-[520px] rounded-full border border-blue-500/10" />
+                <div className="absolute right-[-100px] bottom-[-220px] w-[500px] h-[500px] rounded-full bg-blue-600/10 blur-[100px]" />
+                <div className="absolute left-4 sm:left-10 bottom-5 sm:bottom-8 text-[62px] sm:text-[130px] font-black italic tracking-tighter text-white/[0.025] leading-none select-none pointer-events-none">
+                  PB 162
                 </div>
-              </section>
 
-              {/* Details */}
-              <section className="bg-[#060606] border-t border-white/5">
-                <div className="max-w-7xl mx-auto px-6 sm:px-10 py-12 sm:py-16">
-                  <div className="grid lg:grid-cols-[1fr_320px] gap-10 lg:gap-16">
-                    <div className="relative pl-5 sm:pl-7 border-l-4 border-blue-600">
-                      <div className="grid sm:grid-cols-2 gap-x-10 gap-y-7">
-                        {fields.map(([Icon, label, value]: any) => (
-                          <div key={label} className="group">
-                            <div className="flex items-center gap-2 text-zinc-400 text-xs sm:text-sm font-bold mb-1">
-                              <Icon size={15} className="text-blue-500"/>
-                              <span>{label}</span>
-                            </div>
-                            <p className="text-base sm:text-lg text-white font-medium break-words">{value}</p>
-                          </div>
-                        ))}
+                <div className="relative max-w-7xl mx-auto px-5 sm:px-8 lg:px-10">
+                  <div className="min-h-[650px] sm:min-h-[700px] lg:min-h-[650px] grid lg:grid-cols-[0.9fr_1.1fr] items-center gap-2 lg:gap-0">
+                    {/* Text: deliberately kept separate from image on mobile to prevent overlap */}
+                    <div className="relative z-20 pt-12 sm:pt-14 lg:pt-0 pb-3 lg:pb-0 max-w-2xl">
+                      <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/35 bg-blue-500/[0.07] px-4 py-2 text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] text-blue-400">
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,.9)]" />
+                        {player.ageGroup || "Atlet"} • PB Bilibili 162
+                      </div>
+                      <h1 className="mt-5 text-[46px] leading-[0.88] sm:text-7xl lg:text-[78px] font-black uppercase italic tracking-[-0.045em] break-words">
+                        {player.name}
+                      </h1>
+                      <p className="mt-5 text-sm sm:text-xl lg:text-2xl text-zinc-300 uppercase tracking-[0.09em] leading-relaxed">
+                        {profile.backName !== "-" ? profile.backName : "ATLET PB BILIBILI 162"}
+                      </p>
+                      <div className="mt-6 flex flex-wrap gap-2">
+                        <span className="rounded-full border border-white/10 bg-white/[0.035] px-4 py-2 text-xs font-bold text-zinc-200">
+                          {profile.sector}
+                        </span>
+                        <span className="rounded-full border border-blue-500/30 bg-blue-500/10 px-4 py-2 text-xs font-black text-blue-300">
+                          {points} PTS
+                        </span>
                       </div>
                     </div>
 
-                    <aside className="flex flex-col justify-between gap-8">
-                      <div className="grid grid-cols-2 gap-2">
-                        {statItems.map(([label, value, suffix]) => (
-                          <div key={label} className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-                            <p className="text-[9px] uppercase tracking-widest text-zinc-500 font-black">{label}</p>
-                            <p className="mt-1 text-sm font-black text-white">{value} <span className="text-blue-400">{suffix}</span></p>
-                          </div>
-                        ))}
-                      </div>
-
-                      {(profile.instagram || profile.tiktok) && (
-                        <div className="flex gap-3">
-                          {profile.instagram && <button onClick={() => openSocial(profile.instagram)} className="w-12 h-12 rounded-full border border-white/20 flex items-center justify-center hover:bg-blue-600 hover:border-blue-600 transition"><Instagram size={20}/></button>}
-                          {profile.tiktok && <button onClick={() => openSocial(profile.tiktok)} className="w-12 h-12 rounded-full border border-white/20 flex items-center justify-center hover:bg-blue-600 hover:border-blue-600 transition"><Music2 size={20}/></button>}
+                    {/* Athlete image: constrained independently so it cannot cover the name/details */}
+                    <div className="relative h-[390px] sm:h-[470px] lg:h-[620px] flex items-end justify-center lg:justify-end">
+                      {player.img ? (
+                        <LazyImage
+                          src={player.img}
+                          className="w-full h-full object-contain object-bottom drop-shadow-[0_28px_45px_rgba(0,0,0,.8)]"
+                          alt={player.name}
+                          containerClassName="w-full h-full flex items-end justify-center lg:justify-end"
+                          width={800}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-slate-700">
+                          <User size={110} />
                         </div>
                       )}
-                      <div className="text-zinc-500 italic text-sm">"Disiplin hari ini, prestasi esok hari."</div>
-                    </aside>
+                    </div>
                   </div>
                 </div>
               </section>
 
-              {/* Footer teaser */}
-              <section className="border-t border-white/5 bg-[#090909] px-6 sm:px-10 py-8">
-                <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-[10px] uppercase tracking-[0.25em] text-blue-500 font-black">PB Bilibili 162</p>
-                    <h3 className="text-xl sm:text-2xl font-black">Profil Atlet</h3>
+              {/* PROFILE DETAILS */}
+              <section className="relative bg-[#04070d] border-t border-blue-500/10">
+                <div className="max-w-6xl mx-auto px-5 sm:px-8 lg:px-10 py-8 sm:py-12 lg:py-14">
+                  <div className="rounded-2xl sm:rounded-3xl border border-blue-500/20 bg-[linear-gradient(135deg,rgba(7,17,38,.96),rgba(4,8,16,.98))] shadow-[0_25px_80px_rgba(0,0,0,.35)] overflow-hidden">
+                    <div className="grid lg:grid-cols-[1fr_280px]">
+                      <div className="relative px-5 sm:px-8 lg:px-10 py-7 sm:py-9">
+                        <div className="absolute left-0 top-7 bottom-7 w-1 bg-blue-500 rounded-r-full shadow-[0_0_16px_rgba(59,130,246,.45)]" />
+                        <div className="grid sm:grid-cols-2 gap-x-8">
+                          {fields.map(([Icon, label, value]: any, index) => (
+                            <div key={label} className={`flex gap-3 sm:gap-4 py-4 ${index < fields.length - 1 ? "border-b border-white/[0.07]" : ""} ${index === fields.length - 2 ? "sm:border-b-0" : ""}`}>
+                              <div className="shrink-0 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-blue-600/15 border border-blue-500/25 flex items-center justify-center">
+                                <Icon size={18} className="text-blue-400" />
+                              </div>
+                              <div className="min-w-0 pt-0.5">
+                                <p className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.08em] text-zinc-500">{label}</p>
+                                <p className="mt-1 text-sm sm:text-base lg:text-lg font-medium text-white leading-relaxed break-words">{value}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {(profile.instagram || profile.tiktok) && (
+                          <div className="mt-6 pt-5 border-t border-white/[0.07] flex gap-3">
+                            {profile.instagram && (
+                              <button onClick={() => openSocial(profile.instagram)} className="w-11 h-11 rounded-full border border-white/15 bg-white/[0.025] flex items-center justify-center hover:bg-blue-600 hover:border-blue-500 transition" aria-label="Instagram">
+                                <Instagram size={20} />
+                              </button>
+                            )}
+                            {profile.tiktok && (
+                              <button onClick={() => openSocial(profile.tiktok)} className="w-11 h-11 rounded-full border border-white/15 bg-white/[0.025] flex items-center justify-center hover:bg-blue-600 hover:border-blue-500 transition" aria-label="TikTok">
+                                <Music2 size={20} />
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Summary stats */}
+                      <aside className="border-t lg:border-t-0 lg:border-l border-white/[0.07] bg-black/10 p-5 sm:p-7">
+                        <p className="text-[9px] uppercase tracking-[0.25em] text-blue-400 font-black mb-4">Ringkasan Atlet</p>
+                        <div className="grid grid-cols-2 lg:grid-cols-1 gap-2.5">
+                          {statItems.map(([label, value, suffix, Icon]: any) => (
+                            <div key={label} className="rounded-xl border border-white/[0.08] bg-white/[0.025] p-3.5">
+                              <div className="flex items-center gap-2 text-zinc-500">
+                                <Icon size={14} className="text-blue-400" />
+                                <span className="text-[9px] uppercase tracking-widest font-black">{label}</span>
+                              </div>
+                              <p className="mt-1.5 text-sm font-black text-white break-words">
+                                {value} {suffix && <span className="text-blue-400">{suffix}</span>}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </aside>
+                    </div>
                   </div>
-                  <button onClick={onClose} className="px-5 py-2.5 rounded-full bg-blue-600 hover:bg-blue-700 transition text-xs font-black uppercase">Kembali ke Daftar Atlet</button>
+                </div>
+              </section>
+
+              {/* FOOTER */}
+              <section className="border-t border-white/[0.06] bg-[#071126] px-5 sm:px-8 lg:px-10 py-7">
+                <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div>
+                    <p className="text-[9px] uppercase tracking-[0.28em] text-blue-400 font-black">PB BILIBILI 162</p>
+                    <h3 className="mt-1 text-lg sm:text-xl font-black">Profil Atlet</h3>
+                  </div>
+                  <button onClick={onClose} className="w-full sm:w-auto px-6 py-3 rounded-full bg-blue-600 hover:bg-blue-700 transition text-[10px] font-black uppercase tracking-wider shadow-lg shadow-blue-600/15">
+                    Kembali ke Daftar Atlet
+                  </button>
                 </div>
               </section>
             </>
           ) : (
-            <section className="min-h-[70dvh] bg-[#070707] px-6 sm:px-10 py-12">
-              <div className="max-w-7xl mx-auto">
-                <div className="flex items-end justify-between mb-8">
-                  <div><p className="text-blue-500 text-[10px] font-black uppercase tracking-[.25em]">Performance</p><h2 className="text-3xl sm:text-5xl font-black italic uppercase">Statistik Atlet</h2></div>
-                  <Trophy className="text-blue-500" size={34}/>
+            <section className="min-h-[70dvh] bg-[#04070d] px-5 sm:px-8 lg:px-10 py-10 sm:py-14">
+              <div className="max-w-6xl mx-auto">
+                <div className="flex items-end justify-between gap-4 mb-7">
+                  <div>
+                    <p className="text-blue-400 text-[9px] font-black uppercase tracking-[0.25em]">Performance</p>
+                    <h2 className="mt-1 text-3xl sm:text-5xl font-black italic uppercase tracking-tight">Statistik Atlet</h2>
+                  </div>
+                  <Trophy className="text-blue-500 shrink-0" size={32} />
                 </div>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                  {statItems.map(([label, value, suffix]) => (
-                    <div key={label} className="rounded-3xl border border-white/10 bg-white/[0.035] p-5 sm:p-7">
-                      <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-black">{label}</p>
-                      <p className="mt-3 text-2xl sm:text-4xl font-black">{value}</p>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                  {statItems.map(([label, value, suffix, Icon]: any) => (
+                    <div key={label} className="rounded-2xl border border-blue-500/15 bg-[#071126] p-4 sm:p-6">
+                      <Icon size={20} className="text-blue-400" />
+                      <p className="mt-4 text-[9px] uppercase tracking-widest text-zinc-500 font-black">{label}</p>
+                      <p className="mt-2 text-xl sm:text-3xl font-black break-words">{value}</p>
                       {suffix && <p className="text-blue-400 text-xs font-black mt-1">{suffix}</p>}
                     </div>
                   ))}
                 </div>
-                <div className="mt-8 rounded-3xl border border-blue-600/20 bg-blue-600/[0.04] p-6">
-                  <p className="text-zinc-400 text-sm leading-relaxed">{player.bio}</p>
-                </div>
+                {player.bio && (
+                  <div className="mt-5 rounded-2xl border border-blue-500/15 bg-blue-500/[0.035] p-5 sm:p-7">
+                    <p className="text-zinc-400 text-sm leading-relaxed">{player.bio}</p>
+                  </div>
+                )}
               </div>
             </section>
           )}
