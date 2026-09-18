@@ -210,20 +210,15 @@ export default function RaporAtlet({ isAdmin }: { isAdmin: boolean }) {
                   nama: rName,
                 });
               } else {
-                const hash = r.id ? r.id.charCodeAt(0) + r.id.charCodeAt(r.id.length - 1) : Math.floor(Math.random() * 1000);
                 syncedList.push({
                   id: r.id || String(Math.floor(Math.random() * 1000000)),
                   nama: rName,
-                  fisik: { stamina: 70 + (hash % 20), kecepatan: 70 + (hash % 22), kekuatan: 70 + (hash % 18), kelincahan: 70 + (hash % 25), kelenturan: 70 + (hash % 20) },
-                  teknik: { lob: 70 + (hash % 20), smash: 70 + (hash % 25), netting: 70 + (hash % 20), dropShot: 70 + (hash % 22), backhand: 70 + (hash % 18), service: 70 + (hash % 20) },
+                  fisik: { stamina: 0, kecepatan: 0, kekuatan: 0, kelincahan: 0, kelenturan: 0 },
+                  teknik: { lob: 0, smash: 0, netting: 0, dropShot: 0, backhand: 0, service: 0 },
                   cedera: [],
-                  winLossHistory: [
-                    { bulan: 'Apr', menang: 2 + (hash % 4), kalah: 1 + (hash % 3) },
-                    { bulan: 'Mei', menang: 3 + (hash % 4), kalah: 1 + (hash % 3) },
-                    { bulan: 'Jun', menang: 4 + (hash % 4), kalah: 1 + (hash % 3) }
-                  ],
+                  winLossHistory: [],
                   updatedAt: new Date().toISOString()
-                });
+                });;
               }
             });
 
