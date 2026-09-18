@@ -45,6 +45,14 @@ interface PlayerRanking {
   bonus?: number;
   photo_url?: string;
   updated_at?: string;
+  seeded_player_name?: string;
+  seeded_club_name?: string;
+  seeded_quality?: string;
+  seeded_division?: string;
+  seeded_source_no?: number;
+  seeded_participated?: boolean;
+  seeded_is_cup1?: boolean;
+  seeded_partners?: string[] | null;
 }
 
 interface PointHistory {
@@ -168,8 +176,9 @@ const PlayerDetailModal: React.FC<{
                 {globalRank === 1 && <Trophy size={16} className="text-amber-400" />}
               </div>
               <p className="text-[10px] font-black uppercase text-blue-400 tracking-widest mt-0.5">
-                Peringkat #{globalRank} • {player.seed || 'UNSEEDED'} • {player.category}
+                Peringkat #{globalRank} • {player.seed || 'Non-Seed'} • {player.category}
               </p>
+              {player.seeded_is_cup1 && <p className="text-[8px] font-bold uppercase tracking-widest text-emerald-400 mt-1">Seeded BILIBILI 162 CUP I{player.seeded_partners?.length ? ` • Partner: ${player.seeded_partners.join(', ')}` : ''}</p>}
             </div>
           </div>
           <button
@@ -182,6 +191,25 @@ const PlayerDetailModal: React.FC<{
 
         {/* Scrollable Body */}
         <div className="p-4 sm:p-5 overflow-y-auto space-y-4 custom-scrollbar flex-1">
+          {player.seeded_participated && (
+            <div className="rounded-2xl border border-amber-400/15 bg-amber-500/[0.035] p-3.5">
+              <div className="flex items-center justify-between gap-3 mb-2">
+                <div className="flex items-center gap-2">
+                  <Trophy size={15} className="text-amber-300" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-amber-200">Data Seeded BILIBILI 162 CUP I</span>
+                </div>
+                {player.seeded_is_cup1 && <span className="text-[8px] font-black uppercase text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-2 py-1">Sinkron</span>}
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div className="rounded-xl bg-slate-950/40 border border-white/5 p-2.5"><p className="text-[7px] text-slate-500 uppercase font-black">Seed</p><p className="text-sm text-white font-black mt-0.5">{player.seed}</p></div>
+                <div className="rounded-xl bg-slate-950/40 border border-white/5 p-2.5"><p className="text-[7px] text-slate-500 uppercase font-black">Divisi</p><p className="text-sm text-white font-black mt-0.5">{player.seeded_division || '—'}</p></div>
+                <div className="rounded-xl bg-slate-950/40 border border-white/5 p-2.5"><p className="text-[7px] text-slate-500 uppercase font-black">No. Sumber</p><p className="text-sm text-white font-black mt-0.5">{player.seeded_source_no ?? '—'}</p></div>
+                <div className="rounded-xl bg-slate-950/40 border border-white/5 p-2.5"><p className="text-[7px] text-slate-500 uppercase font-black">Pendaftaran</p><p className="text-sm text-white font-black mt-0.5">{player.seeded_partners?.length || 0} partner data</p></div>
+              </div>
+              {player.seeded_player_name && <p className="text-[9px] text-slate-400 mt-2">Nama pada seeded: <span className="font-bold text-white">{player.seeded_player_name}</span> • PB: <span className="font-bold text-white">{player.seeded_club_name || '—'}</span></p>}
+            </div>
+          )}
+
           {/* Grid Stat Poin */}
           <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
             <div className="bg-slate-900/80 p-3 rounded-2xl border border-slate-800 text-center">
@@ -285,6 +313,7 @@ const Rankings: React.FC = () => {
 
   // Weekly Hero state
   const [topGainer, setTopGainer] = useState<WeeklyTop | null>(null);
+  const CUP1_SEED_FILTERS = ['All', 'A', 'B', 'C+', 'C-', 'D', 'Non-Seed'];
 
   // Fetch Weekly Spotlight
   useEffect(() => {
@@ -347,15 +376,23 @@ const Rankings: React.FC = () => {
     setLoading(true);
     setFetchError(null);
     try {
-      const [rankingsRes, statsRes, pendaftaranRes] = await Promise.allSettled([
+      const [rankingsRes, statsRes, pendaftaranRes, seededRes] = await Promise.allSettled([
         supabase.from('rankings').select('*'),
         supabase.from('atlet_stats').select('pendaftaran_id, player_name, points, total_points, seed'),
         supabase.from('pendaftaran').select('id, nama, foto_url, kategori_atlet'),
+        supabase.from('v_bilibili_162_cup1_athlete_seeded').select('*'),
       ]);
 
       const rankingsData = rankingsRes.status === 'fulfilled' && rankingsRes.value.data ? rankingsRes.value.data : [];
       const statsData = statsRes.status === 'fulfilled' && statsRes.value.data ? statsRes.value.data : [];
       const pendaftaranData = pendaftaranRes.status === 'fulfilled' && pendaftaranRes.value.data ? pendaftaranRes.value.data : [];
+      const seededData = seededRes.status === 'fulfilled' && seededRes.value.data ? seededRes.value.data : [];
+      const seededById = new Map<string, any>();
+      const seededByName = new Map<string, any>();
+      seededData.forEach((s: any) => {
+        if (s.pendaftaran_id) seededById.set(String(s.pendaftaran_id), s);
+        if (s.nama) seededByName.set(s.nama.trim().toLowerCase(), s);
+      });
 
       const playerMap = new Map<string, PlayerRanking>();
 
@@ -380,12 +417,10 @@ const Rankings: React.FC = () => {
           ? Number(rankItem.total_points)
           : calculatedTotal;
 
-        let currentSeed = stat?.seed || rankItem?.seed || 'Non-Seed';
-        if (currentSeed && !currentSeed.includes('Seed') && currentSeed !== 'Non-Seed' && currentSeed !== 'UNSEEDED') {
-          currentSeed = `Seed ${currentSeed}`;
-        } else if (currentSeed === 'UNSEEDED') {
-          currentSeed = 'Non-Seed';
-        }
+        const cup1 = seededById.get(String(profile.id)) || seededByName.get(nameKey);
+        // Seeded BILIBILI 162 CUP I adalah sumber kebenaran untuk badge seeded.
+        // Jika atlet tidak tercatat seeded pada CUP I, jangan mewarisi seed lama.
+        const cup1Seed = cup1?.is_seeded && cup1?.seeded_quality ? String(cup1.seeded_quality).toUpperCase() : 'Non-Seed';
 
         playerMap.set(nameKey, {
           id: profile.id || rankItem?.id || `p-${nameKey}`,
@@ -395,8 +430,16 @@ const Rankings: React.FC = () => {
           poin: basePoints,
           bonus: addedPoints,
           total_points: finalTotal,
-          seed: currentSeed,
+          seed: cup1Seed,
           category: profile.kategori_atlet || rankItem?.category || 'SENIOR',
+          seeded_player_name: cup1?.seeded_player_name || undefined,
+          seeded_club_name: cup1?.seeded_club_name || undefined,
+          seeded_quality: cup1?.seeded_quality || undefined,
+          seeded_division: cup1?.division_level || undefined,
+          seeded_source_no: cup1?.source_no ?? undefined,
+          seeded_participated: !!cup1?.participated,
+          seeded_is_cup1: !!cup1?.is_seeded,
+          seeded_partners: cup1?.partners || null,
           updated_at: rankItem?.updated_at || new Date().toISOString(),
         });
       });
@@ -416,12 +459,8 @@ const Rankings: React.FC = () => {
         const calculatedTotal = basePoints + addedPoints;
         const finalTotal = Number(rankItem.total_points) || calculatedTotal;
 
-        let currentSeed = stat?.seed || rankItem.seed || 'Non-Seed';
-        if (currentSeed && !currentSeed.includes('Seed') && currentSeed !== 'Non-Seed' && currentSeed !== 'UNSEEDED') {
-          currentSeed = `Seed ${currentSeed}`;
-        } else if (currentSeed === 'UNSEEDED') {
-          currentSeed = 'Non-Seed';
-        }
+        const cup1 = seededById.get(String(rankItem.pendaftaran_id || '')) || seededByName.get(nameKey);
+        const cup1Seed = cup1?.is_seeded && cup1?.seeded_quality ? String(cup1.seeded_quality).toUpperCase() : 'Non-Seed';
 
         playerMap.set(nameKey, {
           id: rankItem.id || `r-${nameKey}`,
@@ -431,8 +470,16 @@ const Rankings: React.FC = () => {
           poin: basePoints,
           bonus: addedPoints,
           total_points: finalTotal,
-          seed: currentSeed,
+          seed: cup1Seed,
           category: rankItem.category || 'SENIOR',
+          seeded_player_name: cup1?.seeded_player_name || undefined,
+          seeded_club_name: cup1?.seeded_club_name || undefined,
+          seeded_quality: cup1?.seeded_quality || undefined,
+          seeded_division: cup1?.division_level || undefined,
+          seeded_source_no: cup1?.source_no ?? undefined,
+          seeded_participated: !!cup1?.participated,
+          seeded_is_cup1: !!cup1?.is_seeded,
+          seeded_partners: cup1?.partners || null,
           updated_at: rankItem.updated_at || new Date().toISOString(),
         });
       });
@@ -447,12 +494,8 @@ const Rankings: React.FC = () => {
         const addedPoints = Number(stat.total_points) || 0;
         const finalTotal = basePoints + addedPoints;
 
-        let currentSeed = stat.seed || 'Non-Seed';
-        if (currentSeed && !currentSeed.includes('Seed') && currentSeed !== 'Non-Seed' && currentSeed !== 'UNSEEDED') {
-          currentSeed = `Seed ${currentSeed}`;
-        } else if (currentSeed === 'UNSEEDED') {
-          currentSeed = 'Non-Seed';
-        }
+        const cup1 = seededById.get(String(stat.pendaftaran_id || '')) || seededByName.get(nameKey);
+        const cup1Seed = cup1?.is_seeded && cup1?.seeded_quality ? String(cup1.seeded_quality).toUpperCase() : 'Non-Seed';
 
         playerMap.set(nameKey, {
           id: stat.pendaftaran_id || `s-${nameKey}`,
@@ -462,8 +505,16 @@ const Rankings: React.FC = () => {
           poin: basePoints,
           bonus: addedPoints,
           total_points: finalTotal,
-          seed: currentSeed,
+          seed: cup1Seed,
           category: 'SENIOR',
+          seeded_player_name: cup1?.seeded_player_name || undefined,
+          seeded_club_name: cup1?.seeded_club_name || undefined,
+          seeded_quality: cup1?.seeded_quality || undefined,
+          seeded_division: cup1?.division_level || undefined,
+          seeded_source_no: cup1?.source_no ?? undefined,
+          seeded_participated: !!cup1?.participated,
+          seeded_is_cup1: !!cup1?.is_seeded,
+          seeded_partners: cup1?.partners || null,
           updated_at: new Date().toISOString(),
         });
       });
@@ -491,6 +542,8 @@ const Rankings: React.FC = () => {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'audit_poin' }, () => fetchRankings())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'atlet_stats' }, () => fetchRankings())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'pendaftaran' }, () => fetchRankings())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'seeded_players' }, () => fetchRankings())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pendaftaran_turnamen' }, () => fetchRankings())
       .subscribe();
 
     return () => {
@@ -500,19 +553,21 @@ const Rankings: React.FC = () => {
 
   const getCategoryStyles = (seed: string) => {
     const s = seed?.toUpperCase() || '';
-    if (s.includes('A')) return { bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-500/30' };
-    if (s.includes('B+')) return { bg: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/30' };
-    if (s.includes('B-') || s === 'B') return { bg: 'bg-indigo-500/10', text: 'text-indigo-400', border: 'border-indigo-500/30' };
-    if (s.includes('C')) return { bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/30' };
+    if (s === 'A') return { bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-500/30' };
+    if (s === 'B') return { bg: 'bg-cyan-500/10', text: 'text-cyan-400', border: 'border-cyan-500/30' };
+    if (s === 'B+') return { bg: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/30' };
+    if (s === 'B-') return { bg: 'bg-indigo-500/10', text: 'text-indigo-400', border: 'border-indigo-500/30' };
+    if (s === 'C+') return { bg: 'bg-violet-500/10', text: 'text-violet-400', border: 'border-violet-500/30' };
+    if (s === 'C-' || s === 'C') return { bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/30' };
     return { bg: 'bg-slate-800', text: 'text-slate-400', border: 'border-slate-700' };
   };
 
   const filteredData = useMemo(() => {
     return dbRankings.filter((p) => {
       const name = p.player_name?.toLowerCase() || '';
-      const seedRaw = p.seed?.toUpperCase() || '';
+      const seedRaw = (p.seed || 'Non-Seed').toUpperCase();
       const matchesSearch = name.includes(searchTerm.toLowerCase());
-      const matchesCategory = activeCategory === 'All' || seedRaw.includes(activeCategory.toUpperCase());
+      const matchesCategory = activeCategory === 'All' || seedRaw === activeCategory.toUpperCase();
       return matchesSearch && matchesCategory;
     });
   }, [searchTerm, activeCategory, dbRankings]);
@@ -617,6 +672,14 @@ const Rankings: React.FC = () => {
               </div>
             )}
 
+            <div className="hidden md:flex items-center gap-2 px-3 py-2 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+              <div className="w-7 h-7 rounded-lg bg-blue-500/10 grid place-items-center text-blue-400"><ShieldCheck size={15} /></div>
+              <div>
+                <p className="text-[8px] font-black uppercase tracking-widest text-blue-300">Seeded Terintegrasi</p>
+                <p className="text-[9px] font-bold text-slate-400">BILIBILI 162 CUP I • 08–12 Sep 2026</p>
+              </div>
+            </div>
+
             {/* Matrix Button */}
             <button
               onClick={() => setIsMatrixOpen(true)}
@@ -659,22 +722,27 @@ const Rankings: React.FC = () => {
               <div className="text-slate-500 px-1 hidden lg:block">
                 <Filter size={13} />
               </div>
-              {['All', 'A', 'B+', 'B-', 'C'].map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => {
-                    setActiveCategory(cat);
-                    setCurrentPage(1);
-                  }}
-                  className={`px-3 py-1.5 rounded-lg text-[9px] sm:text-[10px] font-black border uppercase whitespace-nowrap transition-all cursor-pointer ${
-                    activeCategory === cat
-                      ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-600/30'
-                      : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:border-slate-700'
-                  }`}
-                >
-                  {cat === 'All' ? 'SEMUA' : `SEED ${cat}`}
-                </button>
-              ))}
+              {CUP1_SEED_FILTERS.map((cat) => {
+                const count = cat === 'All'
+                  ? dbRankings.length
+                  : dbRankings.filter((p) => (p.seed || 'Non-Seed').toUpperCase() === cat.toUpperCase()).length;
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => {
+                      setActiveCategory(cat);
+                      setCurrentPage(1);
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-[9px] sm:text-[10px] font-black border uppercase whitespace-nowrap transition-all cursor-pointer ${
+                      activeCategory === cat
+                        ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-600/30'
+                        : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:border-slate-700'
+                    }`}
+                  >
+                    {cat === 'All' ? 'SEMUA' : `SEED ${cat}`} <span className="opacity-60">({count})</span>
+                  </button>
+                );
+              })}
             </div>
 
             {/* Items Per Page Selector (Mobile & Desktop) */}
@@ -709,6 +777,25 @@ const Rankings: React.FC = () => {
           </div>
         )}
 
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 shrink-0">
+          <div className="rounded-xl border border-blue-500/15 bg-blue-500/[0.04] px-3 py-2.5">
+            <p className="text-[8px] uppercase tracking-widest text-slate-500 font-black">Total Atlet</p>
+            <p className="text-sm font-black text-white mt-0.5">{dbRankings.length}</p>
+          </div>
+          <div className="rounded-xl border border-amber-500/15 bg-amber-500/[0.04] px-3 py-2.5">
+            <p className="text-[8px] uppercase tracking-widest text-slate-500 font-black">Seeded CUP I</p>
+            <p className="text-sm font-black text-amber-300 mt-0.5">{dbRankings.filter(p => p.seeded_is_cup1).length}</p>
+          </div>
+          <div className="rounded-xl border border-emerald-500/15 bg-emerald-500/[0.04] px-3 py-2.5">
+            <p className="text-[8px] uppercase tracking-widest text-slate-500 font-black">Peserta CUP I</p>
+            <p className="text-sm font-black text-emerald-300 mt-0.5">{dbRankings.filter(p => p.seeded_participated).length}</p>
+          </div>
+          <div className="rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2.5">
+            <p className="text-[8px] uppercase tracking-widest text-slate-500 font-black">Sumber Seed</p>
+            <p className="text-[10px] font-black text-slate-300 mt-0.5 truncate">BILIBILI 162 CUP I</p>
+          </div>
+        </div>
+
         {/* MAIN DATA SECTION (DESKTOP TABLE & MOBILE CARDS WITH FULL SCROLLING) */}
         <div ref={listTopRef} className="bg-slate-900/80 border border-slate-800/80 rounded-2xl shadow-2xl flex-1 flex flex-col justify-between overflow-hidden">
           {loading ? (
@@ -730,7 +817,7 @@ const Rankings: React.FC = () => {
                     <tr className="text-slate-400 text-[9px] font-black uppercase tracking-widest border-b border-slate-800">
                       <th className="px-4 py-3 text-center w-16">Rank</th>
                       <th className="px-4 py-3">Atlet</th>
-                      <th className="px-4 py-3 text-center w-36">Kategori &amp; Seed</th>
+                      <th className="px-4 py-3 text-center w-40">Kategori &amp; Seed CUP I</th>
                       <th className="px-4 py-3 text-right w-28">Poin Dasar</th>
                       <th className="px-4 py-3 text-center w-28">Mutasi</th>
                       <th className="px-4 py-3 text-right w-32">Total Poin</th>
@@ -789,6 +876,8 @@ const Rankings: React.FC = () => {
                                 {player.seed || 'UNSEEDED'}
                               </span>
                               <span className="text-[8px] text-slate-500 font-bold uppercase">{player.category}</span>
+                            {player.seeded_is_cup1 && <span className="text-[7px] text-emerald-400 font-black uppercase tracking-wider">CUP I</span>}
+                              {player.seeded_is_cup1 && <span className="text-[7px] text-emerald-400 font-black uppercase tracking-wider">CUP I</span>}
                             </div>
                           </td>
 
