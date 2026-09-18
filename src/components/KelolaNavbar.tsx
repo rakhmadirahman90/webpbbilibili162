@@ -22,6 +22,9 @@ import {
   Settings2,
   ShieldCheck,
   Trash2,
+  ToggleLeft,
+  ToggleRight,
+  Power,
   X,
 } from 'lucide-react';
 
@@ -32,6 +35,7 @@ type NavItem = {
   type?: string;
   parent_id?: string | null;
   order_index?: number;
+  is_active?: boolean;
   [key: string]: any;
 };
 
@@ -338,6 +342,47 @@ const KelolaNavbar: React.FC = () => {
     }
   };
 
+  const toggleMenuActive = async (item: NavItem) => {
+    const nextActive = item.is_active === false;
+    setIsSaving(true);
+    try {
+      const { error } = await supabase.from('navbar_settings').update({ is_active: nextActive }).eq('id', item.id);
+      if (error) throw error;
+      setNavItems(prev => prev.map(entry => entry.id === item.id ? { ...entry, is_active: nextActive } : entry));
+      notifySuccess(nextActive ? `Menu "${item.label}" diaktifkan` : `Menu "${item.label}" dinonaktifkan`);
+    } catch (error: any) {
+      notifyError('Gagal mengubah status menu', error?.message || 'Silakan coba lagi.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const setAllMenuStatus = async (active: boolean) => {
+    const action = active ? 'mengaktifkan' : 'menonaktifkan';
+    const result = await Swal.fire({
+      title: `${active ? 'Aktifkan' : 'Nonaktifkan'} semua menu?`,
+      text: `Tindakan ini akan ${action} seluruh menu navbar pada desktop dan seluler.`,
+      icon: active ? 'question' : 'warning',
+      showCancelButton: true,
+      confirmButtonText: active ? 'Aktifkan Semua' : 'Nonaktifkan Semua',
+      cancelButtonText: 'Batal',
+      confirmButtonColor: active ? '#16a34a' : '#dc2626',
+      reverseButtons: true,
+    });
+    if (!result.isConfirmed) return;
+    setIsSaving(true);
+    try {
+      const { error } = await supabase.from('navbar_settings').update({ is_active: active }).not('id', 'is', null);
+      if (error) throw error;
+      setNavItems(prev => prev.map(entry => ({ ...entry, is_active: active })));
+      notifySuccess(active ? 'Semua menu berhasil diaktifkan' : 'Semua menu berhasil dinonaktifkan');
+    } catch (error: any) {
+      notifyError('Gagal mengubah semua menu', error?.message || 'Silakan coba lagi.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const moveMenu = async (item: NavItem, direction: 'up' | 'down') => {
     const index = mainMenus.findIndex((entry) => entry.id === item.id);
     const target = direction === 'up' ? index - 1 : index + 1;
@@ -395,6 +440,9 @@ const KelolaNavbar: React.FC = () => {
               </>
             ) : (
               <>
+                <button type="button" onClick={() => toggleMenuActive(item)} disabled={isSaving} className={`inline-flex h-9 items-center gap-1.5 rounded-lg px-2.5 text-[10px] font-bold transition ${item.is_active === false ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'}`} title={item.is_active === false ? 'Aktifkan menu' : 'Nonaktifkan menu'}>
+                  {item.is_active === false ? <ToggleLeft size={16} /> : <ToggleRight size={16} />} <span className="hidden xl:inline">{item.is_active === false ? 'Nonaktif' : 'Aktif'}</span>
+                </button>
                 <button type="button" onClick={() => beginEdit(item)} className="h-9 w-9 rounded-lg text-slate-400 hover:bg-blue-50 hover:text-blue-600" title="Edit menu"><Pencil size={15} /></button>
                 <button type="button" onClick={() => moveMenu(item, 'up')} disabled={index === 0} className="hidden md:flex h-9 w-9 rounded-lg text-slate-400 hover:bg-slate-100 disabled:opacity-20" title="Naik"><ChevronDown className="rotate-180" size={15} /></button>
                 <button type="button" onClick={() => moveMenu(item, 'down')} disabled={index === mainMenus.length - 1} className="hidden md:flex h-9 w-9 rounded-lg text-slate-400 hover:bg-slate-100 disabled:opacity-20" title="Turun"><ChevronDown size={15} /></button>
@@ -419,6 +467,9 @@ const KelolaNavbar: React.FC = () => {
                     <p className="text-sm font-medium text-slate-700 truncate">{child.label || 'Tanpa nama'}</p>
                     <p className="text-[11px] text-slate-400 truncate">{child.path || '—'}</p>
                   </div>
+                  <button type="button" onClick={() => toggleMenuActive(child)} disabled={isSaving} className={`inline-flex h-8 items-center gap-1 rounded-lg px-2 text-[10px] font-bold transition ${child.is_active === false ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'}`} title={child.is_active === false ? 'Aktifkan submenu' : 'Nonaktifkan submenu'}>
+                    {child.is_active === false ? <ToggleLeft size={15} /> : <ToggleRight size={15} />} <span className="hidden sm:inline">{child.is_active === false ? 'Off' : 'On'}</span>
+                  </button>
                   <button type="button" onClick={() => beginEdit(child)} className="h-8 w-8 rounded-lg text-slate-400 hover:bg-blue-50 hover:text-blue-600" title="Edit submenu"><Pencil size={14} /></button>
                   <button type="button" onClick={() => deleteMenu(child)} className="h-8 w-8 rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600" title="Hapus submenu"><Trash2 size={14} /></button>
                 </div>
@@ -449,16 +500,23 @@ const KelolaNavbar: React.FC = () => {
               <button type="button" onClick={() => { fetchNavbar(); fetchBrandSettings(); }} disabled={isLoading} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-medium text-slate-600 shadow-sm hover:bg-slate-50 disabled:opacity-50">
                 <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} /> Sinkronkan
               </button>
+              <button type="button" onClick={() => setAllMenuStatus(true)} disabled={isSaving} className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-2.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 disabled:opacity-50">
+                <Power size={16} /> Aktifkan Semua
+              </button>
+              <button type="button" onClick={() => setAllMenuStatus(false)} disabled={isSaving} className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3.5 py-2.5 text-sm font-semibold text-red-700 hover:bg-red-100 disabled:opacity-50">
+                <Power size={16} /> Nonaktifkan Semua
+              </button>
               <button type="button" onClick={() => setShowAddForm(true)} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-blue-600/20 hover:bg-blue-700">
                 <Plus size={17} /> Tambah Menu
               </button>
             </div>
           </header>
 
-          <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <div className={`${cardClass} flex items-center gap-3 p-4`}><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600"><Menu size={18} /></div><div><p className="text-xs text-slate-400">Menu utama</p><p className="text-xl font-bold text-slate-800">{mainMenus.length}</p></div></div>
             <div className={`${cardClass} flex items-center gap-3 p-4`}><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-violet-600"><Layers3 size={18} /></div><div><p className="text-xs text-slate-400">Submenu</p><p className="text-xl font-bold text-slate-800">{totalSubmenus}</p></div></div>
-            <div className={`${cardClass} flex items-center gap-3 p-4`}><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600"><ShieldCheck size={18} /></div><div><p className="text-xs text-slate-400">Status konfigurasi</p><p className="text-sm font-bold text-emerald-600">Aktif & tersinkron</p></div></div>
+            <div className={`${cardClass} flex items-center gap-3 p-4`}><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600"><ShieldCheck size={18} /></div><div><p className="text-xs text-slate-400">Menu aktif</p><p className="text-xl font-bold text-emerald-600">{navItems.filter(item => item.is_active !== false).length}</p></div></div>
+            <div className={`${cardClass} flex items-center gap-3 p-4`}><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-600"><Power size={18} /></div><div><p className="text-xs text-slate-400">Menu nonaktif</p><p className="text-xl font-bold text-red-600">{navItems.filter(item => item.is_active === false).length}</p></div></div>
           </div>
 
           <div className="mb-5 flex gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-sm w-fit">
@@ -522,7 +580,7 @@ const KelolaNavbar: React.FC = () => {
 
           <div className="mt-5 flex items-start gap-3 rounded-2xl border border-blue-100 bg-blue-50/70 p-4 text-xs text-blue-800">
             <Settings2 size={17} className="mt-0.5 shrink-0 text-blue-600" />
-            <div><p className="font-semibold">Standar pengelolaan menu</p><p className="mt-1 leading-relaxed text-blue-700/80">Gunakan label singkat dan konsisten, URL yang jelas, maksimal satu tingkat submenu, serta urutan menu berdasarkan prioritas pengguna. Perubahan tersimpan langsung ke konfigurasi navbar.</p></div>
+            <div><p className="font-semibold">Kontrol visibilitas navbar</p><p className="mt-1 leading-relaxed text-blue-700/80">Status <strong>Aktif</strong> akan menampilkan menu pada navbar landing page desktop dan seluler. Status <strong>Nonaktif</strong> menyembunyikan menu dari keduanya tanpa menghapus data. Gunakan tombol "Aktifkan Semua" atau "Nonaktifkan Semua" untuk kontrol massal.</p></div>
           </div>
         </div>
       </div>
