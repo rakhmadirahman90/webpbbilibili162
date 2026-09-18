@@ -105,25 +105,8 @@ export default function PublicKasView({ memberOnlyName }: PublicKasViewProps = {
         setHasSetInitialDates(true);
       }
     } catch (error) {
-      console.error("Error fetching kas:", error);
-      let fallbackData: any[] = [];
-      const cached = localStorage.getItem('cached_kas_pb') || localStorage.getItem('kas_local_v3');
-      if (cached) {
-        try {
-          const parsed = JSON.parse(cached);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            fallbackData = memberOnlyName 
-              ? parsed.filter((item: any) => (item.nama_pembayar || '').toLowerCase().includes(memberOnlyName.toLowerCase()))
-              : parsed;
-          }
-        } catch (e) {}
-      }
-      if (fallbackData.length === 0) {
-        fallbackData = memberOnlyName 
-          ? DEFAULT_KAS.filter(item => (item.nama_pembayar || '').toLowerCase().includes(memberOnlyName.toLowerCase()))
-          : DEFAULT_KAS;
-      }
-      setKasData(fallbackData as KasEntry[]);
+      console.error('[kas] fresh data request failed:', error);
+      setKasData([]);
     } finally {
       setLoading(false);
     }
