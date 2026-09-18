@@ -205,13 +205,13 @@ export default function Navbar({ onNavigate }: NavbarProps) {
 
   const getSubMenus = (parentId: string) => {
     const parent = navData.find(i => i.id === parentId || i.path === parentId || String(i.label || '').toLowerCase() === String(parentId).toLowerCase());
-    const list = navData.filter(i => i?.parent_id && (i.parent_id === parentId || i.parent_id === parent?.id || i.parent_id === parent?.path || String(i.parent_id).toLowerCase() === String(parent?.label || '').toLowerCase())).sort((a,b) => (a.order_index || 0) - (b.order_index || 0));
+    const list = navData.filter(i => i?.is_active !== false && i?.parent_id && (i.parent_id === parentId || i.parent_id === parent?.id || i.parent_id === parent?.path || String(i.parent_id).toLowerCase() === String(parent?.label || '').toLowerCase())).sort((a,b) => (a.order_index || 0) - (b.order_index || 0));
     const visibleList = list.filter(i => {
       const itemPath = normalizeNavigationPath(i?.path || '');
       const itemLabel = String(i?.label || '').toLowerCase().trim();
       return !(itemPath === 'seeded-peserta' || itemPath.includes('seeded-peserta') || itemLabel.includes('seeded peserta') || itemLabel.includes('daftar seeded'));
     });
-    if (!visibleList.length && (parent?.path === 'atlet' || parent?.label?.toLowerCase() === 'atlet')) return ATLET_DEFAULT_SUBMENUS;
+    if (!visibleList.length && (parent?.path === 'atlet' || parent?.label?.toLowerCase() === 'atlet')) return ATLET_DEFAULT_SUBMENUS.filter(i => i?.is_active !== false);
     return visibleList;
   };
 
