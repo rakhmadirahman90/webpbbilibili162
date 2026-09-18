@@ -31,8 +31,10 @@ export const DEFAULT_NAV_ITEMS = [
   { id: 'foto-video', label: 'Foto/Video', path: 'galeri', type: 'link', parent_id: 'galeri', order_index: 1, is_active: true },
   { id: 'quiz-badminton', label: 'Quiz Badminton', path: 'quiz', type: 'link', parent_id: 'galeri', order_index: 2, is_active: true },
   { id: 'jadwal', label: 'Jadwal Latihan', path: 'jadwal', type: 'link', parent_id: null, order_index: 7, is_active: true },
-  { id: 'contact', label: 'Hubungi Kami', path: 'contact', type: 'link', parent_id: null, order_index: 8, is_active: true },
-  { id: 'faq', label: 'FAQ', path: 'faq', type: 'link', parent_id: null, order_index: 9 }
+  { id: 'contact', label: 'Hubungi Kami', path: 'contact', type: 'dropdown', parent_id: null, order_index: 8, is_active: true },
+  { id: 'kontak', label: 'Kontak', path: 'contact', type: 'link', parent_id: 'contact', order_index: 1, is_active: true },
+  { id: 'masukan-usulan', label: 'Kirim Usulan / Saran / Masukan', path: 'masukan-usulan', type: 'link', parent_id: 'contact', order_index: 2, is_active: true },
+  { id: 'faq', label: 'FAQ', path: 'faq', type: 'link', parent_id: 'contact', order_index: 3, is_active: true }
 ];
 
 export const ATLET_DEFAULT_SUBMENUS = DEFAULT_NAV_ITEMS.filter(i => i.parent_id === 'atlet');
