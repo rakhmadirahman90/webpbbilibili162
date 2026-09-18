@@ -974,7 +974,7 @@ const Rankings: React.FC = () => {
 
       {/* MODAL PLAYER DETAIL */}
       {selectedPlayer && (
-        <PlayerDetailModal
+        <PlayerProfileModal
           player={selectedPlayer}
           globalRank={dbRankings.findIndex((p) => p.id === selectedPlayer.id) + 1}
           onClose={() => setSelectedPlayer(null)}
