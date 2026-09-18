@@ -60,30 +60,20 @@ export default function PublicKasView({ memberOnlyName }: PublicKasViewProps = {
   const fetchData = async (forceResetDates = false) => {
     setLoading(true);
     try {
-      let query = supabase
-          .from('kas_pb')
-          .select('*');
-      
-      if (memberOnlyName) {
-        query = query.ilike('nama_pembayar', memberOnlyName.trim());
-      }
-      
-      const { data, error } = await query.order('tanggal_transaksi', { ascending: false });
-      
-      let fetchedKas: any[] = [];
-      if (!error && data && data.length > 0) {
-        fetchedKas = data;
-        try {
-          
-        } catch (e) {}
-      } else {
-        if (fetchedKas.length === 0) setKasData([]);
+      let query = supabase.from('kas_pb').select('*');
+      if (memberOnlyName) query = query.ilike('nama_pembayar', memberOnlyName.trim());
 
+      const { data, error } = await query.order('tanggal_transaksi', { ascending: false });
+      if (error) throw error;
+
+      const fetchedKas = Array.isArray(data) ? data : [];
       setKasData(fetchedKas as KasEntry[]);
 
       if (fetchedKas.length > 0 && (!hasSetInitialDates || forceResetDates)) {
-        const sorted = [...fetchedKas].sort((a, b) => a.tanggal_transaksi.localeCompare(b.tanggal_transaksi));
-        const latestDate = sorted[sorted.length - 1].tanggal_transaksi;
+        const sorted = [...fetchedKas].sort((a, b) =>
+          String(a.tanggal_transaksi).localeCompare(String(b.tanggal_transaksi))
+        );
+        const latestDate = String(sorted[sorted.length - 1].tanggal_transaksi);
         setStartDate(latestDate);
         setEndDate(today > latestDate ? today : latestDate);
         setHasSetInitialDates(true);
