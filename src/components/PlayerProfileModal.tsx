@@ -113,7 +113,7 @@ export default function PlayerProfileModal({ player, globalRank, onClose }: Prop
       // Ambil profil berdasarkan ID terlebih dahulu. Jika ID dari sumber ranking tidak cocok,
       // fallback ke nama atlet agar biodata tetap terbaca.
       const profileLookup = async () => {
-        const fields = 'id,nama,kategori,kategori_atlet,domisili,foto_url,jenis_kelamin,pengalaman,status,tanggal_registrasi,created_at,nama_panggilan,nama_punggung,tempat_lahir,tanggal_lahir,tahun_bergabung,tangan_dominan,hobi,makanan_favorit,updated_at';
+        const fields = 'id,nama,kategori,kategori_atlet,domisili,foto_url,jenis_kelamin,pengalaman,prestasi,status,tanggal_registrasi,created_at,nama_panggilan,nama_punggung,tempat_lahir,tanggal_lahir,tahun_bergabung,tangan_dominan,hobi,makanan_favorit,updated_at';
         const byId = await supabase.from('pendaftaran').select(fields).eq('id', pId).maybeSingle();
         if (byId.data) return byId;
         return await supabase.from('pendaftaran').select(fields).ilike('nama', name.trim()).maybeSingle();
@@ -254,7 +254,7 @@ export default function PlayerProfileModal({ player, globalRank, onClose }: Prop
 
   const photos = useMemo(() => gallery.filter(item => item.type === 'image'), [gallery]);
   const videos = useMemo(() => gallery.filter(item => item.type === 'video'), [gallery]);
-  const achievementText = profile?.pengalaman || 'Riwayat prestasi dan pertandingan atlet akan tampil di bagian ini.';
+  const achievementItems = String(profile?.prestasi || '').split(/\n+/).map((item: string) => item.trim()).filter(Boolean);
   const physicalMetrics = rapor ? [['Stamina', rapor.fisik?.stamina], ['Kecepatan', rapor.fisik?.kecepatan], ['Kekuatan', rapor.fisik?.kekuatan], ['Kelincahan', rapor.fisik?.kelincahan], ['Kelenturan', rapor.fisik?.kelenturan]] : [];
   const technicalMetrics = rapor ? [['Lob', rapor.teknik?.lob], ['Smash', rapor.teknik?.smash], ['Netting', rapor.teknik?.netting], ['Drop Shot', rapor.teknik?.dropShot], ['Backhand', rapor.teknik?.backhand], ['Service', rapor.teknik?.service]] : [];
   const allMetrics = [...physicalMetrics, ...technicalMetrics].map(([,v]) => Number(v)).filter(Number.isFinite);
@@ -556,10 +556,38 @@ export default function PlayerProfileModal({ player, globalRank, onClose }: Prop
                     <div className="w-11 h-11 rounded-2xl bg-amber-500/10 border border-amber-500/20 grid place-items-center text-amber-300"><Trophy size={22} /></div>
                     <div>
                       <p className="text-[10px] font-black uppercase tracking-widest text-amber-300">Prestasi & Rekam Pertandingan</p>
-                      <p className="text-sm text-slate-300 mt-1">{achievementText}</p>
+                      <p className="text-sm text-slate-400 mt-1">Riwayat prestasi dan pertandingan disusun dalam daftar yang rapi.</p>
                     </div>
                   </div>
                 </div>
+
+                <section className="rounded-3xl border border-white/10 bg-white/[0.035] overflow-hidden">
+                  <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <Trophy size={19} className="text-amber-300" />
+                      <div>
+                        <p className="text-xs font-black uppercase tracking-widest text-slate-200">Daftar Prestasi</p>
+                        <p className="text-[9px] text-slate-500 mt-1">Prestasi yang tercatat pada profil atlet</p>
+                      </div>
+                    </div>
+                    <span className="rounded-full bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 text-[9px] font-black text-amber-300">{achievementItems.length}</span>
+                  </div>
+                  <div className="divide-y divide-white/5">
+                    {achievementItems.length > 0 ? achievementItems.map((item: string, index: number) => (
+                      <div key={index + item} className="px-5 py-4 flex items-start gap-3">
+                        <div className="mt-0.5 w-8 h-8 shrink-0 rounded-xl bg-amber-500/10 border border-amber-500/20 grid place-items-center text-amber-300">
+                          <Award size={16} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[9px] font-black uppercase tracking-widest text-amber-300">Prestasi #{index + 1}</p>
+                          <p className="mt-1 text-sm leading-6 text-slate-200 break-words">{item}</p>
+                        </div>
+                      </div>
+                    )) : (
+                      <div className="px-5 py-10 text-center text-slate-500 text-xs font-bold uppercase tracking-widest">Belum ada prestasi yang tercatat.</div>
+                    )}
+                  </div>
+                </section>
 
                 <div className="grid grid-cols-3 gap-2">
                   <div className="rounded-2xl bg-white/[0.04] border border-white/10 p-4 text-center"><Award className="mx-auto text-blue-400" size={19}/><p className="text-lg font-black mt-2">{matches.length}</p><p className="text-[8px] uppercase text-slate-500 font-black">Pertandingan</p></div>
@@ -567,21 +595,37 @@ export default function PlayerProfileModal({ player, globalRank, onClose }: Prop
                   <div className="rounded-2xl bg-white/[0.04] border border-white/10 p-4 text-center"><History className="mx-auto text-emerald-400" size={19}/><p className="text-lg font-black mt-2">{audit.length}</p><p className="text-[8px] uppercase text-slate-500 font-black">Aktivitas</p></div>
                 </div>
 
-                {matches.length > 0 ? matches.map(match => (
-                  <div key={match.id} className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-                    <div className="flex items-start justify-between gap-3">
+                <section className="rounded-3xl border border-blue-500/15 bg-[#08162b] overflow-hidden">
+                  <div className="px-5 py-4 border-b border-blue-500/10 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <Calendar size={19} className="text-blue-300" />
                       <div>
-                        <p className="text-xs font-black uppercase text-slate-200">{match.kategori_kegiatan || 'Pertandingan'}</p>
-                        <p className="text-sm font-bold text-blue-300 mt-1">{match.hasil || 'Hasil belum dicatat'}</p>
-                        {match.keterangan && <p className="text-xs leading-5 text-slate-400 mt-2">{match.keterangan}</p>}
+                        <p className="text-xs font-black uppercase tracking-widest text-slate-200">Rekam Pertandingan</p>
+                        <p className="text-[9px] text-slate-500 mt-1">Riwayat pertandingan terbaru</p>
                       </div>
-                      <Calendar size={16} className="text-slate-500 shrink-0" />
                     </div>
-                    {match.created_at && <p className="text-[9px] text-slate-500 mt-3">{new Date(match.created_at).toLocaleDateString('id-ID')}</p>}
+                    <span className="rounded-full bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 text-[9px] font-black text-blue-300">{matches.length}</span>
                   </div>
-                )) : (
+                  <div className="divide-y divide-white/5">
+                    {matches.length > 0 ? matches.map((match, index) => (
+                      <div key={match.id} className="px-5 py-4 flex items-start gap-3">
+                        <div className="mt-0.5 w-8 h-8 shrink-0 rounded-xl bg-blue-500/10 border border-blue-500/20 grid place-items-center text-blue-300 text-[10px] font-black">{index + 1}</div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="text-xs font-black uppercase text-slate-200 break-words">{match.kategori_kegiatan || 'Pertandingan'}</p>
+                              <p className="text-sm font-bold text-blue-300 mt-1 break-words">{match.hasil || 'Hasil belum dicatat'}</p>
+                            </div>
+                            {match.created_at && <span className="text-[9px] text-slate-500 shrink-0 whitespace-nowrap">{new Date(match.created_at).toLocaleDateString('id-ID')}</span>}
+                          </div>
+                          {match.keterangan && <p className="text-xs leading-5 text-slate-400 mt-2 break-words">{match.keterangan}</p>}
+                        </div>
+                      </div>
+                    )) : (
                   <div className="rounded-2xl border border-dashed border-white/10 p-10 text-center text-slate-500 text-xs font-bold uppercase tracking-widest">Belum ada rekam pertandingan.</div>
-                )}
+                    )}
+                  </div>
+                </section>
 
                 {audit.length > 0 && (
                   <div className="space-y-2">
