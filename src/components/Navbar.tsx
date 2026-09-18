@@ -27,7 +27,8 @@ export const DEFAULT_NAV_ITEMS = [
   { id: 'sponsorship', label: 'Daftar Sponsorship', path: 'sponsorship', type: 'link', parent_id: 'pendaftaran-peserta', order_index: 4, is_active: true },
   { id: 'peserta-juara', label: 'Daftar Peserta Juara', path: 'prestasi', type: 'link', parent_id: 'pendaftaran-peserta', order_index: 5, is_active: true },
   { id: 'galeri', label: 'Galeri', path: 'gallery', type: 'dropdown', parent_id: null, order_index: 5, is_active: true },
-  { id: 'quiz-badminton', label: 'Quiz Badminton', path: 'quiz', type: 'link', parent_id: 'galeri', order_index: 1, is_active: true },
+  { id: 'foto-video', label: 'Foto/Video', path: 'galeri', type: 'link', parent_id: 'galeri', order_index: 1, is_active: true },
+  { id: 'quiz-badminton', label: 'Quiz Badminton', path: 'quiz', type: 'link', parent_id: 'galeri', order_index: 2, is_active: true },
   { id: 'jadwal', label: 'Jadwal Latihan', path: 'jadwal', type: 'link', parent_id: null, order_index: 7, is_active: true },
   { id: 'contact', label: 'Hubungi Kami', path: 'contact', type: 'link', parent_id: null, order_index: 8, is_active: true },
   { id: 'faq', label: 'FAQ', path: 'faq', type: 'link', parent_id: null, order_index: 9 }
