@@ -318,22 +318,8 @@ export default function PlayerProfileModal({ player, globalRank, onClose }: Prop
 
             {tab === 'profil' && (
               <div className="mt-7 space-y-5">
-                <div className="overflow-hidden rounded-3xl border border-white/10 bg-black">
-                  {profile?.foto_url || player.photo_url ? (
-                    <img
-                      src={profile?.foto_url || player.photo_url}
-                      alt={profile?.nama || name}
-                      className="w-full max-h-[430px] object-contain bg-[#0b1930]"
-                    />
-                  ) : (
-                    <div className="h-72 flex items-center justify-center text-slate-500">
-                      <User size={72} />
-                    </div>
-                  )}
-                </div>
-
                 {/* PROFIL ATLET — ringkas, terstruktur, responsif */}
-                <div className="mt-7 space-y-5">
+                <div className="space-y-5">
                   <div className="relative overflow-hidden rounded-[2rem] border border-blue-500/20 bg-gradient-to-br from-[#0b2345] via-[#071a33] to-[#06101f] shadow-xl">
                     <div className="absolute -right-16 -top-20 w-48 h-48 rounded-full bg-blue-500/10 blur-2xl" />
                     <div className="relative p-5 sm:p-6">
