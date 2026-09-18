@@ -271,8 +271,11 @@ export default function Navbar({ onNavigate }: NavbarProps) {
     const target = section === 'home' || section === 'beranda' ? '/' : `/${section}`;
     setOpenMenu(null);
     setMobileOpen(false);
-    if (section === 'prestasi') {
-      window.location.assign('/prestasi');
+    // Ranking & Pendaftaran Atlet wajib membuka route publik secara penuh.
+    // Hard navigation dipakai agar klik dari drawer/sidebar mobile tidak berhenti
+    // di state halaman sebelumnya atau terpengaruh bundle/cache React yang lama.
+    if (section === 'prestasi' || section === 'peringkat' || section === 'register') {
+      window.location.assign(target);
       return;
     }
     try { navigate(target); } catch { window.location.assign(target); }
