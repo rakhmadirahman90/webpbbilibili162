@@ -302,19 +302,21 @@ export default function PlayerProfileModal({ player, globalRank, onClose }: Prop
 
         <div className="flex-1 overflow-y-auto custom-scrollbar">
           <div className="px-5 sm:px-8 pt-7 pb-8">
-            <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/5 px-4 py-2 text-[10px] font-black tracking-[0.18em] text-blue-400 uppercase">
-              <span className="w-2 h-2 rounded-full bg-blue-500" />
-              {player.seed || 'SENIOR'} • PB BILIBILI 162
-            </div>
-
-            <h2 className="mt-5 text-4xl sm:text-5xl font-black italic uppercase tracking-tight break-words">{name}</h2>
-            <p className="mt-2 text-slate-400 font-medium uppercase tracking-wide">ATLET PB BILIBILI 162</p>
-
-            <div className="mt-5 flex flex-wrap gap-2">
-              <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold">{player.category || 'SENIOR'}</span>
-              <span className="rounded-full border border-blue-500/30 bg-blue-500/10 px-4 py-2 text-xs font-black text-blue-300">{Number(player.total_points || 0).toLocaleString('id-ID')} PTS</span>
-              {globalRank > 0 && <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-xs font-black text-amber-300">RANK #{globalRank}</span>}
-            </div>
+            {tab !== 'profil' && (
+              <>
+                <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/5 px-4 py-2 text-[10px] font-black tracking-[0.18em] text-blue-400 uppercase">
+                  <span className="w-2 h-2 rounded-full bg-blue-500" />
+                  {player.seed || 'SENIOR'} • PB BILIBILI 162
+                </div>
+                <h2 className="mt-5 text-3xl sm:text-4xl font-black italic uppercase tracking-tight break-words">{name}</h2>
+                <p className="mt-2 text-slate-400 font-medium uppercase tracking-wide">ATLET PB BILIBILI 162</p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold">{player.category || 'SENIOR'}</span>
+                  <span className="rounded-full border border-blue-500/30 bg-blue-500/10 px-4 py-2 text-xs font-black text-blue-300">{Number(player.total_points || 0).toLocaleString('id-ID')} PTS</span>
+                  {globalRank > 0 && <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-xs font-black text-amber-300">RANK #{globalRank}</span>}
+                </div>
+              </>
+            )}
 
             {tab === 'profil' && (
               <div className="mt-7 space-y-5">
@@ -324,16 +326,16 @@ export default function PlayerProfileModal({ player, globalRank, onClose }: Prop
                     <div className="absolute -right-16 -top-20 w-48 h-48 rounded-full bg-blue-500/10 blur-2xl" />
                     <div className="relative p-5 sm:p-6">
                       <div className="flex flex-col sm:flex-row sm:items-center gap-5">
-                        <div className="w-28 h-28 sm:w-32 sm:h-32 shrink-0 rounded-3xl overflow-hidden border border-blue-400/20 bg-[#0b1930] shadow-lg">
+                        <div className="w-full sm:w-[38%] sm:min-h-[300px] shrink-0 rounded-[1.5rem] overflow-hidden border border-blue-400/15 bg-[#0b1930] shadow-lg">
                           {profile?.foto_url || player.photo_url ? (
                             <img
                               src={profile?.foto_url || player.photo_url}
                               alt={profile?.nama || name}
-                              className="w-full h-full object-cover"
+                              className="w-full h-[280px] sm:h-[320px] object-contain bg-white"
                             />
                           ) : (
-                            <div className="w-full h-full grid place-items-center text-slate-600">
-                              <User size={52} />
+                            <div className="h-[280px] sm:h-[320px] grid place-items-center text-slate-600">
+                              <User size={64} />
                             </div>
                           )}
                         </div>
