@@ -136,6 +136,8 @@ export default function Navbar({ onNavigate }: NavbarProps) {
   const [navData, setNavData] = useState<any[]>(DEFAULT_NAV_ITEMS);
   const [branding, setBranding] = useState({ logo_url: '/logo_pb_bilibili_162.svg', brand_name_main: 'PB Bilibili', brand_name_accent: '162' });
   const [openMenu, setOpenMenu] = useState<string | null>(null);
+  // Separate mobile expansion state so desktop hover state can never navigate/reset the mobile submenu.
+  const [mobileOpenMenu, setMobileOpenMenu] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const syncSession = useCallback(async () => {
@@ -284,10 +286,21 @@ export default function Navbar({ onNavigate }: NavbarProps) {
     go(path, subPath);
   };
 
-  const handleMobileParentClick = (event: React.MouseEvent<HTMLButtonElement>, menu: any, expanded: boolean, drop: boolean) => {
+  const handleMobileParentClick = (event: React.MouseEvent<HTMLButtonElement>, menu: any, drop: boolean) => {
     event.preventDefault();
     event.stopPropagation();
-    if (drop) { setOpenMenu(expanded ? null : menu.id); return; }
+
+    // Atlet is always a mobile accordion parent. Never navigate to /atlet
+    // when the parent row itself is tapped.
+    const isAtlet =
+      String(menu?.path || '').trim().toLowerCase() === 'atlet' ||
+      String(menu?.label || '').trim().toLowerCase() === 'atlet';
+
+    if (isAtlet || drop) {
+      setMobileOpenMenu((current) => current === menu.id ? null : menu.id);
+      return;
+    }
+
     go(menu.path);
   };
 
@@ -316,22 +329,23 @@ export default function Navbar({ onNavigate }: NavbarProps) {
           </div>})}
           {session ? <><button type="button" onClick={() => navigate('/admin/dashboard')} className="px-3 py-2 rounded-full bg-emerald-600 text-white text-[10px] font-bold uppercase"><LayoutDashboard size={13} className="inline mr-1" />Dashboard</button><button type="button" onClick={logout} className="p-2 rounded-full bg-red-500/10 text-red-300"><LogOut size={15}/></button></> : <button type="button" onClick={() => navigate('/login')} className="px-3 py-2 rounded-full bg-blue-600 text-white text-[10px] font-bold uppercase"><LogIn size={13} className="inline mr-1"/>Login</button>}
         </div>
-        <button id="mobile-sidebar-toggle-btn" type="button" onClick={() => setMobileOpen(v => !v)} aria-label={mobileOpen ? 'Tutup menu navigasi' : 'Buka menu navigasi'} aria-expanded={mobileOpen} className="lg:hidden ml-auto w-11 h-11 shrink-0 rounded-2xl bg-slate-800/90 border border-white/15 flex items-center justify-center text-slate-200 shadow-lg active:scale-95 transition-transform touch-manipulation"><span className="flex flex-col gap-1.5 pointer-events-none"><i className={`block w-5 h-0.5 bg-blue-300 rounded ${mobileOpen ? 'rotate-45 translate-y-2' : ''}`} /><i className={`block w-4 h-0.5 bg-slate-300 rounded ml-auto ${mobileOpen ? 'opacity-0' : ''}`} /><i className={`block w-5 h-0.5 bg-blue-300 rounded ${mobileOpen ? '-rotate-45 -translate-y-2' : ''}`} /></span></button>
+        <button id="mobile-sidebar-toggle-btn" type="button" onClick={() => { setMobileOpen(v => { const next = !v; if (!next) setMobileOpenMenu(null); return next; }); }} aria-label={mobileOpen ? 'Tutup menu navigasi' : 'Buka menu navigasi'} aria-expanded={mobileOpen} className="lg:hidden ml-auto w-11 h-11 shrink-0 rounded-2xl bg-slate-800/90 border border-white/15 flex items-center justify-center text-slate-200 shadow-lg active:scale-95 transition-transform touch-manipulation"><span className="flex flex-col gap-1.5 pointer-events-none"><i className={`block w-5 h-0.5 bg-blue-300 rounded ${mobileOpen ? 'rotate-45 translate-y-2' : ''}`} /><i className={`block w-4 h-0.5 bg-slate-300 rounded ml-auto ${mobileOpen ? 'opacity-0' : ''}`} /><i className={`block w-5 h-0.5 bg-blue-300 rounded ${mobileOpen ? '-rotate-45 -translate-y-2' : ''}`} /></span></button>
       </div>
       <div className={`lg:hidden fixed inset-0 z-[2147483000] bg-black/70 backdrop-blur-sm transition-opacity duration-150 ${mobileOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => setMobileOpen(false)} aria-hidden="true" />
       <aside aria-label="Menu navigasi seluler" className={`lg:hidden fixed inset-y-0 left-0 z-[2147483001] w-[min(86vw,350px)] max-w-[350px] bg-[#0b1224] border-r border-white/10 shadow-2xl flex flex-col overflow-hidden transition-transform duration-150 ease-out ${mobileOpen ? 'translate-x-0 pointer-events-auto' : '-translate-x-full pointer-events-none'} touch-manipulation`} onClick={(e) => e.stopPropagation()}>
         <div className="h-16 min-h-16 shrink-0 px-4 flex items-center justify-between border-b border-white/10 bg-slate-950/95">
           <div className="flex items-center gap-2.5 min-w-0"><img src={branding.logo_url} className="w-9 h-9 object-contain shrink-0" alt="PB Bilibili 162" loading="eager"/><div className="min-w-0 font-black text-sm italic uppercase truncate">{branding.brand_name_main} <span className="text-blue-500">{branding.brand_name_accent}</span><span className="block text-[7px] tracking-[.18em] text-slate-500 not-italic mt-0.5">PROFESSIONAL CLUB</span></div></div>
-          <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMobileOpen(false); }} className="w-10 h-10 min-w-10 rounded-xl bg-slate-800 border border-white/10 flex items-center justify-center text-slate-200 active:scale-95 touch-manipulation" aria-label="Tutup menu"><X size={19} className="pointer-events-none"/></button>
+          <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMobileOpen(false); setMobileOpenMenu(null); }} className="w-10 h-10 min-w-10 rounded-xl bg-slate-800 border border-white/10 flex items-center justify-center text-slate-200 active:scale-95 touch-manipulation" aria-label="Tutup menu"><X size={19} className="pointer-events-none"/></button>
         </div>
         <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 py-3 [scrollbar-width:thin] touch-pan-y">
           <div className="space-y-0.5 pb-2">
             {topMenus.map(menu => {
               const subs = getSubMenus(menu.id);
               const drop = menu.type === 'dropdown' || subs.length > 0;
-              const expanded = openMenu === menu.id;
+              const expanded = mobileOpenMenu === menu.id;
+              const isAtlet = String(menu?.path || '').trim().toLowerCase() === 'atlet' || String(menu?.label || '').trim().toLowerCase() === 'atlet';
               return <div key={menu.id} className="rounded-xl overflow-hidden">
-                <button type="button" aria-expanded={drop ? expanded : undefined} onClick={(e) => handleMobileParentClick(e, menu, expanded, drop)} className={`w-full min-h-[48px] px-3 flex items-center justify-between gap-3 rounded-xl text-left text-[14px] leading-5 font-bold uppercase tracking-[.01em] transition-colors touch-manipulation select-none ${expanded ? 'bg-blue-600/15 text-blue-300' : 'text-slate-200 hover:bg-white/5 active:bg-white/10'}`}>
+                <button type="button" aria-expanded={drop ? expanded : undefined} data-mobile-nav-parent={isAtlet ? 'atlet' : undefined} onClick={(e) => handleMobileParentClick(e, menu, drop)} className={`w-full min-h-[48px] px-3 flex items-center justify-between gap-3 rounded-xl text-left text-[14px] leading-5 font-bold uppercase tracking-[.01em] transition-colors touch-manipulation select-none ${expanded ? 'bg-blue-600/15 text-blue-300' : 'text-slate-200 hover:bg-white/5 active:bg-white/10'}`}>
                   <span className="flex items-center gap-3 min-w-0 pointer-events-none"><span className="w-6 min-w-6 flex justify-center">{iconFor(menu.path, menu.label)}</span><span className="truncate">{menu.label}</span></span>
                   {drop && <ChevronDown size={15} className={`shrink-0 transition-transform pointer-events-none ${expanded ? 'rotate-180 text-blue-400' : 'text-slate-500'}`}/>} 
                 </button>
