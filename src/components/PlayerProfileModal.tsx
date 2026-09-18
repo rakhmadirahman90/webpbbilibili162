@@ -113,7 +113,7 @@ export default function PlayerProfileModal({ player, globalRank, onClose }: Prop
       // Ambil profil berdasarkan ID terlebih dahulu. Jika ID dari sumber ranking tidak cocok,
       // fallback ke nama atlet agar biodata tetap terbaca.
       const profileLookup = async () => {
-        const fields = 'id,nama,kategori,kategori_atlet,domisili,foto_url,jenis_kelamin,pengalaman,status,tanggal_registrasi,created_at,nama_panggilan,nama_punggung,tempat_lahir,tanggal_lahir,tahun_bergabung,tangan_dominan,hobi,makanan_favorit';
+        const fields = 'id,nama,kategori,kategori_atlet,domisili,foto_url,jenis_kelamin,pengalaman,status,tanggal_registrasi,created_at,nama_panggilan,nama_punggung,tempat_lahir,tanggal_lahir,tahun_bergabung,tangan_dominan,hobi,makanan_favorit,updated_at';
         const byId = await supabase.from('pendaftaran').select(fields).eq('id', pId).maybeSingle();
         if (byId.data) return byId;
         return await supabase.from('pendaftaran').select(fields).ilike('nama', name.trim()).maybeSingle();
@@ -449,7 +449,7 @@ export default function PlayerProfileModal({ player, globalRank, onClose }: Prop
                           ['Hobi', profile?.hobi, Activity],
                           ['Makanan Favorit', profile?.makanan_favorit, Activity],
                           ['Tanggal Registrasi', profile?.tanggal_registrasi ? new Date(profile.tanggal_registrasi).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '', Calendar],
-                          ['Terakhir Diupdate', profile?.updated_at ? new Date(profile.updated_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '', Clock],
+                          ['Terakhir Diupdate', profile?.updated_at ? new Date(profile.updated_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : (profile?.created_at ? new Date(profile.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : ''), Clock],
                         ].map(([label, value, Icon]) => (
                           <div key={String(label)} className="grid grid-cols-[28px_minmax(0,1fr)] gap-3 items-center py-3.5 border-b border-blue-500/10 last:border-b-0">
                             <Icon size={17} className="text-slate-300" />
