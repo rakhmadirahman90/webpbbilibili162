@@ -112,7 +112,7 @@ export default function PlayerProfileModal({ player, globalRank, onClose }: Prop
       const pId = player.pendaftaran_id || player.id;
       const [profileRes, matchRes, auditRes, galleryRes, newsRes, raporRes, rankingsRes, attendanceRes] = await Promise.allSettled([
         supabase.from('pendaftaran').select('id,nama,kategori,kategori_atlet,domisili,foto_url,jenis_kelamin,pengalaman').eq('id', pId).maybeSingle(),
-        supabase.from('pertandingan').select('id,pendaftaran_id,kategori_kegiatan,hasil,keterangan,created_at').eq('pendaftaran_id', pId).order('created_at', { ascending: false }).limit(20),
+        supabase.from('pertandingan').select('id,pendaftaran_id,kategori_kegiatan,hasil,keterangan,created_at').eq('pendaftaran_id', pId).order('created_at', { ascending: false }),
         supabase.from('audit_poin').select('id,created_at,perubahan,poin_sebelum,poin_sesudah,tipe_kegiatan').ilike('atlet_nama', name.trim()).order('created_at', { ascending: false }).limit(12),
         supabase.from('gallery').select('id,title,type,url,description,category,created_at,thumbnail_url').order('created_at', { ascending: false }).limit(100),
         supabase.from('berita').select('id,judul,ringkasan,konten,kategori,gambar_url,tanggal').order('tanggal', { ascending: false }).limit(100),
@@ -139,22 +139,71 @@ export default function PlayerProfileModal({ player, globalRank, onClose }: Prop
 
       let exactRapor: RaporData | null = null;
       if (raporRes.status === 'fulfilled') {
-        const rows = Array.isArray(raporRes.value) ? raporRes.value : [];
-        exactRapor = rows.find((row: any) => String(row?.id || '') === String(player.id || '') || String(row?.id || '') === String(player.pendaftaran_id || '') || norm(row?.nama || '') === norm(name)) || null;
+        const raw = raporRes.value;
+        const rows = Array.isArray(raw) ? raw : (Array.isArray(raw?.items) ? raw.items : []);
+        exactRapor = rows.find((row: any) =>
+          String(row?.id || '') === String(player.id || '') ||
+          String(row?.id || '') === String(player.pendaftaran_id || '') ||
+          norm(row?.nama || '') === norm(name)
+        ) || null;
         setRapor(exactRapor);
       }
 
       const rankingRow = rankingsRes.status === 'fulfilled' ? rankingsRes.value.data : null;
-      const absensiRows = attendanceRes.status === 'fulfilled' && Array.isArray(attendanceRes.value) ? attendanceRes.value : [];
-      const playerAttendance = absensiRows.filter((a: any) => String(a?.user_id || '') === String(player.pendaftaran_id || player.id) || norm(a?.nama || '') === norm(name));
+      const rawAttendance = attendanceRes.status === 'fulfilled' ? attendanceRes.value : null;
+      const attendanceRows = Array.isArray(rawAttendance)
+        ? rawAttendance
+        : (Array.isArray(rawAttendance?.items) ? rawAttendance.items : []);
+      const playerAttendance = attendanceRows.filter((a: any) =>
+        String(a?.user_id || '') === String(player.pendaftaran_id || player.id) ||
+        norm(a?.nama || '') === norm(name)
+      );
       const attendanceTotal = playerAttendance.length;
-      const attendancePresent = playerAttendance.filter((a: any) => a?.status === 'hadir').length;
-      const attendanceRate = attendanceTotal ? Math.round((attendancePresent / attendanceTotal) * 100) : 0;
-      const rid = String(player.id || '');
-      const hash = rid ? rid.charCodeAt(0) + rid.charCodeAt(rid.length - 1) : 0;
-      const base = { matchesPlayed: 20 + (hash % 25), winRate: 60 + (hash % 30), attendanceRate: attendanceTotal ? attendanceRate : 80 + (hash % 20), stamina: 75 + (hash % 25), speed: 70 + (hash % 28), power: 75 + (hash % 23), technique: 80 + (hash % 20), agility: 75 + (hash % 25), streak: 1 + (hash % 8) };
-      const avgRapor = exactRapor ? Math.round([...Object.values(exactRapor.fisik || {}), ...Object.values(exactRapor.teknik || {})].map(Number).filter(Number.isFinite).reduce((a:number,b:number)=>a+b,0) / 11) : 0;
-      setAnalytics({ ...base, poin: Number(rankingRow?.total_points ?? player.total_points ?? 0), raporScore: avgRapor, radar: exactRapor ? { stamina: exactRapor.fisik?.stamina, speed: exactRapor.fisik?.kecepatan, power: exactRapor.fisik?.kekuatan, technique: Math.round(Object.values(exactRapor.teknik || {}).map(Number).reduce((a:number,b:number)=>a+b,0)/6), agility: exactRapor.fisik?.kelincahan } : { stamina: base.stamina, speed: base.speed, power: base.power, technique: base.technique, agility: base.agility } });
+      const attendancePresent = playerAttendance.filter((a: any) => norm(a?.status) === 'hadir').length;
+      const attendanceRate = attendanceTotal ? Math.round((attendancePresent / attendanceTotal) * 100) : null;
+
+      const matchRows = matchRes.status === 'fulfilled' ? (matchRes.value.data || []) : [];
+      const wins = matchRows.filter((m: any) => norm(m?.hasil).includes('menang')).length;
+      const losses = matchRows.filter((m: any) => norm(m?.hasil).includes('kalah')).length;
+      const draws = matchRows.filter((m: any) => norm(m?.hasil).includes('seri') || norm(m?.hasil).includes('imbang')).length;
+      const decidedMatches = wins + losses;
+      const winRateReal = decidedMatches ? Math.round((wins / decidedMatches) * 100) : 0;
+      let streak = 0;
+      for (const match of matchRows) {
+        if (norm(match?.hasil).includes('menang')) streak++;
+        else break;
+      }
+
+      const physicalValues = exactRapor ? Object.values(exactRapor.fisik || {}).map(Number).filter(Number.isFinite) : [];
+      const technicalValues = exactRapor ? Object.values(exactRapor.teknik || {}).map(Number).filter(Number.isFinite) : [];
+      const allRaporValues = [...physicalValues, ...technicalValues];
+      const avgRapor = allRaporValues.length ? Math.round(allRaporValues.reduce((a:number,b:number)=>a+b,0) / allRaporValues.length) : null;
+      const techniqueAverage = technicalValues.length ? Math.round(technicalValues.reduce((a:number,b:number)=>a+b,0) / technicalValues.length) : null;
+
+      setAnalytics({
+        matchesPlayed: matchRows.length,
+        wins,
+        losses,
+        draws,
+        winRate: winRateReal,
+        attendanceRate,
+        stamina: exactRapor?.fisik?.stamina ?? null,
+        speed: exactRapor?.fisik?.kecepatan ?? null,
+        power: exactRapor?.fisik?.kekuatan ?? null,
+        technique: techniqueAverage,
+        agility: exactRapor?.fisik?.kelincahan ?? null,
+        flexibility: exactRapor?.fisik?.kelenturan ?? null,
+        streak,
+        poin: Number(rankingRow?.total_points ?? player.total_points ?? 0),
+        raporScore: avgRapor,
+        radar: {
+          stamina: exactRapor?.fisik?.stamina ?? 0,
+          speed: exactRapor?.fisik?.kecepatan ?? 0,
+          power: exactRapor?.fisik?.kekuatan ?? 0,
+          technique: techniqueAverage ?? 0,
+          agility: exactRapor?.fisik?.kelincahan ?? 0
+        }
+      });
 
       if ([galleryRes, newsRes].some((r: any) => r.status === 'rejected')) {
         setError('Sebagian dokumentasi belum dapat dimuat.');
@@ -182,7 +231,7 @@ export default function PlayerProfileModal({ player, globalRank, onClose }: Prop
   const totalLosses = rapor?.winLossHistory?.reduce((s,m) => s + Number(m.kalah || 0), 0) || 0;
   const totalMatches = totalWins + totalLosses;
   const winRate = totalMatches ? Math.round((totalWins / totalMatches) * 100) : 0;
-  const displayAnalytics = analytics || { matchesPlayed: 0, winRate: winRate, attendanceRate: 0, stamina: 0, speed: 0, power: 0, technique: 0, agility: 0, streak: 0, poin: Number(player.total_points || 0), raporScore: performanceScore, radar: { stamina: 0, speed: 0, power: 0, technique: 0, agility: 0 } };
+  const displayAnalytics = analytics || { matchesPlayed: totalMatches, wins: totalWins, losses: totalLosses, draws: 0, winRate, attendanceRate: null, stamina: rapor?.fisik?.stamina ?? null, speed: rapor?.fisik?.kecepatan ?? null, power: rapor?.fisik?.kekuatan ?? null, technique: technicalMetrics.length ? Math.round(technicalMetrics.map(([,v]) => Number(v) || 0).reduce((a,b)=>a+b,0) / technicalMetrics.length) : null, agility: rapor?.fisik?.kelincahan ?? null, flexibility: rapor?.fisik?.kelenturan ?? null, streak: 0, poin: Number(player.total_points || 0), raporScore: performanceScore, radar: { stamina: rapor?.fisik?.stamina ?? 0, speed: rapor?.fisik?.kecepatan ?? 0, power: rapor?.fisik?.kekuatan ?? 0, technique: 0, agility: rapor?.fisik?.kelincahan ?? 0 } };
 
   if (!player) return null;
 
