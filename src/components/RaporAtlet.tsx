@@ -152,8 +152,9 @@ export default function RaporAtlet({ isAdmin }: { isAdmin: boolean }) {
       let initialList: Rapor[] = [];
       try {
         const dbData = await getSiteSetting('rapor_atlet_data');
-        if (dbData && Array.isArray(dbData) && dbData.length > 0) {
-          initialList = dbData;
+        const dbList = Array.isArray(dbData) ? dbData : (Array.isArray(dbData?.items) ? dbData.items : []);
+        if (dbList.length > 0) {
+          initialList = dbList;
         } else {
           const saved = localStorage.getItem('pb_bilibili_rapor_atlet');
           if (saved) {
