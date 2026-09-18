@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   X, User, Trophy, Medal, Calendar, MapPin, Award, Camera, PlayCircle,
-  Newspaper, ExternalLink, Loader2, History, ShieldCheck, ArrowUpRight,
+  Newspaper, ExternalLink, Loader2, History, ShieldCheck, ArrowUpRight, Activity,
   ArrowDownRight, Clock
 } from 'lucide-react';
 import { supabase } from '../supabase';
@@ -25,7 +25,9 @@ interface Props {
   onClose: () => void;
 }
 
-type Tab = 'profil' | 'prestasi' | 'foto' | 'video' | 'berita';
+type Tab = 'profil' | 'performa' | 'prestasi' | 'foto' | 'video' | 'berita';
+
+type RaporData = { id: string; nama: string; fisik: { stamina:number; kecepatan:number; kekuatan:number; kelincahan:number; kelenturan:number }; teknik: { lob:number; smash:number; netting:number; dropShot:number; backhand:number; service:number }; winLossHistory: { bulan:string; menang:number; kalah:number }[]; updatedAt?:string; };
 
 type GalleryItem = {
   id: string;
@@ -94,6 +96,7 @@ export default function PlayerProfileModal({ player, globalRank, onClose }: Prop
   const [gallery, setGallery] = useState<GalleryItem[]>([]);
   const [news, setNews] = useState<NewsItem[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [rapor, setRapor] = useState<RaporData | null>(null);
 
   const name = player?.player_name || '';
 
@@ -106,12 +109,13 @@ export default function PlayerProfileModal({ player, globalRank, onClose }: Prop
       setError(null);
 
       const pId = player.pendaftaran_id || player.id;
-      const [profileRes, matchRes, auditRes, galleryRes, newsRes] = await Promise.allSettled([
+      const [profileRes, matchRes, auditRes, galleryRes, newsRes, raporRes] = await Promise.allSettled([
         supabase.from('pendaftaran').select('id,nama,kategori,kategori_atlet,domisili,foto_url,jenis_kelamin,pengalaman').eq('id', pId).maybeSingle(),
         supabase.from('pertandingan').select('id,pendaftaran_id,kategori_kegiatan,hasil,keterangan,created_at').eq('pendaftaran_id', pId).order('created_at', { ascending: false }).limit(20),
         supabase.from('audit_poin').select('id,created_at,perubahan,poin_sebelum,poin_sesudah,tipe_kegiatan').ilike('atlet_nama', name.trim()).order('created_at', { ascending: false }).limit(12),
         supabase.from('gallery').select('id,title,type,url,description,category,created_at,thumbnail_url').order('created_at', { ascending: false }).limit(100),
-        supabase.from('berita').select('id,judul,ringkasan,konten,kategori,gambar_url,tanggal').order('tanggal', { ascending: false }).limit(100)
+        supabase.from('berita').select('id,judul,ringkasan,konten,kategori,gambar_url,tanggal').order('tanggal', { ascending: false }).limit(100),
+        import('../utils/siteSettingsHelper').then(({ getSiteSetting }) => getSiteSetting('rapor_atlet_data'))
       ]);
 
       if (cancelled) return;
@@ -128,6 +132,12 @@ export default function PlayerProfileModal({ player, globalRank, onClose }: Prop
       if (newsRes.status === 'fulfilled') {
         const rows = newsRes.value.data || [];
         setNews(rows.filter((row: NewsItem) => containsPlayer(row, name)));
+      }
+
+      if (raporRes.status === 'fulfilled') {
+        const rows = Array.isArray(raporRes.value) ? raporRes.value : [];
+        const exact = rows.find((row: any) => String(row?.id || '') === String(player.id || '') || String(row?.id || '') === String(player.pendaftaran_id || '') || norm(row?.nama || '') === norm(name));
+        setRapor(exact || null);
       }
 
       if ([galleryRes, newsRes].some((r: any) => r.status === 'rejected')) {
@@ -148,11 +158,20 @@ export default function PlayerProfileModal({ player, globalRank, onClose }: Prop
   const photos = useMemo(() => gallery.filter(item => item.type === 'image'), [gallery]);
   const videos = useMemo(() => gallery.filter(item => item.type === 'video'), [gallery]);
   const achievementText = profile?.pengalaman || 'Riwayat prestasi dan pertandingan atlet akan tampil di bagian ini.';
+  const physicalMetrics = rapor ? [['Stamina', rapor.fisik?.stamina], ['Kecepatan', rapor.fisik?.kecepatan], ['Kekuatan', rapor.fisik?.kekuatan], ['Kelincahan', rapor.fisik?.kelincahan], ['Kelenturan', rapor.fisik?.kelenturan]] : [];
+  const technicalMetrics = rapor ? [['Lob', rapor.teknik?.lob], ['Smash', rapor.teknik?.smash], ['Netting', rapor.teknik?.netting], ['Drop Shot', rapor.teknik?.dropShot], ['Backhand', rapor.teknik?.backhand], ['Service', rapor.teknik?.service]] : [];
+  const allMetrics = [...physicalMetrics, ...technicalMetrics].map(([,v]) => Number(v)).filter(Number.isFinite);
+  const performanceScore = allMetrics.length ? Math.round(allMetrics.reduce((a,b) => a+b, 0) / allMetrics.length) : 0;
+  const totalWins = rapor?.winLossHistory?.reduce((s,m) => s + Number(m.menang || 0), 0) || 0;
+  const totalLosses = rapor?.winLossHistory?.reduce((s,m) => s + Number(m.kalah || 0), 0) || 0;
+  const totalMatches = totalWins + totalLosses;
+  const winRate = totalMatches ? Math.round((totalWins / totalMatches) * 100) : 0;
 
   if (!player) return null;
 
   const tabs: { id: Tab; label: string; count?: number }[] = [
     { id: 'profil', label: 'Profil' },
+    { id: 'performa', label: 'Performa', count: rapor ? 1 : undefined },
     { id: 'prestasi', label: 'Prestasi', count: matches.length },
     { id: 'foto', label: 'Foto', count: photos.length },
     { id: 'video', label: 'Video', count: videos.length },
@@ -239,6 +258,67 @@ export default function PlayerProfileModal({ player, globalRank, onClose }: Prop
                   <p className="text-sm leading-7 text-slate-300">{profile?.pengalaman || 'Data pengalaman atlet belum diisi.'}</p>
                   {player.updated_at && <p className="mt-3 text-[10px] text-slate-500">Pembaruan peringkat: {new Date(player.updated_at).toLocaleDateString('id-ID')}</p>}
                 </div>
+              </div>
+            )}
+
+            {tab === 'performa' && (
+              <div className="mt-7 space-y-5">
+                {rapor ? (
+                  <>
+                    <div className="rounded-3xl border border-blue-500/20 bg-blue-500/5 p-5">
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-widest text-blue-400">Rapor Atlet Terintegrasi</p>
+                          <p className="text-sm text-slate-300 mt-1">Data performa diambil dari Rapor Atlet pada panel admin.</p>
+                        </div>
+                        <div className="w-16 h-16 rounded-2xl bg-blue-600/15 border border-blue-500/25 grid place-items-center shrink-0">
+                          <div className="text-center"><p className="text-2xl font-black text-blue-300">{performanceScore}</p><p className="text-[7px] font-black uppercase text-slate-500">Skor</p></div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 text-center"><p className="text-xl font-black text-emerald-400">{totalWins}</p><p className="text-[8px] uppercase tracking-widest text-slate-500 font-black mt-1">Menang</p></div>
+                      <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 text-center"><p className="text-xl font-black text-red-400">{totalLosses}</p><p className="text-[8px] uppercase tracking-widest text-slate-500 font-black mt-1">Kalah</p></div>
+                      <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 text-center"><p className="text-xl font-black text-blue-300">{winRate}%</p><p className="text-[8px] uppercase tracking-widest text-slate-500 font-black mt-1">Win Rate</p></div>
+                    </div>
+
+                    <div className="rounded-3xl border border-white/10 bg-white/[0.035] p-5">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-300 mb-4">Performa Fisik</p>
+                      <div className="space-y-3">
+                        {physicalMetrics.map(([label, value]) => <div key={String(label)}>
+                          <div className="flex justify-between text-[10px] font-black uppercase"><span className="text-slate-400">{String(label)}</span><span className="text-blue-300">{Number(value) || 0}</span></div>
+                          <div className="mt-1.5 h-2 rounded-full bg-slate-800 overflow-hidden"><div className="h-full rounded-full bg-blue-500" style={{ width: Math.max(0, Math.min(100, Number(value) || 0)) + '%' }} /></div>
+                        </div>)}
+                      </div>
+                    </div>
+
+                    <div className="rounded-3xl border border-white/10 bg-white/[0.035] p-5">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-300 mb-4">Performa Teknik</p>
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                        {technicalMetrics.map(([label, value]) => <div key={String(label)}>
+                          <div className="flex justify-between text-[10px] font-black uppercase"><span className="text-slate-400">{String(label)}</span><span className="text-amber-300">{Number(value) || 0}</span></div>
+                          <div className="mt-1.5 h-2 rounded-full bg-slate-800 overflow-hidden"><div className="h-full rounded-full bg-amber-500" style={{ width: Math.max(0, Math.min(100, Number(value) || 0)) + '%' }} /></div>
+                        </div>)}
+                      </div>
+                    </div>
+
+                    <div className="rounded-3xl border border-white/10 bg-white/[0.035] p-5">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Riwayat Menang / Kalah</p>
+                      <div className="space-y-2">
+                        {(rapor.winLossHistory || []).map((m) => <div key={m.bulan} className="flex items-center gap-3">
+                          <span className="w-9 text-[9px] font-black uppercase text-slate-500">{m.bulan}</span>
+                          <div className="flex-1 h-2 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-emerald-500 rounded-full" style={{ width: Math.min(100, Number(m.menang || 0) * 10) + '%' }} /></div>
+                          <span className="text-[9px] font-black text-emerald-400">{m.menang}W</span><span className="text-[9px] font-black text-red-400">{m.kalah}L</span>
+                        </div>)}
+                      </div>
+                    </div>
+
+                    {rapor.updatedAt && <p className="text-[9px] text-slate-500 text-right">Rapor diperbarui: {new Date(rapor.updatedAt).toLocaleDateString('id-ID')}</p>}
+                  </>
+                ) : (
+                  <div className="py-16 text-center border border-dashed border-white/10 rounded-3xl"><Activity className="mx-auto text-slate-600" size={36}/><p className="mt-3 text-xs font-black uppercase tracking-widest text-slate-500">Data performa belum tersedia</p><p className="mt-2 text-[10px] text-slate-600">Admin dapat mengisi Rapor Atlet melalui menu Rapor Atlet.</p></div>
+                )}
               </div>
             )}
 
