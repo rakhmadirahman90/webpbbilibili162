@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { supabase } from '../supabase';
 import { deleteAthleteCompletely } from '../utils/siteSettingsHelper';
 import { DEFAULT_RANKINGS } from '../data/localDatabase';
+import PlayerProfileModal from './PlayerProfileModal';
 import {
   TrendingUp,
   TrendingDown,
