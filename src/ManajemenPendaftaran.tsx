@@ -49,7 +49,7 @@ interface Registrant {
   foto_url: string;
   jenis_kelamin: string;
   kategori_atlet: string; // Kolom kategori atlet sesuai DB
-  status?: string; // 'Pending' | 'Diterima' | 'Ditolak'
+  status?: string; // 'Pending' | 'aktif' | 'Ditolak'
 }
 
 const Toast = Swal.mixin({
@@ -373,16 +373,17 @@ const totalSeniorPutri = registrants.filter(r =>
     try {
       const { error } = await supabase
         .from('pendaftaran')
-        .update({ status: newStatus })
+        .update({ status: newStatus === 'Diterima' ? 'aktif' : 'Ditolak' })
         .eq('id', item.id);
 
       if (error) throw error;
 
-      setRegistrants(prev => prev.map(r => r.id === item.id ? { ...r, status: newStatus } : r));
+      const savedStatus = newStatus === 'Diterima' ? 'aktif' : 'Ditolak';
+      setRegistrants(prev => prev.map(r => r.id === item.id ? { ...r, status: savedStatus } : r));
 
       Toast.fire({
         icon: newStatus === 'Diterima' ? 'success' : 'info',
-        title: `Pendaftaran ${item.nama} diubah ke status: ${newStatus.toUpperCase()}`
+        title: `Pendaftaran ${item.nama} diubah ke status: ${savedStatus.toUpperCase()}`
       });
 
       sendWaStatusNotification(item, newStatus, catatan);
@@ -828,7 +829,7 @@ const totalSeniorPutri = registrants.filter(r =>
                           <Clock size={10} /> MENUNGGU
                         </span>
                       )}
-                      {item.status === 'Diterima' && (
+                      {getStatusCategory(item.status) === 'diterima' && (
                         <span className="px-2.5 py-1 rounded-md text-[8px] font-black uppercase tracking-widest bg-emerald-500/15 text-emerald-300 border border-emerald-400/15 border border-emerald-300 inline-flex items-center gap-1">
                           <CheckCircle2 size={10} /> DITERIMA
                         </span>
