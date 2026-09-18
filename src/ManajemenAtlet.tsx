@@ -440,7 +440,7 @@ export default function ManajemenAtlet() {
   const totalPages = Math.ceil(filteredAtlets.length / itemsPerPage);
 
   return (
-    <div className="min-h-full flex flex-col bg-[#061225] font-sans text-white pb-24 lg:pb-6">
+    <div className="min-h-full flex flex-col bg-[#061225] font-sans text-white pb-8 lg:pb-6">
       {/* HEADER SECTION */}
       <div className="flex-shrink-0 px-3 py-4 md:p-8 md:pb-5 bg-[#07172b] border-b border-blue-500/10">
         <div className="max-w-7xl mx-auto">
@@ -563,10 +563,6 @@ export default function ManajemenAtlet() {
                       {String(atlet.status || 'aktif').toLowerCase() === 'aktif' || String(atlet.status || '').toLowerCase() === 'verified' ? 'AKTIF' : 'TIDAK AKTIF'}
                     </span>
                   </div>
-                  <p className="hidden">
-
-                      {atlet.kategori}
-                    </p>
                     <h3 className="text-sm md:text-base font-black text-white uppercase italic truncate mb-2 sm:mb-3">
                       {atlet.nama}
                     </h3>
