@@ -70,7 +70,7 @@ const replacement = `  const getSubMenus = (parentId: string) => {
     }
 
     return list;
-  };``;
+  }`;
 
 src = src.slice(0, start) + replacement + src.slice(end);
 
