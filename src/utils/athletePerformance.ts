@@ -29,6 +29,7 @@ export interface AthletePerformance {
   physical: Record<string, number>;
   technical: Record<string, number>;
   winLossHistory: { bulan: string; menang: number; kalah: number; seri: number }[];
+  attendanceMonthly: { bulan: string; hadir: number; total: number }[];
 }
 
 const norm = (v: any) => String(v ?? '').trim().toLowerCase();
@@ -119,12 +120,30 @@ function attendanceFor(
   const present = rows.filter((a: any) => norm(a?.status) === 'hadir').length;
   const excused = rows.filter((a: any) => norm(a?.status) === 'izin').length;
   const absent = rows.filter((a: any) => norm(a?.status) === 'alfa').length;
+  const monthly = new Map<string, { bulan: string; hadir: number; total: number; sort: string }>();
+
+  for (const row of rows) {
+    const d = new Date(row?.tanggal || row?.created_at || '');
+    if (Number.isNaN(d.getTime())) continue;
+    const sort = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const current = monthly.get(sort) || {
+      bulan: d.toLocaleDateString('id-ID', { month: 'short' }),
+      hadir: 0,
+      total: 0,
+      sort
+    };
+    current.total++;
+    if (norm(row?.status) === 'hadir') current.hadir++;
+    monthly.set(sort, current);
+  }
+
   return {
     total: rows.length,
     present,
     excused,
     absent,
-    rate: rows.length ? Math.round((present / rows.length) * 100) : null
+    rate: rows.length ? Math.round((present / rows.length) * 100) : null,
+    monthly: Array.from(monthly.values()).sort((a, b) => a.sort.localeCompare(b.sort)).map(({ bulan, hadir, total }) => ({ bulan, hadir, total }))
   };
 }
 
@@ -224,32 +243,51 @@ export async function loadAthletePerformanceData(): Promise<AthletePerformance[]
         raporUpdatedAt: rapor?.updatedAt || setting('rapor_atlet_data')?.updated_at || undefined,
         physical,
         technical,
-        winLossHistory: calcMonthly(playerMatches)
+        winLossHistory: calcMonthly(playerMatches),
+        attendanceMonthly: attendance.monthly
       } as AthletePerformance;
     })
     .filter(Boolean) as AthletePerformance[];
 }
 
 export function buildAggregateMonthlyTrend(players: AthletePerformance[]) {
-  const map = new Map<string, { month: string; sort: string; wins: number; losses: number; present: number; attendanceTotal: number }>();
+  const map = new Map<string, { month: string; sort: string; wins: number; losses: number; attendancePresent: number; attendanceTotal: number }>();
+
   for (const player of players) {
     for (const month of player.winLossHistory) {
       const key = month.bulan;
-      const existing = map.get(key) || { month: key, sort: key, wins: 0, losses: 0, present: 0, attendanceTotal: 0 };
-      existing.wins += month.menang;
-      existing.losses += month.kalah;
-      map.set(key, existing);
+      const current = map.get(key) || {
+        month: key,
+        sort: key,
+        wins: 0,
+        losses: 0,
+        attendancePresent: 0,
+        attendanceTotal: 0
+      };
+      current.wins += month.menang;
+      current.losses += month.kalah;
+      map.set(key, current);
+    }
+
+    for (const month of player.attendanceMonthly) {
+      const current = map.get(month.bulan) || {
+        month: month.bulan,
+        sort: month.bulan,
+        wins: 0,
+        losses: 0,
+        attendancePresent: 0,
+        attendanceTotal: 0
+      };
+      current.attendancePresent += month.hadir;
+      current.attendanceTotal += month.total;
+      map.set(month.bulan, current);
     }
   }
-  const attendanceAvailable = players.some(p => p.attendanceTotal > 0);
-  const totalWinsLosses = Array.from(map.values()).reduce((s, m) => s + m.wins + m.losses, 0);
+
   return Array.from(map.values()).map(m => ({
     month: m.month,
-    Kehadiran: attendanceAvailable
-      ? Math.round(players.reduce((s, p) => s + (p.attendanceRate ?? 0) * (p.attendanceTotal > 0 ? 1 : 0), 0) /
-          Math.max(1, players.filter(p => p.attendanceTotal > 0).length))
-      : null,
+    Kehadiran: m.attendanceTotal ? Math.round((m.attendancePresent / m.attendanceTotal) * 100) : null,
     turnamen_winrate: (m.wins + m.losses) ? Math.round((m.wins / (m.wins + m.losses)) * 100) : 0,
-    skor_avg: totalWinsLosses ? Math.round((m.wins / totalWinsLosses) * 100) : 0
+    skor_avg: (m.wins + m.losses) ? Math.round((m.wins / (m.wins + m.losses)) * 100) : 0
   }));
 }
