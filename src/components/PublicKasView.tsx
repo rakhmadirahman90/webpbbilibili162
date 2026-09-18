@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
-import { DEFAULT_KAS } from '../data/localDatabase';
+ 
 import Swal from 'sweetalert2';
 import { 
   Wallet, FileText, Loader2, ArrowUpCircle, ArrowDownCircle, Calendar,
@@ -74,7 +74,7 @@ export default function PublicKasView({ memberOnlyName }: PublicKasViewProps = {
       if (!error && data && data.length > 0) {
         fetchedKas = data;
         try {
-          localStorage.setItem('cached_kas_pb', JSON.stringify(data));
+          
         } catch (e) {}
       } else {
         const cached = localStorage.getItem('cached_kas_pb') || localStorage.getItem('kas_local_v3');
