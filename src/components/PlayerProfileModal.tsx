@@ -111,7 +111,7 @@ export default function PlayerProfileModal({ player, globalRank, onClose }: Prop
 
       const pId = player.pendaftaran_id || player.id;
       const [profileRes, matchRes, auditRes, galleryRes, newsRes, raporRes, rankingsRes, attendanceRes] = await Promise.allSettled([
-        supabase.from('pendaftaran').select('id,nama,kategori,kategori_atlet,domisili,foto_url,jenis_kelamin,pengalaman,status,tanggal_registrasi,created_at,nama_panggilan,nama_punggung,tempat_lahir,tanggal_lahir,tahun_bergabung,tangan_dominan,hobi,makanan_favorit').eq('id', pId).maybeSingle(),
+        supabase.from('pendaftaran').select('id,nama,kategori,kategori_atlet,domisili,foto_url,jenis_kelamin,pengalaman,status,tanggal_registrasi,created_at,nama_panggilan,nama_punggung,tempat_lahir,tanggal_lahir,tahun_bergabung,tangan_dominan,hobi,makanan_favorit,updated_at').eq('id', pId).maybeSingle(),
         supabase.from('pertandingan').select('id,pendaftaran_id,kategori_kegiatan,hasil,keterangan,created_at').eq('pendaftaran_id', pId).order('created_at', { ascending: false }),
         supabase.from('audit_poin').select('id,created_at,perubahan,poin_sebelum,poin_sesudah,tipe_kegiatan').ilike('atlet_nama', name.trim()).order('created_at', { ascending: false }).limit(12),
         supabase.from('gallery').select('id,title,type,url,description,category,created_at,thumbnail_url').order('created_at', { ascending: false }).limit(100),
@@ -385,66 +385,66 @@ export default function PlayerProfileModal({ player, globalRank, onClose }: Prop
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <section className="rounded-[1.75rem] border border-white/10 bg-white/[0.035] overflow-hidden">
-                      <div className="px-5 py-4 border-b border-white/10 flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 grid place-items-center text-blue-300">
-                          <User size={18} />
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
+                    <section className="rounded-[1.75rem] border border-blue-500/25 bg-[#061a35] overflow-hidden shadow-lg">
+                      <div className="px-5 py-4 bg-gradient-to-r from-blue-600/15 to-transparent border-b border-blue-500/15 flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-blue-600 grid place-items-center text-white shadow-lg shadow-blue-900/30">
+                          <User size={19} />
                         </div>
-                        <div>
-                          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-300">Biodata Atlet</p>
-                          <p className="text-[10px] text-slate-500 mt-0.5">Identitas dasar dan keanggotaan</p>
+                        <div className="min-w-0">
+                          <p className="text-sm sm:text-base font-black text-white">Biodata Atlet</p>
+                          <p className="text-[9px] uppercase tracking-widest text-blue-300 mt-0.5">Identitas & keanggotaan</p>
                         </div>
                       </div>
-                      <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="px-4 sm:px-5 py-2">
                         {[
-                          ['Nama Lengkap', profile?.nama || name],
-                          ['Nama Panggilan', profile?.nama_panggilan],
-                          ['Jenis Kelamin', profile?.jenis_kelamin],
-                          ['Tempat Lahir', profile?.tempat_lahir],
-                          ['Tanggal Lahir', profile?.tanggal_lahir
-                            ? new Date(profile.tanggal_lahir).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
-                            : ''],
-                          ['Domisili', profile?.domisili],
-                          ['Kategori / Sektor', profile?.kategori || player.category],
-                          ['Kategori Atlet', profile?.kategori_atlet || player.category],
-                          ['Status', profile?.status],
-                        ].map(([label, value]) => (
-                          <div key={String(label)} className="rounded-2xl border border-white/8 bg-slate-950/35 p-3.5 min-w-0">
-                            <p className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-slate-500">{label}</p>
-                            <p className="mt-1.5 text-sm font-bold text-slate-100 leading-5 break-words">
-                              {value !== undefined && value !== null && String(value).trim() !== '' ? String(value) : 'Belum diisi'}
-                            </p>
+                          ['Nama Lengkap', profile?.nama || name, User],
+                          ['Nama Panggilan', profile?.nama_panggilan, User],
+                          ['Jenis Kelamin', profile?.jenis_kelamin, User],
+                          ['Tempat, Tgl. Lahir', [profile?.tempat_lahir, profile?.tanggal_lahir ? new Date(profile.tanggal_lahir).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : ''].filter(Boolean).join(', '), Calendar],
+                          ['Domisili', profile?.domisili, MapPin],
+                          ['Kategori / Sektor', profile?.kategori || player.category, User],
+                          ['Kategori Atlet', profile?.kategori_atlet || player.category, Trophy],
+                          ['Status', profile?.status, ShieldCheck],
+                        ].map(([label, value, Icon]) => (
+                          <div key={String(label)} className="grid grid-cols-[28px_minmax(0,1fr)] gap-3 items-center py-3.5 border-b border-blue-500/10 last:border-b-0">
+                            <Icon size={17} className="text-slate-300" />
+                            <div className="grid grid-cols-[minmax(110px,1fr)_minmax(0,1.35fr)] gap-2 sm:gap-4 items-center min-w-0">
+                              <p className="text-xs sm:text-sm text-slate-300 leading-5">{label}</p>
+                              <p className="text-xs sm:text-sm font-bold text-white leading-5 break-words">
+                                {value !== undefined && value !== null && String(value).trim() !== '' ? String(value) : 'Belum diisi'}
+                              </p>
+                            </div>
                           </div>
                         ))}
                       </div>
                     </section>
 
-                    <section className="rounded-[1.75rem] border border-blue-500/15 bg-[#071a33]/80 overflow-hidden">
-                      <div className="px-5 py-4 border-b border-blue-500/10 flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 grid place-items-center text-blue-300">
-                          <Activity size={18} />
+                    <section className="rounded-[1.75rem] border border-blue-500/25 bg-[#061a35] overflow-hidden shadow-lg">
+                      <div className="px-5 py-4 bg-gradient-to-r from-blue-600/15 to-transparent border-b border-blue-500/15 flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-blue-600 grid place-items-center text-white shadow-lg shadow-blue-900/30">
+                          <Activity size={19} />
                         </div>
-                        <div>
-                          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-300">Data Profil Atlet</p>
-                          <p className="text-[10px] text-slate-500 mt-0.5">Informasi personal, permainan, dan preferensi</p>
+                        <div className="min-w-0">
+                          <p className="text-sm sm:text-base font-black text-white">Data Profil Atlet</p>
+                          <p className="text-[9px] uppercase tracking-widest text-blue-300 mt-0.5">Informasi profil & preferensi</p>
                         </div>
                       </div>
-                      <div className="p-5 space-y-3">
+                      <div className="px-4 sm:px-5 py-2">
                         {[
-                          ['Nama Punggung', profile?.nama_punggung],
-                          ['Tahun Bergabung', profile?.tahun_bergabung],
-                          ['Tangan Dominan', profile?.tangan_dominan],
-                          ['Hobi', profile?.hobi],
-                          ['Makanan Favorit', profile?.makanan_favorit],
-                          ['Tanggal Registrasi', profile?.tanggal_registrasi
-                            ? new Date(profile.tanggal_registrasi).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
-                            : ''],
-                        ].map(([label, value]) => (
-                          <div key={String(label)} className="flex items-start justify-between gap-4 rounded-2xl border border-blue-500/10 bg-black/15 px-4 py-3">
-                            <div className="min-w-0">
-                              <p className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-slate-500">{label}</p>
-                              <p className="mt-1 text-sm font-bold text-white leading-5 break-words">
+                          ['Nama Punggung', profile?.nama_punggung, User],
+                          ['Tahun Bergabung', profile?.tahun_bergabung, Calendar],
+                          ['Tangan Dominan', profile?.tangan_dominan, User],
+                          ['Hobi', profile?.hobi, Activity],
+                          ['Makanan Favorit', profile?.makanan_favorit, Activity],
+                          ['Tanggal Registrasi', profile?.tanggal_registrasi ? new Date(profile.tanggal_registrasi).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '', Calendar],
+                          ['Terakhir Diupdate', profile?.updated_at ? new Date(profile.updated_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '', Clock],
+                        ].map(([label, value, Icon]) => (
+                          <div key={String(label)} className="grid grid-cols-[28px_minmax(0,1fr)] gap-3 items-center py-3.5 border-b border-blue-500/10 last:border-b-0">
+                            <Icon size={17} className="text-slate-300" />
+                            <div className="grid grid-cols-[minmax(110px,1fr)_minmax(0,1.35fr)] gap-2 sm:gap-4 items-center min-w-0">
+                              <p className="text-xs sm:text-sm text-slate-300 leading-5">{label}</p>
+                              <p className="text-xs sm:text-sm font-bold text-white leading-5 break-words">
                                 {value !== undefined && value !== null && String(value).trim() !== '' ? String(value) : 'Belum diisi'}
                               </p>
                             </div>
