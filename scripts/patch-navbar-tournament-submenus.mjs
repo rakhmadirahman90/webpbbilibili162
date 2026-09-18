@@ -14,9 +14,30 @@ if (start < 0 || end < 0) {
 
 const replacement = `  const getSubMenus = (parentId: string) => {
     const parent = navData.find(i => i.id === parentId || i.path === parentId || String(i.label || '').toLowerCase() === String(parentId).toLowerCase());
+    const matchesParent = (item: any) => item?.parent_id && (
+      item.parent_id === parentId ||
+      item.parent_id === parent?.id ||
+      item.parent_id === parent?.path ||
+      String(item.parent_id).toLowerCase() === String(parent?.label || '').toLowerCase()
+    );
     const list = navData
-      .filter(i => i?.parent_id && (i.parent_id === parentId || i.parent_id === parent?.id || i.parent_id === parent?.path || String(i.parent_id).toLowerCase() === String(parent?.label || '').toLowerCase()))
-      .sort((a,b) => (a.order_index || 0) - (b.order_index || 0));
+      .filter(matchesParent)
+      .filter((item: any) => item?.is_active !== false)
+      .sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
+
+    const isAtlet = parent?.path === 'atlet'
+      || String(parent?.label || '').toLowerCase().trim() === 'atlet'
+      || String(parentId).toLowerCase() === 'atlet';
+
+    if (isAtlet) {
+      const defaults = ATLET_DEFAULT_SUBMENUS.filter((item: any) => item?.is_active !== false);
+      const key = (item: any) => normalizeNavigationPath(item?.path || '') || String(item?.label || '').toLowerCase().trim();
+      const merged = [...list];
+      for (const fallback of defaults) {
+        if (!merged.some((item: any) => key(item) === key(fallback))) merged.push({ ...fallback });
+      }
+      return merged.sort((a: any, b: any) => (a.order_index || 0) - (b.order_index || 0));
+    }
 
     const isTournament = parent?.path === 'pendaftaran-turnamen'
       || String(parent?.label || '').toLowerCase().trim() === 'pendaftaran peserta'
@@ -48,9 +69,8 @@ const replacement = `  const getSubMenus = (parentId: string) => {
       return merged.sort((a: any, b: any) => (a.order_index || 0) - (b.order_index || 0));
     }
 
-    if (!list.length && (parent?.path === 'atlet' || parent?.label?.toLowerCase() === 'atlet')) return ATLET_DEFAULT_SUBMENUS;
     return list;
-  };`;
+  };``;
 
 src = src.slice(0, start) + replacement + src.slice(end);
 
