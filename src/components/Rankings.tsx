@@ -470,38 +470,12 @@ const Rankings: React.FC = () => {
       const syncedData = Array.from(playerMap.values());
       const sortedData = syncedData.sort((a, b) => b.total_points - a.total_points);
 
-      if (sortedData.length > 0) {
-        setDbRankings(sortedData);
-        try {
-          localStorage.setItem('cached_rankings', JSON.stringify(sortedData));
-        } catch (e) {}
-      } else {
-        const cached = localStorage.getItem('cached_rankings') || localStorage.getItem('rankings_local_v3');
-        if (cached) {
-          try {
-            const parsed = JSON.parse(cached);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              setDbRankings(parsed);
-              return;
-            }
-          } catch (e) {}
-        }
-        setDbRankings(DEFAULT_RANKINGS as any[]);
-      }
+      // Supabase is authoritative. Do not render cached or bundled ranking snapshots.
+      setDbRankings(sortedData);
     } catch (error: any) {
       console.error('Sync Error:', error);
-      const cached = localStorage.getItem('cached_rankings') || localStorage.getItem('rankings_local_v3');
-      if (cached) {
-        try {
-          const parsed = JSON.parse(cached);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setDbRankings(parsed);
-            return;
-          }
-        } catch (e) {}
-      }
-      setDbRankings(DEFAULT_RANKINGS as any[]);
-      setFetchError(error.message);
+      setDbRankings([]);
+      setFetchError(error?.message || 'Data ranking tidak dapat dimuat.');
     } finally {
       setLoading(false);
     }
@@ -513,7 +487,8 @@ const Rankings: React.FC = () => {
     const channel = supabase
       .channel('rankings_realtime_sync_v4')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'rankings' }, () => fetchRankings())
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'audit_poin' }, () => fetchRankings())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'audit_poin' }, () => fetchRankings())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'atlet_stats' }, () => fetchRankings())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'pendaftaran' }, () => fetchRankings())
       .subscribe();
 
