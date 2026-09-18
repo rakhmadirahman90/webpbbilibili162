@@ -1,0 +1,354 @@
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  X, User, Trophy, Medal, Calendar, MapPin, Award, Camera, PlayCircle,
+  Newspaper, ExternalLink, Loader2, History, ShieldCheck, ArrowUpRight,
+  ArrowDownRight, Clock
+} from 'lucide-react';
+import { supabase } from '../supabase';
+
+interface Player {
+  id: string;
+  pendaftaran_id?: string;
+  player_name: string;
+  category: string;
+  seed: string;
+  poin?: number;
+  total_points: number;
+  bonus?: number;
+  photo_url?: string;
+  updated_at?: string;
+}
+
+interface Props {
+  player: Player | null;
+  globalRank: number;
+  onClose: () => void;
+}
+
+type Tab = 'profil' | 'prestasi' | 'foto' | 'video' | 'berita';
+
+type GalleryItem = {
+  id: string;
+  title?: string;
+  type: 'image' | 'video';
+  url: string;
+  description?: string;
+  category?: string;
+  created_at?: string;
+  thumbnail_url?: string;
+};
+
+type NewsItem = {
+  id: string;
+  judul: string;
+  ringkasan?: string;
+  konten?: string;
+  kategori?: string;
+  gambar_url?: string;
+  tanggal?: string;
+};
+
+type MatchItem = {
+  id: string;
+  kategori_kegiatan?: string;
+  hasil?: string;
+  keterangan?: string;
+  created_at?: string;
+};
+
+type AuditItem = {
+  id: string;
+  created_at: string;
+  perubahan: number;
+  poin_sebelum: number;
+  poin_sesudah: number;
+  tipe_kegiatan?: string;
+};
+
+const norm = (v = '') => v.toLowerCase().trim();
+
+const containsPlayer = (item: any, name: string) => {
+  const n = norm(name);
+  return [item?.title, item?.description, item?.category, item?.judul, item?.ringkasan, item?.konten]
+    .filter(Boolean)
+    .some((v: string) => norm(v).includes(n));
+};
+
+const firstUrl = (value?: string) =>
+  (value || '').split(/[\s,]+/).map(v => v.trim()).find(v => /^https?:\/\//i.test(v)) || '';
+
+const isYoutube = (url: string) =>
+  /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)/i.test(url);
+
+const youtubeEmbed = (url: string) => {
+  const m = url.match(/(?:v=|youtu\.be\/|embed\/)([A-Za-z0-9_-]{6,})/i);
+  return m ? `https://www.youtube.com/embed/${m[1]}` : url;
+};
+
+export default function PlayerProfileModal({ player, globalRank, onClose }: Props) {
+  const [tab, setTab] = useState<Tab>('profil');
+  const [loading, setLoading] = useState(false);
+  const [profile, setProfile] = useState<any>(null);
+  const [matches, setMatches] = useState<MatchItem[]>([]);
+  const [audit, setAudit] = useState<AuditItem[]>([]);
+  const [gallery, setGallery] = useState<GalleryItem[]>([]);
+  const [news, setNews] = useState<NewsItem[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  const name = player?.player_name || '';
+
+  useEffect(() => {
+    if (!player) return;
+    let cancelled = false;
+
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+
+      const pId = player.pendaftaran_id || player.id;
+      const [profileRes, matchRes, auditRes, galleryRes, newsRes] = await Promise.allSettled([
+        supabase.from('pendaftaran').select('id,nama,kategori,kategori_atlet,domisili,foto_url,jenis_kelamin,pengalaman').eq('id', pId).maybeSingle(),
+        supabase.from('pertandingan').select('id,pendaftaran_id,kategori_kegiatan,hasil,keterangan,created_at').eq('pendaftaran_id', pId).order('created_at', { ascending: false }).limit(20),
+        supabase.from('audit_poin').select('id,created_at,perubahan,poin_sebelum,poin_sesudah,tipe_kegiatan').ilike('atlet_nama', name.trim()).order('created_at', { ascending: false }).limit(12),
+        supabase.from('gallery').select('id,title,type,url,description,category,created_at,thumbnail_url').order('created_at', { ascending: false }).limit(100),
+        supabase.from('berita').select('id,judul,ringkasan,konten,kategori,gambar_url,tanggal').order('tanggal', { ascending: false }).limit(100)
+      ]);
+
+      if (cancelled) return;
+
+      if (profileRes.status === 'fulfilled') setProfile(profileRes.value.data || null);
+      if (matchRes.status === 'fulfilled') setMatches(matchRes.value.data || []);
+      if (auditRes.status === 'fulfilled') setAudit(auditRes.value.data || []);
+
+      if (galleryRes.status === 'fulfilled') {
+        const rows = galleryRes.value.data || [];
+        setGallery(rows.filter((row: GalleryItem) => containsPlayer(row, name)));
+      }
+
+      if (newsRes.status === 'fulfilled') {
+        const rows = newsRes.value.data || [];
+        setNews(rows.filter((row: NewsItem) => containsPlayer(row, name)));
+      }
+
+      if ([galleryRes, newsRes].some((r: any) => r.status === 'rejected')) {
+        setError('Sebagian dokumentasi belum dapat dimuat.');
+      }
+
+      setLoading(false);
+    };
+
+    load();
+    return () => { cancelled = true; };
+  }, [player, name]);
+
+  useEffect(() => {
+    if (player) setTab('profil');
+  }, [player]);
+
+  const photos = useMemo(() => gallery.filter(item => item.type === 'image'), [gallery]);
+  const videos = useMemo(() => gallery.filter(item => item.type === 'video'), [gallery]);
+  const achievementText = profile?.pengalaman || 'Riwayat prestasi dan pertandingan atlet akan tampil di bagian ini.';
+
+  if (!player) return null;
+
+  const tabs: { id: Tab; label: string; count?: number }[] = [
+    { id: 'profil', label: 'Profil' },
+    { id: 'prestasi', label: 'Prestasi', count: matches.length },
+    { id: 'foto', label: 'Foto', count: photos.length },
+    { id: 'video', label: 'Video', count: videos.length },
+    { id: 'berita', label: 'Berita', count: news.length },
+  ];
+
+  const navigate = (path: string) => {
+    onClose();
+    window.location.href = path;
+  };
+
+  return (
+    <div className="fixed inset-0 z-[99999] bg-[#050a14]/95 backdrop-blur-xl flex items-center justify-center p-0 sm:p-4">
+      <div className="relative w-full sm:max-w-2xl h-[100dvh] sm:h-[92vh] bg-[#071226] text-white overflow-hidden sm:rounded-[2rem] shadow-2xl border border-blue-500/20 flex flex-col">
+        <div className="shrink-0 bg-[#071226]/95 border-b border-white/10">
+          <div className="px-4 sm:px-7 pt-5 pb-2 flex items-center justify-between">
+            <div className="font-black italic text-xl tracking-tight">
+              PB <span className="text-blue-400">BILIBILI</span> 162
+            </div>
+            <button onClick={onClose} aria-label="Tutup" className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 grid place-items-center">
+              <X size={20} />
+            </button>
+          </div>
+
+          <div className="px-2 sm:px-5 overflow-x-auto no-scrollbar">
+            <div className="flex min-w-max">
+              {tabs.map(item => (
+                <button
+                  key={item.id}
+                  onClick={() => setTab(item.id)}
+                  className={`px-4 sm:px-5 py-4 text-sm font-bold border-b-2 transition-all whitespace-nowrap ${
+                    tab === item.id ? 'text-white border-blue-500' : 'text-slate-500 border-transparent hover:text-slate-300'
+                  }`}
+                >
+                  {item.label}{item.count ? <span className="ml-1.5 text-[10px] text-blue-400">({item.count})</span> : ''}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto custom-scrollbar">
+          <div className="px-5 sm:px-8 pt-7 pb-8">
+            <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/5 px-4 py-2 text-[10px] font-black tracking-[0.18em] text-blue-400 uppercase">
+              <span className="w-2 h-2 rounded-full bg-blue-500" />
+              {player.seed || 'SENIOR'} • PB BILIBILI 162
+            </div>
+
+            <h2 className="mt-5 text-4xl sm:text-5xl font-black italic uppercase tracking-tight break-words">{name}</h2>
+            <p className="mt-2 text-slate-400 font-medium uppercase tracking-wide">ATLET PB BILIBILI 162</p>
+
+            <div className="mt-5 flex flex-wrap gap-2">
+              <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold">{player.category || 'SENIOR'}</span>
+              <span className="rounded-full border border-blue-500/30 bg-blue-500/10 px-4 py-2 text-xs font-black text-blue-300">{Number(player.total_points || 0).toLocaleString('id-ID')} PTS</span>
+              {globalRank > 0 && <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-xs font-black text-amber-300">RANK #{globalRank}</span>}
+            </div>
+
+            {tab === 'profil' && (
+              <div className="mt-7 space-y-5">
+                <div className="overflow-hidden rounded-3xl border border-white/10 bg-[#0a1930]">
+                  {player.photo_url ? (
+                    <img src={player.photo_url} alt={name} className="w-full max-h-[420px] object-contain bg-[#0d2b55]" />
+                  ) : (
+                    <div className="h-72 flex items-center justify-center text-slate-500"><User size={72} /></div>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    ['Domisili', profile?.domisili || '—'],
+                    ['Jenis Kelamin', profile?.jenis_kelamin || 'Putra'],
+                    ['Kategori Atlet', profile?.kategori_atlet || player.category || '—'],
+                    ['Seed', player.seed || 'Non-Seed'],
+                  ].map(([label, value]) => (
+                    <div key={label} className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+                      <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">{label}</p>
+                      <p className="mt-1 text-sm font-bold text-slate-200 break-words">{value}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-5">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-2">Profil & Pengalaman</p>
+                  <p className="text-sm leading-7 text-slate-300">{profile?.pengalaman || 'Data pengalaman atlet belum diisi.'}</p>
+                  {player.updated_at && <p className="mt-3 text-[10px] text-slate-500">Pembaruan peringkat: {new Date(player.updated_at).toLocaleDateString('id-ID')}</p>}
+                </div>
+              </div>
+            )}
+
+            {tab === 'prestasi' && (
+              <div className="mt-7 space-y-5">
+                <div className="rounded-3xl border border-amber-500/20 bg-gradient-to-br from-amber-500/10 to-transparent p-5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-2xl bg-amber-500/10 border border-amber-500/20 grid place-items-center text-amber-300"><Trophy size={22} /></div>
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-amber-300">Prestasi & Rekam Pertandingan</p>
+                      <p className="text-sm text-slate-300 mt-1">{achievementText}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="rounded-2xl bg-white/[0.04] border border-white/10 p-4 text-center"><Award className="mx-auto text-blue-400" size={19}/><p className="text-lg font-black mt-2">{matches.length}</p><p className="text-[8px] uppercase text-slate-500 font-black">Pertandingan</p></div>
+                  <div className="rounded-2xl bg-white/[0.04] border border-white/10 p-4 text-center"><Trophy className="mx-auto text-amber-400" size={19}/><p className="text-lg font-black mt-2">{audit.filter(x => x.perubahan > 0).length}</p><p className="text-[8px] uppercase text-slate-500 font-black">Perolehan Poin</p></div>
+                  <div className="rounded-2xl bg-white/[0.04] border border-white/10 p-4 text-center"><History className="mx-auto text-emerald-400" size={19}/><p className="text-lg font-black mt-2">{audit.length}</p><p className="text-[8px] uppercase text-slate-500 font-black">Aktivitas</p></div>
+                </div>
+
+                {matches.length > 0 ? matches.map(match => (
+                  <div key={match.id} className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-black uppercase text-slate-200">{match.kategori_kegiatan || 'Pertandingan'}</p>
+                        <p className="text-sm font-bold text-blue-300 mt-1">{match.hasil || 'Hasil belum dicatat'}</p>
+                        {match.keterangan && <p className="text-xs leading-5 text-slate-400 mt-2">{match.keterangan}</p>}
+                      </div>
+                      <Calendar size={16} className="text-slate-500 shrink-0" />
+                    </div>
+                    {match.created_at && <p className="text-[9px] text-slate-500 mt-3">{new Date(match.created_at).toLocaleDateString('id-ID')}</p>}
+                  </div>
+                )) : (
+                  <div className="rounded-2xl border border-dashed border-white/10 p-10 text-center text-slate-500 text-xs font-bold uppercase tracking-widest">Belum ada rekam pertandingan.</div>
+                )}
+
+                {audit.length > 0 && (
+                  <div className="space-y-2">
+                    {audit.slice(0, 6).map(log => {
+                      const gain = Number(log.perubahan) > 0;
+                      return <div key={log.id} className="rounded-2xl border border-white/10 bg-white/[0.025] p-3 flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          {gain ? <ArrowUpRight size={17} className="text-emerald-400"/> : <ArrowDownRight size={17} className="text-red-400"/>}
+                          <div className="min-w-0"><p className="text-xs font-bold truncate">{log.tipe_kegiatan || 'Aktivitas'}</p><p className="text-[9px] text-slate-500">{new Date(log.created_at).toLocaleDateString('id-ID')}</p></div>
+                        </div>
+                        <span className={`text-xs font-black ${gain ? 'text-emerald-400' : 'text-red-400'}`}>{gain ? '+' : ''}{log.perubahan}</span>
+                      </div>;
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {(tab === 'foto' || tab === 'video') && (
+              <div className="mt-7">
+                {loading ? <div className="py-20 flex justify-center"><Loader2 className="animate-spin text-blue-400" /></div> :
+                  (tab === 'foto' ? photos : videos).length > 0 ? (
+                    <div className="grid grid-cols-2 gap-3">
+                      {(tab === 'foto' ? photos : videos).map(item => {
+                        const url = item.url?.split(/[\s,]+/).find(Boolean) || '';
+                        return <button key={item.id} onClick={() => navigate(`/galeri?gallery=${encodeURIComponent(item.id)}`)} className="text-left rounded-2xl overflow-hidden border border-white/10 bg-white/[0.035] hover:border-blue-500/40 transition-all">
+                          <div className="aspect-square bg-black relative overflow-hidden">
+                            {tab === 'foto' ? <img src={url} alt={item.title || name} className="w-full h-full object-cover" loading="lazy"/> :
+                              item.thumbnail_url ? <img src={item.thumbnail_url} alt={item.title || name} className="w-full h-full object-cover"/> :
+                              <div className="w-full h-full grid place-items-center text-blue-400"><PlayCircle size={48}/></div>}
+                            {tab === 'video' && <span className="absolute inset-0 grid place-items-center text-white"><PlayCircle size={44}/></span>}
+                          </div>
+                          <div className="p-3"><p className="text-xs font-black uppercase line-clamp-2">{item.title || 'Dokumentasi Atlet'}</p><p className="text-[9px] text-slate-500 mt-1">{item.category || 'DOKUMENTASI'}</p></div>
+                        </button>;
+                      })}
+                    </div>
+                  ) : (
+                    <div className="py-16 text-center border border-dashed border-white/10 rounded-3xl">
+                      <Camera className="mx-auto text-slate-600" size={36}/>
+                      <p className="mt-3 text-xs font-black uppercase tracking-widest text-slate-500">Belum ada {tab === 'foto' ? 'foto' : 'video'} terkait atlet</p>
+                      <p className="mt-2 text-[10px] text-slate-600">Dokumentasi dapat ditautkan melalui menu Galeri yang sudah tersedia.</p>
+                    </div>
+                  )}
+              </div>
+            )}
+
+            {tab === 'berita' && (
+              <div className="mt-7 space-y-3">
+                {loading ? <div className="py-20 flex justify-center"><Loader2 className="animate-spin text-blue-400" /></div> :
+                  news.length > 0 ? news.map(item => (
+                    <button key={item.id} onClick={() => navigate(`/berita?newsId=${encodeURIComponent(item.id)}`)} className="w-full text-left rounded-2xl border border-white/10 bg-white/[0.035] p-3 flex gap-3 hover:border-blue-500/40 transition-all">
+                      {firstUrl(item.gambar_url) ? <img src={firstUrl(item.gambar_url)} alt="" className="w-24 h-20 rounded-xl object-cover shrink-0"/> : <div className="w-24 h-20 rounded-xl bg-blue-500/10 grid place-items-center text-blue-400 shrink-0"><Newspaper size={25}/></div>}
+                      <div className="min-w-0"><span className="text-[8px] font-black uppercase tracking-widest text-blue-400">{item.kategori || 'BERITA'}</span><p className="text-sm font-black uppercase leading-5 mt-1 line-clamp-2">{item.judul}</p><p className="text-[10px] text-slate-500 mt-1">{item.tanggal ? new Date(item.tanggal).toLocaleDateString('id-ID') : ''}</p></div>
+                    </button>
+                  )) : (
+                    <div className="py-16 text-center border border-dashed border-white/10 rounded-3xl">
+                      <Newspaper className="mx-auto text-slate-600" size={36}/>
+                      <p className="mt-3 text-xs font-black uppercase tracking-widest text-slate-500">Belum ada berita terkait atlet</p>
+                      <p className="mt-2 text-[10px] text-slate-600">Berita akan terhubung otomatis berdasarkan nama atlet.</p>
+                    </div>
+                  )}
+              </div>
+            )}
+
+            {error && <p className="mt-4 text-[10px] text-amber-400">{error}</p>}
+
+            <div className="mt-8 pt-5 border-t border-white/10 flex flex-wrap gap-2 text-[9px] font-black uppercase tracking-widest text-slate-500">
+              <span className="inline-flex items-center gap-1"><ShieldCheck size={12}/> Data terintegrasi</span>
+              <span className="inline-flex items-center gap-1"><MapPin size={12}/> PB Bilibili 162</span>
+              <span className="inline-flex items-center gap-1"><Clock size={12}/> Real-time</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
