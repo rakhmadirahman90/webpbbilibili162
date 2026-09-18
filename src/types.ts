@@ -12,4 +12,12 @@ export interface Registrant {
   bio: string;
   prestasi: string;
   status?: string;
+  alasan_status?: string | null;
+  seeded_cup1?: boolean;
+  seeded_participated?: boolean;
+  seeded_player_name?: string | null;
+  seeded_club_name?: string | null;
+  seeded_division?: string | null;
+  seeded_partners?: string[];
+  seeded_source_no?: number | null;
 }
