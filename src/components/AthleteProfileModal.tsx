@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, User, Edit3 } from 'lucide-react';
+import { X, User, Edit3, Power, MapPin, Briefcase, Heart } from 'lucide-react';
 import { Registrant } from '../types';
 import LazyImage from './LazyImage';
 
@@ -49,6 +49,16 @@ export default function AthleteProfileModal({ atlet, onClose, onEdit }: Props) {
                 <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Biografi Singkat</h3>
                 <p className="text-sm text-slate-300 leading-relaxed">{atlet.bio}</p>
               </div>
+              {String((atlet as any).status || 'aktif').toLowerCase() !== 'aktif' && (
+                <div className="bg-red-500/10 p-5 rounded-2xl border border-red-500/20">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Power size={15} className="text-red-400" />
+                    <h3 className="text-[10px] font-black text-red-300 uppercase tracking-widest">Status Keanggotaan</h3>
+                  </div>
+                  <p className="text-sm font-black text-white uppercase">Tidak Aktif</p>
+                  <p className="text-xs text-red-300 mt-1 font-semibold">{(atlet as any).alasan_status || 'Alasan Lainnya'}</p>
+                </div>
+              )}
               <button 
                 onClick={onEdit}
                 className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all"
@@ -64,6 +74,7 @@ export default function AthleteProfileModal({ atlet, onClose, onEdit }: Props) {
               <div className="bg-white/5 p-4 rounded-xl border border-white/5"><p className="text-[10px] text-slate-400 uppercase">Points</p><p className="text-sm font-semibold mt-1">{atlet.points?.toLocaleString() || 0}</p></div>
               <div className="bg-white/5 p-4 rounded-xl border border-white/5"><p className="text-[10px] text-slate-400 uppercase">Seed</p><p className="text-sm font-semibold mt-1">{atlet.seed}</p></div>
               <div className="bg-white/5 p-4 rounded-xl border border-white/5"><p className="text-[10px] text-slate-400 uppercase">Gender</p><p className="text-sm font-semibold mt-1">{atlet.jenis_kelamin}</p></div>
+              <div className="col-span-2 bg-white/5 p-4 rounded-xl border border-white/5"><p className="text-[10px] text-slate-400 uppercase">Status Keanggotaan</p><p className={`text-sm font-black mt-1 uppercase ${String((atlet as any).status || 'aktif').toLowerCase() === 'aktif' ? 'text-emerald-400' : 'text-red-400'}`}>{String((atlet as any).status || 'aktif').toLowerCase() === 'aktif' ? 'Aktif' : `Tidak Aktif — ${(atlet as any).alasan_status || 'Alasan Lainnya'}`}</p></div>
             </div>
           )}
         </div>
