@@ -558,9 +558,37 @@ export default function PlayerProfileModal({ player, globalRank, onClose }: Prop
                     <div className="p-5">
                       <div className="rounded-2xl bg-slate-950/40 border border-white/5 p-4">
                         <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">Pengalaman</p>
-                        <p className="mt-2 text-sm leading-6 text-slate-200">
-                          {profile?.pengalaman || 'Belum diisi pada database.'}
-                        </p>
+                        <div className="mt-3 space-y-3">
+                          {String(profile?.pengalaman || 'Belum diisi pada database.')
+                            .split(/\n+|(?=Prestasi\s*:)/i)
+                            .map((part, index) => {
+                              const text = part.trim();
+                              if (!text) return null;
+                              const isPrestasi = /^Prestasi\s*:/i.test(text);
+                              const content = isPrestasi ? text.replace(/^Prestasi\s*:\s*/i, '') : text;
+                              return (
+                                <div key={index} className={isPrestasi
+                                  ? 'rounded-xl border border-amber-500/20 bg-amber-500/5 p-3'
+                                  : 'rounded-xl border border-white/5 bg-slate-900/40 p-3'}>
+                                  <div className="flex items-start gap-2">
+                                    {isPrestasi ? (
+                                      <Trophy size={14} className="mt-0.5 shrink-0 text-amber-400" />
+                                    ) : (
+                                      <History size={14} className="mt-0.5 shrink-0 text-blue-400" />
+                                    )}
+                                    <div className="min-w-0">
+                                      <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">
+                                        {isPrestasi ? 'Prestasi / Partisipasi' : 'Pengalaman'}
+                                      </p>
+                                      <p className="mt-1 text-sm leading-6 text-slate-200">
+                                        {content}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                        </div>
                       </div>
                       <div className="mt-3 flex flex-wrap gap-2">
                         <span className="inline-flex items-center gap-1.5 rounded-xl border border-blue-500/20 bg-blue-500/5 px-3 py-2 text-[9px] font-black uppercase tracking-widest text-blue-300">
