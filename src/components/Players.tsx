@@ -136,9 +136,48 @@ const Players: React.FC<{ initialFilter?: string }> = ({
       });
 
       const rankingsMap = new Map();
-      // Rankings tanpa pasangan pada public.pendaftaran tidak ditampilkan sebagai atlet baru.
-      // Dengan demikian landing page memakai master atlet yang sama dengan Manajemen Atlet.
-      
+      rankingsList.forEach((r: any) => {
+        if (r.pendaftaran_id) rankingsMap.set(String(r.pendaftaran_id), r);
+        if (r.player_name) rankingsMap.set(r.player_name.trim().toLowerCase(), r);
+      });
+
+      // public.pendaftaran adalah master identitas atlet.
+      // rankings/atlet_stats hanya memperkaya poin, seed, bio, dan performa.
+      // Atlet yang hanya ada di rankings tidak dibuat sebagai atlet baru di landing page.
+      const playerMap = new Map<string, any>();
+
+      pendaftaranList.forEach((p: any) => {
+        const nameKey = (p.nama || '').trim().toLowerCase();
+        if (!nameKey) return;
+
+        const stat = statsMap.get(String(p.id)) || statsMap.get(nameKey);
+        const rankItem = rankingsMap.get(String(p.id)) || rankingsMap.get(nameKey);
+
+        const baseP = Number(stat?.points) || Number(rankItem?.poin) || 0;
+        const bonusP = Number(stat?.total_points) || Number(rankItem?.bonus) || 0;
+        const finalP = Number(rankItem?.total_points) > (baseP + bonusP)
+          ? Number(rankItem.total_points)
+          : (baseP + bonusP);
+
+        const tournamentPhoto = tournamentPhotoById.get(String(p.id));
+        const mergedPendaftaran = {
+          ...p,
+          foto_url: tournamentPhoto || p.foto_url || null,
+        };
+
+        playerMap.set(nameKey, {
+          id: p.id,
+          pendaftaran_id: p.id,
+          pendaftaran: mergedPendaftaran,
+          points: baseP,
+          total_points: bonusP,
+          display_points: finalP,
+          seed: stat?.seed || rankItem?.seed || 'UNSEEDED',
+          bio: stat?.bio || p.pengalaman || 'Dedikasi dan semangat tinggi untuk membawa nama baik PB Bilibili 162 di kancah nasional.',
+          status: p.status || 'aktif',
+        });
+      });
+
       const resultPlayers = Array.from(playerMap.values());
       // Live database is authoritative. Never render an older browser snapshot.
       setDbPlayers(resultPlayers);
@@ -158,6 +197,7 @@ const Players: React.FC<{ initialFilter?: string }> = ({
     const channel = supabase
       .channel('atlet_changes_v2')
       .on('postgres_changes', { event: '*', table: 'atlet_stats', schema: 'public' }, () => fetchPlayersFromDB())
+      .on('postgres_changes', { event: '*', table: 'rankings', schema: 'public' }, () => fetchPlayersFromDB())
       .on('postgres_changes', { event: '*', table: 'pendaftaran', schema: 'public' }, () => fetchPlayersFromDB())
       .on('postgres_changes', { event: '*', table: 'pendaftaran_turnamen', schema: 'public' }, () => fetchPlayersFromDB())
       .subscribe();
