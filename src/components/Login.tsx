@@ -47,11 +47,17 @@ export default function Login() {
 
   useEffect(() => {
     const normalized = normalizePhone(phone);
-    const isValidPhone = normalized.startsWith('62') && normalized.length >= 11 && normalized.length <= 15;
+    const isValidPhone = /^62\\d{9,13}$/.test(normalized);
+
+    // Tampilkan notice segera setelah nomor WhatsApp lengkap.
+    // Pemeriksaan server berjalan di belakang layar dan tidak boleh
+    // membuat notice hilang hanya karena masalah jaringan/CORS.
     if (!isValidPhone || mustChangePassword) {
       setDefaultNotice(false);
       return;
     }
+
+    setDefaultNotice(true);
 
     let cancelled = false;
     const timer = window.setTimeout(async () => {
@@ -60,21 +66,21 @@ export default function Login() {
           body: { phone: normalized, action: 'check_first_login' }
         });
         if (cancelled) return;
-        if (!error && data?.ok && data?.show_default_notice) {
-          setDefaultNotice(true);
-        } else {
+
+        if (!error && data?.ok && data?.show_default_notice === false) {
           setDefaultNotice(false);
+        } else if (!error && data?.ok && data?.show_default_notice === true) {
+          setDefaultNotice(true);
         }
       } catch {
-        if (!cancelled) setDefaultNotice(false);
+        // Pertahankan notice lokal jika request server gagal.
       }
-    }, 350);
+    }, 250);
 
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
     };
-    return () => window.clearTimeout(timer);
   }, [phone, mustChangePassword]);
 
   const finalizeSession = (user: any) => {
@@ -224,13 +230,11 @@ export default function Login() {
   <form onSubmit={e=>{e.preventDefault();handleLogin();}} className="space-y-3">
     <label className="mb-1 ml-1 flex items-center gap-2 text-[8px] font-black uppercase tracking-[.14em] text-blue-100/60 sm:text-[9px]"><Smartphone size={13} className="text-blue-400"/> Nomor WhatsApp Terdaftar</label>
     <div className="relative">
-      <input type="tel" inputMode="tel" autoComplete="tel" required value={phone} onChange={e=>{setErrorMsg(null);setDefaultNotice(false);setPhone(e.target.value.replace(/[^0-9+ ]/g,''));}} className={inputClass + ' pr-12 text-[15px] font-semibold sm:text-base'} placeholder="08xxxxxxxxxx"/>
+      <input type="tel" inputMode="tel" autoComplete="tel" required value={phone} onChange={e=>{const value=e.target.value.replace(/[^0-9+ ]/g,'');setErrorMsg(null);setPhone(value);const normalized=normalizePhone(value);setDefaultNotice(/^62\\d{9,13}$/.test(normalized));}} className={inputClass + ' pr-12 text-[15px] font-semibold sm:text-base'} placeholder="08xxxxxxxxxx"/>
       <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[8px] font-black uppercase tracking-wider text-emerald-400/70">WA</span>
     </div>
-    <label className="mb-1 ml-1 flex items-center gap-2 text-[8px] font-black uppercase tracking-[.14em] text-blue-100/60 sm:text-[9px]"><LockKeyhole size={13} className="text-cyan-300"/> Password</label>
-    <input type="password" autoComplete="current-password" required value={password} onChange={e=>{setErrorMsg(null);setPassword(e.target.value);}} className={inputClass + ' text-[15px] font-semibold sm:text-base'} placeholder="Masukkan password"/>
     {defaultNotice && (
-      <div role="status" className="animate-in fade-in slide-in-from-top-2 duration-300 rounded-2xl border border-amber-400/25 bg-amber-500/[.08] p-3.5 shadow-[0_10px_30px_rgba(245,158,11,.08)]">
+      <div role="status" aria-live="polite" className="animate-in fade-in slide-in-from-top-2 duration-300 rounded-2xl border border-amber-400/25 bg-amber-500/[.08] p-3.5 shadow-[0_10px_30px_rgba(245,158,11,.08)]">
         <div className="flex items-start gap-2.5">
           <LockKeyhole size={16} className="mt-0.5 shrink-0 text-amber-300"/>
           <div>
@@ -240,6 +244,9 @@ export default function Login() {
         </div>
       </div>
     )}
+    <label className="mb-1 ml-1 flex items-center gap-2 text-[8px] font-black uppercase tracking-[.14em] text-blue-100/60 sm:text-[9px]"><LockKeyhole size={13} className="text-cyan-300"/> Password</label>
+    <input type="password" autoComplete="current-password" required value={password} onChange={e=>{setErrorMsg(null);setPassword(e.target.value);}} className={inputClass + ' text-[15px] font-semibold sm:text-base'} placeholder="Masukkan password"/>
+
     <button type="submit" disabled={loading} className="group relative flex h-[50px] w-full items-center justify-center gap-2.5 overflow-hidden rounded-[18px] bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 text-xs font-black uppercase tracking-[.12em] text-white shadow-[0_14px_36px_rgba(0,102,255,.28)] transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60">
       {loading ? <Loader2 size={18} className="animate-spin"/> : <ShieldCheck size={18}/>}<span>{loading ? 'Memproses…' : 'Masuk ke Sistem'}</span>
     </button>
