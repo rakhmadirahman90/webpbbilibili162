@@ -217,7 +217,7 @@ export default function Login() {
       {loading ? <Loader2 size={18} className="animate-spin"/> : <LockKeyhole size={18}/>}<span>{loading ? 'Menyimpan…' : 'Simpan Password Baru'}</span>
     </button>
   </form>
-  )}</form>
+  )}
 
             <div className="mt-3 flex items-center justify-center gap-1.5 text-[8px] font-bold uppercase tracking-[.14em] text-slate-500"><ShieldCheck size={11} className="text-blue-400"/> Nomor WhatsApp + Password • koneksi aman</div>
           </div>
