@@ -32,6 +32,22 @@ function normalizeMembers(rows: unknown): Member[] {
     .sort((a, b) => a.sort_order - b.sort_order);
 }
 
+function readCachedMembers(): Member[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = window.localStorage.getItem(LEGACY_CACHE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return normalizeMembers(parsed);
+  } catch (error) {
+    console.warn('Cache struktur organisasi tidak valid:', error);
+    try {
+      window.localStorage.removeItem(LEGACY_CACHE_KEY);
+    } catch {}
+    return [];
+  }
+}
+
 function avatarUrl(name: string) {
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0b1224&color=fff&size=320`;
 }
