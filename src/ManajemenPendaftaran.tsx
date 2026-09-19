@@ -519,11 +519,6 @@ const totalSeniorPutri = registrants.filter(r =>
   };
 
   const handleDelete = async (id: string, nama: string, foto_url: string) => {
-    const target = registrants.find(r => r.id === id);
-    if (getStatusCategory(target?.status) === 'diterima') {
-      Toast.fire({ icon: 'info', title: `${nama} sudah DITERIMA / AKTIF — hapus dinonaktifkan` });
-      return;
-    }
     const result = await Swal.fire({
       title: 'Hapus Data?',
       text: `Apakah Anda yakin ingin menghapus data ${nama}?`,
@@ -935,18 +930,16 @@ const totalSeniorPutri = registrants.filter(r =>
                           <MessageSquare size={13} />
                         </button>
                         <button 
-                          disabled={getStatusCategory(item.status) === 'diterima'}
-                          onClick={() => { if (getStatusCategory(item.status) !== 'diterima') { setEditingItem(item); setIsEditModalOpen(true); } }} 
-                          className={`p-1.5 rounded-lg transition-all shadow-sm border border-blue-400/20 ${getStatusCategory(item.status) === 'diterima' ? 'cursor-not-allowed bg-slate-500/10 text-slate-600 opacity-50' : 'bg-blue-500/10 text-blue-300 hover:bg-blue-600 hover:text-white'}`}
-                          title={getStatusCategory(item.status) === 'diterima' ? 'Sudah diterima — edit dinonaktifkan' : 'Edit Data'}
+                          onClick={() => { setEditingItem(item); setIsEditModalOpen(true); }} 
+                          className="p-1.5 bg-blue-500/10 text-blue-300 border border-blue-400/20 rounded-lg hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+                          title="Edit Data"
                         >
                           <Edit3 size={13} />
                         </button>
                         <button 
-                          disabled={getStatusCategory(item.status) === 'diterima'}
                           onClick={() => handleDelete(item.id, item.nama, item.foto_url)} 
-                          className={`p-1.5 rounded-lg transition-all shadow-sm border border-rose-400/20 ${getStatusCategory(item.status) === 'diterima' ? 'cursor-not-allowed bg-slate-500/10 text-slate-600 opacity-50' : 'bg-white/5 text-slate-300 hover:bg-rose-600 hover:text-white'}`}
-                          title={getStatusCategory(item.status) === 'diterima' ? 'Sudah diterima — hapus dinonaktifkan' : 'Hapus Data'}
+                          className="p-1.5 bg-white/5 text-slate-300 border border-white/10 rounded-lg hover:bg-rose-600 hover:text-white transition-all shadow-sm"
+                          title="Hapus Data"
                         >
                           <Trash2 size={13} />
                         </button>
@@ -1056,19 +1049,17 @@ const totalSeniorPutri = registrants.filter(r =>
                     </button>
                     <button
                       type="button"
-                      disabled={getStatusCategory(item.status) === 'diterima'}
-                      onClick={() => { if (getStatusCategory(item.status) !== 'diterima') { setEditingItem(item); setIsEditModalOpen(true); } }}
-                      className={`py-2.5 rounded-lg transition-all font-bold text-[9px] uppercase tracking-widest border flex items-center justify-center gap-1 ${getStatusCategory(item.status) === 'diterima' ? 'cursor-not-allowed bg-slate-500/10 text-slate-500 border-slate-500/20 opacity-50' : 'bg-blue-500/10 hover:bg-blue-600 text-blue-300 hover:text-white border-blue-400/20'}`}
-                      title={getStatusCategory(item.status) === 'diterima' ? 'Sudah diterima — edit dinonaktifkan' : 'Edit Data'}
+                      onClick={() => { setEditingItem(item); setIsEditModalOpen(true); }}
+                      className="py-2.5 bg-blue-500/10 hover:bg-blue-600 text-blue-300 hover:text-white rounded-lg transition-all font-bold text-[9px] uppercase tracking-widest border border-blue-400/20 flex items-center justify-center gap-1"
+                      title="Edit Data"
                     >
                       <Edit3 size={11} /> Edit
                     </button>
                     <button
                       type="button"
-                      disabled={getStatusCategory(item.status) === 'diterima'}
                       onClick={() => handleDelete(item.id, item.nama, item.foto_url)}
-                      className={`py-2.5 rounded-lg transition-all font-bold text-[9px] uppercase tracking-widest border flex items-center justify-center gap-1 ${getStatusCategory(item.status) === 'diterima' ? 'cursor-not-allowed bg-slate-500/10 text-slate-500 border-slate-500/20 opacity-50' : 'bg-white/5 hover:bg-rose-600 text-slate-300 hover:text-white border-white/10'}`}
-                      title={getStatusCategory(item.status) === 'diterima' ? 'Sudah diterima — hapus dinonaktifkan' : 'Hapus Data'}
+                      className="py-2.5 bg-white/5 hover:bg-rose-600 text-slate-300 hover:text-white rounded-lg transition-all font-bold text-[9px] uppercase tracking-widest border border-white/10 flex items-center justify-center gap-1"
+                      title="Hapus Data"
                     >
                       <Trash2 size={11} /> Hapus
                     </button>
