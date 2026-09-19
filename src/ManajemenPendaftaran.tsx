@@ -326,21 +326,23 @@ const totalSeniorPutri = registrants.filter(r =>
       (item?.whatsapp || '').toLowerCase().includes(searchTerm.toLowerCase());
 
     const cat = getStatusCategory(item?.status);
-    
-    if (statusFilter === 'pending') {
-      return matchesSearch && cat === 'pending';
-    }
-    if (statusFilter === 'diterima') {
-      return matchesSearch && cat === 'diterima';
-    }
-    if (statusFilter === 'ditolak') {
-      return matchesSearch && cat === 'ditolak';
-    }
+    const rawStatus = String(item?.status ?? '').trim().toLowerCase();
+    const isAccepted = cat === 'diterima' || ['aktif', 'active', 'diterima', 'verified', 'approved', 'terima', 'disetujui'].includes(rawStatus);
+    const isPending = cat === 'pending';
+    const isRejected = cat === 'ditolak';
+
+    if (statusFilter === 'pending') return matchesSearch && isPending;
+    if (statusFilter === 'diterima') return matchesSearch && isAccepted;
+    if (statusFilter === 'ditolak') return matchesSearch && isRejected;
 
     return matchesSearch;
   });
 
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+  useEffect(() => {
+    if (totalPages === 0 && currentPage !== 1) setCurrentPage(1);
+    else if (totalPages > 0 && currentPage > totalPages) setCurrentPage(1);
+  }, [totalPages, currentPage]);
   const currentItems = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   // --- VERIFIKASI & WHATSAPP FUNCTIONS ---
@@ -749,7 +751,7 @@ const totalSeniorPutri = registrants.filter(r =>
 
         {/* SEARCH BAR & STATUS FILTER */}
         <section className="mb-5 md:mb-6 space-y-3">
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-1 px-1 snap-x">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-2 sm:overflow-x-auto sm:pb-1 sm:-mx-1 sm:px-1">
             <button
               type="button"
               onClick={() => { setStatusFilter('semua'); setCurrentPage(1); }}
@@ -760,21 +762,21 @@ const totalSeniorPutri = registrants.filter(r =>
             <button
               type="button"
               onClick={() => { setStatusFilter('pending'); setCurrentPage(1); }}
-              className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${statusFilter === 'pending' ? 'bg-amber-600 text-white shadow-md' : 'bg-[#0c203b] text-amber-300 hover:bg-amber-500/10 border border-amber-400/20'}`}
+              className={`w-full justify-center px-3 py-3 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${statusFilter === 'pending' ? 'bg-amber-600 text-white shadow-md' : 'bg-[#0c203b] text-amber-300 hover:bg-amber-500/10 border border-amber-400/20'}`}
             >
               <Clock size={12} /> Menunggu Verifikasi <span className={`px-2 py-0.5 rounded-full text-[9px] ${statusFilter === 'pending' ? 'bg-amber-600 text-white' : 'bg-amber-500/15 text-amber-200'} ml-1`}>{totalPending}</span>
             </button>
             <button
               type="button"
               onClick={() => { setStatusFilter('diterima'); setCurrentPage(1); }}
-              className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${statusFilter === 'diterima' ? 'bg-emerald-600 text-white shadow-md' : 'bg-[#0c203b] text-emerald-300 hover:bg-emerald-500/10 border border-emerald-400/20'}`}
+              className={`w-full justify-center px-3 py-3 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${statusFilter === 'diterima' ? 'bg-emerald-600 text-white shadow-md' : 'bg-[#0c203b] text-emerald-300 hover:bg-emerald-500/10 border border-emerald-400/20'}`}
             >
               <CheckCircle2 size={12} /> Diterima <span className={`px-2 py-0.5 rounded-full text-[9px] ${statusFilter === 'diterima' ? 'bg-emerald-700 text-white' : 'bg-emerald-500/15 text-emerald-200'} ml-1`}>{totalDiterima}</span>
             </button>
             <button
               type="button"
               onClick={() => { setStatusFilter('ditolak'); setCurrentPage(1); }}
-              className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${statusFilter === 'ditolak' ? 'bg-rose-600 text-white shadow-md' : 'bg-[#0c203b] text-rose-300 hover:bg-rose-500/10 border border-rose-400/20'}`}
+              className={`w-full justify-center px-3 py-3 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${statusFilter === 'ditolak' ? 'bg-rose-600 text-white shadow-md' : 'bg-[#0c203b] text-rose-300 hover:bg-rose-500/10 border border-rose-400/20'}`}
             >
               <XCircle size={12} /> Ditolak <span className={`px-2 py-0.5 rounded-full text-[9px] ${statusFilter === 'ditolak' ? 'bg-rose-700 text-white' : 'bg-rose-500/15 text-rose-200'} ml-1`}>{totalDitolak}</span>
             </button>
