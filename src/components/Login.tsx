@@ -109,7 +109,7 @@ export default function Login() {
   };
 
   const inputClass = 'h-[54px] w-full rounded-[18px] border border-blue-200/10 bg-[#081a31]/85 px-4 text-white outline-none backdrop-blur-xl transition-all placeholder:text-slate-500 focus:border-blue-400/70 focus:bg-[#0a2342] focus:ring-4 focus:ring-blue-500/10';
-  const keyClass = 'h-11 rounded-[14px] border border-white/[0.08] bg-white/[0.035] text-sm font-black text-white shadow-[inset_0_1px_0_rgba(255,255,255,.04)] transition-all hover:border-blue-400/30 hover:bg-blue-500/10 active:scale-[.96] active:bg-blue-500/20 touch-manipulation';
+  const keyClass = 'h-12 rounded-[14px] max-[380px]:h-10 border border-white/[0.08] bg-white/[0.035] text-sm font-black text-white shadow-[inset_0_1px_0_rgba(255,255,255,.04)] transition-all hover:border-blue-400/30 hover:bg-blue-500/10 active:scale-[.96] active:bg-blue-500/20 touch-manipulation';
 
   return (
     <div className="relative min-h-screen min-h-dvh w-full overflow-x-hidden bg-[#020817] font-sans text-white selection:bg-blue-500/30">
@@ -128,7 +128,7 @@ export default function Login() {
         <ArrowLeft size={14}/><Home size={13}/><span className="hidden sm:inline">Beranda</span>
       </button>
 
-      <main className="relative z-10 mx-auto flex min-h-screen min-h-dvh w-full max-w-[620px] flex-col px-3 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-[calc(3.9rem+env(safe-area-inset-top))] sm:px-5 sm:pt-20">
+      <main className="relative z-10 mx-auto flex min-h-screen min-h-dvh w-full max-w-[560px] flex-col px-3 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-[calc(3.9rem+env(safe-area-inset-top))] sm:px-5 sm:pt-20">
         {/* Compact mobile status bar */}
         <div className="mb-4 flex items-center justify-between px-1 text-[8px] font-black uppercase tracking-[.2em] text-blue-200/50 sm:text-[9px]">
           <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,.8)]"/> PB162 ONLINE</span>
@@ -137,12 +137,12 @@ export default function Login() {
 
         {/* Brand / hero */}
         <header className="relative mb-5 text-center">
-          <div className="relative mx-auto flex h-[86px] w-[86px] items-center justify-center rounded-[28px] border border-blue-300/30 bg-gradient-to-br from-[#0d2b55] via-[#061a35] to-[#030d1d] p-3 shadow-[0_0_45px_rgba(37,99,235,.24)]">
+          <div className="relative mx-auto flex h-[84px] w-[84px] max-[380px]:h-[72px] max-[380px]:w-[72px] items-center justify-center rounded-[28px] border border-blue-300/30 bg-gradient-to-br from-[#0d2b55] via-[#061a35] to-[#030d1d] p-3 shadow-[0_0_45px_rgba(37,99,235,.24)]">
             <div className="absolute inset-1.5 rounded-[22px] border border-white/[0.06]" />
             <div className="absolute -inset-2 rounded-[32px] border border-blue-400/10" />
             <img src={logoUrl} alt="Logo PB Bilibili 162" className="relative h-full w-full object-contain" onError={(e)=>{e.currentTarget.src='/logo_pb_bilibili_162.svg';}}/>
           </div>
-          <h1 className="mt-4 text-[29px] font-black italic tracking-[-.045em] leading-none sm:text-4xl">PB BILIBILI <span className="text-blue-400">162</span></h1>
+          <h1 className="mt-4 text-[28px] font-black max-[380px]:text-[24px] italic tracking-[-.045em] leading-none sm:text-4xl">PB BILIBILI <span className="text-blue-400">162</span></h1>
           <p className="mt-2 text-[8px] font-black uppercase tracking-[.36em] text-slate-400 sm:text-[10px]">Professional Badminton Club</p>
           <div className="mt-3 flex items-center justify-center gap-2 text-[9px] font-bold uppercase tracking-[.28em] text-blue-200/65">
             <span>Satu Semangat</span><span className="h-1 w-1 rounded-full bg-blue-400"/><span>Satu Keluarga</span><span className="h-1 w-1 rounded-full bg-blue-400"/><span>Satu Prestasi</span>
@@ -150,7 +150,7 @@ export default function Login() {
         </header>
 
         {/* Glass login panel */}
-        <section className="relative overflow-hidden rounded-[30px] border border-blue-300/20 bg-[#06162b]/80 p-4 shadow-[0_24px_90px_rgba(0,0,0,.48),0_0_60px_rgba(37,99,235,.08)] backdrop-blur-2xl sm:rounded-[34px] sm:p-7">
+        <section className="relative overflow-hidden rounded-[30px] border border-blue-300/20 bg-[#06162b]/80 p-4 max-[380px]:rounded-[25px] max-[380px]:p-3.5 shadow-[0_24px_90px_rgba(0,0,0,.48),0_0_60px_rgba(37,99,235,.08)] backdrop-blur-2xl sm:rounded-[34px] sm:p-7">
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-blue-400/70 to-transparent" />
           <div className="absolute -right-20 -top-20 h-40 w-40 rounded-full bg-blue-500/10 blur-3xl" />
 
@@ -159,14 +159,14 @@ export default function Login() {
               <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-2xl border border-blue-300/20 bg-blue-500/10 text-blue-300 shadow-[0_0_24px_rgba(37,99,235,.14)]">
                 <ShieldCheck size={21}/>
               </div>
-              <h2 className="text-[25px] font-black tracking-[-.035em]">Selamat Datang</h2>
+              <h2 className="text-[25px] font-black tracking-[-.035em] max-[380px]:text-[22px]">Selamat Datang</h2>
               <p className="mt-1 text-xs leading-5 text-slate-400">Masuk untuk mengakses sistem<br className="sm:hidden"/> PB Bilibili 162</p>
             </div>
 
             {errorMsg && <div role="alert" className="mb-4 flex gap-3 rounded-2xl border border-red-400/20 bg-red-500/[0.07] p-3.5"><AlertCircle size={17} className="mt-0.5 shrink-0 text-red-400"/><div className="min-w-0"><p className="text-xs font-extrabold text-red-300">Akses Ditolak</p><p className="mt-0.5 break-words text-[11px] leading-5 text-red-200/70">{errorMsg}</p></div></div>}
             {successMsg && <div role="status" className="mb-4 flex gap-3 rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.07] p-3.5"><CheckCircle2 size={17} className="mt-0.5 shrink-0 text-emerald-400"/><p className="text-[11px] leading-5 text-emerald-200/80">{successMsg}</p></div>}
 
-            <form onSubmit={e=>{e.preventDefault();verifyAndLogin();}} className="space-y-3.5">
+            <form onSubmit={e=>{e.preventDefault();verifyAndLogin();}} className="space-y-3.5 max-[380px]:space-y-3">
               <div>
                 <label className="mb-1.5 ml-1 flex items-center gap-2 text-[9px] font-black uppercase tracking-[.16em] text-blue-100/60"><User size={13} className="text-blue-400"/> Username / Nama Anggota</label>
                 <input type="text" required autoComplete="username" value={usernameInput} onChange={e=>{setErrorMsg(null);setUsernameInput(e.target.value);}} className={`${inputClass} text-[13px] font-semibold sm:text-sm`} placeholder="Nama anggota / WhatsApp / admin"/>
@@ -190,7 +190,7 @@ export default function Login() {
                 </div>
               </div>
 
-              <button type="submit" disabled={loading} className="group relative mt-1 flex h-[56px] w-full items-center justify-center gap-2.5 overflow-hidden rounded-[19px] bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 text-sm font-black uppercase tracking-[.12em] text-white shadow-[0_14px_36px_rgba(0,102,255,.28)] transition-all hover:-translate-y-0.5 hover:shadow-[0_18px_45px_rgba(0,153,255,.32)] active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60">
+              <button type="submit" disabled={loading} className="group relative mt-1 flex h-[56px] w-full max-[380px]:h-[52px] items-center justify-center gap-2.5 overflow-hidden rounded-[19px] bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 text-sm font-black uppercase tracking-[.12em] text-white shadow-[0_14px_36px_rgba(0,102,255,.28)] transition-all hover:-translate-y-0.5 hover:shadow-[0_18px_45px_rgba(0,153,255,.32)] active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60">
                 <span className="absolute inset-0 bg-[linear-gradient(110deg,transparent_25%,rgba(255,255,255,.14)_45%,transparent_65%)] transition-transform duration-700 group-hover:translate-x-full"/>
                 {loading?<Loader2 size={19} className="relative animate-spin"/>:<Zap size={18} className="relative"/>}
                 <span className="relative">{loading?'Memverifikasi…':'Masuk Portal'}</span>
@@ -201,7 +201,7 @@ export default function Login() {
           </div>
         </section>
 
-        <footer className="mt-5 px-2 text-center">
+        <footer className="mt-4 px-2 text-center sm:mt-5">
           <div className="flex items-center justify-center gap-2 text-[9px] font-bold uppercase tracking-[.24em] text-slate-600"><span className="h-px w-8 bg-white/[.08]"/><span>More Than A Club</span><span className="h-px w-8 bg-white/[.08]"/></div>
           <p className="mt-2 text-[8px] uppercase tracking-[.2em] text-slate-700">Community • Discipline • Teamwork • Achievement</p>
           <button type="button" onClick={()=>navigate('/')} className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/[.08] bg-white/[.025] px-4 py-2.5 text-[10px] font-black text-slate-400 backdrop-blur-xl transition hover:border-blue-400/30 hover:text-white"><ArrowLeft size={13}/> Kembali ke Beranda</button>
