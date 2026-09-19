@@ -112,7 +112,7 @@ export default function Login() {
   const keyClass = 'h-12 rounded-[14px] max-[380px]:h-10 border border-white/[0.08] bg-white/[0.035] text-sm font-black text-white shadow-[inset_0_1px_0_rgba(255,255,255,.04)] transition-all hover:border-blue-400/30 hover:bg-blue-500/10 active:scale-[.96] active:bg-blue-500/20 touch-manipulation';
 
   return (
-    <div className="relative min-h-screen min-h-dvh w-full overflow-x-hidden bg-[#020817] font-sans text-white selection:bg-blue-500/30">
+    <div className="relative min-h-[100svh] w-full overflow-x-hidden bg-[#020817] font-sans text-white selection:bg-blue-500/30">
       {/* Futuristic court-inspired background */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden="true">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(0,109,255,.25),transparent_32%),radial-gradient(circle_at_15%_80%,rgba(0,153,255,.13),transparent_28%),linear-gradient(180deg,#03142b_0%,#020817_58%,#01050d_100%)]" />
