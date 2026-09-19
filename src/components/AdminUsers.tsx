@@ -829,12 +829,13 @@ export default function AdminUsers({ session }: { session: any }) {
               </div>
 
               <div>
-                <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1 block">Password Login</label>
+                <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1 block">Password Login (Terenkripsi)</label>
                 <input
-                  type="text"
+                  type="password"
                   minLength={8}
+                  autoComplete="new-password"
                   value={formData.password}
-                  onChange={(e) => setFormData({...formData, pin: e.target.value})}
+                  onChange={(e) => setFormData({...formData, password: e.target.value})}
                   placeholder="Minimal 8 karakter"
                   className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 font-semibold"
                 />
