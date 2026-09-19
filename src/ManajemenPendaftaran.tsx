@@ -304,8 +304,8 @@ const totalSeniorPutri = registrants.filter(r =>
       return rows.map(row => ({
         ...row,
         display_foto_url:
-          row.foto_url ||
-          (row.bilibili_cup1_photo_path ? signedByPath.get(row.bilibili_cup1_photo_path) || '' : '')
+          (row.bilibili_cup1_photo_path ? signedByPath.get(row.bilibili_cup1_photo_path) || '' : '') ||
+          row.foto_url || ''
       }));
     } catch (error) {
       console.warn('Gagal sinkron foto peserta CUP I:', error);
