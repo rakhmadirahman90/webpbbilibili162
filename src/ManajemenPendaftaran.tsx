@@ -332,60 +332,32 @@ const totalSeniorPutri = registrants.filter(r =>
   const currentItems = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   // --- VERIFIKASI & WHATSAPP FUNCTIONS ---
+  // Tombol Terima/Tolak bersifat langsung: sekali dipilih, status langsung disimpan.
   const handleVerifyStatus = async (item: Registrant, newStatus: 'Diterima' | 'Ditolak') => {
-    let catatan = '';
-
-    if (newStatus === 'Ditolak') {
-      const { value: reason, isConfirmed } = await Swal.fire({
-        title: '<span class="text-rose-500 font-black uppercase">Tolak Pendaftaran Atlet</span>',
-        text: `Masukkan alasan penolakan untuk atlet ${item.nama}:`,
-        input: 'textarea',
-        inputPlaceholder: 'Contoh: Persyaratan berkas belum lengkap / Kuota kategori penuh...',
-        showCancelButton: true,
-        confirmButtonText: 'Tolak & Simpan Status',
-        cancelButtonText: 'Batal',
-        confirmButtonColor: '#EF4444',
-        cancelButtonColor: '#64748B',
-        inputValidator: (value) => {
-          if (!value) {
-            return 'Alasan penolakan wajib diisi untuk pemberitahuan ke atlet!';
-          }
-        }
-      });
-
-      if (!isConfirmed) return;
-      catatan = reason || 'Persyaratan tidak memenuhi kriteria.';
-    } else {
-      const confirm = await Swal.fire({
-        title: '<span class="text-emerald-500 font-black uppercase">Verifikasi & Terima Atlet</span>',
-        html: `Apakah Anda yakin ingin menyetujui pendaftaran atlet <b>${item.nama}</b> sebagai anggota/atlet resmi PB BILIBILI 162?`,
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonText: 'Ya, Terima & Verifikasi',
-        cancelButtonText: 'Batal',
-        confirmButtonColor: '#10B981',
-        cancelButtonColor: '#64748B'
-      });
-
-      if (!confirm.isConfirmed) return;
-    }
+    const savedStatus = newStatus === 'Diterima' ? 'aktif' : 'Ditolak';
+    const catatan = newStatus === 'Ditolak'
+      ? 'Pendaftaran ditolak oleh Admin PB BILIBILI 162.'
+      : '';
 
     try {
       const { error } = await supabase
         .from('pendaftaran')
-        .update({ status: newStatus === 'Diterima' ? 'aktif' : 'Ditolak' })
+        .update({ status: savedStatus })
         .eq('id', item.id);
 
       if (error) throw error;
 
-      const savedStatus = newStatus === 'Diterima' ? 'aktif' : 'Ditolak';
-      setRegistrants(prev => prev.map(r => r.id === item.id ? { ...r, status: savedStatus } : r));
+      // Update UI seketika tanpa menunggu refresh halaman.
+      setRegistrants(prev =>
+        prev.map(r => r.id === item.id ? { ...r, status: savedStatus } : r)
+      );
 
       Toast.fire({
         icon: newStatus === 'Diterima' ? 'success' : 'info',
-        title: `Pendaftaran ${item.nama} diubah ke status: ${savedStatus.toUpperCase()}`
+        title: `${item.nama} → ${newStatus === 'Diterima' ? 'DITERIMA / AKTIF' : 'DITOLAK'}`
       });
 
+      // Notifikasi WA hanya ditawarkan setelah status berhasil tersimpan.
       sendWaStatusNotification(item, newStatus, catatan);
     } catch (err: any) {
       Swal.fire('Gagal Update Status', err.message, 'error');
@@ -460,9 +432,12 @@ const totalSeniorPutri = registrants.filter(r =>
       return;
     }
 
-    const statusLabel = (!item.status || item.status === 'Pending' || item.status === 'Menunggu') 
-      ? '⏳ MENUNGGU VERIFIKASI' 
-      : item.status === 'Diterima' ? '✅ DITERIMA (VERIFIED)' : '❌ DITOLAK';
+    const statusCategory = getStatusCategory(item.status);
+    const statusLabel = statusCategory === 'diterima'
+      ? '✅ DITERIMA (AKTIF)'
+      : statusCategory === 'ditolak'
+        ? '❌ DITOLAK'
+        : '⏳ MENUNGGU VERIFIKASI';
 
     const message = 
       `*RINCIAN DOKUMEN & HISTORY PENDAFTARAN ATLET*\n` +
