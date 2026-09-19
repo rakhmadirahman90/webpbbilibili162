@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Users, UserCheck, ShieldCheck, Shield, KeyRound, Search, Filter, Plus, 
-  Trash2, Edit3, CheckCircle, XCircle, AlertTriangle, Sparkles, Lock, Mail, Phone, Calendar
+  Trash2, Edit3, CheckCircle, XCircle, AlertTriangle, Sparkles, Lock, Mail, Phone, Calendar,
+  Activity, UserPlus, Eye, MoreVertical, SlidersHorizontal, Download, Upload, BookOpen, Lightbulb
 } from 'lucide-react';
 import { supabase } from '../supabase';
 import { deleteAthleteCompletely } from '../utils/siteSettingsHelper';
@@ -322,6 +323,11 @@ export default function AdminUsers({ session }: { session: any }) {
     }
   };
 
+  const adminCount = users.filter(u => u.role === 'admin').length;
+  const memberCount = users.filter(u => u.role === 'anggota').length;
+  const passwordReadyCount = users.filter(u => u.hasPassword).length;
+  const passwordPendingCount = users.length - passwordReadyCount;
+
   const filteredUsers = users.filter(u => {
     const matchSearch = u.nama.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -368,14 +374,69 @@ export default function AdminUsers({ session }: { session: any }) {
               className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs sm:text-sm font-black uppercase tracking-wider px-4 py-3 rounded-xl sm:rounded-2xl shadow-lg shadow-blue-600/30 active:scale-95 transition-all cursor-pointer border border-blue-400/30 shrink-0"
             >
               <Plus size={16} />
+              <UserPlus size={16} />
               <span>Tambah User</span>
             </button>
           </div>
         </div>
       </div>
 
+      {/* Dashboard summary cards */}
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 shrink-0">
+        <div className="group rounded-2xl border border-blue-400/15 bg-gradient-to-br from-[#102a61] via-[#0b1835] to-[#081326] p-4 shadow-xl shadow-blue-950/20 transition-all hover:-translate-y-0.5">
+          <div className="flex items-center justify-between">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/15 text-blue-300 ring-1 ring-blue-400/20"><Users size={20}/></div>
+            <span className="text-[9px] font-black uppercase tracking-widest text-blue-300/50">Total</span>
+          </div>
+          <div className="mt-3 text-2xl font-black text-white">{users.length}</div>
+          <div className="text-[10px] font-semibold text-slate-400">Total User</div>
+        </div>
+        <div className="group rounded-2xl border border-emerald-400/15 bg-gradient-to-br from-[#092d28] via-[#071c1d] to-[#061318] p-4 shadow-xl transition-all hover:-translate-y-0.5">
+          <div className="flex items-center justify-between">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-400/20"><ShieldCheck size={20}/></div>
+            <span className="text-[9px] font-black uppercase tracking-widest text-emerald-300/50">Admin</span>
+          </div>
+          <div className="mt-3 text-2xl font-black text-white">{adminCount}</div>
+          <div className="text-[10px] font-semibold text-slate-400">Admin Klub</div>
+        </div>
+        <div className="group rounded-2xl border border-cyan-400/15 bg-gradient-to-br from-[#092b4b] via-[#081b30] to-[#061321] p-4 shadow-xl transition-all hover:-translate-y-0.5">
+          <div className="flex items-center justify-between">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-500/15 text-cyan-300 ring-1 ring-cyan-400/20"><UserCheck size={20}/></div>
+            <span className="text-[9px] font-black uppercase tracking-widest text-cyan-300/50">Member</span>
+          </div>
+          <div className="mt-3 text-2xl font-black text-white">{memberCount}</div>
+          <div className="text-[10px] font-semibold text-slate-400">Anggota</div>
+        </div>
+        <button type="button" onClick={() => setShowOnlineModal(true)} className="text-left group rounded-2xl border border-teal-400/15 bg-gradient-to-br from-[#082b2a] via-[#071b21] to-[#061318] p-4 shadow-xl transition-all hover:-translate-y-0.5">
+          <div className="flex items-center justify-between">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-500/15 text-teal-300 ring-1 ring-teal-400/20"><Activity size={20}/></div>
+            <span className="flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-emerald-300"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"/> Online</span>
+          </div>
+          <div className="mt-3 text-2xl font-black text-white">{onlineUsers.length}</div>
+          <div className="text-[10px] font-semibold text-slate-400">Sedang Online</div>
+        </button>
+      </section>
+
+      {/* Password policy banner */}
+      <section className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 rounded-2xl border border-amber-400/20 bg-gradient-to-r from-amber-500/[.10] via-[#171b2c] to-[#0c1428] p-4 shadow-xl shrink-0">
+        <div className="flex items-start gap-3 min-w-0">
+          <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/15 text-amber-300 ring-1 ring-amber-400/20"><Lock size={19}/></div>
+          <div className="min-w-0">
+            <h3 className="text-sm font-black text-amber-200">Default Password Anggota</h3>
+            <p className="mt-0.5 text-[10px] sm:text-xs leading-5 text-slate-400">Kelola status password anggota. Password disimpan sebagai hash dan tidak ditampilkan di halaman.</p>
+            <div className="mt-1 flex flex-wrap gap-2 text-[9px] font-bold">
+              <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-emerald-300">● {passwordReadyCount} password aktif</span>
+              {passwordPendingCount > 0 && <span className="rounded-full bg-amber-500/10 px-2.5 py-1 text-amber-300">● {passwordPendingCount} belum diset</span>}
+            </div>
+          </div>
+        </div>
+        <button type="button" onClick={() => setRoleFilter('anggota')} className="inline-flex w-full lg:w-auto items-center justify-center gap-2 rounded-xl border border-amber-300/20 bg-white/[.04] px-4 py-2.5 text-[10px] font-black uppercase tracking-wider text-slate-200 hover:bg-white/[.08] transition">
+          <KeyRound size={14}/> Kelola Password
+        </button>
+      </section>
+
       {/* Filter & Search Bar */}
-      <div className="bg-[#0b1224]/90 p-3 sm:p-4 rounded-2xl border border-white/10 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
+      <div className="bg-[#081426]/95 p-3 sm:p-4 rounded-2xl border border-blue-300/10 shadow-xl flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 shrink-0">
         <div className="relative w-full sm:w-80">
           <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
@@ -383,11 +444,11 @@ export default function AdminUsers({ session }: { session: any }) {
             placeholder="Cari nama, email, atau no WA..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-slate-900/90 border border-white/10 rounded-xl pl-10 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
+            className="w-full bg-[#071426] border border-blue-200/10 rounded-xl pl-10 pr-4 py-3 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-400/60 focus:ring-4 focus:ring-blue-500/10 transition-all"
           />
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
+        <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
           {[
             { id: 'all', label: 'Semua User', count: users.length },
             { id: 'admin', label: 'Admin', count: users.filter(u => u.role === 'admin').length },
@@ -414,7 +475,11 @@ export default function AdminUsers({ session }: { session: any }) {
       {/* Users Table / List / Mobile Cards */}
       <div className="bg-[#0b1224]/90 border border-white/10 rounded-2xl md:rounded-3xl overflow-hidden shadow-xl flex-1 flex flex-col min-h-0">
         <div className="p-4 border-b border-white/5 bg-black/20 flex items-center justify-between shrink-0">
-          <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Daftar Akun Terdaftar ({filteredUsers.length})</h3>
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-500/10 text-blue-300 ring-1 ring-blue-400/10"><Users size={17}/></div>
+            <div className="min-w-0"><h3 className="text-xs font-black uppercase tracking-[0.18em] text-slate-300">Daftar Akun Terdaftar</h3><p className="mt-0.5 text-[9px] text-slate-500">{filteredUsers.length} user ditampilkan</p></div>
+          </div>
+          <div className="hidden sm:flex items-center gap-2 text-[9px] font-bold text-slate-500"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400"/> Realtime</div>
         </div>
 
         <div className="overflow-y-auto flex-1 min-h-0 p-2 sm:p-4">
@@ -435,7 +500,7 @@ export default function AdminUsers({ session }: { session: any }) {
                 {filteredUsers.map((user) => {
                   const isOnline = onlineUsers.some(u => (u.user_id && u.user_id === user.id) || (u.email && u.email === user.email));
                   return (
-                  <div key={user.id} className="bg-slate-900/90 border border-white/10 rounded-2xl p-4 flex flex-col space-y-3 shadow-md relative overflow-hidden">
+                  <div key={user.id} className="group bg-gradient-to-br from-[#0c1a30] to-[#081224] border border-blue-200/10 rounded-2xl p-4 flex flex-col space-y-3 shadow-lg shadow-black/10 relative overflow-hidden transition-all hover:border-blue-400/20">
                     {/* Status Online Indicator (Top Edge) */}
                     <div className={`absolute top-0 left-0 w-full h-1 ${isOnline ? 'bg-emerald-500' : 'bg-transparent'}`} />
 
@@ -460,6 +525,11 @@ export default function AdminUsers({ session }: { session: any }) {
                           </p>
                           <p className="text-[10px] text-slate-500">ID: {user.id.slice(0, 8)}</p>
                         </div>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <button type="button" onClick={() => handleResetPassword(user)} title="Password" className="h-8 w-8 inline-flex items-center justify-center rounded-lg bg-blue-500/10 text-blue-300 ring-1 ring-blue-400/15 hover:bg-blue-500/20 transition"><KeyRound size={14}/></button>
+                        <button type="button" onClick={() => handleOpenEdit(user)} title="Edit" className="h-8 w-8 inline-flex items-center justify-center rounded-lg bg-white/[.04] text-slate-300 ring-1 ring-white/10 hover:bg-white/[.08] transition"><Edit3 size={14}/></button>
+                        <button type="button" onClick={() => handleDelete(user)} title="Hapus" className="h-8 w-8 inline-flex items-center justify-center rounded-lg bg-red-500/10 text-red-300 ring-1 ring-red-400/10 hover:bg-red-500/20 transition"><Trash2 size={14}/></button>
                       </div>
                       <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${
                         user.role === 'admin' 
@@ -750,7 +820,7 @@ export default function AdminUsers({ session }: { session: any }) {
       {/* Add / Edit User Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-[#0b1224] border border-white/10 rounded-3xl p-6 w-full max-w-lg shadow-2xl relative overflow-hidden">
+          <div className="bg-gradient-to-b from-[#0a1930] to-[#071122] border border-blue-300/15 rounded-[26px] p-5 sm:p-6 w-full max-w-lg shadow-2xl shadow-black/50 relative overflow-hidden max-h-[90vh] overflow-y-auto">
             <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/10 rounded-full blur-2xl pointer-events-none" />
             
             <div className="flex items-center justify-between mb-5 border-b border-white/5 pb-3">
