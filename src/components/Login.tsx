@@ -203,7 +203,7 @@ export default function Login() {
   const handleForgotPasswordRequest = async () => {
     if (loading) return;
     const normalized = normalizePhone(phone);
-    if (!/^62\\d{9,13}$/.test(normalized)) {
+    if (!/^62\d{9,13}$/.test(normalized)) {
       setErrorMsg('Masukkan nomor WhatsApp yang terdaftar, contoh: 0812xxxxxxxx.');
       return;
     }
@@ -230,7 +230,7 @@ export default function Login() {
       setErrorMsg('Permintaan reset belum tersedia. Silakan minta kode baru.');
       return;
     }
-    if (!/^\\d{6}$/.test(resetOtp)) {
+    if (!/^\d{6}$/.test(resetOtp)) {
       setErrorMsg('Masukkan 6 digit kode reset yang dikirim ke WhatsApp.');
       return;
     }
