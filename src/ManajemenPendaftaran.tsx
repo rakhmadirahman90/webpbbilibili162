@@ -104,15 +104,12 @@ export default function ManajemenPendaftaran() {
   ];
 
 // Helper untuk normalisasi status agar konsisten dengan DB
-const getStatusCategory = (st?: string): 'pending' | 'diterima' | 'ditolak' => {
-  if (!st) return 'pending';
-  const clean = st.trim().toLowerCase();
-  if (['diterima', 'verified', 'active', 'approved', 'terima', 'disetujui'].includes(clean)) {
-    return 'diterima';
-  }
-  if (['ditolak', 'rejected', 'tolak', 'disapproved'].includes(clean)) {
-    return 'ditolak';
-  }
+const getStatusCategory = (st?: string): 'pending' | 'diterima' | 'ditolak' | 'tidak_aktif' => {
+  const clean = String(st ?? '').trim().toLowerCase();
+  if (['aktif', 'active', 'diterima', 'verified', 'approved', 'terima', 'disetujui'].includes(clean)) return 'diterima';
+  if (['ditolak', 'rejected', 'tolak', 'disapproved'].includes(clean)) return 'ditolak';
+  if (['tidak aktif', 'inactive', 'nonaktif', 'non-aktif'].includes(clean)) return 'tidak_aktif';
+  if (!clean || ['pending', 'menunggu', 'menunggu verifikasi', 'belum diverifikasi', 'verifikasi'].includes(clean)) return 'pending';
   return 'pending';
 };
 
@@ -326,8 +323,7 @@ const totalSeniorPutri = registrants.filter(r =>
       (item?.whatsapp || '').toLowerCase().includes(searchTerm.toLowerCase());
 
     const cat = getStatusCategory(item?.status);
-    const rawStatus = String(item?.status ?? '').trim().toLowerCase();
-    const isAccepted = cat === 'diterima' || ['aktif', 'active', 'diterima', 'verified', 'approved', 'terima', 'disetujui'].includes(rawStatus);
+    const isAccepted = cat === 'diterima';
     const isPending = cat === 'pending';
     const isRejected = cat === 'ditolak';
 
