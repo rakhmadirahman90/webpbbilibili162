@@ -66,10 +66,27 @@ export default {
 
       const supabaseAdmin = ctx.supabaseAdmin;
 
-      const { data: members, error: memberError } = await supabaseAdmin
-        .from("pendaftaran")
-        .select("id,nama,whatsapp,kategori,kategori_atlet,jenis_kelamin,domisili,pengalaman,foto_url,email,tanggal_lahir,sektor_bermain,ukuran_jersey,status,password_hash,password_salt,must_change_password")
-        .in("status", ["aktif", "verified", "Diterima", "diterima", "active"]);
+      // Cari hanya nomor yang sedang login, bukan seluruh anggota aktif.
+      // Ini memangkas query dari puluhan baris menjadi maksimal satu baris.
+      const localPhone = phone.startsWith("62") ? "0" + phone.slice(2) : phone;
+      const memberFilter = `whatsapp.eq.${phone},whatsapp.eq.${localPhone}`;
+
+      const [memberResult, settingResult] = await Promise.all([
+        supabaseAdmin
+          .from("pendaftaran")
+          .select("id,nama,whatsapp,kategori,kategori_atlet,jenis_kelamin,domisili,pengalaman,foto_url,email,tanggal_lahir,sektor_bermain,ukuran_jersey,status,password_hash,password_salt,must_change_password")
+          .or(memberFilter)
+          .in("status", ["aktif", "verified", "Diterima", "diterima", "active"])
+          .limit(1),
+        supabaseAdmin
+          .from("site_settings")
+          .select("value")
+          .eq("key", "whatsapp_admin_login")
+          .maybeSingle(),
+      ]);
+
+      const { data: members, error: memberError } = memberResult;
+      const { data: setting, error: settingError } = settingResult;
 
       if (memberError) {
         console.error("member lookup error", memberError);
@@ -77,12 +94,6 @@ export default {
       }
 
       const member = (members || []).find((row: any) => normalizePhone(row.whatsapp || "") === phone);
-
-      const { data: setting, error: settingError } = await supabaseAdmin
-        .from("site_settings")
-        .select("value")
-        .eq("key", "whatsapp_admin_login")
-        .maybeSingle();
 
       if (settingError) console.error("admin setting lookup error", settingError);
 
