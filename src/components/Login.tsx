@@ -47,7 +47,7 @@ export default function Login() {
 
   useEffect(() => {
     const normalized = normalizePhone(phone);
-    const isValidPhone = /^62\\d{9,13}$/.test(normalized);
+    const isValidPhone = normalized.startsWith('62') && normalized.length >= 11 && normalized.length <= 15;
 
     // Tampilkan notice segera setelah nomor WhatsApp lengkap.
     // Pemeriksaan server berjalan di belakang layar dan tidak boleh
@@ -230,7 +230,7 @@ export default function Login() {
   <form onSubmit={e=>{e.preventDefault();handleLogin();}} className="space-y-3">
     <label className="mb-1 ml-1 flex items-center gap-2 text-[8px] font-black uppercase tracking-[.14em] text-blue-100/60 sm:text-[9px]"><Smartphone size={13} className="text-blue-400"/> Nomor WhatsApp Terdaftar</label>
     <div className="relative">
-      <input type="tel" inputMode="tel" autoComplete="tel" required value={phone} onChange={e=>{const value=e.target.value.replace(/[^0-9+ ]/g,'');setErrorMsg(null);setPhone(value);const normalized=normalizePhone(value);setDefaultNotice(/^62\\d{9,13}$/.test(normalized));}} className={inputClass + ' pr-12 text-[15px] font-semibold sm:text-base'} placeholder="08xxxxxxxxxx"/>
+      <input type="tel" inputMode="tel" autoComplete="tel" required value={phone} onChange={e=>{const value=e.target.value.replace(/[^0-9+ ]/g,'');setErrorMsg(null);setPhone(value);const normalized=normalizePhone(value);setDefaultNotice(normalized.startsWith('62') && normalized.length >= 11 && normalized.length <= 15);}} className={inputClass + ' pr-12 text-[15px] font-semibold sm:text-base'} placeholder="08xxxxxxxxxx"/>
       <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[8px] font-black uppercase tracking-wider text-emerald-400/70">WA</span>
     </div>
     {defaultNotice && (
