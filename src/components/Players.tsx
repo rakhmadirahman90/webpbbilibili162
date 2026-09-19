@@ -111,87 +111,97 @@ const Players: React.FC<{ initialFilter?: string }> = ({
   const nextRef = useRef<HTMLButtonElement>(null);
 
   const fetchPlayersFromDB = useCallback(async () => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
-      const [pendaftaranRes, statsRes, rankingsRes] = await Promise.allSettled([
+      // Sumber master identitas HARUS sama dengan Manajemen Atlet.
+      const [pendaftaranRes, rankingsRes, statsRes, cup1Res] = await Promise.allSettled([
         supabase.from('pendaftaran').select('*').order('nama', { ascending: true }),
-        supabase.from('atlet_stats').select('*'),
-        supabase.from('rankings').select('*')
+        supabase.from('rankings').select('*').order('total_points', { ascending: false }),
+        supabase.from('atlet_stats').select('pendaftaran_id, points, total_points, seed'),
+        supabase.from('v_bilibili_162_cup1_athlete_seeded').select('*'),
       ]);
 
-      const pendaftaranList = pendaftaranRes.status === 'fulfilled' && pendaftaranRes.value.data ? pendaftaranRes.value.data : [];
-      const statsList = statsRes.status === 'fulfilled' && statsRes.value.data ? statsRes.value.data : [];
-      const rankingsList = rankingsRes.status === 'fulfilled' && rankingsRes.value.data ? rankingsRes.value.data : [];
+      const pendaftaran = pendaftaranRes.status === 'fulfilled' && pendaftaranRes.value.data
+        ? pendaftaranRes.value.data
+        : [];
+      const rankings = rankingsRes.status === 'fulfilled' && rankingsRes.value.data
+        ? rankingsRes.value.data
+        : [];
+      const stats = statsRes.status === 'fulfilled' && statsRes.value.data
+        ? statsRes.value.data
+        : [];
+      const cup1Rows = cup1Res.status === 'fulfilled' && cup1Res.value.data
+        ? cup1Res.value.data
+        : [];
+
+      const cup1Map = new Map((cup1Rows || []).map((row: any) => [row.pendaftaran_id, row]));
+
+      // Foto CUP I menjadi sumber foto terintegrasi, sama seperti Manajemen Atlet.
       const tournamentPhotoById = new Map<string, string>();
-      await Promise.all(pendaftaranList.map(async (p: any) => {
-        if (!p.bilibili_cup1_photo_path) return;
-        const { data } = await supabase.storage.from('turnamen-dokumen').createSignedUrl(p.bilibili_cup1_photo_path, 60 * 60);
-        if (data?.signedUrl) tournamentPhotoById.set(String(p.id), data.signedUrl);
+      await Promise.all((pendaftaran || []).map(async (atlet: any) => {
+        const path = atlet.bilibili_cup1_photo_path || cup1Map.get(atlet.id)?.photo_path;
+        if (!path) return;
+        const { data } = await supabase.storage
+          .from('turnamen-dokumen')
+          .createSignedUrl(path, 60 * 60);
+        if (data?.signedUrl) tournamentPhotoById.set(String(atlet.id), data.signedUrl);
       }));
 
-      const statsMap = new Map();
-      statsList.forEach((s) => {
-        if (s.pendaftaran_id) statsMap.set(s.pendaftaran_id, s);
-        if (s.player_name) statsMap.set(s.player_name.trim().toLowerCase(), s);
-      });
+      const statsMap = new Map((stats || []).map((s: any) => [s.pendaftaran_id, s]));
 
-      const rankingsMap = new Map();
-      rankingsList.forEach((r: any) => {
-        if (r.pendaftaran_id) rankingsMap.set(String(r.pendaftaran_id), r);
-        if (r.player_name) rankingsMap.set(r.player_name.trim().toLowerCase(), r);
-      });
-
-      // public.pendaftaran adalah master identitas atlet.
-      // rankings/atlet_stats hanya memperkaya poin, seed, bio, dan performa.
-      // Atlet yang hanya ada di rankings tidak dibuat sebagai atlet baru di landing page.
-      const playerMap = new Map<string, any>();
-
-      pendaftaranList.forEach((p: any) => {
-        const nameKey = (p.nama || '').trim().toLowerCase();
-        if (!nameKey) return;
-
-        const stat = statsMap.get(String(p.id)) || statsMap.get(nameKey);
-        const rankItem = rankingsMap.get(String(p.id)) || rankingsMap.get(nameKey);
-
-        const baseP = Number(stat?.points) || Number(rankItem?.poin) || 0;
-        const bonusP = Number(stat?.total_points) || Number(rankItem?.bonus) || 0;
-        const finalP = Number(rankItem?.total_points) > (baseP + bonusP)
-          ? Number(rankItem.total_points)
-          : (baseP + bonusP);
-
-        const tournamentPhoto = tournamentPhotoById.get(String(p.id));
-        const mergedPendaftaran = {
-          ...p,
-          foto_url: tournamentPhoto || p.foto_url || null,
-        };
-
-        playerMap.set(nameKey, {
-          id: p.id,
-          pendaftaran_id: p.id,
-          pendaftaran: mergedPendaftaran,
-          points: baseP,
-          total_points: bonusP,
-          display_points: finalP,
-          seed: stat?.seed || rankItem?.seed || 'UNSEEDED',
-          bio: stat?.bio || p.pengalaman || 'Dedikasi dan semangat tinggi untuk membawa nama baik PB Bilibili 162 di kancah nasional.',
-          status: p.status || 'aktif',
-        });
-      });
-
-      const resultPlayers = Array.from(playerMap.values());
-      // Live database is authoritative. Never render an older browser snapshot.
-      setDbPlayers(resultPlayers);
-      if (pendaftaranRes.status === 'rejected' && statsRes.status === 'rejected' && rankingsRes.status === 'rejected') {
-        throw new Error('Semua sumber data atlet tidak dapat diakses.');
+      if (pendaftaran.length === 0) {
+        setDbPlayers([]);
+        return;
       }
+
+      const formatted = pendaftaran.map((atlet: any) => {
+        const rankPosisi = rankings.findIndex(
+          (r: any) =>
+            (r.pendaftaran_id && r.pendaftaran_id === atlet.id) ||
+            (r.player_name || r.nama)?.trim().toLowerCase() ===
+              atlet.nama?.trim().toLowerCase()
+        );
+        const rankingMatch = rankPosisi !== -1 ? rankings[rankPosisi] : null;
+        const stat = statsMap.get(atlet.id);
+        const cup1 = cup1Map.get(atlet.id);
+        const integratedSeed = cup1?.seeded_quality || 'D';
+
+        const basePoints = Number(stat?.points || 0);
+        const addedPoints = Number(stat?.total_points || 0);
+        const calculatedTotal = basePoints + addedPoints;
+
+        return {
+          ...atlet,
+          points: stat ? calculatedTotal : Number(rankingMatch?.total_points || 0),
+          raw_base_points: basePoints,
+          raw_added_points: addedPoints,
+          rank: rankPosisi !== -1 ? rankPosisi + 1 : 0,
+          seed: integratedSeed,
+          seeded_cup1: Boolean(cup1?.is_seeded),
+          seeded_participated: Boolean(cup1?.participated),
+          seeded_player_name: cup1?.seeded_player_name || null,
+          seeded_club_name: cup1?.seeded_club_name || null,
+          seeded_division: cup1?.division_level || integratedSeed,
+          seeded_partners: Array.isArray(cup1?.partners) ? cup1.partners : [],
+          seeded_source_no: cup1?.source_no || null,
+          foto_url:
+            tournamentPhotoById.get(String(atlet.id)) ||
+            atlet.foto_url ||
+            rankingMatch?.photo_url ||
+            '',
+          bio: rankingMatch?.bio || 'No biography available.',
+          prestasi: rankingMatch?.achievement || 'Regular Player',
+        };
+      });
+
+      setDbPlayers(formatted);
     } catch (err) {
       console.error('Database Error:', err);
       setDbPlayers([]);
-        } finally {
+    } finally {
       setIsLoading(false);
     }
   }, []);
-
   useEffect(() => {
     fetchPlayersFromDB();
     const channel = supabase
@@ -223,26 +233,29 @@ const Players: React.FC<{ initialFilter?: string }> = ({
 
       const name = info.nama || 'Atlet PB Bilibili 162';
       const photo = info.foto_url || null;
-      const calculatedPoints = (Number(p.points) || 0) + (Number(p.total_points) || 0);
-      const dbCategory = info.kategori_atlet;
-      let ageGroup = 'Senior';
-      if (dbCategory) {
-        ageGroup = normalizeFilter(dbCategory);
-      } else {
-        const categoryRaw = (info.kategori || '').toUpperCase();
-        if (categoryRaw.includes('MUDA') || ['U-9', 'U-11', 'U-13', 'U-15', 'U-17', 'U-19'].some((u) => categoryRaw.includes(u))) {
-          ageGroup = 'Muda';
-        }
-      }
+      const categoryRaw = String(info.kategori || info.kategori_atlet || 'SENIOR').toUpperCase();
+      const ageGroup = categoryRaw.includes('MUDA') ||
+        ['U-9', 'U-11', 'U-13', 'U-15', 'U-17', 'U-19'].some((u) => categoryRaw.includes(u))
+        ? 'Muda'
+        : 'Senior';
 
       uniquePlayersMap.set(uniqueKey, {
         ...p,
         name,
         img: photo,
         ageGroup,
-        displayPoints: calculatedPoints,
-        displaySeed: p.seed || 'UNSEEDED',
-        bio: p.bio || 'Dedikasi dan semangat tinggi untuk membawa nama baik PB Bilibili 162 di kancah nasional.',
+        displayPoints: Number(p.points) || 0,
+        displaySeed: p.seed || 'D',
+        bio: p.bio || 'No biography available.',
+        prestasi: p.prestasi || 'Regular Player',
+        rank: p.rank || 0,
+        seeded_cup1: Boolean(p.seeded_cup1),
+        seeded_participated: Boolean(p.seeded_participated),
+        seeded_player_name: p.seeded_player_name || null,
+        seeded_club_name: p.seeded_club_name || null,
+        seeded_division: p.seeded_division || p.seed || 'D',
+        seeded_partners: Array.isArray(p.seeded_partners) ? p.seeded_partners : [],
+        seeded_source_no: p.seeded_source_no || null,
       });
     });
 
