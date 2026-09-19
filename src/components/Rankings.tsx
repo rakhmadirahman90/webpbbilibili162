@@ -46,6 +46,8 @@ interface PlayerRanking {
   total_points: number;
   bonus?: number;
   photo_url?: string;
+  bilibili_cup1_photo_path?: string | null;
+  bilibili_cup1_partner_name?: string | null;
   updated_at?: string;
   seeded_player_name?: string;
   seeded_club_name?: string;
@@ -378,17 +380,25 @@ const Rankings: React.FC = () => {
     setLoading(true);
     setFetchError(null);
     try {
-      const [rankingsRes, statsRes, pendaftaranRes, seededRes] = await Promise.allSettled([
+      const [rankingsRes, statsRes, pendaftaranRes, seededRes, tournamentProfileRes] = await Promise.allSettled([
         supabase.from('rankings').select('*'),
         supabase.from('atlet_stats').select('pendaftaran_id, player_name, points, total_points, seed'),
-        supabase.from('pendaftaran').select('id, nama, foto_url, kategori_atlet, status, alasan_status'),
+        supabase.from('pendaftaran').select('id, nama, foto_url, kategori_atlet, status, alasan_status, bilibili_cup1_photo_path, bilibili_cup1_partner_name'),
         supabase.from('v_bilibili_162_cup1_athlete_seeded').select('*'),
+        supabase.from('pendaftaran').select('id, bilibili_cup1_photo_path, bilibili_cup1_partner_name').not('bilibili_cup1_registration_id','is',null),
       ]);
 
       const rankingsData = rankingsRes.status === 'fulfilled' && rankingsRes.value.data ? rankingsRes.value.data : [];
       const statsData = statsRes.status === 'fulfilled' && statsRes.value.data ? statsRes.value.data : [];
       const pendaftaranData = pendaftaranRes.status === 'fulfilled' && pendaftaranRes.value.data ? pendaftaranRes.value.data : [];
       const seededData = seededRes.status === 'fulfilled' && seededRes.value.data ? seededRes.value.data : [];
+      const tournamentProfileData = tournamentProfileRes.status === 'fulfilled' && tournamentProfileRes.value.data ? tournamentProfileRes.value.data : [];
+      const tournamentPhotoById = new Map<string, string>();
+      await Promise.all(tournamentProfileData.map(async (x: any) => {
+        if (!x.bilibili_cup1_photo_path) return;
+        const { data: signed } = await supabase.storage.from('turnamen-dokumen').createSignedUrl(x.bilibili_cup1_photo_path, 60 * 60);
+        if (signed?.signedUrl) tournamentPhotoById.set(String(x.id), signed.signedUrl);
+      }));
       const seededById = new Map<string, any>();
       const seededByName = new Map<string, any>();
       seededData.forEach((s: any) => {
@@ -430,7 +440,9 @@ const Rankings: React.FC = () => {
           status: profile.status || 'aktif',
           alasan_status: profile.alasan_status || undefined,
           player_name: rawName.trim().toUpperCase(),
-          photo_url: profile.foto_url || rankItem?.photo_url || undefined,
+          photo_url: profile.foto_url || tournamentPhotoById.get(String(profile.id)) || rankItem?.photo_url || undefined,
+          bilibili_cup1_photo_path: profile.bilibili_cup1_photo_path || null,
+          bilibili_cup1_partner_name: profile.bilibili_cup1_partner_name || null,
           poin: basePoints,
           bonus: addedPoints,
           total_points: finalTotal,
@@ -472,7 +484,9 @@ const Rankings: React.FC = () => {
           status: 'aktif',
           alasan_status: undefined,
           player_name: rawName.trim().toUpperCase(),
-          photo_url: rankItem.photo_url || undefined,
+          photo_url: rankItem.photo_url || tournamentPhotoById.get(String(rankItem.pendaftaran_id || '')) || undefined,
+          bilibili_cup1_photo_path: rankItem.pendaftaran_id ? (tournamentProfileData.find((x:any) => String(x.id) === String(rankItem.pendaftaran_id))?.bilibili_cup1_photo_path || null) : null,
+          bilibili_cup1_partner_name: rankItem.pendaftaran_id ? (tournamentProfileData.find((x:any) => String(x.id) === String(rankItem.pendaftaran_id))?.bilibili_cup1_partner_name || null) : null,
           poin: basePoints,
           bonus: addedPoints,
           total_points: finalTotal,
@@ -508,7 +522,9 @@ const Rankings: React.FC = () => {
           pendaftaran_id: stat.pendaftaran_id,
           status: 'aktif',
           player_name: rawName.trim().toUpperCase(),
-          photo_url: undefined,
+          photo_url: tournamentPhotoById.get(String(stat.pendaftaran_id || '')) || undefined,
+          bilibili_cup1_photo_path: stat.pendaftaran_id ? (tournamentProfileData.find((x:any) => String(x.id) === String(stat.pendaftaran_id))?.bilibili_cup1_photo_path || null) : null,
+          bilibili_cup1_partner_name: stat.pendaftaran_id ? (tournamentProfileData.find((x:any) => String(x.id) === String(stat.pendaftaran_id))?.bilibili_cup1_partner_name || null) : null,
           poin: basePoints,
           bonus: addedPoints,
           total_points: finalTotal,
