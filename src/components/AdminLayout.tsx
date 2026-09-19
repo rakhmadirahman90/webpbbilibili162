@@ -60,7 +60,11 @@ export default function AdminLayout({ children, email }: AdminLayoutProps) {
   useEffect(() => { setIsSidebarOpen(false); }, [location.pathname]);
   useEffect(() => { if (typeof document === 'undefined') return; document.body.style.overflow = isSidebarOpen ? 'hidden' : ''; return () => { document.body.style.overflow = ''; }; }, [isSidebarOpen]);
   useEffect(() => { cleanupDuplicateTournamentMenu(); const observer = new MutationObserver(() => cleanupDuplicateTournamentMenu()); const root = document.getElementById('admin-sidebar') || document.body; observer.observe(root, { childList: true, subtree: true }); const timer = window.setTimeout(cleanupDuplicateTournamentMenu, 1000); return () => { observer.disconnect(); window.clearTimeout(timer); }; }, [location.pathname]);
-  const content = isDashboard ? children : adminPath === 'agenda' ? <AdminAgendaPB162 /> : <AdminRouteView session={{ user: { email: portalEmail, user_metadata: portalSession?.user?.user_metadata || { role } } }} />;
+  const content = isDashboard
+    ? children
+    : adminPath === 'agenda'
+      ? (isAdmin ? <AdminAgendaPB162 /> : <AdminDashboard />)
+      : <AdminRouteView session={{ user: { email: portalEmail, user_metadata: portalSession?.user?.user_metadata || { role } } }} />;
   if (!portalReady) return <div className="h-[100dvh] flex items-center justify-center bg-[#07101f] text-slate-300 text-sm">Memuat portal...</div>;
   if (!portalSession) { window.location.replace('/login'); return null; }
 
