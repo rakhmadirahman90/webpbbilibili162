@@ -47,21 +47,33 @@ export default function Login() {
 
   useEffect(() => {
     const normalized = normalizePhone(phone);
-    if (!/^62\\d{9,13}$/.test(normalized) || mustChangePassword) {
+    const isValidPhone = normalized.startsWith('62') && normalized.length >= 11 && normalized.length <= 15;
+    if (!isValidPhone || mustChangePassword) {
       setDefaultNotice(false);
       return;
     }
+
+    let cancelled = false;
     const timer = window.setTimeout(async () => {
       try {
-        const { data } = await supabase.functions.invoke('password-login', {
+        const { data, error } = await supabase.functions.invoke('password-login', {
           body: { phone: normalized, action: 'check_first_login' }
         });
-        if (data?.ok && data?.show_default_notice) {
+        if (cancelled) return;
+        if (!error && data?.ok && data?.show_default_notice) {
           setDefaultNotice(true);
-          window.setTimeout(() => setDefaultNotice(false), 5000);
+        } else {
+          setDefaultNotice(false);
         }
-      } catch {}
-    }, 450);
+      } catch {
+        if (!cancelled) setDefaultNotice(false);
+      }
+    }, 350);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
     return () => window.clearTimeout(timer);
   }, [phone, mustChangePassword]);
 
