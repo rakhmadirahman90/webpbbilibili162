@@ -15,7 +15,7 @@ interface UserRecord {
   role: 'admin' | 'anggota';
   kategori: string;
   foto_url?: string;
-  hasPin?: boolean;
+  hasPassword?: boolean;
   created_at?: string;
 }
 
@@ -34,8 +34,29 @@ export default function AdminUsers({ session }: { session: any }) {
     whatsapp: '',
     role: 'anggota' as 'admin' | 'anggota',
     kategori: 'SENIOR',
-    pin: '123456'
+    password: ''
   });
+
+
+  const hashPassword = async (password: string) => {
+    const normalized = password.trim();
+    if (normalized.length < 8) throw new Error('Password minimal 8 karakter.');
+    const encoder = new TextEncoder();
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const iterations = 210000;
+    const key = await crypto.subtle.importKey('raw', encoder.encode(normalized), 'PBKDF2', false, ['deriveBits']);
+    const bits = await crypto.subtle.deriveBits(
+      { name: 'PBKDF2', salt, iterations, hash: 'SHA-256' },
+      key,
+      256
+    );
+    const toBase64Url = (bytes: Uint8Array) => {
+      let binary = '';
+      bytes.forEach((b) => { binary += String.fromCharCode(b); });
+      return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+    };
+    return `pbkdf2$sha256${iterations}${toBase64Url(salt)}${toBase64Url(new Uint8Array(bits))}`;
+  };
 
   const [saving, setSaving] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState<any[]>([]);
@@ -85,19 +106,8 @@ export default function AdminUsers({ session }: { session: any }) {
 
       if (error) throw error;
 
-      // Read stored pins dict
-      let pinDict: Record<string, any> = {};
-      try {
-        const rawPins = localStorage.getItem('pb162_user_pins');
-        if (rawPins) pinDict = JSON.parse(rawPins);
-      } catch (e) {
-        console.error(e);
-      }
-
-      // Map pendaftaran data to UserRecord
+      // Password selalu berasal dari hash server/database; tidak disimpan di localStorage.
       const mapped: UserRecord[] = (pendaftaranData || []).map((item: any) => {
-        const key = (item.nama || item.email || '').toLowerCase().trim();
-        const pinInfo = pinDict[key] || pinDict[item.whatsapp] || pinDict[item.email];
         return {
           id: item.id,
           nama: item.nama || 'Tanpa Nama',
@@ -106,7 +116,7 @@ export default function AdminUsers({ session }: { session: any }) {
           role: item.role || (item.nama?.toLowerCase().includes('admin') ? 'admin' : 'anggota'),
           kategori: item.kategori || item.kategori_atlet || 'SENIOR',
           foto_url: item.foto_url || '',
-          hasPin: !!pinInfo?.hasChosenPin || !!pinInfo?.pin,
+          hasPassword: !!item.password_hash,
           created_at: item.created_at || new Date().toISOString()
         };
       });
@@ -121,7 +131,7 @@ export default function AdminUsers({ session }: { session: any }) {
           whatsapp: '081234567890',
           role: 'admin',
           kategori: 'SENIOR',
-          hasPin: true,
+          hasPassword: true,
           created_at: new Date().toISOString()
         });
       }
@@ -149,7 +159,7 @@ export default function AdminUsers({ session }: { session: any }) {
       whatsapp: '',
       role: 'anggota',
       kategori: 'SENIOR',
-      pin: '123456'
+      password: ''
     });
     setShowModal(true);
   };
@@ -162,7 +172,7 @@ export default function AdminUsers({ session }: { session: any }) {
       whatsapp: user.whatsapp,
       role: user.role,
       kategori: user.kategori,
-      pin: '123456'
+      password: ''
     });
     setShowModal(true);
   };
@@ -198,20 +208,17 @@ export default function AdminUsers({ session }: { session: any }) {
         if (error) throw error;
       }
 
-      // If PIN is updated
-      if (formData.pin) {
-        try {
-          const raw = localStorage.getItem('pb162_user_pins');
-          const dict = raw ? JSON.parse(raw) : {};
-          dict[formData.nama.toLowerCase().trim()] = {
-            pin: formData.pin,
-            hasChosenPin: true,
-            method: 'pin'
-          };
-          if (formData.email) dict[formData.email.toLowerCase().trim()] = dict[formData.nama.toLowerCase().trim()];
-          localStorage.setItem('pb162_user_pins', JSON.stringify(dict));
-        } catch (e) {
-          console.error(e);
+      // Simpan hanya hash password. Password plaintext tidak pernah ditulis ke database/localStorage.
+      if (formData.password.trim()) {
+        if (editingUser?.id === 'admin-master') {
+          // Master Admin menggunakan password admin di Edge Function.
+        } else {
+          const passwordHash = await hashPassword(formData.password);
+          const { error: passwordError } = await supabase
+            .from('pendaftaran')
+            .update({ password_hash: passwordHash })
+            .eq('id', editingUser?.id || '')
+          if (passwordError) throw passwordError;
         }
       }
 
@@ -272,47 +279,46 @@ export default function AdminUsers({ session }: { session: any }) {
     }
   };
 
-  const handleResetPin = async (user: UserRecord) => {
-    const { value: newPin } = await Swal.fire({
-      title: `Reset PIN untuk ${user.nama}`,
-      input: 'text',
-      inputLabel: 'Masukkan 6 digit PIN baru',
-      inputValue: '123456',
-      inputAttributes: {
-        maxlength: '6',
-        autocapitalize: 'off',
-        autocorrect: 'off'
-      },
+  const handleResetPassword = async (user: UserRecord) => {
+    if (user.id === 'admin-master') {
+      await Swal.fire({
+        title: 'Password Master Admin',
+        text: 'Master Admin menggunakan password admin pada layanan login.',
+        icon: 'info',
+        background: '#0F172A',
+        color: '#fff'
+      });
+      return;
+    }
+
+    const { value: newPassword } = await Swal.fire({
+      title: `Reset Password untuk ${user.nama}`,
+      input: 'password',
+      inputLabel: 'Masukkan password baru (minimal 8 karakter)',
+      inputPlaceholder: 'Password baru',
+      inputAttributes: { minlength: '8', autocomplete: 'new-password' },
       showCancelButton: true,
-      confirmButtonText: 'Simpan PIN',
+      confirmButtonText: 'Simpan Password',
       cancelButtonText: 'Batal',
       background: '#0F172A',
       color: '#fff',
       confirmButtonColor: '#3B82F6'
     });
 
-    if (newPin) {
-      if (newPin.length !== 6 || !/^\d+$/.test(newPin)) {
-        Swal.fire({ title: 'PIN Tidak Valid', text: 'PIN harus tepat 6 angka.', icon: 'error', background: '#0F172A', color: '#fff' });
-        return;
-      }
+    if (!newPassword) return;
+    if (String(newPassword).trim().length < 8) {
+      await Swal.fire({ title: 'Password Tidak Valid', text: 'Password minimal 8 karakter.', icon: 'error', background: '#0F172A', color: '#fff' });
+      return;
+    }
 
-      try {
-        const raw = localStorage.getItem('pb162_user_pins');
-        const dict = raw ? JSON.parse(raw) : {};
-        dict[user.nama.toLowerCase().trim()] = {
-          pin: newPin,
-          hasChosenPin: true,
-          method: 'pin'
-        };
-        if (user.email) dict[user.email.toLowerCase().trim()] = dict[user.nama.toLowerCase().trim()];
-        localStorage.setItem('pb162_user_pins', JSON.stringify(dict));
-
-        Swal.fire({ title: 'PIN Direset!', text: `PIN baru untuk ${user.nama} berhasil disimpan.`, icon: 'success', timer: 1500, showConfirmButton: false, background: '#0F172A', color: '#fff' });
-        fetchUsers();
-      } catch (e) {
-        Swal.fire({ title: 'Gagal', text: 'Gagal menyimpan PIN baru.', icon: 'error', background: '#0F172A', color: '#fff' });
-      }
+    try {
+      const passwordHash = await hashPassword(String(newPassword));
+      const { error } = await supabase.from('pendaftaran').update({ password_hash: passwordHash }).eq('id', user.id);
+      if (error) throw error;
+      await Swal.fire({ title: 'Password Diperbarui!', text: `Password untuk ${user.nama} telah disimpan sebagai hash.`, icon: 'success', timer: 1500, showConfirmButton: false, background: '#0F172A', color: '#fff' });
+      fetchUsers();
+    } catch (e: any) {
+      await Swal.fire({ title: 'Gagal', text: e?.message || 'Gagal menyimpan password baru.', icon: 'error', background: '#0F172A', color: '#fff' });
     }
   };
 
@@ -339,7 +345,7 @@ export default function AdminUsers({ session }: { session: any }) {
               Kelola <span className="text-blue-500">User & Hak Akses</span>
             </h1>
             <p className="text-slate-400 text-xs sm:text-sm font-medium mt-0.5">
-              Manajemen akun anggota, hak akses admin, pengaturan PIN login, dan verifikasi profil sistem klub.
+              Manajemen akun anggota, hak akses admin, pengaturan password login, dan verifikasi profil sistem klub.
             </p>
           </div>
           
@@ -483,16 +489,16 @@ export default function AdminUsers({ session }: { session: any }) {
 
                     <div className="flex items-center justify-between pt-1">
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                        user.hasPin ? 'text-emerald-400 bg-emerald-500/10' : 'text-amber-400 bg-amber-500/10'
+                        user.hasPassword ? 'text-emerald-400 bg-emerald-500/10' : 'text-amber-400 bg-amber-500/10'
                       }`}>
-                        {user.hasPin ? <CheckCircle size={12} /> : <AlertTriangle size={12} />}
-                        {user.hasPin ? 'PIN Aktif' : 'Belum Set PIN'}
+                        {user.hasPassword ? <CheckCircle size={12} /> : <AlertTriangle size={12} />}
+                        {user.hasPassword ? 'Password Aktif' : 'Belum Set Password'}
                       </span>
 
                       <div className="flex items-center gap-1.5">
                         <button
-                          onClick={() => handleResetPin(user)}
-                          title="Reset PIN"
+                          onClick={() => handleResetPassword(user)}
+                          title="Reset Password"
                           className="px-2.5 py-1.5 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 rounded-xl text-[10px] font-bold uppercase flex items-center gap-1"
                         >
                           <KeyRound size={12} /> PIN
@@ -590,17 +596,17 @@ export default function AdminUsers({ session }: { session: any }) {
                         </td>
                         <td className="p-4">
                           <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                            user.hasPin ? 'text-emerald-400 bg-emerald-500/10' : 'text-amber-400 bg-amber-500/10'
+                            user.hasPassword ? 'text-emerald-400 bg-emerald-500/10' : 'text-amber-400 bg-amber-500/10'
                           }`}>
-                            {user.hasPin ? <CheckCircle size={12} /> : <AlertTriangle size={12} />}
-                            {user.hasPin ? 'PIN Aktif' : 'Belum Set PIN'}
+                            {user.hasPassword ? <CheckCircle size={12} /> : <AlertTriangle size={12} />}
+                            {user.hasPassword ? 'Password Aktif' : 'Belum Set Password'}
                           </span>
                         </td>
                         <td className="p-4 text-right">
                           <div className="flex items-center justify-end gap-1.5">
                             <button
-                              onClick={() => handleResetPin(user)}
-                              title="Reset PIN"
+                              onClick={() => handleResetPassword(user)}
+                              title="Reset Password"
                               className="p-2 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 rounded-xl transition-all cursor-pointer"
                             >
                               <KeyRound size={14} />
@@ -823,16 +829,16 @@ export default function AdminUsers({ session }: { session: any }) {
               </div>
 
               <div>
-                <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1 block">PIN Login 6 Digit</label>
+                <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1 block">Password Login</label>
                 <input
                   type="text"
-                  maxLength={6}
-                  value={formData.pin}
+                  minLength={8}
+                  value={formData.password}
                   onChange={(e) => setFormData({...formData, pin: e.target.value})}
-                  placeholder="Contoh: 123456"
-                  className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 tracking-widest font-mono font-bold"
+                  placeholder="Minimal 8 karakter"
+                  className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 font-semibold"
                 />
-                <p className="text-[10px] text-slate-500 mt-1">PIN digunakan anggota untuk login kilat ke portal klub.</p>
+                <p className="text-[10px] text-slate-500 mt-1">Password digunakan anggota untuk login ke portal klub. Password disimpan sebagai hash, bukan plaintext.</p>
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/5">
