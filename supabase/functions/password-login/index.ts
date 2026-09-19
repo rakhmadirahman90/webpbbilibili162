@@ -68,14 +68,16 @@ export default {
 
       // Cari hanya nomor yang sedang login, bukan seluruh anggota aktif.
       // Ini memangkas query dari puluhan baris menjadi maksimal satu baris.
+      // Data pendaftaran menyimpan nomor WhatsApp dalam format lokal (08...).
+      // Gunakan equality query langsung agar PostgREST tidak perlu memproses
+      // filter OR dan login tetap cepat serta stabil.
       const localPhone = phone.startsWith("62") ? "0" + phone.slice(2) : phone;
-      const memberFilter = `whatsapp.eq.${phone},whatsapp.eq.${localPhone}`;
 
       const [memberResult, settingResult] = await Promise.all([
         supabaseAdmin
           .from("pendaftaran")
           .select("id,nama,whatsapp,kategori,kategori_atlet,jenis_kelamin,domisili,pengalaman,foto_url,email,tanggal_lahir,sektor_bermain,ukuran_jersey,status,password_hash,password_salt,must_change_password")
-          .or(memberFilter)
+          .eq("whatsapp", localPhone)
           .in("status", ["aktif", "verified", "Diterima", "diterima", "active"])
           .limit(1),
         supabaseAdmin
