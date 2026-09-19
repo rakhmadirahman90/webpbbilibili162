@@ -227,7 +227,9 @@ const Players: React.FC<{ initialFilter?: string }> = ({
     const uniquePlayersMap = new Map();
 
     dbPlayers.forEach((p) => {
-      const info = p.pendaftaran || {};
+      // fetchPlayersFromDB mengembalikan baris pendaftaran langsung.
+      // Tetap dukung bentuk lama { pendaftaran: {...} } agar tidak merusak data/cache lama.
+      const info = p.pendaftaran || p;
       const uniqueKey = info.id || p.id;
       if (uniquePlayersMap.has(uniqueKey)) return;
 
