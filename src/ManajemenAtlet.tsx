@@ -102,6 +102,7 @@ export default function ManajemenAtlet() {
     const channel = supabase
       .channel('manajemen_atlet_realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'pendaftaran' }, () => fetchAtlets())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pendaftaran_turnamen' }, () => fetchAtlets())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'atlet_stats' }, () => fetchAtlets())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'rankings' }, () => fetchAtlets())
       .subscribe();
@@ -131,6 +132,13 @@ export default function ManajemenAtlet() {
       if (cup1Error) console.warn('Cup I seeded integration:', cup1Error.message);
       const cup1Map = new Map((cup1Rows || []).map((row: any) => [row.pendaftaran_id, row]));
       setCup1SeededMap(cup1Map);
+      const tournamentPhotoById = new Map<string, string>();
+      await Promise.all((pendaftaran || []).map(async (atlet: any) => {
+        const path = atlet.bilibili_cup1_photo_path || cup1Map.get(atlet.id)?.photo_path;
+        if (!path) return;
+        const { data } = await supabase.storage.from('turnamen-dokumen').createSignedUrl(path, 60 * 60);
+        if (data?.signedUrl) tournamentPhotoById.set(String(atlet.id), data.signedUrl);
+      }));
 
       // Buat Map untuk mempercepat pencarian statistik berdasarkan ID
       const statsMap = new Map(stats?.map((s: any) => [s.pendaftaran_id, s]));
@@ -171,29 +179,16 @@ export default function ManajemenAtlet() {
             seeded_division: cup1?.division_level || integratedSeed,
             seeded_partners: Array.isArray(cup1?.partners) ? cup1.partners : [],
             seeded_source_no: cup1?.source_no || null,
-            foto_url: atlet.foto_url || rankingMatch?.photo_url || '',
+            foto_url: tournamentPhotoById.get(String(atlet.id)) || atlet.foto_url || rankingMatch?.photo_url || '',
             bio: rankingMatch?.bio || 'No biography available.',
             prestasi: rankingMatch?.achievement || 'Regular Player',
           };
         });
 
         setAtlets(formatted);
-      } else if (rankings && rankings.length > 0) {
-        const fromRankings = rankings.map((r: any, idx: number) => ({
-          id: r.pendaftaran_id || r.id || `r-${idx}`,
-          nama: r.player_name || r.nama || 'Atlet',
-          kategori_atlet: r.category || 'SENIOR',
-          points: Number(r.total_points || r.poin || 0),
-          raw_base_points: Number(r.poin || 0),
-          raw_added_points: Number(r.bonus || 0),
-          rank: idx + 1,
-          seed: r.seed || 'D',
-          foto_url: r.photo_url || '',
-          bio: r.bio || 'No biography available.',
-          prestasi: r.achievement || 'Regular Player'
-        }));
-        setAtlets(fromRankings);
       } else {
+        // Data atlet hanya berasal dari master public.pendaftaran.
+        // Tabel rankings/atlet_stats dipakai sebagai data performa, bukan master identitas.
         setAtlets([]);
       }
     } catch (err: any) {
@@ -338,6 +333,7 @@ export default function ManajemenAtlet() {
       const { error: rError } = await supabase.from('rankings').upsert(
         {
           player_name: cleanName,
+          pendaftaran_id: (await supabase.from('pendaftaran').select('id').eq('nama', cleanName).maybeSingle()).data?.id || null,
           category: newAtlet.kategori,
           seed: newAtlet.seed,
           total_points: newAtlet.points,
