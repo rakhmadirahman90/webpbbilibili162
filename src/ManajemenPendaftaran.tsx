@@ -1054,15 +1054,21 @@ const totalSeniorPutri = registrants.filter(r =>
                     >
                       <MessageSquare size={11} /> Kirim Akun Ke WA Atlet
                     </button>
-                    <button 
-                      onClick={() => { setEditingItem(item); setIsEditModalOpen(true); }} 
+                    <button
+                      type="button"
+                      disabled={getStatusCategory(item.status) === 'diterima'}
+                      onClick={() => { if (getStatusCategory(item.status) !== 'diterima') { setEditingItem(item); setIsEditModalOpen(true); } }}
                       className={`py-2.5 rounded-lg transition-all font-bold text-[9px] uppercase tracking-widest border flex items-center justify-center gap-1 ${getStatusCategory(item.status) === 'diterima' ? 'cursor-not-allowed bg-slate-500/10 text-slate-500 border-slate-500/20 opacity-50' : 'bg-blue-500/10 hover:bg-blue-600 text-blue-300 hover:text-white border-blue-400/20'}`}
+                      title={getStatusCategory(item.status) === 'diterima' ? 'Sudah diterima — edit dinonaktifkan' : 'Edit Data'}
                     >
                       <Edit3 size={11} /> Edit
                     </button>
-                    <button 
-                      onClick={() => handleDelete(item.id, item.nama, item.foto_url)} 
+                    <button
+                      type="button"
+                      disabled={getStatusCategory(item.status) === 'diterima'}
+                      onClick={() => handleDelete(item.id, item.nama, item.foto_url)}
                       className={`py-2.5 rounded-lg transition-all font-bold text-[9px] uppercase tracking-widest border flex items-center justify-center gap-1 ${getStatusCategory(item.status) === 'diterima' ? 'cursor-not-allowed bg-slate-500/10 text-slate-500 border-slate-500/20 opacity-50' : 'bg-white/5 hover:bg-rose-600 text-slate-300 hover:text-white border-white/10'}`}
+                      title={getStatusCategory(item.status) === 'diterima' ? 'Sudah diterima — hapus dinonaktifkan' : 'Hapus Data'}
                     >
                       <Trash2 size={11} /> Hapus
                     </button>
