@@ -60,9 +60,9 @@ const WINNERS = [
     category: 'Ganda Putra AD/BC-/C+C Ajatappareng',
     rows: [
       { rank: 'Juara I', pair: 'Andi M Fahrul & Ichal Bin Tura', club: 'Ajatappareng', prize: 5000000 },
-      { rank: 'Juara II', pair: 'Data juara II', club: 'Menunggu pembaruan data resmi', prize: 3000000 },
-      { rank: 'Juara III Bersama', pair: 'Semifinalis 1', club: 'Menunggu pembaruan data resmi', prize: 1500000 },
-      { rank: 'Juara III Bersama', pair: 'Semifinalis 2', club: 'Menunggu pembaruan data resmi', prize: 1500000 }
+      { rank: 'Juara II', pair: 'Gusmulyadi & Ahmad Halim', club: 'PB Barokah', prize: 3000000 },
+      { rank: 'Juara III Bersama', pair: 'Nugi & Saldi', club: 'The Gade', prize: 1500000 },
+      { rank: 'Juara III Bersama', pair: 'Haykal & Restu', club: 'PB Rovida', prize: 1500000 }
     ]
   }
 ];
@@ -428,8 +428,8 @@ export default function AdminLaporan() {
                     </div>
                   ))}
                 </div>
-                <div className="mt-4 rounded-2xl border border-amber-500/15 bg-amber-500/5 p-3 text-[8px] leading-relaxed text-slate-400">
-                  Nama juara yang belum tersedia di basis data hasil resmi sengaja tidak diisi dengan tebakan.
+                <div className="mt-4 rounded-2xl border border-emerald-500/15 bg-emerald-500/5 p-3 text-[8px] leading-relaxed text-slate-400">
+                  Data juara diselaraskan dengan data prestasi yang telah dikonfirmasi pada halaman Prestasi PB BILIBILI 162.
                 </div>
               </section>
             ))}
