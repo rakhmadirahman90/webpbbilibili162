@@ -49,8 +49,9 @@ interface Registrant {
   foto_url: string;
   jenis_kelamin: string;
   kategori_atlet: string; // Kolom kategori atlet sesuai DB
-  status?: string; // 'aktif' | 'tidak aktif' | 'Ditolak'
+  status?: string; // 'aktif' | 'tidak aktif' | 'Ditolak' | 'Pending'
   alasan_status?: string;
+  tanggal_registrasi?: string;
   nama_panggilan?: string;
   nama_punggung?: string;
   tempat_lahir?: string;
@@ -591,7 +592,6 @@ const totalSeniorPutri = registrants.filter(r =>
         prestasi: editingItem.prestasi || '',
         jenis_kelamin: editingItem.jenis_kelamin,
         foto_url: editingItem.foto_url || '',
-        email: editingItem.email || '',
         nama_panggilan: editingItem.nama_panggilan || '',
         nama_punggung: editingItem.nama_punggung || '',
         tempat_lahir: editingItem.tempat_lahir || '',
@@ -601,7 +601,8 @@ const totalSeniorPutri = registrants.filter(r =>
         hobi: editingItem.hobi || '',
         makanan_favorit: editingItem.makanan_favorit || '',
         status: editingItem.status || 'aktif',
-        alasan_status: editingItem.alasan_status || ''
+        alasan_status: editingItem.status === 'aktif' ? '' : (editingItem.alasan_status || ''),
+        tanggal_registrasi: editingItem.tanggal_registrasi || null
       })
       .eq('id', editingItem.id);
 
@@ -616,6 +617,14 @@ const totalSeniorPutri = registrants.filter(r =>
     setIsSaving(false);
   }
 };
+  const toDateTimeLocal = (value?: string) => {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+    return local.toISOString().slice(0, 16);
+  };
+
   const inputClass = "w-full min-h-12 rounded-xl border border-blue-400/20 bg-[#07172b] px-3.5 py-3 text-sm font-semibold text-white outline-none transition placeholder:text-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20";
   const textareaClass = "w-full rounded-xl border border-blue-400/20 bg-[#07172b] px-3.5 py-3 text-sm font-semibold text-white outline-none transition placeholder:text-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 resize-y";
   const Field = ({ label, children, className = "" }: { label: string; children: React.ReactNode; className?: string }) => (
@@ -1334,11 +1343,13 @@ const totalSeniorPutri = registrants.filter(r =>
                       <Field label="Status Atlet *">
                         <div className="grid grid-cols-2 gap-2 rounded-xl border border-white/10 bg-[#07172b] p-1.5">
                           {[
-                            { value: 'aktif', label: 'AKTIF', icon: <CheckCircle2 size={15} /> },
-                            { value: 'tidak aktif', label: 'TIDAK AKTIF', icon: <XCircle size={15} /> }
+                            { value: 'aktif', label: 'AKTIF', icon: <CheckCircle2 size={15} />, active: 'bg-emerald-600' },
+                            { value: 'tidak aktif', label: 'TIDAK AKTIF', icon: <XCircle size={15} />, active: 'bg-amber-600' },
+                            { value: 'Ditolak', label: 'DITOLAK', icon: <XCircle size={15} />, active: 'bg-rose-600' },
+                            { value: 'Pending', label: 'PENDING', icon: <Clock size={15} />, active: 'bg-slate-600' }
                           ].map(s => (
                             <button type="button" key={s.value} onClick={() => setEditingItem({...editingItem, status: s.value})}
-                              className={`flex items-center justify-center gap-1.5 rounded-lg py-3 text-[9px] font-black tracking-wider transition-all ${getStatusCategory(editingItem.status) === 'diterima' && s.value === 'aktif' || editingItem.status === s.value ? (s.value === 'aktif' ? 'bg-emerald-600 text-white shadow-lg' : 'bg-rose-600 text-white shadow-lg') : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}>
+                              className={`flex items-center justify-center gap-1.5 rounded-lg border border-white/10 py-3 text-[9px] font-black tracking-wider transition-all ${editingItem.status === s.value || (s.value === 'aktif' && getStatusCategory(editingItem.status) === 'diterima') ? `${s.active} text-white shadow-lg` : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}>
                               {s.icon}{s.label}
                             </button>
                           ))}
