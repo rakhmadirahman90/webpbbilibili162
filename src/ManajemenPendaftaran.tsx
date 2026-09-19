@@ -1173,7 +1173,7 @@ const totalSeniorPutri = registrants.filter(r =>
       {isEditModalOpen && editingItem && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-0 sm:p-4">
           <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" onClick={() => !isSaving && setIsEditModalOpen(false)} />
-          <div className="relative w-full h-[100dvh] sm:h-auto sm:max-h-[94vh] sm:max-w-4xl overflow-hidden rounded-none sm:rounded-[2rem] border border-blue-400/15 bg-[#07172b] text-white shadow-2xl shadow-black/50">
+          <div className="relative flex w-full h-[100dvh] sm:h-auto sm:max-h-[94vh] sm:max-w-4xl min-h-0 flex-col overflow-hidden rounded-none sm:rounded-[2rem] border border-blue-400/15 bg-[#07172b] text-white shadow-2xl shadow-black/50">
             <div className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-white/10 bg-gradient-to-r from-[#07172b] via-[#0b2450] to-[#063b86] px-4 py-4 sm:px-6">
               <div className="flex min-w-0 items-center gap-3">
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-950/50">
@@ -1199,8 +1199,11 @@ const totalSeniorPutri = registrants.filter(r =>
               </button>
             </div>
 
-            <form onSubmit={handleUpdate} className="flex max-h-[calc(100dvh-76px)] flex-col sm:max-h-[calc(94vh-76px)]">
-              <div className="flex-1 overflow-y-auto px-3 py-4 sm:px-6 sm:py-5">
+            <form onSubmit={handleUpdate} className="flex min-h-0 flex-1 flex-col">
+              <div
+                className="min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y px-3 py-4 pb-8 sm:px-6 sm:py-5 sm:pb-8"
+                style={{ WebkitOverflowScrolling: 'touch' }}
+              >
                 <div className="mx-auto max-w-3xl space-y-4">
 
                   {/* FOTO & IDENTITAS */}
@@ -1308,9 +1311,6 @@ const totalSeniorPutri = registrants.filter(r =>
                       <Field label="WhatsApp *">
                         <input required type="tel" inputMode="tel" value={editingItem.whatsapp || ''} onChange={e => setEditingItem({...editingItem, whatsapp: e.target.value})} className={inputClass} placeholder="08XXXXXXXXXX" />
                       </Field>
-                      <Field label="Email">
-                        <input type="email" value={editingItem.email || ''} onChange={e => setEditingItem({...editingItem, email: e.target.value})} className={inputClass} placeholder="email@contoh.com" />
-                      </Field>
                       <Field label="Domisili *" className="sm:col-span-2">
                         <input required value={editingItem.domisili || ''} onChange={e => setEditingItem({...editingItem, domisili: e.target.value})} className={inputClass} placeholder="KOTA / KABUPATEN DOMISILI" />
                       </Field>
@@ -1378,7 +1378,7 @@ const totalSeniorPutri = registrants.filter(r =>
               </div>
 
               {/* ACTION BAR */}
-              <div className="border-t border-white/10 bg-[#061225] px-3 py-3 sm:px-6 sm:py-4">
+              <div className="shrink-0 border-t border-white/10 bg-[#061225] px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-4">
                 <div className="mx-auto grid max-w-3xl grid-cols-2 gap-2 sm:gap-3">
                   <button type="button" disabled={isSaving} onClick={() => setIsEditModalOpen(false)}
                     className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3 text-[10px] font-black uppercase tracking-[0.14em] text-slate-300 transition hover:bg-white/10 disabled:opacity-50">
