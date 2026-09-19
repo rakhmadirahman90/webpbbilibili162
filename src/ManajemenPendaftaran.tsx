@@ -344,6 +344,10 @@ const totalSeniorPutri = registrants.filter(r =>
   // --- VERIFIKASI & WHATSAPP FUNCTIONS ---
   // Tombol Terima/Tolak bersifat langsung: sekali dipilih, status langsung disimpan.
   const handleVerifyStatus = async (item: Registrant, newStatus: 'Diterima' | 'Ditolak') => {
+    if (getStatusCategory(item.status) === 'diterima') {
+      Toast.fire({ icon: 'info', title: `${item.nama} sudah DITERIMA / AKTIF` });
+      return;
+    }
     const savedStatus = newStatus === 'Diterima' ? 'aktif' : 'Ditolak';
     const catatan = newStatus === 'Ditolak'
       ? 'Pendaftaran ditolak oleh Admin PB BILIBILI 162.'
@@ -900,20 +904,24 @@ const totalSeniorPutri = registrants.filter(r =>
 
                     <td className="px-3 py-3.5 whitespace-nowrap">
                       <div className="flex justify-end items-center gap-1">
-                        <button 
-                          onClick={() => handleVerifyStatus(item, 'Diterima')} 
-                          className="p-1.5 bg-emerald-500/10 text-emerald-300 rounded-lg hover:bg-emerald-600 hover:text-white transition-all shadow-sm border border-emerald-400/20"
-                          title="Verifikasi & Terima Atlet"
-                        >
-                          <CheckCircle2 size={13} />
-                        </button>
-                        <button 
-                          onClick={() => handleVerifyStatus(item, 'Ditolak')} 
-                          className="p-1.5 bg-rose-500/10 text-rose-300 rounded-lg hover:bg-rose-600 hover:text-white transition-all shadow-sm border border-rose-400/20"
-                          title="Tolak Pendaftaran"
-                        >
-                          <XCircle size={13} />
-                        </button>
+                        <button
+                           type="button"
+                           disabled={getStatusCategory(item.status) === 'diterima'}
+                           onClick={() => handleVerifyStatus(item, 'Diterima')}
+                           className={`p-1.5 rounded-lg transition-all shadow-sm border border-emerald-400/20 ${getStatusCategory(item.status) === 'diterima' ? 'cursor-not-allowed bg-slate-500/10 text-slate-600 opacity-50' : 'bg-emerald-500/10 text-emerald-300 hover:bg-emerald-600 hover:text-white'}`}
+                           title={getStatusCategory(item.status) === 'diterima' ? 'Sudah diterima — tombol dinonaktifkan' : 'Verifikasi & Terima Atlet'}
+                         >
+                           <CheckCircle2 size={13} />
+                         </button>
+                         <button
+                           type="button"
+                           disabled={getStatusCategory(item.status) === 'diterima'}
+                           onClick={() => handleVerifyStatus(item, 'Ditolak')}
+                           className={`p-1.5 rounded-lg transition-all shadow-sm border border-rose-400/20 ${getStatusCategory(item.status) === 'diterima' ? 'cursor-not-allowed bg-slate-500/10 text-slate-600 opacity-50' : 'bg-rose-500/10 text-rose-300 hover:bg-rose-600 hover:text-white'}`}
+                           title={getStatusCategory(item.status) === 'diterima' ? 'Sudah diterima — tombol dinonaktifkan' : 'Tolak Pendaftaran'}
+                         >
+                           <XCircle size={13} />
+                         </button>
                         <button 
                           onClick={() => handleSendAccountHistory(item)} 
                           className="p-1.5 bg-emerald-500/10 text-emerald-300 border border-emerald-400/20 rounded-lg hover:bg-green-600 hover:text-white transition-all shadow-sm border border-emerald-400/20"
@@ -1017,18 +1025,22 @@ const totalSeniorPutri = registrants.filter(r =>
 
                   {/* ACTION BUTTONS */}
                   <div className="grid grid-cols-2 gap-2 pt-3 border-t border-dashed border-white/10">
-                    <button 
-                      onClick={() => handleVerifyStatus(item, 'Diterima')} 
-                      className="py-2.5 bg-emerald-500/10 hover:bg-emerald-600 text-emerald-300 hover:text-white rounded-lg transition-all font-bold text-[9px] uppercase tracking-widest border border-emerald-200 flex items-center justify-center gap-1"
-                    >
-                      <CheckCircle2 size={11} /> Terima
-                    </button>
-                    <button 
-                      onClick={() => handleVerifyStatus(item, 'Ditolak')} 
-                      className="py-2.5 bg-rose-500/10 hover:bg-rose-600 text-rose-300 hover:text-white rounded-lg transition-all font-bold text-[9px] uppercase tracking-widest border border-rose-200 flex items-center justify-center gap-1"
-                    >
-                      <XCircle size={11} /> Tolak
-                    </button>
+                    <button
+                       type="button"
+                       disabled={getStatusCategory(item.status) === 'diterima'}
+                       onClick={() => handleVerifyStatus(item, 'Diterima')}
+                       className={`py-2.5 rounded-lg transition-all font-bold text-[9px] uppercase tracking-widest border flex items-center justify-center gap-1 ${getStatusCategory(item.status) === 'diterima' ? 'cursor-not-allowed bg-slate-500/10 text-slate-500 border-slate-500/20 opacity-50' : 'bg-emerald-500/10 hover:bg-emerald-600 text-emerald-300 hover:text-white border-emerald-200'}`}
+                     >
+                       <CheckCircle2 size={11} /> Terima
+                     </button>
+                     <button
+                       type="button"
+                       disabled={getStatusCategory(item.status) === 'diterima'}
+                       onClick={() => handleVerifyStatus(item, 'Ditolak')}
+                       className={`py-2.5 rounded-lg transition-all font-bold text-[9px] uppercase tracking-widest border flex items-center justify-center gap-1 ${getStatusCategory(item.status) === 'diterima' ? 'cursor-not-allowed bg-slate-500/10 text-slate-500 border-slate-500/20 opacity-50' : 'bg-rose-500/10 hover:bg-rose-600 text-rose-300 hover:text-white border-rose-200'}`}
+                     >
+                       <XCircle size={11} /> Tolak
+                     </button>
                     <button 
                       onClick={() => handleSendAccountHistory(item)} 
                       className="py-2.5 bg-emerald-500/10 hover:bg-emerald-600 text-emerald-300 hover:text-white rounded-lg transition-all font-bold text-[9px] uppercase tracking-widest border border-green-200 flex items-center justify-center gap-1 col-span-2"
