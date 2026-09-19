@@ -62,6 +62,9 @@ interface Registrant {
   makanan_favorit?: string;
   prestasi?: string;
   updated_at?: string;
+  bilibili_cup1_photo_path?: string | null;
+  bilibili_cup1_partner_name?: string | null;
+  display_foto_url?: string;
 }
 
 const Toast = Swal.mixin({
@@ -271,6 +274,45 @@ const totalSeniorPutri = registrants.filter(r =>
   };
 
   // --- CORE FUNCTIONS ---
+  const enrichTournamentPhotos = async (rows: Registrant[]): Promise<Registrant[]> => {
+    const paths = Array.from(new Set(
+      rows
+        .filter(row => !row.foto_url && row.bilibili_cup1_photo_path)
+        .map(row => row.bilibili_cup1_photo_path as string)
+        .filter(Boolean)
+    ));
+
+    if (paths.length === 0) {
+      return rows.map(row => ({ ...row, display_foto_url: row.foto_url || '' }));
+    }
+
+    try {
+      const { data: signedRows, error } = await supabase.storage
+        .from('turnamen-dokumen')
+        .createSignedUrls(paths, 60 * 60);
+
+      if (error) {
+        console.warn('Foto peserta CUP I belum dapat dibuat signed URL:', error.message);
+      }
+
+      const signedByPath = new Map(
+        (signedRows || [])
+          .filter((row: any) => row?.path && row?.signedUrl)
+          .map((row: any) => [row.path, row.signedUrl])
+      );
+
+      return rows.map(row => ({
+        ...row,
+        display_foto_url:
+          row.foto_url ||
+          (row.bilibili_cup1_photo_path ? signedByPath.get(row.bilibili_cup1_photo_path) || '' : '')
+      }));
+    } catch (error) {
+      console.warn('Gagal sinkron foto peserta CUP I:', error);
+      return rows.map(row => ({ ...row, display_foto_url: row.foto_url || '' }));
+    }
+  };
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -279,7 +321,8 @@ const totalSeniorPutri = registrants.filter(r =>
         .select('*')
         .order('created_at', { ascending: false });
       if (error) throw error;
-      setRegistrants(data || []);
+      const enriched = await enrichTournamentPhotos((data || []) as Registrant[]);
+      setRegistrants(enriched);
     } catch (error: any) {
       console.error('Error fetching data:', error.message);
     } finally {
@@ -298,12 +341,8 @@ const totalSeniorPutri = registrants.filter(r =>
       .channel('pendaftaran_changes')
       .on('postgres_changes', { event: '*', table: 'pendaftaran', schema: 'public' }, 
         (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setRegistrants((prev) => [payload.new as Registrant, ...prev]);
-          } else if (payload.eventType === 'UPDATE') {
-            setRegistrants((prev) => prev.map((item) => item.id === payload.new.id ? (payload.new as Registrant) : item));
-          } else if (payload.eventType === 'DELETE') {
-            setRegistrants((prev) => prev.filter((item) => item.id !== payload.old.id));
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE' || payload.eventType === 'DELETE') {
+            void fetchData();
           }
         }
       ).subscribe();
@@ -830,11 +869,11 @@ const totalSeniorPutri = registrants.filter(r =>
                     <td className="px-3 py-3">
                       <div className="flex items-center gap-3">
                         <div 
-                          onClick={() => item.foto_url && setPreviewImage(item.foto_url)}
+                          onClick={() => (item.display_foto_url || item.foto_url) && setPreviewImage(item.display_foto_url || item.foto_url)}
                           className="w-10 h-10 rounded-xl bg-[#132947] border border-white/10 shadow-sm overflow-hidden flex-shrink-0 cursor-zoom-in hover:opacity-80 transition-opacity"
                         >
-                          {item.foto_url ? (
-                            <img src={item.foto_url} loading="lazy" decoding="async" className="w-full h-full object-cover object-top" alt={item.nama} />
+                          {(item.display_foto_url || item.foto_url) ? (
+                            <img src={item.display_foto_url || item.foto_url} loading="lazy" decoding="async" className="w-full h-full object-cover object-top" alt={item.nama} />
                           ) : (
                             <User className="m-auto mt-1.5 text-slate-400" size={20} />
                           )}
@@ -842,6 +881,11 @@ const totalSeniorPutri = registrants.filter(r =>
                         <div className="flex flex-col min-w-[100px] max-w-[180px]">
                           <h4 className="font-black text-white text-[11px] uppercase leading-tight truncate" title={item.nama}>{item.nama || 'No Name'}</h4>
                           <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">UID: {item.id.split('-')[0]}</span>
+                          {item.bilibili_cup1_partner_name && (
+                            <span className="mt-1 inline-flex w-fit items-center gap-1 rounded-md border border-amber-400/20 bg-amber-500/10 px-1.5 py-0.5 text-[7px] font-black uppercase tracking-wider text-amber-300">
+                              CUP I • PARTNER: {item.bilibili_cup1_partner_name}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </td>
@@ -992,11 +1036,11 @@ const totalSeniorPutri = registrants.filter(r =>
 
                   <div className="flex items-center gap-3">
                     <div 
-                      onClick={() => item.foto_url && setPreviewImage(item.foto_url)}
+                      onClick={() => (item.display_foto_url || item.foto_url) && setPreviewImage(item.display_foto_url || item.foto_url)}
                       className="w-14 h-14 rounded-2xl bg-[#132947] border border-white/10 shadow-sm overflow-hidden flex-shrink-0 cursor-zoom-in"
                     >
-                      {item.foto_url ? (
-                        <img src={item.foto_url} loading="lazy" decoding="async" className="w-full h-full object-cover object-top" alt={item.nama} />
+                      {(item.display_foto_url || item.foto_url) ? (
+                        <img src={item.display_foto_url || item.foto_url} loading="lazy" decoding="async" className="w-full h-full object-cover object-top" alt={item.nama} />
                       ) : (
                         <User className="m-auto mt-2 text-slate-400" size={24} />
                       )}
@@ -1007,6 +1051,11 @@ const totalSeniorPutri = registrants.filter(r =>
                       <div className="inline-flex items-center gap-1 mt-0.5 text-slate-400 uppercase text-[8px] font-bold">
                         <MapPin size={9} className="text-rose-500 shrink-0" /> {item.domisili || '-'}
                       </div>
+                      {item.bilibili_cup1_partner_name && (
+                        <span className="mt-1 inline-flex w-fit max-w-full truncate rounded-md border border-amber-400/20 bg-amber-500/10 px-1.5 py-0.5 text-[7px] font-black uppercase tracking-wider text-amber-300">
+                          CUP I • PARTNER: {item.bilibili_cup1_partner_name}
+                        </span>
+                      )}
                     </div>
                   </div>
 
