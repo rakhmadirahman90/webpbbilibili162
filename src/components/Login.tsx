@@ -69,12 +69,12 @@ export default function Login() {
       <div className="absolute inset-0 opacity-[0.035] bg-[linear-gradient(rgba(255,255,255,.7)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.7)_1px,transparent_1px)] bg-[size:42px_42px]" />
     </div>
 
-    <button type="button" onClick={()=>navigate('/')} className="fixed left-3 top-3 sm:left-5 sm:top-5 z-50 inline-flex min-h-10 items-center gap-2 rounded-xl sm:rounded-2xl border border-white/10 bg-[#0a1222]/80 px-3 py-2.5 text-[11px] sm:text-xs font-bold text-slate-300 shadow-lg backdrop-blur-xl hover:bg-[#101b31] hover:text-white transition-all touch-manipulation" aria-label="Kembali ke beranda">
+    <button type="button" onClick={()=>navigate('/')} className="fixed left-3 top-[max(0.75rem,env(safe-area-inset-top))] sm:left-5 sm:top-5 z-50 inline-flex min-h-10 items-center gap-2 rounded-xl sm:rounded-2xl border border-white/10 bg-[#0a1222]/80 px-3 py-2.5 text-[11px] sm:text-xs font-bold text-slate-300 shadow-lg backdrop-blur-xl hover:bg-[#101b31] hover:text-white transition-all touch-manipulation" aria-label="Kembali ke beranda">
       <ArrowLeft size={15}/><Home size={14}/><span className="hidden xs:inline">Beranda</span>
     </button>
 
-    <main className="relative z-10 min-h-screen min-h-dvh w-full flex items-center justify-center px-3 py-16 sm:px-5 sm:py-20 lg:px-8 lg:py-10">
-      <div className="w-full max-w-5xl lg:min-h-[620px] grid grid-cols-1 lg:grid-cols-[0.92fr_1.08fr] overflow-hidden rounded-[28px] sm:rounded-[34px] border border-white/10 bg-[#09111f]/95 shadow-[0_30px_100px_rgba(0,0,0,.58)] backdrop-blur-xl">
+    <main className="relative z-10 min-h-screen min-h-dvh w-full flex items-center justify-center px-2.5 py-12 sm:px-5 sm:py-20 lg:px-8 lg:py-10">
+      <div className="w-full max-w-5xl lg:min-h-[620px] grid grid-cols-1 lg:grid-cols-[0.92fr_1.08fr] overflow-hidden rounded-[26px] sm:rounded-[34px] border border-white/10 bg-[#09111f]/95 shadow-[0_30px_100px_rgba(0,0,0,.58)] backdrop-blur-xl">
         {/* Brand panel - desktop */}
         <section className="relative hidden lg:flex flex-col justify-between overflow-hidden border-r border-white/[0.07] bg-gradient-to-br from-blue-950/70 via-[#091426] to-[#07101e] p-10 xl:p-12">
           <div className="absolute -right-28 -top-28 h-72 w-72 rounded-full border border-blue-400/10" />
@@ -96,40 +96,45 @@ export default function Login() {
         </section>
 
         {/* Login panel */}
-        <section className="flex min-w-0 flex-col justify-center p-4 sm:p-7 md:p-9 lg:p-10 xl:p-12">
+        <section className="flex min-w-0 flex-col justify-center p-4 pt-7 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:p-7 md:p-9 lg:p-10 xl:p-12">
           <div className="mx-auto w-full max-w-[470px]">
             <header className="text-center lg:text-left">
-              <div className="mb-5 flex items-center justify-center gap-3 lg:hidden">
-                <div className="h-[72px] w-[72px] rounded-[22px] border border-blue-400/25 bg-[#071022] p-2.5 shadow-lg shadow-blue-950/30"><img src={logoUrl} alt="Logo PB Bilibili 162" className="h-full w-full object-contain" onError={(e)=>{e.currentTarget.src='/logo_pb_bilibili_162.svg';}}/></div>
-                <div className="text-left"><p className="text-base font-black">PB Bilibili 162</p><p className="mt-1 text-[9px] font-bold uppercase tracking-[0.18em] text-slate-500">Professional Club</p><div className="mt-2 inline-flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider text-blue-300"><ShieldCheck size={11}/> Secure Access</div></div>
+              <div className="mb-6 flex flex-col items-center text-center lg:hidden">
+                <div className="relative flex h-[82px] w-[82px] items-center justify-center rounded-[26px] border border-blue-400/25 bg-gradient-to-br from-[#0c1b34] to-[#071022] p-3 shadow-[0_14px_40px_rgba(37,99,235,.18)]">
+                  <div className="absolute inset-1.5 rounded-[20px] border border-white/[0.05]" />
+                  <img src={logoUrl} alt="Logo PB Bilibili 162" className="relative h-full w-full object-contain" onError={(e)=>{e.currentTarget.src='/logo_pb_bilibili_162.svg';}}/>
+                </div>
+                <p className="mt-3 text-[17px] font-black tracking-[-0.02em]">PB Bilibili 162</p>
+                <p className="mt-1 text-[9px] font-bold uppercase tracking-[0.22em] text-slate-500">Professional Badminton Club</p>
+                <div className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-blue-400/15 bg-blue-500/[0.07] px-2.5 py-1 text-[8px] font-black uppercase tracking-[0.16em] text-blue-300"><ShieldCheck size={10}/> Akses Aman</div>
               </div>
               <div className="hidden lg:inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.24em] text-blue-300"><Sparkles size={12}/> Secure Member Access</div>
-              <h1 className="mt-1 text-[28px] sm:text-[32px] lg:text-[34px] font-black tracking-[-0.03em] text-white">Portal System</h1>
+              <h1 className="mt-1 text-[27px] sm:text-[32px] lg:text-[34px] font-black tracking-[-0.03em] text-white">Portal System</h1>
               <p className="mt-1 text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.24em] text-slate-500">Login anggota & administrator</p>
             </header>
 
             {errorMsg && <div role="alert" className="mt-5 rounded-2xl border border-red-400/20 bg-red-500/[0.07] p-3.5 flex gap-3"><AlertCircle size={17} className="mt-0.5 shrink-0 text-red-400"/><div className="min-w-0"><p className="text-xs font-extrabold text-red-300">Akses Ditolak</p><p className="mt-0.5 text-[11px] leading-5 text-red-200/70 break-words">{errorMsg}</p></div></div>}
             {successMsg && <div role="status" className="mt-5 rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.07] p-3.5 flex gap-3"><CheckCircle2 size={17} className="mt-0.5 shrink-0 text-emerald-400"/><p className="text-[11px] leading-5 text-emerald-200/80">{successMsg}</p></div>}
 
-            <form onSubmit={e=>{e.preventDefault();verifyAndLogin();}} className="mt-6 space-y-4">
+            <form onSubmit={e=>{e.preventDefault();verifyAndLogin();}} className="mt-5 space-y-4 sm:mt-6">
               <div>
                 <label className="mb-2 ml-1 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.13em] text-slate-400"><User size={14} className="text-blue-400"/> Username / Nama Anggota</label>
-                <input type="text" required autoComplete="username" value={usernameInput} onChange={e=>{setErrorMsg(null);setUsernameInput(e.target.value);}} className={`${input} px-4 text-sm font-semibold`} placeholder="Nama anggota / WhatsApp / admin"/>
+                <input type="text" required autoComplete="username" value={usernameInput} onChange={e=>{setErrorMsg(null);setUsernameInput(e.target.value);}} className={`${input} px-4 text-[13px] sm:text-sm font-semibold placeholder:text-slate-600`} placeholder="Nama anggota / WhatsApp / admin"/>
               </div>
               <div>
                 <div className="mb-2 flex items-center justify-between px-1"><label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.13em] text-slate-400"><KeyRound size={14} className="text-cyan-400"/> PIN / Passcode</label><span className="text-[9px] font-mono text-slate-600">maks. 12 digit</span></div>
-                <div className="relative"><input type={showPin?'text':'password'} inputMode="numeric" autoComplete="current-password" value={pinInput} onChange={e=>setCleanPin(e.target.value)} className={`${input} px-4 pr-12 text-center font-mono text-lg tracking-[0.3em]`} placeholder="Masukkan PIN"/><button type="button" onClick={()=>setShowPin(v=>!v)} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl p-2.5 text-slate-400 hover:bg-white/5 hover:text-white" aria-label={showPin?'Sembunyikan PIN':'Tampilkan PIN'}>{showPin?<EyeOff size={17}/>:<Eye size={17}/>}</button></div>
+                <div className="relative"><input type={showPin?'text':'password'} inputMode="numeric" autoComplete="current-password" value={pinInput} onChange={e=>setCleanPin(e.target.value)} className={`${input} px-4 pr-12 text-center font-mono text-lg tracking-[0.28em] placeholder:text-slate-700`} placeholder="Masukkan PIN"/><button type="button" onClick={()=>setShowPin(v=>!v)} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl p-2.5 text-slate-400 hover:bg-white/5 hover:text-white" aria-label={showPin?'Sembunyikan PIN':'Tampilkan PIN'}>{showPin?<EyeOff size={17}/>:<Eye size={17}/>}</button></div>
               </div>
 
-              <div className="rounded-3xl border border-white/[0.07] bg-black/10 p-3 sm:p-3.5">
-                <div className="mb-2.5 flex items-center justify-between px-1"><span className="inline-flex items-center gap-1.5 text-[9px] font-black uppercase tracking-[0.16em] text-slate-600"><Smartphone size={11}/> Secure keypad</span><button type="button" onClick={handleNumpadClear} className="rounded-lg px-2 py-1 text-[9px] font-black uppercase text-slate-500 hover:bg-white/5 hover:text-slate-300">Reset</button></div>
-                <div className="grid grid-cols-3 gap-1.5 sm:gap-2">{['1','2','3','4','5','6','7','8','9'].map(n=><button key={n} type="button" onClick={()=>handleNumpadClick(n)} className={key}>{n}</button>)}<button type="button" onClick={handleNumpadClear} className={`${key} text-[11px]`}>Clear</button><button type="button" onClick={()=>handleNumpadClick('0')} className={key}>0</button><button type="button" onClick={handleNumpadDelete} className={key} aria-label="Hapus satu digit"><Delete size={16} className="mx-auto"/></button></div>
+              <div className="rounded-[22px] border border-white/[0.07] bg-[#060c18]/70 p-2.5 sm:rounded-3xl sm:p-3.5">
+                <div className="mb-2 flex items-center justify-between px-1.5 sm:mb-2.5 sm:px-1"><span className="inline-flex items-center gap-1.5 text-[9px] font-black uppercase tracking-[0.16em] text-slate-600"><Smartphone size={11}/> Secure keypad</span><button type="button" onClick={handleNumpadClear} className="rounded-lg px-2 py-1 text-[9px] font-black uppercase text-slate-500 hover:bg-white/5 hover:text-slate-300">Reset</button></div>
+                <div className="grid grid-cols-3 gap-1.5 sm:gap-2">{['1','2','3','4','5','6','7','8','9'].map(n=><button key={n} type="button" onClick={()=>handleNumpadClick(n)} className={`${key} h-12 sm:h-12`}>{n}</button>)}<button type="button" onClick={handleNumpadClear} className={`${key} h-12 text-[10px] sm:h-12`}>Clear</button><button type="button" onClick={()=>handleNumpadClick('0')} className={`${key} h-12 sm:h-12`}>0</button><button type="button" onClick={handleNumpadDelete} className={`${key} h-12 sm:h-12`} aria-label="Hapus satu digit"><Delete size={16} className="mx-auto"/></button></div>
               </div>
 
               <button type="submit" disabled={loading} className="group relative flex h-14 w-full items-center justify-center gap-2.5 overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 to-blue-500 text-sm font-black uppercase tracking-[0.14em] text-white shadow-[0_14px_35px_rgba(37,99,235,.22)] transition-all hover:-translate-y-0.5 hover:shadow-[0_18px_42px_rgba(37,99,235,.3)] active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60 touch-manipulation"><span className="absolute inset-y-0 left-[-30%] w-1/4 -skew-x-12 bg-white/10 transition-transform duration-700 group-hover:translate-x-[560%]"/>{loading?<Loader2 size={19} className="animate-spin"/>:<ShieldCheck size={18}/>}<span>{loading?'Memverifikasi…':'Masuk Portal'}</span></button>
             </form>
 
-            <div className="mt-6 flex items-center justify-center gap-2 text-[9px] font-semibold uppercase tracking-[0.14em] text-slate-600"><ShieldCheck size={12}/> Sistem akses aman • PB Bilibili 162</div>
+            <div className="mt-5 flex items-center justify-center gap-2 sm:mt-6 text-[9px] font-semibold uppercase tracking-[0.14em] text-slate-600"><ShieldCheck size={12}/> Sistem akses aman • PB Bilibili 162</div>
           </div>
         </section>
       </div>
