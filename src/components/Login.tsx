@@ -68,7 +68,7 @@ export default function Login() {
   const handleLogin = async () => {
     if (loading) return;
     const normalized = normalizePhone(phone);
-    if (!/^62\\d{9,13}$/.test(normalized)) {
+    if (!/^62\d{9,13}$/.test(normalized)) {
       setErrorMsg('Masukkan nomor WhatsApp yang terdaftar, contoh: 081234567890.');
       return;
     }
