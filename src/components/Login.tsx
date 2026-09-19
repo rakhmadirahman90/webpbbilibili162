@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
-import { AlertCircle, ArrowLeft, CheckCircle2, Home, Loader2, ShieldCheck, Smartphone, Wifi, Zap, MessageCircle, LockKeyhole } from 'lucide-react';
+import { AlertCircle, ArrowLeft, CheckCircle2, Home, Loader2, ShieldCheck, Smartphone, Wifi, LockKeyhole } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface MemberRecord { id: string; nama: string; whatsapp?: string; kategori?: string; kategori_atlet?: string; jenis_kelamin?: string; domisili?: string; pengalaman?: string; foto_url?: string; email?: string; tanggal_lahir?: string; sektor_bermain?: string; ukuran_jersey?: string; created_at?: string; }
@@ -10,11 +10,8 @@ const parseLogo = (value: any) => { try { const v = typeof value === 'string' ? 
 export default function Login() {
   const navigate = useNavigate();
   const [phone, setPhone] = useState('');
-  const [otp, setOtp] = useState('');
-  const [challengeId, setChallengeId] = useState('');
-  const [step, setStep] = useState<'phone'|'otp'>('phone');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [cooldown, setCooldown] = useState(0);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [logoUrl, setLogoUrl] = useState('/logo_pb_bilibili_162.svg');
@@ -30,12 +27,6 @@ export default function Login() {
     })();
     return () => { mounted = false; };
   }, []);
-
-  useEffect(() => {
-    if (cooldown <= 0) return;
-    const t = window.setInterval(() => setCooldown(v => Math.max(0, v - 1)), 1000);
-    return () => window.clearInterval(t);
-  }, [cooldown]);
 
   const normalizePhone = (raw: string) => {
     const digits = raw.replace(/\D/g, '');
@@ -63,57 +54,40 @@ export default function Login() {
     window.location.replace('/admin');
   };
 
-  const callOtp = async (action: 'request'|'verify', extra: Record<string,string> = {}) => {
-    const { data, error } = await supabase.functions.invoke('whatsapp-login-otp', {
-      body: { action, phone: normalizePhone(phone), ...extra }
+  const callLogin = async () => {
+    const { data, error } = await supabase.functions.invoke('password-login', {
+      body: { phone: normalizePhone(phone), password }
     });
-    if (error) { const detail = await error.context?.json?.().catch?.(() => null); throw new Error(detail?.message || error.message || 'Layanan verifikasi tidak tersedia.'); }
+    if (error) {
+      const detail = await error.context?.json?.().catch?.(() => null);
+      throw new Error(detail?.message || error.message || 'Layanan login tidak tersedia.');
+    }
     return data;
   };
 
-  const requestOtp = async () => {
-    if (loading || cooldown > 0) return;
+  const handleLogin = async () => {
+    if (loading) return;
     const normalized = normalizePhone(phone);
-    if (!/^62\d{9,13}$/.test(normalized)) {
-      setErrorMsg('Masukkan nomor WhatsApp yang valid, contoh: 081234567890.');
+    if (!/^62\\d{9,13}$/.test(normalized)) {
+      setErrorMsg('Masukkan nomor WhatsApp yang terdaftar, contoh: 081234567890.');
+      return;
+    }
+    if (!password.trim()) {
+      setErrorMsg('Masukkan password yang telah ditentukan.');
       return;
     }
     setLoading(true); setErrorMsg(null); setSuccessMsg(null);
     try {
-      const result = await callOtp('request');
-      if (!result?.ok) { setErrorMsg(result?.message || 'Kode verifikasi belum dapat dikirim.'); return; }
-      if (!result.challengeId) {
-        setSuccessMsg(result.message || 'Jika nomor terdaftar, kode verifikasi akan dikirim melalui WhatsApp.');
+      const result = await callLogin();
+      if (!result?.ok || !result.user) {
+        setErrorMsg(result?.message || 'Nomor WhatsApp atau password tidak sesuai.');
         return;
       }
-      setChallengeId(result.challengeId);
-      setStep('otp');
-      setCooldown(60);
-      setSuccessMsg('Kode 6 digit telah dikirim ke ' + maskPhone(phone) + '.');
-    } catch (e: any) {
-      setErrorMsg(e?.message || 'Koneksi ke layanan WhatsApp sedang bermasalah.');
-    } finally { setLoading(false); }
-  };
-
-  const verifyOtp = async () => {
-    if (loading) return;
-    if (!challengeId || !/^\d{6}$/.test(otp)) {
-      setErrorMsg('Masukkan kode verifikasi 6 digit yang dikirim melalui WhatsApp.');
-      return;
-    }
-    setLoading(true); setErrorMsg(null); setSuccessMsg(null);
-    try {
-      const result = await callOtp('verify', { challengeId, otp });
-      if (!result?.ok || !result.user) { setErrorMsg(result?.message || 'Kode verifikasi salah atau sudah kedaluwarsa.'); return; }
-      setSuccessMsg('Verifikasi berhasil. Membuka portal…');
+      setSuccessMsg('Login berhasil. Membuka portal…');
       finalizeSession(result.user);
     } catch (e: any) {
-      setErrorMsg(e?.message || 'Koneksi ke layanan verifikasi sedang bermasalah.');
+      setErrorMsg(e?.message || 'Koneksi ke layanan login sedang bermasalah.');
     } finally { setLoading(false); }
-  };
-
-  const changeNumber = () => {
-    setStep('phone'); setChallengeId(''); setOtp(''); setErrorMsg(null); setSuccessMsg(null); setCooldown(0);
   };
 
   const inputClass = 'h-[48px] sm:h-[50px] w-full sm:h-[54px] rounded-[16px] sm:rounded-[16px] sm:rounded-[18px] border border-blue-200/10 bg-[#081a31]/85 px-4 text-white outline-none backdrop-blur-xl transition-all placeholder:text-slate-500 focus:border-blue-400/70 focus:bg-[#0a2342] focus:ring-4 focus:ring-blue-500/10';
@@ -173,38 +147,23 @@ export default function Login() {
             {errorMsg && <div role="alert" className="mb-3 flex gap-3 rounded-2xl border border-red-400/20 bg-red-500/[0.07] p-3.5"><AlertCircle size={17} className="mt-0.5 shrink-0 text-red-400"/><div className="min-w-0"><p className="text-xs font-extrabold text-red-300">Akses Ditolak</p><p className="mt-0.5 break-words text-[11px] leading-5 text-red-200/70">{errorMsg}</p></div></div>}
             {successMsg && <div role="status" className="mb-3 flex gap-3 rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.07] p-3.5"><CheckCircle2 size={17} className="mt-0.5 shrink-0 text-emerald-400"/><p className="text-[11px] leading-5 text-emerald-200/80">{successMsg}</p></div>}
 
-            {step === 'phone' ? (
-  <form onSubmit={e=>{e.preventDefault();requestOtp();}} className="space-y-3">
-    <label className="mb-1 ml-1 flex items-center gap-2 text-[8px] font-black uppercase tracking-[.14em] text-blue-100/60 sm:text-[9px]"><Smartphone size={13} className="text-blue-400"/> Nomor WhatsApp</label>
+  <form onSubmit={e=>{e.preventDefault();handleLogin();}} className="space-y-3">
+    <label className="mb-1 ml-1 flex items-center gap-2 text-[8px] font-black uppercase tracking-[.14em] text-blue-100/60 sm:text-[9px]"><Smartphone size={13} className="text-blue-400"/> Nomor WhatsApp Terdaftar</label>
     <div className="relative">
-      <input type="tel" inputMode="tel" autoComplete="tel" required value={phone} onChange={e=>{setErrorMsg(null);setPhone(e.target.value.replace(/[^0-9+ ]/g,''));}} className={`${inputClass} pr-12 text-[15px] font-semibold sm:text-base`} placeholder="08xxxxxxxxxx"/>
+      <input type="tel" inputMode="tel" autoComplete="tel" required value={phone} onChange={e=>{setErrorMsg(null);setPhone(e.target.value.replace(/[^0-9+ ]/g,''));}} className={inputClass + ' pr-12 text-[15px] font-semibold sm:text-base'} placeholder="08xxxxxxxxxx"/>
       <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[8px] font-black uppercase tracking-wider text-emerald-400/70">WA</span>
     </div>
+    <label className="mb-1 ml-1 flex items-center gap-2 text-[8px] font-black uppercase tracking-[.14em] text-blue-100/60 sm:text-[9px]"><LockKeyhole size={13} className="text-cyan-300"/> Password</label>
+    <input type="password" autoComplete="current-password" required value={password} onChange={e=>{setErrorMsg(null);setPassword(e.target.value);}} className={inputClass + ' text-[15px] font-semibold sm:text-base'} placeholder="Masukkan password"/>
     <div className="rounded-2xl border border-blue-300/10 bg-blue-500/[.04] p-3 text-[9px] leading-4 text-slate-400">
-      <div className="flex items-center gap-2 font-bold text-blue-200"><MessageCircle size={13}/> Kode sekali pakai melalui WhatsApp</div>
-      <p className="mt-1">Kode berlaku singkat, hanya dapat digunakan sekali, dan percobaan verifikasi dibatasi.</p>
+      <p>Gunakan nomor WhatsApp yang sudah terdaftar pada data PB BILIBILI 162 dan password yang telah ditentukan.</p>
     </div>
-    <button type="submit" disabled={loading || cooldown > 0} className="group relative flex h-[50px] w-full items-center justify-center gap-2.5 overflow-hidden rounded-[18px] bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 text-xs font-black uppercase tracking-[.12em] text-white shadow-[0_14px_36px_rgba(0,102,255,.28)] transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60">
-      {loading ? <Loader2 size={18} className="animate-spin"/> : <Zap size={18}/>}
-      <span>{cooldown > 0 ? 'Tunggu ' + cooldown + ' detik' : 'Kirim Kode WhatsApp'}</span>
+    <button type="submit" disabled={loading} className="group relative flex h-[50px] w-full items-center justify-center gap-2.5 overflow-hidden rounded-[18px] bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 text-xs font-black uppercase tracking-[.12em] text-white shadow-[0_14px_36px_rgba(0,102,255,.28)] transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60">
+      {loading ? <Loader2 size={18} className="animate-spin"/> : <ShieldCheck size={18}/>}<span>{loading ? 'Memproses…' : 'Masuk ke Sistem'}</span>
     </button>
   </form>
-) : (
-  <form onSubmit={e=>{e.preventDefault();verifyOtp();}} className="space-y-3">
-    <label className="mb-1 ml-1 flex items-center gap-2 text-[8px] font-black uppercase tracking-[.14em] text-blue-100/60 sm:text-[9px]"><LockKeyhole size={13} className="text-cyan-300"/> Kode Verifikasi</label>
-    <input type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6} required value={otp} onChange={e=>{setErrorMsg(null);setOtp(e.target.value.replace(/\D/g,'').slice(0,6));}} className={`${inputClass} text-center font-mono text-2xl font-black tracking-[.42em]`} placeholder="••••••"/>
-    <button type="submit" disabled={loading} className="flex h-[50px] w-full items-center justify-center gap-2.5 overflow-hidden rounded-[18px] bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 text-xs font-black uppercase tracking-[.12em] text-white shadow-[0_14px_36px_rgba(0,102,255,.28)] transition-all disabled:cursor-not-allowed disabled:opacity-60">
-      {loading ? <Loader2 size={18} className="animate-spin"/> : <ShieldCheck size={18}/>}
-      <span>{loading ? 'Memverifikasi…' : 'Verifikasi & Masuk'}</span>
-    </button>
-    <div className="flex items-center justify-between text-[9px]">
-      <button type="button" onClick={changeNumber} className="font-bold text-slate-500 hover:text-white">← Ganti nomor</button>
-      <button type="button" disabled={cooldown > 0 || loading} onClick={requestOtp} className="font-bold text-blue-300 disabled:text-slate-600">{cooldown > 0 ? 'Kirim ulang ' + cooldown + 's' : 'Kirim ulang kode'}</button>
-    </div>
-  </form>
-)}
 
-            <div className="mt-3 flex items-center justify-center gap-1.5 text-[8px] font-bold uppercase tracking-[.14em] text-slate-500"><ShieldCheck size={11} className="text-blue-400"/> OTP sekali pakai • terenkripsi</div>
+            <div className="mt-3 flex items-center justify-center gap-1.5 text-[8px] font-bold uppercase tracking-[.14em] text-slate-500"><ShieldCheck size={11} className="text-blue-400"/> Nomor WhatsApp + Password • koneksi aman</div>
           </div>
         </section>
 
