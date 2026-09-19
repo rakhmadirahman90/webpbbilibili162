@@ -2,9 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   CalendarDays, MapPin, Trophy, Users, Wallet, ArrowDownRight, ArrowUpRight,
   FileSpreadsheet, Printer, RefreshCw, Search, Medal, CircleDollarSign,
-  Building2, CheckCircle2, ChevronRight, FileText, X, Database
+  Building2, CheckCircle2, Database
 } from 'lucide-react';
-import Swal from 'sweetalert2';
 import * as XLSX from 'xlsx';
 import { supabase } from '../supabase';
 
