@@ -49,7 +49,18 @@ interface Registrant {
   foto_url: string;
   jenis_kelamin: string;
   kategori_atlet: string; // Kolom kategori atlet sesuai DB
-  status?: string; // 'Pending' | 'aktif' | 'Ditolak'
+  status?: string; // 'aktif' | 'tidak aktif' | 'Ditolak'
+  alasan_status?: string;
+  nama_panggilan?: string;
+  nama_punggung?: string;
+  tempat_lahir?: string;
+  tanggal_lahir?: string;
+  tahun_bergabung?: number;
+  tangan_dominan?: string;
+  hobi?: string;
+  makanan_favorit?: string;
+  prestasi?: string;
+  updated_at?: string;
 }
 
 const Toast = Swal.mixin({
@@ -576,9 +587,21 @@ const totalSeniorPutri = registrants.filter(r =>
         // Pastikan kategori_atlet juga aman dari null
         kategori_atlet: (editingItem.kategori_atlet || 'MUDA').toUpperCase(), 
         domisili: (editingItem.domisili || '').toUpperCase(),
-        pengalaman: (editingItem.pengalaman || '').toUpperCase(),
+        pengalaman: editingItem.pengalaman || '',
+        prestasi: editingItem.prestasi || '',
         jenis_kelamin: editingItem.jenis_kelamin,
-        foto_url: editingItem.foto_url
+        foto_url: editingItem.foto_url || '',
+        email: editingItem.email || '',
+        nama_panggilan: editingItem.nama_panggilan || '',
+        nama_punggung: editingItem.nama_punggung || '',
+        tempat_lahir: editingItem.tempat_lahir || '',
+        tanggal_lahir: editingItem.tanggal_lahir || null,
+        tahun_bergabung: editingItem.tahun_bergabung || null,
+        tangan_dominan: editingItem.tangan_dominan || '',
+        hobi: editingItem.hobi || '',
+        makanan_favorit: editingItem.makanan_favorit || '',
+        status: editingItem.status || 'aktif',
+        alasan_status: editingItem.alasan_status || ''
       })
       .eq('id', editingItem.id);
 
@@ -593,6 +616,21 @@ const totalSeniorPutri = registrants.filter(r =>
     setIsSaving(false);
   }
 };
+  const inputClass = "w-full min-h-12 rounded-xl border border-blue-400/20 bg-[#07172b] px-3.5 py-3 text-sm font-semibold text-white outline-none transition placeholder:text-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20";
+  const textareaClass = "w-full rounded-xl border border-blue-400/20 bg-[#07172b] px-3.5 py-3 text-sm font-semibold text-white outline-none transition placeholder:text-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 resize-y";
+  const Field = ({ label, children, className = "" }: { label: string; children: React.ReactNode; className?: string }) => (
+    <div className={`min-w-0 space-y-1.5 ${className}`}>
+      <label className="ml-0.5 block text-[9px] font-black uppercase tracking-wider text-blue-100/70 sm:text-[10px]">{label}</label>
+      {children}
+    </div>
+  );
+  const SectionTitle = ({ icon, title }: { icon: React.ReactNode; title: string }) => (
+    <div className="mb-4 flex items-center gap-2 border-b border-white/10 pb-2.5">
+      <span className="text-blue-400">{icon}</span>
+      <h3 className="text-xs font-black uppercase tracking-[0.14em] text-white sm:text-sm">{title}</h3>
+    </div>
+  );
+
   return (
     <div className="min-h-full flex flex-col bg-[#061225] text-white font-sans pb-6 lg:pb-8">
       <div className="flex-1 flex flex-col max-w-[1500px] w-full mx-auto px-3 sm:px-4 md:px-8 py-4 sm:py-5 md:py-7">
@@ -1124,87 +1162,228 @@ const totalSeniorPutri = registrants.filter(r =>
 
       {/* ======================= MODAL EDIT ======================= */}
       {isEditModalOpen && editingItem && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setIsEditModalOpen(false)} />
-          <div className="relative bg-white w-full max-w-xl rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in duration-300">
-            <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-              <div>
-                <h2 className="text-xl font-black text-slate-900 uppercase italic tracking-tighter">Edit Data <span className="text-blue-600">Atlet</span></h2>
-                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Perbarui informasi database</p>
-              </div>
-              <button onClick={() => setIsEditModalOpen(false)} className="p-2.5 bg-white border border-slate-200 hover:bg-slate-100 rounded-xl text-slate-400 transition-all"><X size={18}/></button>
-            </div>
-            
-            <form onSubmit={handleUpdate} className="p-8 space-y-5">
-              <div className="flex items-center gap-6 mb-2">
-                <div className="relative">
-                  <div className="w-24 h-24 rounded-[1.5rem] bg-slate-100 border-4 border-white shadow-xl overflow-hidden flex-shrink-0">
-                    {editingItem.foto_url ? (
-                      <img src={editingItem.foto_url} className="w-full h-full object-cover object-top" alt="preview" /> 
-                    ) : (
-                      <User size={32} className="m-auto mt-6 text-slate-200" />
-                    )}
-                    {uploading && <div className="absolute inset-0 bg-white/90 flex items-center justify-center"><Loader2 className="animate-spin text-blue-600" size={20} /></div>}
-                  </div>
-                  <label className="absolute -bottom-2 -right-2 p-2.5 bg-blue-600 text-white rounded-xl shadow-xl cursor-pointer hover:bg-slate-900 transition-all border-4 border-white">
-                    <Camera size={14} />
-                    <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'edit')} />
-                  </label>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-0 sm:p-4">
+          <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" onClick={() => !isSaving && setIsEditModalOpen(false)} />
+          <div className="relative w-full h-[100dvh] sm:h-auto sm:max-h-[94vh] sm:max-w-4xl overflow-hidden rounded-none sm:rounded-[2rem] border border-blue-400/15 bg-[#07172b] text-white shadow-2xl shadow-black/50">
+            <div className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-white/10 bg-gradient-to-r from-[#07172b] via-[#0b2450] to-[#063b86] px-4 py-4 sm:px-6">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-950/50">
+                  <User size={22} />
                 </div>
-                <div className="flex-1 space-y-1">
-                  <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest ml-1">Nama Lengkap</label>
-                  <input className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold uppercase text-xs focus:border-blue-600 outline-none transition-all" value={editingItem.nama || ''} onChange={e => setEditingItem({...editingItem, nama: e.target.value})} required />
+                <div className="min-w-0">
+                  <h2 className="truncate text-lg font-black uppercase italic tracking-tight sm:text-2xl">
+                    Edit Data <span className="text-blue-300">Atlet</span>
+                  </h2>
+                  <p className="mt-0.5 text-[9px] font-bold uppercase tracking-[0.16em] text-blue-100/70 sm:text-[10px]">
+                    Perbarui seluruh informasi pendaftar
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                disabled={isSaving}
+                onClick={() => setIsEditModalOpen(false)}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/5 text-slate-300 transition hover:bg-rose-500/20 hover:text-white disabled:opacity-40"
+                aria-label="Tutup edit data"
+              >
+                <X size={22} />
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdate} className="flex max-h-[calc(100dvh-76px)] flex-col sm:max-h-[calc(94vh-76px)]">
+              <div className="flex-1 overflow-y-auto px-3 py-4 sm:px-6 sm:py-5">
+                <div className="mx-auto max-w-3xl space-y-4">
+
+                  {/* FOTO & IDENTITAS */}
+                  <section className="rounded-2xl border border-white/10 bg-[#0a203a] p-3.5 sm:p-5">
+                    <div className="mb-4 flex items-center gap-2">
+                      <Camera size={18} className="text-blue-400" />
+                      <h3 className="text-xs font-black uppercase tracking-[0.14em] text-white sm:text-sm">Foto & Identitas</h3>
+                    </div>
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                      <div className="relative mx-auto shrink-0 sm:mx-0">
+                        <div className="h-28 w-28 overflow-hidden rounded-2xl border-2 border-blue-400/30 bg-[#07172b] shadow-xl sm:h-32 sm:w-32">
+                          {editingItem.foto_url ? (
+                            <img src={editingItem.foto_url} className="h-full w-full object-cover object-top" alt="Foto atlet" />
+                          ) : (
+                            <div className="flex h-full w-full flex-col items-center justify-center text-slate-500">
+                              <User size={38} />
+                              <span className="mt-1 text-[8px] font-black uppercase">No Photo</span>
+                            </div>
+                          )}
+                          {uploading && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-[#07172b]/90">
+                              <Loader2 className="animate-spin text-blue-400" size={24} />
+                            </div>
+                          )}
+                        </div>
+                        <label className="absolute -bottom-2 left-1/2 flex -translate-x-1/2 cursor-pointer items-center gap-1.5 rounded-xl border-4 border-[#0a203a] bg-blue-600 px-3 py-2 text-[9px] font-black uppercase tracking-wider text-white shadow-lg hover:bg-blue-500">
+                          <Camera size={14} /> Pilih Foto
+                          <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'edit')} />
+                        </label>
+                      </div>
+                      <div className="grid flex-1 gap-3 sm:grid-cols-2">
+                        <Field label="Nama Lengkap *" className="sm:col-span-2">
+                          <input required value={editingItem.nama || ''} onChange={e => setEditingItem({...editingItem, nama: e.target.value})} className={inputClass} placeholder="NAMA LENGKAP" />
+                        </Field>
+                        <Field label="Nama Panggilan">
+                          <input value={editingItem.nama_panggilan || ''} onChange={e => setEditingItem({...editingItem, nama_panggilan: e.target.value})} className={inputClass} placeholder="NAMA PANGGILAN" />
+                        </Field>
+                        <Field label="Nama Punggung">
+                          <input value={editingItem.nama_punggung || ''} onChange={e => setEditingItem({...editingItem, nama_punggung: e.target.value})} className={inputClass} placeholder="NAMA PUNGGUNG" />
+                        </Field>
+                      </div>
+                    </div>
+                  </section>
+
+                  {/* DATA PRIBADI */}
+                  <section className="rounded-2xl border border-white/10 bg-[#0a203a] p-3.5 sm:p-5">
+                    <SectionTitle icon={<User size={18} />} title="Data Pribadi" />
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <Field label="Tempat Lahir">
+                        <input value={editingItem.tempat_lahir || ''} onChange={e => setEditingItem({...editingItem, tempat_lahir: e.target.value})} className={inputClass} placeholder="KOTA TEMPAT LAHIR" />
+                      </Field>
+                      <Field label="Tanggal Lahir">
+                        <input type="date" value={editingItem.tanggal_lahir || ''} onChange={e => setEditingItem({...editingItem, tanggal_lahir: e.target.value})} className={inputClass} />
+                      </Field>
+                      <Field label="Tahun Bergabung">
+                        <input type="number" min="1900" max="2100" value={editingItem.tahun_bergabung ?? ''} onChange={e => setEditingItem({...editingItem, tahun_bergabung: e.target.value ? Number(e.target.value) : undefined})} className={inputClass} placeholder="2026" />
+                      </Field>
+                      <Field label="Tangan Dominan">
+                        <select value={editingItem.tangan_dominan || ''} onChange={e => setEditingItem({...editingItem, tangan_dominan: e.target.value})} className={inputClass}>
+                          <option value="">Pilih tangan dominan</option>
+                          <option value="Kanan">Kanan</option>
+                          <option value="Kiri">Kiri</option>
+                          <option value="Ambidextrous">Ambidextrous</option>
+                        </select>
+                      </Field>
+                    </div>
+                  </section>
+
+                  {/* KATEGORI */}
+                  <section className="rounded-2xl border border-white/10 bg-[#0a203a] p-3.5 sm:p-5">
+                    <SectionTitle icon={<Users size={18} />} title="Kategori Atlet" />
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <Field label="Kategori Atlet *">
+                        <div className="grid grid-cols-2 gap-2 rounded-xl border border-white/10 bg-[#07172b] p-1.5">
+                          {['Muda', 'Senior'].map(k => (
+                            <button type="button" key={k} onClick={() => setEditingItem({...editingItem, kategori_atlet: k})}
+                              className={`rounded-lg py-3 text-[10px] font-black tracking-widest transition-all ${editingItem.kategori_atlet === k ? (k === 'Muda' ? 'bg-indigo-600 text-white shadow-lg' : 'bg-emerald-600 text-white shadow-lg') : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}>
+                              {k.toUpperCase()}
+                            </button>
+                          ))}
+                        </div>
+                      </Field>
+                      <Field label="Kategori Umur *">
+                        <select required value={editingItem.kategori || ''} onChange={e => setEditingItem({...editingItem, kategori: e.target.value})} className={inputClass}>
+                          {kategoriUmur.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                      </Field>
+                      <Field label="Jenis Kelamin *">
+                        <div className="grid grid-cols-2 gap-2 rounded-xl border border-white/10 bg-[#07172b] p-1.5">
+                          {['Putra', 'Putri'].map(g => (
+                            <button type="button" key={g} onClick={() => setEditingItem({...editingItem, jenis_kelamin: g})}
+                              className={`rounded-lg py-3 text-[10px] font-black tracking-widest transition-all ${editingItem.jenis_kelamin === g ? (g === 'Putra' ? 'bg-blue-600 text-white shadow-lg' : 'bg-rose-500 text-white shadow-lg') : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}>
+                              {g.toUpperCase()}
+                            </button>
+                          ))}
+                        </div>
+                      </Field>
+                    </div>
+                  </section>
+
+                  {/* KONTAK & DOMISILI */}
+                  <section className="rounded-2xl border border-white/10 bg-[#0a203a] p-3.5 sm:p-5">
+                    <SectionTitle icon={<Phone size={18} />} title="Kontak & Domisili" />
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <Field label="WhatsApp *">
+                        <input required type="tel" inputMode="tel" value={editingItem.whatsapp || ''} onChange={e => setEditingItem({...editingItem, whatsapp: e.target.value})} className={inputClass} placeholder="08XXXXXXXXXX" />
+                      </Field>
+                      <Field label="Email">
+                        <input type="email" value={editingItem.email || ''} onChange={e => setEditingItem({...editingItem, email: e.target.value})} className={inputClass} placeholder="email@contoh.com" />
+                      </Field>
+                      <Field label="Domisili *" className="sm:col-span-2">
+                        <input required value={editingItem.domisili || ''} onChange={e => setEditingItem({...editingItem, domisili: e.target.value})} className={inputClass} placeholder="KOTA / KABUPATEN DOMISILI" />
+                      </Field>
+                    </div>
+                  </section>
+
+                  {/* INFORMASI ATLET */}
+                  <section className="rounded-2xl border border-white/10 bg-[#0a203a] p-3.5 sm:p-5">
+                    <SectionTitle icon={<Activity size={18} />} title="Informasi Atlet" />
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <Field label="Hobi">
+                        <input value={editingItem.hobi || ''} onChange={e => setEditingItem({...editingItem, hobi: e.target.value})} className={inputClass} placeholder="HOBI ATLET" />
+                      </Field>
+                      <Field label="Makanan Favorit">
+                        <input value={editingItem.makanan_favorit || ''} onChange={e => setEditingItem({...editingItem, makanan_favorit: e.target.value})} className={inputClass} placeholder="MAKANAN FAVORIT" />
+                      </Field>
+                      <Field label="Pengalaman" className="sm:col-span-2">
+                        <textarea rows={4} value={editingItem.pengalaman || ''} onChange={e => setEditingItem({...editingItem, pengalaman: e.target.value})} className={textareaClass} placeholder="Pengalaman, klub sebelumnya, perjalanan atlet..." />
+                      </Field>
+                      <Field label="Prestasi" className="sm:col-span-2">
+                        <textarea rows={4} value={editingItem.prestasi || ''} onChange={e => setEditingItem({...editingItem, prestasi: e.target.value})} className={textareaClass} placeholder="Prestasi / pencapaian atlet..." />
+                      </Field>
+                    </div>
+                  </section>
+
+                  {/* STATUS */}
+                  <section className="rounded-2xl border border-white/10 bg-[#0a203a] p-3.5 sm:p-5">
+                    <SectionTitle icon={<ShieldCheck size={18} />} title="Status Keanggotaan" />
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <Field label="Status Atlet *">
+                        <div className="grid grid-cols-2 gap-2 rounded-xl border border-white/10 bg-[#07172b] p-1.5">
+                          {[
+                            { value: 'aktif', label: 'AKTIF', icon: <CheckCircle2 size={15} /> },
+                            { value: 'tidak aktif', label: 'TIDAK AKTIF', icon: <XCircle size={15} /> }
+                          ].map(s => (
+                            <button type="button" key={s.value} onClick={() => setEditingItem({...editingItem, status: s.value})}
+                              className={`flex items-center justify-center gap-1.5 rounded-lg py-3 text-[9px] font-black tracking-wider transition-all ${getStatusCategory(editingItem.status) === 'diterima' && s.value === 'aktif' || editingItem.status === s.value ? (s.value === 'aktif' ? 'bg-emerald-600 text-white shadow-lg' : 'bg-rose-600 text-white shadow-lg') : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}>
+                              {s.icon}{s.label}
+                            </button>
+                          ))}
+                        </div>
+                      </Field>
+                      <Field label="Alasan Status">
+                        <select value={editingItem.alasan_status || ''} onChange={e => setEditingItem({...editingItem, alasan_status: e.target.value})} className={inputClass}>
+                          <option value="">Pilih alasan (opsional)</option>
+                          <option value="Pindah Alamat">Pindah Alamat</option>
+                          <option value="Meninggal Dunia">Meninggal Dunia</option>
+                          <option value="Pindah Kerja">Pindah Kerja</option>
+                          <option value="Pensiun">Pensiun</option>
+                          <option value="Cedera/Istirahat">Cedera/Istirahat</option>
+                          <option value="Mengundurkan Diri">Mengundurkan Diri</option>
+                          <option value="Tidak Aktif Sementara">Tidak Aktif Sementara</option>
+                          <option value="Alasan Lainnya">Alasan Lainnya</option>
+                        </select>
+                      </Field>
+                    </div>
+                  </section>
+
+                  <div className="rounded-xl border border-blue-400/15 bg-blue-500/5 px-3 py-2.5 text-[9px] font-bold text-blue-200/80">
+                    <span className="font-black text-blue-300">Catatan:</span> Data yang tersimpan akan memperbarui profil atlet dan status keanggotaan secara realtime.
+                  </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest ml-1">Kategori Atlet</label>
-                  <div className="grid grid-cols-2 gap-2 bg-slate-50 p-1 rounded-xl border border-slate-200">
-                    {['Muda', 'Senior'].map((k) => (
-                      <button key={k} type="button" onClick={() => setEditingItem({...editingItem, kategori_atlet: k})} className={`py-2 rounded-lg font-black text-[9px] tracking-widest transition-all ${editingItem.kategori_atlet === k ? (k === 'Muda' ? 'bg-indigo-600 text-white shadow-md' : 'bg-emerald-600 text-white shadow-md') : 'text-slate-400 hover:text-slate-600'}`}>
-                        {k.toUpperCase()}
-                      </button>
-                    ))}
-                  </div>
+              {/* ACTION BAR */}
+              <div className="border-t border-white/10 bg-[#061225] px-3 py-3 sm:px-6 sm:py-4">
+                <div className="mx-auto grid max-w-3xl grid-cols-2 gap-2 sm:gap-3">
+                  <button type="button" disabled={isSaving} onClick={() => setIsEditModalOpen(false)}
+                    className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3 text-[10px] font-black uppercase tracking-[0.14em] text-slate-300 transition hover:bg-white/10 disabled:opacity-50">
+                    <X size={17} /> Batal
+                  </button>
+                  <button type="submit" disabled={isSaving || uploading}
+                    className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-blue-600 px-3 text-[10px] font-black uppercase tracking-[0.14em] text-white shadow-lg shadow-blue-950/40 transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50">
+                    {isSaving ? <Loader2 className="animate-spin" size={17} /> : <Save size={17} />}
+                    {isSaving ? 'Menyimpan...' : 'Simpan Perubahan'}
+                  </button>
                 </div>
-                <div className="space-y-1">
-                  <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest ml-1">Jenis Kelamin</label>
-                  <div className="grid grid-cols-2 gap-2 bg-slate-50 p-1 rounded-xl border border-slate-200">
-                    {['Putra', 'Putri'].map((g) => (
-                      <button key={g} type="button" onClick={() => setEditingItem({...editingItem, jenis_kelamin: g})} className={`py-2 rounded-lg font-black text-[9px] tracking-widest transition-all ${editingItem.jenis_kelamin === g ? (g === 'Putra' ? 'bg-blue-600 text-white shadow-md' : 'bg-rose-500 text-white shadow-md') : 'text-slate-400 hover:text-slate-600'}`}>
-                        {g.toUpperCase()}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                
-                <div className="space-y-1">
-                  <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest ml-1">Kategori Umur</label>
-                  <select className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs outline-none focus:border-blue-600" value={editingItem.kategori || ''} onChange={e => setEditingItem({...editingItem, kategori: e.target.value})}>
-                    {kategoriUmur.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest ml-1">WhatsApp</label>
-                  <input className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs outline-none focus:border-blue-600" value={editingItem.whatsapp || ''} onChange={e => setEditingItem({...editingItem, whatsapp: e.target.value})} required />
-                </div>
-                <div className="col-span-2 space-y-1">
-                  <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest ml-1">Domisili</label>
-                  <input className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold uppercase text-xs outline-none focus:border-blue-600" value={editingItem.domisili || ''} onChange={e => setEditingItem({...editingItem, domisili: e.target.value})} required />
-                </div>
-              </div>
-              <div className="pt-4 border-t border-slate-100">
-                <button type="submit" disabled={isSaving || uploading} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] shadow-xl hover:bg-blue-600 transition-all flex items-center justify-center gap-2 active:scale-95">
-                  {isSaving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
-                  Simpan Perubahan
-                </button>
               </div>
             </form>
           </div>
         </div>
       )}
-
       {/* LIGHTBOX PREVIEW */}
       {previewImage && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setPreviewImage(null)}>
