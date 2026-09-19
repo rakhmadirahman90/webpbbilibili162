@@ -115,7 +115,7 @@ export default function Login() {
     if (loading) return;
     const normalized = normalizePhone(phone);
     if (!/^62\d{9,13}$/.test(normalized)) {
-      setErrorMsg('Masukkan nomor WhatsApp yang terdaftar, contoh: 081234567890.');
+      setErrorMsg('Masukkan nomor WhatsApp yang terdaftar, contoh: 08bili216290.');
       return;
     }
     if (!password.trim()) {
@@ -239,7 +239,7 @@ export default function Login() {
           <LockKeyhole size={16} className="mt-0.5 shrink-0 text-amber-300"/>
           <div>
             <p className="text-[11px] font-black text-amber-200">Informasi Login Pertama</p>
-            <p className="mt-1 text-[10px] leading-4 text-amber-100/80">Default password anggota: <strong className="text-amber-200">12345678</strong>. Setelah login pertama wajib diganti.</p>
+            <p className="mt-1 text-[10px] leading-4 text-amber-100/80">Default password anggota: <strong className="text-amber-200">bili2162</strong>. Setelah login pertama wajib diganti.</p>
           </div>
         </div>
       </div>
