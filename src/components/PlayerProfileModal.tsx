@@ -165,11 +165,13 @@ export default function PlayerProfileModal({ player, globalRank, onClose }: Prop
 
       if (profileRes.status === 'fulfilled') {
         let mergedProfile = profileRes.value.data || null;
-        if (mergedProfile?.bilibili_cup1_photo_path && !mergedProfile?.foto_url) {
+        if (mergedProfile?.bilibili_cup1_photo_path) {
           const { data: signed } = await supabase.storage
             .from('turnamen-dokumen')
             .createSignedUrl(mergedProfile.bilibili_cup1_photo_path, 60 * 60);
-          if (signed?.signedUrl) mergedProfile = { ...mergedProfile, foto_url: signed.signedUrl };
+          if (signed?.signedUrl) {
+            mergedProfile = { ...mergedProfile, foto_url: signed.signedUrl };
+          }
         }
         setProfile(mergedProfile);
         if (profileRes.value.error) console.warn('Profil atlet tidak terbaca:', profileRes.value.error.message);
