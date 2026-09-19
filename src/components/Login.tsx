@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
-import { AlertCircle, ArrowLeft, CheckCircle2, Home, Loader2, ShieldCheck, Smartphone, Wifi, LockKeyhole } from 'lucide-react';
+import { AlertCircle, ArrowLeft, CheckCircle2, Eye, EyeOff, Home, Loader2, ShieldCheck, Smartphone, Wifi, LockKeyhole } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface MemberRecord { id: string; nama: string; whatsapp?: string; kategori?: string; kategori_atlet?: string; jenis_kelamin?: string; domisili?: string; pengalaman?: string; foto_url?: string; email?: string; tanggal_lahir?: string; sektor_bermain?: string; ukuran_jersey?: string; created_at?: string; }
@@ -18,6 +18,11 @@ export default function Login() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [defaultNotice, setDefaultNotice] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showResetNewPassword, setShowResetNewPassword] = useState(false);
+  const [showResetConfirmPassword, setShowResetConfirmPassword] = useState(false);
   const [resetMode, setResetMode] = useState(false);
   const [resetStep, setResetStep] = useState<1 | 2>(1);
   const [resetChallengeId, setResetChallengeId] = useState('');
@@ -343,7 +348,12 @@ export default function Login() {
       </div>
     )}
     <label className="mb-1 ml-1 flex items-center gap-2 text-[8px] font-black uppercase tracking-[.14em] text-blue-100/60 sm:text-[9px]"><LockKeyhole size={13} className="text-cyan-300"/> Password</label>
-    <input type="password" autoComplete="current-password" required value={password} onChange={e=>{setErrorMsg(null);setPassword(e.target.value);}} className={inputClass + ' text-[15px] font-semibold sm:text-base'} placeholder="Masukkan password"/>
+    <div className="relative">
+      <input type={showPassword ? 'text' : 'password'} autoComplete="current-password" required value={password} onChange={e=>{setErrorMsg(null);setPassword(e.target.value);}} className={inputClass + ' pr-12 text-[15px] font-semibold sm:text-base'} placeholder="Masukkan password"/>
+      <button type="button" onClick={()=>setShowPassword(v=>!v)} aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'} title={showPassword ? 'Sembunyikan password' : 'Tampilkan password'} className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-2 text-slate-400 transition hover:bg-white/5 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-400/40">
+        {showPassword ? <EyeOff size={18}/> : <Eye size={18}/>}
+      </button>
+    </div>
 
     <button type="submit" disabled={loading} className="group relative flex h-[50px] w-full items-center justify-center gap-2.5 overflow-hidden rounded-[18px] bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 text-xs font-black uppercase tracking-[.12em] text-white shadow-[0_14px_36px_rgba(0,102,255,.28)] transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60">
       {loading ? <Loader2 size={18} className="animate-spin"/> : <ShieldCheck size={18}/>}<span>{loading ? 'Memproses…' : 'Masuk ke Sistem'}</span>
@@ -359,9 +369,19 @@ export default function Login() {
       <p className="mt-1 text-[10px] leading-4 text-amber-100/70">Demi keamanan, password default wajib diganti sebelum mengakses portal.</p>
     </div>
     <label className="mb-1 ml-1 flex items-center gap-2 text-[8px] font-black uppercase tracking-[.14em] text-blue-100/60 sm:text-[9px]"><LockKeyhole size={13} className="text-cyan-300"/> Password Baru</label>
-    <input type="password" autoComplete="new-password" required minLength={8} value={newPassword} onChange={e=>{setErrorMsg(null);setNewPassword(e.target.value);}} className={inputClass + ' text-[15px] font-semibold sm:text-base'} placeholder="Minimal 8 karakter"/>
+    <div className="relative">
+      <input type={showNewPassword ? 'text' : 'password'} autoComplete="new-password" required minLength={8} value={newPassword} onChange={e=>{setErrorMsg(null);setNewPassword(e.target.value);}} className={inputClass + ' pr-12 text-[15px] font-semibold sm:text-base'} placeholder="Minimal 8 karakter"/>
+      <button type="button" onClick={()=>setShowNewPassword(v=>!v)} aria-label={showNewPassword ? 'Sembunyikan password baru' : 'Tampilkan password baru'} title={showNewPassword ? 'Sembunyikan password baru' : 'Tampilkan password baru'} className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-2 text-slate-400 transition hover:bg-white/5 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-400/40">
+        {showNewPassword ? <EyeOff size={18}/> : <Eye size={18}/>}
+      </button>
+    </div>
     <label className="mb-1 ml-1 flex items-center gap-2 text-[8px] font-black uppercase tracking-[.14em] text-blue-100/60 sm:text-[9px]"><LockKeyhole size={13} className="text-cyan-300"/> Konfirmasi Password Baru</label>
-    <input type="password" autoComplete="new-password" required minLength={8} value={confirmPassword} onChange={e=>{setErrorMsg(null);setConfirmPassword(e.target.value);}} className={inputClass + ' text-[15px] font-semibold sm:text-base'} placeholder="Ulangi password baru"/>
+    <div className="relative">
+      <input type={showConfirmPassword ? 'text' : 'password'} autoComplete="new-password" required minLength={8} value={confirmPassword} onChange={e=>{setErrorMsg(null);setConfirmPassword(e.target.value);}} className={inputClass + ' pr-12 text-[15px] font-semibold sm:text-base'} placeholder="Ulangi password baru"/>
+      <button type="button" onClick={()=>setShowConfirmPassword(v=>!v)} aria-label={showConfirmPassword ? 'Sembunyikan konfirmasi password' : 'Tampilkan konfirmasi password'} title={showConfirmPassword ? 'Sembunyikan konfirmasi password' : 'Tampilkan konfirmasi password'} className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-2 text-slate-400 transition hover:bg-white/5 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-400/40">
+        {showConfirmPassword ? <EyeOff size={18}/> : <Eye size={18}/>}
+      </button>
+    </div>
     <button type="submit" disabled={loading} className="group relative flex h-[50px] w-full items-center justify-center gap-2.5 overflow-hidden rounded-[18px] bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 text-xs font-black uppercase tracking-[.12em] text-white shadow-[0_14px_36px_rgba(0,102,255,.28)] transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60">
       {loading ? <Loader2 size={18} className="animate-spin"/> : <LockKeyhole size={18}/>}<span>{loading ? 'Menyimpan…' : 'Simpan Password Baru'}</span>
     </button>
@@ -392,8 +412,18 @@ export default function Login() {
                       <p className="mt-1 text-[10px] leading-4 text-emerald-100/70">Masukkan kode 6 digit dari WhatsApp, lalu buat password baru minimal 8 karakter.</p>
                     </div>
                     <input type="text" inputMode="numeric" autoComplete="one-time-code" required maxLength={6} value={resetOtp} onChange={e=>{setErrorMsg(null);setResetOtp(e.target.value.replace(/\D/g,'').slice(0,6));}} className={inputClass + ' text-center text-[20px] font-black tracking-[.35em]'} placeholder="••••••"/>
-                    <input type="password" autoComplete="new-password" required minLength={8} value={resetNewPassword} onChange={e=>{setErrorMsg(null);setResetNewPassword(e.target.value);}} className={inputClass + ' text-[15px] font-semibold sm:text-base'} placeholder="Password baru — minimal 8 karakter"/>
-                    <input type="password" autoComplete="new-password" required minLength={8} value={resetConfirmPassword} onChange={e=>{setErrorMsg(null);setResetConfirmPassword(e.target.value);}} className={inputClass + ' text-[15px] font-semibold sm:text-base'} placeholder="Ulangi password baru"/>
+                    <div className="relative">
+                      <input type={showResetNewPassword ? 'text' : 'password'} autoComplete="new-password" required minLength={8} value={resetNewPassword} onChange={e=>{setErrorMsg(null);setResetNewPassword(e.target.value);}} className={inputClass + ' pr-12 text-[15px] font-semibold sm:text-base'} placeholder="Password baru — minimal 8 karakter"/>
+                      <button type="button" onClick={()=>setShowResetNewPassword(v=>!v)} aria-label={showResetNewPassword ? 'Sembunyikan password baru' : 'Tampilkan password baru'} title={showResetNewPassword ? 'Sembunyikan password baru' : 'Tampilkan password baru'} className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-2 text-slate-400 transition hover:bg-white/5 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-400/40">
+                        {showResetNewPassword ? <EyeOff size={18}/> : <Eye size={18}/>}
+                      </button>
+                    </div>
+                    <div className="relative">
+                      <input type={showResetConfirmPassword ? 'text' : 'password'} autoComplete="new-password" required minLength={8} value={resetConfirmPassword} onChange={e=>{setErrorMsg(null);setResetConfirmPassword(e.target.value);}} className={inputClass + ' pr-12 text-[15px] font-semibold sm:text-base'} placeholder="Ulangi password baru"/>
+                      <button type="button" onClick={()=>setShowResetConfirmPassword(v=>!v)} aria-label={showResetConfirmPassword ? 'Sembunyikan konfirmasi password' : 'Tampilkan konfirmasi password'} title={showResetConfirmPassword ? 'Sembunyikan konfirmasi password' : 'Tampilkan konfirmasi password'} className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-2 text-slate-400 transition hover:bg-white/5 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-400/40">
+                        {showResetConfirmPassword ? <EyeOff size={18}/> : <Eye size={18}/>}
+                      </button>
+                    </div>
                     <button type="submit" disabled={loading} className="flex h-[48px] w-full items-center justify-center gap-2 rounded-[16px] bg-gradient-to-r from-emerald-600 via-blue-600 to-cyan-500 text-[10px] font-black uppercase tracking-[.12em] text-white disabled:opacity-60">
                       {loading ? <Loader2 size={17} className="animate-spin"/> : <ShieldCheck size={17}/>}
                       {loading ? 'Mereset password…' : 'Simpan Password Baru'}
