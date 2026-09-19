@@ -76,7 +76,7 @@ export default {
       const [memberResult, settingResult] = await Promise.all([
         supabaseAdmin
           .from("pendaftaran")
-          .select("id,nama,whatsapp,kategori,kategori_atlet,jenis_kelamin,domisili,pengalaman,foto_url,email,tanggal_lahir,sektor_bermain,ukuran_jersey,status,password_hash,password_salt,must_change_password")
+          .select("id,nama,whatsapp,kategori,kategori_atlet,jenis_kelamin,domisili,pengalaman,foto_url,tanggal_lahir,status,password_hash,password_salt,must_change_password")
           .eq("whatsapp", localPhone)
           .in("status", ["aktif", "verified", "Diterima", "diterima", "active"])
           .limit(1),
