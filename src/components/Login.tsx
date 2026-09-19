@@ -97,13 +97,20 @@ export default function Login() {
   };
 
   const callLogin = async (action?: string) => {
-    const { data, error } = await supabase.functions.invoke('password-login', {
+    const request = supabase.functions.invoke('password-login', {
       body: {
         phone: normalizePhone(phone),
         password,
         ...(action ? { action, new_password: newPassword } : {})
       }
     });
+
+    // Jangan biarkan tombol login berputar tanpa batas jika jaringan/function sedang bermasalah.
+    const timeout = new Promise<never>((_, reject) =>
+      window.setTimeout(() => reject(new Error('Layanan login terlalu lama merespons. Silakan coba lagi.')), 12000)
+    );
+
+    const { data, error } = await Promise.race([request, timeout]);
     if (error) {
       const detail = await error.context?.json?.().catch?.(() => null);
       throw new Error(detail?.message || error.message || 'Layanan login tidak tersedia.');
@@ -115,7 +122,7 @@ export default function Login() {
     if (loading) return;
     const normalized = normalizePhone(phone);
     if (!/^62\d{9,13}$/.test(normalized)) {
-      setErrorMsg('Masukkan nomor WhatsApp yang terdaftar, contoh: 08bili216290.');
+      setErrorMsg('Masukkan nomor WhatsApp yang terdaftar, contoh: 0812xxxxxxxx.');
       return;
     }
     if (!password.trim()) {
