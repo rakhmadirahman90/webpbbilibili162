@@ -122,6 +122,12 @@ const Players: React.FC<{ initialFilter?: string }> = ({
       const pendaftaranList = pendaftaranRes.status === 'fulfilled' && pendaftaranRes.value.data ? pendaftaranRes.value.data : [];
       const statsList = statsRes.status === 'fulfilled' && statsRes.value.data ? statsRes.value.data : [];
       const rankingsList = rankingsRes.status === 'fulfilled' && rankingsRes.value.data ? rankingsRes.value.data : [];
+      const tournamentPhotoById = new Map<string, string>();
+      await Promise.all(pendaftaranList.map(async (p: any) => {
+        if (!p.bilibili_cup1_photo_path) return;
+        const { data } = await supabase.storage.from('turnamen-dokumen').createSignedUrl(p.bilibili_cup1_photo_path, 60 * 60);
+        if (data?.signedUrl) tournamentPhotoById.set(String(p.id), data.signedUrl);
+      }));
 
       const statsMap = new Map();
       statsList.forEach((s) => {
@@ -130,67 +136,9 @@ const Players: React.FC<{ initialFilter?: string }> = ({
       });
 
       const rankingsMap = new Map();
-      rankingsList.forEach((r) => {
-        if (r.pendaftaran_id) rankingsMap.set(r.pendaftaran_id, r);
-        if (r.player_name) rankingsMap.set(r.player_name.trim().toLowerCase(), r);
-      });
-
-      const playerMap = new Map<string, any>();
-
-      pendaftaranList.forEach((p) => {
-        const nameKey = (p.nama || '').trim().toLowerCase();
-        if (!nameKey) return;
-        const stat = statsMap.get(p.id) || statsMap.get(nameKey);
-        const rankItem = rankingsMap.get(p.id) || rankingsMap.get(nameKey);
-
-        const baseP = Number(stat?.points) || Number(rankItem?.poin) || 0;
-        const bonusP = Number(stat?.total_points) || Number(rankItem?.bonus) || 0;
-        const finalP = rankItem?.total_points && Number(rankItem.total_points) > (baseP + bonusP)
-          ? Number(rankItem.total_points)
-          : (baseP + bonusP);
-
-        playerMap.set(nameKey, {
-          id: p.id,
-          pendaftaran_id: p.id,
-          pendaftaran: p,
-          points: baseP,
-          total_points: bonusP,
-          display_points: finalP,
-          seed: stat?.seed || rankItem?.seed || 'UNSEEDED',
-          bio: stat?.bio || p.pengalaman || 'Dedikasi dan semangat tinggi untuk membawa nama baik PB Bilibili 162 di kancah nasional.',
-          status: p.status || 'Active'
-        });
-      });
-
-      rankingsList.forEach((r) => {
-        const nameKey = (r.player_name || '').trim().toLowerCase();
-        if (!nameKey || playerMap.has(nameKey)) return;
-        const stat = statsMap.get(r.pendaftaran_id) || statsMap.get(nameKey);
-        const baseP = Number(stat?.points) || Number(r.poin) || 0;
-        const bonusP = Number(stat?.total_points) || Number(r.bonus) || 0;
-        const finalP = Number(r.total_points) || (baseP + bonusP);
-
-        playerMap.set(nameKey, {
-          id: r.id || `r-${nameKey}`,
-          pendaftaran_id: r.pendaftaran_id,
-          pendaftaran: {
-            id: r.pendaftaran_id || r.id,
-            nama: r.player_name,
-            foto_url: r.photo_url || null,
-            kategori_atlet: r.category || 'Senior',
-            kategori: r.category || 'Senior',
-            pengalaman: 'Atlet PB Bilibili 162',
-            status: 'Active'
-          },
-          points: baseP,
-          total_points: bonusP,
-          display_points: finalP,
-          seed: stat?.seed || r.seed || 'UNSEEDED',
-          bio: stat?.bio || 'Dedikasi dan semangat tinggi untuk membawa nama baik PB Bilibili 162 di kancah nasional.',
-          status: 'Active'
-        });
-      });
-
+      // Rankings tanpa pasangan pada public.pendaftaran tidak ditampilkan sebagai atlet baru.
+      // Dengan demikian landing page memakai master atlet yang sama dengan Manajemen Atlet.
+      
       const resultPlayers = Array.from(playerMap.values());
       // Live database is authoritative. Never render an older browser snapshot.
       setDbPlayers(resultPlayers);
@@ -211,6 +159,7 @@ const Players: React.FC<{ initialFilter?: string }> = ({
       .channel('atlet_changes_v2')
       .on('postgres_changes', { event: '*', table: 'atlet_stats', schema: 'public' }, () => fetchPlayersFromDB())
       .on('postgres_changes', { event: '*', table: 'pendaftaran', schema: 'public' }, () => fetchPlayersFromDB())
+      .on('postgres_changes', { event: '*', table: 'pendaftaran_turnamen', schema: 'public' }, () => fetchPlayersFromDB())
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
