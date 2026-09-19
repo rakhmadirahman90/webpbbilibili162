@@ -139,7 +139,7 @@ export default function PlayerProfileModal({ player, globalRank, onClose }: Prop
       // Ambil profil berdasarkan ID terlebih dahulu. Jika ID dari sumber ranking tidak cocok,
       // fallback ke nama atlet agar biodata tetap terbaca.
       const profileLookup = async () => {
-        const fields = 'id,nama,kategori,kategori_atlet,domisili,foto_url,jenis_kelamin,pengalaman,prestasi,status,alasan_status,tanggal_registrasi,created_at,nama_panggilan,nama_punggung,tempat_lahir,tanggal_lahir,tahun_bergabung,tangan_dominan,hobi,makanan_favorit,updated_at';
+        const fields = 'id,nama,kategori,kategori_atlet,domisili,foto_url,jenis_kelamin,pengalaman,prestasi,status,alasan_status,tanggal_registrasi,created_at,nama_panggilan,nama_punggung,tempat_lahir,tanggal_lahir,tahun_bergabung,tangan_dominan,hobi,makanan_favorit,updated_at,bilibili_cup1_photo_path,bilibili_cup1_partner_name';
         const byId = await supabase.from('pendaftaran').select(fields).eq('id', pId).maybeSingle();
         if (byId.data) return byId;
         return await supabase.from('pendaftaran').select(fields).ilike('nama', name.trim()).maybeSingle();
@@ -164,7 +164,14 @@ export default function PlayerProfileModal({ player, globalRank, onClose }: Prop
       if (cancelled) return;
 
       if (profileRes.status === 'fulfilled') {
-        setProfile(profileRes.value.data || null);
+        let mergedProfile = profileRes.value.data || null;
+        if (mergedProfile?.bilibili_cup1_photo_path && !mergedProfile?.foto_url) {
+          const { data: signed } = await supabase.storage
+            .from('turnamen-dokumen')
+            .createSignedUrl(mergedProfile.bilibili_cup1_photo_path, 60 * 60);
+          if (signed?.signedUrl) mergedProfile = { ...mergedProfile, foto_url: signed.signedUrl };
+        }
+        setProfile(mergedProfile);
         if (profileRes.value.error) console.warn('Profil atlet tidak terbaca:', profileRes.value.error.message);
       }
       if (matchRes.status === 'fulfilled') setMatches(matchRes.value.data || []);
