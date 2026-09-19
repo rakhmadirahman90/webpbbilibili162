@@ -18,6 +18,12 @@ export default function Login() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [defaultNotice, setDefaultNotice] = useState(false);
+  const [resetMode, setResetMode] = useState(false);
+  const [resetStep, setResetStep] = useState<1 | 2>(1);
+  const [resetChallengeId, setResetChallengeId] = useState('');
+  const [resetOtp, setResetOtp] = useState('');
+  const [resetNewPassword, setResetNewPassword] = useState('');
+  const [resetConfirmPassword, setResetConfirmPassword] = useState('');
   const [logoUrl, setLogoUrl] = useState('/logo_pb_bilibili_162.svg');
 
   useEffect(() => {
@@ -176,6 +182,91 @@ export default function Login() {
     } finally { setLoading(false); }
   };
 
+  const callPasswordReset = async (action: 'request' | 'reset', payload: Record<string, unknown>) => {
+    const request = supabase.functions.invoke('password-reset', { body: { action, ...payload } });
+    const timeout = new Promise<never>((_, reject) =>
+      window.setTimeout(() => reject(new Error('Layanan reset password terlalu lama merespons. Silakan coba lagi.')), 15000)
+    );
+    const { data, error } = await Promise.race([request, timeout]);
+    if (error) {
+      const detail = await error.context?.json?.().catch?.(() => null);
+      throw new Error(detail?.message || error.message || 'Layanan reset password tidak tersedia.');
+    }
+    return data;
+  };
+
+  const handleForgotPasswordRequest = async () => {
+    if (loading) return;
+    const normalized = normalizePhone(phone);
+    if (!/^62\\d{9,13}$/.test(normalized)) {
+      setErrorMsg('Masukkan nomor WhatsApp yang terdaftar, contoh: 0812xxxxxxxx.');
+      return;
+    }
+    setLoading(true); setErrorMsg(null); setSuccessMsg(null);
+    try {
+      const result = await callPasswordReset('request', { phone: normalized });
+      if (!result?.ok) {
+        setErrorMsg(result?.message || 'Permintaan reset password gagal.');
+        return;
+      }
+      setResetChallengeId(String(result.challengeId || ''));
+      setResetStep(2);
+      setSuccessMsg(result.message || 'Kode reset telah dikirim ke WhatsApp terdaftar.');
+    } catch (e: any) {
+      setErrorMsg(e?.message || 'Koneksi ke layanan reset password sedang bermasalah.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotPasswordReset = async () => {
+    if (loading) return;
+    if (!resetChallengeId) {
+      setErrorMsg('Permintaan reset belum tersedia. Silakan minta kode baru.');
+      return;
+    }
+    if (!/^\\d{6}$/.test(resetOtp)) {
+      setErrorMsg('Masukkan 6 digit kode reset yang dikirim ke WhatsApp.');
+      return;
+    }
+    if (resetNewPassword.length < 8) {
+      setErrorMsg('Password baru minimal 8 karakter.');
+      return;
+    }
+    if (resetNewPassword !== resetConfirmPassword) {
+      setErrorMsg('Konfirmasi password baru tidak sama.');
+      return;
+    }
+    if (resetNewPassword === 'bili2162') {
+      setErrorMsg('Password baru harus berbeda dari password default.');
+      return;
+    }
+    setLoading(true); setErrorMsg(null); setSuccessMsg(null);
+    try {
+      const result = await callPasswordReset('reset', {
+        challengeId: resetChallengeId,
+        otp: resetOtp,
+        new_password: resetNewPassword,
+      });
+      if (!result?.ok) {
+        setErrorMsg(result?.message || 'Password gagal direset.');
+        return;
+      }
+      setResetMode(false);
+      setResetStep(1);
+      setResetChallengeId('');
+      setResetOtp('');
+      setResetNewPassword('');
+      setResetConfirmPassword('');
+      setPassword('');
+      setSuccessMsg('Password berhasil direset. Silakan login dengan password baru.');
+    } catch (e: any) {
+      setErrorMsg(e?.message || 'Koneksi ke layanan reset password sedang bermasalah.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const inputClass = 'h-[48px] sm:h-[50px] w-full sm:h-[54px] rounded-[16px] sm:rounded-[16px] sm:rounded-[18px] border border-blue-200/10 bg-[#081a31]/85 px-4 text-white outline-none backdrop-blur-xl transition-all placeholder:text-slate-500 focus:border-blue-400/70 focus:bg-[#0a2342] focus:ring-4 focus:ring-blue-500/10';
 
   return (
@@ -257,6 +348,9 @@ export default function Login() {
     <button type="submit" disabled={loading} className="group relative flex h-[50px] w-full items-center justify-center gap-2.5 overflow-hidden rounded-[18px] bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 text-xs font-black uppercase tracking-[.12em] text-white shadow-[0_14px_36px_rgba(0,102,255,.28)] transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60">
       {loading ? <Loader2 size={18} className="animate-spin"/> : <ShieldCheck size={18}/>}<span>{loading ? 'Memproses…' : 'Masuk ke Sistem'}</span>
     </button>
+    <button type="button" disabled={loading} onClick={()=>{setResetMode(true);setResetStep(1);setResetChallengeId('');setResetOtp('');setResetNewPassword('');setResetConfirmPassword('');setErrorMsg(null);setSuccessMsg(null);}} className="w-full rounded-xl border border-blue-300/10 bg-white/[.025] px-4 py-3 text-[10px] font-black uppercase tracking-[.12em] text-blue-200/75 transition hover:border-blue-300/25 hover:bg-blue-500/[.06] hover:text-white disabled:opacity-50">
+      Lupa Password?
+    </button>
   </form>
   ) : (
   <form onSubmit={e=>{e.preventDefault();handleChangePassword();}} className="space-y-3">
@@ -273,6 +367,44 @@ export default function Login() {
     </button>
   </form>
   )}
+
+            {resetMode && (
+              <div className="mt-4 rounded-2xl border border-cyan-400/20 bg-[#071b32]/95 p-4 shadow-[0_18px_50px_rgba(0,0,0,.28)]">
+                {resetStep === 1 ? (
+                  <form onSubmit={e=>{e.preventDefault();handleForgotPasswordRequest();}} className="space-y-3">
+                    <div>
+                      <p className="text-sm font-black text-cyan-200">Lupa Password?</p>
+                      <p className="mt-1 text-[10px] leading-4 text-cyan-100/70">Masukkan nomor WhatsApp terdaftar. Kode verifikasi akan dikirim ke WhatsApp tersebut.</p>
+                    </div>
+                    <input type="tel" inputMode="tel" autoComplete="tel" required value={phone} onChange={e=>{setErrorMsg(null);setPhone(e.target.value.replace(/[^0-9+ ]/g,''));}} className={inputClass + ' text-[15px] font-semibold sm:text-base'} placeholder="08xxxxxxxxxx"/>
+                    <button type="submit" disabled={loading} className="flex h-[48px] w-full items-center justify-center gap-2 rounded-[16px] bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 text-[10px] font-black uppercase tracking-[.12em] text-white disabled:opacity-60">
+                      {loading ? <Loader2 size={17} className="animate-spin"/> : <LockKeyhole size={17}/>}
+                      {loading ? 'Mengirim kode…' : 'Kirim Kode Reset'}
+                    </button>
+                    <button type="button" disabled={loading} onClick={()=>{setResetMode(false);setErrorMsg(null);setSuccessMsg(null);}} className="w-full rounded-xl border border-white/[.08] bg-white/[.02] px-4 py-2.5 text-[10px] font-black uppercase tracking-[.12em] text-slate-400 hover:text-white disabled:opacity-50">
+                      Kembali ke Login
+                    </button>
+                  </form>
+                ) : (
+                  <form onSubmit={e=>{e.preventDefault();handleForgotPasswordReset();}} className="space-y-3">
+                    <div>
+                      <p className="text-sm font-black text-emerald-200">Buat Password Baru</p>
+                      <p className="mt-1 text-[10px] leading-4 text-emerald-100/70">Masukkan kode 6 digit dari WhatsApp, lalu buat password baru minimal 8 karakter.</p>
+                    </div>
+                    <input type="text" inputMode="numeric" autoComplete="one-time-code" required maxLength={6} value={resetOtp} onChange={e=>{setErrorMsg(null);setResetOtp(e.target.value.replace(/\D/g,'').slice(0,6));}} className={inputClass + ' text-center text-[20px] font-black tracking-[.35em]'} placeholder="••••••"/>
+                    <input type="password" autoComplete="new-password" required minLength={8} value={resetNewPassword} onChange={e=>{setErrorMsg(null);setResetNewPassword(e.target.value);}} className={inputClass + ' text-[15px] font-semibold sm:text-base'} placeholder="Password baru — minimal 8 karakter"/>
+                    <input type="password" autoComplete="new-password" required minLength={8} value={resetConfirmPassword} onChange={e=>{setErrorMsg(null);setResetConfirmPassword(e.target.value);}} className={inputClass + ' text-[15px] font-semibold sm:text-base'} placeholder="Ulangi password baru"/>
+                    <button type="submit" disabled={loading} className="flex h-[48px] w-full items-center justify-center gap-2 rounded-[16px] bg-gradient-to-r from-emerald-600 via-blue-600 to-cyan-500 text-[10px] font-black uppercase tracking-[.12em] text-white disabled:opacity-60">
+                      {loading ? <Loader2 size={17} className="animate-spin"/> : <ShieldCheck size={17}/>}
+                      {loading ? 'Mereset password…' : 'Simpan Password Baru'}
+                    </button>
+                    <button type="button" disabled={loading} onClick={()=>{setResetStep(1);setResetChallengeId('');setResetOtp('');setResetNewPassword('');setResetConfirmPassword('');setErrorMsg(null);setSuccessMsg(null);}} className="w-full rounded-xl border border-white/[.08] bg-white/[.02] px-4 py-2.5 text-[10px] font-black uppercase tracking-[.12em] text-slate-400 hover:text-white disabled:opacity-50">
+                      Minta Kode Baru
+                    </button>
+                  </form>
+                )}
+              </div>
+            )}
 
             <div className="mt-3 flex items-center justify-center gap-1.5 text-[8px] font-bold uppercase tracking-[.14em] text-slate-500"><ShieldCheck size={11} className="text-blue-400"/> Nomor WhatsApp + Password • koneksi aman</div>
           </div>
