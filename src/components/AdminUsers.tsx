@@ -337,7 +337,7 @@ export default function AdminUsers({ session }: { session: any }) {
   });
 
   return (
-    <div className="w-full h-full flex flex-col p-3 sm:p-5 md:p-8 space-y-4 md:space-y-6 overflow-hidden select-none pb-24 md:pb-8">
+    <div className="w-full min-h-full flex flex-col p-3 sm:p-5 md:p-8 space-y-4 md:space-y-6 overflow-y-auto overflow-x-hidden overscroll-contain select-none pb-28 md:pb-10">
       {/* Header Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gradient-to-r from-slate-900 via-[#0b1224] to-slate-900 p-4 sm:p-6 rounded-2xl md:rounded-3xl border border-white/10 shadow-2xl relative overflow-hidden shrink-0">
         <div className="absolute top-0 right-0 w-48 h-48 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
@@ -382,8 +382,8 @@ export default function AdminUsers({ session }: { session: any }) {
       </div>
 
       {/* Dashboard summary cards */}
-      <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 shrink-0">
-        <div className="group rounded-2xl border border-blue-400/15 bg-gradient-to-br from-[#102a61] via-[#0b1835] to-[#081326] p-4 shadow-xl shadow-blue-950/20 transition-all hover:-translate-y-0.5">
+      <section className="flex flex-wrap gap-3 shrink-0">
+        <div className="group w-[calc(50%-6px)] lg:w-[calc(25%-9px)] rounded-2xl border border-blue-400/15 bg-gradient-to-br from-[#102a61] via-[#0b1835] to-[#081326] p-3.5 sm:p-4 shadow-xl shadow-blue-950/20 transition-all hover:-translate-y-0.5">
           <div className="flex items-center justify-between">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/15 text-blue-300 ring-1 ring-blue-400/20"><Users size={20}/></div>
             <span className="text-[9px] font-black uppercase tracking-widest text-blue-300/50">Total</span>
@@ -391,7 +391,7 @@ export default function AdminUsers({ session }: { session: any }) {
           <div className="mt-3 text-2xl font-black text-white">{users.length}</div>
           <div className="text-[10px] font-semibold text-slate-400">Total User</div>
         </div>
-        <div className="group rounded-2xl border border-emerald-400/15 bg-gradient-to-br from-[#092d28] via-[#071c1d] to-[#061318] p-4 shadow-xl transition-all hover:-translate-y-0.5">
+        <div className="group w-[calc(50%-6px)] lg:w-[calc(25%-9px)] rounded-2xl border border-emerald-400/15 bg-gradient-to-br from-[#092d28] via-[#071c1d] to-[#061318] p-3.5 sm:p-4 shadow-xl transition-all hover:-translate-y-0.5">
           <div className="flex items-center justify-between">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-400/20"><ShieldCheck size={20}/></div>
             <span className="text-[9px] font-black uppercase tracking-widest text-emerald-300/50">Admin</span>
@@ -399,7 +399,7 @@ export default function AdminUsers({ session }: { session: any }) {
           <div className="mt-3 text-2xl font-black text-white">{adminCount}</div>
           <div className="text-[10px] font-semibold text-slate-400">Admin Klub</div>
         </div>
-        <div className="group rounded-2xl border border-cyan-400/15 bg-gradient-to-br from-[#092b4b] via-[#081b30] to-[#061321] p-4 shadow-xl transition-all hover:-translate-y-0.5">
+        <div className="group w-[calc(50%-6px)] lg:w-[calc(25%-9px)] rounded-2xl border border-cyan-400/15 bg-gradient-to-br from-[#092b4b] via-[#081b30] to-[#061321] p-3.5 sm:p-4 shadow-xl transition-all hover:-translate-y-0.5">
           <div className="flex items-center justify-between">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-500/15 text-cyan-300 ring-1 ring-cyan-400/20"><UserCheck size={20}/></div>
             <span className="text-[9px] font-black uppercase tracking-widest text-cyan-300/50">Member</span>
@@ -407,7 +407,7 @@ export default function AdminUsers({ session }: { session: any }) {
           <div className="mt-3 text-2xl font-black text-white">{memberCount}</div>
           <div className="text-[10px] font-semibold text-slate-400">Anggota</div>
         </div>
-        <button type="button" onClick={() => setShowOnlineModal(true)} className="text-left group rounded-2xl border border-teal-400/15 bg-gradient-to-br from-[#082b2a] via-[#071b21] to-[#061318] p-4 shadow-xl transition-all hover:-translate-y-0.5">
+        <button type="button" onClick={() => setShowOnlineModal(true)} className="text-left group w-[calc(50%-6px)] lg:w-[calc(25%-9px)] rounded-2xl border border-teal-400/15 bg-gradient-to-br from-[#082b2a] via-[#071b21] to-[#061318] p-3.5 sm:p-4 shadow-xl transition-all hover:-translate-y-0.5">
           <div className="flex items-center justify-between">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-500/15 text-teal-300 ring-1 ring-teal-400/20"><Activity size={20}/></div>
             <span className="flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-emerald-300"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"/> Online</span>
@@ -473,7 +473,7 @@ export default function AdminUsers({ session }: { session: any }) {
       </div>
 
       {/* Users Table / List / Mobile Cards */}
-      <div className="bg-[#0b1224]/90 border border-white/10 rounded-2xl md:rounded-3xl overflow-hidden shadow-xl flex-1 flex flex-col min-h-0">
+      <div className="bg-[#0b1224]/90 border border-white/10 rounded-2xl md:rounded-3xl overflow-hidden shadow-xl shrink-0 flex flex-col">
         <div className="p-4 border-b border-white/5 bg-black/20 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3 min-w-0">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-500/10 text-blue-300 ring-1 ring-blue-400/10"><Users size={17}/></div>
@@ -482,7 +482,7 @@ export default function AdminUsers({ session }: { session: any }) {
           <div className="hidden sm:flex items-center gap-2 text-[9px] font-bold text-slate-500"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400"/> Realtime</div>
         </div>
 
-        <div className="overflow-y-auto flex-1 min-h-0 p-2 sm:p-4">
+        <div className="overflow-visible p-2 sm:p-4">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-3">
               <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
@@ -496,7 +496,7 @@ export default function AdminUsers({ session }: { session: any }) {
           ) : (
             <>
               {/* Mobile Cards Grid (< md) */}
-              <div className="grid grid-cols-1 gap-3 md:hidden">
+              <div className="!grid grid-cols-1 gap-3 md:hidden">
                 {filteredUsers.map((user) => {
                   const isOnline = onlineUsers.some(u => (u.user_id && u.user_id === user.id) || (u.email && u.email === user.email));
                   return (
@@ -597,7 +597,7 @@ export default function AdminUsers({ session }: { session: any }) {
               </div>
 
               {/* Desktop Table view (>= md) */}
-              <div className="hidden md:block overflow-x-auto">
+              <div className="hidden md:block overflow-x-auto overscroll-x-contain">
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
                     <tr className="bg-black/30 text-slate-400 uppercase text-[9px] tracking-wider border-b border-white/5">
