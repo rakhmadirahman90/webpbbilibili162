@@ -264,7 +264,7 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
       <div className="absolute inset-0" onClick={closePopup} />
 
       <div
-        className="relative flex flex-col w-full max-w-[calc(100vw-1rem)] sm:max-w-[460px] lg:max-w-[520px] max-h-[94dvh] sm:max-h-[calc(100dvh-2rem)] bg-white rounded-[20px] sm:rounded-[28px] shadow-[0_24px_80px_rgba(0,0,0,0.38)] overflow-hidden ring-1 ring-white/20"
+        className="relative flex flex-col w-full max-w-[calc(100vw-0.75rem)] sm:max-w-[460px] lg:max-w-[520px] h-[calc(100dvh-1rem)] sm:h-auto sm:max-h-[calc(100dvh-2rem)] bg-white rounded-[18px] sm:rounded-[28px] shadow-[0_24px_80px_rgba(0,0,0,0.38)] overflow-hidden ring-1 ring-white/20"
         onClick={e => e.stopPropagation()}
         onMouseEnter={() => setIsHovering(true)}
         onMouseLeave={() => setIsHovering(false)}
@@ -279,10 +279,10 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
 
         <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain hide-scrollbar overscroll-y-contain">
           <div className="relative overflow-hidden bg-slate-950">
-            <div className="relative w-full h-auto min-h-0 max-h-[43dvh] sm:h-[46dvh] sm:min-h-[250px] sm:max-h-[520px] bg-slate-950 flex items-center justify-center select-none">
+            <div className="relative w-full aspect-[3/4] max-h-[48dvh] sm:aspect-auto sm:h-[46dvh] sm:min-h-[250px] sm:max-h-[520px] bg-slate-950 flex items-center justify-center select-none overflow-hidden">
               <img
                 src={current.url_gambar}
-                className="block w-full h-auto max-h-[43dvh] sm:h-full sm:max-h-none object-contain object-center z-10 select-none pointer-events-none"
+                className="block w-full h-full object-contain object-center z-10 select-none pointer-events-none"
                 alt={current.judul || 'Banner pengumuman'}
                 draggable={false}
                 fetchPriority="high"
@@ -304,7 +304,7 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
             {hasNavigation && <button type="button" onClick={() => setIsAutoPlay(v => !v)} aria-label={isAutoPlay ? 'Jeda slider otomatis' : 'Putar slider otomatis'} className="ml-1 w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors shrink-0">{isAutoPlay ? <Pause size={11} /> : <Play size={11} />}</button>}
           </div>
 
-          <div className="px-3.5 sm:px-6 pt-3 sm:pt-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:pb-7 bg-white">
+          <div className="px-3 sm:px-6 pt-2.5 sm:pt-4 pb-[calc(0.9rem+env(safe-area-inset-bottom))] sm:pb-7 bg-white">
             <div className="flex justify-center mb-3 sm:mb-4">
               <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.16em] border border-blue-100">
                 Pengumuman
@@ -312,13 +312,13 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
             </div>
 
             <div>
-              <h3 className="text-[clamp(1.05rem,5.5vw,1.65rem)] font-black text-blue-700 leading-tight text-center mb-3 sm:mb-4 px-1 uppercase tracking-tight break-words">
+              <h3 className="text-[clamp(0.95rem,5vw,1.65rem)] font-black text-blue-700 leading-[1.12] text-center mb-2.5 sm:mb-4 px-1 uppercase tracking-tight break-words">
                 {current.judul}
               </h3>
 
               {!!current.deskripsi && (
-                <div className="bg-slate-50 border border-slate-100 rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 mb-4 sm:mb-6 shadow-inner">
-                  <div className={isExpanded ? '' : 'line-clamp-3'}>
+                <div className="bg-slate-50 border border-slate-100 rounded-2xl sm:rounded-3xl p-3 sm:p-5 mb-3 sm:mb-6 shadow-inner">
+                  <div className={isExpanded ? '' : 'line-clamp-2'}>
                     {renderCleanDescription(current.deskripsi || '')}
                   </div>
                   <button type="button" onClick={() => setIsExpanded(v => !v)} className="text-blue-600 text-xs font-bold mt-2 hover:underline">
