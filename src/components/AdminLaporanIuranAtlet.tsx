@@ -50,6 +50,8 @@ type PlayerReport = Member & {
   allTransactions: Transaction[];
   incomeTransactions: Transaction[];
   incomeAmount: number;
+  selectedIncomeTransactions: Transaction[];
+  selectedIncomeAmount: number;
   totalContributions: number;
 };
 
@@ -331,6 +333,18 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
         0
       );
 
+      // Kategori penerimaan hanya menentukan transaksi penerimaan yang ditampilkan.
+      // Tidak boleh menghilangkan peserta yang belum membayar iuran.
+      const selectedIncomeTransactions =
+        incomeCategoryFilter === 'all'
+          ? incomeTransactions
+          : incomeTransactions.filter((transaction) => transaction.kategori === incomeCategoryFilter);
+
+      const selectedIncomeAmount = selectedIncomeTransactions.reduce(
+        (sum, transaction) => sum + Number(transaction.jumlah_bayar || 0),
+        0
+      );
+
       const paidAmount = monthlyTransactions.reduce(
         (sum, transaction) => sum + Number(transaction.jumlah_bayar || 0),
         0
@@ -362,10 +376,12 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
         allTransactions: memberTransactions,
         incomeTransactions,
         incomeAmount,
+        selectedIncomeTransactions,
+        selectedIncomeAmount,
         totalContributions,
       };
     });
-  }, [members, transactions, selectedMonth, selectedYear, monthIndex]);
+  }, [members, transactions, selectedMonth, selectedYear, monthIndex, incomeCategoryFilter]);
 
   const filteredReports = useMemo(() => {
     const loggedName = normalizeName(loggedInMemberName);
@@ -374,15 +390,14 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
       const matchesStatus =
         statusFilter === 'all' || (statusFilter === 'lunas' ? item.paid : !item.paid);
       const matchesCategory = categoryFilter === 'all' || item.kategori_atlet === categoryFilter;
-      // Kategori Penerimaan adalah filter independen dari Status Iuran.
-      // Status Iuran tetap ditentukan oleh monthlyTransactions di atas.
-      const matchesIncomeCategory =
-        incomeCategoryFilter === 'all' ||
-        item.incomeTransactions.some((transaction) => transaction.kategori === incomeCategoryFilter);
+      // Kategori Penerimaan adalah filter independen dan tidak menghapus peserta.
+      // Filter ini hanya mengatur transaksi penerimaan yang ditampilkan pada peserta.
+      // Dengan demikian, saat Status Iuran = Belum Bayar, seluruh peserta yang belum
+      // membayar iuran tetap muncul meskipun belum memiliki transaksi pada kategori tersebut.
       const matchesRole = isAdmin || normalizeName(item.nama) === loggedName;
-      return matchesSearch && matchesStatus && matchesCategory && matchesIncomeCategory && matchesRole;
+      return matchesSearch && matchesStatus && matchesCategory && matchesRole;
     });
-  }, [reports, search, statusFilter, categoryFilter, incomeCategoryFilter, selectedMonth, selectedYear, monthIndex, isAdmin, loggedInMemberName]);
+  }, [reports, search, statusFilter, categoryFilter, isAdmin, loggedInMemberName]);
 
   const totalPlayers = filteredReports.length;
   const totalPaid = filteredReports.filter((item) => item.paid).length;
@@ -564,7 +579,7 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-2 text-[9px] font-bold text-slate-500">
             <CalendarDays size={13} className="text-blue-400" />
-            Menampilkan <span className="text-slate-300">{filteredReports.length}</span> atlet untuk <span className="text-slate-300">{selectedMonth} {selectedYear}</span>{incomeCategoryFilter !== 'all' && <> dengan penerimaan <span className="text-blue-300">{incomeCategoryFilter}</span></>}. <span className="text-slate-500">Status Iuran dan Kategori Penerimaan adalah filter terpisah.</span>
+            Menampilkan <span className="text-slate-300">{filteredReports.length}</span> atlet untuk <span className="text-slate-300">{selectedMonth} {selectedYear}</span>{incomeCategoryFilter !== 'all' && <> dengan transaksi <span className="text-blue-300">{incomeCategoryFilter}</span></>}. <span className="text-slate-500">Status Iuran menentukan daftar peserta; Kategori Penerimaan hanya memfilter transaksi yang ditampilkan.</span>
             {selectedYear === 2026 && <span className="text-amber-300"> Rekap 2026 dimulai September.</span>}
             <button type="button" onClick={() => { setStatusFilter('all'); setCategoryFilter('all'); setIncomeCategoryFilter('all'); setSearch(''); }} className="ml-auto rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 font-black uppercase tracking-wider text-slate-300 hover:bg-white/10">Reset Filter</button>
           </div>
@@ -623,6 +638,26 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
                         <p className="mt-1 text-xs font-black text-slate-200">{item.paidDate ? formatDate(item.paidDate) : '-'}</p>
                       </div>
                     </div>
+                    {incomeCategoryFilter !== 'all' && (
+                      <div className="mt-2 rounded-xl border border-blue-500/15 bg-blue-500/5 p-2.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="truncate text-[8px] font-black uppercase tracking-wider text-blue-300">
+                            {incomeCategoryFilter}
+                          </p>
+                          <span className="shrink-0 text-[9px] font-black text-slate-300">
+                            {item.selectedIncomeTransactions.length} transaksi
+                          </span>
+                        </div>
+                        <p className="mt-1 text-xs font-black text-white">
+                          Rp {rupiah(item.selectedIncomeAmount)}
+                        </p>
+                        {item.selectedIncomeTransactions.length === 0 && (
+                          <p className="mt-1 text-[8px] font-bold text-slate-500">
+                            Belum ada transaksi pada kategori ini. Peserta tetap ditampilkan sesuai Status Iuran.
+                          </p>
+                        )}
+                      </div>
+                    )}
                     <div className="mt-2 flex items-center justify-between border-t border-white/5 pt-2.5">
                       <span className="text-[9px] font-bold text-slate-500">Total kontribusi: <b className="text-slate-300">Rp {rupiah(item.totalContributions)}</b></span>
                       <button type="button" onClick={() => setDetail(item)} className="inline-flex min-h-9 items-center gap-1.5 rounded-xl bg-blue-600/15 px-3 text-[9px] font-black uppercase tracking-wider text-blue-300 ring-1 ring-blue-500/20 hover:bg-blue-600 hover:text-white">
