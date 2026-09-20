@@ -20,7 +20,7 @@ export default function InformasiRekeningQris() {
     '',
     'Gunakan QRIS resmi PB BILIBILI 162 pada gambar yang dibagikan.',
     'Pastikan nama penerima adalah PB BILIBILI 162 sebelum transaksi.',
-  ].join('\\n');
+  ].join('\n');
 
   const copyAccount = async () => {
     try {
@@ -58,7 +58,7 @@ export default function InformasiRekeningQris() {
       }
 
       // Fallback: buka WhatsApp dengan seluruh informasi + URL QRIS resmi.
-      const fallbackText = shareText + '\\n\\nQRIS: ' + imageUrl;
+      const fallbackText = shareText + '\n\nQRIS: ' + imageUrl;
       window.open(
         'https://wa.me/?text=' + encodeURIComponent(fallbackText),
         '_blank',
@@ -72,7 +72,7 @@ export default function InformasiRekeningQris() {
       try {
         const imageUrl = new URL(QRIS_IMAGE, window.location.origin).href;
         window.open(
-          'https://wa.me/?text=' + encodeURIComponent(shareText + '\\n\\nQRIS: ' + imageUrl),
+          'https://wa.me/?text=' + encodeURIComponent(shareText + '\n\nQRIS: ' + imageUrl),
           '_blank',
           'noopener,noreferrer'
         );
