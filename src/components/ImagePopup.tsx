@@ -256,7 +256,7 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
 
   return (
     <div
-      className="fixed inset-0 z-[999999] flex items-center justify-center p-2.5 sm:p-4 bg-slate-950/80 backdrop-blur-md"
+      className="fixed inset-0 z-[999999] flex items-center justify-center p-2 sm:p-4 bg-slate-950/75 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
       aria-label="Pengumuman PB Bilibili 162"
@@ -264,7 +264,7 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
       <div className="absolute inset-0" onClick={closePopup} />
 
       <div
-        className="relative flex flex-col w-full max-w-[calc(100vw-0.75rem)] sm:max-w-[460px] lg:max-w-[520px] h-[calc(100dvh-1rem)] sm:h-auto sm:max-h-[calc(100dvh-2rem)] bg-white rounded-[18px] sm:rounded-[28px] shadow-[0_24px_80px_rgba(0,0,0,0.38)] overflow-hidden ring-1 ring-white/20"
+        className="relative flex flex-col w-full max-w-[calc(100vw-1rem)] sm:max-w-[460px] lg:max-w-[520px] max-h-[88dvh] sm:max-h-[calc(100dvh-3rem)] bg-white rounded-[22px] sm:rounded-[28px] shadow-[0_24px_80px_rgba(0,0,0,0.38)] overflow-hidden ring-1 ring-white/20"
         onClick={e => e.stopPropagation()}
         onMouseEnter={() => setIsHovering(true)}
         onMouseLeave={() => setIsHovering(false)}
@@ -277,9 +277,9 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
           <X size={18} />
         </button>
 
-        <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain hide-scrollbar overscroll-y-contain">
+        <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain overscroll-y-contain hide-scrollbar">
           <div className="relative overflow-hidden bg-slate-950">
-            <div className="relative w-full aspect-[3/4] max-h-[48dvh] sm:aspect-auto sm:h-[46dvh] sm:min-h-[250px] sm:max-h-[520px] bg-slate-950 flex items-center justify-center select-none overflow-hidden">
+            <div className="relative w-full h-[34dvh] min-h-[190px] max-h-[360px] sm:h-[42dvh] sm:min-h-[250px] sm:max-h-[460px] bg-slate-950 flex items-center justify-center select-none overflow-hidden">
               <img
                 src={current.url_gambar}
                 className="block w-full h-full object-contain object-center z-10 select-none pointer-events-none"
@@ -304,8 +304,8 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
             {hasNavigation && <button type="button" onClick={() => setIsAutoPlay(v => !v)} aria-label={isAutoPlay ? 'Jeda slider otomatis' : 'Putar slider otomatis'} className="ml-1 w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors shrink-0">{isAutoPlay ? <Pause size={11} /> : <Play size={11} />}</button>}
           </div>
 
-          <div className="px-3 sm:px-6 pt-2.5 sm:pt-4 pb-[calc(0.9rem+env(safe-area-inset-bottom))] sm:pb-7 bg-white">
-            <div className="flex justify-center mb-3 sm:mb-4">
+          <div className="px-3.5 sm:px-6 pt-3 sm:pt-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:pb-6 bg-white">
+            <div className="flex justify-center mb-2.5 sm:mb-4">
               <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.16em] border border-blue-100">
                 Pengumuman
               </span>
@@ -327,7 +327,7 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
                 </div>
               )}
 
-              <div className="space-y-2.5 px-0.5">
+              <div className="space-y-2 px-0.5">
                 {current.file_url && String(current.file_url).length > 5 && (
                   <a href={current.file_url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 w-full min-h-11 py-3 bg-slate-900 text-white rounded-xl font-bold text-[11px] tracking-wider shadow-lg">
                     <Download size={14} /> LIHAT LAMPIRAN
