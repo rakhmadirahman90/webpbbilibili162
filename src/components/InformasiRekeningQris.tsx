@@ -20,6 +20,9 @@ export default function InformasiRekeningQris() {
     '',
     'Gunakan QRIS resmi PB BILIBILI 162 pada gambar yang dibagikan.',
     'Pastikan nama penerima adalah PB BILIBILI 162 sebelum transaksi.',
+    '',
+    'Admin PB Bilibili 162',
+    'https://pbilibili162.99apps.id/informasi-rekening-qris',
   ].join('\n');
 
   const copyAccount = async () => {
