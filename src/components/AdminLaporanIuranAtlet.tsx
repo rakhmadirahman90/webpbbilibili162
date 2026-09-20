@@ -71,9 +71,74 @@ const rupiah = (value: number) =>
 
 const normalizeName = (value: string) => (value || '').trim().toLowerCase();
 
+const normalizeMonthLabel = (value: string) => {
+  const label = value.trim().toLowerCase().replace(/\\./g, '');
+  const aliases: Record<string, string> = {
+    jan: 'Januari',
+    januari: 'Januari',
+    feb: 'Februari',
+    februari: 'Februari',
+    mar: 'Maret',
+    maret: 'Maret',
+    apr: 'April',
+    april: 'April',
+    mei: 'Mei',
+    may: 'Mei',
+    jun: 'Juni',
+    juni: 'Juni',
+    jul: 'Juli',
+    juli: 'Juli',
+    agu: 'Agustus',
+    agt: 'Agustus',
+    agustus: 'Agustus',
+    sep: 'September',
+    sept: 'September',
+    september: 'September',
+    okt: 'Oktober',
+    oct: 'Oktober',
+    oktober: 'Oktober',
+    nov: 'November',
+    november: 'November',
+    des: 'Desember',
+    desember: 'Desember',
+  };
+  return aliases[label] || value.trim();
+};
+
 const parseMonthsFromNote = (note?: string | null) => {
-  const match = (note || '').match(/\[Bulan:\s*([^\]]+)\]/i);
-  return match ? match[1].split(',').map((item) => item.trim()).filter(Boolean) : [];
+  const text = (note || '').trim();
+  if (!text) return [];
+
+  const explicit = text.match(/\[Bulan:\s*([^\]]+)\]/i);
+  if (explicit) {
+    return explicit[1]
+      .split(',')
+      .map((item) => normalizeMonthLabel(item))
+      .filter(Boolean);
+  }
+
+  const normalizedText = text.toLowerCase().replace(/\\./g, '');
+  const months: string[] = [];
+  const patterns: Array<[string, RegExp]> = [
+    ['Januari', /\\bjan(?:uari)?\\b/],
+    ['Februari', /\\bfeb(?:ruari)?\\b/],
+    ['Maret', /\\bmar(?:et)?\\b/],
+    ['April', /\\bapr(?:il)?\\b/],
+    ['Mei', /\\bmei\\b/],
+    ['Juni', /\\bjun(?:i)?\\b/],
+    ['Juli', /\\bjul(?:i)?\\b/],
+    ['Agustus', /\\bag[tu]?(?:ustus)?\\b/],
+    ['September', /\\bsep(?:t|tember)?\\b/],
+    ['Oktober', /\\bokt(?:ober)?\\b|\\boct\\b/],
+    ['November', /\\bnov(?:ember)?\\b/],
+    ['Desember', /\\bdes(?:ember)?\\b/],
+  ];
+
+  for (const [month, pattern] of patterns) {
+    if (pattern.test(normalizedText)) months.push(month);
+  }
+
+  return months;
 };
 
 const monthFromDate = (date?: string | null) => {
