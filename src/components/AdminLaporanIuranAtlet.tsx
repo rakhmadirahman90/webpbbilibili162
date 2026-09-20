@@ -414,10 +414,10 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
         <section className="overflow-hidden rounded-2xl border border-white/10 bg-[#0b1224]/95 shadow-xl">
           <div className="flex items-center justify-between border-b border-white/5 bg-black/20 px-4 py-3 sm:px-5">
             <div>
-              <h2 className="text-xs font-black uppercase tracking-[0.2em] text-white">Data Pembayaran Per Atlet</h2>
-              <p className="mt-1 text-[9px] font-bold text-slate-500">Status iuran ditampilkan langsung per pemain.</p>
+              <h2 className="text-xs font-black uppercase tracking-[0.2em] text-white">Rincian & Daftar Peserta / Anggota</h2>
+              <p className="mt-1 text-[9px] font-bold text-slate-500">Daftar peserta aktif dan status iuran ditampilkan langsung per pemain.</p>
             </div>
-            <span className="rounded-full border border-blue-500/20 bg-blue-500/10 px-2.5 py-1 text-[9px] font-black text-blue-300">{filteredReports.length} data</span>
+            <span className="rounded-full border border-blue-500/20 bg-blue-500/10 px-2.5 py-1 text-[9px] font-black text-blue-300">{filteredReports.length} peserta</span>
           </div>
 
           {loading ? (
