@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Users, UserCheck, ShieldCheck, Shield, KeyRound, Search, Filter, Plus, 
-  Trash2, Edit3, CheckCircle, XCircle, AlertTriangle, Sparkles, Lock, Mail, Phone, Calendar,
+  Trash2, Edit3, CheckCircle, XCircle, AlertTriangle, Sparkles, Lock, Mail, Phone, Calendar, Image as ImageIcon,
   Activity, UserPlus, Eye, MoreVertical, SlidersHorizontal, Download, Upload, BookOpen, Lightbulb
 } from 'lucide-react';
 import { supabase } from '../supabase';
@@ -510,8 +510,8 @@ export default function AdminUsers({ session }: { session: any }) {
                           {user.foto_url ? (
                             <img src={user.foto_url} alt={user.nama} className="w-11 h-11 rounded-2xl object-cover border border-white/10 shrink-0 shadow" />
                           ) : (
-                            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white font-black flex items-center justify-center shadow shrink-0">
-                              {user.nama.charAt(0).toUpperCase()}
+                            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-blue-600/20 to-indigo-600/20 text-blue-300 ring-1 ring-blue-400/20 flex items-center justify-center shadow shrink-0">
+                              <ImageIcon size={19} strokeWidth={1.8} />
                             </div>
                           )}
                           {/* Online Dot */}
@@ -621,8 +621,8 @@ export default function AdminUsers({ session }: { session: any }) {
                               {user.foto_url ? (
                                 <img src={user.foto_url} alt={user.nama} className="w-10 h-10 rounded-xl object-cover border border-white/10 shrink-0 shadow" />
                               ) : (
-                                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white font-black flex items-center justify-center shadow shrink-0">
-                                  {user.nama.charAt(0).toUpperCase()}
+                                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600/20 to-indigo-600/20 text-blue-300 ring-1 ring-blue-400/20 flex items-center justify-center shadow shrink-0">
+                                  <ImageIcon size={17} strokeWidth={1.8} />
                                 </div>
                               )}
                               <div className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-slate-900 flex items-center justify-center ${isOnline ? 'bg-emerald-500' : 'bg-slate-600'}`}>
@@ -743,8 +743,8 @@ export default function AdminUsers({ session }: { session: any }) {
                         {userDetail?.foto_url ? (
                           <img src={userDetail.foto_url} alt={u.nama} className="w-12 h-12 rounded-xl object-cover border border-emerald-500/30" />
                         ) : (
-                          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-600 text-white font-black flex items-center justify-center text-lg shadow shrink-0">
-                            {(u.nama || u.email || '?').charAt(0).toUpperCase()}
+                          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-600/20 to-teal-600/20 text-emerald-300 ring-1 ring-emerald-400/20 flex items-center justify-center text-lg shadow shrink-0">
+                            <ImageIcon size={19} strokeWidth={1.8} />
                           </div>
                         )}
                         <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-[#0b1224] bg-emerald-500 flex items-center justify-center">
