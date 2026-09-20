@@ -18,6 +18,9 @@ import {
   Users,
   Wallet,
   X,
+  Plus,
+  Pencil,
+  Trash2,
 } from 'lucide-react';
 
 type Props = { isAdmin?: boolean; session?: any };
@@ -202,6 +205,19 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState<PlayerReport | null>(null);
   const [loggedInMemberName, setLoggedInMemberName] = useState('');
+  const [transactionModalOpen, setTransactionModalOpen] = useState(false);
+  const [editingTransactionId, setEditingTransactionId] = useState<string | null>(null);
+  const [savingTransaction, setSavingTransaction] = useState(false);
+  const [transactionForm, setTransactionForm] = useState({
+    nama_pembayar: '',
+    kategori: DEFAULT_INCOME_CATEGORIES[0],
+    tipe_anggota: 'Anggota Tetap',
+    jumlah_bola: '',
+    jumlah_bayar: '',
+    keterangan: '',
+    tanggal_transaksi: new Date().toISOString().slice(0, 10),
+    jenis_transaksi: 'Masuk' as 'Masuk' | 'Keluar',
+  });
 
   const monthIndex = MONTHS.indexOf(selectedMonth);
   const availableMonths = MONTHS.slice(firstMonthIndexForYear(selectedYear));
@@ -414,6 +430,127 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
     return Array.from(years).sort((a, b) => b - a);
   };
 
+  const resetTransactionForm = (name = '') => {
+    setEditingTransactionId(null);
+    setTransactionForm({
+      nama_pembayar: name,
+      kategori: DEFAULT_INCOME_CATEGORIES[0],
+      tipe_anggota: 'Anggota Tetap',
+      jumlah_bola: '',
+      jumlah_bayar: '',
+      keterangan: '',
+      tanggal_transaksi: new Date().toISOString().slice(0, 10),
+      jenis_transaksi: 'Masuk',
+    });
+  };
+
+  const openAddTransaction = (name = '') => {
+    resetTransactionForm(name);
+    setTransactionModalOpen(true);
+  };
+
+  const openEditTransaction = (transaction: Transaction) => {
+    setEditingTransactionId(transaction.id);
+    setTransactionForm({
+      nama_pembayar: transaction.nama_pembayar || '',
+      kategori: transaction.kategori || DEFAULT_INCOME_CATEGORIES[0],
+      tipe_anggota: 'Anggota Tetap',
+      jumlah_bola: transaction.jumlah_bola == null ? '' : String(transaction.jumlah_bola),
+      jumlah_bayar: transaction.jumlah_bayar == null ? '' : String(transaction.jumlah_bayar),
+      keterangan: transaction.keterangan || '',
+      tanggal_transaksi: transaction.tanggal_transaksi?.slice(0, 10) || new Date().toISOString().slice(0, 10),
+      jenis_transaksi: transaction.jenis_transaksi || 'Masuk',
+    });
+    setTransactionModalOpen(true);
+  };
+
+  const saveTransaction = async () => {
+    if (!isAdmin) return;
+    if (!transactionForm.nama_pembayar.trim()) {
+      Swal.fire({ icon: 'warning', title: 'Nama belum dipilih', text: 'Pilih peserta/anggota terlebih dahulu.' });
+      return;
+    }
+    const amount = Number(transactionForm.jumlah_bayar);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      Swal.fire({ icon: 'warning', title: 'Nominal tidak valid', text: 'Masukkan nominal pembayaran lebih dari 0.' });
+      return;
+    }
+    if (!transactionForm.tanggal_transaksi) {
+      Swal.fire({ icon: 'warning', title: 'Tanggal wajib diisi', text: 'Pilih tanggal transaksi.' });
+      return;
+    }
+
+    setSavingTransaction(true);
+    try {
+      const payload = {
+        nama_pembayar: transactionForm.nama_pembayar.trim(),
+        kategori: transactionForm.kategori,
+        tipe_anggota: transactionForm.tipe_anggota,
+        jumlah_bola: transactionForm.jumlah_bola ? Number(transactionForm.jumlah_bola) : 0,
+        jumlah_bayar: amount,
+        keterangan: transactionForm.keterangan.trim() || null,
+        tanggal_transaksi: transactionForm.tanggal_transaksi,
+        jenis_transaksi: transactionForm.jenis_transaksi,
+      };
+
+      const query = editingTransactionId
+        ? supabase.from('kas_pb').update(payload).eq('id', editingTransactionId)
+        : supabase.from('kas_pb').insert(payload);
+
+      const { error } = await query;
+      if (error) throw error;
+
+      const wasEditing = Boolean(editingTransactionId);
+      setTransactionModalOpen(false);
+      setEditingTransactionId(null);
+      await loadData();
+      Swal.fire({
+        icon: 'success',
+        title: wasEditing ? 'Data diperbarui' : 'Data ditambahkan',
+        text: wasEditing ? 'Transaksi berhasil diperbarui.' : 'Transaksi baru berhasil ditambahkan.',
+        timer: 1400,
+        showConfirmButton: false,
+      });
+    } catch (error: any) {
+      console.error('Gagal menyimpan transaksi:', error);
+      Swal.fire({ icon: 'error', title: 'Gagal menyimpan', text: error?.message || 'Transaksi tidak dapat disimpan.' });
+    } finally {
+      setSavingTransaction(false);
+    }
+  };
+
+  const deleteTransaction = async (transaction: Transaction) => {
+    if (!isAdmin) return;
+    const result = await Swal.fire({
+      icon: 'warning',
+      title: 'Hapus transaksi?',
+      html: '<b>' + transaction.nama_pembayar + '</b><br>' + transaction.kategori + '<br>Rp ' + rupiah(Number(transaction.jumlah_bayar || 0)),
+      showCancelButton: true,
+      confirmButtonText: 'Ya, hapus',
+      cancelButtonText: 'Batal',
+      confirmButtonColor: '#dc2626',
+      background: '#0b1224',
+      color: '#fff',
+    });
+    if (!result.isConfirmed) return;
+
+    try {
+      const { error } = await supabase.from('kas_pb').delete().eq('id', transaction.id);
+      if (error) throw error;
+      setDetail((currentDetail) =>
+        currentDetail ? {
+          ...currentDetail,
+          allTransactions: currentDetail.allTransactions.filter((item) => item.id !== transaction.id),
+        } : currentDetail
+      );
+      await loadData();
+      Swal.fire({ icon: 'success', title: 'Transaksi dihapus', timer: 1200, showConfirmButton: false });
+    } catch (error: any) {
+      console.error('Gagal menghapus transaksi:', error);
+      Swal.fire({ icon: 'error', title: 'Gagal menghapus', text: error?.message || 'Transaksi tidak dapat dihapus.' });
+    }
+  };
+
   const exportExcel = () => {
     if (!filteredReports.length) return;
     const rows = filteredReports.map((item, index) => ({
@@ -494,6 +631,9 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
               </button>
               {isAdmin && (
                 <>
+                  <button type="button" onClick={() => openAddTransaction()} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-violet-600 px-3 text-[10px] font-black uppercase tracking-wider text-white hover:bg-violet-500">
+                    <Plus size={14} /> Tambah Data
+                  </button>
                   <button type="button" onClick={exportExcel} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-3 text-[10px] font-black uppercase tracking-wider text-white hover:bg-emerald-500">
                     <FileSpreadsheet size={14} /> Excel
                   </button>
@@ -778,6 +918,11 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
                     <h4 className="text-xs font-black uppercase tracking-wider text-white">Riwayat Pembayaran Lengkap</h4>
                     <p className="mt-0.5 text-[9px] font-bold text-slate-500">Seluruh transaksi peserta dari database, bukan hanya 30 transaksi terakhir.</p>
                   </div>
+                  {isAdmin && (
+                    <button type="button" onClick={() => openAddTransaction(detail.nama)} className="inline-flex items-center gap-1.5 rounded-lg bg-violet-600/15 px-2.5 py-1.5 text-[8px] font-black uppercase tracking-wider text-violet-300 ring-1 ring-violet-500/20 hover:bg-violet-600 hover:text-white">
+                      <Plus size={12} /> Tambah
+                    </button>
+                  )}
                   <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[8px] font-black text-slate-400">
                     {detail.allTransactions.length} transaksi
                   </span>
@@ -785,18 +930,91 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
                 <div className="space-y-2">
                   {detail.allTransactions
                     .map((transaction) => (
-                      <div key={transaction.id} className="flex items-center justify-between gap-3 rounded-xl border border-white/5 bg-white/[0.02] p-3">
-                        <div className="min-w-0">
+                      <div key={transaction.id} className="flex items-center justify-between gap-2 rounded-xl border border-white/5 bg-white/[0.02] p-3">
+                        <div className="min-w-0 flex-1">
                           <p className="truncate text-[10px] font-black text-slate-200">{transaction.kategori}</p>
-                          <p className="mt-0.5 text-[9px] font-bold text-slate-500">{formatDate(transaction.tanggal_transaksi)} {transaction.keterangan ? `• ${transaction.keterangan}` : ''}</p>
+                          <p className="mt-0.5 text-[9px] font-bold text-slate-500">{formatDate(transaction.tanggal_transaksi)} {transaction.keterangan ? '• ' + transaction.keterangan : ''}</p>
                         </div>
                         <p className="shrink-0 text-xs font-black text-emerald-300">Rp {rupiah(transaction.jumlah_bayar)}</p>
+                        {isAdmin && (
+                          <div className="flex shrink-0 items-center gap-1">
+                            <button type="button" onClick={() => openEditTransaction(transaction)} className="rounded-lg bg-blue-500/10 p-2 text-blue-300 hover:bg-blue-500 hover:text-white" aria-label="Edit transaksi" title="Edit">
+                              <Pencil size={13} />
+                            </button>
+                            <button type="button" onClick={() => deleteTransaction(transaction)} className="rounded-lg bg-red-500/10 p-2 text-red-300 hover:bg-red-500 hover:text-white" aria-label="Hapus transaksi" title="Hapus">
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                        )}
                       </div>
                     ))}
                   {!detail.allTransactions.length && (
                     <p className="py-6 text-center text-[10px] font-bold uppercase tracking-wider text-slate-600">Belum ada riwayat transaksi.</p>
                   )}
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {transactionModalOpen && isAdmin && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/80 p-3 backdrop-blur-sm">
+          <div className="max-h-[92vh] w-full max-w-xl overflow-hidden rounded-3xl border border-white/10 bg-[#0b1224] shadow-2xl">
+            <div className="flex items-center justify-between border-b border-white/5 px-4 py-4 sm:px-5">
+              <div>
+                <p className="text-[9px] font-black uppercase tracking-widest text-violet-400">Kelola Data Iuran</p>
+                <h3 className="mt-1 text-lg font-black text-white">{editingTransactionId ? 'Edit Transaksi' : 'Tambah Transaksi'}</h3>
+              </div>
+              <button type="button" onClick={() => setTransactionModalOpen(false)} className="rounded-xl p-2 text-slate-400 hover:bg-white/5 hover:text-white">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="max-h-[calc(92vh-78px)] overflow-y-auto p-4 sm:p-5">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="block sm:col-span-2">
+                  <span className="mb-1.5 block text-[9px] font-black uppercase tracking-wider text-slate-500">Peserta / Anggota</span>
+                  <select value={transactionForm.nama_pembayar} onChange={(e) => setTransactionForm((v) => ({ ...v, nama_pembayar: e.target.value }))} className="h-11 w-full rounded-xl border border-white/10 bg-[#0a1528] px-3 text-sm font-bold text-white outline-none focus:border-violet-500">
+                    <option value="">Pilih peserta...</option>
+                    {members.map((member) => <option key={member.id} value={member.nama}>{member.nama}</option>)}
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="mb-1.5 block text-[9px] font-black uppercase tracking-wider text-slate-500">Kategori Penerimaan</span>
+                  <select value={transactionForm.kategori} onChange={(e) => setTransactionForm((v) => ({ ...v, kategori: e.target.value }))} className="h-11 w-full rounded-xl border border-white/10 bg-[#0a1528] px-3 text-xs font-bold text-white outline-none focus:border-violet-500">
+                    {incomeCategoryOptions.map((category) => <option key={category} value={category}>{category}</option>)}
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="mb-1.5 block text-[9px] font-black uppercase tracking-wider text-slate-500">Jenis Transaksi</span>
+                  <select value={transactionForm.jenis_transaksi} onChange={(e) => setTransactionForm((v) => ({ ...v, jenis_transaksi: e.target.value as 'Masuk' | 'Keluar' }))} className="h-11 w-full rounded-xl border border-white/10 bg-[#0a1528] px-3 text-sm font-bold text-white outline-none focus:border-violet-500">
+                    <option value="Masuk">Masuk</option>
+                    <option value="Keluar">Keluar</option>
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="mb-1.5 block text-[9px] font-black uppercase tracking-wider text-slate-500">Nominal (Rp)</span>
+                  <input type="number" min="0" step="1000" value={transactionForm.jumlah_bayar} onChange={(e) => setTransactionForm((v) => ({ ...v, jumlah_bayar: e.target.value }))} placeholder="10000" className="h-11 w-full rounded-xl border border-white/10 bg-[#0a1528] px-3 text-sm font-bold text-white outline-none focus:border-violet-500" />
+                </label>
+                <label className="block">
+                  <span className="mb-1.5 block text-[9px] font-black uppercase tracking-wider text-slate-500">Tanggal Transaksi</span>
+                  <input type="date" value={transactionForm.tanggal_transaksi} onChange={(e) => setTransactionForm((v) => ({ ...v, tanggal_transaksi: e.target.value }))} className="h-11 w-full rounded-xl border border-white/10 bg-[#0a1528] px-3 text-sm font-bold text-white outline-none focus:border-violet-500" />
+                </label>
+                <label className="block">
+                  <span className="mb-1.5 block text-[9px] font-black uppercase tracking-wider text-slate-500">Jumlah Bola</span>
+                  <input type="number" min="0" value={transactionForm.jumlah_bola} onChange={(e) => setTransactionForm((v) => ({ ...v, jumlah_bola: e.target.value }))} placeholder="0" className="h-11 w-full rounded-xl border border-white/10 bg-[#0a1528] px-3 text-sm font-bold text-white outline-none focus:border-violet-500" />
+                </label>
+                <label className="block sm:col-span-2">
+                  <span className="mb-1.5 block text-[9px] font-black uppercase tracking-wider text-slate-500">Keterangan</span>
+                  <textarea value={transactionForm.keterangan} onChange={(e) => setTransactionForm((v) => ({ ...v, keterangan: e.target.value }))} rows={3} placeholder="Contoh: Iuran September 2026" className="w-full rounded-xl border border-white/10 bg-[#0a1528] px-3 py-2.5 text-sm font-bold text-white outline-none focus:border-violet-500" />
+                </label>
+              </div>
+              <div className="mt-4 flex justify-end gap-2">
+                <button type="button" onClick={() => setTransactionModalOpen(false)} className="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-[10px] font-black uppercase tracking-wider text-slate-300 hover:bg-white/10">Batal</button>
+                <button type="button" onClick={saveTransaction} disabled={savingTransaction} className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-[10px] font-black uppercase tracking-wider text-white hover:bg-violet-500 disabled:opacity-50">
+                  {savingTransaction ? <Loader2 size={14} className="animate-spin" /> : editingTransactionId ? <Pencil size={14} /> : <Plus size={14} />}
+                  {savingTransaction ? 'Menyimpan...' : editingTransactionId ? 'Simpan Perubahan' : 'Tambah Data'}
+                </button>
               </div>
             </div>
           </div>
