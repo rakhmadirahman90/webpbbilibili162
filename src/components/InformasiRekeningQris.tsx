@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, Building2, CreditCard, ShieldCheck, Copy, CheckCircle2, BadgeCheck, Handshake, Zap, Info } from 'lucide-react';
+import { ArrowLeft, Building2, CreditCard, ShieldCheck, Copy, CheckCircle2, Info, Smartphone, Landmark } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const BSI_ACCOUNT = '7372006514';
@@ -23,143 +23,153 @@ export default function InformasiRekeningQris() {
     } catch {}
   };
 
-  const badges = [
-    { icon: ShieldCheck, label: 'Aman' },
-    { icon: BadgeCheck, label: 'Resmi' },
-    { icon: Handshake, label: 'Terpercaya' },
-    { icon: Zap, label: 'Mudah' },
-  ];
-
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-900">
-      <section className="relative overflow-hidden bg-[#031b3a] text-white">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(0,174,255,.18),transparent_35%),linear-gradient(115deg,#031b3a,#062c5c)]" />
-        <div className="absolute -right-20 -top-16 h-80 w-80 rounded-full bg-cyan-400/10 blur-3xl" />
-        <div className="relative mx-auto max-w-7xl px-4 pb-8 pt-8 sm:px-6 lg:px-8 lg:pb-10">
-          <button type="button" onClick={goHome}
-            className="mb-6 inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-xs font-bold text-slate-200 transition hover:bg-white/10">
+    <main className="min-h-screen bg-[#f4f7fb] text-slate-900">
+      {/* Header */}
+      <section className="relative overflow-hidden bg-[#061a36] text-white">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_10%_0%,rgba(37,153,255,.25),transparent_34%),radial-gradient(circle_at_100%_100%,rgba(0,205,255,.12),transparent_35%)]" />
+        <div className="absolute -right-24 -top-28 h-72 w-72 rounded-full bg-blue-500/15 blur-3xl" />
+        <div className="relative mx-auto max-w-6xl px-4 pb-9 pt-7 sm:px-6 lg:px-8 lg:pb-12 lg:pt-9">
+          <button
+            type="button"
+            onClick={goHome}
+            className="mb-7 inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/10 bg-white/[.06] px-3.5 text-xs font-bold text-slate-200 transition hover:bg-white/10"
+          >
             <ArrowLeft size={15} /> Beranda
           </button>
 
-          <div className="max-w-4xl">
-            <p className="text-xs font-black uppercase tracking-[.24em] text-cyan-300">Hubungi Kami</p>
-            <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-5xl">
-              Informasi Rekening &amp; QRIS
-              <span className="block text-cyan-400">PB BILIBILI 162</span>
+          <div className="max-w-3xl">
+            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1.5 text-[9px] font-black uppercase tracking-[.2em] text-cyan-300">
+              <ShieldCheck size={13} /> Transaksi Resmi
+            </div>
+            <h1 className="mt-4 text-3xl font-black tracking-tight sm:text-4xl lg:text-5xl">
+              Rekening <span className="text-cyan-400">&amp; QRIS</span>
             </h1>
-            <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-300 sm:text-lg">
-              Gunakan rekening resmi dan QRIS PB Bilibili 162 untuk setiap transaksi yang Anda lakukan.
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300 sm:text-base">
+              Gunakan rekening dan QRIS resmi PB Bilibili 162. Pastikan nama penerima sesuai sebelum transaksi.
             </p>
-          </div>
-
-          <div className="mt-6 flex max-w-2xl flex-wrap overflow-hidden rounded-full border border-cyan-300/50 bg-white/[.03]">
-            {badges.map(({ icon: Icon, label }) => (
-              <div key={label} className="flex min-w-[50%] flex-1 items-center justify-center gap-2 border-white/10 px-4 py-3 text-xs font-bold sm:min-w-0">
-                <Icon size={17} className="text-white" /> {label}
-              </div>
-            ))}
           </div>
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 py-7 sm:px-6 lg:px-8 lg:py-10">
-        <div className="grid gap-6 lg:grid-cols-2">
-          <motion.section initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}
-            className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
-            <header className="bg-gradient-to-r from-[#064a8c] to-[#0b5ca8] px-5 py-5 text-white sm:px-7">
-              <div className="flex items-center gap-4">
-                <span className="grid h-14 w-14 place-items-center rounded-2xl bg-white/15">
-                  <Building2 size={28} />
+      <section className="mx-auto max-w-6xl px-4 py-5 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
+        <div className="grid gap-5 lg:grid-cols-[.82fr_1.18fr]">
+          {/* Account */}
+          <motion.section
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_15px_45px_rgba(15,23,42,.08)]"
+          >
+            <div className="bg-gradient-to-br from-[#07539b] to-[#0b75bd] px-5 py-5 text-white sm:px-7">
+              <div className="flex items-center gap-3.5">
+                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-white/15 ring-1 ring-white/10">
+                  <Landmark size={24} />
                 </span>
-                <div>
-                  <h2 className="text-xl font-black sm:text-2xl">Rekening Resmi</h2>
-                  <p className="mt-1 text-sm font-semibold text-cyan-300">PB BILIBILI 162</p>
+                <div className="min-w-0">
+                  <p className="text-[9px] font-black uppercase tracking-[.2em] text-blue-100">Rekening Resmi</p>
+                  <h2 className="mt-1 text-lg font-black sm:text-xl">Bank Syariah Indonesia</h2>
                 </div>
               </div>
-            </header>
+            </div>
 
             <div className="p-5 sm:p-7">
-              <div className="mb-7 flex items-end gap-3">
-                <span className="text-6xl font-black tracking-tight text-[#08a7a5]">BSI</span>
-                <span className="mb-1 text-xl font-semibold leading-tight text-[#08a7a5]">BANK SYARIAH<br />INDONESIA</span>
+              <div className="rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 to-slate-50 p-4 sm:p-5">
+                <p className="text-[10px] font-black uppercase tracking-widest text-blue-600">Nama Rekening</p>
+                <p className="mt-1.5 text-lg font-black text-slate-900 sm:text-xl">{BSI_ACCOUNT_NAME}</p>
               </div>
 
-              <div className="divide-y divide-slate-100">
-                <div className="flex gap-4 py-4">
-                  <Building2 className="mt-1 shrink-0 text-[#064a8c]" size={25} />
-                  <div><p className="text-xs text-slate-500">Nama Rekening</p><p className="mt-1 text-lg font-black text-[#06295a]">{BSI_ACCOUNT_NAME}</p></div>
-                </div>
-                <div className="flex gap-4 py-4">
-                  <CreditCard className="mt-1 shrink-0 text-[#064a8c]" size={25} />
+              <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
+                <div className="flex items-start gap-3">
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-100 text-blue-700">
+                    <CreditCard size={19} />
+                  </span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs text-slate-500">Nomor Rekening</p>
-                    <div className="mt-1 flex flex-wrap items-center gap-3">
-                      <p className="text-2xl font-black tracking-wider text-[#06295a]">{BSI_ACCOUNT}</p>
-                      <button type="button" onClick={copyAccount}
-                        className="inline-flex items-center gap-2 rounded-xl bg-blue-50 px-4 py-2 text-xs font-black text-[#064a8c] hover:bg-blue-100">
-                        {copied ? <CheckCircle2 size={15} /> : <Copy size={15} />}
-                        {copied ? 'Tersalin' : 'Salin'}
-                      </button>
-                    </div>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Nomor Rekening</p>
+                    <p className="mt-1 break-all text-xl font-black tracking-[.08em] text-[#06295a] sm:text-2xl">{BSI_ACCOUNT}</p>
+                    <button
+                      type="button"
+                      onClick={copyAccount}
+                      className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-xl bg-[#07539b] px-3.5 py-2 text-[10px] font-black uppercase tracking-wide text-white transition hover:bg-[#064782] active:scale-[.98]"
+                    >
+                      {copied ? <CheckCircle2 size={14} /> : <Copy size={14} />}
+                      {copied ? 'Tersalin' : 'Salin Rekening'}
+                    </button>
                   </div>
                 </div>
-                <div className="flex gap-4 py-4">
-                  <Building2 className="mt-1 shrink-0 text-[#064a8c]" size={25} />
-                  <div><p className="text-xs text-slate-500">Bank</p><p className="mt-1 text-base font-bold text-[#06295a]">Bank Syariah Indonesia (BSI)</p></div>
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <div className="rounded-2xl border border-slate-200 p-3.5">
+                  <Building2 size={18} className="text-blue-600" />
+                  <p className="mt-2 text-[9px] font-black uppercase tracking-widest text-slate-400">Bank</p>
+                  <p className="mt-1 text-xs font-bold leading-5 text-slate-800">BSI</p>
                 </div>
-                <div className="flex gap-4 py-4">
-                  <ShieldCheck className="mt-1 shrink-0 text-[#064a8c]" size={25} />
-                  <div><p className="text-xs text-slate-500">Jenis Rekening</p><p className="mt-1 text-base font-bold text-[#06295a]">Rekening Resmi Organisasi</p></div>
+                <div className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-3.5">
+                  <ShieldCheck size={18} className="text-emerald-600" />
+                  <p className="mt-2 text-[9px] font-black uppercase tracking-widest text-slate-400">Status</p>
+                  <p className="mt-1 text-xs font-bold leading-5 text-emerald-800">Resmi</p>
                 </div>
               </div>
 
-              <div className="mt-5 flex gap-3 rounded-2xl bg-sky-50 p-4 text-sm leading-6 text-blue-900">
-                <Info className="mt-0.5 shrink-0 text-blue-600" size={20} />
-                <p>Pastikan nama penerima sesuai dengan <b>PB BILIBILI 162</b> sebelum melakukan transaksi.</p>
+              <div className="mt-4 flex gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs leading-5 text-amber-900">
+                <Info size={18} className="mt-0.5 shrink-0 text-amber-600" />
+                <p>Pastikan nama penerima <b>PB BILIBILI 162</b> sebelum menyelesaikan transaksi.</p>
               </div>
             </div>
           </motion.section>
 
-          <motion.section initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: .05 }}
-            className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
-            <header className="bg-gradient-to-r from-[#064a8c] to-[#0b5ca8] px-5 py-5 text-white sm:px-7">
-              <div className="flex items-center gap-4">
-                <span className="grid h-14 w-14 place-items-center rounded-2xl bg-white/15">
-                  <CreditCard size={28} />
+          {/* QRIS */}
+          <motion.section
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: .06 }}
+            className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_15px_45px_rgba(15,23,42,.08)]"
+          >
+            <div className="flex items-center justify-between gap-3 bg-gradient-to-br from-[#07539b] to-[#0b75bd] px-5 py-5 text-white sm:px-7">
+              <div className="flex min-w-0 items-center gap-3.5">
+                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-white/15 ring-1 ring-white/10">
+                  <CreditCard size={24} />
                 </span>
-                <div>
-                  <h2 className="text-xl font-black sm:text-2xl">QRIS Resmi</h2>
-                  <p className="mt-1 text-sm font-semibold text-cyan-300">PB BILIBILI 162</p>
+                <div className="min-w-0">
+                  <p className="text-[9px] font-black uppercase tracking-[.2em] text-blue-100">Pembayaran Digital</p>
+                  <h2 className="mt-1 text-lg font-black sm:text-xl">QRIS PB BILIBILI 162</h2>
                 </div>
               </div>
-            </header>
+              <Smartphone className="hidden shrink-0 text-cyan-200 sm:block" size={25} />
+            </div>
 
-            <div className="p-4 sm:p-5">
-              <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-inner">
-                <img src={QRIS_IMAGE}
+            <div className="p-3 sm:p-5 lg:p-6">
+              <div className="rounded-2xl border border-slate-200 bg-white p-1.5 shadow-inner sm:p-2">
+                {/* Asset QRIS ditampilkan utuh. Barcode/kode QR tidak diubah atau digambar ulang. */}
+                <img
+                  src={QRIS_IMAGE}
                   alt="QRIS resmi PB BILI BILI 162"
-                  className="block h-auto w-full select-none object-contain"
+                  className="mx-auto block h-auto w-full max-w-[680px] select-none object-contain"
                   decoding="sync"
-                  draggable="false" />
+                  draggable="false"
+                />
+              </div>
+              <div className="mt-4 flex items-start gap-3 rounded-2xl border border-blue-100 bg-blue-50 p-4">
+                <ShieldCheck size={19} className="mt-0.5 shrink-0 text-blue-600" />
+                <div className="text-xs leading-5 text-blue-900">
+                  <p className="font-black">Gunakan QRIS yang tampil di atas</p>
+                  <p className="mt-0.5 text-blue-800/80">Jangan gunakan gambar QRIS dari sumber lain untuk transaksi resmi PB BILIBILI 162.</p>
+                </div>
               </div>
             </div>
           </motion.section>
         </div>
 
-        <section className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 shadow-sm sm:p-6">
-          <div className="flex gap-4">
-            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-amber-600 text-white">
-              <ShieldCheck size={25} />
+        <section className="mt-5 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#061a36] text-white">
+              <ShieldCheck size={21} />
             </span>
-            <div>
-              <h2 className="text-lg font-black text-amber-800">Informasi Penting</h2>
-              <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm leading-6 text-slate-700">
-                <li>Gunakan hanya rekening dan QRIS resmi PB BILIBILI 162 untuk setiap transaksi.</li>
-                <li>Pastikan nama penerima sesuai dengan <b>PB BILIBILI 162</b>.</li>
-                <li>PB BILIBILI 162 tidak bertanggung jawab atas transaksi ke rekening selain yang tertera pada halaman ini.</li>
-                <li>Simpan bukti transaksi Anda sebagai arsip pribadi.</li>
-                <li>Jika ada pertanyaan terkait transaksi, silakan hubungi kami melalui menu <b>Kontak &amp; Markas Besar</b>.</li>
-              </ol>
+            <div className="min-w-0">
+              <h2 className="text-sm font-black text-slate-900 sm:text-base">Informasi Transaksi</h2>
+              <p className="mt-1 text-xs leading-5 text-slate-500 sm:text-sm">
+                Halaman ini hanya menyediakan informasi rekening dan QRIS resmi PB Bilibili 162. Simpan bukti transaksi Anda sebagai arsip.
+              </p>
             </div>
           </div>
         </section>
