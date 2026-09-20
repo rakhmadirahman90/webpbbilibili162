@@ -17,6 +17,7 @@ interface UserRecord {
   kategori: string;
   foto_url?: string;
   hasPassword?: boolean;
+  mustChangePassword?: boolean;
   created_at?: string;
 }
 
@@ -43,20 +44,23 @@ export default function AdminUsers({ session }: { session: any }) {
     const normalized = password.trim();
     if (normalized.length < 8) throw new Error('Password minimal 8 karakter.');
     const encoder = new TextEncoder();
-    const salt = crypto.getRandomValues(new Uint8Array(16));
-    const iterations = 210000;
+    const saltBytes = crypto.getRandomValues(new Uint8Array(16));
+    const salt = Array.from(saltBytes).map(b => b.toString(16).padStart(2, '0')).join('');
     const key = await crypto.subtle.importKey('raw', encoder.encode(normalized), 'PBKDF2', false, ['deriveBits']);
     const bits = await crypto.subtle.deriveBits(
-      { name: 'PBKDF2', salt, iterations, hash: 'SHA-256' },
+      { name: 'PBKDF2', salt: saltBytes, iterations: 210000, hash: 'SHA-256' },
       key,
       256
     );
     const toBase64Url = (bytes: Uint8Array) => {
       let binary = '';
       bytes.forEach((b) => { binary += String.fromCharCode(b); });
-      return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+      return btoa(binary).replace(/\\+/g, '-').replace(/\\//g, '_').replace(/=+$/g, '');
     };
-    return `pbkdf2$sha256${iterations}${toBase64Url(salt)}${toBase64Url(new Uint8Array(bits))}`;
+    return {
+      salt,
+      hash: `pbkdf2$sha256$210000$${toBase64Url(saltBytes)}$${toBase64Url(new Uint8Array(bits))}`
+    };
   };
 
   const [saving, setSaving] = useState(false);
@@ -118,6 +122,7 @@ export default function AdminUsers({ session }: { session: any }) {
           kategori: item.kategori || item.kategori_atlet || 'SENIOR',
           foto_url: item.foto_url || '',
           hasPassword: !!item.password_hash,
+          mustChangePassword: !!item.must_change_password,
           created_at: item.created_at || new Date().toISOString()
         };
       });
@@ -209,18 +214,24 @@ export default function AdminUsers({ session }: { session: any }) {
         if (error) throw error;
       }
 
-      // Simpan hanya hash password. Password plaintext tidak pernah ditulis ke database/localStorage.
+      // Password anggota selalu dimulai dari mode default + wajib ganti pada login pertama.
       if (formData.password.trim()) {
         if (editingUser?.id === 'admin-master') {
           // Master Admin menggunakan password admin di Edge Function.
         } else {
-          const passwordHash = await hashPassword(formData.password);
+          const passwordData = await hashPassword(formData.password);
           const { error: passwordError } = await supabase
             .from('pendaftaran')
-            .update({ password_hash: passwordHash })
+            .update({ password_hash: passwordData.hash, password_salt: passwordData.salt, must_change_password: formData.role === 'anggota' })
             .eq('id', editingUser?.id || '')
           if (passwordError) throw passwordError;
         }
+      } else if (editingUser?.id && editingUser.id !== 'admin-master' && formData.role === 'anggota') {
+        const { error: defaultError } = await supabase
+          .from('pendaftaran')
+          .update({ password_hash: null, password_salt: null, must_change_password: true })
+          .eq('id', editingUser.id);
+        if (defaultError) throw defaultError;
       }
 
       Swal.fire({
@@ -313,8 +324,8 @@ export default function AdminUsers({ session }: { session: any }) {
     }
 
     try {
-      const passwordHash = await hashPassword(String(newPassword));
-      const { error } = await supabase.from('pendaftaran').update({ password_hash: passwordHash }).eq('id', user.id);
+      const passwordData = await hashPassword(String(newPassword));
+      const { error } = await supabase.from('pendaftaran').update({ password_hash: passwordData.hash, password_salt: passwordData.salt, must_change_password: false, password_changed_at: new Date().toISOString() }).eq('id', user.id);
       if (error) throw error;
       await Swal.fire({ title: 'Password Diperbarui!', text: `Password untuk ${user.nama} telah disimpan sebagai hash.`, icon: 'success', timer: 1500, showConfirmButton: false, background: '#0F172A', color: '#fff' });
       fetchUsers();
@@ -325,8 +336,8 @@ export default function AdminUsers({ session }: { session: any }) {
 
   const adminCount = users.filter(u => u.role === 'admin').length;
   const memberCount = users.filter(u => u.role === 'anggota').length;
-  const passwordReadyCount = users.filter(u => u.hasPassword).length;
-  const passwordPendingCount = users.length - passwordReadyCount;
+  const defaultPasswordCount = users.filter(u => u.role === 'anggota' && u.mustChangePassword).length;
+  const customPasswordCount = users.filter(u => u.role === 'anggota' && u.hasPassword && !u.mustChangePassword).length;
 
   const filteredUsers = users.filter(u => {
     const matchSearch = u.nama.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -422,11 +433,11 @@ export default function AdminUsers({ session }: { session: any }) {
         <div className="flex items-start gap-3 min-w-0">
           <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/15 text-amber-300 ring-1 ring-amber-400/20"><Lock size={19}/></div>
           <div className="min-w-0">
-            <h3 className="text-sm font-black text-amber-200">Default Password Anggota</h3>
-            <p className="mt-0.5 text-[10px] sm:text-xs leading-5 text-slate-400">Kelola status password anggota. Password disimpan sebagai hash dan tidak ditampilkan di halaman.</p>
+            <h3 className="text-sm font-black text-amber-200">Password Default & Keamanan Anggota</h3>
+            <p className="mt-0.5 text-[10px] sm:text-xs leading-5 text-slate-400">Semua anggota baru/default login memakai password awal dan wajib membuat password pribadi pada login pertama. Password pribadi disimpan sebagai hash.</p>
             <div className="mt-1 flex flex-wrap gap-2 text-[9px] font-bold">
-              <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-emerald-300">● {passwordReadyCount} password aktif</span>
-              {passwordPendingCount > 0 && <span className="rounded-full bg-amber-500/10 px-2.5 py-1 text-amber-300">● {passwordPendingCount} belum diset</span>}
+              <span className="rounded-full bg-amber-500/10 px-2.5 py-1 text-amber-300">● {defaultPasswordCount} wajib ganti password</span>
+              <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-emerald-300">● {customPasswordCount} password pribadi</span>
             </div>
           </div>
         </div>
@@ -561,8 +572,8 @@ export default function AdminUsers({ session }: { session: any }) {
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
                         user.hasPassword ? 'text-emerald-400 bg-emerald-500/10' : 'text-amber-400 bg-amber-500/10'
                       }`}>
-                        {user.hasPassword ? <CheckCircle size={12} /> : <AlertTriangle size={12} />}
-                        {user.hasPassword ? 'Password Aktif' : 'Belum Set Password'}
+                        {user.mustChangePassword ? <AlertTriangle size={12} /> : (user.hasPassword ? <CheckCircle size={12} /> : <Lock size={12} />)}
+                        {user.mustChangePassword ? 'Wajib Ganti Password' : (user.hasPassword ? 'Password Pribadi' : 'Default Login')}
                       </span>
 
                       <div className="flex items-center gap-1.5">
@@ -899,7 +910,7 @@ export default function AdminUsers({ session }: { session: any }) {
               </div>
 
               <div>
-                <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1 block">Password Login (Terenkripsi)</label>
+                <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1 block">Password Login (Terenkripsi & Aman)</label>
                 <input
                   type="password"
                   minLength={8}
@@ -909,7 +920,7 @@ export default function AdminUsers({ session }: { session: any }) {
                   placeholder="Minimal 8 karakter"
                   className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 font-semibold"
                 />
-                <p className="text-[10px] text-slate-500 mt-1">Password digunakan anggota untuk login ke portal klub. Password disimpan sebagai hash, bukan plaintext.</p>
+                <p className="text-[10px] text-slate-500 mt-1">Untuk anggota, kosongkan bila ingin kembali ke password default. Password default akan berlaku pada login pertama dan anggota wajib menggantinya. Password tidak disimpan sebagai plaintext.</p>
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/5">
