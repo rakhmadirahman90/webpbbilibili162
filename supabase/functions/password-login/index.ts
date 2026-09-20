@@ -19,16 +19,70 @@ const normalizePhone = (raw: string) => {
   return digits;
 };
 
-const hashPassword = async (salt: string, password: string) => {
-  const data = new TextEncoder().encode(salt + ":" + password);
-  const digest = await crypto.subtle.digest("SHA-256", data);
-  return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, "0")).join("");
+const PBKDF2_ITERATIONS = 600000;
+
+const toBase64Url = (bytes: Uint8Array) => {
+  let binary = "";
+  bytes.forEach((b) => { binary += String.fromCharCode(b); });
+  return btoa(binary).replace(/\\+/g, "-").replace(/\\//g, "_").replace(/=+$/g, "");
 };
 
-const createSalt = () => {
-  const bytes = new Uint8Array(16);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes).map(b => b.toString(16).padStart(2, "0")).join("");
+const fromBase64Url = (value: string) => {
+  const normalized = value.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - value.length % 4) % 4);
+  const binary = atob(normalized);
+  return Uint8Array.from(binary, (c) => c.charCodeAt(0));
+};
+
+const derivePasswordBytes = async (password: string, salt: Uint8Array, iterations: number) => {
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
+  const bits = await crypto.subtle.deriveBits(
+    { name: "PBKDF2", salt, iterations, hash: "SHA-256" },
+    key,
+    256,
+  );
+  return new Uint8Array(bits);
+};
+
+const hashPassword = async (password: string) => {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const derived = await derivePasswordBytes(password, salt, PBKDF2_ITERATIONS);
+  return {
+    hash: `pbkdf2$sha256${PBKDF2_ITERATIONS}${toBase64Url(salt)}${toBase64Url(derived)}`,
+    salt: toBase64Url(salt),
+  };
+};
+
+const verifyPassword = async (password: string, storedHash: string) => {
+  if (!storedHash) return false;
+
+  // New format: pbkdf2$sha256$iterations$salt$derived
+  const parts = storedHash.split("$");
+  if (parts.length === 5 && parts[0] === "pbkdf2" && parts[1] === "sha256") {
+    const iterations = Number(parts[2]);
+    if (!Number.isFinite(iterations) || iterations < 100000) return false;
+    const salt = fromBase64Url(parts[3]);
+    const expected = fromBase64Url(parts[4]);
+    const actual = await derivePasswordBytes(password, salt, iterations);
+    if (actual.length !== expected.length) return false;
+    let diff = 0;
+    for (let i = 0; i < actual.length; i++) diff |= actual[i] ^ expected[i];
+    return diff === 0;
+  }
+
+  // Legacy format produced by the previous admin UI.
+  const legacy = storedHash.match(/^pbkdf2\\$sha256(\\d+)([A-Za-z0-9_-]{22})([A-Za-z0-9_-]{43})$/);
+  if (legacy) {
+    const iterations = Number(legacy[1]);
+    const salt = fromBase64Url(legacy[2]);
+    const expected = fromBase64Url(legacy[3]);
+    const actual = await derivePasswordBytes(password, salt, iterations);
+    if (actual.length !== expected.length) return false;
+    let diff = 0;
+    for (let i = 0; i < actual.length; i++) diff |= actual[i] ^ expected[i];
+    return diff === 0;
+  }
+
+  return false;
 };
 
 const safeUser = (row: any, role = "member") => ({
@@ -134,8 +188,7 @@ export default {
 
       const valid = firstLogin
         ? password === "bili2162"
-        : !!member.password_hash && !!member.password_salt &&
-          (await hashPassword(member.password_salt, password)) === member.password_hash;
+        : await verifyPassword(password, member.password_hash || "");
 
       if (!valid) {
         return json({ ok: false, message: "Nomor WhatsApp atau password tidak sesuai." }, 401);
@@ -152,11 +205,10 @@ export default {
           return json({ ok: false, message: "Password baru harus berbeda dari password default." }, 400);
         }
 
-        const salt = createSalt();
-        const passwordHash = await hashPassword(salt, newPassword);
+        const generated = await hashPassword(newPassword);
         const { error: updateError } = await supabaseAdmin
           .from("pendaftaran")
-          .update({ password_hash: passwordHash, password_salt: salt, must_change_password: false })
+          .update({ password_hash: generated.hash, password_salt: generated.salt, must_change_password: false, password_changed_at: new Date().toISOString() })
           .eq("id", member.id);
 
         if (updateError) {
