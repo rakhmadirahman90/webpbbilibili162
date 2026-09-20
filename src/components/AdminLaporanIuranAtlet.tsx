@@ -61,6 +61,16 @@ const PAYMENT_CATEGORIES = [
   'Pembayaran Iuran Binaan',
 ];
 
+// Kategori penerimaan yang tersedia pada kas PB. Filter ini terpisah
+// dari kategori atlet agar admin dapat menelusuri sumber penerimaan.
+const DEFAULT_INCOME_CATEGORIES = [
+  'Iuran Bulanan Tetap (10k)',
+  'Pembayaran Iuran Binaan',
+  'Pembayaran Shuttlecock',
+  'Pendaftaran Atlet Baru',
+  'Sumbangan Sukarela',
+];
+
 const ACTIVE_STATUSES = ['aktif', 'verified', 'Diterima', 'diterima', 'active'];
 
 // Tahun 2026 mulai melakukan rekap iuran pada bulan September.
@@ -170,6 +180,7 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'lunas' | 'belum'>('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
+  const [incomeCategoryFilter, setIncomeCategoryFilter] = useState('all');
   const [members, setMembers] = useState<Member[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -277,6 +288,14 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
     [members]
   );
 
+  const incomeCategoryOptions = useMemo(() => {
+    const categories = new Set(DEFAULT_INCOME_CATEGORIES);
+    transactions.forEach((transaction) => {
+      if (transaction.kategori?.trim()) categories.add(transaction.kategori.trim());
+    });
+    return Array.from(categories).sort((a, b) => a.localeCompare(b, 'id'));
+  }, [transactions]);
+
   const reports = useMemo<PlayerReport[]>(() => {
     return members.map((member) => {
       const memberTransactions = transactions.filter(
@@ -336,10 +355,19 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
       const matchesStatus =
         statusFilter === 'all' || (statusFilter === 'lunas' ? item.paid : !item.paid);
       const matchesCategory = categoryFilter === 'all' || item.kategori_atlet === categoryFilter;
+      const matchesIncomeCategory =
+        incomeCategoryFilter === 'all' ||
+        item.allTransactions.some((transaction) => {
+          if (transaction.kategori !== incomeCategoryFilter) return false;
+          const transactionYear = yearFromDate(transaction.tanggal_transaksi);
+          if (transactionYear !== selectedYear) return false;
+          const months = parseMonthsFromNote(transaction.keterangan);
+          return months.includes(selectedMonth) || monthFromDate(transaction.tanggal_transaksi) === monthIndex;
+        });
       const matchesRole = isAdmin || normalizeName(item.nama) === loggedName;
-      return matchesSearch && matchesStatus && matchesCategory && matchesRole;
+      return matchesSearch && matchesStatus && matchesCategory && matchesIncomeCategory && matchesRole;
     });
-  }, [reports, search, statusFilter, categoryFilter, isAdmin, loggedInMemberName]);
+  }, [reports, search, statusFilter, categoryFilter, incomeCategoryFilter, selectedMonth, selectedYear, monthIndex, isAdmin, loggedInMemberName]);
 
   const totalPlayers = filteredReports.length;
   const totalPaid = filteredReports.filter((item) => item.paid).length;
@@ -475,7 +503,7 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
           <div className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-300">
             <Filter size={14} className="text-blue-400" /> Filter Laporan
           </div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-6">
             <label className="block">
               <span className="mb-1.5 block text-[9px] font-black uppercase tracking-wider text-slate-500">Bulan</span>
               <select value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} className="h-11 w-full rounded-xl border border-white/10 bg-[#0a1528] px-3 text-sm font-bold text-white outline-none focus:border-blue-500">
@@ -503,6 +531,13 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
                 {categoryOptions.map((category) => <option key={category} value={category}>{category}</option>)}
               </select>
             </label>
+            <label className="block">
+              <span className="mb-1.5 block text-[9px] font-black uppercase tracking-wider text-slate-500">Kategori Penerimaan</span>
+              <select value={incomeCategoryFilter} onChange={(e) => setIncomeCategoryFilter(e.target.value)} className="h-11 w-full rounded-xl border border-white/10 bg-[#0a1528] px-3 text-sm font-bold text-white outline-none focus:border-blue-500">
+                <option value="all">Semua Penerimaan</option>
+                {incomeCategoryOptions.map((category) => <option key={category} value={category}>{category}</option>)}
+              </select>
+            </label>
             <label className="block lg:col-span-1">
               <span className="mb-1.5 block text-[9px] font-black uppercase tracking-wider text-slate-500">Cari Atlet</span>
               <div className="flex h-11 items-center gap-2 rounded-xl border border-white/10 bg-[#0a1528] px-3 focus-within:border-blue-500">
@@ -514,9 +549,9 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-2 text-[9px] font-bold text-slate-500">
             <CalendarDays size={13} className="text-blue-400" />
-            Menampilkan <span className="text-slate-300">{filteredReports.length}</span> atlet untuk <span className="text-slate-300">{selectedMonth} {selectedYear}</span>.
+            Menampilkan <span className="text-slate-300">{filteredReports.length}</span> atlet untuk <span className="text-slate-300">{selectedMonth} {selectedYear}</span>{incomeCategoryFilter !== 'all' && <> dengan penerimaan <span className="text-blue-300">{incomeCategoryFilter}</span></>}.
             {selectedYear === 2026 && <span className="text-amber-300"> Rekap 2026 dimulai September.</span>}
-            <button type="button" onClick={() => { setStatusFilter('all'); setCategoryFilter('all'); setSearch(''); }} className="ml-auto rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 font-black uppercase tracking-wider text-slate-300 hover:bg-white/10">Reset Filter</button>
+            <button type="button" onClick={() => { setStatusFilter('all'); setCategoryFilter('all'); setIncomeCategoryFilter('all'); setSearch(''); }} className="ml-auto rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 font-black uppercase tracking-wider text-slate-300 hover:bg-white/10">Reset Filter</button>
           </div>
         </section>
 
