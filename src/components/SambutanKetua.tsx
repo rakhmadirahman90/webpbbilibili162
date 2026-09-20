@@ -24,11 +24,10 @@ const bust = (url: string, stamp?: string) => {
 };
 
 const SambutanKetua = () => {
-  const [config, setConfig] = useState<SambutanConfig>({
-    nama: 'H. Wawan', jabatan: 'Ketua Umum PB Bilibili 162', label: 'Sambutan Pimpinan',
-    judul: 'Sambutan Ketua Umum', deskripsi: DEFAULT_TEXT, foto_url: DEFAULT_IMAGE
-  });
-  const [imageSrc, setImageSrc] = useState(DEFAULT_IMAGE);
+  const [config, setConfig] = useState<SambutanConfig | null>(null);
+  const [imageSrc, setImageSrc] = useState('');
+  const [imageReady, setImageReady] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const load = async () => {
     try {
@@ -36,8 +35,15 @@ const SambutanKetua = () => {
       let parsed: any = raw;
       if (typeof parsed === 'string') { try { parsed = JSON.parse(parsed); } catch { parsed = null; } }
       if (parsed && typeof parsed === 'object') {
-        setConfig(prev => ({ ...prev, ...parsed }));
-        if (parsed.foto_url) setImageSrc(bust(parsed.foto_url, parsed.updated_at));
+        const nextConfig = { ...parsed };
+        setConfig(nextConfig);
+        if (nextConfig.foto_url) {
+          setImageReady(false);
+          setImageSrc(bust(nextConfig.foto_url, nextConfig.updated_at || Date.now()));
+        } else {
+          setImageSrc('');
+          setImageReady(false);
+        }
       }
     } catch (error) { console.warn('Gagal memuat sambutan ketua:', error); }
   };
@@ -50,22 +56,49 @@ const SambutanKetua = () => {
         let parsed: any = raw;
         if (typeof parsed === 'string') { try { parsed = JSON.parse(parsed); } catch { parsed = null; } }
         if (!mounted || !parsed || typeof parsed !== 'object') return;
-        setConfig(prev => ({ ...prev, ...parsed }));
-        if (parsed.foto_url) setImageSrc(bust(parsed.foto_url, parsed.updated_at));
+        const nextConfig = { ...parsed };
+        setConfig(nextConfig);
+        if (nextConfig.foto_url) {
+          setImageReady(false);
+          setImageSrc(bust(nextConfig.foto_url, nextConfig.updated_at || Date.now()));
+        } else {
+          setImageSrc('');
+          setImageReady(false);
+        }
       } catch (error) { console.warn('Gagal memuat sambutan ketua:', error); }
     };
-    initialLoad();
+    initialLoad().finally(() => { if (mounted) setLoading(false); });
     const handler = (event: any) => {
       if (event.detail?.key !== 'sambutan_ketua') return;
       const value = event.detail?.value;
       if (value && typeof value === 'object') {
-        setConfig(prev => ({ ...prev, ...value }));
-        if (value.foto_url) setImageSrc(bust(value.foto_url, value.updated_at));
+        const nextConfig = { ...value };
+        setConfig(nextConfig);
+        if (nextConfig.foto_url) {
+          setImageReady(false);
+          setImageSrc(bust(nextConfig.foto_url, nextConfig.updated_at || Date.now()));
+        } else {
+          setImageSrc('');
+          setImageReady(false);
+        }
       } else load();
     };
     window.addEventListener('site_setting_updated', handler);
     return () => { mounted = false; window.removeEventListener('site_setting_updated', handler); };
   }, []);
+
+  if (loading || !config) {
+    return (
+      <section className="bg-[#070d1a] text-white py-10 md:py-20 border-t border-white/5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center animate-pulse">
+            <div className="w-full max-w-xs sm:max-w-sm md:max-w-full mx-auto aspect-[4/5] rounded-2xl bg-slate-800/60" />
+            <div className="space-y-4"><div className="h-5 w-40 rounded bg-slate-800/60" /><div className="h-10 w-3/4 rounded bg-slate-800/60" /><div className="h-24 w-full rounded bg-slate-800/60" /></div>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   const paragraphs = (config.deskripsi || DEFAULT_TEXT).split(/\n\s*\n/).filter(Boolean);
 
@@ -75,7 +108,21 @@ const SambutanKetua = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center">
           <div className="relative max-w-xs sm:max-w-sm md:max-w-full mx-auto w-full">
-            <img key={imageSrc} src={imageSrc} alt={`${config.nama || 'Ketua'} - ${config.jabatan || 'Ketua Umum PB Bilibili 162'}`} className="rounded-2xl shadow-2xl border border-white/10 w-full h-auto object-cover aspect-[4/5]" loading="eager" decoding="async" onError={() => setImageSrc(DEFAULT_IMAGE)} />
+            {imageSrc && (
+              <div className="relative w-full aspect-[4/5] rounded-2xl bg-slate-900 overflow-hidden">
+                {!imageReady && <div className="absolute inset-0 animate-pulse bg-slate-800/70" />}
+                <img
+                  key={imageSrc}
+                  src={imageSrc}
+                  alt={(config.nama || 'Ketua') + ' - ' + (config.jabatan || 'Ketua Umum PB Bilibili 162')}
+                  className={imageReady ? 'rounded-2xl shadow-2xl border border-white/10 w-full h-full object-cover transition-opacity duration-300 opacity-100' : 'rounded-2xl shadow-2xl border border-white/10 w-full h-full object-cover transition-opacity duration-300 opacity-0'}
+                  loading="eager"
+                  decoding="async"
+                  onLoad={() => setImageReady(true)}
+                  onError={() => { setImageReady(false); setImageSrc(''); }}
+                />
+              </div>
+            )}
             <div className="absolute -bottom-4 -left-4 w-24 h-24 bg-blue-600/20 rounded-full blur-xl -z-10" />
           </div>
           <div className="space-y-4 sm:space-y-6">
