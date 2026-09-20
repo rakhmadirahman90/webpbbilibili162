@@ -1099,6 +1099,90 @@ export default function AdminRekapKeuangan({ isAdmin = true, session }: AdminRek
         )}
       </div>
 
+
+      {/* Mobile Member Detail List */}
+      <section className="md:hidden rounded-2xl border border-blue-500/20 bg-[#0b1224]/95 shadow-xl overflow-hidden">
+        <div className="px-4 py-3 border-b border-white/5 bg-blue-500/[0.04]">
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              <h3 className="text-sm font-black uppercase tracking-wider text-white">Rincian Peserta / Anggota</h3>
+              <p className="mt-1 text-[9px] font-bold text-slate-500">Seluruh rincian tampil sebagai kartu tanpa perlu geser ke samping.</p>
+            </div>
+            <span className="shrink-0 rounded-full bg-blue-500/10 px-2.5 py-1 text-[9px] font-black text-blue-300">{filteredRecaps.length} DATA</span>
+          </div>
+        </div>
+        <div className="p-3 space-y-2.5">
+          {loading ? (
+            <div className="py-10 text-center">
+              <Loader2 className="mx-auto animate-spin text-blue-500" size={28} />
+              <p className="mt-2 text-[9px] font-black uppercase tracking-wider text-slate-500">Memuat data peserta...</p>
+            </div>
+          ) : currentItems.length === 0 ? (
+            <div className="py-10 text-center">
+              <Search size={30} className="mx-auto text-slate-600" />
+              <p className="mt-2 text-[9px] font-black uppercase tracking-wider text-slate-500">Data peserta tidak ditemukan</p>
+            </div>
+          ) : currentItems.map((item) => (
+            <article key={item.id} className="rounded-2xl border border-white/10 bg-[#0e1729] p-3.5 shadow-lg">
+              <div className="flex items-start gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-500/15 ring-1 ring-blue-400/20 text-sm font-black text-blue-300">
+                  {(item.nama || '?').trim().slice(0, 2).toUpperCase()}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h4 className="truncate text-sm font-black uppercase text-white">{item.nama}</h4>
+                  <p className="mt-1 truncate text-[9px] font-bold text-slate-500">
+                    {item.kategoriAtlet || 'Kategori belum diisi'} • {item.kategoriUmur || '-'} • {item.whatsapp || 'WhatsApp belum diisi'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <div className="rounded-xl bg-black/20 p-2.5 border border-white/5">
+                  <p className="text-[8px] font-black uppercase tracking-wider text-slate-500">Total Masuk</p>
+                  <p className="mt-1 text-sm font-black text-blue-300">Rp {item.totalPemasukan.toLocaleString()}</p>
+                </div>
+                <div className="rounded-xl bg-black/20 p-2.5 border border-white/5">
+                  <p className="text-[8px] font-black uppercase tracking-wider text-slate-500">Saldo Kas</p>
+                  <p className={`mt-1 text-sm font-black ${item.saldo >= 0 ? 'text-emerald-300' : 'text-red-300'}`}>Rp {item.saldo.toLocaleString()}</p>
+                </div>
+                <div className="rounded-xl bg-black/20 p-2.5 border border-white/5">
+                  <p className="text-[8px] font-black uppercase tracking-wider text-slate-500">Iuran Bulanan</p>
+                  <p className="mt-1 text-xs font-black text-slate-200">Rp {item.iuranBulanan.toLocaleString()}</p>
+                </div>
+                <div className="rounded-xl bg-black/20 p-2.5 border border-white/5">
+                  <p className="text-[8px] font-black uppercase tracking-wider text-slate-500">Iuran Binaan</p>
+                  <p className="mt-1 text-xs font-black text-slate-200">Rp {item.iuranBinaan.toLocaleString()}</p>
+                </div>
+              </div>
+
+              <div className="mt-2 grid grid-cols-3 gap-2">
+                <div className="rounded-lg bg-white/[0.025] px-2 py-2">
+                  <p className="text-[7px] font-black uppercase text-slate-600">Shuttlecock</p>
+                  <p className="mt-0.5 text-[10px] font-bold text-slate-300">Rp {item.shuttlecock.toLocaleString()}</p>
+                </div>
+                <div className="rounded-lg bg-white/[0.025] px-2 py-2">
+                  <p className="text-[7px] font-black uppercase text-slate-600">Pendaftaran</p>
+                  <p className="mt-0.5 text-[10px] font-bold text-slate-300">Rp {item.pendaftaranBaru.toLocaleString()}</p>
+                </div>
+                <div className="rounded-lg bg-white/[0.025] px-2 py-2">
+                  <p className="text-[7px] font-black uppercase text-slate-600">Sumbangan</p>
+                  <p className="mt-0.5 text-[10px] font-bold text-slate-300">Rp {item.sumbangan.toLocaleString()}</p>
+                </div>
+              </div>
+
+              <button type="button" onClick={() => handleOpenManageModal(item)} className="mt-3 w-full min-h-10 rounded-xl bg-blue-600/15 text-[10px] font-black uppercase tracking-wider text-blue-300 ring-1 ring-blue-500/20 hover:bg-blue-600 hover:text-white active:scale-[0.99] transition-all">
+                Lihat Detail & Rincian
+              </button>
+            </article>
+          ))}
+        </div>
+        {totalPages > 1 && (
+          <div className="border-t border-white/5 px-3 py-2 text-center text-[9px] font-bold text-slate-500">
+            Halaman {currentPage} / {totalPages}
+          </div>
+        )}
+      </section>
+
       {/* Main Table Container */}
       <div className="bg-[#0b1224]/90 border border-white/10 rounded-2xl overflow-hidden flex flex-col flex-1 min-h-[400px] shadow-xl">
         <div className="p-3 sm:p-5 border-b border-white/5 flex items-center justify-between shrink-0 bg-black/20">
