@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, Building2, CreditCard, ShieldCheck, Copy, CheckCircle2, Info, Smartphone, Landmark } from 'lucide-react';
+import { Building2, CreditCard, ShieldCheck, Copy, CheckCircle2, Info, Landmark } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const BSI_ACCOUNT = '7372006514';
@@ -8,12 +8,6 @@ const QRIS_IMAGE = '/qris-pb-bilibili-162.svg?v=20260920';
 
 export default function InformasiRekeningQris() {
   const [copied, setCopied] = React.useState(false);
-
-  const goHome = () => {
-    window.history.pushState({}, '', '/');
-    window.dispatchEvent(new PopStateEvent('popstate'));
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
 
   const copyAccount = async () => {
     try {
@@ -24,156 +18,160 @@ export default function InformasiRekeningQris() {
   };
 
   return (
-    <main className="min-h-screen bg-[#f4f7fb] text-slate-900">
-      {/* Header */}
-      <section className="relative overflow-hidden bg-[#061a36] text-white">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_10%_0%,rgba(37,153,255,.25),transparent_34%),radial-gradient(circle_at_100%_100%,rgba(0,205,255,.12),transparent_35%)]" />
-        <div className="absolute -right-24 -top-28 h-72 w-72 rounded-full bg-blue-500/15 blur-3xl" />
-        <div className="relative mx-auto max-w-6xl px-4 pb-9 pt-7 sm:px-6 lg:px-8 lg:pb-12 lg:pt-9">
-          <button
-            type="button"
-            onClick={goHome}
-            className="mb-7 inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/10 bg-white/[.06] px-3.5 text-xs font-bold text-slate-200 transition hover:bg-white/10"
-          >
-            <ArrowLeft size={15} /> Beranda
-          </button>
+    <section className="w-full min-h-full bg-[#070d1a] text-white relative overflow-hidden py-1 sm:py-3 md:py-6">
+      <div className="absolute top-0 right-0 w-[280px] sm:w-[500px] h-[280px] sm:h-[500px] bg-blue-600/10 blur-[90px] rounded-full pointer-events-none -mr-20 -mt-20" />
+      <div className="absolute bottom-0 left-0 w-[280px] sm:w-[400px] h-[280px] sm:h-[400px] bg-indigo-600/10 blur-[90px] rounded-full pointer-events-none -ml-20 -mb-20" />
 
-          <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1.5 text-[9px] font-black uppercase tracking-[.2em] text-cyan-300">
-              <ShieldCheck size={13} /> Transaksi Resmi
-            </div>
-            <h1 className="mt-4 text-3xl font-black tracking-tight sm:text-4xl lg:text-5xl">
-              Rekening <span className="text-cyan-400">&amp; QRIS</span>
-            </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300 sm:text-base">
-              Gunakan rekening dan QRIS resmi PB Bilibili 162. Pastikan nama penerima sesuai sebelum transaksi.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-6xl px-4 py-5 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
-        <div className="grid gap-5 lg:grid-cols-[.82fr_1.18fr]">
-          {/* Account */}
-          <motion.section
-            initial={{ opacity: 0, y: 14 }}
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-2.5 sm:px-4 md:px-6 flex flex-col">
+        {/* Consistent public-information header */}
+        <div className="text-center mb-3 sm:mb-4 lg:mb-6 shrink-0">
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_15px_45px_rgba(15,23,42,.08)]"
+            className="inline-flex items-center gap-1.5 bg-blue-600/10 border border-blue-500/20 px-3 py-1 rounded-full mb-1"
           >
-            <div className="bg-gradient-to-br from-[#07539b] to-[#0b75bd] px-5 py-5 text-white sm:px-7">
-              <div className="flex items-center gap-3.5">
-                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-white/15 ring-1 ring-white/10">
-                  <Landmark size={24} />
-                </span>
-                <div className="min-w-0">
-                  <p className="text-[9px] font-black uppercase tracking-[.2em] text-blue-100">Rekening Resmi</p>
-                  <h2 className="mt-1 text-lg font-black sm:text-xl">Bank Syariah Indonesia</h2>
+            <CreditCard size={12} className="text-blue-400" />
+            <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] text-blue-400">
+              Informasi Transaksi Resmi
+            </span>
+          </motion.div>
+
+          <motion.h2
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="text-lg sm:text-2xl md:text-4xl lg:text-5xl font-black tracking-tighter italic uppercase text-white"
+          >
+            REKENING <span className="text-blue-500">&amp; QRIS</span>
+          </motion.h2>
+
+          <p className="text-slate-400 max-w-xl mx-auto uppercase tracking-widest text-[8px] sm:text-[10px] md:text-xs font-bold mt-0.5">
+            Informasi Pembayaran Resmi PB Bilibili 162 Parepare
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 sm:gap-4 md:gap-6 items-stretch">
+          {/* Rekening */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="lg:col-span-5 bg-[#0b1224]/90 p-3 sm:p-5 md:p-6 rounded-2xl md:rounded-3xl border border-white/10 backdrop-blur-xl shadow-xl overflow-hidden relative"
+          >
+            <div className="absolute top-0 right-0 w-28 h-28 bg-blue-500/10 blur-2xl pointer-events-none" />
+
+            <div className="flex items-center justify-between pb-2 sm:pb-2.5 border-b border-white/10 mb-3 sm:mb-4 relative">
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-5 sm:h-6 bg-blue-500 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.6)]" />
+                <div className="flex items-center gap-1.5 text-blue-400 font-black text-xs sm:text-base md:text-lg uppercase tracking-tight italic">
+                  <Landmark size={16} />
+                  <span>Rekening Resmi</span>
                 </div>
               </div>
+              <span className="hidden xs:inline-flex items-center gap-1 text-[8px] sm:text-[9px] font-black uppercase tracking-wider text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-1 rounded-full">
+                <ShieldCheck size={11} /> Resmi
+              </span>
             </div>
 
-            <div className="p-5 sm:p-7">
-              <div className="rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 to-slate-50 p-4 sm:p-5">
-                <p className="text-[10px] font-black uppercase tracking-widest text-blue-600">Nama Rekening</p>
-                <p className="mt-1.5 text-lg font-black text-slate-900 sm:text-xl">{BSI_ACCOUNT_NAME}</p>
+            <div className="relative space-y-2.5 sm:space-y-3">
+              <div className="bg-white/5 border border-white/5 rounded-xl p-3 sm:p-4">
+                <p className="text-[8px] sm:text-[9px] text-slate-500 uppercase tracking-widest font-black">Nama Rekening</p>
+                <p className="mt-1 text-sm sm:text-base md:text-lg font-black text-white">{BSI_ACCOUNT_NAME}</p>
               </div>
 
-              <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
-                <div className="flex items-start gap-3">
-                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-100 text-blue-700">
-                    <CreditCard size={19} />
+              <div className="bg-white/5 border border-blue-500/15 rounded-xl p-3 sm:p-4">
+                <div className="flex items-start gap-2.5">
+                  <span className="w-9 h-9 shrink-0 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+                    <CreditCard size={17} />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Nomor Rekening</p>
-                    <p className="mt-1 break-all text-xl font-black tracking-[.08em] text-[#06295a] sm:text-2xl">{BSI_ACCOUNT}</p>
+                    <p className="text-[8px] sm:text-[9px] text-slate-500 uppercase tracking-widest font-black">Nomor Rekening</p>
+                    <p className="mt-1 text-xl sm:text-2xl font-black tracking-[.08em] text-white break-all">{BSI_ACCOUNT}</p>
                     <button
                       type="button"
                       onClick={copyAccount}
-                      className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-xl bg-[#07539b] px-3.5 py-2 text-[10px] font-black uppercase tracking-wide text-white transition hover:bg-[#064782] active:scale-[.98]"
+                      className="mt-2.5 inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 px-3 py-2 text-[9px] font-black uppercase tracking-wider text-white transition-colors"
                     >
-                      {copied ? <CheckCircle2 size={14} /> : <Copy size={14} />}
+                      {copied ? <CheckCircle2 size={13} /> : <Copy size={13} />}
                       {copied ? 'Tersalin' : 'Salin Rekening'}
                     </button>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-4 grid grid-cols-2 gap-3">
-                <div className="rounded-2xl border border-slate-200 p-3.5">
-                  <Building2 size={18} className="text-blue-600" />
-                  <p className="mt-2 text-[9px] font-black uppercase tracking-widest text-slate-400">Bank</p>
-                  <p className="mt-1 text-xs font-bold leading-5 text-slate-800">BSI</p>
+              <div className="grid grid-cols-2 gap-2.5">
+                <div className="bg-white/5 border border-white/5 rounded-xl p-3">
+                  <Building2 size={16} className="text-blue-400" />
+                  <p className="mt-1.5 text-[8px] text-slate-500 uppercase tracking-widest font-black">Bank</p>
+                  <p className="mt-0.5 text-[11px] sm:text-xs font-bold text-slate-200">BSI</p>
                 </div>
-                <div className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-3.5">
-                  <ShieldCheck size={18} className="text-emerald-600" />
-                  <p className="mt-2 text-[9px] font-black uppercase tracking-widest text-slate-400">Status</p>
-                  <p className="mt-1 text-xs font-bold leading-5 text-emerald-800">Resmi</p>
+                <div className="bg-emerald-500/5 border border-emerald-500/15 rounded-xl p-3">
+                  <ShieldCheck size={16} className="text-emerald-400" />
+                  <p className="mt-1.5 text-[8px] text-slate-500 uppercase tracking-widest font-black">Status</p>
+                  <p className="mt-0.5 text-[11px] sm:text-xs font-bold text-emerald-300">Resmi</p>
                 </div>
               </div>
 
-              <div className="mt-4 flex gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs leading-5 text-amber-900">
-                <Info size={18} className="mt-0.5 shrink-0 text-amber-600" />
-                <p>Pastikan nama penerima <b>PB BILIBILI 162</b> sebelum menyelesaikan transaksi.</p>
+              <div className="flex items-start gap-2.5 bg-blue-500/5 border border-blue-500/15 rounded-xl p-3 text-[10px] sm:text-xs leading-5 text-slate-300">
+                <Info size={15} className="mt-0.5 shrink-0 text-blue-400" />
+                <p>Pastikan nama penerima adalah <b className="text-white">PB BILIBILI 162</b> sebelum transaksi.</p>
               </div>
             </div>
-          </motion.section>
+          </motion.div>
 
           {/* QRIS */}
-          <motion.section
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: .06 }}
-            className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_15px_45px_rgba(15,23,42,.08)]"
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: .05 }}
+            className="lg:col-span-7 bg-[#0b1224]/90 p-3 sm:p-5 md:p-6 rounded-2xl md:rounded-3xl border border-white/10 backdrop-blur-xl shadow-xl overflow-hidden relative"
           >
-            <div className="flex items-center justify-between gap-3 bg-gradient-to-br from-[#07539b] to-[#0b75bd] px-5 py-5 text-white sm:px-7">
-              <div className="flex min-w-0 items-center gap-3.5">
-                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-white/15 ring-1 ring-white/10">
-                  <CreditCard size={24} />
-                </span>
-                <div className="min-w-0">
-                  <p className="text-[9px] font-black uppercase tracking-[.2em] text-blue-100">Pembayaran Digital</p>
-                  <h2 className="mt-1 text-lg font-black sm:text-xl">QRIS PB BILIBILI 162</h2>
+            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 blur-3xl pointer-events-none" />
+
+            <div className="flex items-center justify-between gap-2 pb-2 sm:pb-2.5 border-b border-white/10 mb-3 sm:mb-4 relative">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="w-1.5 h-5 sm:h-6 bg-blue-500 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.6)]" />
+                <div className="flex items-center gap-1.5 text-blue-400 font-black text-xs sm:text-base md:text-lg uppercase tracking-tight italic min-w-0">
+                  <CreditCard size={16} />
+                  <span className="truncate">QRIS Resmi</span>
                 </div>
               </div>
-              <Smartphone className="hidden shrink-0 text-cyan-200 sm:block" size={25} />
+              <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 bg-white/5 px-2 py-1 rounded-full border border-white/10 shrink-0">
+                PB BILIBILI 162
+              </span>
             </div>
 
-            <div className="p-3 sm:p-5 lg:p-6">
-              <div className="rounded-2xl border border-slate-200 bg-white p-1.5 shadow-inner sm:p-2">
-                {/* Asset QRIS ditampilkan utuh. Barcode/kode QR tidak diubah atau digambar ulang. */}
+            <div className="relative flex flex-col items-center">
+              {/* IMPORTANT: render the original QRIS asset as-is; never redraw or modify the QR code */}
+              <div className="w-full max-w-[720px] bg-white rounded-xl sm:rounded-2xl p-1.5 sm:p-2 border border-white/10 shadow-xl">
                 <img
                   src={QRIS_IMAGE}
-                  alt="QRIS resmi PB BILI BILI 162"
-                  className="mx-auto block h-auto w-full max-w-[680px] select-none object-contain"
+                  alt="QRIS resmi PB BILIBILI 162"
+                  className="block w-full h-auto object-contain select-none"
                   decoding="sync"
                   draggable="false"
                 />
               </div>
-              <div className="mt-4 flex items-start gap-3 rounded-2xl border border-blue-100 bg-blue-50 p-4">
-                <ShieldCheck size={19} className="mt-0.5 shrink-0 text-blue-600" />
-                <div className="text-xs leading-5 text-blue-900">
-                  <p className="font-black">Gunakan QRIS yang tampil di atas</p>
-                  <p className="mt-0.5 text-blue-800/80">Jangan gunakan gambar QRIS dari sumber lain untuk transaksi resmi PB BILIBILI 162.</p>
-                </div>
+              <div className="w-full max-w-[720px] mt-2.5 flex items-start gap-2.5 bg-blue-500/5 border border-blue-500/15 rounded-xl p-3 text-[9px] sm:text-[10px] leading-5 text-slate-400">
+                <ShieldCheck size={15} className="mt-0.5 shrink-0 text-blue-400" />
+                <p>Gunakan QRIS resmi PB BILIBILI 162 yang ditampilkan pada halaman ini.</p>
               </div>
             </div>
-          </motion.section>
+          </motion.div>
         </div>
 
-        <section className="mt-5 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#061a36] text-white">
-              <ShieldCheck size={21} />
+        <div className="mt-2.5 sm:mt-4 bg-[#0b1224]/90 border border-white/10 rounded-2xl p-3 sm:p-4 md:p-5 shadow-xl">
+          <div className="flex items-start gap-3">
+            <span className="w-9 h-9 shrink-0 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+              <ShieldCheck size={17} className="text-blue-400" />
             </span>
             <div className="min-w-0">
-              <h2 className="text-sm font-black text-slate-900 sm:text-base">Informasi Transaksi</h2>
-              <p className="mt-1 text-xs leading-5 text-slate-500 sm:text-sm">
-                Halaman ini hanya menyediakan informasi rekening dan QRIS resmi PB Bilibili 162. Simpan bukti transaksi Anda sebagai arsip.
+              <h3 className="text-xs sm:text-sm font-black uppercase tracking-tight italic text-white">Informasi Penting</h3>
+              <p className="mt-1 text-[9px] sm:text-[10px] md:text-xs leading-5 text-slate-400">
+                Halaman ini hanya menampilkan rekening dan QRIS resmi PB Bilibili 162. Simpan bukti transaksi Anda sebagai arsip.
               </p>
             </div>
           </div>
-        </section>
-      </section>
-    </main>
+        </div>
+      </div>
+    </section>
   );
 }
