@@ -48,6 +48,8 @@ type PlayerReport = Member & {
   monthlyCategory: string;
   monthlyTransactions: Transaction[];
   allTransactions: Transaction[];
+  incomeTransactions: Transaction[];
+  incomeAmount: number;
   totalContributions: number;
 };
 
@@ -162,6 +164,18 @@ const yearFromDate = (date?: string | null) => {
   if (!date) return -1;
   const parsed = new Date(date);
   return Number.isNaN(parsed.getTime()) ? -1 : parsed.getFullYear();
+};
+
+const isTransactionInPeriod = (
+  transaction: Transaction,
+  selectedMonth: string,
+  selectedYear: number,
+  monthIndex: number
+) => {
+  const transactionYear = yearFromDate(transaction.tanggal_transaksi);
+  if (transactionYear !== selectedYear) return false;
+  const months = parseMonthsFromNote(transaction.keterangan);
+  return months.includes(selectedMonth) || monthFromDate(transaction.tanggal_transaksi) === monthIndex;
 };
 
 const formatDate = (date?: string | null) =>
@@ -298,17 +312,24 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
         (transaction) => normalizeName(transaction.nama_pembayar) === normalizeName(member.nama)
       );
 
-      const monthlyTransactions = memberTransactions.filter((transaction) => {
-        if (!PAYMENT_CATEGORIES.includes(transaction.kategori)) return false;
-        const months = parseMonthsFromNote(transaction.keterangan);
-        const transactionYear = yearFromDate(transaction.tanggal_transaksi);
-        const taggedMonth =
-          transactionYear === selectedYear && months.includes(selectedMonth);
-        const datedMonth =
-          monthFromDate(transaction.tanggal_transaksi) === monthIndex &&
-          transactionYear === selectedYear;
-        return taggedMonth || datedMonth;
-      });
+      // Status Iuran hanya dihitung dari kategori iuran bulanan/binaan.
+      // Filter Kategori Penerimaan diproses terpisah.
+      const monthlyTransactions = memberTransactions.filter((transaction) =>
+        PAYMENT_CATEGORIES.includes(transaction.kategori) &&
+        transaction.jenis_transaksi === 'Masuk' &&
+        isTransactionInPeriod(transaction, selectedMonth, selectedYear, monthIndex)
+      );
+
+      // Semua penerimaan pada periode berjalan dikumpulkan terpisah dari status iuran.
+      const incomeTransactions = memberTransactions.filter((transaction) =>
+        transaction.jenis_transaksi === 'Masuk' &&
+        isTransactionInPeriod(transaction, selectedMonth, selectedYear, monthIndex)
+      );
+
+      const incomeAmount = incomeTransactions.reduce(
+        (sum, transaction) => sum + Number(transaction.jumlah_bayar || 0),
+        0
+      );
 
       const paidAmount = monthlyTransactions.reduce(
         (sum, transaction) => sum + Number(transaction.jumlah_bayar || 0),
@@ -339,6 +360,8 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
         monthlyCategory,
         monthlyTransactions,
         allTransactions: memberTransactions,
+        incomeTransactions,
+        incomeAmount,
         totalContributions,
       };
     });
@@ -351,15 +374,11 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
       const matchesStatus =
         statusFilter === 'all' || (statusFilter === 'lunas' ? item.paid : !item.paid);
       const matchesCategory = categoryFilter === 'all' || item.kategori_atlet === categoryFilter;
+      // Kategori Penerimaan adalah filter independen dari Status Iuran.
+      // Status Iuran tetap ditentukan oleh monthlyTransactions di atas.
       const matchesIncomeCategory =
         incomeCategoryFilter === 'all' ||
-        item.allTransactions.some((transaction) => {
-          if (transaction.kategori !== incomeCategoryFilter) return false;
-          const transactionYear = yearFromDate(transaction.tanggal_transaksi);
-          if (transactionYear !== selectedYear) return false;
-          const months = parseMonthsFromNote(transaction.keterangan);
-          return months.includes(selectedMonth) || monthFromDate(transaction.tanggal_transaksi) === monthIndex;
-        });
+        item.incomeTransactions.some((transaction) => transaction.kategori === incomeCategoryFilter);
       const matchesRole = isAdmin || normalizeName(item.nama) === loggedName;
       return matchesSearch && matchesStatus && matchesCategory && matchesIncomeCategory && matchesRole;
     });
@@ -513,7 +532,7 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
               </select>
             </label>
             <label className="block">
-              <span className="mb-1.5 block text-[9px] font-black uppercase tracking-wider text-slate-500">Status Pembayaran</span>
+              <span className="mb-1.5 block text-[9px] font-black uppercase tracking-wider text-slate-500">Status Iuran</span>
               <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)} className="h-11 w-full rounded-xl border border-white/10 bg-[#0a1528] px-3 text-sm font-bold text-white outline-none focus:border-blue-500">
                 <option value="all">Semua Status</option>
                 <option value="lunas">Sudah Bayar</option>
@@ -545,7 +564,7 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-2 text-[9px] font-bold text-slate-500">
             <CalendarDays size={13} className="text-blue-400" />
-            Menampilkan <span className="text-slate-300">{filteredReports.length}</span> atlet untuk <span className="text-slate-300">{selectedMonth} {selectedYear}</span>{incomeCategoryFilter !== 'all' && <> dengan penerimaan <span className="text-blue-300">{incomeCategoryFilter}</span></>}.
+            Menampilkan <span className="text-slate-300">{filteredReports.length}</span> atlet untuk <span className="text-slate-300">{selectedMonth} {selectedYear}</span>{incomeCategoryFilter !== 'all' && <> dengan penerimaan <span className="text-blue-300">{incomeCategoryFilter}</span></>}. <span className="text-slate-500">Status Iuran dan Kategori Penerimaan adalah filter terpisah.</span>
             {selectedYear === 2026 && <span className="text-amber-300"> Rekap 2026 dimulai September.</span>}
             <button type="button" onClick={() => { setStatusFilter('all'); setCategoryFilter('all'); setIncomeCategoryFilter('all'); setSearch(''); }} className="ml-auto rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 font-black uppercase tracking-wider text-slate-300 hover:bg-white/10">Reset Filter</button>
           </div>
