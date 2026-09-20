@@ -62,6 +62,10 @@ const PAYMENT_CATEGORIES = [
 
 const ACTIVE_STATUSES = ['aktif', 'verified', 'Diterima', 'diterima', 'active'];
 
+// Tahun 2026 mulai melakukan rekap iuran pada bulan September.
+// Tahun lain tetap menggunakan Januari sebagai awal periode rekap.
+const firstMonthIndexForYear = (year: number) => (year === 2026 ? 8 : 0);
+
 const rupiah = (value: number) =>
   new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(value || 0);
 
@@ -107,6 +111,14 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
   const [loggedInMemberName, setLoggedInMemberName] = useState('');
 
   const monthIndex = MONTHS.indexOf(selectedMonth);
+  const availableMonths = MONTHS.slice(firstMonthIndexForYear(selectedYear));
+
+  useEffect(() => {
+    const firstAllowedMonth = firstMonthIndexForYear(selectedYear);
+    if (monthIndex < firstAllowedMonth) {
+      setSelectedMonth(MONTHS[firstAllowedMonth]);
+    }
+  }, [selectedYear, monthIndex]);
 
   const loadData = async () => {
     setLoading(true);
@@ -182,10 +194,12 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
       const monthlyTransactions = memberTransactions.filter((transaction) => {
         if (!PAYMENT_CATEGORIES.includes(transaction.kategori)) return false;
         const months = parseMonthsFromNote(transaction.keterangan);
-        const taggedMonth = months.includes(selectedMonth);
+        const transactionYear = yearFromDate(transaction.tanggal_transaksi);
+        const taggedMonth =
+          transactionYear === selectedYear && months.includes(selectedMonth);
         const datedMonth =
           monthFromDate(transaction.tanggal_transaksi) === monthIndex &&
-          yearFromDate(transaction.tanggal_transaksi) === selectedYear;
+          transactionYear === selectedYear;
         return taggedMonth || datedMonth;
       });
 
@@ -320,6 +334,7 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
               </h1>
               <p className="mt-1 max-w-2xl text-xs leading-5 text-slate-400 sm:text-sm">
                 Pantau status pembayaran setiap atlet per bulan dengan tampilan yang ringkas, jelas, dan nyaman dibuka dari HP maupun desktop.
+                Untuk tahun 2026, periode rekap resmi dimulai pada September.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -371,7 +386,7 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
             <label className="block">
               <span className="mb-1.5 block text-[9px] font-black uppercase tracking-wider text-slate-500">Bulan</span>
               <select value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} className="h-11 w-full rounded-xl border border-white/10 bg-[#0a1528] px-3 text-sm font-bold text-white outline-none focus:border-blue-500">
-                {MONTHS.map((month) => <option key={month} value={month}>{month}</option>)}
+                {availableMonths.map((month) => <option key={month} value={month}>{month}</option>)}
               </select>
             </label>
             <label className="block">
@@ -407,6 +422,7 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
           <div className="mt-3 flex flex-wrap items-center gap-2 text-[9px] font-bold text-slate-500">
             <CalendarDays size={13} className="text-blue-400" />
             Menampilkan <span className="text-slate-300">{filteredReports.length}</span> atlet untuk <span className="text-slate-300">{selectedMonth} {selectedYear}</span>.
+            {selectedYear === 2026 && <span className="text-amber-300"> Rekap 2026 dimulai September.</span>}
             <button type="button" onClick={() => { setStatusFilter('all'); setCategoryFilter('all'); setSearch(''); }} className="ml-auto rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 font-black uppercase tracking-wider text-slate-300 hover:bg-white/10">Reset Filter</button>
           </div>
         </section>
@@ -555,21 +571,22 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-                  {MONTHS.map((month, idx) => {
+                  {availableMonths.map((month, idx) => {
+                    const actualMonthIndex = firstMonthIndexForYear(selectedYear) + idx;
                     const paidForMonth = transactions.some((transaction) => {
                       if (normalizeName(transaction.nama_pembayar) !== normalizeName(detail.nama)) return false;
                       if (!PAYMENT_CATEGORIES.includes(transaction.kategori)) return false;
                       const months = parseMonthsFromNote(transaction.keterangan);
                       return (
                         (months.includes(month) && yearFromDate(transaction.tanggal_transaksi) === selectedYear) ||
-                        (!months.length && monthFromDate(transaction.tanggal_transaksi) === idx && yearFromDate(transaction.tanggal_transaksi) === selectedYear)
+                        (!months.length && monthFromDate(transaction.tanggal_transaksi) === actualMonthIndex && yearFromDate(transaction.tanggal_transaksi) === selectedYear)
                       );
                     });
                     return (
-                      <div key={month} className={`rounded-xl border p-2.5 text-center ${paidForMonth ? 'border-emerald-400/20 bg-emerald-400/10' : idx <= new Date().getMonth() ? 'border-red-400/20 bg-red-400/10' : 'border-white/5 bg-white/[0.02]'}`}>
+                      <div key={month} className={`rounded-xl border p-2.5 text-center ${paidForMonth ? 'border-emerald-400/20 bg-emerald-400/10' : actualMonthIndex <= new Date().getMonth() && selectedYear <= new Date().getFullYear() ? 'border-red-400/20 bg-red-400/10' : 'border-white/5 bg-white/[0.02]'}`}>
                         <p className="text-[9px] font-black uppercase text-slate-300">{month.slice(0, 3)}</p>
-                        <p className={`mt-1 text-[8px] font-black uppercase ${paidForMonth ? 'text-emerald-300' : idx <= new Date().getMonth() ? 'text-red-300' : 'text-slate-600'}`}>
-                          {paidForMonth ? 'Lunas' : idx <= new Date().getMonth() ? 'Belum' : 'Mendatang'}
+                        <p className={`mt-1 text-[8px] font-black uppercase ${paidForMonth ? 'text-emerald-300' : actualMonthIndex <= new Date().getMonth() && selectedYear <= new Date().getFullYear() ? 'text-red-300' : 'text-slate-600'}`}>
+                          {paidForMonth ? 'Lunas' : actualMonthIndex <= new Date().getMonth() && selectedYear <= new Date().getFullYear() ? 'Belum' : 'Mendatang'}
                         </p>
                       </div>
                     );
