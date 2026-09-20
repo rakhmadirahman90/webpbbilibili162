@@ -1,5 +1,5 @@
 import React from 'react';
-import { Building2, CreditCard, ShieldCheck, Copy, CheckCircle2, Info, Landmark } from 'lucide-react';
+import { Building2, CreditCard, ShieldCheck, Copy, CheckCircle2, Info, Landmark, Share2, MessageCircle, Download } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const BSI_ACCOUNT = '7372006514';
@@ -8,6 +8,19 @@ const QRIS_IMAGE = '/qris-pb-bilibili-162.svg?v=20260920';
 
 export default function InformasiRekeningQris() {
   const [copied, setCopied] = React.useState(false);
+  const [sharing, setSharing] = React.useState(false);
+  const [shareMessage, setShareMessage] = React.useState('');
+
+  const shareText = [
+    '🏸 PB BILIBILI 162 — REKENING & QRIS RESMI',
+    '',
+    'Bank: Bank Syariah Indonesia (BSI)',
+    'Nomor Rekening: ' + BSI_ACCOUNT,
+    'Nama Rekening: ' + BSI_ACCOUNT_NAME,
+    '',
+    'Gunakan QRIS resmi PB BILIBILI 162 pada gambar yang dibagikan.',
+    'Pastikan nama penerima adalah PB BILIBILI 162 sebelum transaksi.',
+  ].join('\\n');
 
   const copyAccount = async () => {
     try {
@@ -15,6 +28,71 @@ export default function InformasiRekeningQris() {
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1800);
     } catch {}
+  };
+
+  const shareToWhatsApp = async () => {
+    if (sharing) return;
+    setSharing(true);
+    setShareMessage('');
+
+    try {
+      const imageUrl = new URL(QRIS_IMAGE, window.location.origin).href;
+      const response = await fetch(imageUrl, { cache: 'no-store' });
+      if (!response.ok) throw new Error('QRIS tidak dapat diambil');
+
+      const blob = await response.blob();
+      const extension = blob.type.includes('png') ? 'png' : blob.type.includes('jpeg') ? 'jpg' : 'svg';
+      const file = new File([blob], 'QRIS-PB-BILIBILI-162.' + extension, {
+        type: blob.type || 'image/svg+xml',
+      });
+
+      // Web Share API dapat mengirim teks + file QRIS sekaligus.
+      // Pada Android, pengguna dapat memilih WhatsApp dari daftar aplikasi.
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({
+          title: 'Rekening & QRIS PB BILIBILI 162',
+          text: shareText,
+          files: [file],
+        });
+        return;
+      }
+
+      // Fallback: buka WhatsApp dengan seluruh informasi + URL QRIS resmi.
+      const fallbackText = shareText + '\\n\\nQRIS: ' + imageUrl;
+      window.open(
+        'https://wa.me/?text=' + encodeURIComponent(fallbackText),
+        '_blank',
+        'noopener,noreferrer'
+      );
+      setShareMessage('WhatsApp dibuka. Jika gambar QRIS tidak ikut terlampir otomatis, simpan/download QRIS lalu lampirkan pada chat.');
+    } catch (error) {
+      // User menutup native share sheet — tidak perlu menampilkan error.
+      if (error instanceof DOMException && error.name === 'AbortError') return;
+
+      try {
+        const imageUrl = new URL(QRIS_IMAGE, window.location.origin).href;
+        window.open(
+          'https://wa.me/?text=' + encodeURIComponent(shareText + '\\n\\nQRIS: ' + imageUrl),
+          '_blank',
+          'noopener,noreferrer'
+        );
+        setShareMessage('WhatsApp dibuka dengan informasi rekening dan tautan QRIS resmi.');
+      } catch {
+        setShareMessage('Gagal membuka WhatsApp. Silakan coba lagi.');
+      }
+    } finally {
+      setSharing(false);
+      window.setTimeout(() => setShareMessage(''), 5000);
+    }
+  };
+
+  const downloadQris = () => {
+    const link = document.createElement('a');
+    link.href = QRIS_IMAGE;
+    link.download = 'QRIS-PB-BILIBILI-162.svg';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
   };
 
   return (
@@ -72,6 +150,20 @@ export default function InformasiRekeningQris() {
             </div>
 
             <div className="relative space-y-2.5 sm:space-y-3">
+              <button
+                type="button"
+                onClick={shareToWhatsApp}
+                disabled={sharing}
+                className="w-full min-h-11 inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 disabled:cursor-wait px-4 py-3 text-[10px] sm:text-xs font-black uppercase tracking-wider text-white transition-colors shadow-lg shadow-emerald-900/20"
+              >
+                {sharing ? <Share2 size={16} className="animate-pulse" /> : <MessageCircle size={16} />}
+                {sharing ? 'Menyiapkan QRIS…' : 'Bagikan Rekening + QRIS ke WhatsApp'}
+              </button>
+              {shareMessage && (
+                <p className="text-[9px] sm:text-[10px] leading-4 text-emerald-300 bg-emerald-500/5 border border-emerald-500/15 rounded-lg px-3 py-2">
+                  {shareMessage}
+                </p>
+              )}
               <div className="bg-white/5 border border-white/5 rounded-xl p-3 sm:p-4">
                 <p className="text-[8px] sm:text-[9px] text-slate-500 uppercase tracking-widest font-black">Nama Rekening</p>
                 <p className="mt-1 text-sm sm:text-base md:text-lg font-black text-white">{BSI_ACCOUNT_NAME}</p>
@@ -149,6 +241,25 @@ export default function InformasiRekeningQris() {
                   decoding="sync"
                   draggable="false"
                 />
+              </div>
+              <div className="w-full max-w-[720px] mt-2.5 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={shareToWhatsApp}
+                  disabled={sharing}
+                  className="min-h-10 inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 px-3 py-2.5 text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-white transition-colors"
+                >
+                  <MessageCircle size={14} />
+                  {sharing ? 'Menyiapkan…' : 'Share ke WhatsApp'}
+                </button>
+                <button
+                  type="button"
+                  onClick={downloadQris}
+                  className="min-h-10 inline-flex items-center justify-center gap-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-2.5 text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-slate-200 transition-colors"
+                >
+                  <Download size={14} />
+                  Simpan QRIS
+                </button>
               </div>
               <div className="w-full max-w-[720px] mt-2.5 flex items-start gap-2.5 bg-blue-500/5 border border-blue-500/15 rounded-xl p-3 text-[9px] sm:text-[10px] leading-5 text-slate-400">
                 <ShieldCheck size={15} className="mt-0.5 shrink-0 text-blue-400" />
