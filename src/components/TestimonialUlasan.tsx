@@ -4,6 +4,7 @@ import {
   MessageSquare, 
   CheckCircle2, 
   Trash2, 
+  Edit3,
   Plus, 
   ThumbsUp, 
   ShieldAlert, 
@@ -93,6 +94,7 @@ export default function TestimonialUlasan({ isAdmin }: { isAdmin: boolean }) {
   const [newKategori, setNewKategori] = useState<'Pelatihan' | 'Fasilitas Lapangan' | 'Kompetisi' | 'Umum'>('Umum');
   const [newUlasan, setNewUlasan] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [editingTestimonial, setEditingTestimonial] = useState<Testimonial | null>(null);
 
   const AVAILABLE_TAGS = [
     'Pelatih Profesional', 'Fisik Meningkat', 'Sangat Disiplin',
@@ -147,6 +149,25 @@ export default function TestimonialUlasan({ isAdmin }: { isAdmin: boolean }) {
       return;
     }
 
+    if (editingTestimonial) {
+      const updated = testimonials.map((t) => t.id === editingTestimonial.id ? {
+        ...t,
+        nama: newNama.trim(),
+        peran: newPeran,
+        rating: newRating,
+        ulasan: newUlasan.trim(),
+        kategori: newKategori,
+        tags: selectedTags,
+      } : t);
+      saveTestimonials(updated);
+      setEditingTestimonial(null);
+      setNewNama('');
+      setNewUlasan('');
+      setSelectedTags([]);
+      Swal.fire({ icon: 'success', title: 'Testimoni Diperbarui', text: 'Perubahan testimoni berhasil disimpan.', background: '#0F172A', color: '#FFF' });
+      return;
+    }
+
     const newTesti: Testimonial = {
       id: 't-' + Math.floor(1000 + Math.random() * 9000),
       nama: newNama.trim(),
@@ -177,6 +198,17 @@ export default function TestimonialUlasan({ isAdmin }: { isAdmin: boolean }) {
       background: '#0F172A',
       color: '#FFF'
     });
+  };
+
+  const handleEdit = (testimonial: Testimonial) => {
+    setEditingTestimonial(testimonial);
+    setNewNama(testimonial.nama);
+    setNewPeran(testimonial.peran);
+    setNewRating(testimonial.rating);
+    setNewKategori(testimonial.kategori);
+    setNewUlasan(testimonial.ulasan);
+    setSelectedTags(testimonial.tags || []);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleSuka = (id: string) => {
@@ -296,7 +328,7 @@ export default function TestimonialUlasan({ isAdmin }: { isAdmin: boolean }) {
           {/* Write Review Form */}
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6">
             <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2 mb-4">
-              <MessageSquare size={14} className="text-blue-500" /> Tulis Ulasan Baru
+              <MessageSquare size={14} className="text-blue-500" /> {editingTestimonial ? 'Edit Testimoni' : 'Tulis Ulasan Baru'}
             </h3>
 
             <form onSubmit={handleSubmitReview} className="space-y-4">
@@ -555,6 +587,14 @@ export default function TestimonialUlasan({ isAdmin }: { isAdmin: boolean }) {
                               <Check size={10} /> Setujui
                             </button>
                           )}
+
+                          <button
+                            onClick={() => handleEdit(t)}
+                            className="p-1.5 bg-blue-950/50 hover:bg-blue-900/50 text-blue-400 hover:text-white rounded-xl border border-blue-900/30 transition-all"
+                            title="Edit Testimoni"
+                          >
+                            <Edit3 size={12} />
+                          </button>
 
                           <button
                             onClick={() => handleDelete(t.id)}
