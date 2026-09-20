@@ -7,6 +7,7 @@ import autoTable from 'jspdf-autotable';
 import {
   CalendarDays,
   CheckCircle2,
+  Image as ImageIcon,
   AlertCircle,
   Eye,
   FileSpreadsheet,
@@ -31,6 +32,7 @@ type Member = {
   whatsapp: string;
   kategori: string;
   kategori_atlet: string;
+  foto_url?: string | null;
 };
 
 type Transaction = {
@@ -241,7 +243,7 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
         for (let from = 0; ; from += pageSize) {
           const { data, error } = await supabase
             .from('pendaftaran')
-            .select('id, nama, whatsapp, kategori, kategori_atlet, status')
+            .select('id, nama, whatsapp, kategori, kategori_atlet, foto_url, status')
             .in('status', ACTIVE_STATUSES)
             .order('nama', { ascending: true })
             .range(from, from + pageSize - 1);
@@ -751,8 +753,19 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
                 {filteredReports.map((item, index) => (
                   <article key={item.id} className="rounded-2xl border border-white/10 bg-[#0d172a] p-3.5 shadow-lg">
                     <div className="flex items-start gap-3">
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-500/15 text-sm font-black text-blue-300 ring-1 ring-blue-400/20">
-                        {(item.nama || '?').trim().slice(0, 2).toUpperCase()}
+                      <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-blue-500/15 ring-1 ring-blue-400/20">
+                        {item.foto_url ? (
+                          <img
+                            src={item.foto_url}
+                            alt={item.nama}
+                            loading="lazy"
+                            className="h-full w-full object-cover object-center"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-blue-300">
+                            <ImageIcon size={19} strokeWidth={1.8} />
+                          </div>
+                        )}
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-start justify-between gap-2">
