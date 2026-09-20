@@ -115,7 +115,7 @@ export default function AdminRouteView({ session }: Props) {
     case 'jadwal': return <JadwalLatihanView />;
     case 'ranking': return isAdmin ? render(AdminRanking) : <div className="p-4 md:p-8"><Ranking /></div>;
     case 'kas': return isAdmin ? render(KasManager) : <div className="p-4 md:p-8"><PublicKasView /></div>;
-    case 'rekap-keuangan': return render(AdminLaporanIuranAtlet);
+    case 'rekap-keuangan': return <AdminLaporanIuranAtlet isAdmin={isAdmin} session={session} />;
     case 'berita': return isAdmin ? render(AdminBerita) : <div className="p-4 md:p-8"><News /></div>;
     case 'galeri': return isAdmin ? render(AdminGallery) : <div className="p-4 md:p-8"><Gallery /></div>;
     case 'dokumen': return isAdmin ? render(ManajemenDokumen) : <div className="p-4 md:p-8"><DokumenPenting /></div>;
