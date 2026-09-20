@@ -43,24 +43,22 @@ export default function AdminUsers({ session }: { session: any }) {
   const hashPassword = async (password: string) => {
     const normalized = password.trim();
     if (normalized.length < 8) throw new Error('Password minimal 8 karakter.');
+    if (normalized.length > 128) throw new Error('Password maksimal 128 karakter.');
     const encoder = new TextEncoder();
-    const saltBytes = crypto.getRandomValues(new Uint8Array(16));
-    const salt = Array.from(saltBytes).map(b => b.toString(16).padStart(2, '0')).join('');
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const iterations = 600000;
     const key = await crypto.subtle.importKey('raw', encoder.encode(normalized), 'PBKDF2', false, ['deriveBits']);
     const bits = await crypto.subtle.deriveBits(
-      { name: 'PBKDF2', salt: saltBytes, iterations: 210000, hash: 'SHA-256' },
+      { name: 'PBKDF2', salt, iterations, hash: 'SHA-256' },
       key,
       256
     );
     const toBase64Url = (bytes: Uint8Array) => {
       let binary = '';
       bytes.forEach((b) => { binary += String.fromCharCode(b); });
-      return btoa(binary).replace(/\\+/g, '-').replace(/\\//g, '_').replace(/=+$/g, '');
+      return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
     };
-    return {
-      salt,
-      hash: `pbkdf2$sha256$210000$${toBase64Url(saltBytes)}$${toBase64Url(new Uint8Array(bits))}`
-    };
+    return `pbkdf2$sha256$${iterations}$${toBase64Url(salt)}$${toBase64Url(new Uint8Array(bits))}`;
   };
 
   const [saving, setSaving] = useState(false);
