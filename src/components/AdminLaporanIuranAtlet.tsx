@@ -7,7 +7,7 @@ import autoTable from 'jspdf-autotable';
 import {
   CalendarDays,
   CheckCircle2,
-  CircleAlert,
+  AlertCircle,
   Eye,
   FileSpreadsheet,
   FileText,
@@ -352,7 +352,7 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
             <p className="mt-1 text-[9px] font-bold text-emerald-400/70">{collectionRate}% dari daftar</p>
           </div>
           <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-4">
-            <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-wider text-red-400"><CircleAlert size={14} /> Belum Bayar</div>
+            <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-wider text-red-400"><AlertCircle size={14} /> Belum Bayar</div>
             <p className="mt-2 text-2xl font-black text-red-300">{totalUnpaid}</p>
             <p className="mt-1 text-[9px] font-bold text-red-400/70">Perlu ditindaklanjuti</p>
           </div>
