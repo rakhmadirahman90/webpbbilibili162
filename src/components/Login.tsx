@@ -152,12 +152,6 @@ export default function Login() {
         setSuccessMsg('Login pertama berhasil. Silakan buat password pribadi baru sebelum masuk ke portal.');
         return;
       }
-      if (result.must_change_password) {
-        setPendingUser(result.user);
-        setForceChange(true);
-        setSuccessMsg('Login pertama berhasil. Demi keamanan, buat password pribadi sebelum masuk ke portal.');
-        return;
-      }
       setSuccessMsg('Login berhasil. Membuka portal…');
       finalizeSession(result.user);
     } catch (e: any) {
@@ -278,44 +272,6 @@ export default function Login() {
     }
   };
 
-  const handleForcePasswordChange = async () => {
-    if (loading) return;
-    if (newPassword.length < 8) {
-      setErrorMsg('Password baru minimal 8 karakter.');
-      return;
-    }
-    if (newPassword === 'bili2162') {
-      setErrorMsg('Password baru harus berbeda dari password default.');
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      setErrorMsg('Konfirmasi password belum sama.');
-      return;
-    }
-    setLoading(true);
-    setErrorMsg(null);
-    try {
-      const { data, error } = await supabase.functions.invoke('password-login', {
-        body: { phone: normalizePhone(phone), password, action: 'change_password', new_password: newPassword }
-      });
-      if (error) {
-        const detail = await error.context?.json?.().catch?.(() => null);
-        throw new Error(detail?.message || error.message || 'Gagal mengubah password.');
-      }
-      if (!data?.ok || !data?.user) {
-        setErrorMsg(data?.message || 'Password baru gagal disimpan.');
-        return;
-      }
-      setForceChange(false);
-      setSuccessMsg('Password berhasil diperbarui. Membuka portal…');
-      finalizeSession(data.user);
-    } catch (e: any) {
-      setErrorMsg(e?.message || 'Layanan perubahan password sedang bermasalah.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const inputClass = 'h-[48px] sm:h-[50px] w-full sm:h-[54px] rounded-[16px] sm:rounded-[16px] sm:rounded-[18px] border border-blue-200/10 bg-[#081a31]/85 px-4 text-white outline-none backdrop-blur-xl transition-all placeholder:text-slate-500 focus:border-blue-400/70 focus:bg-[#0a2342] focus:ring-4 focus:ring-blue-500/10';
 
   return (
@@ -373,23 +329,6 @@ export default function Login() {
             {errorMsg && <div role="alert" className="mb-3 flex gap-3 rounded-2xl border border-red-400/20 bg-red-500/[0.07] p-3.5"><AlertCircle size={17} className="mt-0.5 shrink-0 text-red-400"/><div className="min-w-0"><p className="text-xs font-extrabold text-red-300">Akses Ditolak</p><p className="mt-0.5 break-words text-[11px] leading-5 text-red-200/70">{errorMsg}</p></div></div>}
             {successMsg && <div role="status" className="mb-3 flex gap-3 rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.07] p-3.5"><CheckCircle2 size={17} className="mt-0.5 shrink-0 text-emerald-400"/><p className="text-[11px] leading-5 text-emerald-200/80">{successMsg}</p></div>}
 
-  {!mustChangePassword ? (
-  {forceChange ? (
-    <div className="space-y-4">
-      <div className="rounded-2xl border border-amber-400/20 bg-amber-500/[.07] p-4">
-        <p className="text-sm font-black text-amber-200">Ganti Password Pertama</p>
-        <p className="mt-1 text-[11px] leading-5 text-amber-100/70">Password default hanya untuk akses pertama. Buat password pribadi minimal 8 karakter sebelum melanjutkan.</p>
-      </div>
-      <label className="ml-1 flex items-center gap-2 text-[9px] font-black uppercase tracking-[.14em] text-blue-100/60"><LockKeyhole size={13} className="text-cyan-300"/> Password Baru</label>
-      <input type="password" autoComplete="new-password" required minLength={8} value={newPassword} onChange={e=>{setErrorMsg(null);setNewPassword(e.target.value);}} className={inputClass + ' text-[15px] font-semibold sm:text-base'} placeholder="Minimal 8 karakter"/>
-      <label className="ml-1 flex items-center gap-2 text-[9px] font-black uppercase tracking-[.14em] text-blue-100/60"><LockKeyhole size={13} className="text-cyan-300"/> Konfirmasi Password</label>
-      <input type="password" autoComplete="new-password" required minLength={8} value={confirmPassword} onChange={e=>{setErrorMsg(null);setConfirmPassword(e.target.value);}} className={inputClass + ' text-[15px] font-semibold sm:text-base'} placeholder="Ulangi password baru"/>
-      <button type="button" onClick={handleForcePasswordChange} disabled={loading} className="flex h-[50px] w-full items-center justify-center gap-2.5 rounded-[18px] bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 text-xs font-black uppercase tracking-[.12em] text-white shadow-[0_14px_36px_rgba(0,102,255,.28)] disabled:opacity-60">
-        {loading ? <Loader2 size={18} className="animate-spin"/> : <ShieldCheck size={18}/>}
-        <span>{loading ? 'Menyimpan…' : 'Simpan Password & Masuk'}</span>
-      </button>
-    </div>
-  ) : (
   <form onSubmit={e=>{e.preventDefault();handleLogin();}} className="space-y-3">
     <label className="mb-1 ml-1 flex items-center gap-2 text-[8px] font-black uppercase tracking-[.14em] text-blue-100/60 sm:text-[9px]"><Smartphone size={13} className="text-blue-400"/> Nomor WhatsApp Terdaftar</label>
     <div className="relative">
@@ -446,7 +385,6 @@ export default function Login() {
       {loading ? <Loader2 size={18} className="animate-spin"/> : <LockKeyhole size={18}/>}<span>{loading ? 'Menyimpan…' : 'Simpan Password Baru'}</span>
     </button>
   </form>
-  )}
 
             {resetMode && (
               <div className="mt-4 rounded-2xl border border-cyan-400/20 bg-[#071b32]/95 p-4 shadow-[0_18px_50px_rgba(0,0,0,.28)]">
