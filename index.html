@@ -97,12 +97,12 @@
         window.addEventListener('error', (event) => showBootError(event.error || event.message));
         window.addEventListener('unhandledrejection', (event) => showBootError(event.reason));
 
-        // v15: clear legacy PWA state and perform one controlled reload.
-        const reloadKey = 'pb162-legacy-cache-reload-v15';
+        // v16: clear legacy PWA state and perform one controlled reload after mobile recap/scroll fixes.
+        const reloadKey = 'pb162-legacy-cache-reload-v16';
         try {
           const firstPass = !sessionStorage.getItem(reloadKey);
           sessionStorage.setItem(reloadKey, '1');
-          localStorage.setItem('pb162-legacy-cache-cleanup-v15', '1');
+          localStorage.setItem('pb162-legacy-cache-cleanup-v16', '1');
           const cleanup = [];
           if ('serviceWorker' in navigator) {
             cleanup.push(navigator.serviceWorker.getRegistrations().then((registrations) => Promise.all(registrations.map((registration) => registration.unregister()))).catch(() => []));
@@ -129,6 +129,6 @@
         }, 15000);
       })();
     </script>
-    <script type="module" src="/src/main.tsx?v=20260919-admin-status-fix"></script>
+    <script type="module" src="/src/main.tsx?v=20260920-mobile-rekap-scroll-fix"></script>
   </body>
 </html>
