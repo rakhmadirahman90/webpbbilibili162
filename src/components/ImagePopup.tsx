@@ -255,42 +255,87 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
   const hasNavigation = total > 1;
 
   return (
-    <div className="fixed inset-0 z-[999999] flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md" role="dialog" aria-modal="true" aria-label="Pengumuman PB Bilibili 162">
+    <div
+      className="fixed inset-0 z-[999999] flex items-center justify-center p-2.5 sm:p-4 bg-slate-950/80 backdrop-blur-md"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Pengumuman PB Bilibili 162"
+    >
       <div className="absolute inset-0" onClick={closePopup} />
-      <div className="relative w-full max-w-[calc(100vw-1.5rem)] sm:max-w-[420px] max-h-[90vh] bg-white rounded-[28px] shadow-[0_24px_80px_rgba(0,0,0,0.38)] flex flex-col overflow-hidden ring-1 ring-white/20" onClick={e => e.stopPropagation()} onMouseEnter={() => setIsHovering(true)} onMouseLeave={() => setIsHovering(false)}>
-        <button onClick={closePopup} aria-label="Tutup pop-up" className="absolute top-3 right-3 z-[80] p-2.5 bg-white/95 hover:bg-slate-100 text-slate-800 rounded-full shadow-xl border border-slate-200 transition-colors active:scale-90"><X size={18} /></button>
+
+      <div
+        className="relative flex w-full max-w-[calc(100vw-1.25rem)] sm:max-w-[460px] lg:max-w-[520px] h-[calc(100dvh-1.25rem)] sm:h-auto sm:max-h-[calc(100dvh-2rem)] bg-white rounded-[22px] sm:rounded-[28px] shadow-[0_24px_80px_rgba(0,0,0,0.38)] overflow-hidden ring-1 ring-white/20"
+        onClick={e => e.stopPropagation()}
+        onMouseEnter={() => setIsHovering(true)}
+        onMouseLeave={() => setIsHovering(false)}
+      >
+        <button
+          onClick={closePopup}
+          aria-label="Tutup pop-up"
+          className="absolute top-2.5 right-2.5 sm:top-3 sm:right-3 z-[80] w-10 h-10 sm:w-11 sm:h-11 inline-flex items-center justify-center bg-white/95 hover:bg-slate-100 text-slate-800 rounded-full shadow-xl border border-slate-200 transition-colors active:scale-90"
+        >
+          <X size={18} />
+        </button>
 
         <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain hide-scrollbar">
           <div className="relative overflow-hidden bg-slate-950">
-            <div className="relative w-full bg-slate-950 flex items-center justify-center select-none">
-              <img src={current.url_gambar} className="w-full h-auto block z-10 select-none pointer-events-none" alt={current.judul || 'Banner pengumuman'} draggable={false} fetchPriority="high" decoding="async" />
+            <div className="relative w-full h-[46dvh] min-h-[250px] max-h-[520px] bg-slate-950 flex items-center justify-center select-none">
+              <img
+                src={current.url_gambar}
+                className="block w-full h-full object-contain object-center z-10 select-none pointer-events-none"
+                alt={current.judul || 'Banner pengumuman'}
+                draggable={false}
+                fetchPriority="high"
+                decoding="async"
+              />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950/20 via-transparent to-black/10 z-20 pointer-events-none" />
               {hasNavigation && <>
-                <button type="button" onClick={goPrev} aria-label="Pop-up sebelumnya" className="absolute left-2.5 top-1/2 -translate-y-1/2 z-40 w-10 h-10 rounded-full bg-black/45 hover:bg-black/65 text-white backdrop-blur-md border border-white/15 flex items-center justify-center shadow-lg active:scale-90 transition-colors"><ChevronLeft size={21} /></button>
-                <button type="button" onClick={goNext} aria-label="Pop-up berikutnya" className="absolute right-2.5 top-1/2 -translate-y-1/2 z-40 w-10 h-10 rounded-full bg-black/45 hover:bg-black/65 text-white backdrop-blur-md border border-white/15 flex items-center justify-center shadow-lg active:scale-90 transition-colors"><ChevronRight size={21} /></button>
+                <button type="button" onClick={goPrev} aria-label="Pop-up sebelumnya" className="absolute left-2 top-1/2 -translate-y-1/2 z-40 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/45 hover:bg-black/65 text-white backdrop-blur-md border border-white/15 flex items-center justify-center shadow-lg active:scale-90 transition-colors"><ChevronLeft size={20} /></button>
+                <button type="button" onClick={goNext} aria-label="Pop-up berikutnya" className="absolute right-2 top-1/2 -translate-y-1/2 z-40 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/45 hover:bg-black/65 text-white backdrop-blur-md border border-white/15 flex items-center justify-center shadow-lg active:scale-90 transition-colors"><ChevronRight size={20} /></button>
               </>}
             </div>
           </div>
 
-          <div className="flex items-center justify-center gap-2 py-2.5 bg-white border-b border-slate-100">
+          <div className="sticky top-0 z-30 flex items-center justify-center gap-1.5 sm:gap-2 px-3 py-2 sm:py-2.5 bg-white/95 backdrop-blur border-b border-slate-100">
             {hasNavigation ? promoImages.map((item, index) => (
-              <button key={item.id || index} type="button" onClick={() => { setIsAutoPlay(true); goTo(index); }} aria-label={`Buka pop-up ${index + 1} dari ${total}`} className={`rounded-full transition-all duration-200 ${index === currentIndex ? 'w-7 h-2 bg-blue-600' : 'w-2 h-2 bg-slate-300 hover:bg-slate-400'}`} />
+              <button key={item.id || index} type="button" onClick={() => { setIsAutoPlay(true); goTo(index); }} aria-label={`Buka pop-up ${index + 1} dari ${total}`} className={`rounded-full transition-all duration-200 ${index === currentIndex ? 'w-6 sm:w-7 h-2 bg-blue-600' : 'w-2 h-2 bg-slate-300 hover:bg-slate-400'}`} />
             )) : <span className="text-[10px] font-bold text-slate-400">1 / 1</span>}
-            {hasNavigation && <span className="ml-1 text-[10px] font-bold text-slate-500">{currentIndex + 1} / {total}</span>}
-            {hasNavigation && <button type="button" onClick={() => setIsAutoPlay(v => !v)} aria-label={isAutoPlay ? 'Jeda slider otomatis' : 'Putar slider otomatis'} className="ml-1 w-6 h-6 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors">{isAutoPlay ? <Pause size={11} /> : <Play size={11} />}</button>}
+            {hasNavigation && <span className="ml-1 text-[10px] font-bold text-slate-500 whitespace-nowrap">{currentIndex + 1} / {total}</span>}
+            {hasNavigation && <button type="button" onClick={() => setIsAutoPlay(v => !v)} aria-label={isAutoPlay ? 'Jeda slider otomatis' : 'Putar slider otomatis'} className="ml-1 w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors shrink-0">{isAutoPlay ? <Pause size={11} /> : <Play size={11} />}</button>}
           </div>
 
-          <div className="px-5 sm:px-6 pt-3 pb-7 bg-white">
-            <div className="flex justify-center mb-4"><span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-bold uppercase tracking-widest border border-blue-100">Pengumuman</span></div>
+          <div className="px-3.5 sm:px-6 pt-3 sm:pt-4 pb-5 sm:pb-7 bg-white">
+            <div className="flex justify-center mb-3 sm:mb-4">
+              <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.16em] border border-blue-100">
+                Pengumuman
+              </span>
+            </div>
+
             <div>
-              <h3 className="text-xl sm:text-2xl font-black text-blue-700 leading-tight text-center mb-5 px-2 uppercase tracking-tighter">{current.judul}</h3>
-              <div className="bg-slate-50 border border-slate-100 rounded-3xl p-5 sm:p-6 mb-7 shadow-inner">
-                <div className={isExpanded ? '' : 'line-clamp-3'}>{renderCleanDescription(current.deskripsi || '')}</div>
-                {!!current.deskripsi && <button type="button" onClick={() => setIsExpanded(v => !v)} className="text-blue-600 text-xs font-bold mt-2 hover:underline">{isExpanded ? 'Read Less' : 'Read More'}</button>}
-              </div>
-              <div className="space-y-3 px-1">
-                {current.file_url && String(current.file_url).length > 5 && <a href={current.file_url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 w-full py-3.5 bg-slate-900 text-white rounded-xl font-bold text-[12px] tracking-wider shadow-lg"><Download size={14} /> LIHAT LAMPIRAN</a>}
-                <button type="button" onClick={closePopup} className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-[12px] tracking-wider transition-colors shadow-md">MENGERTI</button>
+              <h3 className="text-[clamp(1.05rem,5.5vw,1.65rem)] font-black text-blue-700 leading-tight text-center mb-3 sm:mb-4 px-1 uppercase tracking-tight break-words">
+                {current.judul}
+              </h3>
+
+              {!!current.deskripsi && (
+                <div className="bg-slate-50 border border-slate-100 rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 mb-4 sm:mb-6 shadow-inner">
+                  <div className={isExpanded ? '' : 'line-clamp-3'}>
+                    {renderCleanDescription(current.deskripsi || '')}
+                  </div>
+                  <button type="button" onClick={() => setIsExpanded(v => !v)} className="text-blue-600 text-xs font-bold mt-2 hover:underline">
+                    {isExpanded ? 'Read Less' : 'Read More'}
+                  </button>
+                </div>
+              )}
+
+              <div className="space-y-2.5 px-0.5">
+                {current.file_url && String(current.file_url).length > 5 && (
+                  <a href={current.file_url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 w-full min-h-11 py-3 bg-slate-900 text-white rounded-xl font-bold text-[11px] tracking-wider shadow-lg">
+                    <Download size={14} /> LIHAT LAMPIRAN
+                  </a>
+                )}
+                <button type="button" onClick={closePopup} className="w-full min-h-11 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-[11px] tracking-wider transition-colors shadow-md">
+                  MENGERTI
+                </button>
               </div>
             </div>
           </div>
