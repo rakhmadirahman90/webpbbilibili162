@@ -40,52 +40,84 @@ export default function InformasiRekeningQris() {
       const response = await fetch(imageUrl, { cache: 'no-store' });
       if (!response.ok) throw new Error('QRIS tidak dapat diambil');
 
-      const blob = await response.blob();
-      const extension = blob.type.includes('png') ? 'png' : blob.type.includes('jpeg') ? 'jpg' : 'svg';
-      const file = new File([blob], 'QRIS-PB-BILIBILI-162.' + extension, {
-        type: blob.type || 'image/svg+xml',
+      const svgText = await response.text();
+      const pngBlob = await new Promise<Blob>((resolve, reject) => {
+        const svgBlob = new Blob([svgText], { type: 'image/svg+xml;charset=utf-8' });
+        const objectUrl = URL.createObjectURL(svgBlob);
+        const image = new Image();
+
+        image.onload = () => {
+          try {
+            // Rasterize the original QRIS asset only so WhatsApp/Android can
+            // accept it as a standard PNG attachment. No QR content is redrawn.
+            const canvas = document.createElement('canvas');
+            const size = Math.max(image.naturalWidth || 1200, image.naturalHeight || 1200);
+            canvas.width = size;
+            canvas.height = size;
+            const context = canvas.getContext('2d');
+            if (!context) throw new Error('Canvas tidak tersedia');
+
+            context.fillStyle = '#ffffff';
+            context.fillRect(0, 0, size, size);
+            context.drawImage(image, 0, 0, size, size);
+
+            canvas.toBlob((blob) => {
+              URL.revokeObjectURL(objectUrl);
+              if (blob) resolve(blob);
+              else reject(new Error('Gagal membuat gambar QRIS'));
+            }, 'image/png');
+          } catch (error) {
+            URL.revokeObjectURL(objectUrl);
+            reject(error);
+          }
+        };
+
+        image.onerror = () => {
+          URL.revokeObjectURL(objectUrl);
+          reject(new Error('Gagal membaca gambar QRIS'));
+        };
+
+        image.src = objectUrl;
       });
 
-      // Web Share API dapat mengirim teks + file QRIS sekaligus.
-      // Pada Android, pengguna dapat memilih WhatsApp dari daftar aplikasi.
+      const file = new File([pngBlob], 'QRIS-PB-BILIBILI-162.png', {
+        type: 'image/png',
+      });
+
+      // Android/Chrome + WhatsApp: native share sheet menerima teks dan
+      // gambar PNG sehingga WhatsApp dapat melampirkannya ke chat penerima.
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
         await navigator.share({
           title: 'Rekening & QRIS PB BILIBILI 162',
           text: shareText,
           files: [file],
         });
+        setShareMessage('Berhasil membuka menu berbagi. Pilih WhatsApp lalu pilih penerima dan tekan Kirim.');
         return;
       }
 
-      // Fallback: buka WhatsApp dengan seluruh informasi + URL QRIS resmi.
-      const fallbackText = shareText + '\n\nQRIS: ' + imageUrl;
-      window.open(
-        'https://wa.me/?text=' + encodeURIComponent(fallbackText),
-        '_blank',
-        'noopener,noreferrer'
-      );
-      setShareMessage('WhatsApp dibuka. Jika gambar QRIS tidak ikut terlampir otomatis, simpan/download QRIS lalu lampirkan pada chat.');
+      // Fallback untuk browser yang tidak mendukung file sharing.
+      // WhatsApp tetap menerima seluruh teks rekening; gambar QRIS tersedia
+      // melalui tautan resmi agar dapat dilampirkan dari chat.
+      const fallbackText =
+        shareText +
+        '\\n\\nQRIS resmi: ' +
+        imageUrl +
+        '\\n\\nCatatan: browser ini tidak mendukung pengiriman gambar langsung ke WhatsApp.';
+
+      window.location.href = 'https://wa.me/?text=' + encodeURIComponent(fallbackText);
+      setShareMessage('WhatsApp dibuka dengan data rekening lengkap. Lampirkan QRIS jika browser tidak mendukung berbagi gambar.');
     } catch (error) {
-      // User menutup native share sheet — tidak perlu menampilkan error.
       if (error instanceof DOMException && error.name === 'AbortError') return;
 
-      try {
-        const imageUrl = new URL(QRIS_IMAGE, window.location.origin).href;
-        window.open(
-          'https://wa.me/?text=' + encodeURIComponent(shareText + '\n\nQRIS: ' + imageUrl),
-          '_blank',
-          'noopener,noreferrer'
-        );
-        setShareMessage('WhatsApp dibuka dengan informasi rekening dan tautan QRIS resmi.');
-      } catch {
-        setShareMessage('Gagal membuka WhatsApp. Silakan coba lagi.');
-      }
+      setShareMessage(
+        'Berbagi QRIS gagal. Coba gunakan tombol Share ke WhatsApp lagi atau simpan QRIS terlebih dahulu.'
+      );
     } finally {
       setSharing(false);
-      window.setTimeout(() => setShareMessage(''), 5000);
+      window.setTimeout(() => setShareMessage(''), 7000);
     }
   };
-
   const downloadQris = () => {
     const link = document.createElement('a');
     link.href = QRIS_IMAGE;
