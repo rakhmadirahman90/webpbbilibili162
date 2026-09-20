@@ -51,15 +51,26 @@ export default function InformasiRekeningQris() {
             // Rasterize the original QRIS asset only so WhatsApp/Android can
             // accept it as a standard PNG attachment. No QR content is redrawn.
             const canvas = document.createElement('canvas');
-            const size = Math.max(image.naturalWidth || 1200, image.naturalHeight || 1200);
-            canvas.width = size;
-            canvas.height = size;
+
+            // Keep the original 1090:1536 QRIS aspect ratio. The previous
+            // implementation used a square canvas, which stretched and
+            // downscaled the QRIS before WhatsApp compressed it.
+            const sourceWidth = image.naturalWidth || 1090;
+            const sourceHeight = image.naturalHeight || 1536;
+            const targetWidth = 3000;
+            const targetHeight = Math.round(targetWidth * (sourceHeight / sourceWidth));
+
+            canvas.width = targetWidth;
+            canvas.height = targetHeight;
+
             const context = canvas.getContext('2d');
             if (!context) throw new Error('Canvas tidak tersedia');
 
+            context.imageSmoothingEnabled = true;
+            context.imageSmoothingQuality = 'high';
             context.fillStyle = '#ffffff';
-            context.fillRect(0, 0, size, size);
-            context.drawImage(image, 0, 0, size, size);
+            context.fillRect(0, 0, targetWidth, targetHeight);
+            context.drawImage(image, 0, 0, targetWidth, targetHeight);
 
             canvas.toBlob((blob) => {
               URL.revokeObjectURL(objectUrl);
