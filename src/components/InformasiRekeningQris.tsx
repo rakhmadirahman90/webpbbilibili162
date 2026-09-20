@@ -101,9 +101,9 @@ export default function InformasiRekeningQris() {
       // melalui tautan resmi agar dapat dilampirkan dari chat.
       const fallbackText =
         shareText +
-        '\\n\\nQRIS resmi: ' +
+        '\n\nQRIS resmi: ' +
         imageUrl +
-        '\\n\\nCatatan: browser ini tidak mendukung pengiriman gambar langsung ke WhatsApp.';
+        '\n\nCatatan: browser ini tidak mendukung pengiriman gambar langsung ke WhatsApp.';
 
       window.location.href = 'https://wa.me/?text=' + encodeURIComponent(fallbackText);
       setShareMessage('WhatsApp dibuka dengan data rekening lengkap. Lampirkan QRIS jika browser tidak mendukung berbagi gambar.');
