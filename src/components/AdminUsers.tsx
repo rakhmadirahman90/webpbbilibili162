@@ -18,6 +18,7 @@ interface UserRecord {
   foto_url?: string;
   hasPassword?: boolean;
   mustChangePassword?: boolean;
+  status?: string;
   created_at?: string;
 }
 
@@ -26,6 +27,8 @@ export default function AdminUsers({ session }: { session: any }) {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'anggota'>('all');
+  const [categoryFilter, setCategoryFilter] = useState<'all' | 'SENIOR' | 'MUDA' | 'VETERAN'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'aktif' | 'tidak aktif'>('all');
 
   // Modal State
   const [showModal, setShowModal] = useState(false);
@@ -121,6 +124,7 @@ export default function AdminUsers({ session }: { session: any }) {
           foto_url: item.foto_url || '',
           hasPassword: !!item.password_hash,
           mustChangePassword: !!item.must_change_password,
+          status: item.status || 'aktif',
           created_at: item.created_at || new Date().toISOString()
         };
       });
@@ -342,13 +346,17 @@ export default function AdminUsers({ session }: { session: any }) {
                           u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           u.whatsapp.includes(searchTerm);
     const matchRole = roleFilter === 'all' || u.role === roleFilter;
-    return matchSearch && matchRole;
+    const normalizedCategory = String(u.kategori || 'SENIOR').toUpperCase();
+    const matchCategory = categoryFilter === 'all' || normalizedCategory === categoryFilter;
+    const normalizedStatus = String(u.status || 'aktif').toLowerCase().includes('tidak') ? 'tidak aktif' : 'aktif';
+    const matchStatus = statusFilter === 'all' || normalizedStatus === statusFilter;
+    return matchSearch && matchRole && matchCategory && matchStatus;
   });
 
   return (
-    <div className="w-full min-h-full flex flex-col p-3 sm:p-5 md:p-8 space-y-4 md:space-y-6 overflow-y-auto overflow-x-hidden overscroll-contain select-none pb-28 md:pb-10">
+    <div className="mx-auto w-full max-w-[1600px] min-h-full flex flex-col p-3 sm:p-5 lg:p-7 space-y-4 md:space-y-6 overflow-y-auto overflow-x-hidden overscroll-contain pb-28 md:pb-10">
       {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gradient-to-r from-slate-900 via-[#0b1224] to-slate-900 p-4 sm:p-6 rounded-2xl md:rounded-3xl border border-white/10 shadow-2xl relative overflow-hidden shrink-0">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gradient-to-r from-slate-900 via-[#0b1224] to-slate-900 p-4 sm:p-6 rounded-[24px] md:rounded-[30px] border border-blue-300/10 shadow-[0_24px_90px_rgba(0,0,0,.35)] relative overflow-hidden shrink-0">
         <div className="absolute top-0 right-0 w-48 h-48 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between w-full gap-4">
           <div>
@@ -444,42 +452,52 @@ export default function AdminUsers({ session }: { session: any }) {
         </button>
       </section>
 
-      {/* Filter & Search Bar */}
-      <div className="bg-[#081426]/95 p-3 sm:p-4 rounded-2xl border border-blue-300/10 shadow-xl flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 shrink-0">
-        <div className="relative w-full sm:w-80">
-          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Cari nama, email, atau no WA..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-[#071426] border border-blue-200/10 rounded-xl pl-10 pr-4 py-3 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-400/60 focus:ring-4 focus:ring-blue-500/10 transition-all"
-          />
+      {/* Search, filter & quick actions */}
+      <section className="rounded-[24px] border border-blue-300/10 bg-[#07152a]/90 p-3 sm:p-4 shadow-[0_18px_60px_rgba(0,0,0,.24)]">
+        <div className="flex flex-col xl:flex-row gap-3">
+          <div className="relative flex-1 min-w-0">
+            <Search size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Cari nama, email, atau nomor WhatsApp..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="h-12 w-full rounded-2xl border border-blue-200/10 bg-[#061327] pl-11 pr-4 text-sm text-white placeholder:text-slate-500 outline-none transition focus:border-blue-400/60 focus:ring-4 focus:ring-blue-500/10"
+            />
+          </div>
+          <div className="grid grid-cols-2 sm:flex gap-2">
+            <select value={roleFilter} onChange={(e)=>setRoleFilter(e.target.value as any)} className="h-12 rounded-2xl border border-blue-200/10 bg-[#061327] px-3 text-xs font-bold text-slate-200 outline-none focus:border-blue-400/60">
+              <option value="all">Semua Role</option>
+              <option value="admin">Admin</option>
+              <option value="anggota">Anggota</option>
+            </select>
+            <select value={categoryFilter} onChange={(e)=>setCategoryFilter(e.target.value as any)} className="h-12 rounded-2xl border border-blue-200/10 bg-[#061327] px-3 text-xs font-bold text-slate-200 outline-none focus:border-blue-400/60">
+              <option value="all">Semua Kategori</option>
+              <option value="SENIOR">Senior / Umum</option>
+              <option value="MUDA">Muda / Junior</option>
+              <option value="VETERAN">Veteran</option>
+            </select>
+            <select value={statusFilter} onChange={(e)=>setStatusFilter(e.target.value as any)} className="h-12 rounded-2xl border border-blue-200/10 bg-[#061327] px-3 text-xs font-bold text-slate-200 outline-none focus:border-blue-400/60">
+              <option value="all">Semua Status</option>
+              <option value="aktif">Aktif</option>
+              <option value="tidak aktif">Tidak Aktif</option>
+            </select>
+          </div>
         </div>
-
-        <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+        <div className="mt-3 flex flex-wrap items-center gap-2">
           {[
             { id: 'all', label: 'Semua User', count: users.length },
             { id: 'admin', label: 'Admin', count: users.filter(u => u.role === 'admin').length },
             { id: 'anggota', label: 'Anggota', count: users.filter(u => u.role === 'anggota').length }
           ].map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setRoleFilter(tab.id as any)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold uppercase transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
-                roleFilter === tab.id
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
-                  : 'bg-slate-900/80 text-slate-400 hover:text-white border border-white/5'
-              }`}
-            >
-              <span>{tab.label}</span>
-              <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${roleFilter === tab.id ? 'bg-blue-500 text-white' : 'bg-slate-800 text-slate-400'}`}>
-                {tab.count}
-              </span>
+            <button key={tab.id} type="button" onClick={() => setRoleFilter(tab.id as any)}
+              className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-[10px] font-black uppercase tracking-wider transition ${roleFilter === tab.id ? 'border-blue-400/40 bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'border-white/5 bg-white/[.03] text-slate-400 hover:bg-white/[.06] hover:text-white'}`}>
+              {tab.label}<span className={`rounded-full px-1.5 py-0.5 ${roleFilter === tab.id ? 'bg-white/15 text-white' : 'bg-slate-800 text-slate-400'}`}>{tab.count}</span>
             </button>
           ))}
+          <span className="ml-auto hidden sm:inline-flex items-center gap-2 text-[10px] font-bold text-slate-500"><SlidersHorizontal size={13}/> Filter aktif: {filteredUsers.length}</span>
         </div>
-      </div>
+      </section>
 
       {/* Users Table / List / Mobile Cards */}
       <div className="bg-[#0b1224]/90 border border-white/10 rounded-2xl md:rounded-3xl overflow-hidden shadow-xl shrink-0 flex flex-col">
