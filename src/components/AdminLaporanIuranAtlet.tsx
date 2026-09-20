@@ -288,13 +288,9 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
     [members]
   );
 
-  const incomeCategoryOptions = useMemo(() => {
-    const categories = new Set(DEFAULT_INCOME_CATEGORIES);
-    transactions.forEach((transaction) => {
-      if (transaction.kategori?.trim()) categories.add(transaction.kategori.trim());
-    });
-    return Array.from(categories).sort((a, b) => a.localeCompare(b, 'id'));
-  }, [transactions]);
+  // Pilihan kategori penerimaan sengaja dibatasi hanya pada kategori resmi
+  // yang digunakan pada form penerimaan kas PB.
+  const incomeCategoryOptions = DEFAULT_INCOME_CATEGORIES;
 
   const reports = useMemo<PlayerReport[]>(() => {
     return members.map((member) => {
