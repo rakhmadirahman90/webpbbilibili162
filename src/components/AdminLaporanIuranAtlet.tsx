@@ -72,7 +72,7 @@ const rupiah = (value: number) =>
 const normalizeName = (value: string) => (value || '').trim().toLowerCase();
 
 const normalizeMonthLabel = (value: string) => {
-  const label = value.trim().toLowerCase().replace(/\\./g, '');
+  const label = value.trim().toLowerCase().replace(/\./g, '');
   const aliases: Record<string, string> = {
     jan: 'Januari',
     januari: 'Januari',
@@ -117,21 +117,21 @@ const parseMonthsFromNote = (note?: string | null) => {
       .filter(Boolean);
   }
 
-  const normalizedText = text.toLowerCase().replace(/\\./g, '');
+  const normalizedText = text.toLowerCase().replace(/\./g, '');
   const months: string[] = [];
   const patterns: Array<[string, RegExp]> = [
-    ['Januari', /\\bjan(?:uari)?\\b/],
-    ['Februari', /\\bfeb(?:ruari)?\\b/],
-    ['Maret', /\\bmar(?:et)?\\b/],
-    ['April', /\\bapr(?:il)?\\b/],
-    ['Mei', /\\bmei\\b/],
-    ['Juni', /\\bjun(?:i)?\\b/],
-    ['Juli', /\\bjul(?:i)?\\b/],
-    ['Agustus', /\\bag[tu]?(?:ustus)?\\b/],
-    ['September', /\\bsep(?:t|tember)?\\b/],
-    ['Oktober', /\\bokt(?:ober)?\\b|\\boct\\b/],
-    ['November', /\\bnov(?:ember)?\\b/],
-    ['Desember', /\\bdes(?:ember)?\\b/],
+    ['Januari', /\bjan(?:uari)?\b/],
+    ['Februari', /\bfeb(?:ruari)?\b/],
+    ['Maret', /\bmar(?:et)?\b/],
+    ['April', /\bapr(?:il)?\b/],
+    ['Mei', /\bmei\b/],
+    ['Juni', /\bjun(?:i)?\b/],
+    ['Juli', /\bjul(?:i)?\b/],
+    ['Agustus', /\bag[tu]?(?:ustus)?\b/],
+    ['September', /\bsep(?:t|tember)?\b/],
+    ['Oktober', /\bokt(?:ober)?\b|\boct\b/],
+    ['November', /\bnov(?:ember)?\b/],
+    ['Desember', /\bdes(?:ember)?\b/],
   ];
 
   for (const [month, pattern] of patterns) {
