@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { getSiteSetting } from '../utils/siteSettingsHelper';
 
-const DEFAULT_IMAGE = 'https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/logos/ketua.png';
 const DEFAULT_TEXT = `Selamat datang di PB Bilibili 162. Kami menyambut hangat seluruh atlet bulutangkis dan para pecinta olahraga bulutangkis di Kota Parepare. Kehadiran Anda adalah semangat bagi kami untuk terus berkontribusi bagi kemajuan bulutangkis di daerah kita tercinta.
 
 Bagi rekan-rekan atlet, kami berkomitmen menyediakan wadah pelatihan yang terstruktur, disiplin, dan berintegritas untuk mengasah potensi maksimal Anda. Sementara bagi seluruh pecinta bulutangkis di Parepare, mari kita jadikan klub ini sebagai rumah bersama dalam memupuk sportivitas dan kegemaran terhadap olahraga ini.
@@ -13,7 +12,7 @@ interface SambutanConfig {
 }
 
 const bust = (url: string, stamp?: string) => {
-  if (!url) return DEFAULT_IMAGE;
+  if (!url) return '';
   try {
     const u = new URL(url, window.location.origin);
     u.searchParams.set('v', String(stamp || Date.now()));
