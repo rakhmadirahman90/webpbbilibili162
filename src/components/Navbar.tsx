@@ -35,7 +35,7 @@ export const DEFAULT_NAV_ITEMS = [
   { id: 'kontak', label: 'Kontak', path: 'contact', type: 'link', parent_id: 'contact', order_index: 1, is_active: true },
   { id: 'masukan-usulan', label: 'Kirim Usulan / Saran / Masukan', path: 'masukan-usulan', type: 'link', parent_id: 'contact', order_index: 2, is_active: true },
   { id: 'faq', label: 'FAQ', path: 'faq', type: 'link', parent_id: 'contact', order_index: 3, is_active: true },
-  { id: 'contact-payment', label: 'Informasi Rekening & QRIS PB Bilibili 162', path: 'informasi-rekening-qris', type: 'link', parent_id: 'contact', order_index: 4, is_active: true }
+  { id: 'contact-payment', label: 'Rekening dan QRIS', path: 'informasi-rekening-qris', type: 'link', parent_id: 'contact', order_index: 4, is_active: true }
 ];
 
 export const ATLET_DEFAULT_SUBMENUS = DEFAULT_NAV_ITEMS.filter(i => i.parent_id === 'atlet');
