@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, memo } from 'react';
-import { Globe, Home, ChevronDown, Menu, X, MapPin, UserPlus, FileText, Trophy, BrainCircuit, Youtube, Instagram, Facebook, Twitter, Radio, LogIn, LayoutDashboard, LogOut, Timer, HelpCircle, Info, Users, Award, Image as ImageIcon, Building2, Target, Shield, Newspaper, Sparkles } from 'lucide-react';
+import { Globe, Home, ChevronDown, Menu, X, MapPin, UserPlus, FileText, Trophy, BrainCircuit, Youtube, Instagram, Facebook, Twitter, Radio, LogIn, LayoutDashboard, LogOut, Timer, HelpCircle, Info, Users, Award, Image as ImageIcon, Building2, Target, Shield, Newspaper, Sparkles, CreditCard } from 'lucide-react';
 import { supabase, warmupRouteData } from '../supabase';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
@@ -258,7 +258,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
   };
   const iconFor = (path = '', label = '') => {
     const p = path.toLowerCase(), l = label.toLowerCase();
-    const C = p.includes('jadwal') ? Timer : p.includes('berita') ? Newspaper : p.includes('prestasi') ? Award : p.includes('atlet') || l.includes('atlet') ? Users : p.includes('peringkat') || p.includes('rank') ? Trophy : p.includes('quiz') || p.includes('kuis') ? BrainCircuit : p.includes('gallery') || p.includes('galeri') ? ImageIcon : p.includes('contact') || l.includes('hubungi') ? MapPin : p.includes('faq') ? HelpCircle : p.includes('fasilitas') ? Building2 : p.includes('visi') ? Target : p.includes('struktur') ? Users : p.includes('dokumen') ? FileText : p.includes('tentang') || p === 'about' ? Shield : p === 'quiz' ? BrainCircuit : p === 'home' ? Home : p.includes('sponsorship') || p.includes('sponsor') || l.includes('sponsor') ? Sparkles : Sparkles;
+    const C = p.includes('jadwal') ? Timer : p.includes('berita') ? Newspaper : p.includes('prestasi') ? Award : p.includes('atlet') || l.includes('atlet') ? Users : p.includes('peringkat') || p.includes('rank') ? Trophy : p.includes('quiz') || p.includes('kuis') ? BrainCircuit : p.includes('gallery') || p.includes('galeri') ? ImageIcon : p.includes('qris') || p.includes('rekening') || l.includes('rekening') || l.includes('qris') ? CreditCard : p.includes('contact') || l.includes('hubungi') ? MapPin : p.includes('faq') ? HelpCircle : p.includes('fasilitas') ? Building2 : p.includes('visi') ? Target : p.includes('struktur') ? Users : p.includes('dokumen') ? FileText : p.includes('tentang') || p === 'about' ? Shield : p === 'quiz' ? BrainCircuit : p === 'home' ? Home : p.includes('sponsorship') || p.includes('sponsor') || l.includes('sponsor') ? Sparkles : Sparkles;
     return <C size={15} className="shrink-0 text-blue-400" />;
   };
 
