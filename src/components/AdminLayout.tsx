@@ -80,7 +80,7 @@ export default function AdminLayout({ children, email }: AdminLayoutProps) {
         <span className="admin-mobile-badge text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full whitespace-nowrap">{isAdmin ? 'Admin Portal' : 'Portal Anggota'}</span>
       </header>
       {isAdmin && <a href="/admin/sponsorship" className="fixed right-5 top-4 z-50 hidden md:inline-flex items-center gap-2 rounded-xl border border-amber-400/20 bg-[#0b1224]/95 px-3 py-2 text-[9px] font-black uppercase tracking-wider text-amber-200 shadow-xl backdrop-blur hover:border-amber-300/40" aria-label="Kelola sponsorship"><Handshake size={14}/> Sponsorship</a>}
-      <main className="admin-main flex-1 min-w-0 min-h-0 overflow-y-auto overflow-x-hidden flex flex-col overscroll-contain">{content}</main>
+      <main className="admin-main flex-1 min-w-0 min-h-0 overflow-y-auto overflow-x-hidden flex flex-col overscroll-auto touch-pan-y" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y', overscrollBehaviorY: 'auto' }}>{content}</main>
     </div>
   </div>;
 }
