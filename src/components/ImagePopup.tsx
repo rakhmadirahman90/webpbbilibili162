@@ -346,7 +346,6 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
       </div>
     </div>
   );
-  );
 }
 
 export default ImagePopup;
