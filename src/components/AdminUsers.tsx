@@ -61,7 +61,8 @@ export default function AdminUsers({ session }: { session: any }) {
       bytes.forEach((b) => { binary += String.fromCharCode(b); });
       return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
     };
-    return `pbkdf2$sha256$${iterations}$${toBase64Url(salt)}$${toBase64Url(new Uint8Array(bits))}`;
+    const hash = `pbkdf2$sha256${iterations}${toBase64Url(salt)}${toBase64Url(new Uint8Array(bits))}`;
+    return { hash, salt: toBase64Url(salt) };
   };
 
   const [saving, setSaving] = useState(false);
@@ -354,9 +355,9 @@ export default function AdminUsers({ session }: { session: any }) {
   });
 
   return (
-    <div className="mx-auto w-full max-w-[1600px] min-h-full flex flex-col p-3 sm:p-5 lg:p-7 space-y-4 md:space-y-6 overflow-y-auto overflow-x-hidden overscroll-contain pb-28 md:pb-10">
+    <div className="mx-auto w-full max-w-[1680px] min-h-full flex flex-col p-3 sm:p-5 lg:p-7 space-y-4 md:space-y-6 overflow-y-auto overflow-x-hidden overscroll-contain pb-28 md:pb-10">
       {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gradient-to-r from-slate-900 via-[#0b1224] to-slate-900 p-4 sm:p-6 rounded-[24px] md:rounded-[30px] border border-blue-300/10 shadow-[0_24px_90px_rgba(0,0,0,.35)] relative overflow-hidden shrink-0">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gradient-to-br from-[#0b1c38] via-[#07152a] to-[#050d1c] p-4 sm:p-6 rounded-[24px] md:rounded-[30px] border border-blue-300/10 shadow-[0_24px_90px_rgba(0,0,0,.35)] relative overflow-hidden shrink-0">
         <div className="absolute top-0 right-0 w-48 h-48 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between w-full gap-4">
           <div>
@@ -364,7 +365,7 @@ export default function AdminUsers({ session }: { session: any }) {
               <ShieldCheck size={12} />
               <span>Admin Security & Access Management</span>
             </div>
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-white italic uppercase tracking-tighter">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-white italic uppercase tracking-[-.04em]">
               Kelola <span className="text-blue-500">User & Hak Akses</span>
             </h1>
             <p className="text-slate-400 text-xs sm:text-sm font-medium mt-0.5">
@@ -399,8 +400,8 @@ export default function AdminUsers({ session }: { session: any }) {
       </div>
 
       {/* Dashboard summary cards */}
-      <section className="flex flex-wrap gap-3 shrink-0">
-        <div className="group w-[calc(50%-6px)] lg:w-[calc(25%-9px)] rounded-2xl border border-blue-400/15 bg-gradient-to-br from-[#102a61] via-[#0b1835] to-[#081326] p-3.5 sm:p-4 shadow-xl shadow-blue-950/20 transition-all hover:-translate-y-0.5">
+      <section className="grid grid-cols-2 xl:grid-cols-4 gap-3 shrink-0">
+        <div className="group w-full rounded-2xl border border-blue-400/15 bg-gradient-to-br from-[#102a61] via-[#0b1835] to-[#081326] p-3.5 sm:p-4 shadow-xl shadow-blue-950/20 transition-all hover:-translate-y-0.5">
           <div className="flex items-center justify-between">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/15 text-blue-300 ring-1 ring-blue-400/20"><Users size={20}/></div>
             <span className="text-[9px] font-black uppercase tracking-widest text-blue-300/50">Total</span>
@@ -408,7 +409,7 @@ export default function AdminUsers({ session }: { session: any }) {
           <div className="mt-3 text-2xl font-black text-white">{users.length}</div>
           <div className="text-[10px] font-semibold text-slate-400">Total User</div>
         </div>
-        <div className="group w-[calc(50%-6px)] lg:w-[calc(25%-9px)] rounded-2xl border border-emerald-400/15 bg-gradient-to-br from-[#092d28] via-[#071c1d] to-[#061318] p-3.5 sm:p-4 shadow-xl transition-all hover:-translate-y-0.5">
+        <div className="group w-full rounded-2xl border border-emerald-400/15 bg-gradient-to-br from-[#092d28] via-[#071c1d] to-[#061318] p-3.5 sm:p-4 shadow-xl transition-all hover:-translate-y-0.5">
           <div className="flex items-center justify-between">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-400/20"><ShieldCheck size={20}/></div>
             <span className="text-[9px] font-black uppercase tracking-widest text-emerald-300/50">Admin</span>
@@ -416,7 +417,7 @@ export default function AdminUsers({ session }: { session: any }) {
           <div className="mt-3 text-2xl font-black text-white">{adminCount}</div>
           <div className="text-[10px] font-semibold text-slate-400">Admin Klub</div>
         </div>
-        <div className="group w-[calc(50%-6px)] lg:w-[calc(25%-9px)] rounded-2xl border border-cyan-400/15 bg-gradient-to-br from-[#092b4b] via-[#081b30] to-[#061321] p-3.5 sm:p-4 shadow-xl transition-all hover:-translate-y-0.5">
+        <div className="group w-full rounded-2xl border border-cyan-400/15 bg-gradient-to-br from-[#092b4b] via-[#081b30] to-[#061321] p-3.5 sm:p-4 shadow-xl transition-all hover:-translate-y-0.5">
           <div className="flex items-center justify-between">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-500/15 text-cyan-300 ring-1 ring-cyan-400/20"><UserCheck size={20}/></div>
             <span className="text-[9px] font-black uppercase tracking-widest text-cyan-300/50">Member</span>
@@ -424,7 +425,7 @@ export default function AdminUsers({ session }: { session: any }) {
           <div className="mt-3 text-2xl font-black text-white">{memberCount}</div>
           <div className="text-[10px] font-semibold text-slate-400">Anggota</div>
         </div>
-        <button type="button" onClick={() => setShowOnlineModal(true)} className="text-left group w-[calc(50%-6px)] lg:w-[calc(25%-9px)] rounded-2xl border border-teal-400/15 bg-gradient-to-br from-[#082b2a] via-[#071b21] to-[#061318] p-3.5 sm:p-4 shadow-xl transition-all hover:-translate-y-0.5">
+        <button type="button" onClick={() => setShowOnlineModal(true)} className="text-left group w-full rounded-2xl border border-teal-400/15 bg-gradient-to-br from-[#082b2a] via-[#071b21] to-[#061318] p-3.5 sm:p-4 shadow-xl transition-all hover:-translate-y-0.5">
           <div className="flex items-center justify-between">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-500/15 text-teal-300 ring-1 ring-teal-400/20"><Activity size={20}/></div>
             <span className="flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-emerald-300"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"/> Online</span>
@@ -453,7 +454,7 @@ export default function AdminUsers({ session }: { session: any }) {
       </section>
 
       {/* Search, filter & quick actions */}
-      <section className="rounded-[24px] border border-blue-300/10 bg-[#07152a]/90 p-3 sm:p-4 shadow-[0_18px_60px_rgba(0,0,0,.24)]">
+      <section className="rounded-[24px] border border-blue-300/10 bg-[#07152a]/90 p-3 sm:p-4 shadow-[0_18px_60px_rgba(0,0,0,.24)] sticky top-2 z-20 shadow-[0_18px_60px_rgba(0,0,0,.24)]">
         <div className="flex flex-col xl:flex-row gap-3">
           <div className="relative flex-1 min-w-0">
             <Search size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -500,7 +501,7 @@ export default function AdminUsers({ session }: { session: any }) {
       </section>
 
       {/* Users Table / List / Mobile Cards */}
-      <div className="bg-[#0b1224]/90 border border-white/10 rounded-2xl md:rounded-3xl overflow-hidden shadow-xl shrink-0 flex flex-col">
+      <div className="bg-gradient-to-b from-[#0b172d] to-[#07101f] border border-white/10 rounded-2xl md:rounded-3xl overflow-hidden shadow-[0_24px_80px_rgba(0,0,0,.28)] shrink-0 flex flex-col">
         <div className="p-4 border-b border-white/5 bg-black/20 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3 min-w-0">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-500/10 text-blue-300 ring-1 ring-blue-400/10"><Users size={17}/></div>
@@ -624,15 +625,15 @@ export default function AdminUsers({ session }: { session: any }) {
               </div>
 
               {/* Desktop Table view (>= md) */}
-              <div className="hidden md:block overflow-x-auto overscroll-x-contain">
-                <table className="w-full text-left border-collapse text-xs">
+              <div className="hidden md:block overflow-x-auto overscroll-x-contain scrollbar-thin">
+                <table className="w-full min-w-[980px] text-left border-collapse text-xs">
                   <thead>
                     <tr className="bg-black/30 text-slate-400 uppercase text-[9px] tracking-wider border-b border-white/5">
-                      <th className="p-4">Pengguna / Atlet</th>
+                      <th className="p-4"># / Pengguna</th>
                       <th className="p-4">Kontak (WhatsApp / Email)</th>
                       <th className="p-4">Hak Akses (Role)</th>
                       <th className="p-4">Kategori</th>
-                      <th className="p-4">Status PIN</th>
+                      <th className="p-4">Status Password</th>
                       <th className="p-4 text-right">Aksi</th>
                     </tr>
                   </thead>
@@ -736,6 +737,33 @@ export default function AdminUsers({ session }: { session: any }) {
           )}
         </div>
       </div>
+
+      {/* Quick security tips */}
+      <section className="grid grid-cols-1 xl:grid-cols-2 gap-3 shrink-0">
+        <div className="rounded-[22px] border border-cyan-400/10 bg-gradient-to-br from-[#081c32] to-[#071122] p-4 sm:p-5 shadow-xl">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-300 ring-1 ring-cyan-400/15"><Lightbulb size={18}/></div>
+            <div><h3 className="text-sm font-black text-white">Tips Pengelolaan User</h3><p className="text-[10px] text-slate-500">Praktik aman untuk akun PB BILIBILI 162</p></div>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-2 text-[10px] text-slate-400">
+            <div className="rounded-xl bg-white/[.025] border border-white/5 p-3">• Anggota menggunakan password default saat pertama kali login.</div>
+            <div className="rounded-xl bg-white/[.025] border border-white/5 p-3">• Login pertama wajib diarahkan untuk mengganti password.</div>
+            <div className="rounded-xl bg-white/[.025] border border-white/5 p-3">• Password pribadi disimpan dalam bentuk hash, bukan plaintext.</div>
+            <div className="rounded-xl bg-white/[.025] border border-white/5 p-3">• Gunakan nomor WhatsApp yang aktif dan terdaftar.</div>
+          </div>
+        </div>
+        <div className="rounded-[22px] border border-blue-400/10 bg-gradient-to-br from-[#0a1930] to-[#071122] p-4 sm:p-5 shadow-xl">
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 text-blue-300 ring-1 ring-blue-400/15"><ShieldCheck size={18}/></div><div><h3 className="text-sm font-black text-white">Status Keamanan</h3><p className="text-[10px] text-slate-500">Ringkasan akses saat ini</p></div></div>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-400/15 px-2.5 py-1 text-[9px] font-black text-emerald-300"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"/> Aktif</span>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <div className="rounded-xl border border-white/5 bg-black/15 p-3"><p className="text-lg font-black text-white">{defaultPasswordCount}</p><p className="text-[9px] text-slate-500">Wajib ganti</p></div>
+            <div className="rounded-xl border border-white/5 bg-black/15 p-3"><p className="text-lg font-black text-white">{customPasswordCount}</p><p className="text-[9px] text-slate-500">Password pribadi</p></div>
+            <div className="rounded-xl border border-white/5 bg-black/15 p-3"><p className="text-lg font-black text-white">{onlineUsers.length}</p><p className="text-[9px] text-slate-500">Online</p></div>
+          </div>
+        </div>
+      </section>
 
       {/* Online Users Modal */}
       {showOnlineModal && (
