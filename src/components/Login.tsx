@@ -329,6 +329,7 @@ export default function Login() {
             {errorMsg && <div role="alert" className="mb-3 flex gap-3 rounded-2xl border border-red-400/20 bg-red-500/[0.07] p-3.5"><AlertCircle size={17} className="mt-0.5 shrink-0 text-red-400"/><div className="min-w-0"><p className="text-xs font-extrabold text-red-300">Akses Ditolak</p><p className="mt-0.5 break-words text-[11px] leading-5 text-red-200/70">{errorMsg}</p></div></div>}
             {successMsg && <div role="status" className="mb-3 flex gap-3 rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.07] p-3.5"><CheckCircle2 size={17} className="mt-0.5 shrink-0 text-emerald-400"/><p className="text-[11px] leading-5 text-emerald-200/80">{successMsg}</p></div>}
 
+  {!mustChangePassword ? (
   <form onSubmit={e=>{e.preventDefault();handleLogin();}} className="space-y-3">
     <label className="mb-1 ml-1 flex items-center gap-2 text-[8px] font-black uppercase tracking-[.14em] text-blue-100/60 sm:text-[9px]"><Smartphone size={13} className="text-blue-400"/> Nomor WhatsApp Terdaftar</label>
     <div className="relative">
@@ -385,6 +386,7 @@ export default function Login() {
       {loading ? <Loader2 size={18} className="animate-spin"/> : <LockKeyhole size={18}/>}<span>{loading ? 'Menyimpan…' : 'Simpan Password Baru'}</span>
     </button>
   </form>
+  )}
 
             {resetMode && (
               <div className="mt-4 rounded-2xl border border-cyan-400/20 bg-[#071b32]/95 p-4 shadow-[0_18px_50px_rgba(0,0,0,.28)]">
