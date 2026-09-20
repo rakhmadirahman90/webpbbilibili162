@@ -47,6 +47,7 @@ type PlayerReport = Member & {
   paidDate: string | null;
   monthlyCategory: string;
   monthlyTransactions: Transaction[];
+  allTransactions: Transaction[];
   totalContributions: number;
 };
 
@@ -188,23 +189,49 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
   const loadData = async () => {
     setLoading(true);
     try {
-      const [membersRes, transactionsRes] = await Promise.all([
-        supabase
-          .from('pendaftaran')
-          .select('id, nama, whatsapp, kategori, kategori_atlet, status')
-          .in('status', ACTIVE_STATUSES)
-          .order('nama', { ascending: true }),
-        supabase
-          .from('kas_pb')
-          .select('id, tanggal_transaksi, nama_pembayar, kategori, jumlah_bayar, jenis_transaksi, keterangan, jumlah_bola')
-          .order('tanggal_transaksi', { ascending: false }),
+      // Ambil seluruh data secara bertahap agar laporan tidak berhenti pada
+      // batas default API. Supabase merekomendasikan range() untuk pagination.
+      const pageSize = 500;
+
+      const fetchAllMembers = async (): Promise<Member[]> => {
+        const rows: any[] = [];
+        for (let from = 0; ; from += pageSize) {
+          const { data, error } = await supabase
+            .from('pendaftaran')
+            .select('id, nama, whatsapp, kategori, kategori_atlet, status')
+            .in('status', ACTIVE_STATUSES)
+            .order('nama', { ascending: true })
+            .range(from, from + pageSize - 1);
+          if (error) throw error;
+          rows.push(...(data || []));
+          if (!data || data.length < pageSize) break;
+        }
+        return rows as Member[];
+      };
+
+      const fetchAllTransactions = async (): Promise<Transaction[]> => {
+        const rows: any[] = [];
+        for (let from = 0; ; from += pageSize) {
+          const { data, error } = await supabase
+            .from('kas_pb')
+            .select('id, tanggal_transaksi, nama_pembayar, kategori, jumlah_bayar, jenis_transaksi, keterangan, jumlah_bola')
+            .order('tanggal_transaksi', { ascending: false })
+            .order('created_at', { ascending: false })
+            .range(from, from + pageSize - 1);
+          if (error) throw error;
+          rows.push(...(data || []));
+          if (!data || data.length < pageSize) break;
+        }
+        return rows as Transaction[];
+      };
+
+      const [memberRows, transactionRows] = await Promise.all([
+        fetchAllMembers(),
+        fetchAllTransactions(),
       ]);
 
-      if (membersRes.error) throw membersRes.error;
-      if (transactionsRes.error) throw transactionsRes.error;
-
-      setMembers((membersRes.data || []) as Member[]);
-      setTransactions((transactionsRes.data || []) as Transaction[]);
+      setMembers(memberRows);
+      setTransactions(transactionRows);
     } catch (error: any) {
       console.error('Gagal memuat laporan iuran:', error);
       Swal.fire({
@@ -296,6 +323,7 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
         paidDate,
         monthlyCategory,
         monthlyTransactions,
+        allTransactions: memberTransactions,
         totalContributions,
       };
     });
@@ -395,10 +423,10 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
                 <Wallet size={13} /> Administrasi & Keuangan
               </div>
               <h1 className="text-2xl font-black tracking-tight text-white sm:text-3xl">
-                Laporan Pembayaran Iuran Atlet
+                Rekap Iuran Peserta
               </h1>
               <p className="mt-1 max-w-2xl text-xs leading-5 text-slate-400 sm:text-sm">
-                Pantau status pembayaran setiap atlet per bulan dengan tampilan yang ringkas, jelas, dan nyaman dibuka dari HP maupun desktop.
+                Rekap lengkap setiap peserta: status bulanan, nominal, tanggal bayar, total kontribusi, dan seluruh riwayat transaksi.
                 Untuk tahun 2026, periode rekap resmi dimulai pada September.
               </p>
             </div>
@@ -601,7 +629,7 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
           <div className="max-h-[92vh] w-full max-w-2xl overflow-hidden rounded-3xl border border-white/10 bg-[#0b1224] shadow-2xl">
             <div className="flex items-center justify-between border-b border-white/5 px-4 py-4 sm:px-5">
               <div className="min-w-0">
-                <p className="text-[9px] font-black uppercase tracking-widest text-blue-400">Detail Pembayaran Atlet</p>
+                <p className="text-[9px] font-black uppercase tracking-widest text-blue-400">Rekap Lengkap Peserta</p>
                 <h3 className="mt-1 truncate text-lg font-black uppercase text-white">{detail.nama}</h3>
                 <p className="text-[10px] font-bold text-slate-500">{detail.kategori_atlet || '-'} • {detail.whatsapp || '-'}</p>
               </div>
@@ -660,11 +688,17 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
               </div>
 
               <div className="rounded-2xl border border-white/10 bg-black/15 p-3.5">
-                <h4 className="mb-3 text-xs font-black uppercase tracking-wider text-white">Riwayat Pembayaran Iuran</h4>
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <div>
+                    <h4 className="text-xs font-black uppercase tracking-wider text-white">Riwayat Pembayaran Lengkap</h4>
+                    <p className="mt-0.5 text-[9px] font-bold text-slate-500">Seluruh transaksi peserta dari database, bukan hanya 30 transaksi terakhir.</p>
+                  </div>
+                  <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[8px] font-black text-slate-400">
+                    {detail.allTransactions.length} transaksi
+                  </span>
+                </div>
                 <div className="space-y-2">
-                  {transactions
-                    .filter((transaction) => normalizeName(transaction.nama_pembayar) === normalizeName(detail.nama) && PAYMENT_CATEGORIES.includes(transaction.kategori))
-                    .slice(0, 30)
+                  {detail.allTransactions
                     .map((transaction) => (
                       <div key={transaction.id} className="flex items-center justify-between gap-3 rounded-xl border border-white/5 bg-white/[0.02] p-3">
                         <div className="min-w-0">
@@ -674,8 +708,8 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
                         <p className="shrink-0 text-xs font-black text-emerald-300">Rp {rupiah(transaction.jumlah_bayar)}</p>
                       </div>
                     ))}
-                  {!transactions.some((transaction) => normalizeName(transaction.nama_pembayar) === normalizeName(detail.nama) && PAYMENT_CATEGORIES.includes(transaction.kategori)) && (
-                    <p className="py-6 text-center text-[10px] font-bold uppercase tracking-wider text-slate-600">Belum ada riwayat pembayaran.</p>
+                  {!detail.allTransactions.length && (
+                    <p className="py-6 text-center text-[10px] font-bold uppercase tracking-wider text-slate-600">Belum ada riwayat transaksi.</p>
                   )}
                 </div>
               </div>
