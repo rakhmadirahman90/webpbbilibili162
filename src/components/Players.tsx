@@ -15,6 +15,7 @@ import {
   Trophy,
   ChevronLeft,
   ChevronRight,
+  ArrowLeft,
   User,
   Star,
   Loader2,
@@ -347,8 +348,23 @@ const Players: React.FC<{ initialFilter?: string }> = ({
         )}
 
         <div className="flex flex-col flex-grow max-w-7xl mx-auto px-4 mt-0 relative z-10 w-full gap-3">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-3">
-            <div>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
+            <div className="min-w-0 w-full">
+              <button
+                type="button"
+                onClick={() => {
+                  try { sessionStorage.setItem('pb_suppress_landing_popup', '1'); } catch {}
+                  navigate('/');
+                  window.requestAnimationFrame(() => {
+                    window.scrollTo({ top: 0, behavior: 'auto' });
+                  });
+                }}
+                className="mb-4 inline-flex min-h-10 items-center gap-2 rounded-full border border-blue-400/30 bg-[#111a2b]/95 px-4 py-2 text-[10px] font-extrabold uppercase tracking-[0.12em] text-blue-200 shadow-lg shadow-black/20 backdrop-blur-md transition hover:border-blue-400/60 hover:bg-blue-600 hover:text-white active:scale-[0.98]"
+                aria-label="Kembali ke Profil Atlet di Landing Page"
+              >
+                <ArrowLeft size={16} strokeWidth={2.5} />
+                <span>Kembali ke Profil Atlet</span>
+              </button>
               <motion.h2 initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="text-2xl sm:text-4xl md:text-5xl font-black italic uppercase tracking-tighter">
                 PROFIL <span className="text-blue-600">PEMAIN</span>
               </motion.h2>
