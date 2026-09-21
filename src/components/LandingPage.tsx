@@ -109,6 +109,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
         try {
           sessionStorage.removeItem('pb_landing_athlete_return');
           sessionStorage.removeItem('pb_landing_athlete_id');
+          window.setTimeout(() => sessionStorage.removeItem('pb_suppress_landing_popup'), 900);
         } catch {}
         return;
       }
