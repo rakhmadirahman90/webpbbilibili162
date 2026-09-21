@@ -672,59 +672,60 @@ const Rankings: React.FC = () => {
       {/* Background glow */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(circle_at_50%_0%,#1e3a8a22,transparent_60%)] pointer-events-none" />
 
-      <div className="max-w-6xl mx-auto px-2.5 sm:px-4 w-full flex flex-col flex-1 min-h-0 gap-2.5 relative z-10 overflow-hidden">
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 w-full flex flex-col flex-none lg:flex-1 min-h-0 gap-3 relative z-10 overflow-visible lg:overflow-hidden">
         
         {/* COMPACT TOP HEADER BAR */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-slate-900/60 border border-slate-800/80 p-3.5 sm:p-4 rounded-2xl backdrop-blur-xl shadow-xl shrink-0">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="px-2.5 py-0.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[8px] sm:text-[9px] font-black uppercase tracking-widest rounded-full flex items-center gap-1">
-                <Trophy size={11} className="text-blue-400" /> Standar Resmi PB Bilibili 162
-              </span>
-              <span className="text-[8px] font-black uppercase text-emerald-400 flex items-center gap-1 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Live Sync
-              </span>
-            </div>
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-black italic uppercase tracking-tighter text-white">
-              PERINGKAT &amp; <span className="text-blue-500">POIN ATLET</span>
-            </h1>
-          </div>
-
-          <div className="flex items-center gap-2.5 w-full sm:w-auto justify-between sm:justify-end">
-            {/* Weekly Hero Mini Chip */}
-            {topGainer && (
-              <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-orange-500/10 border border-orange-500/30 rounded-xl text-orange-400 text-xs">
-                <Flame size={14} className="text-orange-500 animate-pulse" />
-                <span className="text-[9px] font-bold uppercase tracking-wider">
-                  Hero: <strong className="text-white font-black">{topGainer.atlet_nama}</strong> (+{topGainer.total_gain} PTS)
+        <div className="flex flex-col gap-3 bg-slate-900/60 border border-slate-800/80 p-3 sm:p-4 rounded-2xl backdrop-blur-xl shadow-xl shrink-0">
+          <div className="flex items-start justify-between gap-3 min-w-0">
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-1.5 mb-2">
+                <span className="px-2.5 py-1 bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[8px] sm:text-[9px] font-black uppercase tracking-widest rounded-full flex items-center gap-1 whitespace-nowrap">
+                  <Trophy size={11} className="text-blue-400" /> Standar Resmi PB Bilibili 162
+                </span>
+                <span className="text-[8px] font-black uppercase text-emerald-400 flex items-center gap-1 bg-emerald-500/10 px-2 py-1 rounded-md border border-emerald-500/20 whitespace-nowrap">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Live Sync
                 </span>
               </div>
-            )}
-
-            <div className="hidden md:flex items-center gap-2 px-3 py-2 bg-blue-500/10 border border-blue-500/20 rounded-xl">
-              <div className="w-7 h-7 rounded-lg bg-blue-500/10 grid place-items-center text-blue-400"><ShieldCheck size={15} /></div>
-              <div>
-                <p className="text-[8px] font-black uppercase tracking-widest text-blue-300">Seeded Terintegrasi</p>
-                <p className="text-[9px] font-bold text-slate-400">BILIBILI 162 CUP I • 08–12 Sep 2026</p>
-              </div>
+              <h1 className="text-[25px] sm:text-2xl md:text-3xl font-black italic uppercase tracking-[-0.04em] text-white leading-none">
+                PERINGKAT &amp; <span className="text-blue-500">POIN ATLET</span>
+              </h1>
+              <p className="mt-2 text-[9px] sm:text-[10px] text-slate-500 font-bold uppercase tracking-[0.12em]">
+                Ranking atlet • poin terverifikasi • sinkronisasi realtime
+              </p>
             </div>
 
-            {/* Matrix Button */}
-            <button
-              onClick={() => setIsMatrixOpen(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-blue-400 border border-slate-700 hover:border-blue-500 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer shadow-md"
-            >
-              <Activity size={14} />
-              <span>Matrix Poin</span>
-            </button>
+            <div className="hidden md:flex items-center gap-2 shrink-0">
+              {topGainer && (
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-orange-500/10 border border-orange-500/30 rounded-xl text-orange-400">
+                  <Flame size={14} className="text-orange-500 animate-pulse" />
+                  <span className="text-[9px] font-bold uppercase tracking-wider">
+                    Hero: <strong className="text-white font-black">{topGainer.atlet_nama}</strong> (+{topGainer.total_gain} PTS)
+                  </span>
+                </div>
+              )}
+              <div className="flex items-center gap-2 px-3 py-2 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+                <div className="w-7 h-7 rounded-lg bg-blue-500/10 grid place-items-center text-blue-400"><ShieldCheck size={15} /></div>
+                <div>
+                  <p className="text-[8px] font-black uppercase tracking-widest text-blue-300">Seeded Terintegrasi</p>
+                  <p className="text-[9px] font-bold text-slate-400">BILIBILI 162 CUP I • 08–12 Sep 2026</p>
+                </div>
+              </div>
+            </div>
           </div>
+
+          <button
+            onClick={() => setIsMatrixOpen(true)}
+            className="w-full md:w-auto md:self-end flex items-center justify-center gap-2 px-4 py-3 md:py-2.5 bg-slate-800 hover:bg-slate-700 active:bg-slate-700 text-blue-400 border border-slate-700 hover:border-blue-500 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer shadow-md"
+          >
+            <Activity size={15} />
+            <span>Matrix Poin</span>
+          </button>
         </div>
 
         {/* SEARCH & FILTER CONTROLS BAR */}
-        <div className="flex flex-col md:flex-row items-center gap-2.5 bg-slate-900/40 border border-slate-800/80 p-2.5 rounded-2xl backdrop-blur-md shrink-0">
-          {/* Search Box */}
-          <div className="relative flex-1 w-full">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" size={15} />
+        <div className="flex flex-col gap-3 bg-slate-900/40 border border-slate-800/80 p-3 rounded-2xl backdrop-blur-md shrink-0">
+          <div className="relative w-full">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" size={17} />
             <input
               type="text"
               placeholder="Cari nama atlet..."
@@ -733,51 +734,54 @@ const Rankings: React.FC = () => {
                 setSearchTerm(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full bg-slate-950/70 border border-slate-800 rounded-xl py-2 pl-9 pr-8 text-xs font-bold text-white placeholder:text-slate-600 focus:border-blue-500 focus:outline-none transition-all"
+              className="w-full h-12 bg-slate-950/70 border border-slate-800 rounded-xl py-2 pl-10 pr-9 text-sm sm:text-xs font-bold text-white placeholder:text-slate-600 focus:border-blue-500 focus:outline-none transition-all"
             />
             {searchTerm && (
               <button
                 onClick={() => setSearchTerm('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white cursor-pointer"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 w-8 h-8 grid place-items-center text-slate-500 hover:text-white cursor-pointer rounded-lg hover:bg-slate-800"
+                aria-label="Hapus pencarian"
               >
-                <X size={14} />
+                <X size={15} />
               </button>
             )}
           </div>
 
-          {/* Seed Category Filters */}
-          <div className="flex items-center justify-between w-full md:w-auto gap-2">
-            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
-              <div className="text-slate-500 px-1 hidden lg:block">
+          <div className="w-full min-w-0">
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5 pb-1 touch-pan-x">
+              <div className="hidden lg:flex items-center justify-center w-8 h-8 shrink-0 text-slate-500">
                 <Filter size={13} />
               </div>
-              {CUP1_SEED_FILTERS.map((cat) => {
-                const count = cat === 'All'
-                  ? dbRankings.length
-                  : dbRankings.filter((p) => (p.seed || 'Non-Seed').toUpperCase() === cat.toUpperCase()).length;
-                return (
-                  <button
-                    key={cat}
-                    onClick={() => {
-                      setActiveCategory(cat);
-                      setCurrentPage(1);
-                    }}
-                    className={`px-3 py-1.5 rounded-lg text-[9px] sm:text-[10px] font-black border uppercase whitespace-nowrap transition-all cursor-pointer ${
-                      activeCategory === cat
+              <div className="flex items-center gap-1.5 w-max min-w-max">
+                {CUP1_SEED_FILTERS.map((cat) => {
+                  const count = cat === 'All'
+                    ? dbRankings.length
+                    : dbRankings.filter((p) => (p.seed || 'Non-Seed').toUpperCase() === cat.toUpperCase()).length;
+                  return (
+                    <button
+                      key={cat}
+                      onClick={() => {
+                        setActiveCategory(cat);
+                        setCurrentPage(1);
+                      }}
+                      className={'shrink-0 h-9 px-3 rounded-lg text-[9px] sm:text-[10px] font-black border uppercase whitespace-nowrap transition-all cursor-pointer ' + (activeCategory === cat
                         ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-600/30'
-                        : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:border-slate-700'
-                    }`}
-                  >
-                    {cat === 'All' ? 'SEMUA' : `SEED ${cat}`} <span className="opacity-60">({count})</span>
-                  </button>
-                );
-              })}
+                        : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:border-slate-700')}
+                    >
+                      {cat === 'All' ? 'SEMUA' : 'SEED ' + cat} <span className="opacity-60">({count})</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
+          </div>
 
-            {/* Items Per Page Selector (Mobile & Desktop) */}
-            <div className="flex items-center gap-1 pl-2 border-l border-slate-800 shrink-0">
-              <SlidersHorizontal size={12} className="text-slate-500 hidden sm:block" />
-              <span className="text-[9px] font-bold text-slate-500 uppercase hidden sm:inline">Tampil:</span>
+          <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-800/80 w-full">
+            <div className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider text-slate-500">
+              <SlidersHorizontal size={13} />
+              <span>Tampilkan</span>
+            </div>
+            <div className="flex items-center gap-1.5">
               {[5, 10, 20, 'All'].map((num) => (
                 <button
                   key={String(num)}
@@ -785,11 +789,9 @@ const Rankings: React.FC = () => {
                     setItemsPerPage(num as number | 'All');
                     setCurrentPage(1);
                   }}
-                  className={`px-2 py-1 text-[9px] font-black rounded border transition-all cursor-pointer ${
-                    itemsPerPage === num
-                      ? 'bg-blue-500/20 text-blue-400 border-blue-500/40'
-                      : 'bg-slate-950 text-slate-500 border-slate-800 hover:text-slate-300'
-                  }`}
+                  className={'h-9 min-w-[38px] px-2 text-[9px] font-black rounded-lg border transition-all cursor-pointer ' + (itemsPerPage === num
+                    ? 'bg-blue-500/20 text-blue-400 border-blue-500/40'
+                    : 'bg-slate-950 text-slate-500 border-slate-800 hover:text-slate-300')}
                 >
                   {num === 'All' ? 'Semua' : num}
                 </button>
@@ -826,7 +828,7 @@ const Rankings: React.FC = () => {
         </div>
 
         {/* MAIN DATA SECTION (DESKTOP TABLE & MOBILE CARDS WITH FULL SCROLLING) */}
-        <div ref={listTopRef} className="bg-slate-900/80 border border-slate-800/80 rounded-2xl shadow-2xl flex-1 flex flex-col justify-between overflow-hidden">
+        <div ref={listTopRef} className="bg-slate-900/80 border border-slate-800/80 rounded-2xl shadow-2xl flex-none lg:flex-1 flex flex-col justify-between overflow-visible lg:overflow-hidden">
           {loading ? (
             <div className="flex-1 flex flex-col items-center justify-center py-16 gap-3">
               <Loader2 className="animate-spin text-blue-500" size={32} />
@@ -955,133 +957,92 @@ const Rankings: React.FC = () => {
               </div>
 
               {/* MOBILE CARD LIST VIEW - FULL SCROLLABLE */}
-              <div className="md:hidden divide-y divide-slate-800/40 overflow-y-auto flex-1 min-h-0 custom-scrollbar touch-pan-y">
+              <div className="md:hidden divide-y divide-slate-800/50 overflow-visible flex-none min-h-0">
                 {currentPlayers.map((player) => {
                   const globalRank = dbRankings.findIndex((p) => p.id === player.id) + 1;
                   const style = getCategoryStyles(player.seed);
+                  const basePoints = Number(player.poin || 0);
+                  const bonusPoints = Number(player.bonus || 0);
+                  const rankClass =
+                    globalRank === 1 ? 'text-amber-300 border-amber-400/40 bg-amber-400/10' :
+                    globalRank === 2 ? 'text-slate-200 border-slate-300/30 bg-slate-300/5' :
+                    globalRank === 3 ? 'text-orange-300 border-orange-400/30 bg-orange-400/10' :
+                    'text-blue-400 border-slate-700 bg-slate-800';
 
                   return (
-                    <div
+                    <button
                       key={player.id}
+                      type="button"
                       onClick={() => setSelectedPlayer(player)}
-                      className="p-3 flex items-center justify-between gap-3 hover:bg-slate-800/50 transition-all cursor-pointer active:bg-slate-800/80"
+                      className="w-full text-left p-3.5 flex items-center gap-2.5 bg-transparent hover:bg-slate-800/50 active:bg-slate-800/80 transition-all cursor-pointer"
                     >
-                      <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                        {/* Rank Badge */}
-                        <div className="w-8 h-8 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0 font-mono font-black italic text-xs text-blue-400 shadow-sm">
-                          #{String(globalRank).padStart(2, '0')}
+                      <div className={'w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 font-mono font-black italic text-[11px] shadow-sm ' + rankClass}>
+                        #{String(globalRank).padStart(2, '0')}
+                      </div>
+
+                      <div className="w-11 h-11 rounded-full bg-slate-800 border border-slate-700 overflow-hidden shrink-0 shadow-md">
+                        {player.photo_url ? (
+                          <img src={player.photo_url} className="w-full h-full object-cover" alt="" loading="lazy" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-slate-600"><User size={18} /></div>
+                        )}
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <p className="font-black italic uppercase text-[13px] leading-tight text-white truncate">{player.player_name}</p>
+                          {globalRank === 1 && <Trophy size={13} className="text-amber-400 shrink-0" />}
                         </div>
 
-                        {/* Photo */}
-                        <div className="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 overflow-hidden shrink-0">
-                          {player.photo_url ? (
-                            <img src={player.photo_url} className="w-full h-full object-cover" alt="" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-slate-600"><User size={16} /></div>
+                        <div className="flex items-center gap-1.5 mt-1.5 min-w-0">
+                          <span className={'shrink-0 text-[8px] font-black px-1.5 py-1 rounded-md border uppercase tracking-wide ' + style.bg + ' ' + style.text + ' ' + style.border}>
+                            {player.seed || 'UNSEEDED'}
+                          </span>
+                          <span className="text-[8px] text-slate-500 font-bold uppercase truncate">{player.category}</span>
+                          {player.seeded_is_cup1 && (
+                            <span className="shrink-0 text-[7px] text-emerald-400 font-black uppercase tracking-wide bg-emerald-500/10 border border-emerald-500/15 px-1.5 py-1 rounded-md">
+                              CUP I
+                            </span>
                           )}
                         </div>
 
-                        {/* Name & Seed */}
-                        <div className="min-w-0 flex-1">
-                          <p className="font-black italic uppercase text-xs sm:text-sm text-white truncate">{player.player_name}</p>
-                          <div className="flex items-center gap-1.5 mt-0.5">
-                            <span className={`text-[7px] font-black px-1.5 py-0.2 rounded border uppercase ${style.bg} ${style.text} ${style.border}`}>
-                              {player.seed || 'UNSEEDED'}
-                            </span>
-                            <span className="text-[8px] text-slate-500 font-bold uppercase">{player.category}</span>
-                          </div>
-                        </div>
+                        <p className="mt-1.5 text-[8px] text-slate-500 font-mono truncate">
+                          Dasar {basePoints.toLocaleString()} {bonusPoints !== 0 ? '• Mutasi ' + (bonusPoints > 0 ? '+' : '') + bonusPoints.toLocaleString() : '• Tanpa mutasi'}
+                        </p>
                       </div>
 
-                      {/* Total Points & Action */}
-                      <div className="text-right shrink-0 flex items-center gap-2.5">
-                        <div>
-                          <p className="font-mono font-black text-white text-xs sm:text-sm">
-                            {Number(player.total_points || 0).toLocaleString()}
-                          </p>
-                          <p className="text-[7px] text-slate-500 font-bold uppercase tracking-wider">PTS</p>
-                        </div>
-                        <div className="p-1.5 bg-slate-800 rounded-lg text-blue-400 border border-slate-700">
-                          <Eye size={13} />
+                      <div className="shrink-0 text-right pl-1">
+                        <p className="text-[8px] font-black uppercase tracking-wider text-slate-500">PTS</p>
+                        <p className="font-mono font-black text-[16px] leading-none text-white mt-1">{Number(player.total_points || 0).toLocaleString()}</p>
+                        <div className="mt-1.5 inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-800 text-blue-400 border border-slate-700">
+                          <Eye size={14} />
                         </div>
                       </div>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
-            </>
-          )}
 
           {/* FOOTER CONTROLS & COMPLETE PAGINATION */}
           <div className="p-3 border-t border-slate-800 bg-slate-950/95 backdrop-blur-md flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
-            {/* Info Range & Page Count */}
-            <div className="flex items-center gap-2 text-[10px] sm:text-xs font-bold text-slate-400">
+            <div className="flex items-center justify-between w-full sm:w-auto gap-2 text-[9px] sm:text-xs font-bold text-slate-400">
               <span>
-                Menampilkan <strong className="text-white font-mono">{startItemIndex}-{endItemIndex}</strong> dari <strong className="text-white font-mono">{filteredData.length}</strong> Atlet
+                <strong className="text-white font-mono">{startItemIndex}-{endItemIndex}</strong> dari <strong className="text-white font-mono">{filteredData.length}</strong> Atlet
               </span>
               {itemsPerPage !== 'All' && totalPages > 1 && (
-                <span className="hidden sm:inline text-slate-600">
-                  • Hal <strong className="text-blue-400 font-mono">{currentPage}</strong> / <strong className="text-white font-mono">{totalPages}</strong>
+                <span className="text-slate-600">
+                  Hal <strong className="text-blue-400 font-mono">{currentPage}</strong>/<strong className="text-white font-mono">{totalPages}</strong>
                 </span>
               )}
             </div>
 
-            {/* Complete Pagination Buttons */}
-            <div className="flex items-center gap-1 sm:gap-1.5">
-              {/* First Page */}
-              <button
-                disabled={currentPage === 1 || itemsPerPage === 'All' || loading}
-                onClick={() => handlePageChange(1)}
-                className="p-1.5 sm:p-2 bg-slate-800 hover:bg-blue-600 disabled:opacity-20 text-white rounded-lg transition-all border border-slate-700 hover:border-blue-500 cursor-pointer"
-                title="Halaman Pertama"
-              >
-                <ChevronsLeft size={14} />
-              </button>
-
-              {/* Prev Page */}
-              <button
-                disabled={currentPage === 1 || itemsPerPage === 'All' || loading}
-                onClick={() => handlePageChange(currentPage - 1)}
-                className="p-1.5 sm:p-2 bg-slate-800 hover:bg-blue-600 disabled:opacity-20 text-white rounded-lg transition-all border border-slate-700 hover:border-blue-500 cursor-pointer"
-                title="Halaman Sebelumnya"
-              >
-                <ChevronLeft size={14} />
-              </button>
-
-              {/* Page Numbers */}
-              <div className="flex items-center gap-1 px-1">
-                {renderPageNumbers()}
-              </div>
-
-              {/* Next Page */}
-              <button
-                disabled={currentPage === totalPages || itemsPerPage === 'All' || totalPages === 0 || loading}
-                onClick={() => handlePageChange(currentPage + 1)}
-                className="p-1.5 sm:p-2 bg-slate-800 hover:bg-blue-600 disabled:opacity-20 text-white rounded-lg transition-all border border-slate-700 hover:border-blue-500 cursor-pointer"
-                title="Halaman Berikutnya"
-              >
-                <ChevronRight size={14} />
-              </button>
-
-              {/* Last Page */}
-              <button
-                disabled={currentPage === totalPages || itemsPerPage === 'All' || totalPages === 0 || loading}
-                onClick={() => handlePageChange(totalPages)}
-                className="p-1.5 sm:p-2 bg-slate-800 hover:bg-blue-600 disabled:opacity-20 text-white rounded-lg transition-all border border-slate-700 hover:border-blue-500 cursor-pointer"
-                title="Halaman Terakhir"
-              >
-                <ChevronsRight size={14} />
-              </button>
-
-              {/* Refresh Button */}
-              <button
-                onClick={fetchRankings}
-                disabled={loading}
-                className="ml-1 sm:ml-2 p-1.5 sm:p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-all border border-slate-700 hover:border-blue-500 cursor-pointer"
-                title="Segarkan Data"
-              >
-                <RefreshCw size={13} className={loading ? 'animate-spin text-blue-400' : ''} />
-              </button>
+            <div className="flex items-center justify-center gap-1.5 w-full sm:w-auto">
+              <button disabled={currentPage === 1 || itemsPerPage === 'All' || loading} onClick={() => handlePageChange(1)} className="w-9 h-9 grid place-items-center bg-slate-800 hover:bg-blue-600 disabled:opacity-20 text-white rounded-lg transition-all border border-slate-700 hover:border-blue-500 cursor-pointer" title="Halaman Pertama"><ChevronsLeft size={14} /></button>
+              <button disabled={currentPage === 1 || itemsPerPage === 'All' || loading} onClick={() => handlePageChange(currentPage - 1)} className="w-9 h-9 grid place-items-center bg-slate-800 hover:bg-blue-600 disabled:opacity-20 text-white rounded-lg transition-all border border-slate-700 hover:border-blue-500 cursor-pointer" title="Halaman Sebelumnya"><ChevronLeft size={14} /></button>
+              <div className="flex items-center gap-1 px-0.5">{renderPageNumbers()}</div>
+              <button disabled={currentPage === totalPages || itemsPerPage === 'All' || totalPages === 0 || loading} onClick={() => handlePageChange(currentPage + 1)} className="w-9 h-9 grid place-items-center bg-slate-800 hover:bg-blue-600 disabled:opacity-20 text-white rounded-lg transition-all border border-slate-700 hover:border-blue-500 cursor-pointer" title="Halaman Berikutnya"><ChevronRight size={14} /></button>
+              <button disabled={currentPage === totalPages || itemsPerPage === 'All' || totalPages === 0 || loading} onClick={() => handlePageChange(totalPages)} className="w-9 h-9 grid place-items-center bg-slate-800 hover:bg-blue-600 disabled:opacity-20 text-white rounded-lg transition-all border border-slate-700 hover:border-blue-500 cursor-pointer" title="Halaman Terakhir"><ChevronsRight size={14} /></button>
+              <button onClick={fetchRankings} disabled={loading} className="w-9 h-9 grid place-items-center ml-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-all border border-slate-700 hover:border-blue-500 cursor-pointer" title="Segarkan Data"><RefreshCw size={13} className={loading ? 'animate-spin text-blue-400' : ''} /></button>
             </div>
           </div>
         </div>
