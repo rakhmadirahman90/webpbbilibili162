@@ -54,48 +54,45 @@ const FALLBACK_ATHLETES: Athlete[] = [
   { id: 'fallback-4', name: 'NEXT CHAMPION', photo: '', points: 0, seed: '—', category: 'ATLET', rank: 4 },
 ];
 
-function AutoFitNewsTitle({ title }: { title: string }) {
-  const ref = useRef<HTMLHeadingElement>(null);
-  const [fontSize, setFontSize] = useState(14);
+function CompactNewsTitle({ title }: { title: string }) {
+  const displayTitle = (() => {
+    const value = String(title || '').trim();
+    if (!value) return 'Berita PB BILIBILI 162';
 
-  useLayoutEffect(() => {
-    const element = ref.current;
-    if (!element) return;
+    const rules: Array<[RegExp, string]> = [
+      [/^Wakil Wali Kota Parepare Resmi Buka Turnamen Bulutangkis Bili-Bili 162 Cup I.*$/i,
+        'Wakil Wali Kota Parepare Resmi Buka Turnamen Bili-Bili 162 Cup I'],
+      [/^FAMILY GATHERING PB BILIBILI 162 PAREPARE.*$/i,
+        'Family Gathering PB BILIBILI 162 Parepare Hari ke-1'],
+      [/^MABAR INTERNAL BAROKAH CUP 3.*$/i,
+        'Mabar Internal Barokah Cup 3 Tahun 2026 Resmi Dimulai'],
+      [/^M\.\s*Nur Raih.*Bestie.*Ajatappareng.*$/i,
+        'M. Nur Raih Juara 1 Pekan Olahraga Bestie Kontingen Ajatappareng'],
+      [/^Rudi C.*$/i,
+        'Rudi C Resmi Bergabung dengan PB BILIBILI 162'],
+    ];
 
-    const fit = () => {
-      let size = 14;
-      const lineHeight = 1.3;
-      element.style.fontSize = `${size}px`;
-      element.style.lineHeight = `${lineHeight}`;
+    const matched = rules.find(([pattern]) => pattern.test(value));
+    if (matched) return matched[1];
 
-      while (element.scrollHeight > size * lineHeight * 3 && size > 9.5) {
-        size -= 0.25;
-        element.style.fontSize = `${size}px`;
-      }
+    // Berita lain tetap memakai judul asli, tetapi dipadatkan pada batas kata
+    // agar kartu tidak melebar/bertambah tinggi di layar kecil.
+    if (value.length <= 76) return value;
+    const compact = value
+      .replace(/\s*[,;:—–-]\s*/g, ' — ')
+      .split(' — ')[0]
+      .trim();
+    if (compact.length >= 24) return compact;
 
-      setFontSize((current) => Math.abs(current - size) > 0.05 ? size : current);
-    };
-
-    fit();
-
-    if (typeof ResizeObserver !== 'undefined') {
-      const observer = new ResizeObserver(fit);
-      observer.observe(element);
-      return () => observer.disconnect();
-    }
-
-    window.addEventListener('resize', fit);
-    return () => window.removeEventListener('resize', fit);
-  }, [title]);
+    return value.slice(0, 73).replace(/\s+\S*$/, '').trim() + '…';
+  })();
 
   return (
     <h3
-      ref={ref}
       className="landing-news-list-title group-hover:text-blue-300"
-      style={{ fontSize: `${fontSize}px`, lineHeight: 1.3 }}
       title={title}
     >
-      {title}
+      {displayTitle}
     </h3>
   );
 }
@@ -477,7 +474,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
                               {itemImage ? <LazyImage src={itemImage} alt={item.judul} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" containerClassName="h-full w-full" width={360} /> : null}
                             </div>
                             <div className="min-w-0 flex-1">
-                              <AutoFitNewsTitle title={item.judul} />
+                              <CompactNewsTitle title={item.judul} />
                               <div className="landing-news-list-meta">
                                 <span>{item.tanggal ? new Date(item.tanggal).toLocaleDateString('id-ID',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}) : 'Terbaru'}</span>
                                 <span className="inline-flex items-center gap-1"><Eye size={10}/> {item.views}</span>
@@ -668,7 +665,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
 /* Auto-deploy sync checkpoint: 2026-09-21 */
 /* Landing typography/layout deployment sync: 2026-09-21 */
 /* Vercel production sync checkpoint: 2026-09-21-3 */
-/* Other news titles auto-fit to a maximum of 3 complete lines. */
+/* Other news titles are compacted and constrained to a maximum of 3 complete lines. */
 
         #landing-page {
           --landing-blue:#2563eb;
@@ -910,16 +907,47 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           }
           #landing-page .landing-section h2 { text-wrap:balance; }
           #landing-page #landing-news .divide-y > button {
-            min-height:104px;
+            min-height:112px;
+            display:grid !important;
+            grid-template-columns:minmax(132px,44%) minmax(0,1fr) auto;
             align-items:center;
-            padding:14px 12px;
-            gap:14px;
+            padding:12px !important;
+            gap:12px !important;
           }
           #landing-page #landing-news .divide-y > button > div:first-child {
-            width:156px !important;
-            min-width:156px !important;
-            height:112px !important;
+            width:100% !important;
+            min-width:0 !important;
+            height:auto !important;
+            aspect-ratio:1.48 / 1;
+            max-height:118px;
             border-radius:14px;
+          }
+          #landing-page #landing-news .divide-y > button > div:nth-child(2) {
+            min-width:0 !important;
+            width:auto !important;
+            overflow:hidden !important;
+          }
+          #landing-page #landing-news .landing-news-list-title {
+            display:-webkit-box !important;
+            -webkit-box-orient:vertical;
+            -webkit-line-clamp:3;
+            line-clamp:3;
+            overflow:hidden !important;
+            font-size:clamp(.88rem,3.25vw,1rem) !important;
+            line-height:1.28 !important;
+            max-height:3.84em;
+            text-wrap:initial !important;
+          }
+          #landing-page #landing-news .landing-news-list-meta {
+            margin-top:.45rem;
+            gap:.45rem;
+            max-height:1.35rem;
+            overflow:hidden;
+            white-space:nowrap;
+          }
+          #landing-page #landing-news .divide-y > button > svg {
+            width:18px !important;
+            height:18px !important;
           }
           #landing-page #landing-athletes .grid-cols-3 { gap:8px; }
           #landing-page #landing-athletes .grid-cols-3 > button { min-width:0; }
@@ -929,6 +957,20 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
         }
 
         @media (max-width: 380px) {
+          #landing-page #landing-news .divide-y > button {
+            grid-template-columns:minmax(116px,42%) minmax(0,1fr) auto;
+            min-height:100px;
+            padding:10px !important;
+            gap:10px !important;
+          }
+          #landing-page #landing-news .divide-y > button > div:first-child {
+            max-height:100px;
+            border-radius:12px;
+          }
+          #landing-page #landing-news .landing-news-list-title {
+            font-size:.84rem !important;
+            line-height:1.27 !important;
+          }
           #landing-page #landing-news,
           #landing-page #landing-athletes,
           #landing-page #landing-gallery {
