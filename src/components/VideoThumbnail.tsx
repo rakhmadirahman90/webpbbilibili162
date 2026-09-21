@@ -81,7 +81,7 @@ export default function VideoThumbnail({
     // Jangan gunakan thumbnail_url lama yang bisa menunjuk ke file yang sudah
     // tidak ada. Untuk MP4 Supabase, gunakan frame video secara langsung agar
     // preview selalu menampilkan isi video.
-    if (thumbnailUrl && /^https?:\\/\\//i.test(thumbnailUrl)) {
+    if (thumbnailUrl && /^https?:\/\//i.test(thumbnailUrl)) {
       const probe = new Image();
       probe.onload = () => { if (!cancelled) setPoster(thumbnailUrl); };
       probe.onerror = () => {};
