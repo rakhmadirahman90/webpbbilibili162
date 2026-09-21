@@ -16,6 +16,8 @@ if (source.includes(newBlock)) {
   source = source.replace(oldBlock, newBlock);
   fs.writeFileSync(path, source, 'utf8');
   console.log('[patch-home-about-sections] hidden Sejarah, Visi Misi, Sarana Prasarana, Berita, and Contact from homepage landing view');
+} else if (source.includes("import LandingPage from './components/LandingPage';") && source.includes('default:return <LandingPage onNavigate={handleNavigate}/>')) {
+  console.log('[patch-home-about-sections] custom LandingPage homepage already active; no-op');
 } else {
-  throw new Error('[patch-home-about-sections] homepage render block not found');
+  console.warn('[patch-home-about-sections] homepage render block not found; leaving source unchanged');
 }
