@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { CalendarDays, Clock3, MapPin, Radio, RefreshCw, X, ChevronRight, Info } from 'lucide-react';
+import { CalendarDays, Clock3, MapPin, Radio, RefreshCw, X, ChevronRight, Info, History, ListChecks } from 'lucide-react';
 import { supabase } from '../supabase';
 
 type AgendaItem = {
@@ -45,6 +45,7 @@ export default function AgendaPB162({ compact = false }: { compact?: boolean }) 
   const [loading, setLoading] = useState(true);
   const [online, setOnline] = useState(false);
   const [selected, setSelected] = useState<AgendaItem | null>(null);
+  const [filter, setFilter] = useState<'all' | 'upcoming' | 'completed'>('all');
 
   const load = useCallback(async () => {
     const { data, error } = await supabase
@@ -86,7 +87,18 @@ export default function AgendaPB162({ compact = false }: { compact?: boolean }) 
     };
   }, [selected]);
 
-  const visible = useMemo(() => compact ? items.slice(0, 3) : items, [items, compact]);
+  const visible = useMemo(() => {
+    if (filter === 'all') return items;
+    const today = new Date().toISOString().slice(0, 10);
+    return items.filter(item => filter === 'upcoming' ? item.event_date >= today : item.event_date < today);
+  }, [items, filter]);
+
+  const upcomingCount = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    return items.filter(item => item.event_date >= today).length;
+  }, [items]);
+
+  const completedCount = items.length - upcomingCount;
 
   return <section id="agenda-pb162" className={compact ? "agenda-landing-compact landing-section w-full bg-[#050914]" : "w-full bg-[#070d1a] px-4 py-10 sm:px-6 sm:py-14"}>
     <div className={compact ? "mx-auto w-full max-w-7xl px-4 py-6 sm:px-8 sm:py-12 lg:px-10" : "mx-auto max-w-5xl"}>
@@ -99,12 +111,29 @@ export default function AgendaPB162({ compact = false }: { compact?: boolean }) 
             Agenda <span className="text-blue-500">Kegiatan</span>
           </h2>
           <p className="mt-2 max-w-2xl text-sm text-slate-400">
-            Informasi agenda klub disusun berdasarkan tanggal, waktu, lokasi, dan status kegiatan.
+            Seluruh agenda klub ditampilkan di sini, termasuk kegiatan yang akan datang dan kegiatan yang telah dilaksanakan.
           </p>
         </div>
-        <div className={`inline-flex w-fit items-center gap-2 rounded-full border px-3 py-1.5 text-[9px] font-black uppercase tracking-wider ${online ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300' : 'border-slate-700 bg-slate-900 text-slate-400'}`}>
-          <Radio size={12} className={online ? 'animate-pulse' : ''} /> {online ? 'Realtime aktif' : 'Menghubungkan...'}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[.03] px-3 py-1.5 text-[9px] font-black uppercase tracking-wider text-slate-300">
+            <ListChecks size={12} /> {items.length} agenda
+          </div>
+          <div className={`inline-flex w-fit items-center gap-2 rounded-full border px-3 py-1.5 text-[9px] font-black uppercase tracking-wider ${online ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300' : 'border-slate-700 bg-slate-900 text-slate-400'}`}>
+            <Radio size={12} className={online ? 'animate-pulse' : ''} /> {online ? 'Realtime aktif' : 'Menghubungkan...'}
+          </div>
         </div>
+      </div>
+
+      <div className="mb-5 flex flex-wrap gap-2">
+        <button type="button" onClick={() => setFilter('all')} className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-2 text-[9px] font-black uppercase tracking-wider transition ${filter === 'all' ? 'border-blue-500 bg-blue-600 text-white' : 'border-white/10 bg-white/[.03] text-slate-400 hover:border-blue-500/40 hover:text-white'}`}>
+          <ListChecks size={12} /> Semua Agenda ({items.length})
+        </button>
+        <button type="button" onClick={() => setFilter('upcoming')} className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-2 text-[9px] font-black uppercase tracking-wider transition ${filter === 'upcoming' ? 'border-emerald-500 bg-emerald-600 text-white' : 'border-white/10 bg-white/[.03] text-slate-400 hover:border-emerald-500/40 hover:text-white'}`}>
+          <CalendarDays size={12} /> Akan Datang ({upcomingCount})
+        </button>
+        <button type="button" onClick={() => setFilter('completed')} className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-2 text-[9px] font-black uppercase tracking-wider transition ${filter === 'completed' ? 'border-slate-500 bg-slate-700 text-white' : 'border-white/10 bg-white/[.03] text-slate-400 hover:border-slate-500/40 hover:text-white'}`}>
+          <History size={12} /> Sudah Dilaksanakan ({completedCount})
+        </button>
       </div>
 
       {loading ? <div className="rounded-2xl border border-white/10 bg-[#0b1224] p-8 text-center text-sm text-slate-400"><RefreshCw size={18} className="mx-auto mb-2 animate-spin" />Memuat agenda...</div>
@@ -130,7 +159,7 @@ export default function AgendaPB162({ compact = false }: { compact?: boolean }) 
                   <span className="rounded-full border border-blue-500/20 bg-blue-500/10 px-2 py-0.5 text-[8px] font-black uppercase tracking-wider text-blue-300">{item.category || 'Kegiatan Klub'}</span>
                   <span className={`rounded-full px-2 py-0.5 text-[8px] font-bold ${item.status === 'Selesai' ? 'bg-slate-800 text-slate-400' : 'bg-emerald-500/10 text-emerald-300'}`}>{item.status || 'Terjadwal'}</span>
                 </div>
-                <h3 className="truncate text-sm font-black uppercase italic leading-tight text-white sm:text-base">{item.title}</h3>
+                <h3 className="line-clamp-2 text-sm font-black uppercase italic leading-tight text-white sm:text-base">{item.title}</h3>
                 <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-slate-400 sm:text-xs">
                   <span className="inline-flex items-center gap-1.5"><Clock3 size={12} className="text-amber-400" />{timeLabel(item)}</span>
                   {item.location && <span className="inline-flex min-w-0 items-center gap-1.5"><MapPin size={12} className="shrink-0 text-rose-400" /><span className="truncate">{item.location}</span></span>}
@@ -141,7 +170,7 @@ export default function AgendaPB162({ compact = false }: { compact?: boolean }) 
           </button>)}
         </div>}
 
-      {compact && items.length > 3 && <div className="mt-5 flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-500"><Info size={12} /> Buka menu Agenda untuk melihat seluruh kegiatan</div>}
+      {compact && items.length > 0 && <div className="mt-5 flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-500"><Info size={12} /> Data agenda Landing dan menu Agenda tersinkron realtime</div>}
     </div>
 
     {selected && <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/75 p-0 backdrop-blur-sm sm:items-center sm:p-4" onMouseDown={(e) => e.target === e.currentTarget && setSelected(null)}>
