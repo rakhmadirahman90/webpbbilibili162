@@ -459,7 +459,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
         <div className="landing-section-header mb-4 flex items-center justify-between gap-3 border-b border-white/10 pb-3.5 sm:mb-6 sm:pb-4">
           <div className="flex min-w-0 items-center gap-3">
             <span className="h-7 w-1 shrink-0 rounded-full bg-blue-500 shadow-[0_0_14px_rgba(37,99,235,.45)] sm:h-8" />
-            <h2 className="truncate text-[clamp(1.55rem,6.8vw,3rem)] font-extrabold uppercase leading-none tracking-[-.035em] text-white">Kenali Atlet Kami</h2>
+            <h2 className="landing-section-title">Kenali Atlet Kami</h2>
           </div>
           <button onClick={() => go('atlet')} className="hidden shrink-0 items-center gap-1.5 rounded-full border border-white/10 bg-white/[.03] px-3.5 py-2 text-[10px] font-extrabold uppercase tracking-[.1em] text-slate-300 transition hover:border-blue-500/50 hover:bg-blue-600 hover:text-white sm:flex">
             Semua Atlet <ArrowRight size={14} />
@@ -561,7 +561,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
             </button>
             <button
               onClick={() => setGalleryTab('video')}
-              className={`px-4 py-4 text-sm font-black uppercase tracking-[.12em] transition ${galleryTab === 'video' ? 'bg-blue-600 text-white' : 'text-white/75 hover:bg-white/10'}`}
+              className={`px-4 py-3.5 text-[11px] font-black uppercase tracking-[.12em] transition sm:py-4 ${galleryTab === 'video' ? 'bg-blue-600 text-white' : 'text-white/75 hover:bg-white/10'}`}
             >
               Video Terbaru
             </button>
@@ -623,40 +623,166 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           --landing-surface-2:#111827;
           --landing-border:rgba(255,255,255,.10);
           --landing-muted:#94a3b8;
+          --landing-title:clamp(1.5rem,5vw,2.25rem);
+          --landing-body:clamp(.8125rem,1.4vw,.9375rem);
+          --landing-meta:clamp(.625rem,1vw,.6875rem);
+          --landing-control:clamp(.6875rem,1.1vw,.75rem);
           font-family:"Plus Jakarta Sans","Inter",sans-serif;
           font-variant-numeric:tabular-nums;
           background:var(--landing-bg);
           color:#fff;
           letter-spacing:0;
         }
-        #landing-page .landing-section {
-          scroll-margin-top:80px;
-          background:var(--landing-bg);
-        }
-        #landing-page .landing-section-header {
-          min-height:42px;
-        }
-        #landing-page .landing-section-title {
-          font-family:"Plus Jakarta Sans","Inter",sans-serif;
-          font-weight:800;
-          letter-spacing:-.035em;
-        }
+
+        #landing-page,
         #landing-page button,
         #landing-page h1,
         #landing-page h2,
         #landing-page h3,
-        #landing-page p {
+        #landing-page p,
+        #landing-page span {
           font-family:"Plus Jakarta Sans","Inter",sans-serif;
         }
+
+        #landing-page .landing-section {
+          scroll-margin-top:80px;
+          background:var(--landing-bg);
+          width:100%;
+        }
+
+        #landing-page .landing-section > div,
+        #landing-page .landing-section > section {
+          box-sizing:border-box;
+        }
+
+        #landing-page .landing-section-header {
+          min-height:42px;
+          margin-bottom:24px;
+          padding-bottom:14px;
+          border-color:var(--landing-border);
+        }
+
+        #landing-page .landing-section-title,
+        #landing-page .landing-section-header h2 {
+          font-size:var(--landing-title) !important;
+          line-height:1.05 !important;
+          font-weight:800 !important;
+          letter-spacing:-.035em !important;
+          text-wrap:balance;
+        }
+
+        #landing-page .landing-section-header button,
+        #landing-page .landing-section-header + button,
+        #landing-page .landing-section-header + div button {
+          font-size:var(--landing-control) !important;
+          line-height:1.1 !important;
+          font-weight:800 !important;
+          letter-spacing:.08em !important;
+          white-space:nowrap;
+        }
+
+        /* One typography scale for content across all three landing sections. */
+        #landing-page #landing-news h3 {
+          font-size:clamp(.9375rem,2.5vw,2rem) !important;
+          line-height:1.2 !important;
+          font-weight:800 !important;
+        }
+        #landing-page #landing-news p {
+          font-size:var(--landing-body) !important;
+          line-height:1.55 !important;
+        }
+        #landing-page #landing-news .text-\\[8px\\],
+        #landing-page #landing-news .text-\\[9px\\] {
+          font-size:var(--landing-meta) !important;
+          line-height:1.35 !important;
+        }
+        #landing-page #landing-news > div > div:last-child > div:first-child {
+          line-height:1.2;
+        }
+
+        #landing-page #landing-athletes .text-\\[9px\\] {
+          font-size:var(--landing-meta) !important;
+          line-height:1.3 !important;
+        }
+        #landing-page #landing-athletes .text-\\[10px\\] {
+          font-size:var(--landing-meta) !important;
+          line-height:1.35 !important;
+        }
+
+        #landing-page #landing-gallery > div {
+          width:100%;
+        }
+        #landing-page #landing-gallery > div > div.grid button {
+          font-size:var(--landing-control) !important;
+          line-height:1.2 !important;
+          font-weight:800 !important;
+          letter-spacing:.1em !important;
+        }
+        #landing-page #landing-gallery > div > button.group > div:last-child {
+          font-size:var(--landing-body) !important;
+        }
+
         #landing-page p {
           line-height:1.55;
         }
+
         #landing-page .landing-section-header button {
           line-height:1.1;
           white-space:nowrap;
         }
+
+        #landing-page button {
+          -webkit-tap-highlight-color:transparent;
+        }
+
         #landing-page #landing-gallery {
           background:var(--landing-bg);
+        }
+
+        @media (min-width: 641px) {
+          #landing-page #landing-news,
+          #landing-page #landing-athletes,
+          #landing-page #landing-gallery {
+            padding-top:48px !important;
+            padding-bottom:48px !important;
+          }
+          #landing-page .landing-section-header {
+            margin-bottom:24px;
+          }
+        }
+
+        @media (max-width: 640px) {
+          #landing-page .landing-section { scroll-margin-top:76px; }
+          #landing-page #landing-news,
+          #landing-page #landing-athletes,
+          #landing-page #landing-gallery {
+            padding:28px 16px !important;
+          }
+          #landing-page .landing-section-header {
+            min-height:40px;
+            margin-bottom:18px;
+            padding-bottom:12px;
+          }
+          #landing-page .landing-section h2 { text-wrap:balance; }
+          #landing-page #landing-news .divide-y > button { min-height:92px; }
+          #landing-page #landing-athletes .grid-cols-3 { gap:8px; }
+          #landing-page #landing-athletes .grid-cols-3 > button { min-width:0; }
+          #landing-page #landing-gallery button { touch-action:manipulation; }
+          #landing-page #landing-gallery > div > button.group { border-radius:16px; }
+          #landing-page #landing-gallery p { line-height:1.55; }
+        }
+
+        @media (max-width: 380px) {
+          #landing-page #landing-news,
+          #landing-page #landing-athletes,
+          #landing-page #landing-gallery {
+            padding-left:14px !important;
+            padding-right:14px !important;
+          }
+          #landing-page .landing-section-title,
+          #landing-page .landing-section-header h2 {
+            font-size:24px !important;
+          }
         }
         @media (prefers-reduced-motion: reduce) {
           #landing-page *, #landing-page *::before, #landing-page *::after { animation-duration:.01ms!important; transition-duration:.01ms!important; }
