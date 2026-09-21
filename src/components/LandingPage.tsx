@@ -359,25 +359,50 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
             <button onClick={() => go('galeri')} className="px-4 py-4 text-sm font-black uppercase tracking-[.12em] text-white/90 transition hover:bg-white/10">Video Terbaru</button>
           </div>
 
-          {galleryItems.length > 0 ? (
+          <div className="grid gap-5">
             <button onClick={() => go('galeri')} className="group block w-full overflow-hidden rounded-xl bg-black text-left">
               <div className="aspect-[16/9] w-full overflow-hidden">
-                <LazyImage
-                  src={galleryItems[0].url}
-                  alt={galleryItems[0].title || 'Galeri PB BILIBILI 162'}
-                  className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.02]"
-                  containerClassName="h-full w-full"
-                  width={1400}
-                />
+                {galleryItems.filter(item => item.type === 'image')[0] ? (
+                  <LazyImage
+                    src={galleryItems.filter(item => item.type === 'image')[0].url}
+                    alt={galleryItems.filter(item => item.type === 'image')[0].title || 'Foto terbaru PB BILIBILI 162'}
+                    className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.02]"
+                    containerClassName="h-full w-full"
+                    width={1400}
+                  />
+                ) : <div className="grid h-full place-items-center text-sm text-slate-500">Belum ada foto terbaru.</div>}
               </div>
               <div className="px-4 py-4">
                 <div className="text-[9px] font-black uppercase tracking-[.18em] text-blue-400">Foto Terbaru</div>
-                <div className="mt-1 text-lg font-black text-white">{galleryItems[0].title || 'Momen PB BILIBILI 162'}</div>
+                <div className="mt-1 text-lg font-black text-white">{galleryItems.filter(item => item.type === 'image')[0]?.title || 'Momen PB BILIBILI 162'}</div>
               </div>
             </button>
-          ) : (
-            <div className="rounded-xl bg-black px-5 py-16 text-center text-sm font-semibold text-slate-500">Belum ada foto galeri.</div>
-          )}
+
+            <button onClick={() => go('galeri')} className="group block w-full overflow-hidden rounded-xl bg-black text-left">
+              <div className="relative aspect-[16/9] w-full overflow-hidden bg-[#050914]">
+                {galleryItems.filter(item => item.type === 'video')[0] ? (
+                  <>
+                    <LazyImage
+                      src={galleryItems.filter(item => item.type === 'video')[0].thumbnail_url || galleryItems.filter(item => item.type === 'video')[0].url}
+                      alt={galleryItems.filter(item => item.type === 'video')[0].title || 'Video terbaru PB BILIBILI 162'}
+                      className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.02]"
+                      containerClassName="h-full w-full"
+                      width={1400}
+                    />
+                    <div className="absolute inset-0 grid place-items-center bg-black/25">
+                      <div className="grid h-16 w-16 place-items-center rounded-full bg-blue-600 text-white shadow-2xl">
+                        <Play size={25} fill="currentColor" />
+                      </div>
+                    </div>
+                  </>
+                ) : <div className="grid h-full place-items-center text-sm text-slate-500">Belum ada video terbaru.</div>}
+              </div>
+              <div className="px-4 py-4">
+                <div className="text-[9px] font-black uppercase tracking-[.18em] text-blue-400">Video Terbaru</div>
+                <div className="mt-1 text-lg font-black text-white">{galleryItems.filter(item => item.type === 'video')[0]?.title || 'Momen Video PB BILIBILI 162'}</div>
+              </div>
+            </button>
+          </div>
         </div>
       </section>
 
