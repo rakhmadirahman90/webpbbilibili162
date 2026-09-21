@@ -47,6 +47,14 @@ const Players: React.FC<{ initialFilter?: string }> = ({
   const [dbPlayers, setDbPlayers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'profil' | 'stats'>('profil');
+  const [landingAthletePending, setLandingAthletePending] = useState(() => {
+    try {
+      return sessionStorage.getItem('pb_landing_athlete_return') === '1' &&
+        Boolean(sessionStorage.getItem('pb_landing_athlete_id'));
+    } catch {
+      return false;
+    }
+  });
 
   useEffect(() => {
     setActiveTab('profil');
@@ -272,7 +280,11 @@ const Players: React.FC<{ initialFilter?: string }> = ({
     } catch { return; }
     if (!athleteId || !processedPlayers.length) return;
     const target = processedPlayers.find((item) => String(item.id) === athleteId);
-    if (target) setSelectedPlayer(target);
+    if (target) {
+      setSelectedPlayer(target);
+    } else {
+      setLandingAthletePending(false);
+    }
   }, [processedPlayers]);
 
   const counts = useMemo(() => ({
@@ -288,6 +300,27 @@ const Players: React.FC<{ initialFilter?: string }> = ({
       return matchesSearch && matchesAge;
     });
   }, [searchTerm, currentAgeGroup, processedPlayers]);
+
+  if (landingAthletePending && !selectedPlayer) {
+    return (
+      <div className="fixed inset-0 z-[2147483003] bg-[#050a14] flex items-center justify-center" aria-label="Memuat detail atlet">
+        <div className="w-8 h-8 rounded-full border-2 border-blue-400/25 border-t-blue-400 animate-spin" />
+      </div>
+    );
+  }
+
+  if (landingAthletePending && selectedPlayer) {
+    return (
+      <PlayerDetailModal
+        player={selectedPlayer}
+        processedPlayers={processedPlayers}
+        onClose={() => {
+          try { sessionStorage.setItem('pb_suppress_landing_popup', '1'); } catch {}
+          navigate('/');
+        }}
+      />
+    );
+  }
 
   return (
     <>
