@@ -98,6 +98,25 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
   }, []);
 
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has('athlete')) return;
+
+    let frame = 0;
+    let attempts = 0;
+    const scrollToAthletes = () => {
+      const target = document.getElementById('landing-athletes');
+      if (target) {
+        target.scrollIntoView({ behavior: 'auto', block: 'start' });
+        return;
+      }
+      attempts += 1;
+      if (attempts < 30) frame = window.requestAnimationFrame(scrollToAthletes);
+    };
+    frame = window.requestAnimationFrame(scrollToAthletes);
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
+
   const goAthleteDetail = useCallback((athlete?: Athlete) => {
     if (!athlete?.id) return;
     setFeaturedAthleteIndex(Math.max(0, allAthletes.findIndex((item) => String(item.id) === String(athlete.id))));
