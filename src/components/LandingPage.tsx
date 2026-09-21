@@ -370,13 +370,19 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
         {news.length > 0 ? (
           <div>
             {(() => {
-              const featuredTitle = 'PB BILIBILI 162 CUP I TAHUN 2026 RESMI DITUTUP WALI KOTA PAREPARE, LAHIRKAN PARA JUARA PENUH SPORTIVITAS';
+              const featuredTitle = 'PB BILIBILI 162 CUP I TAHUN 2026 Resmi Ditutup Wali Kota Parepare, Lahirkan Para Juara Penuh Sportivitas';
               // Jadikan berita penutupan BILIBILI 162 CUP I sebagai berita utama
               // secara eksplisit, tanpa bergantung pada urutan tanggal berita.
+              // Penulisan judul utama ditampilkan dengan kapitalisasi yang rapi:
+              // singkatan/nama klub tetap kapital, sedangkan kata biasa mengikuti
+              // penulisan kalimat yang normal.
               const featuredIndex = news.findIndex((item) =>
                 String(item.judul || '').trim().toLowerCase() === featuredTitle.toLowerCase()
               );
               const featured = featuredIndex >= 0 ? news[featuredIndex] : news[0];
+              const featuredDisplayTitle = featuredIndex >= 0
+                ? featuredTitle
+                : featured.judul;
               const others = news
                 .filter((_, index) => index !== (featuredIndex >= 0 ? featuredIndex : 0))
                 .slice(0, 4);
@@ -402,7 +408,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
                       <div className="mb-2 inline-flex rounded-full bg-blue-600 px-3 py-1.5 text-[8px] font-black uppercase tracking-[.18em] text-white">
                         Berita Terbaru
                       </div>
-                      <h3 className="landing-featured-news-title">{featured.judul}</h3>
+                      <h3 className="landing-featured-news-title">{featuredDisplayTitle}</h3>
                       <div className="landing-featured-news-meta">
                         <span>{featured.tanggal ? new Date(featured.tanggal).toLocaleDateString('id-ID',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}) : 'Terbaru'}</span>
                         <span className="inline-flex items-center gap-1.5"><Eye size={14}/> {featured.views}</span>
@@ -682,7 +688,9 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           white-space:nowrap;
         }
 
-        /* News typography/layout — aligned to the supplied mobile references. */
+        /* News typography/layout — supplied mobile references.
+           * Berita utama: kapitalisasi rapi dan judul tidak dipotong.
+           * Berita lainnya: maksimal 3 baris agar kartu tetap ringkas dan rapi. */
         #landing-page #landing-news .landing-featured-news-title {
           margin:0;
           width:100%;
@@ -721,15 +729,19 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           margin:0;
           max-width:100%;
           color:#fff;
-          font-size:clamp(.875rem,2.15vw,1rem) !important;
-          line-height:1.35 !important;
+          font-size:clamp(.78rem,2vw,.98rem) !important;
+          line-height:1.3 !important;
           font-weight:800 !important;
-          letter-spacing:-.006em !important;
+          letter-spacing:-.004em !important;
           white-space:normal !important;
           overflow-wrap:break-word !important;
           word-break:normal !important;
-          display:block !important;
-          overflow:visible !important;
+          display:-webkit-box !important;
+          -webkit-box-orient:vertical !important;
+          -webkit-line-clamp:3 !important;
+          overflow:hidden !important;
+          text-overflow:ellipsis !important;
+          text-wrap:balance;
         }
         #landing-page #landing-news .landing-news-list-meta {
           margin-top:.55rem;
@@ -819,11 +831,15 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
             font-size:.6875rem !important;
           }
           #landing-page #landing-news .landing-news-list-title {
-            font-size:.875rem !important;
-            line-height:1.35 !important;
-            letter-spacing:-.004em !important;
-            display:block !important;
-            overflow:visible !important;
+            font-size:.8rem !important;
+            line-height:1.3 !important;
+            letter-spacing:-.003em !important;
+            display:-webkit-box !important;
+            -webkit-box-orient:vertical !important;
+            -webkit-line-clamp:3 !important;
+            overflow:hidden !important;
+            text-overflow:ellipsis !important;
+            text-wrap:balance;
           }
           #landing-page #landing-news .landing-news-list-meta {
             margin-top:.4rem;
