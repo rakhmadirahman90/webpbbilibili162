@@ -625,7 +625,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
       </section>
 
       <style>{`
-        #landing-page { --landing-blue:#2563eb; }
+        #landing-page { --landing-blue:#2563eb; font-family:"Plus Jakarta Sans","Inter",sans-serif; font-variant-numeric:tabular-nums; }
         #landing-page .landing-section { scroll-margin-top:80px; }
         @media (prefers-reduced-motion: reduce) {
           #landing-page *, #landing-page *::before, #landing-page *::after { animation-duration:.01ms!important; transition-duration:.01ms!important; }
