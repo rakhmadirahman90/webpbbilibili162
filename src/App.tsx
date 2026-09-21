@@ -4,7 +4,6 @@ import { supabase } from './supabase';
 import { getSiteSetting } from './utils/siteSettingsHelper';
 import { preloadPublicExperience, preloadAdminExperience } from './utils/routePreload';
 import Navbar from './components/Navbar';
-import Hero from './components/Hero';
 import LandingPage from './components/LandingPage';
 import SambutanKetua from './components/SambutanKetua';
 import Sejarah from './components/Sejarah';
