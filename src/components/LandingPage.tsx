@@ -14,6 +14,15 @@ type Athlete = {
   rank: number;
 };
 
+type GalleryItem = {
+  id: string;
+  title: string;
+  type: 'image' | 'video';
+  url: string;
+  thumbnail_url: string;
+  description: string;
+};
+
 type NewsItem = {
   id: string;
   judul: string;
@@ -39,6 +48,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
   const [athletes, setAthletes] = useState<Athlete[]>([]);
   const [allAthletes, setAllAthletes] = useState<Athlete[]>([]);
   const [news, setNews] = useState<NewsItem[]>([]);
+  const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
   const [featuredAthleteIndex, setFeaturedAthleteIndex] = useState(0);
   const [loading, setLoading] = useState(true);
 
@@ -59,12 +69,13 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
 
     const load = async () => {
       try {
-        const [playersRes, rankingsRes, statsRes, cup1Res, newsRes] = await Promise.all([
+        const [playersRes, rankingsRes, statsRes, cup1Res, newsRes, galleryRes] = await Promise.all([
           supabase.from('pendaftaran').select('id,nama,foto_url,kategori,kategori_atlet,bilibili_cup1_photo_path').order('nama', { ascending: true }),
           supabase.from('rankings').select('pendaftaran_id,player_name,total_points,photo_url').order('total_points', { ascending: false }),
           supabase.from('atlet_stats').select('pendaftaran_id,points,total_points,seed'),
           supabase.from('v_bilibili_162_cup1_athlete_seeded').select('*'),
           supabase.from('berita').select('id,judul,ringkasan,gambar_url,tanggal,views,comments_count:komentar(count)').order('tanggal', { ascending: false }).limit(7),
+          supabase.from('gallery').select('id,title,type,url,thumbnail_url,description').order('created_at', { ascending: false }).limit(12),
         ]);
 
         const players = playersRes.data || [];
@@ -107,6 +118,15 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
 
         const sorted = merged.sort((a, b) => b.points - a.points).map((athlete, index) => ({ ...athlete, rank: index + 1 }));
         const newsRows = newsRes.data || [];
+        const galleryRows = galleryRes.data || [];
+        const formattedGallery = galleryRows.map((item: any) => ({
+          id: String(item.id),
+          title: item.title || 'Momen PB BILIBILI 162',
+          type: item.type === 'video' ? 'video' : 'image',
+          url: item.url || item.thumbnail_url || '',
+          thumbnail_url: item.thumbnail_url || item.url || '',
+          description: item.description || '',
+        }));
         const formattedNews = newsRows.map((item: any) => ({
           id: String(item.id),
           judul: item.judul || 'Berita PB Bilibili 162',
@@ -121,12 +141,14 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
         setAllAthletes(sorted);
         setAthletes(sorted.slice(0, 4));
         setNews(formattedNews);
+        setGalleryItems(formattedGallery);
       } catch (error) {
         console.warn('[LandingPage] homepage data sync skipped:', error);
         if (mounted) {
           setAllAthletes([]);
           setAthletes([]);
           setNews([]);
+          setGalleryItems([]);
         }
       } finally {
         if (mounted) setLoading(false);
