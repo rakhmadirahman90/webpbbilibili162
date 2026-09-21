@@ -40,7 +40,7 @@ export const DEFAULT_NAV_ITEMS = [
 
 export const ATLET_DEFAULT_SUBMENUS = DEFAULT_NAV_ITEMS.filter(i => i.parent_id === 'atlet');
 export const ABOUT_DEFAULT_SUBMENUS = DEFAULT_NAV_ITEMS.filter(i => i.parent_id === 'about');
-export const SAMBUTAN_DEFAULT_SUBMENU = { id: 'sambutan-ketua', label: 'Sambutan Ketua', path: 'sambutan-ketua', type: 'link', parent_id: 'about', order_index: 6, is_active: true };
+export const SAMBUTAN_DEFAULT_SUBMENU = { id: 'sambutan-ketua', label: 'Sambutan Ketua', path: 'sambutan-ketua', type: 'link', parent_id: 'about', order_index: 1, is_active: true };
 export const isTopLevelMenuItem = (item: any) => !!item && (!item.parent_id || item.parent_id === 'none' || item.parent_id === '');
 
 const normalizeNavigationPath = (value = '') => {
@@ -68,7 +68,7 @@ const ensureCanonicalNavigation = (items: any[]) => {
       normalizedItem.path = 'sambutan-ketua';
       normalizedItem.type = 'link';
       normalizedItem.parent_id = 'about';
-      normalizedItem.order_index = 6;
+      normalizedItem.order_index = 1;
       normalizedItem.is_active = normalizedItem.is_active !== false;
     }
     result.push(normalizedItem);
@@ -273,7 +273,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
     const mergedList = [...list];
     if (isAbout) {
       const key = (item: any) => normalizeNavigationPath(item?.path || '') || String(item?.label || '').trim().toLowerCase();
-      for (const fallback of [...ABOUT_DEFAULT_SUBMENUS, SAMBUTAN_DEFAULT_SUBMENU]) {
+      for (const fallback of [SAMBUTAN_DEFAULT_SUBMENU, ...ABOUT_DEFAULT_SUBMENUS]) {
         if (!mergedList.some((item: any) => key(item) === key(fallback))) mergedList.push({ ...fallback });
       }
     }
