@@ -193,11 +193,21 @@ const Players: React.FC<{ initialFilter?: string }> = ({
           seeded_division: cup1?.division_level || integratedSeed,
           seeded_partners: Array.isArray(cup1?.partners) ? cup1.partners : [],
           seeded_source_no: cup1?.source_no || null,
-          foto_url:
-            tournamentPhotoById.get(String(atlet.id)) ||
-            atlet.foto_url ||
-            rankingMatch?.photo_url ||
-            '',
+          foto_url: (() => {
+            const currentPhoto = String(atlet.foto_url || '').trim();
+            const tournamentPhoto = tournamentPhotoById.get(String(atlet.id)) || '';
+            const rankingPhoto = String(rankingMatch?.photo_url || '').trim();
+            // Foto profil terbaru dari master pendaftaran harus menjadi sumber utama.
+            // Foto CUP I hanya fallback agar update foto atlet tidak tertutup foto lama.
+            const base = currentPhoto || tournamentPhoto || rankingPhoto;
+            if (!base) return '';
+            // Cache-bust berdasarkan updated_at agar foto yang baru diganti langsung tampil.
+            if (currentPhoto && atlet.updated_at) {
+              const separator = base.includes('?') ? '&' : '?';
+              return base + separator + 'v=' + encodeURIComponent(String(atlet.updated_at));
+            }
+            return base;
+          })(),
           bio: rankingMatch?.bio || 'No biography available.',
           prestasi: rankingMatch?.achievement || 'Regular Player',
         };
@@ -213,6 +223,13 @@ const Players: React.FC<{ initialFilter?: string }> = ({
   }, []);
   useEffect(() => {
     fetchPlayersFromDB();
+
+    const refreshOnReturn = () => {
+      if (document.visibilityState === 'visible') void fetchPlayersFromDB();
+    };
+    window.addEventListener('focus', refreshOnReturn);
+    document.addEventListener('visibilitychange', refreshOnReturn);
+
     const channel = supabase
       .channel('atlet_changes_v2')
       .on('postgres_changes', { event: '*', table: 'atlet_stats', schema: 'public' }, () => fetchPlayersFromDB())
@@ -221,6 +238,8 @@ const Players: React.FC<{ initialFilter?: string }> = ({
       .on('postgres_changes', { event: '*', table: 'pendaftaran_turnamen', schema: 'public' }, () => fetchPlayersFromDB())
       .subscribe();
     return () => {
+      window.removeEventListener('focus', refreshOnReturn);
+      document.removeEventListener('visibilitychange', refreshOnReturn);
       supabase.removeChannel(channel);
     };
   }, [fetchPlayersFromDB]);
