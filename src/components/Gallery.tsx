@@ -161,12 +161,25 @@ export default function Gallery() {
   }, []);
 
   const handleDetailBack = useCallback(() => {
+    const fromLanding = searchParams.get('from') === 'landing';
     const tab = searchParams.get('tab') === 'video' ? 'video' : (activeMedia?.type === 'video' ? 'video' : 'image');
-    setActiveTab(tab);
-    setSelectedId(null);
+
     setSharePreviewItem(null);
     setActiveImgIndex(0);
-    // Kembali ke halaman utama Galeri tanpa memicu navigasi/pop-up Landing Page.
+    setSelectedId(null);
+
+    if (fromLanding) {
+      // Kembali langsung ke tampilan Galeri di Landing Page yang sebelumnya dipilih.
+      // replaceState mencegah penambahan history/pop-up tambahan.
+      const target = tab === 'video' ? '/?galleryTab=video' : '/';
+      window.history.replaceState({}, '', target);
+      window.dispatchEvent(new PopStateEvent('popstate'));
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    // Jika detail dibuka dari halaman Galeri penuh, tetap kembali ke Galeri penuh.
+    setActiveTab(tab);
     const query = tab === 'video' ? '?tab=video' : '';
     window.history.replaceState({}, '', `/galeri${query}`);
     window.scrollTo({ top: 0, behavior: 'smooth' });
