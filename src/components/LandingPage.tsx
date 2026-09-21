@@ -334,8 +334,9 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
       <section id="landing-news" className="landing-section mx-auto w-full max-w-7xl px-4 py-8 sm:px-8 sm:py-14 lg:px-10">
         <div className="mb-6 flex items-end justify-between gap-4">
           <div>
-            <div className="mb-2 text-[9px] font-black uppercase tracking-[.25em] text-blue-400">01 • KABAR KLUB</div>
-            <h2 className="text-[clamp(1.75rem,7vw,3rem)] font-extrabold uppercase leading-[.98] tracking-[-.045em]">Berita <span className="text-blue-500">Terbaru.</span></h2>
+            <h2 className="text-[clamp(1.75rem,7vw,3rem)] font-extrabold uppercase leading-[1] tracking-[-.04em] text-white">
+              Berita <span className="text-blue-500">Terbaru</span>
+            </h2>
           </div>
           <button onClick={() => goNews()} className="hidden items-center gap-2 rounded-full border border-blue-500/70 px-5 py-2.5 text-[10px] font-black uppercase tracking-[.15em] text-white transition hover:bg-blue-600 sm:flex">
             Lihat Semua Berita <ArrowRight size={15} />
