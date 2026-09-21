@@ -668,7 +668,7 @@ const Rankings: React.FC = () => {
   };
 
   return (
-    <section id="rankings" className="w-full bg-[#070d1a] text-white font-sans relative py-2 sm:py-3 h-[calc(100vh-4.5rem)] flex flex-col justify-between overflow-hidden">
+    <section id="rankings" className="w-full bg-[#070d1a] text-white font-sans relative py-2 sm:py-3 min-h-[calc(100dvh-4.5rem)] lg:h-[calc(100dvh-4.5rem)] flex flex-col justify-start lg:justify-between overflow-visible lg:overflow-hidden">
       {/* Background glow */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(circle_at_50%_0%,#1e3a8a22,transparent_60%)] pointer-events-none" />
 
