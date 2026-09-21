@@ -1095,11 +1095,14 @@ ${shareUrl}`;
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 30 }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed inset-0 z-[110000] bg-white overflow-y-auto flex flex-col scroll-smooth w-full overflow-x-hidden"
+              className="fixed inset-0 z-[2147483003] bg-white overflow-y-auto flex flex-col scroll-smooth w-full overflow-x-hidden"
             >
-              {/* Sticky Top Header Bar */}
-              <div className="sticky top-0 bg-[#0b1224] text-white px-4 py-3 md:py-4 flex items-center justify-between z-[110] shadow-md">
-                <button 
+              {/* Sticky Top Header Bar — always above the global Navbar */}
+              <div
+                className="sticky top-0 bg-[#0b1224] text-white px-3 sm:px-4 py-3 md:py-4 flex items-center justify-between z-[2147483004] shadow-lg border-b border-white/10"
+                style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}
+              >
+                <button
                   onClick={() => {
                     const fromLanding = searchParams.get('from') === 'landing';
                     if (fromLanding) {
@@ -1111,12 +1114,15 @@ ${shareUrl}`;
                       return;
                     }
                     setSelectedNews(null);
-                  }} 
-                  className="flex items-center gap-2 text-zinc-300 hover:text-white transition-colors py-1.5 px-3 rounded-lg hover:bg-white/10 active:scale-95"
-                  aria-label="Kembali ke berita"
+                  }}
+                  className="group inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border border-white/15 bg-white/[0.06] px-3.5 text-sm font-bold text-white shadow-sm transition-all hover:bg-white/[0.12] active:scale-[0.97] focus:outline-none focus:ring-2 focus:ring-blue-400/70"
+                  aria-label="Kembali ke halaman sebelumnya"
+                  title="Kembali"
                 >
-                  <ArrowLeft size={20} />
-                  <span className="text-sm font-bold uppercase tracking-wider hidden sm:inline">Kembali</span>
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/15 text-blue-300 transition-colors group-hover:bg-blue-500/25">
+                    <ArrowLeft size={19} strokeWidth={2.5} />
+                  </span>
+                  <span className="hidden xs:inline sm:inline uppercase tracking-[0.12em]">Kembali</span>
                 </button>
                 
                 {/* PBSI-style Center Logo/Club Brand */}
