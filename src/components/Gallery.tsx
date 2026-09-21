@@ -4,6 +4,7 @@ import { supabase } from '../supabase';
 import { X, Image as ImageIcon, Loader2, ArrowLeft, ChevronLeft, ChevronRight, Share2, Link2, Heart, Eye, Plus, Calendar, Search, PlayCircle, MessageCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import LazyImage from './LazyImage';
+import VideoThumbnail from './VideoThumbnail';
 import { getOptimizedImageUrl } from '../utils/imageOptimizer';
 import { getSiteSetting } from '../utils/siteSettingsHelper';
 import { DEFAULT_GALLERY } from '../data/localDatabase';
@@ -287,7 +288,18 @@ export default function Gallery() {
               return (
                 <article key={item.id} onClick={() => { setSelectedId(item.id); setActiveImgIndex(0); }} className="gallery-card relative isolate cursor-pointer overflow-hidden rounded-xl bg-white border border-slate-100 flex flex-col shadow-xs">
                   <div className="aspect-[1.5/1] relative isolate overflow-hidden bg-slate-100 shrink-0">
-                    {item.type === 'video' && !getYouTubeID(item.url) && thumbnail ? <video src={`${item.url}#t=0.5`} poster={thumbnail} muted playsInline preload="metadata" className="w-full h-full object-cover block brightness-100 filter-none" /> : thumbnail ? <LazyImage src={thumbnail} alt={item.title || ''} containerClassName="w-full h-full" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-slate-400"><PlayCircle size={42} /></div>}
+                    {item.type === 'video' ? (
+                      <VideoThumbnail
+                        src={item.url}
+                        thumbnailUrl={item.thumbnail_url}
+                        alt={item.title || 'Video PB BILIBILI 162'}
+                        className="w-full h-full object-cover block brightness-100 filter-none"
+                      />
+                    ) : thumbnail ? (
+                      <LazyImage src={thumbnail} alt={item.title || ''} containerClassName="w-full h-full" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-slate-400"><PlayCircle size={42} /></div>
+                    )}
                     <div className="absolute top-4 left-4 bg-[#22c55e] text-white px-3 py-1.5 rounded-sm text-[10px] font-black uppercase tracking-wider shadow-sm z-10 max-w-[85%] truncate">{item.category || 'DOKUMENTASI'}</div>
                     {item.type === 'image' && photoCount > 1 && <div className="absolute bottom-4 left-4 bg-black/70 text-white px-2.5 py-1.5 rounded-full text-[10px] font-black z-10">{photoCount} FOTO</div>}
                     <button onClick={event => handleLike(event, item.id)} className={`absolute top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center shadow-md z-10 ${likedItems.has(item.id) ? 'bg-rose-500 text-white' : 'bg-white/95 text-slate-500'}`} aria-label="Sukai"><Heart size={15} fill={likedItems.has(item.id) ? 'currentColor' : 'none'} /></button>
@@ -342,21 +354,9 @@ export default function Gallery() {
                 <div className="p-4 sm:p-5 bg-[#efeae2] min-h-[320px] max-h-[60vh] overflow-y-auto space-y-3 font-sans">
                   <div className="flex justify-center"><span className="bg-white/90 text-slate-600 text-[10px] font-bold px-3 py-1 rounded-md shadow-2xs border border-slate-200/60 uppercase tracking-wider">PRATINJAU PESAN WHATSAPP</span></div>
                   <div className="bg-[#dcf8c6] text-slate-900 rounded-2xl rounded-tr-none p-3.5 shadow-md border border-emerald-200/80 max-w-[96%] ml-auto relative">
-                    {item.type === 'video' && !previewImage ? (
+                    {item.type === 'video' ? (
   <div className="mb-2.5 rounded-xl overflow-hidden border border-emerald-300/40 bg-black/5 aspect-[16/9] relative shadow-xs">
-    <video
-      src={item.url}
-      muted
-      playsInline
-      preload="metadata"
-      className="w-full h-full object-cover"
-      aria-label={titleClean}
-      onLoadedMetadata={(event) => {
-        try {
-          event.currentTarget.currentTime = Math.min(0.5, event.currentTarget.duration || 0.5);
-        } catch {}
-      }}
-    />
+    <VideoThumbnail src={item.url} thumbnailUrl={item.thumbnail_url} alt={titleClean} className="w-full h-full object-cover" />
     <div className="absolute inset-0 grid place-items-center pointer-events-none">
       <div className="grid h-11 w-11 place-items-center rounded-full bg-blue-600 text-white shadow-xl">
         <PlayCircle size={20} fill="currentColor" />
