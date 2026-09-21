@@ -619,6 +619,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
       </section>
 
       <style>{`/* Landing typography/layout deployment sync: 2026-09-21 */
+/* Vercel production sync checkpoint: 2026-09-21-2 */
 
         #landing-page {
           --landing-blue:#2563eb;
