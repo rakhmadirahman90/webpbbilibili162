@@ -39,6 +39,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
   const [athletes, setAthletes] = useState<Athlete[]>([]);
   const [allAthletes, setAllAthletes] = useState<Athlete[]>([]);
   const [news, setNews] = useState<NewsItem[]>([]);
+  const [featuredAthleteIndex, setFeaturedAthleteIndex] = useState(0);
   const [loading, setLoading] = useState(true);
 
   const goNews = useCallback((newsId?: string) => {
@@ -234,39 +235,91 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
         )}
       </section>
 
-      <section className="landing-section mx-auto w-full max-w-7xl px-5 py-10 sm:px-8 sm:py-14 lg:px-10">
-        <div className="mb-7 flex items-end justify-between gap-4">
+      <section className="landing-section mx-auto w-full max-w-7xl px-4 py-10 sm:px-8 sm:py-14 lg:px-10">
+        <div className="mb-6 flex items-end justify-between gap-4">
           <div>
-            <div className="mb-2 text-[9px] font-black uppercase tracking-[.25em] text-blue-400">02 • Data Atlet</div>
-            <h2 className="text-3xl font-black italic uppercase tracking-[-.04em] sm:text-5xl">Atlet PB <span className="text-blue-500">Bilibili 162.</span></h2>
+            <div className="mb-2 text-[9px] font-black uppercase tracking-[.25em] text-blue-400">02 • ATHLETE PROFILE</div>
+            <h2 className="text-3xl font-black italic uppercase tracking-[-.05em] sm:text-5xl">Meet The <span className="text-blue-500">Players.</span></h2>
           </div>
-          <button onClick={() => go('atlet')} className="hidden items-center gap-2 text-[10px] font-black uppercase tracking-[.15em] text-slate-400 hover:text-white sm:flex">Semua Atlet <ChevronRight size={15} /></button>
+          <button onClick={() => go('atlet')} className="hidden items-center gap-2 text-[10px] font-black uppercase tracking-[.15em] text-slate-400 hover:text-white sm:flex">
+            Lihat Semua Atlet <ArrowRight size={15} />
+          </button>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
-          {(allAthletes.length > 0 ? allAthletes : spotlight).map((athlete, index) => (
-            <motion.button key={athlete.id} whileHover={{ y: -5 }} onClick={() => athlete.id.startsWith('fallback') ? go('atlet') : go('atlet')} className="group relative aspect-[.78] overflow-hidden rounded-3xl border border-white/10 bg-[#0b1220] text-left shadow-2xl">
-              {athlete.photo ? (
-                <LazyImage src={athlete.photo} alt={athlete.name} className="h-full w-full object-cover object-top transition duration-700 group-hover:scale-105" containerClassName="h-full w-full" width={700} />
-              ) : (
-                <div className="flex h-full items-center justify-center bg-[radial-gradient(circle_at_50%_25%,rgba(37,99,235,.3),transparent_48%),#0b1220]">
-                  <Trophy size={42} className="text-blue-500/40" />
-                </div>
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-[#020617] via-transparent to-transparent" />
-              <div className="absolute left-3 top-3 flex h-9 w-9 items-center justify-center rounded-xl border border-white/15 bg-black/35 text-xs font-black backdrop-blur-md">0{index + 1}</div>
-              <div className="absolute inset-x-0 bottom-0 p-4">
-                <div className="mb-1 text-[8px] font-black uppercase tracking-[.18em] text-blue-300">{athlete.category}</div>
-                <div className="line-clamp-2 text-sm font-black uppercase leading-tight sm:text-base">{athlete.name}</div>
-                <div className="mt-3 flex items-center justify-between border-t border-white/10 pt-2 text-[8px] font-bold uppercase tracking-wider text-slate-400">
-                  <span>Seed {athlete.seed}</span>
-                  <span className="text-blue-300">{athlete.points.toLocaleString()} PTS</span>
-                </div>
+        {(() => {
+          const roster = allAthletes.length > 0 ? allAthletes : spotlight;
+          const featured = roster[Math.min(featuredAthleteIndex, Math.max(roster.length - 1, 0))];
+          const gallery = roster.slice(0, 6);
+          if (!featured) {
+            return (
+              <div className="rounded-[2rem] border border-white/10 bg-[#0b1220] px-5 py-14 text-center text-[10px] font-black uppercase tracking-[.2em] text-slate-500">
+                Data atlet sedang disinkronkan.
               </div>
-            </motion.button>
-          ))}
-        </div>
-        <button onClick={() => go('atlet')} className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 py-3 text-[10px] font-black uppercase tracking-[.16em] text-slate-300 sm:hidden">Buka Data Atlet Lengkap <ArrowRight size={14} /></button>
+            );
+          }
+          return (
+            <div className="overflow-hidden rounded-[2rem] border border-white/10 bg-[#090d14] shadow-2xl">
+              <button onClick={() => go('atlet')} className="group block w-full text-left">
+                <div className="relative aspect-[1.15/1] w-full overflow-hidden bg-[#1d1d1d] sm:aspect-[2.1/1]">
+                  {featured.photo ? (
+                    <LazyImage
+                      src={featured.photo}
+                      alt={featured.name}
+                      className="h-full w-full object-cover object-top transition duration-700 group-hover:scale-[1.015]"
+                      containerClassName="h-full w-full"
+                      width={1400}
+                    />
+                  ) : (
+                    <div className="grid h-full place-items-center bg-[radial-gradient(circle_at_50%_30%,rgba(37,99,235,.28),transparent_48%),#171b22]">
+                      <Users size={72} className="text-blue-500/30" />
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-black/5" />
+                </div>
+                <div className="bg-[#05070b] px-5 py-5 sm:px-8 sm:py-6">
+                  <div className="text-[9px] font-black uppercase tracking-[.22em] text-slate-400">Kenal Lebih Dekat</div>
+                  <div className="mt-2 text-2xl font-black uppercase leading-none tracking-[-.02em] text-white sm:text-4xl">{featured.name}</div>
+                  <div className="mt-3 flex flex-wrap items-center gap-2 text-[8px] font-black uppercase tracking-[.16em] text-blue-300">
+                    <span>{featured.category}</span>
+                    <span className="text-slate-600">•</span>
+                    <span>Seed {featured.seed}</span>
+                    <span className="text-slate-600">•</span>
+                    <span>{featured.points.toLocaleString()} Points</span>
+                  </div>
+                </div>
+              </button>
+
+              <div className="border-t border-white/10 bg-[#171717] px-4 py-5 sm:px-7">
+                <div className="mb-4 flex items-center justify-between gap-4">
+                  <div className="text-xl font-black uppercase tracking-[-.02em] text-white sm:text-2xl">Profil Atlet</div>
+                  <button onClick={() => go('atlet')} className="text-sm font-medium text-slate-300 transition hover:text-blue-400 sm:text-base">
+                    Lihat galeri atlet
+                  </button>
+                </div>
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
+                  {gallery.map((athlete, index) => (
+                    <button
+                      key={athlete.id}
+                      onClick={() => setFeaturedAthleteIndex(index)}
+                      className={`group relative aspect-[.82] overflow-hidden rounded-xl border transition sm:rounded-2xl ${index === featuredAthleteIndex ? 'border-blue-500 ring-2 ring-blue-500/25' : 'border-white/10 hover:border-blue-400/60'}`}
+                    >
+                      {athlete.photo ? (
+                        <LazyImage src={athlete.photo} alt={athlete.name} className="h-full w-full object-cover object-top transition duration-500 group-hover:scale-105" containerClassName="h-full w-full" width={320} />
+                      ) : (
+                        <div className="grid h-full place-items-center bg-[#0b1220]"><Users size={28} className="text-blue-500/30" /></div>
+                      )}
+                      <div className={`absolute inset-0 transition ${index === featuredAthleteIndex ? 'bg-gradient-to-t from-blue-950/75 via-transparent to-transparent' : 'bg-gradient-to-t from-black/75 via-black/5 to-transparent'}`} />
+                      <div className={`absolute inset-x-2 bottom-2 line-clamp-1 text-left text-[10px] font-black uppercase ${index === featuredAthleteIndex ? 'text-blue-200' : 'text-white'}`}>{athlete.name}</div>
+                    </button>
+                  ))}
+                </div>
+                <button onClick={() => go('atlet')} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 py-3 text-[9px] font-black uppercase tracking-[.16em] text-slate-300 transition hover:border-blue-500/40 hover:text-white">
+                  Buka Profil & Data Atlet Lengkap <ArrowRight size={14} />
+                </button>
+              </div>
+            </div>
+          );
+        })()}
       </section>
 
       <section className="landing-section bg-[#08101d]">
