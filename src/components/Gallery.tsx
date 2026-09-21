@@ -171,10 +171,9 @@ export default function Gallery() {
     if (fromLanding) {
       // Kembali langsung ke tampilan Galeri di Landing Page yang sebelumnya dipilih.
       // replaceState mencegah penambahan history/pop-up tambahan.
-      const target = tab === 'video' ? '/?galleryTab=video' : '/';
+      const target = tab === 'video' ? '/?galleryTab=video#landing-gallery' : '/?galleryTab=image#landing-gallery';
       window.history.replaceState({}, '', target);
       window.dispatchEvent(new PopStateEvent('popstate'));
-      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
