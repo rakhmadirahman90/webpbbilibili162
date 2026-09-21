@@ -52,17 +52,6 @@ const Players: React.FC<{ initialFilter?: string }> = ({
     setActiveTab('profil');
   }, [selectedPlayer]);
 
-  useEffect(() => {
-    let athleteId = '';
-    try {
-      if (sessionStorage.getItem('pb_landing_athlete_return') !== '1') return;
-      athleteId = sessionStorage.getItem('pb_landing_athlete_id') || '';
-    } catch { return; }
-    if (!athleteId || !processedPlayers.length) return;
-    const target = processedPlayers.find((item) => String(item.id) === athleteId);
-    if (target) setSelectedPlayer(target);
-  }, [processedPlayers]);
-
   // Navbar tetap tersedia pada dedicated page Atlet.
   // Ini menjaga tombol menu seluler tetap terlihat dan seluruh navigasi tetap berfungsi.
   const handlePublicNavigate = useCallback((sectionId: string, subPath?: string) => {
@@ -274,6 +263,17 @@ const Players: React.FC<{ initialFilter?: string }> = ({
 
     return Array.from(uniquePlayersMap.values()).sort((a, b) => b.displayPoints - a.displayPoints);
   }, [dbPlayers]);
+
+  useEffect(() => {
+    let athleteId = '';
+    try {
+      if (sessionStorage.getItem('pb_landing_athlete_return') !== '1') return;
+      athleteId = sessionStorage.getItem('pb_landing_athlete_id') || '';
+    } catch { return; }
+    if (!athleteId || !processedPlayers.length) return;
+    const target = processedPlayers.find((item) => String(item.id) === athleteId);
+    if (target) setSelectedPlayer(target);
+  }, [processedPlayers]);
 
   const counts = useMemo(() => ({
     all: processedPlayers.length,
