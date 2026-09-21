@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../supabase';
 import { X, Image as ImageIcon, Loader2, ArrowLeft, ChevronLeft, ChevronRight, Share2, Link2, Heart, Eye, Plus, Calendar, Search, PlayCircle, MessageCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -36,7 +36,6 @@ function sameGallery(a: GalleryItem[], b: GalleryItem[]) {
 }
 
 export default function Gallery() {
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -174,7 +173,13 @@ export default function Gallery() {
       const target = tab === 'video'
         ? '/?galleryTab=video#landing-gallery'
         : '/?galleryTab=image#landing-gallery';
-      navigate(target, { replace: true });
+      window.history.replaceState({}, '', target);
+      window.dispatchEvent(new PopStateEvent('popstate'));
+      window.dispatchEvent(new CustomEvent('pb-return-to-landing-gallery'));
+      window.scrollTo({ top: 0, behavior: 'auto' });
+      window.requestAnimationFrame(() => {
+        document.getElementById('landing-gallery')?.scrollIntoView({ block: 'start', behavior: 'auto' });
+      });
       return;
     }
 
@@ -187,7 +192,7 @@ export default function Gallery() {
     const query = tab === 'video' ? '?tab=video' : '';
     window.history.replaceState({}, '', `/galeri${query}`);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [searchParams, activeMedia, navigate]);
+  }, [searchParams, activeMedia]);
 
   const getYouTubeID = useCallback((url: string) => {
     if (!url) return null;
