@@ -166,6 +166,7 @@ export default function Gallery() {
     const tab = searchParams.get('tab') === 'video' ? 'video' : (activeMedia?.type === 'video' ? 'video' : 'image');
 
     if (fromLanding) {
+      try { sessionStorage.setItem('pb_suppress_landing_popup', '1'); } catch {}
       // Detail dibuka dari kartu Foto/Video Terbaru Landing Page.
       // Gunakan React Router agar satu klik langsung mengganti route tanpa
       // race dengan useSearchParams / state Gallery yang sedang aktif.
@@ -177,10 +178,15 @@ export default function Gallery() {
       window.history.replaceState({}, '', target);
       window.dispatchEvent(new PopStateEvent('popstate'));
       window.dispatchEvent(new CustomEvent('pb-return-to-landing-gallery'));
-      window.scrollTo({ top: 0, behavior: 'auto' });
-      window.requestAnimationFrame(() => {
-        document.getElementById('landing-gallery')?.scrollIntoView({ block: 'start', behavior: 'auto' });
-      });
+      let attempts = 0;
+      const restore = () => {
+        let saved = 0;
+        try { saved = Number(sessionStorage.getItem('pb_landing_gallery_scroll_y') || '0'); } catch {}
+        window.scrollTo({ top: Math.max(0, saved), behavior: 'auto' });
+        attempts += 1;
+        if (attempts < 12) window.requestAnimationFrame(restore);
+      };
+      window.requestAnimationFrame(restore);
       return;
     }
 
