@@ -25,7 +25,7 @@ export function getOptimizedImageUrl(url: string, width?: number, quality: numbe
       return transformed.toString();
     }
 
-    // Unsplash has native responsive WebP support.
+    // Signed/private Supabase Storage URLs must be loaded directly.\n    // The external image proxy cannot reliably access time-limited signed URLs,\n    // which caused athlete cards to appear as placeholders while detail view worked.\n    if (/\\/storage\\/v1\\/object\\/(sign|authenticated)\\//i.test(trimmedUrl)) {\n      return trimmedUrl;\n    }\n\n    // Unsplash has native responsive WebP support.
     if (trimmedUrl.includes('images.unsplash.com')) {
       const imageUrl = new URL(trimmedUrl);
       imageUrl.searchParams.set('fm', 'webp');
