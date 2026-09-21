@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../supabase';
 import { X, Image as ImageIcon, Loader2, ArrowLeft, ChevronLeft, ChevronRight, Share2, Link2, Heart, Eye, Plus, Calendar, Search, PlayCircle, MessageCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -36,6 +36,7 @@ function sameGallery(a: GalleryItem[], b: GalleryItem[]) {
 }
 
 export default function Gallery() {
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -166,14 +167,14 @@ export default function Gallery() {
 
     if (fromLanding) {
       // Detail dibuka dari kartu Foto/Video Terbaru Landing Page.
-      // Jangan mengubah state Gallery terlebih dahulu karena itu dapat
-      // merender daftar Galeri sesaat sebelum navigasi kembali.
-      // Langsung replace ke Landing Page pada kartu media yang sama.
+      // Gunakan React Router agar satu klik langsung mengganti route tanpa
+      // race dengan useSearchParams / state Gallery yang sedang aktif.
+      // State detail TIDAK di-reset sebelum navigate karena efek URL dapat
+      // menangkap perubahan tersebut dan membutuhkan klik kedua.
       const target = tab === 'video'
         ? '/?galleryTab=video#landing-gallery'
         : '/?galleryTab=image#landing-gallery';
-      window.history.replaceState({}, '', target);
-      window.dispatchEvent(new PopStateEvent('popstate'));
+      navigate(target, { replace: true });
       return;
     }
 
@@ -186,7 +187,7 @@ export default function Gallery() {
     const query = tab === 'video' ? '?tab=video' : '';
     window.history.replaceState({}, '', `/galeri${query}`);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [searchParams, activeMedia]);
+  }, [searchParams, activeMedia, navigate]);
 
   const getYouTubeID = useCallback((url: string) => {
     if (!url) return null;
