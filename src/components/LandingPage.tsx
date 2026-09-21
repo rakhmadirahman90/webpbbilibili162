@@ -615,7 +615,8 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
         </div>
       </section>
 
-      <style>{`/* Landing typography/layout deployment sync: 2026-09-21 */
+      <style>{`/* Production sync: restore ea1f64b landing news layout */
+/* Landing typography/layout deployment sync: 2026-09-21 */
 /* Vercel production sync checkpoint: 2026-09-21-2 */
 
         #landing-page {
