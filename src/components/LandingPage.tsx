@@ -613,6 +613,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
 
       <style>{`/* Production sync: restore ea1f64b landing news layout */
 /* Vercel sync: news reference typography 2026-09-21 */
+/* Auto-deploy sync checkpoint: 2026-09-21 */
 /* Landing typography/layout deployment sync: 2026-09-21 */
 /* Vercel production sync checkpoint: 2026-09-21-2 */
 
