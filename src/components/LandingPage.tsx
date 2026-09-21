@@ -693,13 +693,11 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           font-weight:800;
           letter-spacing:-.025em;
           color:#fff;
-          overflow:hidden;
-          overflow-wrap:anywhere;
+          overflow:visible;
+          overflow-wrap:break-word;
           word-break:normal;
-          display:-webkit-box;
-          -webkit-box-orient:vertical;
-          -webkit-line-clamp:4;
-          min-height:0;
+          display:block;
+          white-space:normal;
         }
         #landing-page .landing-featured-summary {
           margin-top:.625rem;
@@ -861,7 +859,8 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
             line-height:1.22;
             letter-spacing:-.025em;
             max-width:100%;
-            -webkit-line-clamp:4;
+            display:block;
+            white-space:normal;
           }
           #landing-page #landing-news .landing-featured-summary {
             margin-top:.75rem;
