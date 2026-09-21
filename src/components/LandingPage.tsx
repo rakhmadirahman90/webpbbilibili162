@@ -177,7 +177,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
                         />
                       ) : <div className="h-full w-full bg-[#111827]" />}
                     </div>
-                    <div className="bg-gradient-to-r from-[#ef101d] via-[#dc1623] to-[#c90f1c] px-5 py-5 sm:px-7 sm:py-6">
+                    <div className="bg-gradient-to-r from-[#0b3b91] via-[#1557d6] to-[#2563eb] px-5 py-5 sm:px-7 sm:py-6">
                       <div className="mb-2 inline-flex rounded-full bg-blue-600 px-3 py-1.5 text-[8px] font-black uppercase tracking-[.18em] text-white">
                         Berita Terbaru
                       </div>
