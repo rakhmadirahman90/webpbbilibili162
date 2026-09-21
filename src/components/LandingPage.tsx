@@ -37,6 +37,15 @@ interface LandingPageProps {
   onNavigate?: (sectionId: string, subPath?: string) => void;
 }
 
+type LandingCache = {
+  athletes: Athlete[];
+  allAthletes: Athlete[];
+  news: NewsItem[];
+  galleryItems: GalleryItem[];
+};
+
+let landingCache: LandingCache | null = null;
+
 const FALLBACK_ATHLETES: Athlete[] = [
   { id: 'fallback-1', name: 'PB BILIBILI 162', photo: '', points: 0, seed: '—', category: 'ATLET', rank: 1 },
   { id: 'fallback-2', name: 'KELUARGA BILIBILI 162', photo: '', points: 0, seed: '—', category: 'ATLET', rank: 2 },
@@ -45,10 +54,10 @@ const FALLBACK_ATHLETES: Athlete[] = [
 ];
 
 export default function LandingPage({ onNavigate }: LandingPageProps) {
-  const [athletes, setAthletes] = useState<Athlete[]>([]);
-  const [allAthletes, setAllAthletes] = useState<Athlete[]>([]);
-  const [news, setNews] = useState<NewsItem[]>([]);
-  const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
+  const [athletes, setAthletes] = useState<Athlete[]>(() => landingCache?.athletes || []);
+  const [allAthletes, setAllAthletes] = useState<Athlete[]>(() => landingCache?.allAthletes || []);
+  const [news, setNews] = useState<NewsItem[]>(() => landingCache?.news || []);
+  const [galleryItems, setGalleryItems] = useState<GalleryItem[]>(() => landingCache?.galleryItems || []);
   const [featuredAthleteIndex, setFeaturedAthleteIndex] = useState(0);
   const [galleryTab, setGalleryTab] = useState<'image' | 'video'>(() => {
     try {
@@ -57,7 +66,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
       return 'image';
     }
   });
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !landingCache);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (!params.get('galleryTab')) return;
@@ -174,13 +183,20 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
         }));
 
         if (!mounted) return;
-        setAllAthletes(sorted);
-        setAthletes(sorted.slice(0, 4));
-        setNews(formattedNews);
-        setGalleryItems(formattedGallery);
+        const nextCache: LandingCache = {
+          allAthletes: sorted,
+          athletes: sorted.slice(0, 4),
+          news: formattedNews,
+          galleryItems: formattedGallery,
+        };
+        landingCache = nextCache;
+        setAllAthletes(nextCache.allAthletes);
+        setAthletes(nextCache.athletes);
+        setNews(nextCache.news);
+        setGalleryItems(nextCache.galleryItems);
       } catch (error) {
         console.warn('[LandingPage] homepage data sync skipped:', error);
-        if (mounted) {
+        if (mounted && !landingCache) {
           setAllAthletes([]);
           setAthletes([]);
           setNews([]);
