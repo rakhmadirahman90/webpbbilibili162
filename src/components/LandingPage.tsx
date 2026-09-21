@@ -91,6 +91,44 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
   }, []);
 
 
+  const goAthleteDetail = useCallback((athlete?: Athlete) => {
+    if (!athlete?.id) return;
+    try {
+      sessionStorage.setItem('pb_landing_athlete_id', String(athlete.id));
+      sessionStorage.setItem('pb_landing_athlete_return', '1');
+    } catch {}
+    setFeaturedAthleteIndex(Math.max(0, allAthletes.findIndex((item) => String(item.id) === String(athlete.id))));
+    go('atlet');
+  }, [allAthletes, go]);
+
+  useEffect(() => {
+    let athleteId = '';
+    try {
+      if (sessionStorage.getItem('pb_landing_athlete_return') !== '1') return;
+      athleteId = sessionStorage.getItem('pb_landing_athlete_id') || '';
+    } catch { return; }
+    if (!athleteId || !allAthletes.length) return;
+    const index = allAthletes.findIndex((item) => String(item.id) === athleteId);
+    if (index >= 0) setFeaturedAthleteIndex(index);
+    let frame = 0;
+    let attempts = 0;
+    const scrollBack = () => {
+      const target = document.getElementById('landing-athletes');
+      if (target) {
+        target.scrollIntoView({ behavior: 'auto', block: 'start' });
+        try {
+          sessionStorage.removeItem('pb_landing_athlete_return');
+          sessionStorage.removeItem('pb_landing_athlete_id');
+        } catch {}
+        return;
+      }
+      attempts += 1;
+      if (attempts < 30) frame = requestAnimationFrame(scrollBack);
+    };
+    frame = requestAnimationFrame(scrollBack);
+    return () => cancelAnimationFrame(frame);
+  }, [allAthletes]);
+  
   const goGalleryItem = useCallback((item?: GalleryItem) => {
     const target = item ? `/galeri?gallery=${encodeURIComponent(item.id)}&from=landing&tab=${item.type}` : '/galeri';
     window.history.pushState({}, '', target);
@@ -219,7 +257,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
 
   return (
     <div id="landing-page" className="landing-page relative overflow-hidden bg-[#050914] text-white">
-      <section className="landing-section mx-auto w-full max-w-7xl px-4 py-10 sm:px-8 sm:py-14 lg:px-10">
+      <section id="landing-athletes" className="landing-section mx-auto w-full max-w-7xl px-4 py-10 sm:px-8 sm:py-14 lg:px-10">
         <div className="mb-6 flex items-end justify-between gap-4">
           <div>
             <div className="mb-2 text-[9px] font-black uppercase tracking-[.25em] text-blue-400">01 • KABAR KLUB</div>
@@ -342,7 +380,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           }
           return (
             <div className="overflow-hidden rounded-[2rem] border border-white/10 bg-[#090d14] shadow-2xl">
-              <button onClick={() => go('atlet')} className="group block w-full text-left">
+              <button onClick={() => goAthleteDetail(featured)} className="group block w-full text-left">
                 <div className="relative aspect-[1.15/1] w-full overflow-hidden bg-[#1d1d1d] sm:aspect-[2.1/1]">
                   {featured.photo ? (
                     <LazyImage
@@ -383,7 +421,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
                   {gallery.map((athlete, index) => (
                     <button
                       key={athlete.id}
-                      onClick={() => setFeaturedAthleteIndex(index)}
+                      onClick={() => goAthleteDetail(athlete)}
                       className={`group relative aspect-[.82] overflow-hidden rounded-xl border transition sm:rounded-2xl ${index === featuredAthleteIndex ? 'border-blue-500 ring-2 ring-blue-500/25' : 'border-white/10 hover:border-blue-400/60'}`}
                     >
                       {athlete.photo ? (
