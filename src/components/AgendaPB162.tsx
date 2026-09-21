@@ -88,8 +88,8 @@ export default function AgendaPB162({ compact = false }: { compact?: boolean }) 
 
   const visible = useMemo(() => compact ? items.slice(0, 3) : items, [items, compact]);
 
-  return <section id="agenda-pb162" className="w-full bg-[#070d1a] px-4 py-10 sm:px-6 sm:py-14">
-    <div className="mx-auto max-w-5xl">
+  return <section id="agenda-pb162" className={compact ? "agenda-landing-compact landing-section w-full bg-[#050914]" : "w-full bg-[#070d1a] px-4 py-10 sm:px-6 sm:py-14"}>
+    <div className={compact ? "mx-auto w-full max-w-7xl px-4 py-6 sm:px-8 sm:py-12 lg:px-10" : "mx-auto max-w-5xl"}>
       <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-blue-300">
