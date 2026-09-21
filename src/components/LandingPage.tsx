@@ -3,6 +3,7 @@ import { ArrowRight, CalendarDays, ChevronRight, Medal, Trophy, Users, Zap, Eye,
 import { motion } from 'framer-motion';
 import { supabase } from '../supabase';
 import LazyImage from './LazyImage';
+import VideoThumbnail from './VideoThumbnail';
 
 type Athlete = {
   id: string;
@@ -437,32 +438,12 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
               <button onClick={() => goGalleryItem(selected)} className="group block w-full overflow-hidden rounded-xl bg-black text-left">
                 <div className="relative aspect-[16/9] w-full overflow-hidden">
                   {isVideo ? (
-                    (() => {
-                      const videoId = selected.url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([^#&?\s]+)/i)?.[1];
-                      return videoId ? (
-                        <img
-                          src={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`}
-                          alt={selected.title || 'Video terbaru PB BILIBILI 162'}
-                          className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.02]"
-                          loading="lazy"
-                          referrerPolicy="no-referrer"
-                        />
-                      ) : (
-                        <video
-                          src={selected.url}
-                          muted
-                          playsInline
-                          preload="metadata"
-                          className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.02]"
-                          aria-label={selected.title || 'Video terbaru PB BILIBILI 162'}
-                          onLoadedMetadata={(event) => {
-                            try {
-                              event.currentTarget.currentTime = Math.min(0.5, event.currentTarget.duration || 0.5);
-                            } catch {}
-                          }}
-                        />
-                      );
-                    })()
+                    <VideoThumbnail
+                      src={selected.url}
+                      thumbnailUrl={selected.thumbnail_url}
+                      alt={selected.title || 'Video terbaru PB BILIBILI 162'}
+                      className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.02]"
+                    />
                   ) : (
                     <LazyImage
                       src={selected.url}
