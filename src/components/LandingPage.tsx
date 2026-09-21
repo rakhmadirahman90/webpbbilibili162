@@ -74,22 +74,33 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
 
     let frame = 0;
     let attempts = 0;
-    const scrollToGallery = () => {
+    let savedScrollY = 0;
+    try {
+      savedScrollY = Number(sessionStorage.getItem('pb_landing_gallery_scroll_y') || '0');
+    } catch {}
+
+    const restoreGalleryPosition = () => {
       const target = document.getElementById('landing-gallery');
       if (target) {
-        // Pastikan kembali tepat ke kartu Foto/Video Terbaru di Landing Page,
-        // bukan ke daftar Galeri dan bukan ke bagian atas halaman.
-        target.scrollIntoView({ behavior: 'auto', block: 'start' });
+        window.scrollTo({ top: Math.max(0, savedScrollY), behavior: 'auto' });
+        if (attempts < 12) {
+          attempts += 1;
+          frame = window.requestAnimationFrame(restoreGalleryPosition);
+          return;
+        }
+        try {
+          sessionStorage.removeItem('pb_landing_gallery_scroll_y');
+          window.setTimeout(() => sessionStorage.removeItem('pb_suppress_landing_popup'), 900);
+        } catch {}
         return;
       }
       attempts += 1;
-      if (attempts < 30) frame = window.requestAnimationFrame(scrollToGallery);
+      if (attempts < 60) frame = window.requestAnimationFrame(restoreGalleryPosition);
     };
 
-    frame = window.requestAnimationFrame(scrollToGallery);
+    frame = window.requestAnimationFrame(restoreGalleryPosition);
     return () => window.cancelAnimationFrame(frame);
   }, []);
-
 
   useEffect(() => {
     let athleteId = '';
@@ -142,10 +153,15 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
   }, [allAthletes]);
 
   const goGalleryItem = useCallback((item?: GalleryItem) => {
+    if (item?.id) {
+      try {
+        sessionStorage.setItem('pb_landing_gallery_scroll_y', String(Math.max(0, window.scrollY || window.pageYOffset || 0)));
+      } catch {}
+    }
     const target = item ? `/galeri?gallery=${encodeURIComponent(item.id)}&from=landing&tab=${item.type}` : '/galeri';
     window.history.pushState({}, '', target);
     window.dispatchEvent(new PopStateEvent('popstate'));
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: 'auto' });
   }, []);
 
   const goNews = useCallback((newsId?: string) => {
