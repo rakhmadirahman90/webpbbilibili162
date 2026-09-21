@@ -398,7 +398,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
                         />
                       ) : <div className="h-full w-full bg-[#111827]" />}
                     </div>
-                    <div className="bg-gradient-to-r from-[#0b3b91] via-[#1557d6] to-[#2563eb] px-4 py-4 sm:px-7 sm:py-6">
+                    <div className="bg-gradient-to-r from-[#0b3b91] via-[#1557d6] to-[#2563eb] px-4 py-5 sm:px-7 sm:py-6">
                       <div className="mb-2 inline-flex rounded-full bg-blue-600 px-3 py-1.5 text-[8px] font-black uppercase tracking-[.18em] text-white">
                         Berita Terbaru
                       </div>
@@ -698,8 +698,8 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           word-break:normal;
           display:-webkit-box;
           -webkit-box-orient:vertical;
-          -webkit-line-clamp:2;
-          min-height:2.36em;
+          -webkit-line-clamp:4;
+          min-height:0;
         }
         #landing-page .landing-featured-summary {
           margin-top:.625rem;
@@ -755,11 +755,6 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
         }
 
         /* One typography scale for content across all three landing sections. */
-        #landing-page #landing-news h3 {
-          font-size:clamp(.9375rem,2.5vw,2rem) !important;
-          line-height:1.2 !important;
-          font-weight:800 !important;
-        }
         #landing-page #landing-news p {
           font-size:var(--landing-body) !important;
           line-height:1.55 !important;
@@ -862,12 +857,18 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
         }
         @media (max-width: 640px) {
           #landing-page #landing-news .landing-featured-title {
-            font-size:clamp(1.2rem,5.4vw,1.45rem);
-            line-height:1.2;
+            font-size:clamp(1.65rem,7.2vw,2rem);
+            line-height:1.22;
+            letter-spacing:-.025em;
+            max-width:100%;
+            -webkit-line-clamp:4;
           }
           #landing-page #landing-news .landing-featured-summary {
-            font-size:.8125rem;
+            margin-top:.75rem;
+            font-size:.9375rem;
             line-height:1.5;
+            max-width:100%;
+            -webkit-line-clamp:2;
           }
           #landing-page #landing-news .divide-y > button {
             min-height:88px;
