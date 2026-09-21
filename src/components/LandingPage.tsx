@@ -434,8 +434,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
       <section id="landing-athletes" className="landing-section mx-auto w-full max-w-7xl px-4 py-8 sm:px-8 sm:py-14 lg:px-10">
         <div className="mb-6 flex items-end justify-between gap-4">
           <div>
-            <div className="mb-2 text-[9px] font-black uppercase tracking-[.25em] text-blue-400">02 • PROFIL ATLET</div>
-            <h2 className="text-[clamp(1.75rem,7vw,3rem)] font-extrabold uppercase leading-[.98] tracking-[-.045em]">Kenali <span className="text-blue-500">Atlet Kami.</span></h2>
+            <h2 className="text-[clamp(1.75rem,7vw,3rem)] font-extrabold uppercase leading-[1] tracking-[-.04em] text-white">Kenali Atlet Kami</h2>
           </div>
           <button onClick={() => go('atlet')} className="hidden items-center gap-2 text-[10px] font-black uppercase tracking-[.15em] text-slate-400 hover:text-white sm:flex">
             Lihat Semua Berita Atlet <ArrowRight size={15} />
@@ -522,7 +521,6 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
         <div className="mx-auto max-w-7xl px-4 py-8 sm:px-8 sm:py-14 lg:px-10">
           <div className="mb-5 flex items-center justify-between gap-4">
             <div>
-              <div className="mb-2 text-[9px] font-black uppercase tracking-[.25em] text-blue-400">03 • GALERI KLUB</div>
               <h2 className="text-[clamp(1.75rem,7vw,2.5rem)] font-extrabold uppercase leading-none tracking-[-.04em] text-white">Galeri</h2>
             </div>
             <button onClick={() => go('galeri')} className="text-sm font-medium text-slate-300 hover:text-blue-400 sm:text-base">Lihat Semua</button>
@@ -589,40 +587,6 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
             );
           })()}
         </div>
-      </section>
-
-      <section className="landing-section mx-auto w-full max-w-7xl px-4 py-8 sm:px-8 sm:py-14 lg:px-10">
-        <div className="mb-7 flex items-end justify-between gap-4">
-          <div>
-            <div className="mb-2 text-[9px] font-black uppercase tracking-[.25em] text-amber-400">04 • PERINGKAT TERATAS</div>
-            <h2 className="text-[clamp(1.75rem,7vw,3rem)] font-extrabold uppercase leading-[.98] tracking-[-.045em]">Kejar <span className="text-amber-400">Poin.</span></h2>
-          </div>
-          <button onClick={() => go('peringkat')} className="hidden items-center gap-2 text-[10px] font-black uppercase tracking-[.15em] text-slate-400 hover:text-white sm:flex">Peringkat Lengkap <ChevronRight size={15} /></button>
-        </div>
-
-        <div className="overflow-hidden rounded-[1.25rem] sm:rounded-[2rem] border border-white/10 bg-[#0a101c]">
-          {loading ? (
-            <div className="grid place-items-center px-6 py-16 text-[10px] font-black uppercase tracking-[.2em] text-slate-500">Sinkronisasi ranking...</div>
-          ) : (
-            spotlight.map((athlete, index) => (
-              <button key={athlete.id} onClick={() => go('peringkat')} className="group flex w-full items-center gap-3 border-b border-white/8 px-4 py-4 text-left transition hover:bg-white/[.035] sm:px-6">
-                <div className={`w-9 shrink-0 text-center text-sm font-black ${index === 0 ? 'text-amber-400' : 'text-slate-500'}`}>0{index + 1}</div>
-                <div className="h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-slate-800">
-                  {athlete.photo ? <LazyImage src={athlete.photo} alt="" className="h-full w-full object-cover object-top" containerClassName="h-full w-full" width={120} /> : null}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-xs font-black uppercase text-white sm:text-sm">{athlete.name}</div>
-                  <div className="mt-1 text-[8px] font-bold uppercase tracking-wider text-slate-500">{athlete.category} • Seed {athlete.seed}</div>
-                </div>
-                <div className="shrink-0 text-right">
-                  <div className="text-sm font-black text-blue-300 sm:text-base">{athlete.points.toLocaleString()}</div>
-                  <div className="text-[7px] font-black uppercase tracking-widest text-slate-600">POIN</div>
-                </div>
-              </button>
-            ))
-          )}
-        </div>
-        <button onClick={() => go('peringkat')} className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 py-3 text-[10px] font-black uppercase tracking-[.16em] text-slate-300 sm:hidden">Buka Peringkat Lengkap <ArrowRight size={14} /></button>
       </section>
 
       <style>{`
