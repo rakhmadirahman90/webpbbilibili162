@@ -143,70 +143,88 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
 
   return (
     <div id="landing-page" className="landing-page relative overflow-hidden bg-[#050914] text-white">
-      <section className="landing-section mx-auto w-full max-w-7xl px-5 py-10 sm:px-8 sm:py-14 lg:px-10">
+      <section className="landing-section mx-auto w-full max-w-7xl px-4 py-10 sm:px-8 sm:py-14 lg:px-10">
         <div className="mb-6 flex items-end justify-between gap-4">
           <div>
             <div className="mb-2 text-[9px] font-black uppercase tracking-[.25em] text-blue-400">01 • Informasi Klub</div>
-            <h2 className="text-3xl font-black italic uppercase tracking-[-.04em] sm:text-5xl">Berita <span className="text-blue-500">Terbaru.</span></h2>
+            <h2 className="text-3xl font-black italic uppercase tracking-[-.05em] sm:text-5xl">Berita <span className="text-blue-500">Terbaru.</span></h2>
           </div>
-          <button onClick={() => goNews()} className="hidden items-center gap-2 text-[10px] font-black uppercase tracking-[.15em] text-slate-400 hover:text-white sm:flex">Berita Lainnya <ChevronRight size={15} /></button>
+          <button onClick={() => goNews()} className="hidden items-center gap-2 rounded-full border border-blue-500/70 px-5 py-2.5 text-[10px] font-black uppercase tracking-[.15em] text-white transition hover:bg-blue-600 sm:flex">
+            Lihat Semua <ArrowRight size={15} />
+          </button>
         </div>
 
         {news.length > 0 ? (
-          <div className="grid gap-4 lg:grid-cols-[1.18fr_.82fr]">
+          <div>
             {(() => {
               const featured = news[0];
-              const others = news.slice(1);
+              const others = news.slice(1, 5);
               const image = featured.gambar_url.split(/[,\s]+/)[0];
               return (
                 <>
                   <button
                     onClick={() => goNews(featured.id)}
-                    className="group relative min-h-[360px] overflow-hidden rounded-[2rem] border border-white/10 bg-[#0b1220] text-left shadow-2xl sm:min-h-[460px]"
+                    className="group block w-full overflow-hidden rounded-[2rem] border border-white/10 bg-[#0b1220] text-left shadow-2xl"
                   >
-                    {image ? (
-                      <LazyImage src={image} alt={featured.judul} className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105" containerClassName="absolute inset-0 h-full w-full" width={1100} />
-                    ) : <div className="absolute inset-0 bg-[#111827]" />}
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#020617] via-[#020617]/55 to-black/10" />
-                    <div className="absolute inset-x-0 bottom-0 p-5 sm:p-7">
-                      <div className="mb-3 inline-flex rounded-full bg-blue-600 px-3 py-1.5 text-[8px] font-black uppercase tracking-[.18em] text-white">Berita Terbaru</div>
-                      <h3 className="max-w-3xl text-2xl font-black leading-tight text-white sm:text-4xl">{featured.judul}</h3>
-                      <p className="mt-3 line-clamp-2 max-w-2xl text-xs leading-5 text-slate-200 sm:text-sm">{featured.ringkasan}</p>
-                      <div className="mt-4 flex flex-wrap items-center gap-3 text-[8px] font-bold uppercase tracking-wider text-slate-300">
-                        <span>{featured.tanggal ? new Date(featured.tanggal).toLocaleDateString('id-ID',{weekday:'long',day:'2-digit',month:'short',year:'numeric'}) : 'Terbaru'}</span>
-                        <span className="inline-flex items-center gap-1"><Eye size={11}/> {featured.views}</span>
-                        <span className="inline-flex items-center gap-1"><MessageCircle size={11}/> {featured.comments_count}</span>
+                    <div className="relative aspect-[16/10] w-full overflow-hidden bg-slate-900 sm:aspect-[2.05/1]">
+                      {image ? (
+                        <LazyImage
+                          src={image}
+                          alt={featured.judul}
+                          className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.02]"
+                          containerClassName="h-full w-full"
+                          width={1200}
+                        />
+                      ) : <div className="h-full w-full bg-[#111827]" />}
+                    </div>
+                    <div className="bg-gradient-to-r from-[#ef101d] via-[#dc1623] to-[#c90f1c] px-5 py-5 sm:px-7 sm:py-6">
+                      <div className="mb-2 inline-flex rounded-full bg-blue-600 px-3 py-1.5 text-[8px] font-black uppercase tracking-[.18em] text-white">
+                        Berita Terbaru
+                      </div>
+                      <h3 className="text-xl font-black leading-tight text-white sm:text-3xl lg:text-4xl">{featured.judul}</h3>
+                      <p className="mt-3 line-clamp-2 text-xs leading-5 text-white/85 sm:text-sm">{featured.ringkasan}</p>
+                      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex flex-wrap items-center gap-3 text-[8px] font-bold uppercase tracking-wider text-white/80 sm:text-[9px]">
+                          <span>{featured.tanggal ? new Date(featured.tanggal).toLocaleDateString('id-ID',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}) : 'Terbaru'}</span>
+                          <span className="inline-flex items-center gap-1"><Eye size={12}/> {featured.views}</span>
+                          <span className="inline-flex items-center gap-1"><MessageCircle size={12}/> {featured.comments_count}</span>
+                        </div>
+                        <span className="hidden items-center gap-2 text-sm font-black text-white sm:inline-flex">Baca Selengkapnya <ArrowRight size={16}/></span>
                       </div>
                     </div>
                   </button>
 
-                  <div className="overflow-hidden rounded-[2rem] border border-white/10 bg-[#0b1220]">
-                    <div className="border-b border-white/10 px-5 py-4">
-                      <div className="text-[9px] font-black uppercase tracking-[.2em] text-blue-300">Berita Lainnya</div>
+                  <div className="mt-4 overflow-hidden rounded-[2rem] border border-white/10 bg-[#0b1220]">
+                    <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+                      <div className="text-[10px] font-black uppercase tracking-[.2em] text-blue-300">Berita Lainnya</div>
+                      <button onClick={() => goNews()} className="hidden items-center gap-1 text-[9px] font-black uppercase tracking-wider text-blue-400 sm:flex">Lihat Semua <ArrowRight size={13}/></button>
                     </div>
                     <div className="divide-y divide-white/10">
                       {others.map((item) => {
                         const itemImage = item.gambar_url.split(/[,\s]+/)[0];
                         return (
-                          <button key={item.id} onClick={() => goNews(item.id)} className="group flex w-full gap-3 p-3.5 text-left transition hover:bg-white/[.04] sm:p-4">
-                            <div className="h-[82px] w-[112px] shrink-0 overflow-hidden rounded-2xl bg-slate-800 sm:h-[92px] sm:w-[128px]">
-                              {itemImage ? <LazyImage src={itemImage} alt={item.judul} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" containerClassName="h-full w-full" width={320} /> : null}
+                          <button key={item.id} onClick={() => goNews(item.id)} className="group flex w-full items-center gap-3 p-3.5 text-left transition hover:bg-white/[.04] sm:gap-5 sm:p-4">
+                            <div className="h-[76px] w-[106px] shrink-0 overflow-hidden rounded-2xl bg-slate-800 sm:h-[88px] sm:w-[128px]">
+                              {itemImage ? <LazyImage src={itemImage} alt={item.judul} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" containerClassName="h-full w-full" width={360} /> : null}
                             </div>
-                            <div className="min-w-0 py-0.5">
-                              <h3 className="line-clamp-2 text-sm font-black leading-tight text-white group-hover:text-blue-300">{item.judul}</h3>
-                              <div className="mt-2 text-[8px] font-bold uppercase tracking-wider text-slate-500">
-                                {item.tanggal ? new Date(item.tanggal).toLocaleDateString('id-ID',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}) : 'Terbaru'}
-                              </div>
-                              <div className="mt-1 flex items-center gap-2 text-[8px] font-bold text-slate-600">
+                            <div className="min-w-0 flex-1">
+                              <h3 className="line-clamp-2 text-sm font-black leading-tight text-white group-hover:text-blue-300 sm:text-base">{item.judul}</h3>
+                              <div className="mt-2 flex flex-wrap items-center gap-2 text-[8px] font-bold uppercase tracking-wider text-slate-500 sm:text-[9px]">
+                                <span>{item.tanggal ? new Date(item.tanggal).toLocaleDateString('id-ID',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}) : 'Terbaru'}</span>
                                 <span className="inline-flex items-center gap-1"><Eye size={10}/> {item.views}</span>
                                 <span className="inline-flex items-center gap-1"><MessageCircle size={10}/> {item.comments_count}</span>
                               </div>
                             </div>
+                            <ChevronRight size={20} className="shrink-0 text-slate-500 transition group-hover:text-blue-400" />
                           </button>
                         );
                       })}
                     </div>
                   </div>
+
+                  <button onClick={() => goNews()} className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 py-3.5 text-[10px] font-black uppercase tracking-[.16em] text-white shadow-lg shadow-blue-600/15 sm:hidden">
+                    Berita Lainnya / Selengkapnya <ArrowRight size={14} />
+                  </button>
                 </>
               );
             })()}
@@ -214,10 +232,6 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
         ) : (
           <div className="rounded-[2rem] border border-white/10 bg-[#0b1220] px-5 py-14 text-center text-[10px] font-black uppercase tracking-[.2em] text-slate-500">Belum ada berita terbaru.</div>
         )}
-
-        <button onClick={() => goNews()} className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 py-3.5 text-[10px] font-black uppercase tracking-[.16em] text-white shadow-lg shadow-blue-600/15 sm:hidden">
-          Berita Lainnya / Selengkapnya <ArrowRight size={14} />
-        </button>
       </section>
 
       <section className="landing-section mx-auto w-full max-w-7xl px-5 py-10 sm:px-8 sm:py-14 lg:px-10">
