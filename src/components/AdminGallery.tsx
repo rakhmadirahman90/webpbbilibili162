@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import imageCompression from 'browser-image-compression';
 import { supabase } from '../supabase';
 import { broadcastDataChange } from '../utils/realtimeHelper';
+import VideoThumbnail from './VideoThumbnail';
 import { getSiteSetting, saveSiteSetting } from '../utils/siteSettingsHelper';
 import Swal from 'sweetalert2';
 import {
@@ -19,6 +20,7 @@ interface GalleryItem {
   description: string;
   created_at: string;
   is_local?: boolean;
+  thumbnail_url?: string;
 }
 
 const ITEMS_PER_PAGE = 6;
@@ -389,19 +391,7 @@ export default function AdminGallery({ session }: { session?: any }) {
   {item.type === 'image' && cover ? (
     <img src={cover} alt={item.title} className="h-full w-full object-cover" loading="lazy" />
   ) : item.type === 'video' && cover ? (
-    <video
-      src={cover}
-      muted
-      playsInline
-      preload="metadata"
-      className="h-full w-full object-cover"
-      aria-label={item.title}
-      onLoadedMetadata={(event) => {
-        try {
-          event.currentTarget.currentTime = Math.min(0.5, event.currentTarget.duration || 0.5);
-        } catch {}
-      }}
-    />
+    <VideoThumbnail src={cover} thumbnailUrl={item.thumbnail_url} alt={item.title} className="h-full w-full object-cover" />
   ) : (
     <div className="flex h-full w-full items-center justify-center bg-zinc-900"><PlayCircle size={58} className="text-blue-500" /></div>
   )}
