@@ -331,9 +331,9 @@ export default function PlayerProfileModal({ player, globalRank, onClose }: Prop
   };
 
   return (
-    <div className="fixed inset-0 z-[99999] bg-[#050a14]/95 backdrop-blur-xl flex items-center justify-center p-0 sm:p-4">
+    <div className="fixed inset-0 z-[2147483003] bg-[#050a14]/95 backdrop-blur-xl flex items-center justify-center p-0 sm:p-4">
       <div className="relative w-full sm:max-w-2xl h-[100dvh] sm:h-[92vh] bg-[#071226] text-white overflow-hidden sm:rounded-[2rem] shadow-2xl border border-blue-500/20 flex flex-col">
-        <div className="shrink-0 bg-[#071226]/95 border-b border-white/10">
+        <div className="relative z-30 shrink-0 bg-[#071226]/98 border-b border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.28)]">
           <div className="px-4 sm:px-7 pt-4 pb-2 flex items-center justify-between gap-3">
             <button
               type="button"
