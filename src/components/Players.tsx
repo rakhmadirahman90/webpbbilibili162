@@ -52,6 +52,15 @@ const Players: React.FC<{ initialFilter?: string }> = ({
     setActiveTab('profil');
   }, [selectedPlayer]);
 
+  // Deep-link dari Landing Page: /atlet?athlete=<id>&from=landing
+  // membuka detail atlet yang sama secara langsung.
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get('athlete');
+    if (!id || !processedPlayers.length) return;
+    const target = processedPlayers.find((item) => String(item.id) === String(id));
+    if (target) setSelectedPlayer(target);
+  }, [processedPlayers]);
+
   // Navbar tetap tersedia pada dedicated page Atlet.
   // Ini menjaga tombol menu seluler tetap terlihat dan seluruh navigasi tetap berfungsi.
   const handlePublicNavigate = useCallback((sectionId: string, subPath?: string) => {
@@ -289,7 +298,22 @@ const Players: React.FC<{ initialFilter?: string }> = ({
           <PlayerDetailModal
             player={selectedPlayer}
             processedPlayers={processedPlayers}
-            onClose={() => setSelectedPlayer(null)}
+            onClose={() => {
+              const params = new URLSearchParams(window.location.search);
+              const fromLanding = params.get('from') === 'landing' && params.has('athlete');
+              if (fromLanding) {
+                const target = '/?athlete=' + encodeURIComponent(params.get('athlete') || '');
+                window.history.replaceState({}, '', target);
+                setSelectedPlayer(null);
+                window.dispatchEvent(new CustomEvent('pb-return-to-landing-athlete'));
+                window.scrollTo({ top: 0, behavior: 'auto' });
+                window.requestAnimationFrame(() => {
+                  document.getElementById('landing-athletes')?.scrollIntoView({ block: 'start', behavior: 'auto' });
+                });
+                return;
+              }
+              setSelectedPlayer(null);
+            }}
           />
         )}
 
