@@ -342,7 +342,32 @@ export default function Gallery() {
                 <div className="p-4 sm:p-5 bg-[#efeae2] min-h-[320px] max-h-[60vh] overflow-y-auto space-y-3 font-sans">
                   <div className="flex justify-center"><span className="bg-white/90 text-slate-600 text-[10px] font-bold px-3 py-1 rounded-md shadow-2xs border border-slate-200/60 uppercase tracking-wider">PRATINJAU PESAN WHATSAPP</span></div>
                   <div className="bg-[#dcf8c6] text-slate-900 rounded-2xl rounded-tr-none p-3.5 shadow-md border border-emerald-200/80 max-w-[96%] ml-auto relative">
-                    {previewImage && <div className="mb-2.5 rounded-xl overflow-hidden border border-emerald-300/40 bg-black/5 aspect-[16/9] relative shadow-xs"><LazyImage src={getOptimizedImageUrl(previewImage, 800)} alt={titleClean} className="w-full h-full object-cover" /></div>}
+                    {item.type === 'video' && !previewImage ? (
+  <div className="mb-2.5 rounded-xl overflow-hidden border border-emerald-300/40 bg-black/5 aspect-[16/9] relative shadow-xs">
+    <video
+      src={item.url}
+      muted
+      playsInline
+      preload="metadata"
+      className="w-full h-full object-cover"
+      aria-label={titleClean}
+      onLoadedMetadata={(event) => {
+        try {
+          event.currentTarget.currentTime = Math.min(0.5, event.currentTarget.duration || 0.5);
+        } catch {}
+      }}
+    />
+    <div className="absolute inset-0 grid place-items-center pointer-events-none">
+      <div className="grid h-11 w-11 place-items-center rounded-full bg-blue-600 text-white shadow-xl">
+        <PlayCircle size={20} fill="currentColor" />
+      </div>
+    </div>
+  </div>
+) : previewImage ? (
+  <div className="mb-2.5 rounded-xl overflow-hidden border border-emerald-300/40 bg-black/5 aspect-[16/9] relative shadow-xs">
+    <LazyImage src={getOptimizedImageUrl(previewImage, 800)} alt={titleClean} className="w-full h-full object-cover" />
+  </div>
+) : null}
                     <div className="bg-white/95 rounded-lg p-2.5 mb-2.5 border-l-4 border-[#25D366] shadow-2xs text-left"><p className="font-extrabold text-slate-900 text-xs sm:text-sm leading-snug mb-1">{titleClean}</p><p className="text-[11px] text-slate-600 leading-relaxed">{dateText ? `${dateText} — ` : ''}{mediaLabel} PB Bilibili 162</p><p className="text-[10px] text-emerald-700 font-bold mt-1.5 flex items-center gap-1"><Link2 size={11} /> pbilibili162.99apps.id</p></div>
                     <div className="text-xs sm:text-[13px] text-slate-800 space-y-1.5 leading-relaxed font-sans text-left"><p className="font-black text-slate-900">*{titleClean}*</p><p className="italic text-slate-700 text-[11.5px]">📸 _{mediaLabel} PB Bilibili 162_</p><p className="text-slate-900 font-bold text-[11px] pt-1">✨ *Lihat {item.type === 'video' ? 'Video' : 'Foto'} Selengkapnya:*</p><p className="text-blue-700 font-bold underline break-all text-[11px]">{shareUrl}</p></div>
                     <div className="flex items-center justify-end gap-1 mt-2 text-[10px] text-slate-500 font-medium"><span>SEKARANG</span><span className="text-[#34B7F1] font-extrabold text-xs leading-none">✓✓</span></div>
