@@ -403,7 +403,10 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
                         Berita Terbaru
                       </div>
                       <h3 className="landing-featured-title">{featured.judul}</h3>
-                      <p className="landing-featured-summary">{featured.ringkasan}</p>
+                      {String(featured.ringkasan || '').trim() &&
+  String(featured.ringkasan || '').trim().toLowerCase() !== String(featured.judul || '').trim().toLowerCase() && (
+    <p className="landing-featured-summary">{featured.ringkasan}</p>
+  )}
                       <div className="mt-3 flex flex-wrap items-center justify-between gap-2.5">
                         <div className="flex flex-wrap items-center gap-3 text-[8px] font-bold uppercase tracking-wider text-white/80 sm:text-[9px]">
                           <span>{featured.tanggal ? new Date(featured.tanggal).toLocaleDateString('id-ID',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}) : 'Terbaru'}</span>
@@ -685,7 +688,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
         #landing-page .landing-featured-title {
           margin:0;
           max-width:100%;
-          font-size:clamp(1.25rem,3.8vw,2rem);
+          font-size:clamp(1.125rem,5.2vw,2rem);
           line-height:1.18;
           font-weight:800;
           letter-spacing:-.025em;
@@ -696,6 +699,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           display:-webkit-box;
           -webkit-box-orient:vertical;
           -webkit-line-clamp:2;
+          min-height:2.36em;
         }
         #landing-page .landing-featured-summary {
           margin-top:.625rem;
@@ -713,7 +717,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
         #landing-page .landing-news-item-title {
           margin:0;
           max-width:100%;
-          font-size:clamp(.875rem,1.8vw,1rem);
+          font-size:clamp(.875rem,2vw,1rem);
           line-height:1.3;
           font-weight:800;
           letter-spacing:-.012em;
@@ -744,6 +748,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
         #landing-page #landing-news .divide-y > button > div:nth-child(2) {
           min-width:0;
           flex:1 1 auto;
+          overflow:hidden;
         }
         #landing-page #landing-news .divide-y > button > svg {
           flex:0 0 auto;
@@ -876,7 +881,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
             border-radius:14px;
           }
           #landing-page #landing-news .landing-news-item-title {
-            font-size:.875rem;
+            font-size:.9375rem;
             line-height:1.28;
           }
           #landing-page #landing-news .landing-news-item-meta {
@@ -898,8 +903,6 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           }
           #landing-page .landing-section h2 { text-wrap:balance; }
           #landing-page button { -webkit-tap-highlight-color:transparent; }
-          #landing-page #landing-news .group h3 { overflow-wrap:anywhere; }
-          #landing-page #landing-news .divide-y > button { min-height:92px; }
           #landing-page #landing-athletes .grid-cols-3 { gap:7px; }
           #landing-page #landing-athletes .grid-cols-3 > button { min-width:0; }
           #landing-page #landing-gallery button { touch-action:manipulation; }
