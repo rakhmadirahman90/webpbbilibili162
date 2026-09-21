@@ -304,6 +304,7 @@ const Players: React.FC<{ initialFilter?: string }> = ({
               let fromLanding = false;
               try { fromLanding = sessionStorage.getItem('pb_landing_athlete_return') === '1'; } catch {}
               if (fromLanding) {
+                try { sessionStorage.setItem('pb_suppress_landing_popup', '1'); } catch {}
                 navigate('/');
                 return;
               }
