@@ -43,7 +43,7 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
     // Jangan tampilkan popup promosi ketika pengguna kembali dari
     // detail Foto/Video Terbaru ke Landing Page.
     const returningToLandingGallery = typeof window !== 'undefined' &&
-      (() => { const p = new URLSearchParams(window.location.search); return p.has('galleryTab') || p.has('athlete'); })();
+      new URLSearchParams(window.location.search).has('galleryTab');
     if (activeView !== null || returningToLandingGallery) {
       setPopupOpen(false);
       return;
@@ -155,7 +155,7 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
       .channel('landing-popup-carousel-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'konfigurasi_popup' }, () => {
         const returningToLandingGallery = typeof window !== 'undefined' &&
-        (() => { const p = new URLSearchParams(window.location.search); return p.has('galleryTab') || p.has('athlete'); })();
+        new URLSearchParams(window.location.search).has('galleryTab');
       if (activeView === null && !returningToLandingGallery && !isOpenRef.current) void fetchActivePopups(false);
       })
       .subscribe();
@@ -168,7 +168,7 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
 
     const handleUpdate = () => {
       const returningToLandingGallery = typeof window !== 'undefined' &&
-        (() => { const p = new URLSearchParams(window.location.search); return p.has('galleryTab') || p.has('athlete'); })();
+        new URLSearchParams(window.location.search).has('galleryTab');
       if (activeView === null && !returningToLandingGallery && !isOpenRef.current) void fetchActivePopups(false);
     };
 
