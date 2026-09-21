@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowRight, CalendarDays, ChevronRight, Medal, Trophy, Users, Zap } from 'lucide-react';
+import { ArrowRight, CalendarDays, ChevronRight, Medal, Trophy, Users, Zap, Eye, MessageCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { supabase } from '../supabase';
 import LazyImage from './LazyImage';
@@ -12,6 +12,16 @@ type Athlete = {
   seed: string;
   category: string;
   rank: number;
+};
+
+type NewsItem = {
+  id: string;
+  judul: string;
+  ringkasan: string;
+  gambar_url: string;
+  tanggal: string;
+  views: number;
+  comments_count: number;
 };
 
 interface LandingPageProps {
@@ -27,6 +37,8 @@ const FALLBACK_ATHLETES: Athlete[] = [
 
 export default function LandingPage({ onNavigate }: LandingPageProps) {
   const [athletes, setAthletes] = useState<Athlete[]>([]);
+  const [allAthletes, setAllAthletes] = useState<Athlete[]>([]);
+  const [news, setNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   const go = useCallback((path: string) => {
@@ -39,16 +51,28 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
 
     const load = async () => {
       try {
-        const [playersRes, rankingsRes, statsRes] = await Promise.all([
-          supabase.from('pendaftaran').select('id,nama,foto_url,kategori,kategori_atlet').order('nama', { ascending: true }),
+        const [playersRes, rankingsRes, statsRes, cup1Res, newsRes] = await Promise.all([
+          supabase.from('pendaftaran').select('id,nama,foto_url,kategori,kategori_atlet,bilibili_cup1_photo_path').order('nama', { ascending: true }),
           supabase.from('rankings').select('pendaftaran_id,player_name,total_points,photo_url').order('total_points', { ascending: false }),
           supabase.from('atlet_stats').select('pendaftaran_id,points,total_points,seed'),
+          supabase.from('v_bilibili_162_cup1_athlete_seeded').select('*'),
+          supabase.from('berita').select('id,judul,ringkasan,gambar_url,tanggal,views,comments_count:komentar(count)').order('tanggal', { ascending: false }).limit(4),
         ]);
 
         const players = playersRes.data || [];
         const rankings = rankingsRes.data || [];
         const stats = statsRes.data || [];
+        const cup1Rows = cup1Res.data || [];
         const statsMap = new Map(stats.map((row: any) => [String(row.pendaftaran_id), row]));
+        const cup1Map = new Map(cup1Rows.map((row: any) => [String(row.pendaftaran_id), row]));
+
+        const tournamentPhotoById = new Map<string, string>();
+        await Promise.all(players.map(async (player: any) => {
+          const path = player.bilibili_cup1_photo_path || cup1Map.get(String(player.id))?.photo_path;
+          if (!path) return;
+          const { data } = await supabase.storage.from('turnamen-dokumen').createSignedUrl(path, 60 * 60);
+          if (data?.signedUrl) tournamentPhotoById.set(String(player.id), data.signedUrl);
+        }));
 
         const merged = players.map((player: any) => {
           const ranking = rankings.find((row: any) =>
@@ -63,19 +87,39 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           return {
             id: String(player.id),
             name: player.nama || ranking?.player_name || 'Atlet PB Bilibili 162',
-            photo: player.foto_url || ranking?.photo_url || '',
+            photo: tournamentPhotoById.get(String(player.id)) || player.foto_url || ranking?.photo_url || '',
             points,
-            seed: stat?.seed || 'D',
-            category: String(player.kategori || player.kategori_atlet || 'SENIOR').toUpperCase().includes('MUDA') ? 'MUDA' : 'SENIOR',
+            seed: cup1Map.get(String(player.id))?.seeded_quality || stat?.seed || 'D',
+            category: String(player.kategori || player.kategori_atlet || 'SENIOR').toUpperCase().includes('MUDA') ||
+              ['U-9','U-11','U-13','U-15','U-17','U-19'].some((u) => String(player.kategori || player.kategori_atlet || '').toUpperCase().includes(u))
+              ? 'MUDA' : 'SENIOR',
             rank: 0,
           };
-        }).sort((a, b) => b.points - a.points).slice(0, 4);
+        });
+
+        const sorted = merged.sort((a, b) => b.points - a.points).map((athlete, index) => ({ ...athlete, rank: index + 1 }));
+        const newsRows = newsRes.data || [];
+        const formattedNews = newsRows.map((item: any) => ({
+          id: String(item.id),
+          judul: item.judul || 'Berita PB Bilibili 162',
+          ringkasan: item.ringkasan || '',
+          gambar_url: item.gambar_url || '',
+          tanggal: item.tanggal || '',
+          views: Number(item.views || 0),
+          comments_count: Array.isArray(item.comments_count) ? Number(item.comments_count[0]?.count || 0) : 0,
+        }));
 
         if (!mounted) return;
-        setAthletes(merged.map((athlete, index) => ({ ...athlete, rank: index + 1 })));
+        setAllAthletes(sorted);
+        setAthletes(sorted.slice(0, 4));
+        setNews(formattedNews);
       } catch (error) {
-        console.warn('[LandingPage] athlete preview skipped:', error);
-        if (mounted) setAthletes([]);
+        console.warn('[LandingPage] homepage data sync skipped:', error);
+        if (mounted) {
+          setAllAthletes([]);
+          setAthletes([]);
+          setNews([]);
+        }
       } finally {
         if (mounted) setLoading(false);
       }
@@ -92,17 +136,49 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
 
   return (
     <div id="landing-page" className="landing-page relative overflow-hidden bg-[#050914] text-white">
-      <section className="landing-section mx-auto w-full max-w-7xl px-5 py-14 sm:px-8 sm:py-18 lg:px-10">
+      <section className="landing-section mx-auto w-full max-w-7xl px-5 py-10 sm:px-8 sm:py-14 lg:px-10">
+        <div className="mb-6 flex items-end justify-between gap-4">
+          <div>
+            <div className="mb-2 text-[9px] font-black uppercase tracking-[.25em] text-blue-400">01 • Informasi Klub</div>
+            <h2 className="text-3xl font-black italic uppercase tracking-[-.04em] sm:text-5xl">Berita <span className="text-blue-500">Terbaru.</span></h2>
+          </div>
+          <button onClick={() => go('berita')} className="hidden items-center gap-2 text-[10px] font-black uppercase tracking-[.15em] text-slate-400 hover:text-white sm:flex">Semua Berita <ChevronRight size={15} /></button>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {news.length > 0 ? news.map((item) => (
+            <button key={item.id} onClick={() => go('berita')} className="group overflow-hidden rounded-3xl border border-white/10 bg-[#0b1220] text-left transition hover:-translate-y-1 hover:border-blue-500/40">
+              <div className="aspect-[1.45] overflow-hidden bg-[#101827]">
+                {item.gambar_url ? <LazyImage src={item.gambar_url.split(/[,\s]+/)[0]} alt={item.judul} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" containerClassName="h-full w-full" width={700} /> : <div className="grid h-full place-items-center text-blue-500/40"><Trophy size={34}/></div>}
+              </div>
+              <div className="p-4">
+                <div className="text-[8px] font-black uppercase tracking-[.16em] text-blue-300">Berita PB Bilibili 162</div>
+                <h3 className="mt-2 line-clamp-2 text-sm font-black uppercase leading-tight text-white">{item.judul}</h3>
+                <p className="mt-2 line-clamp-2 text-[11px] leading-5 text-slate-400">{item.ringkasan}</p>
+                <div className="mt-4 flex items-center gap-3 text-[8px] font-bold uppercase tracking-wider text-slate-500">
+                  <span>{item.tanggal ? new Date(item.tanggal).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}) : 'Terbaru'}</span>
+                  <span className="inline-flex items-center gap-1"><Eye size={11}/> {item.views}</span>
+                  <span className="inline-flex items-center gap-1"><MessageCircle size={11}/> {item.comments_count}</span>
+                </div>
+              </div>
+            </button>
+          )) : (
+            <div className="sm:col-span-2 lg:col-span-4 rounded-3xl border border-white/10 bg-[#0b1220] px-5 py-12 text-center text-[10px] font-black uppercase tracking-[.2em] text-slate-500">Belum ada berita terbaru.</div>
+          )}
+        </div>
+        <button onClick={() => go('berita')} className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 py-3 text-[10px] font-black uppercase tracking-[.16em] text-slate-300 sm:hidden">Lihat Semua Berita <ArrowRight size={14} /></button>
+      </section>
+
+      <section className="landing-section mx-auto w-full max-w-7xl px-5 py-10 sm:px-8 sm:py-14 lg:px-10">
         <div className="mb-7 flex items-end justify-between gap-4">
           <div>
-            <div className="mb-2 text-[9px] font-black uppercase tracking-[.25em] text-blue-400">01 • Athlete Spotlight</div>
-            <h2 className="text-3xl font-black italic uppercase tracking-[-.04em] sm:text-5xl">Meet The <span className="text-blue-500">Athletes.</span></h2>
+            <div className="mb-2 text-[9px] font-black uppercase tracking-[.25em] text-blue-400">02 • Data Atlet</div>
+            <h2 className="text-3xl font-black italic uppercase tracking-[-.04em] sm:text-5xl">Atlet PB <span className="text-blue-500">Bilibili 162.</span></h2>
           </div>
           <button onClick={() => go('atlet')} className="hidden items-center gap-2 text-[10px] font-black uppercase tracking-[.15em] text-slate-400 hover:text-white sm:flex">Semua Atlet <ChevronRight size={15} /></button>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          {spotlight.map((athlete, index) => (
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
+          {(allAthletes.length > 0 ? allAthletes : spotlight).map((athlete, index) => (
             <motion.button key={athlete.id} whileHover={{ y: -5 }} onClick={() => athlete.id.startsWith('fallback') ? go('atlet') : go('atlet')} className="group relative aspect-[.78] overflow-hidden rounded-3xl border border-white/10 bg-[#0b1220] text-left shadow-2xl">
               {athlete.photo ? (
                 <LazyImage src={athlete.photo} alt={athlete.name} className="h-full w-full object-cover object-top transition duration-700 group-hover:scale-105" containerClassName="h-full w-full" width={700} />
@@ -124,7 +200,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
             </motion.button>
           ))}
         </div>
-        <button onClick={() => go('atlet')} className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 py-3 text-[10px] font-black uppercase tracking-[.16em] text-slate-300 sm:hidden">Lihat Semua Atlet <ArrowRight size={14} /></button>
+        <button onClick={() => go('atlet')} className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 py-3 text-[10px] font-black uppercase tracking-[.16em] text-slate-300 sm:hidden">Buka Data Atlet Lengkap <ArrowRight size={14} /></button>
       </section>
 
       <section className="landing-section bg-[#08101d]">
