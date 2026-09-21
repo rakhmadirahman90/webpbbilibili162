@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { supabase } from '../supabase';
 import LazyImage from './LazyImage';
 import VideoThumbnail from './VideoThumbnail';
+import AgendaPB162 from './AgendaPB162';
 
 type Athlete = {
   id: string;
@@ -661,122 +662,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
       </section>
 
 
-      <section id="landing-agenda" className="landing-section border-t border-white/5 bg-[#050914]">
-        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-8 sm:py-12 lg:px-10">
-          <div className="landing-agenda-panel overflow-hidden rounded-[1.25rem] border border-white/10 bg-[#0b1220] shadow-2xl sm:rounded-[2rem]">
-            <div className="landing-agenda-header flex items-center justify-between gap-4 border-b border-white/10 px-4 py-5 sm:px-7 sm:py-6">
-              <div className="flex min-w-0 items-center gap-3.5">
-                <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-blue-600/15 text-blue-400 ring-1 ring-blue-500/20 sm:h-14 sm:w-14">
-                  <CalendarDays size={24} strokeWidth={2.2} className="sm:h-7 sm:w-7" />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-[9px] font-black uppercase tracking-[.22em] text-blue-400 sm:text-[10px]">Agenda Klub</div>
-                  <h2 className="mt-1 text-[clamp(1.35rem,4.8vw,2rem)] font-extrabold uppercase leading-[1.05] tracking-[-.035em] text-white">
-                    Agenda <span className="text-blue-500">PB BILIBILI 162</span>
-                  </h2>
-                  <p className="mt-1 text-[11px] leading-[1.45] text-slate-400 sm:text-sm">Jadwal kegiatan, latihan, turnamen, dan agenda klub.</p>
-                </div>
-              </div>
-              <button
-                onClick={() => go('jadwal')}
-                className="hidden shrink-0 items-center gap-1.5 rounded-full border border-blue-500/30 bg-blue-500/5 px-4 py-2.5 text-[10px] font-extrabold uppercase tracking-[.1em] text-blue-300 transition hover:border-blue-500 hover:bg-blue-600 hover:text-white sm:flex"
-              >
-                Lihat Semua <ArrowRight size={14} />
-              </button>
-            </div>
-
-            <div className="hidden grid-cols-[minmax(0,1fr)_150px] border-b border-white/10 bg-[#111827] px-5 py-3 text-[9px] font-black uppercase tracking-[.18em] text-slate-400 sm:grid">
-              <span>Kegiatan</span>
-              <span className="text-right">Jadwal</span>
-            </div>
-
-            <div className="divide-y divide-white/10">
-              {[
-                {
-                  icon: CalendarDays,
-                  tone: 'blue',
-                  title: 'Latihan Rutin PB BILIBILI 162',
-                  detail: 'Latihan bersama • Rabu & Minggu',
-                  place: 'GOR Tonrangeng, Parepare',
-                  date: 'SETIAP',
-                  sub: 'Rabu & Minggu',
-                },
-                {
-                  icon: Users,
-                  tone: 'violet',
-                  title: 'Mabar Internal PB BILIBILI 162',
-                  detail: 'Silaturahmi • Uji tanding & pembinaan',
-                  place: 'Jadwal diumumkan panitia',
-                  date: 'INFO',
-                  sub: 'Akan diumumkan',
-                },
-                {
-                  icon: Trophy,
-                  tone: 'amber',
-                  title: 'Kejuaraan & Turnamen Bulutangkis',
-                  detail: 'Partisipasi tim • Kompetisi antar klub',
-                  place: 'Jadwal mengikuti kalender pertandingan',
-                  date: 'UPDATE',
-                  sub: 'Kalender turnamen',
-                },
-                {
-                  icon: Medal,
-                  tone: 'emerald',
-                  title: 'Evaluasi & Pembinaan Atlet',
-                  detail: 'Evaluasi performa • Persiapan pertandingan',
-                  place: 'Sekretariat / tempat latihan',
-                  date: 'BERKALA',
-                  sub: 'Mengikuti program klub',
-                },
-                {
-                  icon: Zap,
-                  tone: 'sky',
-                  title: 'Agenda Khusus PB BILIBILI 162',
-                  detail: 'Kegiatan klub • Informasi resmi',
-                  place: 'Parepare',
-                  date: 'TERBARU',
-                  sub: 'Pantau pengumuman',
-                },
-              ].map((item) => {
-                const Icon = item.icon;
-                return (
-                  <button
-                    key={item.title}
-                    onClick={() => go('jadwal')}
-                    className="landing-agenda-row group grid w-full grid-cols-[42px_minmax(0,1fr)_92px] items-center gap-3 px-3.5 py-3.5 text-left transition hover:bg-white/[.035] sm:grid-cols-[52px_minmax(0,1fr)_150px] sm:gap-4 sm:px-5 sm:py-4"
-                  >
-                    <div className={`grid h-10 w-10 place-items-center rounded-xl ring-1 sm:h-11 sm:w-11 ${item.tone === 'blue' ? 'bg-blue-500/10 text-blue-400 ring-blue-500/20' : item.tone === 'violet' ? 'bg-violet-500/10 text-violet-400 ring-violet-500/20' : item.tone === 'amber' ? 'bg-amber-500/10 text-amber-400 ring-amber-500/20' : item.tone === 'emerald' ? 'bg-emerald-500/10 text-emerald-400 ring-emerald-500/20' : 'bg-sky-500/10 text-sky-400 ring-sky-500/20'}`}>
-                      <Icon size={19} strokeWidth={2.1} />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="truncate text-[11px] font-extrabold leading-[1.25] text-white sm:text-sm">{item.title}</div>
-                      <div className="mt-1 truncate text-[9px] font-semibold leading-[1.35] text-slate-400 sm:text-[11px]">{item.detail}</div>
-                      <div className="mt-0.5 truncate text-[8px] font-bold uppercase tracking-[.06em] text-slate-500 sm:text-[9px]">{item.place}</div>
-                    </div>
-                    <div className="justify-self-stretch rounded-xl border border-blue-500/10 bg-blue-500/[.06] px-2 py-2 text-center sm:px-3 sm:py-2.5">
-                      <div className="text-[8px] font-black uppercase tracking-[.08em] text-blue-300 sm:text-[9px]">{item.date}</div>
-                      <div className="mt-0.5 text-[8px] font-semibold leading-[1.2] text-slate-400 sm:text-[10px]">{item.sub}</div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="flex flex-col gap-3 border-t border-white/10 bg-[#080d17] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-              <div className="flex items-start gap-2.5 text-[9px] leading-[1.5] text-slate-400 sm:text-[10px]">
-                <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-blue-500/10 text-blue-400"><CalendarDays size={11} /></span>
-                <span>Agenda dapat berubah sewaktu-waktu. Pantau informasi terbaru melalui menu Jadwal dan kanal resmi PB BILIBILI 162.</span>
-              </div>
-              <button
-                onClick={() => go('jadwal')}
-                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-blue-500/30 bg-blue-600/10 px-4 py-2.5 text-[9px] font-black uppercase tracking-[.14em] text-blue-300 transition hover:border-blue-500 hover:bg-blue-600 hover:text-white"
-              >
-                Lihat Semua Agenda <ArrowRight size={13} />
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
+      <AgendaPB162 compact />
 
       <style>{`/* Production sync: restore ea1f64b landing news layout */
 /* Vercel sync: news reference typography 2026-09-21 */
@@ -932,6 +818,32 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
         #landing-page #landing-athletes .text-\\[10px\\] {
           font-size:var(--landing-meta) !important;
           line-height:1.35 !important;
+        }
+
+        #landing-page #agenda-pb162.agenda-landing-compact {
+          background:var(--landing-bg) !important;
+          scroll-margin-top:80px;
+        }
+        #landing-page #agenda-pb162.agenda-landing-compact > div {
+          box-sizing:border-box;
+        }
+        #landing-page #agenda-pb162.agenda-landing-compact > div > div:first-child {
+          margin-bottom:24px;
+        }
+        #landing-page #agenda-pb162.agenda-landing-compact > div > div:first-child h2 {
+          font-family:"Plus Jakarta Sans","Inter",sans-serif !important;
+          font-size:var(--landing-title) !important;
+          line-height:1.05 !important;
+          font-weight:800 !important;
+          letter-spacing:-.035em !important;
+          font-style:normal !important;
+        }
+        #landing-page #agenda-pb162.agenda-landing-compact > div > div:last-child {
+          max-width:none;
+        }
+        @media (max-width:640px) {
+          #landing-page #agenda-pb162.agenda-landing-compact > div { padding-top:24px !important; padding-bottom:24px !important; }
+          #landing-page #agenda-pb162.agenda-landing-compact > div > div:first-child { margin-bottom:16px; }
         }
 
         #landing-page #landing-gallery > div {
