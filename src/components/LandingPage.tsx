@@ -216,9 +216,17 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
         {news.length > 0 ? (
           <div>
             {(() => {
-              const featured = news[0];
-              const others = news.slice(1, 5);
-              const image = featured.gambar_url.split(/[,\s]+/)[0];
+              const featuredTitle = 'PB BILIBILI 162 CUP I TAHUN 2026 RESMI DITUTUP WALI KOTA PAREPARE, LAHIRKAN PARA JUARA PENUH SPORTIVITAS';
+              // Jadikan berita penutupan BILIBILI 162 CUP I sebagai berita utama
+              // secara eksplisit, tanpa bergantung pada urutan tanggal berita.
+              const featuredIndex = news.findIndex((item) =>
+                String(item.judul || '').trim().toLowerCase() === featuredTitle.toLowerCase()
+              );
+              const featured = featuredIndex >= 0 ? news[featuredIndex] : news[0];
+              const others = news
+                .filter((_, index) => index !== (featuredIndex >= 0 ? featuredIndex : 0))
+                .slice(0, 4);
+              const image = String(featured.gambar_url || '').split(/[,\s]+/)[0];
               return (
                 <>
                   <button
