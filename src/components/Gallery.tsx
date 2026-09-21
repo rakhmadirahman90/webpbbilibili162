@@ -169,11 +169,12 @@ export default function Gallery() {
     setSelectedId(null);
 
     if (fromLanding) {
-      // Kembali langsung ke tampilan Galeri di Landing Page yang sebelumnya dipilih.
-      // replaceState mencegah penambahan history/pop-up tambahan.
+      // Detail dibuka dari kartu media Landing Page.
+      // Gunakan location.replace agar kembali benar-benar ke Landing Page,
+      // bukan tertahan di route /galeri akibat sinkronisasi URL React Router.
+      // replace juga tidak menambahkan entry history baru.
       const target = tab === 'video' ? '/?galleryTab=video#landing-gallery' : '/?galleryTab=image#landing-gallery';
-      window.history.replaceState({}, '', target);
-      window.dispatchEvent(new PopStateEvent('popstate'));
+      window.location.replace(target);
       return;
     }
 
