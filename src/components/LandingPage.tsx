@@ -436,13 +436,42 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
             return selected ? (
               <button onClick={() => goGalleryItem(selected)} className="group block w-full overflow-hidden rounded-xl bg-black text-left">
                 <div className="relative aspect-[16/9] w-full overflow-hidden">
-                  <LazyImage
-                    src={isVideo ? (selected.thumbnail_url || selected.url) : selected.url}
-                    alt={selected.title || (isVideo ? 'Video terbaru PB BILIBILI 162' : 'Foto terbaru PB BILIBILI 162')}
-                    className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.02]"
-                    containerClassName="h-full w-full"
-                    width={1400}
-                  />
+                  {isVideo ? (
+                    (() => {
+                      const videoId = selected.url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([^#&?\s]+)/i)?.[1];
+                      return videoId ? (
+                        <img
+                          src={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`}
+                          alt={selected.title || 'Video terbaru PB BILIBILI 162'}
+                          className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.02]"
+                          loading="lazy"
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <video
+                          src={selected.url}
+                          muted
+                          playsInline
+                          preload="metadata"
+                          className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.02]"
+                          aria-label={selected.title || 'Video terbaru PB BILIBILI 162'}
+                          onLoadedMetadata={(event) => {
+                            try {
+                              event.currentTarget.currentTime = Math.min(0.5, event.currentTarget.duration || 0.5);
+                            } catch {}
+                          }}
+                        />
+                      );
+                    })()
+                  ) : (
+                    <LazyImage
+                      src={selected.url}
+                      alt={selected.title || 'Foto terbaru PB BILIBILI 162'}
+                      className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.02]"
+                      containerClassName="h-full w-full"
+                      width={1400}
+                    />
+                  )}
                   {isVideo && (
                     <div className="absolute inset-0 grid place-items-center bg-black/20">
                       <div className="grid h-16 w-16 place-items-center rounded-full bg-blue-600 text-white shadow-2xl">
