@@ -44,7 +44,9 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
     // detail Foto/Video Terbaru ke Landing Page.
     const returningToLandingGallery = typeof window !== 'undefined' &&
       new URLSearchParams(window.location.search).has('galleryTab');
-    if (activeView !== null || returningToLandingGallery) {
+    const returningFromLandingAthlete = typeof window !== 'undefined' &&
+      sessionStorage.getItem('pb_suppress_landing_popup') === '1';
+    if (activeView !== null || returningToLandingGallery || returningFromLandingAthlete) {
       setPopupOpen(false);
       return;
     }
@@ -141,7 +143,10 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
     const returningToLandingGallery = typeof window !== 'undefined' &&
       new URLSearchParams(window.location.search).has('galleryTab');
 
-    if (activeView === null && !returningToLandingGallery) {
+    const returningFromLandingAthlete = typeof window !== 'undefined' &&
+      sessionStorage.getItem('pb_suppress_landing_popup') === '1';
+
+    if (activeView === null && !returningToLandingGallery && !returningFromLandingAthlete) {
       void fetchActivePopups(true);
     } else {
       setPopupOpen(false);
