@@ -53,6 +53,13 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
   const [galleryTab, setGalleryTab] = useState<'image' | 'video'>('image');
   const [loading, setLoading] = useState(true);
 
+  const goGalleryItem = useCallback((item?: GalleryItem) => {
+    const target = item ? `/galeri?gallery=${encodeURIComponent(item.id)}` : '/galeri';
+    window.history.pushState({}, '', target);
+    window.dispatchEvent(new PopStateEvent('popstate'));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
   const goNews = useCallback((newsId?: string) => {
     const target = newsId ? `/berita?newsId=${encodeURIComponent(newsId)}` : '/berita';
     window.history.pushState({}, '', target);
@@ -375,7 +382,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
             const isVideo = galleryTab === 'video';
 
             return selected ? (
-              <button onClick={() => go('galeri')} className="group block w-full overflow-hidden rounded-xl bg-black text-left">
+              <button onClick={() => goGalleryItem(selected)} className="group block w-full overflow-hidden rounded-xl bg-black text-left">
                 <div className="relative aspect-[16/9] w-full overflow-hidden">
                   <LazyImage
                     src={isVideo ? (selected.thumbnail_url || selected.url) : selected.url}
