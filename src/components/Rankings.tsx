@@ -908,7 +908,6 @@ const Rankings: React.FC = () => {
                               </span>
                               <span className="text-[8px] text-slate-500 font-bold uppercase">{player.category}</span>
                             {player.seeded_is_cup1 && <span className="text-[7px] text-emerald-400 font-black uppercase tracking-wider">CUP I</span>}
-                              {player.seeded_is_cup1 && <span className="text-[7px] text-emerald-400 font-black uppercase tracking-wider">CUP I</span>}
                             </div>
                           </td>
 
@@ -1022,8 +1021,10 @@ const Rankings: React.FC = () => {
                   );
                 })}
               </div>
+            </>
+          )}
 
-          {/* FOOTER CONTROLS & COMPLETE PAGINATION */}
+          {/* FOOTER CONTROLS & COMPLETE PAGINATION */
           <div className="p-3 border-t border-slate-800 bg-slate-950/95 backdrop-blur-md flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
             <div className="flex items-center justify-between w-full sm:w-auto gap-2 text-[9px] sm:text-xs font-bold text-slate-400">
               <span>
