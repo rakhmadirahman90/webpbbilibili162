@@ -146,8 +146,8 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
       <section className="landing-section mx-auto w-full max-w-7xl px-4 py-10 sm:px-8 sm:py-14 lg:px-10">
         <div className="mb-6 flex items-end justify-between gap-4">
           <div>
-            <div className="mb-2 text-[9px] font-black uppercase tracking-[.25em] text-blue-400">01 • Informasi Klub</div>
-            <h2 className="text-3xl font-black italic uppercase tracking-[-.05em] sm:text-5xl">Berita <span className="text-blue-500">Terbaru.</span></h2>
+            <div className="mb-2 text-[9px] font-black uppercase tracking-[.25em] text-blue-400">01 • CLUB UPDATE</div>
+            <h2 className="text-3xl font-black italic uppercase tracking-[-.05em] sm:text-5xl">Latest <span className="text-blue-500">News.</span></h2>
           </div>
           <button onClick={() => goNews()} className="hidden items-center gap-2 rounded-full border border-blue-500/70 px-5 py-2.5 text-[10px] font-black uppercase tracking-[.15em] text-white transition hover:bg-blue-600 sm:flex">
             Lihat Semua <ArrowRight size={15} />
