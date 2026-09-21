@@ -239,3 +239,273 @@ body.swal2-shown:has(main.pt-16) {overflow-y:auto!important;padding-right:0!impo
     scrollbar-width: thin;
   }
 }
+
+/* =========================================================
+   RANKINGS / POIN ATLET — MOBILE UI POLISH
+   Dedicated responsive rules to prevent filter overlap,
+   clipping and cramped athlete rows on narrow screens.
+   ========================================================= */
+@media (max-width: 767px) {
+  #rankings {
+    height: auto !important;
+    min-height: calc(100dvh - 4.5rem) !important;
+    padding: 10px 0 max(88px, env(safe-area-inset-bottom)) !important;
+    overflow: visible !important;
+  }
+
+  #rankings > div.relative.z-10 {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    flex: none !important;
+    overflow: visible !important;
+    gap: 10px !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+
+  /* Header: compact title + full-width Matrix button */
+  #rankings > div.relative.z-10 > div:first-child {
+    width: 100% !important;
+    padding: 14px !important;
+    gap: 12px !important;
+    border-radius: 18px !important;
+  }
+
+  #rankings > div.relative.z-10 > div:first-child h1 {
+    font-size: 25px !important;
+    line-height: 1 !important;
+    letter-spacing: -.045em !important;
+  }
+
+  #rankings > div.relative.z-10 > div:first-child > div:last-child {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  #rankings > div.relative.z-10 > div:first-child > div:last-child > button {
+    width: 100% !important;
+    min-height: 44px !important;
+    justify-content: center !important;
+  }
+
+  /* Search + seed filters: never squeeze buttons into each other. */
+  #rankings > div.relative.z-10 > div:nth-child(2) {
+    width: 100% !important;
+    padding: 12px !important;
+    gap: 10px !important;
+    align-items: stretch !important;
+    border-radius: 18px !important;
+  }
+
+  #rankings > div.relative.z-10 > div:nth-child(2) input {
+    height: 48px !important;
+    font-size: 14px !important;
+  }
+
+  #rankings .no-scrollbar {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    gap: 6px !important;
+    padding: 2px 0 5px !important;
+    overscroll-behavior-x: contain !important;
+    touch-action: pan-x !important;
+  }
+
+  #rankings .no-scrollbar > button {
+    flex: 0 0 auto !important;
+    min-width: max-content !important;
+    height: 40px !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+    white-space: nowrap !important;
+  }
+
+  #rankings > div.relative.z-10 > div:nth-child(2) > div:last-child {
+    width: 100% !important;
+    min-width: 0 !important;
+    margin-top: 1px !important;
+    padding: 10px 0 0 !important;
+    border-left: 0 !important;
+    border-top: 1px solid rgba(51,65,85,.65) !important;
+    justify-content: space-between !important;
+  }
+
+  #rankings > div.relative.z-10 > div:nth-child(2) > div:last-child > div:last-child {
+    display: flex !important;
+    gap: 5px !important;
+    flex-wrap: nowrap !important;
+  }
+
+  #rankings > div.relative.z-10 > div:nth-child(2) > div:last-child button {
+    min-width: 40px !important;
+    min-height: 38px !important;
+    padding: 0 9px !important;
+  }
+
+  /* Summary cards: consistent 2 × 2 rhythm. */
+  #rankings > div.relative.z-10 > div.grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  #rankings > div.relative.z-10 > div.grid > div {
+    min-width: 0 !important;
+    min-height: 72px !important;
+    padding: 12px !important;
+    border-radius: 16px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+  }
+
+  #rankings > div.relative.z-10 > div.grid > div p:last-child {
+    font-size: 16px !important;
+  }
+
+  /* Main ranking panel becomes part of the page flow on mobile. */
+  #rankings > div.relative.z-10 > div[class*="shadow-2xl"] {
+    width: 100% !important;
+    flex: none !important;
+    min-width: 0 !important;
+    overflow: visible !important;
+    border-radius: 18px !important;
+  }
+
+  #rankings > div.relative.z-10 > div[class*="shadow-2xl"] > [class~="md:hidden"] {
+    width: 100% !important;
+    overflow: visible !important;
+    flex: none !important;
+  }
+
+  /* Athlete row: stable columns for rank / photo / identity / points. */
+  #rankings > div.relative.z-10 > div[class*="shadow-2xl"] > [class~="md:hidden"] > div {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 82px !important;
+    padding: 12px 10px !important;
+    gap: 9px !important;
+    align-items: center !important;
+  }
+
+  #rankings > div.relative.z-10 > div[class*="shadow-2xl"] > [class~="md:hidden"] > div > div:first-child {
+    gap: 9px !important;
+    min-width: 0 !important;
+  }
+
+  #rankings > div.relative.z-10 > div[class*="shadow-2xl"] > [class~="md:hidden"] > div > div:first-child > div:first-child {
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    border-radius: 12px !important;
+  }
+
+  #rankings > div.relative.z-10 > div[class*="shadow-2xl"] > [class~="md:hidden"] > div > div:first-child > div:nth-child(2) {
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
+  }
+
+  #rankings > div.relative.z-10 > div[class*="shadow-2xl"] > [class~="md:hidden"] > div > div:first-child > div:nth-child(3) {
+    min-width: 0 !important;
+    flex: 1 1 auto !important;
+  }
+
+  #rankings > div.relative.z-10 > div[class*="shadow-2xl"] > [class~="md:hidden"] > div > div:first-child > div:nth-child(3) p:first-child {
+    font-size: 13px !important;
+    line-height: 1.15 !important;
+  }
+
+  #rankings > div.relative.z-10 > div[class*="shadow-2xl"] > [class~="md:hidden"] > div > div:first-child > div:nth-child(3) span {
+    line-height: 1 !important;
+  }
+
+  #rankings > div.relative.z-10 > div[class*="shadow-2xl"] > [class~="md:hidden"] > div > div:last-child {
+    flex: 0 0 auto !important;
+    min-width: 66px !important;
+    gap: 7px !important;
+  }
+
+  #rankings > div.relative.z-10 > div[class*="shadow-2xl"] > [class~="md:hidden"] > div > div:last-child p:first-child {
+    font-size: 8px !important;
+  }
+
+  #rankings > div.relative.z-10 > div[class*="shadow-2xl"] > [class~="md:hidden"] > div > div:last-child p:nth-child(2) {
+    font-size: 15px !important;
+    line-height: 1 !important;
+  }
+
+  #rankings > div.relative.z-10 > div[class*="shadow-2xl"] > [class~="md:hidden"] > div > div:last-child > div {
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+    padding: 0 !important;
+    display: grid !important;
+    place-items: center !important;
+  }
+
+  /* Pagination: compact and centered without horizontal overflow. */
+  #rankings > div.relative.z-10 > div[class*="shadow-2xl"] > div:last-child {
+    width: 100% !important;
+    padding: 10px !important;
+    gap: 9px !important;
+    overflow-x: auto !important;
+  }
+
+  #rankings > div.relative.z-10 > div[class*="shadow-2xl"] > div:last-child > div:last-child {
+    width: auto !important;
+    max-width: 100% !important;
+    flex-wrap: nowrap !important;
+  }
+}
+
+@media (max-width: 380px) {
+  #rankings > div.relative.z-10 {
+    padding-left: 9px !important;
+    padding-right: 9px !important;
+  }
+
+  #rankings > div.relative.z-10 > div:first-child h1 {
+    font-size: 22px !important;
+  }
+
+  #rankings > div.relative.z-10 > div.grid {
+    gap: 6px !important;
+  }
+
+  #rankings > div.relative.z-10 > div[class*="shadow-2xl"] > [class~="md:hidden"] > div {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+    gap: 7px !important;
+  }
+
+  #rankings > div.relative.z-10 > div[class*="shadow-2xl"] > [class~="md:hidden"] > div > div:first-child {
+    gap: 7px !important;
+  }
+
+  #rankings > div.relative.z-10 > div[class*="shadow-2xl"] > [class~="md:hidden"] > div > div:first-child > div:first-child {
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+  }
+
+  #rankings > div.relative.z-10 > div[class*="shadow-2xl"] > [class~="md:hidden"] > div > div:first-child > div:nth-child(2) {
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+  }
+
+  #rankings > div.relative.z-10 > div[class*="shadow-2xl"] > [class~="md:hidden"] > div > div:last-child {
+    min-width: 58px !important;
+  }
+
+  #rankings > div.relative.z-10 > div[class*="shadow-2xl"] > [class~="md:hidden"] > div > div:last-child p:nth-child(2) {
+    font-size: 14px !important;
+  }
+}
+
