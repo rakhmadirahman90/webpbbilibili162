@@ -50,6 +50,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
   const [news, setNews] = useState<NewsItem[]>([]);
   const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
   const [featuredAthleteIndex, setFeaturedAthleteIndex] = useState(0);
+  const [galleryTab, setGalleryTab] = useState<'image' | 'video'>('image');
   const [loading, setLoading] = useState(true);
 
   const goNews = useCallback((newsId?: string) => {
@@ -355,54 +356,56 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           </div>
 
           <div className="mb-5 grid grid-cols-2 overflow-hidden rounded-xl bg-[#2a2a2a]">
-            <button className="bg-blue-600 px-4 py-4 text-sm font-black uppercase tracking-[.12em] text-white">Foto Terbaru</button>
-            <button onClick={() => go('galeri')} className="px-4 py-4 text-sm font-black uppercase tracking-[.12em] text-white/90 transition hover:bg-white/10">Video Terbaru</button>
+            <button
+              onClick={() => setGalleryTab('image')}
+              className={`px-4 py-4 text-sm font-black uppercase tracking-[.12em] transition ${galleryTab === 'image' ? 'bg-blue-600 text-white' : 'text-white/75 hover:bg-white/10'}`}
+            >
+              Foto Terbaru
+            </button>
+            <button
+              onClick={() => setGalleryTab('video')}
+              className={`px-4 py-4 text-sm font-black uppercase tracking-[.12em] transition ${galleryTab === 'video' ? 'bg-blue-600 text-white' : 'text-white/75 hover:bg-white/10'}`}
+            >
+              Video Terbaru
+            </button>
           </div>
 
-          <div className="grid gap-5">
-            <button onClick={() => go('galeri')} className="group block w-full overflow-hidden rounded-xl bg-black text-left">
-              <div className="aspect-[16/9] w-full overflow-hidden">
-                {galleryItems.filter(item => item.type === 'image')[0] ? (
+          {(() => {
+            const selected = galleryItems.filter(item => item.type === galleryTab)[0];
+            const isVideo = galleryTab === 'video';
+
+            return selected ? (
+              <button onClick={() => go('galeri')} className="group block w-full overflow-hidden rounded-xl bg-black text-left">
+                <div className="relative aspect-[16/9] w-full overflow-hidden">
                   <LazyImage
-                    src={galleryItems.filter(item => item.type === 'image')[0].url}
-                    alt={galleryItems.filter(item => item.type === 'image')[0].title || 'Foto terbaru PB BILIBILI 162'}
+                    src={isVideo ? (selected.thumbnail_url || selected.url) : selected.url}
+                    alt={selected.title || (isVideo ? 'Video terbaru PB BILIBILI 162' : 'Foto terbaru PB BILIBILI 162')}
                     className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.02]"
                     containerClassName="h-full w-full"
                     width={1400}
                   />
-                ) : <div className="grid h-full place-items-center text-sm text-slate-500">Belum ada foto terbaru.</div>}
-              </div>
-              <div className="px-4 py-4">
-                <div className="text-[9px] font-black uppercase tracking-[.18em] text-blue-400">Foto Terbaru</div>
-                <div className="mt-1 text-lg font-black text-white">{galleryItems.filter(item => item.type === 'image')[0]?.title || 'Momen PB BILIBILI 162'}</div>
-              </div>
-            </button>
-
-            <button onClick={() => go('galeri')} className="group block w-full overflow-hidden rounded-xl bg-black text-left">
-              <div className="relative aspect-[16/9] w-full overflow-hidden bg-[#050914]">
-                {galleryItems.filter(item => item.type === 'video')[0] ? (
-                  <>
-                    <LazyImage
-                      src={galleryItems.filter(item => item.type === 'video')[0].thumbnail_url || galleryItems.filter(item => item.type === 'video')[0].url}
-                      alt={galleryItems.filter(item => item.type === 'video')[0].title || 'Video terbaru PB BILIBILI 162'}
-                      className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.02]"
-                      containerClassName="h-full w-full"
-                      width={1400}
-                    />
-                    <div className="absolute inset-0 grid place-items-center bg-black/25">
+                  {isVideo && (
+                    <div className="absolute inset-0 grid place-items-center bg-black/20">
                       <div className="grid h-16 w-16 place-items-center rounded-full bg-blue-600 text-white shadow-2xl">
                         <Play size={25} fill="currentColor" />
                       </div>
                     </div>
-                  </>
-                ) : <div className="grid h-full place-items-center text-sm text-slate-500">Belum ada video terbaru.</div>}
+                  )}
+                </div>
+                <div className="px-4 py-4">
+                  <div className="text-[9px] font-black uppercase tracking-[.18em] text-blue-400">
+                    {isVideo ? 'Video Terbaru' : 'Foto Terbaru'}
+                  </div>
+                  <div className="mt-1 text-lg font-black text-white">{selected.title || 'Momen PB BILIBILI 162'}</div>
+                  {selected.description && <p className="mt-1 line-clamp-2 text-xs text-slate-400">{selected.description}</p>}
+                </div>
+              </button>
+            ) : (
+              <div className="rounded-xl bg-black px-5 py-16 text-center text-sm font-semibold text-slate-500">
+                {isVideo ? 'Belum ada video terbaru.' : 'Belum ada foto terbaru.'}
               </div>
-              <div className="px-4 py-4">
-                <div className="text-[9px] font-black uppercase tracking-[.18em] text-blue-400">Video Terbaru</div>
-                <div className="mt-1 text-lg font-black text-white">{galleryItems.filter(item => item.type === 'video')[0]?.title || 'Momen Video PB BILIBILI 162'}</div>
-              </div>
-            </button>
-          </div>
+            );
+          })()}
         </div>
       </section>
 
