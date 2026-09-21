@@ -93,33 +93,54 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
 
   useEffect(() => {
     let athleteId = '';
+    let savedScrollY = 0;
     try {
       if (sessionStorage.getItem('pb_landing_athlete_return') !== '1') return;
       athleteId = sessionStorage.getItem('pb_landing_athlete_id') || '';
+      savedScrollY = Number(sessionStorage.getItem('pb_landing_athlete_scroll_y') || '0');
     } catch { return; }
+
     if (!athleteId || !allAthletes.length) return;
+
     const index = allAthletes.findIndex((item) => String(item.id) === athleteId);
     if (index >= 0) setFeaturedAthleteIndex(index);
+
     let frame = 0;
     let attempts = 0;
-    const scrollBack = () => {
+    const restoreLandingPosition = () => {
       const target = document.getElementById('landing-athletes');
+
       if (target) {
-        target.scrollIntoView({ behavior: 'auto', block: 'start' });
+        // Restore the exact scroll position from the Landing Page instead of
+        // scrolling to the top or relying on element offsets that can shift
+        // while images/data finish loading.
+        window.scrollTo({ top: Math.max(0, savedScrollY), behavior: 'auto' });
+
+        // Re-apply for a few frames so late-loading content cannot push the
+        // user back to the top or move the selected section unexpectedly.
+        if (attempts < 12) {
+          attempts += 1;
+          frame = window.requestAnimationFrame(restoreLandingPosition);
+          return;
+        }
+
         try {
           sessionStorage.removeItem('pb_landing_athlete_return');
           sessionStorage.removeItem('pb_landing_athlete_id');
+          sessionStorage.removeItem('pb_landing_athlete_scroll_y');
           window.setTimeout(() => sessionStorage.removeItem('pb_suppress_landing_popup'), 900);
         } catch {}
         return;
       }
+
       attempts += 1;
-      if (attempts < 30) frame = requestAnimationFrame(scrollBack);
+      if (attempts < 60) frame = window.requestAnimationFrame(restoreLandingPosition);
     };
-    frame = requestAnimationFrame(scrollBack);
-    return () => cancelAnimationFrame(frame);
+
+    frame = window.requestAnimationFrame(restoreLandingPosition);
+    return () => window.cancelAnimationFrame(frame);
   }, [allAthletes]);
-  
+
   const goGalleryItem = useCallback((item?: GalleryItem) => {
     const target = item ? `/galeri?gallery=${encodeURIComponent(item.id)}&from=landing&tab=${item.type}` : '/galeri';
     window.history.pushState({}, '', target);
@@ -144,6 +165,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
     try {
       sessionStorage.setItem('pb_landing_athlete_id', String(athlete.id));
       sessionStorage.setItem('pb_landing_athlete_return', '1');
+      sessionStorage.setItem('pb_landing_athlete_scroll_y', String(Math.max(0, window.scrollY || window.pageYOffset || 0)));
     } catch {}
     setFeaturedAthleteIndex(Math.max(0, allAthletes.findIndex((item) => String(item.id) === String(athlete.id))));
     go('atlet');
