@@ -402,15 +402,11 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
                       <div className="mb-2 inline-flex rounded-full bg-blue-600 px-3 py-1.5 text-[8px] font-black uppercase tracking-[.18em] text-white">
                         Berita Terbaru
                       </div>
-                      <h3 className="text-[clamp(1.15rem,3.2vw,2rem)] font-extrabold leading-[1.16] tracking-[-.02em] text-white">{featured.judul}</h3>
-                      <p className="mt-2.5 line-clamp-2 text-[12px] leading-[1.55] text-white/80 sm:text-sm">{featured.ringkasan}</p>
-                      <div className="mt-3 flex flex-wrap items-center justify-between gap-2.5">
-                        <div className="flex flex-wrap items-center gap-3 text-[8px] font-bold uppercase tracking-wider text-white/80 sm:text-[9px]">
-                          <span>{featured.tanggal ? new Date(featured.tanggal).toLocaleDateString('id-ID',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}) : 'Terbaru'}</span>
-                          <span className="inline-flex items-center gap-1"><Eye size={12}/> {featured.views}</span>
-                          <span className="inline-flex items-center gap-1"><MessageCircle size={12}/> {featured.comments_count}</span>
-                        </div>
-                        <span className="hidden items-center gap-2 text-sm font-black text-white sm:inline-flex">Baca Selengkapnya <ArrowRight size={16}/></span>
+                      <h3 className="landing-featured-news-title">{featured.judul}</h3>
+                      <div className="landing-featured-news-meta">
+                        <span>{featured.tanggal ? new Date(featured.tanggal).toLocaleDateString('id-ID',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}) : 'Terbaru'}</span>
+                        <span className="inline-flex items-center gap-1.5"><Eye size={14}/> {featured.views}</span>
+                        <span className="inline-flex items-center gap-1.5"><MessageCircle size={14}/> {featured.comments_count}</span>
                       </div>
                     </div>
                   </button>
@@ -429,8 +425,8 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
                               {itemImage ? <LazyImage src={itemImage} alt={item.judul} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" containerClassName="h-full w-full" width={360} /> : null}
                             </div>
                             <div className="min-w-0 flex-1">
-                              <h3 className="line-clamp-2 text-[13px] font-black leading-[1.3] text-white group-hover:text-blue-300 sm:text-[15px]">{item.judul}</h3>
-                              <div className="mt-2 flex flex-wrap items-center gap-2 text-[8px] font-bold uppercase tracking-wider text-slate-500 sm:text-[9px]">
+                              <h3 className="landing-news-list-title group-hover:text-blue-300">{item.judul}</h3>
+                              <div className="landing-news-list-meta">
                                 <span>{item.tanggal ? new Date(item.tanggal).toLocaleDateString('id-ID',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}) : 'Terbaru'}</span>
                                 <span className="inline-flex items-center gap-1"><Eye size={10}/> {item.views}</span>
                                 <span className="inline-flex items-center gap-1"><MessageCircle size={10}/> {item.comments_count}</span>
@@ -684,25 +680,82 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           white-space:nowrap;
         }
 
-        /* One typography scale for content across all three landing sections. */
-        #landing-page #landing-news h3 {
-          font-size:clamp(.9375rem,2.5vw,2rem) !important;
-          line-height:1.2 !important;
+        /* News typography/layout — aligned to the supplied mobile references. */
+        #landing-page #landing-news .landing-featured-news-title {
+          margin:0;
+          width:100%;
+          max-width:100%;
+          color:#fff;
+          font-size:clamp(1.65rem,7.2vw,2.25rem) !important;
+          line-height:1.16 !important;
           font-weight:800 !important;
+          letter-spacing:-.028em !important;
+          white-space:normal !important;
+          overflow-wrap:normal !important;
+          word-break:normal !important;
+          display:-webkit-box;
+          -webkit-box-orient:vertical;
+          -webkit-line-clamp:4;
+          overflow:hidden;
         }
-        #landing-page #landing-news p {
-          font-size:var(--landing-body) !important;
-          line-height:1.55 !important;
+        #landing-page #landing-news .landing-featured-news-meta {
+          margin-top:1rem;
+          display:flex;
+          align-items:center;
+          flex-wrap:wrap;
+          gap:.9rem;
+          color:rgba(255,255,255,.82);
+          font-size:clamp(.75rem,2.3vw,.875rem) !important;
+          line-height:1.25 !important;
+          font-weight:700 !important;
+          letter-spacing:.01em;
+          text-transform:uppercase;
         }
-        #landing-page #landing-news .text-\\[8px\\],
-        #landing-page #landing-news .text-\\[9px\\] {
-          font-size:var(--landing-meta) !important;
-          line-height:1.35 !important;
-        }
-        #landing-page #landing-news > div > div:last-child > div:first-child {
-          line-height:1.2;
+        #landing-page #landing-news .landing-featured-news-meta span {
+          display:inline-flex;
+          align-items:center;
+          white-space:nowrap;
         }
 
+        #landing-page #landing-news .landing-news-list-title {
+          margin:0;
+          max-width:100%;
+          color:#fff;
+          font-size:clamp(1rem,2.9vw,1.25rem) !important;
+          line-height:1.28 !important;
+          font-weight:800 !important;
+          letter-spacing:-.012em !important;
+          white-space:normal !important;
+          overflow-wrap:break-word !important;
+          word-break:normal !important;
+          display:-webkit-box;
+          -webkit-box-orient:vertical;
+          -webkit-line-clamp:2;
+          overflow:hidden;
+        }
+        #landing-page #landing-news .landing-news-list-meta {
+          margin-top:.55rem;
+          display:flex;
+          align-items:center;
+          flex-wrap:wrap;
+          gap:.65rem;
+          color:#64748b;
+          font-size:clamp(.6875rem,1.9vw,.8125rem) !important;
+          line-height:1.25 !important;
+          font-weight:700 !important;
+          letter-spacing:.01em;
+          text-transform:uppercase;
+        }
+        #landing-page #landing-news .landing-news-list-meta span {
+          display:inline-flex;
+          align-items:center;
+          white-space:nowrap;
+        }
+        #landing-page #landing-news .divide-y > button > div:nth-child(2) {
+          min-width:0;
+          flex:1 1 auto;
+          overflow:hidden;
+        }
         #landing-page #landing-athletes .text-\\[9px\\] {
           font-size:var(--landing-meta) !important;
           line-height:1.3 !important;
@@ -767,7 +820,18 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
             padding-bottom:12px;
           }
           #landing-page .landing-section h2 { text-wrap:balance; }
-          #landing-page #landing-news .divide-y > button { min-height:92px; }
+          #landing-page #landing-news .divide-y > button {
+            min-height:104px;
+            align-items:center;
+            padding:14px 12px;
+            gap:14px;
+          }
+          #landing-page #landing-news .divide-y > button > div:first-child {
+            width:156px !important;
+            min-width:156px !important;
+            height:112px !important;
+            border-radius:14px;
+          }
           #landing-page #landing-athletes .grid-cols-3 { gap:8px; }
           #landing-page #landing-athletes .grid-cols-3 > button { min-width:0; }
           #landing-page #landing-gallery button { touch-action:manipulation; }
