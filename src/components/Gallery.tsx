@@ -152,6 +152,12 @@ export default function Gallery() {
     return () => window.removeEventListener('keydown', handleEsc);
   }, []);
 
+  const handleGalleryHomeBack = useCallback(() => {
+    window.history.replaceState({}, '', '/');
+    window.dispatchEvent(new PopStateEvent('popstate'));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
   const handleDetailBack = useCallback(() => {
     const fromLanding = searchParams.get('from') === 'landing';
     const tab = searchParams.get('tab') === 'video' ? 'video' : 'image';
@@ -229,6 +235,12 @@ export default function Gallery() {
   return (
     <section id="gallery" className="bg-[#f8fafc] pb-24 pt-10 md:pt-14 gallery-stable">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="mb-5 flex items-center justify-between gap-3">
+          <button onClick={handleGalleryHomeBack} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-black uppercase tracking-wider text-slate-600 shadow-sm transition hover:border-blue-400 hover:text-blue-600" aria-label="Kembali ke halaman utama">
+            <ArrowLeft size={16} /> Kembali
+          </button>
+          <div className="text-[10px] font-black uppercase tracking-[.2em] text-slate-400">Galeri PB BILIBILI 162</div>
+        </div>
         <div className="flex flex-col md:flex-row items-center justify-between gap-5 mb-8 md:mb-12">
           <div className="inline-flex bg-white p-1.5 rounded-full border border-slate-200/80 shadow-xs shrink-0">
             <button onClick={() => setActiveTab('image')} className={`flex items-center gap-2 px-5 sm:px-8 py-2.5 sm:py-3.5 rounded-full font-black text-[11px] sm:text-xs tracking-wider ${activeTab === 'image' ? 'bg-[#1e293b] text-white shadow-xs' : 'text-slate-500 hover:text-slate-800'}`}><ImageIcon size={15} /> FOTO</button>
