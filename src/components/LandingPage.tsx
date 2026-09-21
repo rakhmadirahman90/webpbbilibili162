@@ -688,8 +688,8 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           width:100%;
           max-width:100%;
           color:#fff;
-          font-size:clamp(1.65rem,7.2vw,2.25rem) !important;
-          line-height:1.16 !important;
+          font-size:clamp(1.35rem,5.6vw,1.9rem) !important;
+          line-height:1.2 !important;
           font-weight:800 !important;
           letter-spacing:-.028em !important;
           white-space:normal !important;
@@ -707,8 +707,8 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           flex-wrap:wrap;
           gap:.9rem;
           color:rgba(255,255,255,.82);
-          font-size:clamp(.75rem,2.3vw,.875rem) !important;
-          line-height:1.25 !important;
+          font-size:clamp(.625rem,1.9vw,.75rem) !important;
+          line-height:1.3 !important;
           font-weight:700 !important;
           letter-spacing:.01em;
           text-transform:uppercase;
@@ -723,8 +723,8 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           margin:0;
           max-width:100%;
           color:#fff;
-          font-size:clamp(1rem,2.9vw,1.25rem) !important;
-          line-height:1.28 !important;
+          font-size:clamp(.875rem,2.35vw,1.05rem) !important;
+          line-height:1.32 !important;
           font-weight:800 !important;
           letter-spacing:-.012em !important;
           white-space:normal !important;
@@ -742,8 +742,8 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           flex-wrap:wrap;
           gap:.65rem;
           color:#64748b;
-          font-size:clamp(.6875rem,1.9vw,.8125rem) !important;
-          line-height:1.25 !important;
+          font-size:clamp(.625rem,1.65vw,.75rem) !important;
+          line-height:1.3 !important;
           font-weight:700 !important;
           letter-spacing:.01em;
           text-transform:uppercase;
@@ -810,7 +810,38 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
         }
 
         @media (max-width: 640px) {
-          #landing-page .landing-section { scroll-margin-top:76px; }
+          #landing-page #landing-news .landing-featured-news-title {
+            font-size:clamp(1.3rem,5.6vw,1.65rem) !important;
+            line-height:1.2 !important;
+            letter-spacing:-.018em !important;
+            -webkit-line-clamp:4;
+          }
+          #landing-page #landing-news .landing-featured-news-meta {
+            margin-top:.75rem;
+            gap:.7rem;
+            font-size:.6875rem !important;
+          }
+          #landing-page #landing-news .landing-news-list-title {
+            font-size:.9375rem !important;
+            line-height:1.3 !important;
+            letter-spacing:-.01em !important;
+          }
+          #landing-page #landing-news .landing-news-list-meta {
+            margin-top:.4rem;
+            gap:.5rem;
+            font-size:.625rem !important;
+          }
+          #landing-page #landing-news .divide-y > button > div:first-child {
+            width:132px !important;
+            min-width:132px !important;
+            height:92px !important;
+          }
+          #landing-page #landing-news .divide-y > button {
+            min-height:92px;
+            padding:12px 10px;
+            gap:12px;
+          }
+
           #landing-page #landing-news,
           #landing-page #landing-athletes,
           #landing-page #landing-gallery {
@@ -853,6 +884,23 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
             font-size:24px !important;
           }
         }
+        @media (max-width: 640px) {
+          #landing-page #landing-news .landing-featured-news-title {
+            font-size:clamp(1.3rem,5.6vw,1.65rem) !important;
+            line-height:1.2 !important;
+          }
+          #landing-page #landing-news .landing-news-list-title {
+            font-size:.9375rem !important;
+            line-height:1.3 !important;
+          }
+          #landing-page #landing-news .landing-featured-news-meta {
+            font-size:.6875rem !important;
+          }
+          #landing-page #landing-news .landing-news-list-meta {
+            font-size:.625rem !important;
+          }
+        }
+
         @media (prefers-reduced-motion: reduce) {
           #landing-page *, #landing-page *::before, #landing-page *::after { animation-duration:.01ms!important; transition-duration:.01ms!important; }
         }
