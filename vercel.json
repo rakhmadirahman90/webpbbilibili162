@@ -1,5 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "github": {
+    "autoJobCancelation": false
+  },
   "buildCommand": "node scripts/build-prep.mjs && npm run build",
   "headers": [
     {
