@@ -59,14 +59,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
   const [allAthletes, setAllAthletes] = useState<Athlete[]>(() => landingCache?.allAthletes || []);
   const [news, setNews] = useState<NewsItem[]>(() => landingCache?.news || []);
   const [galleryItems, setGalleryItems] = useState<GalleryItem[]>(() => landingCache?.galleryItems || []);
-  const [featuredAthleteIndex, setFeaturedAthleteIndex] = useState(() => {
-    try {
-      const id = new URLSearchParams(window.location.search).get('athlete');
-      return id && landingCache?.allAthletes?.length
-        ? Math.max(0, landingCache.allAthletes.findIndex((item) => String(item.id) === id))
-        : 0;
-    } catch { return 0; }
-  });
+  const [featuredAthleteIndex, setFeaturedAthleteIndex] = useState(0);
   const [galleryTab, setGalleryTab] = useState<'image' | 'video'>(() => {
     try {
       return new URLSearchParams(window.location.search).get('galleryTab') === 'video' ? 'video' : 'image';
@@ -98,34 +91,6 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
   }, []);
 
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (!params.has('athlete')) return;
-
-    let frame = 0;
-    let attempts = 0;
-    const scrollToAthletes = () => {
-      const target = document.getElementById('landing-athletes');
-      if (target) {
-        target.scrollIntoView({ behavior: 'auto', block: 'start' });
-        return;
-      }
-      attempts += 1;
-      if (attempts < 30) frame = window.requestAnimationFrame(scrollToAthletes);
-    };
-    frame = window.requestAnimationFrame(scrollToAthletes);
-    return () => window.cancelAnimationFrame(frame);
-  }, []);
-
-  const goAthleteDetail = useCallback((athlete?: Athlete) => {
-    if (!athlete?.id) return;
-    setFeaturedAthleteIndex(Math.max(0, allAthletes.findIndex((item) => String(item.id) === String(athlete.id))));
-    const target = `/atlet?athlete=${encodeURIComponent(athlete.id)}&from=landing`;
-    window.history.pushState({}, '', target);
-    window.dispatchEvent(new PopStateEvent('popstate'));
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [allAthletes]);
-
   const goGalleryItem = useCallback((item?: GalleryItem) => {
     const target = item ? `/galeri?gallery=${encodeURIComponent(item.id)}&from=landing&tab=${item.type}` : '/galeri';
     window.history.pushState({}, '', target);
@@ -144,13 +109,6 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
     if (onNavigate) onNavigate(path);
     else window.location.href = path === 'home' ? '/' : `/${path}`;
   }, [onNavigate]);
-
-  useEffect(() => {
-    const id = new URLSearchParams(window.location.search).get('athlete');
-    if (!id || !allAthletes.length) return;
-    const index = allAthletes.findIndex((item) => String(item.id) === id);
-    if (index >= 0) setFeaturedAthleteIndex(index);
-  }, [allAthletes]);
 
   useEffect(() => {
     let mounted = true;
@@ -384,7 +342,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           }
           return (
             <div className="overflow-hidden rounded-[2rem] border border-white/10 bg-[#090d14] shadow-2xl">
-              <button onClick={() => goAthleteDetail(featured)} className="group block w-full text-left">
+              <button onClick={() => go('atlet')} className="group block w-full text-left">
                 <div className="relative aspect-[1.15/1] w-full overflow-hidden bg-[#1d1d1d] sm:aspect-[2.1/1]">
                   {featured.photo ? (
                     <LazyImage
@@ -425,7 +383,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
                   {gallery.map((athlete, index) => (
                     <button
                       key={athlete.id}
-                      onClick={() => goAthleteDetail(athlete)}
+                      onClick={() => setFeaturedAthleteIndex(index)}
                       className={`group relative aspect-[.82] overflow-hidden rounded-xl border transition sm:rounded-2xl ${index === featuredAthleteIndex ? 'border-blue-500 ring-2 ring-blue-500/25' : 'border-white/10 hover:border-blue-400/60'}`}
                     >
                       {athlete.photo ? (
