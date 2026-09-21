@@ -322,6 +322,43 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
         })()}
       </section>
 
+      <section className="landing-section bg-[#171717]">
+        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-8 sm:py-14 lg:px-10">
+          <div className="mb-5 flex items-center justify-between gap-4">
+            <div>
+              <div className="mb-2 text-[9px] font-black uppercase tracking-[.25em] text-blue-400">03 • GALERI KLUB</div>
+              <h2 className="text-3xl font-black uppercase tracking-[-.04em] text-white sm:text-4xl">Galeri</h2>
+            </div>
+            <button onClick={() => go('galeri')} className="text-sm font-medium text-slate-300 hover:text-blue-400 sm:text-base">Lihat Semua</button>
+          </div>
+
+          <div className="mb-5 grid grid-cols-2 overflow-hidden rounded-xl bg-[#2a2a2a]">
+            <button className="bg-blue-600 px-4 py-4 text-sm font-black uppercase tracking-[.12em] text-white">Foto Terbaru</button>
+            <button onClick={() => go('galeri')} className="px-4 py-4 text-sm font-black uppercase tracking-[.12em] text-white/90 transition hover:bg-white/10">Video Terbaru</button>
+          </div>
+
+          {galleryItems.length > 0 ? (
+            <button onClick={() => go('galeri')} className="group block w-full overflow-hidden rounded-xl bg-black text-left">
+              <div className="aspect-[16/9] w-full overflow-hidden">
+                <LazyImage
+                  src={galleryItems[0].url}
+                  alt={galleryItems[0].title || 'Galeri PB BILIBILI 162'}
+                  className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.02]"
+                  containerClassName="h-full w-full"
+                  width={1400}
+                />
+              </div>
+              <div className="px-4 py-4">
+                <div className="text-[9px] font-black uppercase tracking-[.18em] text-blue-400">Foto Terbaru</div>
+                <div className="mt-1 text-lg font-black text-white">{galleryItems[0].title || 'Momen PB BILIBILI 162'}</div>
+              </div>
+            </button>
+          ) : (
+            <div className="rounded-xl bg-black px-5 py-16 text-center text-sm font-semibold text-slate-500">Belum ada foto galeri.</div>
+          )}
+        </div>
+      </section>
+
       <section className="landing-section bg-[#08101d]">
         <div className="mx-auto grid w-full max-w-7xl gap-5 px-5 py-14 sm:px-8 lg:grid-cols-[1.2fr_.8fr] lg:px-10">
           <div className="relative overflow-hidden rounded-[2rem] border border-blue-400/15 bg-[radial-gradient(circle_at_80%_10%,rgba(37,99,235,.28),transparent_35%),linear-gradient(145deg,#0b1a30,#050914)] p-6 sm:p-9">
