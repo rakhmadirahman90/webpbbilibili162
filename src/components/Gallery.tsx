@@ -172,7 +172,8 @@ export default function Gallery() {
       const target = tab === 'video'
         ? '/?galleryTab=video#landing-gallery'
         : '/?galleryTab=image#landing-gallery';
-      window.location.replace(target);
+      window.history.replaceState({}, '', target);
+      window.dispatchEvent(new PopStateEvent('popstate'));
       return;
     }
 
