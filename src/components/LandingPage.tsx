@@ -228,7 +228,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
     const load = async () => {
       try {
         const [playersRes, rankingsRes, statsRes, cup1Res, newsRes, galleryRes] = await Promise.all([
-          supabase.from('pendaftaran').select('id,nama,foto_url,kategori,kategori_atlet,bilibili_cup1_photo_path').order('nama', { ascending: true }),
+          supabase.from('pendaftaran').select('id,nama,foto_url,kategori,kategori_atlet,bilibili_cup1_photo_path,updated_at').order('nama', { ascending: true }),
           supabase.from('rankings').select('pendaftaran_id,player_name,total_points,photo_url').order('total_points', { ascending: false }),
           supabase.from('atlet_stats').select('pendaftaran_id,points,total_points,seed'),
           supabase.from('v_bilibili_162_cup1_athlete_seeded').select('*'),
@@ -264,7 +264,19 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           return {
             id: String(player.id),
             name: player.nama || ranking?.player_name || 'Atlet PB Bilibili 162',
-            photo: tournamentPhotoById.get(String(player.id)) || player.foto_url || ranking?.photo_url || '',
+            photo: (() => {
+              const currentPhoto = String(player.foto_url || '').trim();
+              const tournamentPhoto = tournamentPhotoById.get(String(player.id)) || '';
+              const rankingPhoto = String(ranking?.photo_url || '').trim();
+              const base = currentPhoto || tournamentPhoto || rankingPhoto;
+              if (!base) return '';
+              // Bust browser/CDN cache when the athlete record has been updated.
+              if (currentPhoto && player.updated_at) {
+                const separator = base.includes('?') ? '&' : '?';
+                return base + separator + 'v=' + encodeURIComponent(String(player.updated_at));
+              }
+              return base;
+            })(),
             points,
             seed: cup1Map.get(String(player.id))?.seeded_quality || stat?.seed || 'D',
             category: String(player.kategori || player.kategori_atlet || 'SENIOR').toUpperCase().includes('MUDA') ||
@@ -321,7 +333,18 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
     };
 
     void load();
-    return () => { mounted = false; };
+
+    const refreshOnReturn = () => {
+      if (document.visibilityState === 'visible') void load();
+    };
+    window.addEventListener('focus', refreshOnReturn);
+    document.addEventListener('visibilitychange', refreshOnReturn);
+
+    return () => {
+      mounted = false;
+      window.removeEventListener('focus', refreshOnReturn);
+      document.removeEventListener('visibilitychange', refreshOnReturn);
+    };
   }, []);
 
   const spotlight = useMemo(() => {
