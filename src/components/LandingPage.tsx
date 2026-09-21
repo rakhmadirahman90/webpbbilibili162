@@ -50,11 +50,17 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
   const [news, setNews] = useState<NewsItem[]>([]);
   const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
   const [featuredAthleteIndex, setFeaturedAthleteIndex] = useState(0);
-  const [galleryTab, setGalleryTab] = useState<'image' | 'video'>('image');
+  const [galleryTab, setGalleryTab] = useState<'image' | 'video'>(() => {
+    try {
+      return new URLSearchParams(window.location.search).get('galleryTab') === 'video' ? 'video' : 'image';
+    } catch {
+      return 'image';
+    }
+  });
   const [loading, setLoading] = useState(true);
 
   const goGalleryItem = useCallback((item?: GalleryItem) => {
-    const target = item ? `/galeri?gallery=${encodeURIComponent(item.id)}` : '/galeri';
+    const target = item ? `/galeri?gallery=${encodeURIComponent(item.id)}&from=landing&tab=${item.type}` : '/galeri';
     window.history.pushState({}, '', target);
     window.dispatchEvent(new PopStateEvent('popstate'));
     window.scrollTo({ top: 0, behavior: 'smooth' });
