@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  X, User, Trophy, Medal, Calendar, MapPin, Award, Camera, PlayCircle,
+  X, ArrowLeft, User, Trophy, Medal, Calendar, MapPin, Award, Camera, PlayCircle,
   Newspaper, ExternalLink, Loader2, History, ShieldCheck, ArrowUpRight, Activity,
   ArrowDownRight, Clock
 } from 'lucide-react';
@@ -334,11 +334,34 @@ export default function PlayerProfileModal({ player, globalRank, onClose }: Prop
     <div className="fixed inset-0 z-[99999] bg-[#050a14]/95 backdrop-blur-xl flex items-center justify-center p-0 sm:p-4">
       <div className="relative w-full sm:max-w-2xl h-[100dvh] sm:h-[92vh] bg-[#071226] text-white overflow-hidden sm:rounded-[2rem] shadow-2xl border border-blue-500/20 flex flex-col">
         <div className="shrink-0 bg-[#071226]/95 border-b border-white/10">
-          <div className="px-4 sm:px-7 pt-5 pb-2 flex items-center justify-between">
-            <div className="font-black italic text-xl tracking-tight">
+          <div className="px-4 sm:px-7 pt-4 pb-2 flex items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Kembali ke profil atlet"
+              className="group inline-flex items-center gap-2.5 rounded-full border border-blue-500/25 bg-blue-500/10 hover:bg-blue-500/20 hover:border-blue-400/45 px-3.5 py-2.5 text-blue-200 transition-all active:scale-95 shadow-lg shadow-blue-950/20"
+            >
+              <span className="w-8 h-8 rounded-full bg-blue-500/15 border border-blue-400/20 grid place-items-center group-hover:-translate-x-0.5 transition-transform">
+                <ArrowLeft size={17} strokeWidth={2.5} />
+              </span>
+              <span className="hidden sm:inline text-[10px] font-black uppercase tracking-[0.16em]">
+                Kembali ke Profil Atlet
+              </span>
+              <span className="sm:hidden text-[10px] font-black uppercase tracking-[0.14em]">
+                Kembali
+              </span>
+            </button>
+
+            <div className="font-black italic text-xl tracking-tight text-center">
               PB <span className="text-blue-400">BILIBILI</span> 162
             </div>
-            <button onClick={onClose} aria-label="Tutup" className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 grid place-items-center">
+
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Tutup detail"
+              className="w-10 h-10 shrink-0 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 grid place-items-center text-slate-300 hover:text-white transition-all active:scale-95"
+            >
               <X size={20} />
             </button>
           </div>
