@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowRight, CalendarDays, ChevronRight, Medal, Trophy, Users, Zap, Eye, MessageCircle } from 'lucide-react';
+import { ArrowRight, CalendarDays, ChevronRight, Medal, Trophy, Users, Zap, Eye, MessageCircle, Play } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { supabase } from '../supabase';
 import LazyImage from './LazyImage';
