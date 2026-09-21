@@ -164,22 +164,24 @@ export default function Gallery() {
     const fromLanding = searchParams.get('from') === 'landing';
     const tab = searchParams.get('tab') === 'video' ? 'video' : (activeMedia?.type === 'video' ? 'video' : 'image');
 
-    setSharePreviewItem(null);
-    setActiveImgIndex(0);
-    setSelectedId(null);
-
     if (fromLanding) {
-      // Detail dibuka dari kartu media Landing Page.
-      // Gunakan location.replace agar kembali benar-benar ke Landing Page,
-      // bukan tertahan di route /galeri akibat sinkronisasi URL React Router.
-      // replace juga tidak menambahkan entry history baru.
-      const target = tab === 'video' ? '/?galleryTab=video#landing-gallery' : '/?galleryTab=image#landing-gallery';
+      // Detail dibuka dari kartu Foto/Video Terbaru Landing Page.
+      // Jangan mengubah state Gallery terlebih dahulu karena itu dapat
+      // merender daftar Galeri sesaat sebelum navigasi kembali.
+      // Langsung replace ke Landing Page pada kartu media yang sama.
+      const target = tab === 'video'
+        ? '/?galleryTab=video#landing-gallery'
+        : '/?galleryTab=image#landing-gallery';
       window.location.replace(target);
       return;
     }
 
-    // Jika detail dibuka dari halaman Galeri penuh, tetap kembali ke Galeri penuh.
+    setSharePreviewItem(null);
+    setActiveImgIndex(0);
+    setSelectedId(null);
     setActiveTab(tab);
+
+    // Detail dari halaman Galeri penuh tetap kembali ke Galeri penuh.
     const query = tab === 'video' ? '?tab=video' : '';
     window.history.replaceState({}, '', `/galeri${query}`);
     window.scrollTo({ top: 0, behavior: 'smooth' });
