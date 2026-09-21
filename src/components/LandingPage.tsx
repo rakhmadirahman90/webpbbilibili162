@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ArrowRight, CalendarDays, ChevronRight, Medal, Trophy, Users, Zap, Eye, MessageCircle, Play } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { supabase } from '../supabase';
@@ -53,6 +53,52 @@ const FALLBACK_ATHLETES: Athlete[] = [
   { id: 'fallback-3', name: 'GENERASI JUARA', photo: '', points: 0, seed: '—', category: 'ATLET', rank: 3 },
   { id: 'fallback-4', name: 'NEXT CHAMPION', photo: '', points: 0, seed: '—', category: 'ATLET', rank: 4 },
 ];
+
+function AutoFitNewsTitle({ title }: { title: string }) {
+  const ref = useRef<HTMLHeadingElement>(null);
+  const [fontSize, setFontSize] = useState(14);
+
+  useLayoutEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+
+    const fit = () => {
+      let size = 14;
+      const lineHeight = 1.3;
+      element.style.fontSize = `${size}px`;
+      element.style.lineHeight = `${lineHeight}`;
+
+      while (element.scrollHeight > size * lineHeight * 3 && size > 9.5) {
+        size -= 0.25;
+        element.style.fontSize = `${size}px`;
+      }
+
+      setFontSize((current) => Math.abs(current - size) > 0.05 ? size : current);
+    };
+
+    fit();
+
+    if (typeof ResizeObserver !== 'undefined') {
+      const observer = new ResizeObserver(fit);
+      observer.observe(element);
+      return () => observer.disconnect();
+    }
+
+    window.addEventListener('resize', fit);
+    return () => window.removeEventListener('resize', fit);
+  }, [title]);
+
+  return (
+    <h3
+      ref={ref}
+      className="landing-news-list-title group-hover:text-blue-300"
+      style={{ fontSize: `${fontSize}px`, lineHeight: 1.3 }}
+      title={title}
+    >
+      {title}
+    </h3>
+  );
+}
 
 export default function LandingPage({ onNavigate }: LandingPageProps) {
   const [athletes, setAthletes] = useState<Athlete[]>(() => landingCache?.athletes || []);
@@ -431,7 +477,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
                               {itemImage ? <LazyImage src={itemImage} alt={item.judul} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" containerClassName="h-full w-full" width={360} /> : null}
                             </div>
                             <div className="min-w-0 flex-1">
-                              <h3 className="landing-news-list-title group-hover:text-blue-300">{item.judul}</h3>
+                              <AutoFitNewsTitle title={item.judul} />
                               <div className="landing-news-list-meta">
                                 <span>{item.tanggal ? new Date(item.tanggal).toLocaleDateString('id-ID',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}) : 'Terbaru'}</span>
                                 <span className="inline-flex items-center gap-1"><Eye size={10}/> {item.views}</span>
@@ -621,7 +667,8 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
 /* Vercel sync: news reference typography 2026-09-21 */
 /* Auto-deploy sync checkpoint: 2026-09-21 */
 /* Landing typography/layout deployment sync: 2026-09-21 */
-/* Vercel production sync checkpoint: 2026-09-21-2 */
+/* Vercel production sync checkpoint: 2026-09-21-3 */
+/* Other news titles auto-fit to a maximum of 3 complete lines. */
 
         #landing-page {
           --landing-blue:#2563eb;
@@ -736,11 +783,8 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           white-space:normal !important;
           overflow-wrap:break-word !important;
           word-break:normal !important;
-          display:-webkit-box !important;
-          -webkit-box-orient:vertical !important;
-          -webkit-line-clamp:3 !important;
-          overflow:hidden !important;
-          text-overflow:ellipsis !important;
+          display:block !important;
+          overflow:visible !important;
           text-wrap:balance;
         }
         #landing-page #landing-news .landing-news-list-meta {
@@ -834,11 +878,8 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
             font-size:.8rem !important;
             line-height:1.3 !important;
             letter-spacing:-.003em !important;
-            display:-webkit-box !important;
-            -webkit-box-orient:vertical !important;
-            -webkit-line-clamp:3 !important;
-            overflow:hidden !important;
-            text-overflow:ellipsis !important;
+            display:block !important;
+            overflow:visible !important;
             text-wrap:balance;
           }
           #landing-page #landing-news .landing-news-list-meta {
