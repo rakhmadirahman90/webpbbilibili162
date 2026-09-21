@@ -91,16 +91,6 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
   }, []);
 
 
-  const goAthleteDetail = useCallback((athlete?: Athlete) => {
-    if (!athlete?.id) return;
-    try {
-      sessionStorage.setItem('pb_landing_athlete_id', String(athlete.id));
-      sessionStorage.setItem('pb_landing_athlete_return', '1');
-    } catch {}
-    setFeaturedAthleteIndex(Math.max(0, allAthletes.findIndex((item) => String(item.id) === String(athlete.id))));
-    go('atlet');
-  }, [allAthletes, go]);
-
   useEffect(() => {
     let athleteId = '';
     try {
@@ -147,6 +137,16 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
     if (onNavigate) onNavigate(path);
     else window.location.href = path === 'home' ? '/' : `/${path}`;
   }, [onNavigate]);
+
+  const goAthleteDetail = useCallback((athlete?: Athlete) => {
+    if (!athlete?.id) return;
+    try {
+      sessionStorage.setItem('pb_landing_athlete_id', String(athlete.id));
+      sessionStorage.setItem('pb_landing_athlete_return', '1');
+    } catch {}
+    setFeaturedAthleteIndex(Math.max(0, allAthletes.findIndex((item) => String(item.id) === String(athlete.id))));
+    go('atlet');
+  }, [allAthletes, go]);
 
   useEffect(() => {
     let mounted = true;
