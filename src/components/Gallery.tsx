@@ -159,15 +159,16 @@ export default function Gallery() {
   }, []);
 
   const handleDetailBack = useCallback(() => {
-    const fromLanding = searchParams.get('from') === 'landing';
-    const tab = searchParams.get('tab') === 'video' ? 'video' : 'image';
-    if (fromLanding) {
-      window.history.pushState({}, '', tab === 'video' ? '/?galleryTab=video' : '/');
-      window.dispatchEvent(new PopStateEvent('popstate'));
-      return;
-    }
+    const tab = searchParams.get('tab') === 'video' ? 'video' : (activeMedia?.type === 'video' ? 'video' : 'image');
+    setActiveTab(tab);
     setSelectedId(null);
-  }, [searchParams]);
+    setSharePreviewItem(null);
+    setActiveImgIndex(0);
+    // Kembali ke halaman utama Galeri tanpa memicu navigasi/pop-up Landing Page.
+    const query = tab === 'video' ? '?tab=video' : '';
+    window.history.replaceState({}, '', `/galeri${query}`);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [searchParams, activeMedia]);
 
   const getYouTubeID = useCallback((url: string) => {
     if (!url) return null;
