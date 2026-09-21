@@ -967,3 +967,5 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
     </div>
   );
 }
+
+/* Vercel production sync: news typography 2026-09-21 */
