@@ -331,15 +331,16 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
 
   return (
     <div id="landing-page" className="landing-page relative overflow-hidden bg-[#050914] text-white font-sans">
-      <section id="landing-news" className="landing-section mx-auto w-full max-w-7xl px-4 py-8 sm:px-8 sm:py-14 lg:px-10">
-        <div className="mb-6 flex items-end justify-between gap-4">
-          <div>
-            <h2 className="text-[clamp(1.75rem,7vw,3rem)] font-extrabold uppercase leading-[1] tracking-[-.04em] text-white">
+      <section id="landing-news" className="landing-section mx-auto w-full max-w-7xl px-4 py-6 sm:px-8 sm:py-12 lg:px-10">
+        <div className="landing-section-header mb-4 flex items-center justify-between gap-3 border-b border-white/10 pb-3.5 sm:mb-6 sm:pb-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="h-7 w-1 shrink-0 rounded-full bg-blue-500 shadow-[0_0_14px_rgba(37,99,235,.45)] sm:h-8" />
+            <h2 className="truncate text-[clamp(1.55rem,6.8vw,3rem)] font-extrabold uppercase leading-none tracking-[-.035em] text-white">
               Berita <span className="text-blue-500">Terbaru</span>
             </h2>
           </div>
-          <button onClick={() => goNews()} className="hidden items-center gap-2 rounded-full border border-blue-500/70 px-5 py-2.5 text-[10px] font-black uppercase tracking-[.15em] text-white transition hover:bg-blue-600 sm:flex">
-            Lihat Semua Berita <ArrowRight size={15} />
+          <button onClick={() => goNews()} className="hidden shrink-0 items-center gap-1.5 rounded-full border border-white/10 bg-white/[.03] px-3.5 py-2 text-[9px] font-extrabold uppercase tracking-[.1em] text-slate-300 transition hover:border-blue-500/50 hover:bg-blue-600 hover:text-white sm:flex">
+            Semua Berita <ArrowRight size={14} />
           </button>
         </div>
 
@@ -431,13 +432,14 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
         )}
       </section>
 
-      <section id="landing-athletes" className="landing-section mx-auto w-full max-w-7xl px-4 py-8 sm:px-8 sm:py-14 lg:px-10">
-        <div className="mb-6 flex items-end justify-between gap-4">
-          <div>
-            <h2 className="text-[clamp(1.75rem,7vw,3rem)] font-extrabold uppercase leading-[1] tracking-[-.04em] text-white">Kenali Atlet Kami</h2>
+      <section id="landing-athletes" className="landing-section mx-auto w-full max-w-7xl px-4 py-6 sm:px-8 sm:py-12 lg:px-10">
+        <div className="landing-section-header mb-4 flex items-center justify-between gap-3 border-b border-white/10 pb-3.5 sm:mb-6 sm:pb-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="h-7 w-1 shrink-0 rounded-full bg-blue-500 shadow-[0_0_14px_rgba(37,99,235,.45)] sm:h-8" />
+            <h2 className="truncate text-[clamp(1.55rem,6.8vw,3rem)] font-extrabold uppercase leading-none tracking-[-.035em] text-white">Kenali Atlet Kami</h2>
           </div>
-          <button onClick={() => go('atlet')} className="hidden items-center gap-2 text-[10px] font-black uppercase tracking-[.15em] text-slate-400 hover:text-white sm:flex">
-            Lihat Semua Berita Atlet <ArrowRight size={15} />
+          <button onClick={() => go('atlet')} className="hidden shrink-0 items-center gap-1.5 rounded-full border border-white/10 bg-white/[.03] px-3.5 py-2 text-[9px] font-extrabold uppercase tracking-[.1em] text-slate-300 transition hover:border-blue-500/50 hover:bg-blue-600 hover:text-white sm:flex">
+            Semua Atlet <ArrowRight size={14} />
           </button>
         </div>
 
@@ -518,12 +520,13 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
       </section>
 
       <section id="landing-gallery" className="landing-section bg-[#111827]">
-        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-8 sm:py-14 lg:px-10">
-          <div className="mb-5 flex items-center justify-between gap-4">
-            <div>
-              <h2 className="text-[clamp(1.75rem,7vw,2.5rem)] font-extrabold uppercase leading-none tracking-[-.04em] text-white">Galeri</h2>
+        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-8 sm:py-12 lg:px-10">
+          <div className="landing-section-header mb-4 flex items-center justify-between gap-3 border-b border-white/10 pb-3.5 sm:mb-5 sm:pb-4">
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="h-7 w-1 shrink-0 rounded-full bg-blue-500 shadow-[0_0_14px_rgba(37,99,235,.45)] sm:h-8" />
+              <h2 className="text-[clamp(1.55rem,6.8vw,2.5rem)] font-extrabold uppercase leading-none tracking-[-.035em] text-white">Galeri</h2>
             </div>
-            <button onClick={() => go('galeri')} className="text-sm font-medium text-slate-300 hover:text-blue-400 sm:text-base">Lihat Semua</button>
+            <button onClick={() => go('galeri')} className="shrink-0 rounded-full border border-white/10 bg-white/[.03] px-3.5 py-2 text-[9px] font-extrabold uppercase tracking-[.1em] text-slate-300 transition hover:border-blue-500/50 hover:bg-blue-600 hover:text-white">Semua Media</button>
           </div>
 
           <div className="mb-4 grid grid-cols-2 overflow-hidden rounded-xl border border-white/10 bg-[#1b2433]">
@@ -603,8 +606,8 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           #landing-page #landing-news,
           #landing-page #landing-athletes,
           #landing-page #landing-gallery {
-            padding-top:30px !important;
-            padding-bottom:30px !important;
+            padding-top:24px !important;
+            padding-bottom:24px !important;
           }
           #landing-page .landing-section h2 { text-wrap:balance; }
           #landing-page button { -webkit-tap-highlight-color:transparent; }
