@@ -385,7 +385,30 @@ export default function AdminGallery({ session }: { session?: any }) {
               const urls = item.type === 'image' ? splitMediaUrls(item.url) : [item.url];
               const cover = urls[0] || '';
               return <article key={item.id} className="overflow-hidden rounded-3xl border border-white/10 bg-[#0d1423] shadow-xl">
-                <div className="relative aspect-[4/3] overflow-hidden bg-black">{item.type === 'image' && cover ? <img src={cover} alt={item.title} className="h-full w-full object-cover" loading="lazy" /> : <div className="flex h-full w-full items-center justify-center bg-zinc-900"><PlayCircle size={58} className="text-blue-500" /></div>}<div className="absolute left-3 top-3 rounded-xl bg-blue-600 px-3 py-2 text-[9px] font-black uppercase text-white">{item.category}</div>{item.type === 'image' && <div className="absolute bottom-3 left-3 rounded-xl bg-black/75 px-3 py-2 text-[10px] font-black text-white"><ImageIcon size={13} className="mr-1 inline" />{urls.length} FOTO</div>}</div>
+                <div className="relative aspect-[4/3] overflow-hidden bg-black">
+  {item.type === 'image' && cover ? (
+    <img src={cover} alt={item.title} className="h-full w-full object-cover" loading="lazy" />
+  ) : item.type === 'video' && cover ? (
+    <video
+      src={cover}
+      muted
+      playsInline
+      preload="metadata"
+      className="h-full w-full object-cover"
+      aria-label={item.title}
+      onLoadedMetadata={(event) => {
+        try {
+          event.currentTarget.currentTime = Math.min(0.5, event.currentTarget.duration || 0.5);
+        } catch {}
+      }}
+    />
+  ) : (
+    <div className="flex h-full w-full items-center justify-center bg-zinc-900"><PlayCircle size={58} className="text-blue-500" /></div>
+  )}
+  {item.type === 'video' && <div className="absolute inset-0 grid place-items-center pointer-events-none"><div className="grid h-14 w-14 place-items-center rounded-full bg-blue-600 text-white shadow-2xl"><PlayCircle size={24} fill="currentColor" /></div></div>}
+  <div className="absolute left-3 top-3 rounded-xl bg-blue-600 px-3 py-2 text-[9px] font-black uppercase text-white">{item.category}</div>
+  {item.type === 'image' && <div className="absolute bottom-3 left-3 rounded-xl bg-black/75 px-3 py-2 text-[10px] font-black text-white"><ImageIcon size={13} className="mr-1 inline" />{urls.length} FOTO</div>}
+</div>
                 <div className="p-5"><h3 className="line-clamp-2 text-base font-black leading-tight sm:text-lg">{item.title}</h3><p className="mt-2 line-clamp-2 text-xs text-zinc-500">{item.description || 'Dokumentasi PB BILIBILI 162'}</p>{item.type === 'image' && urls.length > 1 && <p className="mt-3 text-[9px] font-black uppercase tracking-widest text-blue-400">Album aktivitas · {urls.length} foto terkait</p>}{isAdmin && <div className="mt-5 grid grid-cols-2 gap-2"><button onClick={() => openEdit(item)} className="flex items-center justify-center gap-2 rounded-xl bg-white/5 py-3 text-[9px] font-black uppercase hover:bg-blue-600"><Edit3 size={14} /> Kelola Album</button><button onClick={() => handleDelete(item)} className="flex items-center justify-center gap-2 rounded-xl bg-red-500/10 py-3 text-[9px] font-black uppercase text-red-400 hover:bg-red-600 hover:text-white"><Trash2 size={14} /> Hapus</button></div>}</div>
               </article>;
             })}
