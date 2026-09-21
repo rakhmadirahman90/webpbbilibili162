@@ -330,12 +330,12 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
   }, [athletes]);
 
   return (
-    <div id="landing-page" className="landing-page relative overflow-hidden bg-[#050914] text-white">
-      <section id="landing-athletes" className="landing-section mx-auto w-full max-w-7xl px-4 py-10 sm:px-8 sm:py-14 lg:px-10">
+    <div id="landing-page" className="landing-page relative overflow-hidden bg-[#050914] text-white font-sans">
+      <section id="landing-news" className="landing-section mx-auto w-full max-w-7xl px-4 py-8 sm:px-8 sm:py-14 lg:px-10">
         <div className="mb-6 flex items-end justify-between gap-4">
           <div>
             <div className="mb-2 text-[9px] font-black uppercase tracking-[.25em] text-blue-400">01 • KABAR KLUB</div>
-            <h2 className="text-3xl font-black italic uppercase tracking-[-.05em] sm:text-5xl">Berita <span className="text-blue-500">Terbaru.</span></h2>
+            <h2 className="text-[clamp(1.75rem,7vw,3rem)] font-extrabold uppercase leading-[.98] tracking-[-.045em]">Berita <span className="text-blue-500">Terbaru.</span></h2>
           </div>
           <button onClick={() => goNews()} className="hidden items-center gap-2 rounded-full border border-blue-500/70 px-5 py-2.5 text-[10px] font-black uppercase tracking-[.15em] text-white transition hover:bg-blue-600 sm:flex">
             Lihat Semua Berita <ArrowRight size={15} />
@@ -360,7 +360,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
                 <>
                   <button
                     onClick={() => goNews(featured.id)}
-                    className="group block w-full overflow-hidden rounded-[2rem] border border-white/10 bg-[#0b1220] text-left shadow-2xl"
+                    className="group block w-full overflow-hidden rounded-[1.25rem] sm:rounded-[2rem] border border-white/10 bg-[#0b1220] text-left shadow-2xl"
                   >
                     <div className="relative aspect-[16/10] w-full overflow-hidden bg-slate-900 sm:aspect-[2.05/1]">
                       {image ? (
@@ -373,13 +373,13 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
                         />
                       ) : <div className="h-full w-full bg-[#111827]" />}
                     </div>
-                    <div className="bg-gradient-to-r from-[#0b3b91] via-[#1557d6] to-[#2563eb] px-5 py-5 sm:px-7 sm:py-6">
+                    <div className="bg-gradient-to-r from-[#0b3b91] via-[#1557d6] to-[#2563eb] px-4 py-4 sm:px-7 sm:py-6">
                       <div className="mb-2 inline-flex rounded-full bg-blue-600 px-3 py-1.5 text-[8px] font-black uppercase tracking-[.18em] text-white">
                         Berita Terbaru
                       </div>
-                      <h3 className="text-xl font-black leading-tight text-white sm:text-3xl lg:text-4xl">{featured.judul}</h3>
-                      <p className="mt-3 line-clamp-2 text-xs leading-5 text-white/85 sm:text-sm">{featured.ringkasan}</p>
-                      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                      <h3 className="text-[1.05rem] font-extrabold leading-[1.15] tracking-[-.02em] text-white sm:text-3xl lg:text-4xl">{featured.judul}</h3>
+                      <p className="mt-2.5 line-clamp-2 text-[11px] leading-[1.55] text-white/80 sm:text-sm">{featured.ringkasan}</p>
+                      <div className="mt-3 flex flex-wrap items-center justify-between gap-2.5">
                         <div className="flex flex-wrap items-center gap-3 text-[8px] font-bold uppercase tracking-wider text-white/80 sm:text-[9px]">
                           <span>{featured.tanggal ? new Date(featured.tanggal).toLocaleDateString('id-ID',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}) : 'Terbaru'}</span>
                           <span className="inline-flex items-center gap-1"><Eye size={12}/> {featured.views}</span>
@@ -390,7 +390,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
                     </div>
                   </button>
 
-                  <div className="mt-4 overflow-hidden rounded-[2rem] border border-white/10 bg-[#0b1220]">
+                  <div className="mt-3 overflow-hidden rounded-[1.25rem] sm:rounded-[2rem] border border-white/10 bg-[#0b1220]">
                     <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
                       <div className="text-[10px] font-black uppercase tracking-[.2em] text-blue-300">Berita Lainnya</div>
                       <button onClick={() => goNews()} className="hidden items-center gap-1 text-[9px] font-black uppercase tracking-wider text-blue-400 sm:flex">Lihat Semua Berita <ArrowRight size={13}/></button>
@@ -430,11 +430,11 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
         )}
       </section>
 
-      <section className="landing-section mx-auto w-full max-w-7xl px-4 py-10 sm:px-8 sm:py-14 lg:px-10">
+      <section id="landing-athletes" className="landing-section mx-auto w-full max-w-7xl px-4 py-8 sm:px-8 sm:py-14 lg:px-10">
         <div className="mb-6 flex items-end justify-between gap-4">
           <div>
             <div className="mb-2 text-[9px] font-black uppercase tracking-[.25em] text-blue-400">02 • PROFIL ATLET</div>
-            <h2 className="text-3xl font-black italic uppercase tracking-[-.05em] sm:text-5xl">Kenali <span className="text-blue-500">Atlet Kami.</span></h2>
+            <h2 className="text-[clamp(1.75rem,7vw,3rem)] font-extrabold uppercase leading-[.98] tracking-[-.045em]">Kenali <span className="text-blue-500">Atlet Kami.</span></h2>
           </div>
           <button onClick={() => go('atlet')} className="hidden items-center gap-2 text-[10px] font-black uppercase tracking-[.15em] text-slate-400 hover:text-white sm:flex">
             Lihat Semua Berita Atlet <ArrowRight size={15} />
@@ -453,7 +453,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
             );
           }
           return (
-            <div className="overflow-hidden rounded-[2rem] border border-white/10 bg-[#090d14] shadow-2xl">
+            <div className="overflow-hidden rounded-[1.25rem] sm:rounded-[2rem] border border-white/10 bg-[#090d14] shadow-2xl">
               <button onClick={() => goAthleteDetail(featured)} className="group block w-full text-left">
                 <div className="relative aspect-[1.15/1] w-full overflow-hidden bg-[#1d1d1d] sm:aspect-[2.1/1]">
                   {featured.photo ? (
@@ -471,9 +471,9 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-black/5" />
                 </div>
-                <div className="bg-[#05070b] px-5 py-5 sm:px-8 sm:py-6">
+                <div className="bg-[#05070b] px-4 py-4 sm:px-8 sm:py-6">
                   <div className="text-[9px] font-black uppercase tracking-[.22em] text-slate-400">Kenal Lebih Dekat</div>
-                  <div className="mt-2 text-2xl font-black uppercase leading-none tracking-[-.02em] text-white sm:text-4xl">{featured.name}</div>
+                  <div className="mt-2 text-[1.45rem] font-extrabold uppercase leading-none tracking-[-.025em] text-white sm:text-4xl">{featured.name}</div>
                   <div className="mt-3 flex flex-wrap items-center gap-2 text-[8px] font-black uppercase tracking-[.16em] text-blue-300">
                     <span>{featured.category}</span>
                     <span className="text-slate-600">•</span>
@@ -484,9 +484,9 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
                 </div>
               </button>
 
-              <div className="border-t border-white/10 bg-[#171717] px-4 py-5 sm:px-7">
-                <div className="mb-4 flex items-center justify-between gap-4">
-                  <div className="text-xl font-black uppercase tracking-[-.02em] text-white sm:text-2xl">Profil Atlet</div>
+              <div className="border-t border-white/10 bg-[#171717] px-4 py-4 sm:px-7 sm:py-5">
+                <div className="mb-3.5 flex items-center justify-between gap-3">
+                  <div className="text-lg font-extrabold uppercase tracking-[-.02em] text-white sm:text-2xl">Profil Atlet</div>
                   <button onClick={() => go('atlet')} className="text-sm font-medium text-slate-300 transition hover:text-blue-400 sm:text-base">
                     Lihat Galeri Atlet
                   </button>
@@ -517,17 +517,17 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
         })()}
       </section>
 
-      <section id="landing-gallery" className="landing-section bg-[#171717]">
-        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-8 sm:py-14 lg:px-10">
+      <section id="landing-gallery" className="landing-section bg-[#111827]">
+        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-8 sm:py-14 lg:px-10">
           <div className="mb-5 flex items-center justify-between gap-4">
             <div>
               <div className="mb-2 text-[9px] font-black uppercase tracking-[.25em] text-blue-400">03 • GALERI KLUB</div>
-              <h2 className="text-3xl font-black uppercase tracking-[-.04em] text-white sm:text-4xl">Galeri</h2>
+              <h2 className="text-[clamp(1.75rem,7vw,2.5rem)] font-extrabold uppercase leading-none tracking-[-.04em] text-white">Galeri</h2>
             </div>
             <button onClick={() => go('galeri')} className="text-sm font-medium text-slate-300 hover:text-blue-400 sm:text-base">Lihat Semua</button>
           </div>
 
-          <div className="mb-5 grid grid-cols-2 overflow-hidden rounded-xl bg-[#2a2a2a]">
+          <div className="mb-4 grid grid-cols-2 overflow-hidden rounded-xl border border-white/10 bg-[#1b2433]">
             <button
               onClick={() => setGalleryTab('image')}
               className={`px-4 py-4 text-sm font-black uppercase tracking-[.12em] transition ${galleryTab === 'image' ? 'bg-blue-600 text-white' : 'text-white/75 hover:bg-white/10'}`}
@@ -577,7 +577,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
                   <div className="text-[9px] font-black uppercase tracking-[.18em] text-blue-400">
                     {isVideo ? 'Video Terbaru' : 'Foto Terbaru'}
                   </div>
-                  <div className="mt-1 text-lg font-black text-white">{selected.title || 'Momen PB BILIBILI 162'}</div>
+                  <div className="mt-1 text-[1rem] font-extrabold leading-snug tracking-[-.01em] text-white sm:text-lg">{selected.title || 'Momen PB BILIBILI 162'}</div>
                   {selected.description && <p className="mt-1 line-clamp-2 text-xs text-slate-400">{selected.description}</p>}
                 </div>
               </button>
@@ -590,16 +590,16 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
         </div>
       </section>
 
-      <section className="landing-section mx-auto w-full max-w-7xl px-5 py-14 sm:px-8 lg:px-10">
+      <section className="landing-section mx-auto w-full max-w-7xl px-4 py-8 sm:px-8 sm:py-14 lg:px-10">
         <div className="mb-7 flex items-end justify-between gap-4">
           <div>
             <div className="mb-2 text-[9px] font-black uppercase tracking-[.25em] text-amber-400">04 • PERINGKAT TERATAS</div>
-            <h2 className="text-3xl font-black italic uppercase tracking-[-.04em] sm:text-5xl">Kejar <span className="text-amber-400">Poin.</span></h2>
+            <h2 className="text-[clamp(1.75rem,7vw,3rem)] font-extrabold uppercase leading-[.98] tracking-[-.045em]">Kejar <span className="text-amber-400">Poin.</span></h2>
           </div>
           <button onClick={() => go('peringkat')} className="hidden items-center gap-2 text-[10px] font-black uppercase tracking-[.15em] text-slate-400 hover:text-white sm:flex">Peringkat Lengkap <ChevronRight size={15} /></button>
         </div>
 
-        <div className="overflow-hidden rounded-[2rem] border border-white/10 bg-[#0a101c]">
+        <div className="overflow-hidden rounded-[1.25rem] sm:rounded-[2rem] border border-white/10 bg-[#0a101c]">
           {loading ? (
             <div className="grid place-items-center px-6 py-16 text-[10px] font-black uppercase tracking-[.2em] text-slate-500">Sinkronisasi ranking...</div>
           ) : (
@@ -633,6 +633,23 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
         @media (max-width: 640px) {
           #landing-page .landing-hero { min-height:calc(100svh - 58px); }
           #landing-page .landing-hero > div:nth-child(2) { min-height:calc(100svh - 58px); }
+
+          #landing-page .landing-section { scroll-margin-top:76px; }
+          #landing-page #landing-news,
+          #landing-page #landing-athletes,
+          #landing-page #landing-gallery {
+            padding-top:30px !important;
+            padding-bottom:30px !important;
+          }
+          #landing-page .landing-section h2 { text-wrap:balance; }
+          #landing-page button { -webkit-tap-highlight-color:transparent; }
+          #landing-page #landing-news .group h3 { overflow-wrap:anywhere; }
+          #landing-page #landing-news .divide-y > button { min-height:92px; }
+          #landing-page #landing-athletes .grid-cols-3 { gap:7px; }
+          #landing-page #landing-athletes .grid-cols-3 > button { min-width:0; }
+          #landing-page #landing-gallery button { touch-action:manipulation; }
+          #landing-page #landing-gallery > div > button.group { border-radius:16px; }
+          #landing-page #landing-gallery p { line-height:1.55; }
         }
       `}</style>
     </div>
