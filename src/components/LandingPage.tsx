@@ -92,65 +92,6 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
 
   return (
     <div id="landing-page" className="landing-page relative overflow-hidden bg-[#050914] text-white">
-      <section className="landing-hero relative min-h-[calc(100svh-64px)] overflow-hidden">
-        <div className="absolute inset-0">
-          <video
-            className="h-full w-full object-cover object-center"
-            src="https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/assets/hero-sliders/hero-video-1786206060056.webm"
-            poster="https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/assets/hero-sliders/hero-poster-1786206060056.webp"
-            autoPlay
-            muted
-            loop
-            playsInline
-            aria-hidden="true"
-          />
-          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(2,6,23,.94)_0%,rgba(2,6,23,.72)_42%,rgba(2,6,23,.22)_100%)]" />
-          <div className="absolute inset-0 bg-[linear-gradient(0deg,#050914_0%,transparent_30%,rgba(5,9,20,.1)_100%)]" />
-        </div>
-
-        <div className="relative z-10 mx-auto flex min-h-[calc(100svh-64px)] w-full max-w-7xl items-center px-5 py-16 sm:px-8 lg:px-10">
-          <div className="max-w-3xl">
-            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="mb-5 inline-flex items-center gap-2 rounded-full border border-blue-400/25 bg-blue-500/10 px-3 py-2 text-[9px] font-black uppercase tracking-[.24em] text-blue-200 backdrop-blur-md">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,.9)]" />
-              Official Badminton Club • Parepare
-            </motion.div>
-
-            <motion.h1 initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: .08 }} className="max-w-4xl text-[clamp(3rem,8vw,7.2rem)] font-black italic uppercase leading-[.86] tracking-[-.065em]">
-              Satu Klub.<br />
-              <span className="text-blue-500">Satu Keluarga.</span><br />
-              Satu Perjuangan.
-            </motion.h1>
-
-            <motion.p initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: .16 }} className="mt-6 max-w-xl text-sm leading-6 text-slate-300 sm:text-base">
-              Rumah digital PB BILIBILI 162 — tempat atlet, pertandingan, prestasi, dan cerita keluarga besar klub bertemu dalam satu pengalaman.
-            </motion.p>
-
-            <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: .22 }} className="mt-8 flex flex-wrap gap-3">
-              <button onClick={() => go('atlet')} className="group inline-flex min-h-12 items-center gap-3 rounded-2xl bg-blue-600 px-5 text-[11px] font-black uppercase tracking-[.14em] text-white shadow-[0_15px_45px_rgba(37,99,235,.35)] transition hover:bg-blue-500">
-                Lihat Atlet <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
-              </button>
-              <button onClick={() => go('peringkat')} className="inline-flex min-h-12 items-center gap-3 rounded-2xl border border-white/15 bg-white/5 px-5 text-[11px] font-black uppercase tracking-[.14em] text-white backdrop-blur-md transition hover:bg-white/10">
-                Ranking & Poin
-              </button>
-            </motion.div>
-
-            <div className="mt-10 grid max-w-xl grid-cols-3 gap-2 sm:gap-3">
-              {[
-                ['ATLET', athletes.length ? 'LIVE' : 'SYNC', Users],
-                ['RANKING', 'REAL-TIME', Zap],
-                ['CLUB', 'PAREPARE', Medal],
-              ].map(([label, value, Icon]: any) => (
-                <div key={String(label)} className="rounded-2xl border border-white/10 bg-black/20 p-3 backdrop-blur-md sm:p-4">
-                  <Icon size={15} className="mb-3 text-blue-400" />
-                  <div className="text-[8px] font-black tracking-[.18em] text-slate-400">{label}</div>
-                  <div className="mt-1 text-xs font-black text-white sm:text-sm">{value}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
       <section className="landing-section mx-auto w-full max-w-7xl px-5 py-14 sm:px-8 sm:py-18 lg:px-10">
         <div className="mb-7 flex items-end justify-between gap-4">
           <div>
