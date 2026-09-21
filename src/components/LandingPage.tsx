@@ -618,7 +618,8 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
         </div>
       </section>
 
-      <style>{`
+      <style>{`/* Landing typography/layout deployment sync: 2026-09-21 */
+
         #landing-page {
           --landing-blue:#2563eb;
           --landing-bg:#050914;
