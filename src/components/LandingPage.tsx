@@ -103,6 +103,34 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
   }, []);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has('newsId') || params.get('from') !== 'landing') return;
+
+    let savedScrollY = 0;
+    try {
+      savedScrollY = Number(sessionStorage.getItem('pb_landing_news_scroll_y') || '0');
+    } catch {}
+
+    let attempts = 0;
+    let frame = 0;
+    const restoreNewsPosition = () => {
+      window.scrollTo({ top: Math.max(0, savedScrollY), behavior: 'auto' });
+      attempts += 1;
+      if (attempts < 12) {
+        frame = window.requestAnimationFrame(restoreNewsPosition);
+        return;
+      }
+      try {
+        sessionStorage.removeItem('pb_landing_news_scroll_y');
+        window.setTimeout(() => sessionStorage.removeItem('pb_suppress_landing_popup'), 900);
+      } catch {}
+    };
+
+    frame = window.requestAnimationFrame(restoreNewsPosition);
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
+
+  useEffect(() => {
     let athleteId = '';
     let savedScrollY = 0;
     try {
@@ -165,10 +193,17 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
   }, []);
 
   const goNews = useCallback((newsId?: string) => {
-    const target = newsId ? `/berita?newsId=${encodeURIComponent(newsId)}` : '/berita';
+    if (newsId) {
+      try {
+        sessionStorage.setItem('pb_landing_news_scroll_y', String(Math.max(0, window.scrollY || window.pageYOffset || 0)));
+      } catch {}
+    }
+    const target = newsId
+      ? `/?newsId=${encodeURIComponent(newsId)}&from=landing`
+      : '/berita';
     window.history.pushState({}, '', target);
     window.dispatchEvent(new PopStateEvent('popstate'));
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: 'auto' });
   }, []);
 
   const go = useCallback((path: string) => {
