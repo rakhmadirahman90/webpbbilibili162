@@ -688,17 +688,15 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           width:100%;
           max-width:100%;
           color:#fff;
-          font-size:clamp(1.35rem,5.6vw,1.9rem) !important;
-          line-height:1.2 !important;
+          font-size:clamp(1.1rem,4.6vw,1.35rem) !important;
+          line-height:1.24 !important;
           font-weight:800 !important;
-          letter-spacing:-.028em !important;
+          letter-spacing:-.012em !important;
           white-space:normal !important;
-          overflow-wrap:normal !important;
+          overflow-wrap:break-word !important;
           word-break:normal !important;
-          display:-webkit-box;
-          -webkit-box-orient:vertical;
-          -webkit-line-clamp:4;
-          overflow:hidden;
+          display:block !important;
+          overflow:visible !important;
         }
         #landing-page #landing-news .landing-featured-news-meta {
           margin-top:1rem;
@@ -723,17 +721,15 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           margin:0;
           max-width:100%;
           color:#fff;
-          font-size:clamp(.875rem,2.35vw,1.05rem) !important;
-          line-height:1.32 !important;
+          font-size:clamp(.875rem,2.15vw,1rem) !important;
+          line-height:1.35 !important;
           font-weight:800 !important;
-          letter-spacing:-.012em !important;
+          letter-spacing:-.006em !important;
           white-space:normal !important;
           overflow-wrap:break-word !important;
           word-break:normal !important;
-          display:-webkit-box;
-          -webkit-box-orient:vertical;
-          -webkit-line-clamp:2;
-          overflow:hidden;
+          display:block !important;
+          overflow:visible !important;
         }
         #landing-page #landing-news .landing-news-list-meta {
           margin-top:.55rem;
@@ -811,10 +807,11 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
 
         @media (max-width: 640px) {
           #landing-page #landing-news .landing-featured-news-title {
-            font-size:clamp(1.3rem,5.6vw,1.65rem) !important;
-            line-height:1.2 !important;
-            letter-spacing:-.018em !important;
-            -webkit-line-clamp:4;
+            font-size:clamp(1.05rem,4.5vw,1.25rem) !important;
+            line-height:1.24 !important;
+            letter-spacing:-.008em !important;
+            display:block !important;
+            overflow:visible !important;
           }
           #landing-page #landing-news .landing-featured-news-meta {
             margin-top:.75rem;
@@ -822,9 +819,11 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
             font-size:.6875rem !important;
           }
           #landing-page #landing-news .landing-news-list-title {
-            font-size:.9375rem !important;
-            line-height:1.3 !important;
-            letter-spacing:-.01em !important;
+            font-size:.875rem !important;
+            line-height:1.35 !important;
+            letter-spacing:-.004em !important;
+            display:block !important;
+            overflow:visible !important;
           }
           #landing-page #landing-news .landing-news-list-meta {
             margin-top:.4rem;
@@ -882,22 +881,6 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           #landing-page .landing-section-title,
           #landing-page .landing-section-header h2 {
             font-size:24px !important;
-          }
-        }
-        @media (max-width: 640px) {
-          #landing-page #landing-news .landing-featured-news-title {
-            font-size:clamp(1.3rem,5.6vw,1.65rem) !important;
-            line-height:1.2 !important;
-          }
-          #landing-page #landing-news .landing-news-list-title {
-            font-size:.9375rem !important;
-            line-height:1.3 !important;
-          }
-          #landing-page #landing-news .landing-featured-news-meta {
-            font-size:.6875rem !important;
-          }
-          #landing-page #landing-news .landing-news-list-meta {
-            font-size:.625rem !important;
           }
         }
 
