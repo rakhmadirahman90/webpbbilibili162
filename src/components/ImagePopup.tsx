@@ -40,8 +40,11 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
   }, []);
 
   const fetchActivePopups = useCallback(async (forceShow = false) => {
-    // Never fetch/display the landing popup on non-home routes.
-    if (activeView !== null) {
+    // Jangan tampilkan popup promosi ketika pengguna kembali dari
+    // detail Foto/Video Terbaru ke Landing Page.
+    const returningToLandingGallery = typeof window !== 'undefined' &&
+      new URLSearchParams(window.location.search).has('galleryTab');
+    if (activeView !== null || returningToLandingGallery) {
       setPopupOpen(false);
       return;
     }
@@ -135,7 +138,10 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
     requestIdRef.current += 1;
     isDismissedRef.current = false;
 
-    if (activeView === null) {
+    const returningToLandingGallery = typeof window !== 'undefined' &&
+      new URLSearchParams(window.location.search).has('galleryTab');
+
+    if (activeView === null && !returningToLandingGallery) {
       void fetchActivePopups(true);
     } else {
       setPopupOpen(false);
@@ -148,7 +154,9 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
     const channel = supabase
       .channel('landing-popup-carousel-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'konfigurasi_popup' }, () => {
-        if (activeView === null && !isOpenRef.current) void fetchActivePopups(false);
+        const returningToLandingGallery = typeof window !== 'undefined' &&
+        new URLSearchParams(window.location.search).has('galleryTab');
+      if (activeView === null && !returningToLandingGallery && !isOpenRef.current) void fetchActivePopups(false);
       })
       .subscribe();
 
@@ -159,7 +167,9 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
     };
 
     const handleUpdate = () => {
-      if (activeView === null && !isOpenRef.current) void fetchActivePopups(false);
+      const returningToLandingGallery = typeof window !== 'undefined' &&
+        new URLSearchParams(window.location.search).has('galleryTab');
+      if (activeView === null && !returningToLandingGallery && !isOpenRef.current) void fetchActivePopups(false);
     };
 
     window.addEventListener('trigger-home-popup', handleTriggerHome);
