@@ -381,52 +381,10 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
         </div>
       </section>
 
-      <section className="landing-section bg-[#08101d]">
-        <div className="mx-auto grid w-full max-w-7xl gap-5 px-5 py-14 sm:px-8 lg:grid-cols-[1.2fr_.8fr] lg:px-10">
-          <div className="relative overflow-hidden rounded-[2rem] border border-blue-400/15 bg-[radial-gradient(circle_at_80%_10%,rgba(37,99,235,.28),transparent_35%),linear-gradient(145deg,#0b1a30,#050914)] p-6 sm:p-9">
-            <div className="absolute right-[-40px] top-[-50px] h-52 w-52 rounded-full bg-blue-600/15 blur-3xl" />
-            <div className="relative">
-              <div className="text-[9px] font-black uppercase tracking-[.25em] text-blue-400">02 • Momen Klub</div>
-              <h2 className="mt-3 max-w-xl text-3xl font-black italic uppercase leading-[.95] tracking-[-.04em] sm:text-5xl">BILIBILI 162 <span className="text-blue-500">CUP I</span></h2>
-              <p className="mt-4 max-w-xl text-sm leading-6 text-slate-300">
-                Momen kompetisi, persaudaraan, dan perjuangan yang menjadi bagian dari perjalanan PB BILIBILI 162 sepanjang 2026.
-              </p>
-              <div className="mt-7 flex flex-wrap gap-2">
-                <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-[9px] font-bold text-slate-300"><CalendarDays size={13} className="text-blue-400" /> 08–12 SEP 2026</span>
-                <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-[9px] font-bold text-slate-300"><Trophy size={13} className="text-amber-400" /> 2 KATEGORI</span>
-              </div>
-              <button onClick={() => go('prestasi')} className="mt-7 inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[.16em] text-white hover:text-blue-300">Lihat Prestasi <ArrowRight size={14} /></button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-[2rem] border border-white/10 bg-[#0b1220] p-5">
-              <div className="text-4xl font-black tracking-[-.05em] text-white">2026</div>
-              <div className="mt-2 text-[9px] font-black uppercase tracking-[.18em] text-slate-500">Cerita Musim 2026</div>
-              <p className="mt-5 text-xs leading-5 text-slate-400">Latihan, turnamen, prestasi, dan kebersamaan dalam satu perjalanan.</p>
-            </div>
-            <div className="rounded-[2rem] border border-white/10 bg-[#0b1220] p-5">
-              <div className="text-4xl font-black tracking-[-.05em] text-blue-400">LIVE</div>
-              <div className="mt-2 text-[9px] font-black uppercase tracking-[.18em] text-slate-500">Data Klub</div>
-              <p className="mt-5 text-xs leading-5 text-slate-400">Profil atlet dan poin terhubung dengan data klub.</p>
-            </div>
-            <div className="col-span-2 rounded-[2rem] border border-white/10 bg-[#0b1220] p-5 sm:p-6">
-              <div className="flex items-center gap-3">
-                <div className="grid h-10 w-10 place-items-center rounded-2xl bg-blue-500/10 text-blue-400"><Zap size={18} /></div>
-                <div>
-                  <div className="text-[9px] font-black uppercase tracking-[.2em] text-blue-300">Semangat Klub</div>
-                  <div className="mt-1 text-lg font-black uppercase">Berlatih. Bertanding. Berkembang.</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <section className="landing-section mx-auto w-full max-w-7xl px-5 py-14 sm:px-8 lg:px-10">
         <div className="mb-7 flex items-end justify-between gap-4">
           <div>
-            <div className="mb-2 text-[9px] font-black uppercase tracking-[.25em] text-amber-400">03 • PERINGKAT TERATAS</div>
+            <div className="mb-2 text-[9px] font-black uppercase tracking-[.25em] text-amber-400">04 • PERINGKAT TERATAS</div>
             <h2 className="text-3xl font-black italic uppercase tracking-[-.04em] sm:text-5xl">Kejar <span className="text-amber-400">Poin.</span></h2>
           </div>
           <button onClick={() => go('peringkat')} className="hidden items-center gap-2 text-[10px] font-black uppercase tracking-[.15em] text-slate-400 hover:text-white sm:flex">Peringkat Lengkap <ChevronRight size={15} /></button>
@@ -455,21 +413,6 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           )}
         </div>
         <button onClick={() => go('peringkat')} className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 py-3 text-[10px] font-black uppercase tracking-[.16em] text-slate-300 sm:hidden">Buka Peringkat Lengkap <ArrowRight size={14} /></button>
-      </section>
-
-      <section className="mx-auto w-full max-w-7xl px-5 pb-16 sm:px-8 sm:pb-20 lg:px-10">
-        <div className="relative overflow-hidden rounded-[2.2rem] border border-blue-400/20 bg-[radial-gradient(circle_at_75%_20%,rgba(37,99,235,.28),transparent_34%),linear-gradient(120deg,#0b1c35,#07101f)] px-6 py-12 text-center sm:px-10 sm:py-16">
-          <div className="relative mx-auto max-w-2xl">
-            <div className="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-2xl border border-blue-400/20 bg-blue-500/10 text-blue-400"><Trophy size={21} /></div>
-            <div className="text-[9px] font-black uppercase tracking-[.3em] text-blue-300">04 • Gabung Bersama Kami</div>
-            <h2 className="mt-3 text-4xl font-black italic uppercase leading-[.92] tracking-[-.05em] sm:text-6xl">Ready To <span className="text-blue-500">Play?</span></h2>
-            <p className="mx-auto mt-4 max-w-lg text-sm leading-6 text-slate-300">Jadilah bagian dari perjalanan PB BILIBILI 162. Latihan bersama, bertanding dengan sportivitas, dan tumbuh sebagai keluarga.</p>
-            <div className="mt-7 flex flex-wrap justify-center gap-3">
-              <button onClick={() => go('register')} className="inline-flex min-h-12 items-center gap-3 rounded-2xl bg-blue-600 px-6 text-[10px] font-black uppercase tracking-[.16em] shadow-lg shadow-blue-600/20">Daftar Atlet <ArrowRight size={15} /></button>
-              <button onClick={() => go('jadwal')} className="inline-flex min-h-12 items-center gap-3 rounded-2xl border border-white/12 bg-white/5 px-6 text-[10px] font-black uppercase tracking-[.16em]">Jadwal Latihan</button>
-            </div>
-          </div>
-        </div>
       </section>
 
       <style>{`
