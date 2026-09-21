@@ -61,78 +61,35 @@ export default function VideoThumbnail({
 }: VideoThumbnailProps) {
   const youtubeId = getYouTubeId(src);
   const [poster, setPoster] = useState('');
-  const [posterFailed, setPosterFailed] = useState(false);
   const [videoFailed, setVideoFailed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     setPoster('');
-    setPosterFailed(false);
     setVideoFailed(false);
 
-    const direct = thumbnailUrl || (youtubeId ? `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg` : '');
-    if (direct) {
+    if (youtubeId) {
+      const url = `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
       const probe = new Image();
-      probe.onload = () => {
-        if (!cancelled) setPoster(direct);
-      };
-      probe.onerror = () => {
-        if (!cancelled) setPosterFailed(true);
-      };
+      probe.onload = () => { if (!cancelled) setPoster(url); };
+      probe.onerror = () => {};
       probe.referrerPolicy = 'no-referrer';
-      probe.src = direct;
+      probe.src = url;
       return () => { cancelled = true; probe.onload = null; probe.onerror = null; };
     }
 
-    if (!src || youtubeId) return () => { cancelled = true; };
+    // Jangan gunakan thumbnail_url lama yang bisa menunjuk ke file yang sudah
+    // tidak ada. Untuk MP4 Supabase, gunakan frame video secara langsung agar
+    // preview selalu menampilkan isi video.
+    if (thumbnailUrl && /^https?:\\/\\//i.test(thumbnailUrl)) {
+      const probe = new Image();
+      probe.onload = () => { if (!cancelled) setPoster(thumbnailUrl); };
+      probe.onerror = () => {};
+      probe.referrerPolicy = 'no-referrer';
+      probe.src = thumbnailUrl;
+    }
 
-    const video = document.createElement('video');
-    video.crossOrigin = 'anonymous';
-    video.muted = true;
-    video.playsInline = true;
-    video.preload = 'auto';
-
-    const run = async () => {
-      try {
-        await new Promise<void>((resolve, reject) => {
-          const ready = () => resolve();
-          const fail = () => reject(new Error('video-load'));
-          video.addEventListener('loadeddata', ready, { once: true });
-          video.addEventListener('error', fail, { once: true });
-          video.src = src;
-          video.load();
-        });
-
-        const duration = Number.isFinite(video.duration) && video.duration > 0 ? video.duration : 1;
-        const candidates = [0.12, 0.28, 0.45, 0.62, 0.80].map(p =>
-          Math.max(0, Math.min(duration - 0.05, duration * p))
-        );
-        const frames: { data: string; score: number }[] = [];
-        for (const time of candidates) {
-          const frame = await captureFrame(video, time);
-          if (frame) frames.push(frame);
-        }
-
-        if (!cancelled && frames.length) {
-          const best = frames.reduce((winner, current) => current.score > winner.score ? current : winner);
-          setPoster(best.data);
-        }
-      } catch {
-        // The visible video element below is the guaranteed fallback.
-      } finally {
-        video.pause();
-        video.removeAttribute('src');
-        video.load();
-      }
-    };
-
-    run();
-    return () => {
-      cancelled = true;
-      video.pause();
-      video.removeAttribute('src');
-      video.load();
-    };
+    return () => { cancelled = true; };
   }, [src, thumbnailUrl, youtubeId]);
 
   if (poster) {
@@ -144,30 +101,20 @@ export default function VideoThumbnail({
         style={{ objectPosition }}
         loading="eager"
         referrerPolicy="no-referrer"
-        onError={() => {
+        onError={(e) => {
+          e.currentTarget.style.display = 'none';
           setPoster('');
-          setPosterFailed(true);
         }}
       />
     );
   }
 
-  if (youtubeId) {
+  if (!src || videoFailed) {
     return (
-      <div className={`relative ${className}`}>
-        <img
-          src={`https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`}
-          alt={alt}
-          className="h-full w-full object-cover"
-          referrerPolicy="no-referrer"
-          onError={(e) => { e.currentTarget.style.display = 'none'; }}
-        />
+      <div className={`grid h-full w-full place-items-center bg-zinc-900 text-zinc-500 ${className}`} aria-label={alt}>
+        Video tidak dapat dimuat
       </div>
     );
-  }
-
-  if (!src || videoFailed) {
-    return <div className={`grid h-full w-full place-items-center bg-zinc-900 text-zinc-500 ${className}`} aria-label={alt}>Video tidak dapat dimuat</div>;
   }
 
   return (
@@ -182,8 +129,13 @@ export default function VideoThumbnail({
       style={{ objectPosition }}
       aria-label={alt}
       onError={() => setVideoFailed(true)}
-      onLoadedData={(event) => {
-        event.currentTarget.play().catch(() => {});
+      onLoadedMetadata={(event) => {
+        const video = event.currentTarget;
+        try {
+          const duration = Number.isFinite(video.duration) && video.duration > 0 ? video.duration : 1;
+          video.currentTime = Math.min(Math.max(duration * 0.12, 0.4), Math.max(duration - 0.05, 0.4));
+        } catch {}
+        video.play().catch(() => {});
       }}
     />
   );
