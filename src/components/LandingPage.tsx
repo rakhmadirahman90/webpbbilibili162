@@ -58,6 +58,15 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
     }
   });
   const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (!params.get('galleryTab')) return;
+    const timer = window.setTimeout(() => {
+      document.getElementById('landing-gallery')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
+    return () => window.clearTimeout(timer);
+  }, []);
+
 
   const goGalleryItem = useCallback((item?: GalleryItem) => {
     const target = item ? `/galeri?gallery=${encodeURIComponent(item.id)}&from=landing&tab=${item.type}` : '/galeri';
@@ -358,7 +367,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
         })()}
       </section>
 
-      <section className="landing-section bg-[#171717]">
+      <section id="landing-gallery" className="landing-section bg-[#171717]">
         <div className="mx-auto max-w-7xl px-4 py-10 sm:px-8 sm:py-14 lg:px-10">
           <div className="mb-5 flex items-center justify-between gap-4">
             <div>
