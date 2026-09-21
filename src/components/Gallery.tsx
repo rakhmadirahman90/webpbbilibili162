@@ -152,6 +152,8 @@ export default function Gallery() {
     return () => window.removeEventListener('keydown', handleEsc);
   }, []);
 
+  const activeMedia = useMemo(() => galleryItems.find(item => item.id === selectedId) || null, [galleryItems, selectedId]);
+
   const handleGalleryHomeBack = useCallback(() => {
     window.history.replaceState({}, '', '/');
     window.dispatchEvent(new PopStateEvent('popstate'));
@@ -195,7 +197,6 @@ export default function Gallery() {
   }, [galleryItems, activeTab, searchQuery]);
   const totalPages = Math.max(1, Math.ceil(filteredMedia.length / ITEMS_PER_PAGE));
   const paginatedMedia = useMemo(() => filteredMedia.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE), [filteredMedia, currentPage]);
-  const activeMedia = useMemo(() => galleryItems.find(item => item.id === selectedId) || null, [galleryItems, selectedId]);
   useEffect(() => { if (currentPage > totalPages) setCurrentPage(totalPages); }, [currentPage, totalPages]);
 
   const handleLike = (event: React.MouseEvent | React.KeyboardEvent, id: string) => {
