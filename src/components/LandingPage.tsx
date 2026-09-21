@@ -41,6 +41,13 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
   const [news, setNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const goNews = useCallback((newsId?: string) => {
+    const target = newsId ? `/berita?newsId=${encodeURIComponent(newsId)}` : '/berita';
+    window.history.pushState({}, '', target);
+    window.dispatchEvent(new PopStateEvent('popstate'));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
   const go = useCallback((path: string) => {
     if (onNavigate) onNavigate(path);
     else window.location.href = path === 'home' ? '/' : `/${path}`;
@@ -56,7 +63,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           supabase.from('rankings').select('pendaftaran_id,player_name,total_points,photo_url').order('total_points', { ascending: false }),
           supabase.from('atlet_stats').select('pendaftaran_id,points,total_points,seed'),
           supabase.from('v_bilibili_162_cup1_athlete_seeded').select('*'),
-          supabase.from('berita').select('id,judul,ringkasan,gambar_url,tanggal,views,comments_count:komentar(count)').order('tanggal', { ascending: false }).limit(4),
+          supabase.from('berita').select('id,judul,ringkasan,gambar_url,tanggal,views,comments_count:komentar(count)').order('tanggal', { ascending: false }).limit(7),
         ]);
 
         const players = playersRes.data || [];
@@ -142,30 +149,75 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
             <div className="mb-2 text-[9px] font-black uppercase tracking-[.25em] text-blue-400">01 • Informasi Klub</div>
             <h2 className="text-3xl font-black italic uppercase tracking-[-.04em] sm:text-5xl">Berita <span className="text-blue-500">Terbaru.</span></h2>
           </div>
-          <button onClick={() => go('berita')} className="hidden items-center gap-2 text-[10px] font-black uppercase tracking-[.15em] text-slate-400 hover:text-white sm:flex">Semua Berita <ChevronRight size={15} /></button>
+          <button onClick={() => goNews()} className="hidden items-center gap-2 text-[10px] font-black uppercase tracking-[.15em] text-slate-400 hover:text-white sm:flex">Berita Lainnya <ChevronRight size={15} /></button>
         </div>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {news.length > 0 ? news.map((item) => (
-            <button key={item.id} onClick={() => go('berita')} className="group overflow-hidden rounded-3xl border border-white/10 bg-[#0b1220] text-left transition hover:-translate-y-1 hover:border-blue-500/40">
-              <div className="aspect-[1.45] overflow-hidden bg-[#101827]">
-                {item.gambar_url ? <LazyImage src={item.gambar_url.split(/[,\s]+/)[0]} alt={item.judul} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" containerClassName="h-full w-full" width={700} /> : <div className="grid h-full place-items-center text-blue-500/40"><Trophy size={34}/></div>}
-              </div>
-              <div className="p-4">
-                <div className="text-[8px] font-black uppercase tracking-[.16em] text-blue-300">Berita PB Bilibili 162</div>
-                <h3 className="mt-2 line-clamp-2 text-sm font-black uppercase leading-tight text-white">{item.judul}</h3>
-                <p className="mt-2 line-clamp-2 text-[11px] leading-5 text-slate-400">{item.ringkasan}</p>
-                <div className="mt-4 flex items-center gap-3 text-[8px] font-bold uppercase tracking-wider text-slate-500">
-                  <span>{item.tanggal ? new Date(item.tanggal).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}) : 'Terbaru'}</span>
-                  <span className="inline-flex items-center gap-1"><Eye size={11}/> {item.views}</span>
-                  <span className="inline-flex items-center gap-1"><MessageCircle size={11}/> {item.comments_count}</span>
-                </div>
-              </div>
-            </button>
-          )) : (
-            <div className="sm:col-span-2 lg:col-span-4 rounded-3xl border border-white/10 bg-[#0b1220] px-5 py-12 text-center text-[10px] font-black uppercase tracking-[.2em] text-slate-500">Belum ada berita terbaru.</div>
-          )}
-        </div>
-        <button onClick={() => go('berita')} className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 py-3 text-[10px] font-black uppercase tracking-[.16em] text-slate-300 sm:hidden">Lihat Semua Berita <ArrowRight size={14} /></button>
+
+        {news.length > 0 ? (
+          <div className="grid gap-4 lg:grid-cols-[1.18fr_.82fr]">
+            {(() => {
+              const featured = news[0];
+              const others = news.slice(1);
+              const image = featured.gambar_url.split(/[,\s]+/)[0];
+              return (
+                <>
+                  <button
+                    onClick={() => goNews(featured.id)}
+                    className="group relative min-h-[360px] overflow-hidden rounded-[2rem] border border-white/10 bg-[#0b1220] text-left shadow-2xl sm:min-h-[460px]"
+                  >
+                    {image ? (
+                      <LazyImage src={image} alt={featured.judul} className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105" containerClassName="absolute inset-0 h-full w-full" width={1100} />
+                    ) : <div className="absolute inset-0 bg-[#111827]" />}
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#020617] via-[#020617]/55 to-black/10" />
+                    <div className="absolute inset-x-0 bottom-0 p-5 sm:p-7">
+                      <div className="mb-3 inline-flex rounded-full bg-blue-600 px-3 py-1.5 text-[8px] font-black uppercase tracking-[.18em] text-white">Berita Terbaru</div>
+                      <h3 className="max-w-3xl text-2xl font-black leading-tight text-white sm:text-4xl">{featured.judul}</h3>
+                      <p className="mt-3 line-clamp-2 max-w-2xl text-xs leading-5 text-slate-200 sm:text-sm">{featured.ringkasan}</p>
+                      <div className="mt-4 flex flex-wrap items-center gap-3 text-[8px] font-bold uppercase tracking-wider text-slate-300">
+                        <span>{featured.tanggal ? new Date(featured.tanggal).toLocaleDateString('id-ID',{weekday:'long',day:'2-digit',month:'short',year:'numeric'}) : 'Terbaru'}</span>
+                        <span className="inline-flex items-center gap-1"><Eye size={11}/> {featured.views}</span>
+                        <span className="inline-flex items-center gap-1"><MessageCircle size={11}/> {featured.comments_count}</span>
+                      </div>
+                    </div>
+                  </button>
+
+                  <div className="overflow-hidden rounded-[2rem] border border-white/10 bg-[#0b1220]">
+                    <div className="border-b border-white/10 px-5 py-4">
+                      <div className="text-[9px] font-black uppercase tracking-[.2em] text-blue-300">Berita Lainnya</div>
+                    </div>
+                    <div className="divide-y divide-white/10">
+                      {others.map((item) => {
+                        const itemImage = item.gambar_url.split(/[,\s]+/)[0];
+                        return (
+                          <button key={item.id} onClick={() => goNews(item.id)} className="group flex w-full gap-3 p-3.5 text-left transition hover:bg-white/[.04] sm:p-4">
+                            <div className="h-[82px] w-[112px] shrink-0 overflow-hidden rounded-2xl bg-slate-800 sm:h-[92px] sm:w-[128px]">
+                              {itemImage ? <LazyImage src={itemImage} alt={item.judul} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" containerClassName="h-full w-full" width={320} /> : null}
+                            </div>
+                            <div className="min-w-0 py-0.5">
+                              <h3 className="line-clamp-2 text-sm font-black leading-tight text-white group-hover:text-blue-300">{item.judul}</h3>
+                              <div className="mt-2 text-[8px] font-bold uppercase tracking-wider text-slate-500">
+                                {item.tanggal ? new Date(item.tanggal).toLocaleDateString('id-ID',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}) : 'Terbaru'}
+                              </div>
+                              <div className="mt-1 flex items-center gap-2 text-[8px] font-bold text-slate-600">
+                                <span className="inline-flex items-center gap-1"><Eye size={10}/> {item.views}</span>
+                                <span className="inline-flex items-center gap-1"><MessageCircle size={10}/> {item.comments_count}</span>
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
+          </div>
+        ) : (
+          <div className="rounded-[2rem] border border-white/10 bg-[#0b1220] px-5 py-14 text-center text-[10px] font-black uppercase tracking-[.2em] text-slate-500">Belum ada berita terbaru.</div>
+        )}
+
+        <button onClick={() => goNews()} className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 py-3.5 text-[10px] font-black uppercase tracking-[.16em] text-white shadow-lg shadow-blue-600/15 sm:hidden">
+          Berita Lainnya / Selengkapnya <ArrowRight size={14} />
+        </button>
       </section>
 
       <section className="landing-section mx-auto w-full max-w-7xl px-5 py-10 sm:px-8 sm:py-14 lg:px-10">
