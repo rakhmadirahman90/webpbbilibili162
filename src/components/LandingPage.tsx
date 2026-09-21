@@ -61,10 +61,23 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (!params.get('galleryTab')) return;
-    const timer = window.setTimeout(() => {
-      document.getElementById('landing-gallery')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 80);
-    return () => window.clearTimeout(timer);
+
+    let frame = 0;
+    let attempts = 0;
+    const scrollToGallery = () => {
+      const target = document.getElementById('landing-gallery');
+      if (target) {
+        // Pastikan kembali tepat ke kartu Foto/Video Terbaru di Landing Page,
+        // bukan ke daftar Galeri dan bukan ke bagian atas halaman.
+        target.scrollIntoView({ behavior: 'auto', block: 'start' });
+        return;
+      }
+      attempts += 1;
+      if (attempts < 30) frame = window.requestAnimationFrame(scrollToGallery);
+    };
+
+    frame = window.requestAnimationFrame(scrollToGallery);
+    return () => window.cancelAnimationFrame(frame);
   }, []);
 
 
