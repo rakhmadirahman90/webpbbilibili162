@@ -165,12 +165,26 @@ export default function PlayerProfileModal({ player, globalRank, onClose }: Prop
 
       if (profileRes.status === 'fulfilled') {
         let mergedProfile = profileRes.value.data || null;
-        if (mergedProfile?.bilibili_cup1_photo_path) {
-          const { data: signed } = await supabase.storage
-            .from('turnamen-dokumen')
-            .createSignedUrl(mergedProfile.bilibili_cup1_photo_path, 60 * 60);
-          if (signed?.signedUrl) {
-            mergedProfile = { ...mergedProfile, foto_url: signed.signedUrl };
+        if (mergedProfile) {
+          // foto_url adalah foto profil/master atlet terbaru dan harus selalu menjadi
+          // sumber utama. Foto CUP I hanya fallback jika foto profil kosong.
+          if (!String(mergedProfile.foto_url || '').trim() && mergedProfile.bilibili_cup1_photo_path) {
+            const { data: signed } = await supabase.storage
+              .from('turnamen-dokumen')
+              .createSignedUrl(mergedProfile.bilibili_cup1_photo_path, 60 * 60);
+            if (signed?.signedUrl) {
+              mergedProfile = { ...mergedProfile, foto_url: signed.signedUrl };
+            }
+          }
+
+          // Bust browser/CDN cache when the profile record was updated.
+          const currentPhoto = String(mergedProfile.foto_url || '').trim();
+          if (currentPhoto && mergedProfile.updated_at) {
+            const separator = currentPhoto.includes('?') ? '&' : '?';
+            mergedProfile = {
+              ...mergedProfile,
+              foto_url: currentPhoto + separator + 'v=' + encodeURIComponent(String(mergedProfile.updated_at)),
+            };
           }
         }
         setProfile(mergedProfile);
