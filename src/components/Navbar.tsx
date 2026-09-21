@@ -39,6 +39,8 @@ export const DEFAULT_NAV_ITEMS = [
 ];
 
 export const ATLET_DEFAULT_SUBMENUS = DEFAULT_NAV_ITEMS.filter(i => i.parent_id === 'atlet');
+export const ABOUT_DEFAULT_SUBMENUS = DEFAULT_NAV_ITEMS.filter(i => i.parent_id === 'about');
+export const SAMBUTAN_DEFAULT_SUBMENU = { id: 'sambutan-ketua', label: 'Sambutan Ketua', path: 'sambutan-ketua', type: 'link', parent_id: 'about', order_index: 6, is_active: true };
 export const isTopLevelMenuItem = (item: any) => !!item && (!item.parent_id || item.parent_id === 'none' || item.parent_id === '');
 
 const normalizeNavigationPath = (value = '') => {
@@ -58,8 +60,21 @@ const ensureCanonicalNavigation = (items: any[]) => {
     const key = `${String(item.parent_id || '')}|${normalizeNavigationPath(item.path)}|${String(item.label).trim().toLowerCase()}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    result.push({ ...item });
+    const normalizedItem = { ...item };
+    const itemPath = normalizeNavigationPath(normalizedItem.path || '');
+    if (itemPath === 'sambutan' || itemPath === 'sambutan-ketua') {
+      normalizedItem.id = normalizedItem.id || SAMBUTAN_DEFAULT_SUBMENU.id;
+      normalizedItem.label = 'Sambutan Ketua';
+      normalizedItem.path = 'sambutan-ketua';
+      normalizedItem.type = 'link';
+      normalizedItem.parent_id = 'about';
+      normalizedItem.order_index = 6;
+      normalizedItem.is_active = normalizedItem.is_active !== false;
+    }
+    result.push(normalizedItem);
   }
+  const hasSambutan = result.some(i => i.parent_id === 'about' && normalizeNavigationPath(i.path) === 'sambutan-ketua');
+  if (!hasSambutan) result.push({ ...SAMBUTAN_DEFAULT_SUBMENU });
   const hasHome = result.some(i => isTopLevelMenuItem(i) && normalizeNavigationPath(i.path) === 'home');
   if (!hasHome) result.unshift(DEFAULT_NAV_ITEMS[0]);
   return result.sort((a, b) => (Number(a.order_index) || 0) - (Number(b.order_index) || 0));
@@ -240,6 +255,10 @@ export default function Navbar({ onNavigate }: NavbarProps) {
       return merged.sort((x: any, y: any) => (Number(x.order_index) || 0) - (Number(y.order_index) || 0));
     }
 
+    const isAbout = requested === 'about' ||
+      String(parent?.path || '').toLowerCase() === 'about' ||
+      String(parent?.label || '').trim().toLowerCase() === 'tentang kami';
+
     const list = navData
       .filter((item: any) => item?.is_active !== false && item?.parent_id)
       .filter((item: any) => {
@@ -251,7 +270,15 @@ export default function Navbar({ onNavigate }: NavbarProps) {
       })
       .sort((x: any, y: any) => (Number(x.order_index) || 0) - (Number(y.order_index) || 0));
 
-    return list.filter((item: any) => {
+    const mergedList = [...list];
+    if (isAbout) {
+      const key = (item: any) => normalizeNavigationPath(item?.path || '') || String(item?.label || '').trim().toLowerCase();
+      for (const fallback of [...ABOUT_DEFAULT_SUBMENUS, SAMBUTAN_DEFAULT_SUBMENU]) {
+        if (!mergedList.some((item: any) => key(item) === key(fallback))) mergedList.push({ ...fallback });
+      }
+    }
+
+    return mergedList.filter((item: any) => {
       const p = normalizeNavigationPath(item?.path || '');
       const l = String(item?.label || '').toLowerCase().trim();
       return !(p.includes('seeded-peserta') || l.includes('seeded peserta') || l.includes('daftar seeded'));
