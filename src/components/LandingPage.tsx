@@ -1232,6 +1232,26 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           }
         }
 
+        /* Final agenda/footer spacing: keep the landing page compact like the mobile reference. */
+        #landing-page #agenda-pb162.agenda-landing-compact {
+          margin-bottom:0 !important;
+          padding-bottom:2px !important;
+        }
+        #landing-page #agenda-pb162.agenda-landing-compact > div {
+          padding-bottom:2px !important;
+        }
+        #landing-page #agenda-pb162.agenda-landing-compact > div > div:last-child {
+          margin-bottom:0 !important;
+        }
+        @media (min-width:641px) {
+          #landing-page #agenda-pb162.agenda-landing-compact {
+            padding-bottom:6px !important;
+          }
+          #landing-page #agenda-pb162.agenda-landing-compact > div {
+            padding-bottom:6px !important;
+          }
+        }
+
         @media (prefers-reduced-motion: reduce) {
           #landing-page *, #landing-page *::before, #landing-page *::after { animation-duration:.01ms!important; transition-duration:.01ms!important; }
         }
