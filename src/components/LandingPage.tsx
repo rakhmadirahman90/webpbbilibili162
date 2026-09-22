@@ -1232,23 +1232,24 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           }
         }
 
-        /* Final agenda/footer spacing: keep the landing page compact like the mobile reference. */
+        /* Final agenda/footer spacing: pull the footer directly after the agenda cards. */
         #landing-page #agenda-pb162.agenda-landing-compact {
-          margin-bottom:0 !important;
-          padding-bottom:2px !important;
+          margin-bottom:-24px !important;
+          padding-bottom:0 !important;
         }
         #landing-page #agenda-pb162.agenda-landing-compact > div {
-          padding-bottom:2px !important;
+          padding-bottom:0 !important;
         }
         #landing-page #agenda-pb162.agenda-landing-compact > div > div:last-child {
           margin-bottom:0 !important;
         }
         @media (min-width:641px) {
           #landing-page #agenda-pb162.agenda-landing-compact {
-            padding-bottom:6px !important;
+            margin-bottom:-14px !important;
+            padding-bottom:0 !important;
           }
           #landing-page #agenda-pb162.agenda-landing-compact > div {
-            padding-bottom:6px !important;
+            padding-bottom:0 !important;
           }
         }
 
