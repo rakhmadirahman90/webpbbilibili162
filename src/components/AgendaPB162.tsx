@@ -113,7 +113,7 @@ export default function AgendaPB162({ compact = false }: { compact?: boolean }) 
             type="button"
             onClick={() => setSelected(item)}
             className={compact
-              ? "group relative flex min-h-[166px] w-full min-w-0 flex-col items-stretch gap-2 rounded-xl border border-white/10 bg-[#0b1224] p-2 text-left shadow-lg transition hover:-translate-y-0.5 hover:border-blue-500/40 hover:bg-[#0d1730] focus:outline-none focus:ring-2 focus:ring-blue-500/50 sm:min-h-[150px] sm:flex-row sm:items-center sm:gap-3 sm:p-3"
+              ? "group relative flex min-h-[148px] w-full min-w-0 flex-col items-stretch gap-2 rounded-xl border border-white/10 bg-[#0b1224] p-2 text-left shadow-lg transition hover:-translate-y-0.5 hover:border-blue-500/40 hover:bg-[#0d1730] focus:outline-none focus:ring-2 focus:ring-blue-500/50 sm:min-h-[142px] sm:flex-row sm:items-center sm:gap-3 sm:p-3"
               : "group flex w-full min-w-0 items-center gap-3 rounded-xl border border-white/10 bg-[#0b1224] p-2.5 text-left shadow-lg transition hover:-translate-y-0.5 hover:border-blue-500/40 hover:bg-[#0d1730] focus:outline-none focus:ring-2 focus:ring-blue-500/50 sm:gap-4 sm:p-3"}
           >
             <div className={compact ? "hidden h-16 w-20 shrink-0 overflow-hidden rounded-xl bg-slate-900 sm:block sm:h-16 sm:w-20" : "hidden h-16 w-20 shrink-0 overflow-hidden rounded-xl bg-slate-900 sm:block sm:h-16 sm:w-20"}>
@@ -130,7 +130,7 @@ export default function AgendaPB162({ compact = false }: { compact?: boolean }) 
                   <span className="rounded-full border border-blue-500/20 bg-blue-500/10 px-1.5 py-0.5 text-[7px] font-black uppercase tracking-wider text-blue-300">{item.category || 'Kegiatan Klub'}</span>
                   <span className={`rounded-full px-1.5 py-0.5 text-[7px] font-bold ${item.status === 'Selesai' ? 'bg-slate-800 text-slate-400' : 'bg-emerald-500/10 text-emerald-300'}`}>{item.status || 'Terjadwal'}</span>
                 </div>
-                <h3 className="line-clamp-2 text-[9px] font-black uppercase italic leading-tight text-white sm:text-sm">{item.title}</h3>
+                <h3 className="line-clamp-2 text-[9.5px] font-black uppercase italic leading-tight text-white sm:text-sm">{item.title}</h3>
                 <div className="mt-1 flex flex-col gap-0.5 text-[7.5px] text-slate-400 sm:flex-row sm:flex-wrap sm:gap-x-2 sm:text-[10px]">
                   <span className="inline-flex items-center gap-1.5"><Clock3 size={12} className="text-amber-400" />{timeLabel(item)}</span>
                   {item.location && <span className="inline-flex min-w-0 items-center gap-1.5"><MapPin size={12} className="shrink-0 text-rose-400" /><span className="truncate">{item.location}</span></span>}
