@@ -46,7 +46,29 @@ type LandingCache = {
   galleryItems: GalleryItem[];
 };
 
-let landingCache: LandingCache | null = null;
+const LANDING_CACHE_KEY = 'pb_landing_data_v3';
+
+function readLandingCache(): LandingCache | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.localStorage.getItem(LANDING_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || !Array.isArray(parsed.news) || !Array.isArray(parsed.galleryItems) || !Array.isArray(parsed.allAthletes)) return null;
+    return parsed as LandingCache;
+  } catch {
+    return null;
+  }
+}
+
+function writeLandingCache(value: LandingCache) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(LANDING_CACHE_KEY, JSON.stringify(value));
+  } catch {}
+}
+
+let landingCache: LandingCache | null = readLandingCache();
 
 const FALLBACK_ATHLETES: Athlete[] = [
   { id: 'fallback-1', name: 'PB BILIBILI 162', photo: '', points: 0, seed: '—', category: 'ATLET', rank: 1 },
@@ -112,6 +134,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
     }
   });
   const [loading, setLoading] = useState(() => !landingCache);
+  const [loadError, setLoadError] = useState(false);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (!params.get('galleryTab')) return;
@@ -287,50 +310,6 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
         const statsMap = new Map(stats.map((row: any) => [String(row.pendaftaran_id), row]));
         const cup1Map = new Map(cup1Rows.map((row: any) => [String(row.pendaftaran_id), row]));
 
-        const tournamentPhotoById = new Map<string, string>();
-        await Promise.all(players.map(async (player: any) => {
-          const path = player.bilibili_cup1_photo_path || cup1Map.get(String(player.id))?.photo_path;
-          if (!path) return;
-          const { data } = await supabase.storage.from('turnamen-dokumen').createSignedUrl(path, 60 * 60);
-          if (data?.signedUrl) tournamentPhotoById.set(String(player.id), data.signedUrl);
-        }));
-
-        const merged = players.map((player: any) => {
-          const ranking = rankings.find((row: any) =>
-            (row.pendaftaran_id && String(row.pendaftaran_id) === String(player.id)) ||
-            String(row.player_name || '').trim().toLowerCase() === String(player.nama || '').trim().toLowerCase()
-          );
-          const stat = statsMap.get(String(player.id));
-          const points = stat
-            ? Number(stat.points || 0) + Number(stat.total_points || 0)
-            : Number(ranking?.total_points || 0);
-
-          return {
-            id: String(player.id),
-            name: player.nama || ranking?.player_name || 'Atlet PB Bilibili 162',
-            photo: (() => {
-              const currentPhoto = String(player.foto_url || '').trim();
-              const tournamentPhoto = tournamentPhotoById.get(String(player.id)) || '';
-              const rankingPhoto = String(ranking?.photo_url || '').trim();
-              const base = currentPhoto || tournamentPhoto || rankingPhoto;
-              if (!base) return '';
-              // Bust browser/CDN cache when the athlete record has been updated.
-              if (currentPhoto && player.updated_at) {
-                const separator = base.includes('?') ? '&' : '?';
-                return base + separator + 'v=' + encodeURIComponent(String(player.updated_at));
-              }
-              return base;
-            })(),
-            points,
-            seed: cup1Map.get(String(player.id))?.seeded_quality || stat?.seed || 'D',
-            category: String(player.kategori || player.kategori_atlet || 'SENIOR').toUpperCase().includes('MUDA') ||
-              ['U-9','U-11','U-13','U-15','U-17','U-19'].some((u) => String(player.kategori || player.kategori_atlet || '').toUpperCase().includes(u))
-              ? 'MUDA' : 'SENIOR',
-            rank: 0,
-          };
-        });
-
-        const sorted = merged.sort((a, b) => b.points - a.points).map((athlete, index) => ({ ...athlete, rank: index + 1 }));
         const newsRows = newsRes.data || [];
         const galleryRows = galleryRes.data || [];
         const formattedGallery = galleryRows.map((item: any) => ({
@@ -351,18 +330,84 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           comments_count: Array.isArray(item.comments_count) ? Number(item.comments_count[0]?.count || 0) : 0,
         }));
 
-        if (!mounted) return;
-        const nextCache: LandingCache = {
-          allAthletes: sorted,
-          athletes: sorted.slice(0, 4),
-          news: formattedNews,
-          galleryItems: formattedGallery,
+        const publish = (tournamentPhotoById: Map<string, string>) => {
+          const merged = players.map((player: any) => {
+            const ranking = rankings.find((row: any) =>
+              (row.pendaftaran_id && String(row.pendaftaran_id) === String(player.id)) ||
+              String(row.player_name || '').trim().toLowerCase() === String(player.nama || '').trim().toLowerCase()
+            );
+            const stat = statsMap.get(String(player.id));
+            const points = stat
+              ? Number(stat.points || 0) + Number(stat.total_points || 0)
+              : Number(ranking?.total_points || 0);
+
+            return {
+              id: String(player.id),
+              name: player.nama || ranking?.player_name || 'Atlet PB Bilibili 162',
+              photo: (() => {
+                const currentPhoto = String(player.foto_url || '').trim();
+                const tournamentPhoto = tournamentPhotoById.get(String(player.id)) || '';
+                const rankingPhoto = String(ranking?.photo_url || '').trim();
+                const base = currentPhoto || tournamentPhoto || rankingPhoto;
+                if (!base) return '';
+                if (currentPhoto && player.updated_at) {
+                  const separator = base.includes('?') ? '&' : '?';
+                  return base + separator + 'v=' + encodeURIComponent(String(player.updated_at));
+                }
+                return base;
+              })(),
+              points,
+              seed: cup1Map.get(String(player.id))?.seeded_quality || stat?.seed || 'D',
+              category: String(player.kategori || player.kategori_atlet || 'SENIOR').toUpperCase().includes('MUDA') ||
+                ['U-9','U-11','U-13','U-15','U-17','U-19'].some((u) => String(player.kategori || player.kategori_atlet || '').toUpperCase().includes(u))
+                ? 'MUDA' : 'SENIOR',
+              rank: 0,
+            };
+          });
+
+          const sorted = merged.sort((a, b) => b.points - a.points).map((athlete, index) => ({ ...athlete, rank: index + 1 }));
+          const nextCache: LandingCache = {
+            allAthletes: sorted,
+            athletes: sorted.slice(0, 4),
+            news: formattedNews,
+            galleryItems: formattedGallery,
+          };
+
+          landingCache = nextCache;
+          writeLandingCache(nextCache);
+          if (!mounted) return;
+          setAllAthletes(nextCache.allAthletes);
+          setAthletes(nextCache.athletes);
+          setNews(nextCache.news);
+          setGalleryItems(nextCache.galleryItems);
+          setLoadError(false);
+          setLoading(false);
         };
-        landingCache = nextCache;
-        setAllAthletes(nextCache.allAthletes);
-        setAthletes(nextCache.athletes);
-        setNews(nextCache.news);
-        setGalleryItems(nextCache.galleryItems);
+
+        // Publish the database data immediately. Do NOT wait for private storage
+        // signed-photo requests; those are visual enhancements and can finish later.
+        publish(new Map());
+
+        // Enrich athlete photos in the background without blocking news, gallery,
+        // agenda, or the first meaningful landing render.
+        void Promise.all(players.map(async (player: any) => {
+          const path = player.bilibili_cup1_photo_path || cup1Map.get(String(player.id))?.photo_path;
+          if (!path) return null;
+          const { data } = await supabase.storage.from('turnamen-dokumen').createSignedUrl(path, 60 * 60);
+          return data?.signedUrl ? [String(player.id), data.signedUrl] as const : null;
+        })).then((entries) => {
+          if (!mounted) return;
+          const tournamentPhotoById = new Map<string, string>();
+          entries.forEach((entry) => {
+            if (entry) tournamentPhotoById.set(entry[0], entry[1]);
+          });
+          publish(tournamentPhotoById);
+        }).catch(() => {});
+
+        const hasCoreError = [playersRes, rankingsRes, statsRes, cup1Res, newsRes, galleryRes].some((res: any) => res.error);
+        if (hasCoreError && !formattedNews.length && !formattedGallery.length && !players.length) {
+          setLoadError(true);
+        }
       } catch (error) {
         console.warn('[LandingPage] homepage data sync skipped:', error);
         if (mounted && !landingCache) {
@@ -370,9 +415,10 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           setAthletes([]);
           setNews([]);
           setGalleryItems([]);
+          setLoadError(true);
         }
       } finally {
-        if (mounted) setLoading(false);
+        if (mounted && landingCache) setLoading(false);
       }
     };
 
@@ -391,10 +437,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
     };
   }, []);
 
-  const spotlight = useMemo(() => {
-    if (athletes.length > 0) return athletes;
-    return FALLBACK_ATHLETES;
-  }, [athletes]);
+  const spotlight = useMemo(() => athletes, [athletes]);
 
   return (
     <div id="landing-page" className="landing-page relative overflow-hidden bg-[#050914] text-white font-sans">
@@ -496,8 +539,16 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
               );
             })()}
           </div>
+        ) : loading ? (
+          <div className="rounded-[2rem] border border-white/10 bg-[#0b1220] p-5 sm:p-8">
+            <div className="h-48 sm:h-72 animate-pulse rounded-2xl bg-white/[.05]" />
+            <div className="mt-4 h-5 w-3/4 animate-pulse rounded bg-white/[.06]" />
+            <div className="mt-3 h-3 w-1/2 animate-pulse rounded bg-white/[.05]" />
+          </div>
         ) : (
-          <div className="rounded-[2rem] border border-white/10 bg-[#0b1220] px-5 py-14 text-center text-[11px] font-black uppercase tracking-[.16em] text-slate-500">Belum ada berita terbaru.</div>
+          <div className="rounded-[2rem] border border-white/10 bg-[#0b1220] px-5 py-14 text-center text-[11px] font-black uppercase tracking-[.16em] text-slate-500">
+            {loadError ? 'Data berita sedang disinkronkan. Silakan tunggu sebentar.' : 'Belum ada berita terbaru.'}
+          </div>
         )}
       </section>
 
@@ -517,9 +568,15 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           const featured = roster[Math.min(featuredAthleteIndex, Math.max(roster.length - 1, 0))];
           const gallery = roster.slice(0, 6);
           if (!featured) {
-            return (
+            return loading ? (
+              <div className="overflow-hidden rounded-[1.25rem] sm:rounded-[2rem] border border-white/10 bg-[#090d14] p-4 sm:p-7">
+                <div className="aspect-[1.15/1] sm:aspect-[2.1/1] animate-pulse rounded-2xl bg-white/[.05]" />
+                <div className="mt-5 h-6 w-1/2 animate-pulse rounded bg-white/[.06]" />
+                <div className="mt-3 h-3 w-1/3 animate-pulse rounded bg-white/[.05]" />
+              </div>
+            ) : (
               <div className="rounded-[2rem] border border-white/10 bg-[#0b1220] px-5 py-14 text-center text-[11px] font-black uppercase tracking-[.16em] text-slate-500">
-                Data atlet sedang disinkronkan.
+                {loadError ? 'Data atlet sedang disinkronkan.' : 'Belum ada data atlet.'}
               </div>
             );
           }
@@ -652,9 +709,17 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
                   {selected.description && <p className="mt-1 line-clamp-2 text-[12px] leading-[1.5] text-slate-400">{selected.description}</p>}
                 </div>
               </button>
+            ) : loading ? (
+              <div className="overflow-hidden rounded-xl bg-black">
+                <div className="aspect-[16/9] animate-pulse bg-white/[.05]" />
+                <div className="p-4">
+                  <div className="h-3 w-24 animate-pulse rounded bg-white/[.06]" />
+                  <div className="mt-3 h-5 w-2/3 animate-pulse rounded bg-white/[.06]" />
+                </div>
+              </div>
             ) : (
               <div className="rounded-xl bg-black px-5 py-16 text-center text-sm font-semibold text-slate-500">
-                {isVideo ? 'Belum ada video terbaru.' : 'Belum ada foto terbaru.'}
+                {loadError ? 'Data galeri sedang disinkronkan.' : (isVideo ? 'Belum ada video terbaru.' : 'Belum ada foto terbaru.')}
               </div>
             );
           })()}
