@@ -112,14 +112,14 @@ export default function AgendaPB162({ compact = false }: { compact?: boolean }) 
             type="button"
             onClick={() => setSelected(item)}
             className={compact
-              ? "group flex min-h-[138px] w-full items-center gap-2 rounded-xl border border-white/10 bg-[#0b1224] p-2 text-left shadow-lg transition hover:-translate-y-0.5 hover:border-blue-500/40 hover:bg-[#0d1730] focus:outline-none focus:ring-2 focus:ring-blue-500/50 sm:min-h-[128px] sm:gap-3 sm:p-3"
+              ? "group flex min-h-[132px] w-full items-center gap-1.5 rounded-xl border border-white/10 bg-[#0b1224] p-1.5 text-left shadow-lg transition hover:-translate-y-0.5 hover:border-blue-500/40 hover:bg-[#0d1730] focus:outline-none focus:ring-2 focus:ring-blue-500/50 sm:min-h-[128px] sm:gap-3 sm:p-3"
               : "group flex w-full items-center gap-3 rounded-xl border border-white/10 bg-[#0b1224] p-2.5 text-left shadow-lg transition hover:-translate-y-0.5 hover:border-blue-500/40 hover:bg-[#0d1730] focus:outline-none focus:ring-2 focus:ring-blue-500/50 sm:gap-4 sm:p-3"}
           >
             <div className="hidden h-16 w-20 shrink-0 overflow-hidden rounded-xl bg-slate-900 sm:block sm:h-16 sm:w-20">
               {item.image_url ? <img src={item.image_url} alt="" loading="lazy" className="h-full w-full object-cover transition duration-500 group-hover:scale-105" /> : <div className="flex h-full w-full items-center justify-center"><CalendarDays size={26} className="text-blue-500/40" /></div>}
             </div>
-            <div className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3">
-              <div className="w-11 shrink-0 rounded-lg border border-blue-500/20 bg-blue-500/10 px-1 py-1.5 text-center sm:w-14">
+            <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-3">
+              <div className="w-10 shrink-0 rounded-lg border border-blue-500/20 bg-blue-500/10 px-1 py-1.5 text-center sm:w-14">
                 <div className="text-[9px] font-black uppercase tracking-wider text-blue-300">{new Intl.DateTimeFormat('id-ID', { month: 'short' }).format(new Date(`${item.event_date}T00:00:00`))}</div>
                 <div className="text-[17px] font-black leading-none text-white sm:text-xl">{item.event_date.slice(8, 10)}</div>
                 <div className="mt-1 text-[8px] font-bold text-slate-500">{item.event_date.slice(0, 4)}</div>
@@ -129,8 +129,8 @@ export default function AgendaPB162({ compact = false }: { compact?: boolean }) 
                   <span className="rounded-full border border-blue-500/20 bg-blue-500/10 px-1.5 py-0.5 text-[7px] font-black uppercase tracking-wider text-blue-300">{item.category || 'Kegiatan Klub'}</span>
                   <span className={`rounded-full px-1.5 py-0.5 text-[7px] font-bold ${item.status === 'Selesai' ? 'bg-slate-800 text-slate-400' : 'bg-emerald-500/10 text-emerald-300'}`}>{item.status || 'Terjadwal'}</span>
                 </div>
-                <h3 className="line-clamp-2 text-[10px] font-black uppercase italic leading-tight text-white sm:text-sm">{item.title}</h3>
-                <div className="mt-1 flex flex-col gap-0.5 text-[8px] text-slate-400 sm:flex-row sm:flex-wrap sm:gap-x-2 sm:text-[10px]">
+                <h3 className="line-clamp-2 text-[9px] font-black uppercase italic leading-tight text-white sm:text-sm">{item.title}</h3>
+                <div className="mt-1 flex flex-col gap-0.5 text-[7.5px] text-slate-400 sm:flex-row sm:flex-wrap sm:gap-x-2 sm:text-[10px]">
                   <span className="inline-flex items-center gap-1.5"><Clock3 size={12} className="text-amber-400" />{timeLabel(item)}</span>
                   {item.location && <span className="inline-flex min-w-0 items-center gap-1.5"><MapPin size={12} className="shrink-0 text-rose-400" /><span className="truncate">{item.location}</span></span>}
                 </div>
