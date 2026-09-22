@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, memo } from 'react';
+import React, { useState, useEffect, useCallback, memo, useRef } from 'react';
 import { Globe, Home, Search, ChevronDown, Menu, X, MapPin, UserPlus, FileText, Trophy, BrainCircuit, Youtube, Instagram, Facebook, Twitter, Radio, LogIn, LayoutDashboard, LogOut, Timer, HelpCircle, Info, Users, Award, Image as ImageIcon, Building2, Target, Shield, Newspaper, Sparkles, CreditCard } from 'lucide-react';
 import { supabase, warmupRouteData } from '../supabase';
 import { useNavigate } from 'react-router-dom';
@@ -162,6 +162,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
   const [mobileOpenMenu, setMobileOpenMenu] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileSearch, setMobileSearch] = useState('');
+  const mobileSearchInputRef = useRef<HTMLInputElement | null>(null);
 
   const syncSession = useCallback(async () => {
     try {
@@ -387,7 +388,21 @@ export default function Navbar({ onNavigate }: NavbarProps) {
           </div>})}
           {session ? <><button type="button" onClick={() => navigate('/admin/dashboard')} className="px-3 py-2 rounded-full bg-emerald-600 text-white text-[10px] font-bold uppercase"><LayoutDashboard size={13} className="inline mr-1" />Dashboard</button><button type="button" onClick={logout} className="p-2 rounded-full bg-red-500/10 text-red-300"><LogOut size={15}/></button></> : <button type="button" onClick={() => navigate('/login')} className="px-3 py-2 rounded-full bg-blue-600 text-white text-[10px] font-bold uppercase"><LogIn size={13} className="inline mr-1"/>Login</button>}
         </div>
-        <button id="mobile-sidebar-toggle-btn" type="button" onClick={() => { setMobileOpen(v => { const next = !v; if (!next) setMobileOpenMenu(null); return next; }); }} aria-label={mobileOpen ? 'Tutup menu navigasi' : 'Buka menu navigasi'} aria-expanded={mobileOpen} style={{display:"flex",visibility:"visible",opacity:1}} className="lg:hidden ml-auto w-11 h-11 shrink-0 rounded-2xl bg-slate-800/90 border border-white/15 flex items-center justify-center text-slate-200 shadow-lg active:scale-95 transition-transform touch-manipulation"><span className="flex flex-col gap-1.5 pointer-events-none"><i className={`block w-5 h-0.5 bg-blue-300 rounded ${mobileOpen ? 'rotate-45 translate-y-2' : ''}`} /><i className={`block w-4 h-0.5 bg-slate-300 rounded ml-auto ${mobileOpen ? 'opacity-0' : ''}`} /><i className={`block w-5 h-0.5 bg-blue-300 rounded ${mobileOpen ? '-rotate-45 -translate-y-2' : ''}`} /></span></button>
+        <div className="lg:hidden ml-auto flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            aria-label="Cari menu"
+            onClick={() => {
+              setMobileOpen(true);
+              setMobileOpenMenu(null);
+              window.setTimeout(() => mobileSearchInputRef.current?.focus(), 80);
+            }}
+            className="w-11 h-11 shrink-0 rounded-2xl bg-slate-800/90 border border-white/15 flex items-center justify-center text-slate-200 shadow-lg active:scale-95 transition-transform touch-manipulation"
+          >
+            <Search size={21} className="text-blue-300" />
+          </button>
+          <button id="mobile-sidebar-toggle-btn" type="button" onClick={() => { setMobileOpen(v => { const next = !v; if (!next) setMobileOpenMenu(null); return next; }); }} aria-label={mobileOpen ? 'Tutup menu navigasi' : 'Buka menu navigasi'} aria-expanded={mobileOpen} style={{display:"flex",visibility:"visible",opacity:1}} className="w-11 h-11 shrink-0 rounded-2xl bg-slate-800/90 border border-white/15 flex items-center justify-center text-slate-200 shadow-lg active:scale-95 transition-transform touch-manipulation"><span className="flex flex-col gap-1.5 pointer-events-none"><i className={`block w-5 h-0.5 bg-blue-300 rounded ${mobileOpen ? 'rotate-45 translate-y-2' : ''}`} /><i className={`block w-4 h-0.5 bg-slate-300 rounded ml-auto ${mobileOpen ? 'opacity-0' : ''}`} /><i className={`block w-5 h-0.5 bg-blue-300 rounded ${mobileOpen ? '-rotate-45 -translate-y-2' : ''}`} /></span></button>
+        </div>
       </div>
       <div style={{visibility:mobileOpen?"visible":"hidden"}} className={`lg:hidden fixed inset-0 z-[2147483001] bg-black/70 backdrop-blur-sm transition-opacity duration-150 ${mobileOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => setMobileOpen(false)} aria-hidden="true" />
       <aside aria-label="Menu navigasi seluler" style={{visibility:mobileOpen?"visible":"hidden"}} className={`lg:hidden fixed inset-y-0 left-0 z-[2147483002] w-[min(86vw,350px)] max-w-[350px] bg-[#0b1224] border-r border-white/10 shadow-2xl flex flex-col overflow-hidden transition-transform duration-150 ease-out ${mobileOpen ? 'translate-x-0 pointer-events-auto' : '-translate-x-full pointer-events-none'} touch-manipulation`} onClick={(e) => e.stopPropagation()}>
@@ -399,6 +414,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
           <div className="flex items-center gap-2 rounded-xl border border-blue-500/30 bg-[#111b31] px-3 py-2.5 shadow-inner">
             <Search size={17} className="shrink-0 text-blue-400" />
             <input
+              ref={mobileSearchInputRef}
               type="search"
               value={mobileSearch}
               onChange={(e) => setMobileSearch(e.target.value)}
