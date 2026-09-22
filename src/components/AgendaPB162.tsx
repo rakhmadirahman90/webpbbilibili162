@@ -100,19 +100,14 @@ export default function AgendaPB162({ compact = false }: { compact?: boolean }) 
 
   const completedCount = items.length - upcomingCount;
 
-  return <section id="agenda-pb162" className={compact ? "agenda-landing-compact landing-section w-full bg-[#050914]" : "w-full bg-[#070d1a] px-4 py-10 sm:px-6 sm:py-14"}>
-    <div className={compact ? "mx-auto w-full max-w-7xl px-4 py-6 sm:px-8 sm:py-12 lg:px-10" : "mx-auto max-w-5xl"}>
-      <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-blue-300">
-            <CalendarDays size={13} /> Agenda PB Bilibili 162
-          </div>
-          <h2 className="mt-3 text-2xl font-black italic uppercase tracking-tight text-white sm:text-4xl">
-            Agenda <span className="text-blue-500">Kegiatan</span>
-          </h2>
-          <p className="mt-2 max-w-2xl text-sm text-slate-400">
-            Seluruh agenda klub ditampilkan di sini, termasuk kegiatan yang akan datang dan kegiatan yang telah dilaksanakan.
-          </p>
+  return <section id="agenda-pb162" className={compact ? "agenda-landing-compact landing-section w-full bg-[#050914]" : "w-full bg-[#070d1a] px-4 py-8 sm:px-6 sm:py-10"}>
+    <div className={compact ? "mx-auto w-full max-w-7xl px-4 py-4 sm:px-8 sm:py-7 lg:px-10" : "mx-auto max-w-5xl"}>
+      <div className="mb-4 flex flex-col gap-3 sm:mb-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-center gap-3 rounded-2xl border border-blue-500/80 bg-gradient-to-r from-[#071b3d] via-[#0b2f68] to-[#071b3d] px-4 py-3 shadow-[0_0_22px_rgba(37,99,235,.12)] sm:px-5 sm:py-3.5">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-600 shadow-[0_0_18px_rgba(37,99,235,.35)] sm:h-11 sm:w-11">
+            <CalendarDays size={20} />
+          </span>
+          <h2 className="truncate text-[clamp(1.2rem,5vw,2rem)] font-extrabold uppercase leading-none tracking-[-.03em] text-white">Agenda PB Bilibili 162</h2>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[.03] px-3 py-1.5 text-[9px] font-black uppercase tracking-wider text-slate-300">
@@ -124,7 +119,7 @@ export default function AgendaPB162({ compact = false }: { compact?: boolean }) 
         </div>
       </div>
 
-      <div className="mb-5 flex flex-wrap gap-2">
+      <div className="mb-3 flex flex-wrap gap-2">
         <button type="button" onClick={() => setFilter('all')} className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-2 text-[9px] font-black uppercase tracking-wider transition ${filter === 'all' ? 'border-blue-500 bg-blue-600 text-white' : 'border-white/10 bg-white/[.03] text-slate-400 hover:border-blue-500/40 hover:text-white'}`}>
           <ListChecks size={12} /> Semua Agenda ({items.length})
         </button>
@@ -138,12 +133,12 @@ export default function AgendaPB162({ compact = false }: { compact?: boolean }) 
 
       {loading ? <div className="rounded-2xl border border-white/10 bg-[#0b1224] p-8 text-center text-sm text-slate-400"><RefreshCw size={18} className="mx-auto mb-2 animate-spin" />Memuat agenda...</div>
         : !visible.length ? <div className="rounded-2xl border border-dashed border-white/10 bg-[#0b1224] p-8 text-center text-sm text-slate-500">Belum ada agenda yang dipublikasikan.</div>
-        : <div className="space-y-3">
+        : <div className="space-y-2">
           {visible.map(item => <button
             key={item.id}
             type="button"
             onClick={() => setSelected(item)}
-            className="group flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-[#0b1224] p-3 text-left shadow-lg transition hover:-translate-y-0.5 hover:border-blue-500/40 hover:bg-[#0d1730] focus:outline-none focus:ring-2 focus:ring-blue-500/50 sm:gap-5 sm:p-4"
+            className="group flex w-full items-center gap-3 rounded-xl border border-white/10 bg-[#0b1224] p-2.5 text-left shadow-lg transition hover:-translate-y-0.5 hover:border-blue-500/40 hover:bg-[#0d1730] focus:outline-none focus:ring-2 focus:ring-blue-500/50 sm:gap-4 sm:p-3"
           >
             <div className="hidden h-16 w-20 shrink-0 overflow-hidden rounded-xl bg-slate-900 sm:block sm:h-20 sm:w-28">
               {item.image_url ? <img src={item.image_url} alt="" loading="lazy" className="h-full w-full object-cover transition duration-500 group-hover:scale-105" /> : <div className="flex h-full w-full items-center justify-center"><CalendarDays size={26} className="text-blue-500/40" /></div>}
@@ -170,7 +165,7 @@ export default function AgendaPB162({ compact = false }: { compact?: boolean }) 
           </button>)}
         </div>}
 
-      {compact && items.length > 0 && <div className="mt-5 flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-500"><Info size={12} /> Data agenda Landing dan menu Agenda tersinkron realtime</div>}
+      {compact && items.length > 0 && <div className="mt-3 flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-500"><Info size={12} /> Data agenda Landing dan menu Agenda tersinkron realtime</div>}
     </div>
 
     {selected && <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/75 p-0 backdrop-blur-sm sm:items-center sm:p-4" onMouseDown={(e) => e.target === e.currentTarget && setSelected(null)}>
