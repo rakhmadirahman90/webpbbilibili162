@@ -65,3 +65,32 @@
     width: min(88vw, 350px) !important;
   }
 }
+
+
+/* Mobile header: Search is always visible immediately beside the menu button. */
+@media (max-width: 1023px) {
+  nav [data-mobile-header-actions="true"] {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 8px !important;
+    overflow: visible !important;
+  }
+  nav [data-mobile-header-actions="true"] .mobile-header-search-btn {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: relative !important;
+    width: 46px !important;
+    min-width: 46px !important;
+    height: 46px !important;
+    min-height: 46px !important;
+    flex: 0 0 46px !important;
+    order: 1 !important;
+  }
+  nav [data-mobile-header-actions="true"] #mobile-sidebar-toggle-btn {
+    order: 2 !important;
+  }
+}
