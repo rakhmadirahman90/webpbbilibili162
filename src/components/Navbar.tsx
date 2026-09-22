@@ -389,25 +389,56 @@ export default function Navbar({ onNavigate }: NavbarProps) {
           </div>})}
           {session ? <><button type="button" onClick={() => navigate('/admin/dashboard')} className="px-3 py-2 rounded-full bg-emerald-600 text-white text-[10px] font-bold uppercase"><LayoutDashboard size={13} className="inline mr-1" />Dashboard</button><button type="button" onClick={logout} className="p-2 rounded-full bg-red-500/10 text-red-300"><LogOut size={15}/></button></> : <button type="button" onClick={() => navigate('/login')} className="px-3 py-2 rounded-full bg-blue-600 text-white text-[10px] font-bold uppercase"><LogIn size={13} className="inline mr-1"/>Login</button>}
         </div>
-        <div className="lg:hidden ml-auto flex items-center gap-1.5 shrink-0" style={{ display: 'flex', visibility: 'visible', opacity: 1 }}>
-          {/* Search is a permanent mobile header action; it must remain visible beside the menu button. */}
+        <div
+          className="lg:hidden ml-auto flex items-center justify-end gap-2 shrink-0 min-w-[92px]"
+          style={{ display: 'flex', visibility: 'visible', opacity: 1, position: 'relative', zIndex: 2147483005 }}
+          data-mobile-header-actions="true"
+        >
+          {/* Search MUST stay visible in the mobile header, immediately beside the sidebar/menu button. */}
           <button
             id="mobile-search-toggle-btn"
             type="button"
-            aria-label="Cari"
+            aria-label="Buka pencarian"
             title="Cari"
             aria-expanded={mobileSearchOpen}
-            onClick={() => {
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
               setMobileSearchOpen(v => !v);
               setMobileOpenMenu(null);
               window.setTimeout(() => mobileSearchInputRef.current?.focus(), 80);
             }}
-            style={{ display: 'flex', visibility: 'visible', opacity: 1, flex: '0 0 44px' }}
-            className="w-11 h-11 shrink-0 rounded-2xl bg-slate-800/95 border border-blue-400/35 flex items-center justify-center text-slate-100 shadow-lg shadow-blue-950/30 active:scale-95 transition-transform touch-manipulation"
+            style={{
+              display: 'flex',
+              visibility: 'visible',
+              opacity: 1,
+              position: 'relative',
+              zIndex: 2147483006,
+              flex: '0 0 44px',
+              width: 44,
+              height: 44,
+              minWidth: 44,
+              minHeight: 44
+            }}
+            className="!flex !visible !opacity-100 shrink-0 rounded-2xl bg-[#16243b] border border-blue-400/60 items-center justify-center text-white shadow-lg shadow-blue-950/40 active:scale-95 transition-transform touch-manipulation"
           >
-            <Search size={21} className="text-blue-300" strokeWidth={2.7} />
+            <Search size={22} className="text-blue-300" strokeWidth={2.8} />
           </button>
-          <button id="mobile-sidebar-toggle-btn" type="button" onClick={() => { setMobileOpen(v => { const next = !v; if (!next) setMobileOpenMenu(null); return next; }); }} aria-label={mobileOpen ? 'Tutup menu navigasi' : 'Buka menu navigasi'} aria-expanded={mobileOpen} style={{display:"flex",visibility:"visible",opacity:1,flex:"0 0 44px"}} className="w-11 h-11 shrink-0 rounded-2xl bg-slate-800/90 border border-white/15 flex items-center justify-center text-slate-200 shadow-lg active:scale-95 transition-transform touch-manipulation"><span className="flex flex-col gap-1.5 pointer-events-none"><i className={`block w-5 h-0.5 bg-blue-300 rounded ${mobileOpen ? 'rotate-45 translate-y-2' : ''}`} /><i className={`block w-4 h-0.5 bg-slate-300 rounded ml-auto ${mobileOpen ? 'opacity-0' : ''}`} /><i className={`block w-5 h-0.5 bg-blue-300 rounded ${mobileOpen ? '-rotate-45 -translate-y-2' : ''}`} /></span></button>
+          <button
+            id="mobile-sidebar-toggle-btn"
+            type="button"
+            onClick={() => { setMobileOpen(v => { const next = !v; if (!next) setMobileOpenMenu(null); return next; }); }}
+            aria-label={mobileOpen ? 'Tutup menu navigasi' : 'Buka menu navigasi'}
+            aria-expanded={mobileOpen}
+            style={{ display:'flex', visibility:'visible', opacity:1, position:'relative', zIndex:2147483006, flex:'0 0 44px', width:44, height:44, minWidth:44, minHeight:44 }}
+            className="!flex !visible !opacity-100 shrink-0 rounded-2xl bg-slate-800/90 border border-white/15 items-center justify-center text-slate-200 shadow-lg active:scale-95 transition-transform touch-manipulation"
+          >
+            <span className="flex flex-col gap-1.5 pointer-events-none">
+              <i className={`block w-5 h-0.5 bg-blue-300 rounded ${mobileOpen ? 'rotate-45 translate-y-2' : ''}`} />
+              <i className={`block w-4 h-0.5 bg-slate-300 rounded ml-auto ${mobileOpen ? 'opacity-0' : ''}`} />
+              <i className={`block w-5 h-0.5 bg-blue-300 rounded ${mobileOpen ? '-rotate-45 -translate-y-2' : ''}`} />
+            </span>
+          </button>
         </div>
       </div>
       <div
