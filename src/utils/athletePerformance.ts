@@ -177,17 +177,25 @@ export async function loadAthletePerformanceData(): Promise<AthletePerformance[]
     if (s?.pendaftaran_id) statsByRegistration.set(String(s.pendaftaran_id), s);
   }
 
-  return rankings
-    .map((ranking: any) => {
-      const rankingId = String(ranking?.id || '');
-      const registrationId = String(ranking?.pendaftaran_id || '');
-      const registration =
-        (registrationId && registrationById.get(registrationId)) ||
-        registrations.find((p: any) => norm(p?.nama) === norm(ranking?.player_name || ranking?.nama));
-      if (!registration) return null;
+  // Gunakan tabel pendaftaran sebagai MASTER daftar atlet, sama seperti halaman Profil Atlet.
+  // Rankings hanya menjadi sumber tambahan untuk poin/peringkat, bukan sumber jumlah atlet.
+  // Dengan demikian atlet yang belum memiliki baris rankings tetap ikut terhitung.
+  const rankingByRegistration = new Map<string, any>();
+  const rankingByName = new Map<string, any>();
+  for (const ranking of rankings) {
+    if (ranking?.pendaftaran_id) rankingByRegistration.set(String(ranking.pendaftaran_id), ranking);
+    const rankingName = norm(ranking?.player_name || ranking?.nama);
+    if (rankingName) rankingByName.set(rankingName, ranking);
+  }
 
-      const pendaftaranId = String(registration.id);
-      const name = registration.nama || ranking.player_name || 'Atlet';
+  return registrations
+    .map((registration: any) => {
+      const pendaftaranId = String(registration?.id || '');
+      if (!pendaftaranId) return null;
+
+      const name = registration?.nama || 'Atlet';
+      const ranking = rankingByRegistration.get(pendaftaranId) || rankingByName.get(norm(name)) || null;
+      const rankingId = String(ranking?.id || '');
       const playerMatches = matches.filter((m: any) => String(m?.pendaftaran_id || '') === pendaftaranId);
       const wins = playerMatches.filter((m: any) => resultType(m?.hasil) === 'win').length;
       const losses = playerMatches.filter((m: any) => resultType(m?.hasil) === 'loss').length;
@@ -214,14 +222,16 @@ export async function loadAthletePerformanceData(): Promise<AthletePerformance[]
         : null;
       const attendance = attendanceFor(attendanceRows, users, pendaftaranId, name);
       const statsRow = statsByRegistration.get(pendaftaranId);
+      const rankingPoints = Number(ranking?.total_points ?? ranking?.poin ?? 0) || 0;
+      const statsPoints = statsRow ? (Number(statsRow?.points || 0) + Number(statsRow?.total_points || 0)) : 0;
 
       return {
         id: rankingId || pendaftaranId,
         pendaftaranId,
         nama: name,
-        foto_url: ranking?.photo_url || registration?.foto_url || undefined,
-        category: ranking?.category || registration?.kategori_atlet || registration?.kategori || undefined,
-        poin: Number(ranking?.total_points ?? statsRow?.total_points ?? statsRow?.points ?? ranking?.poin ?? 0) || 0,
+        foto_url: registration?.foto_url || ranking?.photo_url || undefined,
+        category: registration?.kategori_atlet || registration?.kategori || ranking?.category || undefined,
+        poin: statsRow ? statsPoints : rankingPoints,
         matchesPlayed: playerMatches.length,
         wins,
         losses,
@@ -236,7 +246,9 @@ export async function loadAthletePerformanceData(): Promise<AthletePerformance[]
         stamina: physical.stamina ?? null,
         speed: physical.kecepatan ?? null,
         power: physical.kekuatan ?? null,
-        technique: technicalRaw ? (Object.values(technical).length ? Math.round(Object.values(technical).reduce((a, b) => a + b, 0) / Object.values(technical).length) : null) : null,
+        technique: Object.values(technical).length
+          ? Math.round(Object.values(technical).reduce((a, b) => a + b, 0) / Object.values(technical).length)
+          : null,
         agility: physical.kelincahan ?? null,
         flexibility: physical.kelenturan ?? null,
         raporScore,
