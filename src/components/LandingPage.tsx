@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ArrowRight, CalendarDays, ChevronRight, Medal, Trophy, Users, Zap, Eye, MessageCircle, Play } from 'lucide-react';
+import { ArrowRight, CalendarDays, Camera, ChevronRight, Medal, Newspaper, Trophy, Users, Zap, Eye, MessageCircle, Play } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { supabase } from '../supabase';
 import LazyImage from './LazyImage';
@@ -441,15 +441,15 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
 
   return (
     <div id="landing-page" className="landing-page relative overflow-hidden bg-[#050914] text-white font-sans">
-      <section id="landing-news" className="landing-section mx-auto w-full max-w-7xl px-4 py-6 sm:px-8 sm:py-12 lg:px-10">
-        <div className="landing-section-header mb-4 flex items-center justify-between gap-3 border-b border-white/10 pb-3.5 sm:mb-6 sm:pb-4">
+      <section id="landing-news" className="landing-section mx-auto w-full max-w-7xl px-4 py-4 sm:px-8 sm:py-7 lg:px-10">
+        <div className="landing-section-header landing-section-header-box flex items-center justify-between gap-3 rounded-2xl border border-blue-500/80 bg-gradient-to-r from-[#071b3d] via-[#0b2f68] to-[#071b3d] px-4 py-3 shadow-[0_0_22px_rgba(37,99,235,.12)] sm:px-5 sm:py-3.5">
           <div className="flex min-w-0 items-center gap-3">
-            <span className="h-7 w-1 shrink-0 rounded-full bg-blue-500 shadow-[0_0_14px_rgba(37,99,235,.45)] sm:h-8" />
-            <h2 className="truncate landing-section-title truncate text-[clamp(1.5rem,5vw,2.25rem)] font-extrabold uppercase leading-[1.05] tracking-[-.035em] text-white">
-              Berita <span className="text-blue-500">Terbaru</span>
-            </h2>
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-600 shadow-[0_0_18px_rgba(37,99,235,.35)] sm:h-11 sm:w-11">
+              <Newspaper size={20} />
+            </span>
+            <h2 className="landing-section-title min-w-0 truncate text-[clamp(1.25rem,5vw,2rem)] font-extrabold uppercase leading-none tracking-[-.03em] text-white">Berita Terbaru</h2>
           </div>
-          <button onClick={() => goNews()} className="hidden shrink-0 items-center gap-1.5 rounded-full border border-white/10 bg-white/[.03] px-3.5 py-2 text-[10px] font-extrabold uppercase tracking-[.1em] text-slate-300 transition hover:border-blue-500/50 hover:bg-blue-600 hover:text-white sm:flex">
+          <button onClick={() => goNews()} className="hidden shrink-0 items-center gap-1.5 rounded-full border border-blue-300/20 bg-white/[.05] px-3.5 py-2 text-[10px] font-extrabold uppercase tracking-[.1em] text-blue-100 transition hover:bg-blue-600 hover:text-white sm:flex">
             Semua Berita <ArrowRight size={14} />
           </button>
         </div>
@@ -492,7 +492,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
                       ) : <div className="h-full w-full bg-[#111827]" />}
                     </div>
                     <div className="bg-gradient-to-r from-[#0b3b91] via-[#1557d6] to-[#2563eb] px-4 py-4 sm:px-7 sm:py-6">
-                      <div className="mb-2 inline-flex rounded-full bg-blue-600 px-3 py-1.5 text-[8px] font-black uppercase tracking-[.18em] text-white">
+                      <div className="mb-1.5 inline-flex rounded-full bg-blue-600 px-3 py-1.5 text-[8px] font-black uppercase tracking-[.18em] text-white">
                         Berita Terbaru
                       </div>
                       <h3 className="landing-featured-news-title">{featuredDisplayTitle}</h3>
@@ -504,8 +504,8 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
                     </div>
                   </button>
 
-                  <div className="mt-3 overflow-hidden rounded-[1.25rem] sm:rounded-[2rem] border border-white/10 bg-[#0b1220]">
-                    <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+                  <div className="mt-2.5 overflow-hidden rounded-[1.25rem] sm:rounded-[2rem] border border-white/10 bg-[#0b1220]">
+                    <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
                       <div className="text-[10px] font-black uppercase tracking-[.2em] text-blue-300">Berita Lainnya</div>
                       <button onClick={() => goNews()} className="hidden items-center gap-1 text-[9px] font-black uppercase tracking-wider text-blue-400 sm:flex">Lihat Semua Berita <ArrowRight size={13}/></button>
                     </div>
@@ -513,7 +513,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
                       {others.map((item) => {
                         const itemImage = item.gambar_url.split(/[,\s]+/)[0];
                         return (
-                          <button key={item.id} onClick={() => goNews(item.id)} className="group flex w-full items-center gap-3 p-3.5 text-left transition hover:bg-white/[.04] sm:gap-5 sm:p-4">
+                          <button key={item.id} onClick={() => goNews(item.id)} className="group flex w-full items-center gap-3 p-3 text-left transition hover:bg-white/[.04] sm:gap-5 sm:p-4">
                             <div className="h-[76px] w-[106px] shrink-0 overflow-hidden rounded-2xl bg-slate-800 sm:h-[88px] sm:w-[128px]">
                               {itemImage ? <LazyImage src={itemImage} alt={item.judul} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" containerClassName="h-full w-full" width={360} /> : null}
                             </div>
@@ -532,7 +532,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
                     </div>
                   </div>
 
-                  <button onClick={() => goNews()} className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 py-3.5 text-[10px] font-black uppercase tracking-[.16em] text-white shadow-lg shadow-blue-600/15 sm:hidden">
+                  <button onClick={() => goNews()} className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 py-3.5 text-[10px] font-black uppercase tracking-[.16em] text-white shadow-lg shadow-blue-600/15 sm:hidden">
                     Berita Lainnya / Selengkapnya <ArrowRight size={14} />
                   </button>
                 </>
@@ -553,12 +553,14 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
       </section>
 
       <section id="landing-athletes" className="landing-section mx-auto w-full max-w-7xl px-4 py-6 sm:px-8 sm:py-12 lg:px-10">
-        <div className="landing-section-header mb-4 flex items-center justify-between gap-3 border-b border-white/10 pb-3.5 sm:mb-6 sm:pb-4">
+        <div className="landing-section-header landing-section-header-box flex items-center justify-between gap-3 rounded-2xl border border-blue-500/80 bg-gradient-to-r from-[#071b3d] via-[#0b2f68] to-[#071b3d] px-4 py-3 shadow-[0_0_22px_rgba(37,99,235,.12)] sm:px-5 sm:py-3.5">
           <div className="flex min-w-0 items-center gap-3">
-            <span className="h-7 w-1 shrink-0 rounded-full bg-blue-500 shadow-[0_0_14px_rgba(37,99,235,.45)] sm:h-8" />
-            <h2 className="landing-section-title">Kenali Atlet Kami</h2>
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-600 shadow-[0_0_18px_rgba(37,99,235,.35)] sm:h-11 sm:w-11">
+              <Users size={20} />
+            </span>
+            <h2 className="landing-section-title min-w-0 truncate text-[clamp(1.25rem,5vw,2rem)] font-extrabold leading-none tracking-[-.03em] text-white">Kenali Atlet Kami</h2>
           </div>
-          <button onClick={() => go('atlet')} className="hidden shrink-0 items-center gap-1.5 rounded-full border border-white/10 bg-white/[.03] px-3.5 py-2 text-[10px] font-extrabold uppercase tracking-[.1em] text-slate-300 transition hover:border-blue-500/50 hover:bg-blue-600 hover:text-white sm:flex">
+          <button onClick={() => go('atlet')} className="hidden shrink-0 items-center gap-1.5 rounded-full border border-blue-300/20 bg-white/[.05] px-3.5 py-2 text-[10px] font-extrabold uppercase tracking-[.1em] text-blue-100 transition hover:bg-blue-600 hover:text-white sm:flex">
             Semua Atlet <ArrowRight size={14} />
           </button>
         </div>
@@ -646,16 +648,18 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
       </section>
 
       <section id="landing-gallery" className="landing-section bg-[#111827]">
-        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-8 sm:py-12 lg:px-10">
-          <div className="landing-section-header mb-4 flex items-center justify-between gap-3 border-b border-white/10 pb-3.5 sm:mb-5 sm:pb-4">
+        <div className="mx-auto max-w-7xl px-4 py-4 sm:px-8 sm:py-7 lg:px-10">
+          <div className="landing-section-header landing-section-header-box flex items-center justify-between gap-3 rounded-2xl border border-blue-500/80 bg-gradient-to-r from-[#071b3d] via-[#0b2f68] to-[#071b3d] px-4 py-3 shadow-[0_0_22px_rgba(37,99,235,.12)] sm:px-5 sm:py-3.5">
             <div className="flex min-w-0 items-center gap-3">
-              <span className="h-7 w-1 shrink-0 rounded-full bg-blue-500 shadow-[0_0_14px_rgba(37,99,235,.45)] sm:h-8" />
-              <h2 className="landing-section-title text-[clamp(1.5rem,5vw,2.25rem)] font-extrabold uppercase leading-[1.05] tracking-[-.035em] text-white">Galeri</h2>
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-600 shadow-[0_0_18px_rgba(37,99,235,.35)] sm:h-11 sm:w-11">
+                <Camera size={20} />
+              </span>
+              <h2 className="landing-section-title min-w-0 truncate text-[clamp(1.25rem,5vw,2rem)] font-extrabold uppercase leading-none tracking-[-.03em] text-white">Galeri</h2>
             </div>
-            <button onClick={() => go('galeri')} className="shrink-0 rounded-full border border-white/10 bg-white/[.03] px-3.5 py-2 text-[10px] font-extrabold uppercase tracking-[.1em] text-slate-300 transition hover:border-blue-500/50 hover:bg-blue-600 hover:text-white">Semua Media</button>
+            <button onClick={() => go('galeri')} className="shrink-0 rounded-full border border-blue-300/20 bg-white/[.05] px-3.5 py-2 text-[10px] font-extrabold uppercase tracking-[.1em] text-blue-100 transition hover:bg-blue-600 hover:text-white">Semua Media</button>
           </div>
 
-          <div className="mb-4 grid grid-cols-2 overflow-hidden rounded-xl border border-white/10 bg-[#1b2433]">
+          <div className="mb-3 grid grid-cols-2 overflow-hidden rounded-xl border border-white/10 bg-[#1b2433]">
             <button
               onClick={() => setGalleryTab('image')}
               className={`px-4 py-3.5 text-[11px] font-black uppercase tracking-[.12em] transition sm:py-4 ${galleryTab === 'image' ? 'bg-blue-600 text-white' : 'text-white/75 hover:bg-white/10'}`}
@@ -1104,6 +1108,80 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           #landing-page .landing-section-title,
           #landing-page .landing-section-header h2 {
             font-size:24px !important;
+          }
+        }
+
+        /* Compact landing rhythm + unified section header cards. */
+        #landing-page .landing-section-header-box {
+          min-height:0 !important;
+          margin-bottom:14px !important;
+          padding-bottom:0 !important;
+          border-bottom-width:1px !important;
+        }
+        #landing-page #landing-news,
+        #landing-page #landing-athletes,
+        #landing-page #landing-gallery {
+          padding-top:18px !important;
+          padding-bottom:18px !important;
+        }
+        #landing-page #landing-gallery > div {
+          padding-top:18px !important;
+          padding-bottom:18px !important;
+        }
+        #landing-page #landing-athletes .overflow-hidden.rounded-\[1\.25rem\],
+        #landing-page #landing-news > div,
+        #landing-page #landing-gallery > div {
+          margin-bottom:0;
+        }
+        #landing-page #landing-news .landing-featured-news-title {
+          line-height:1.2 !important;
+        }
+        @media (max-width:640px) {
+          #landing-page #landing-news,
+          #landing-page #landing-athletes,
+          #landing-page #landing-gallery {
+            padding-top:14px !important;
+            padding-bottom:14px !important;
+          }
+          #landing-page #landing-gallery > div {
+            padding-top:14px !important;
+            padding-bottom:14px !important;
+          }
+          #landing-page .landing-section-header-box {
+            margin-bottom:10px !important;
+            padding:10px 12px !important;
+            border-radius:14px !important;
+          }
+          #landing-page .landing-section-header-box span.grid {
+            width:36px !important;
+            height:36px !important;
+            border-radius:10px !important;
+          }
+          #landing-page .landing-section-header-box span.grid svg {
+            width:18px !important;
+            height:18px !important;
+          }
+          #landing-page .landing-section-header-box h2 {
+            font-size:1.22rem !important;
+          }
+          #landing-page #landing-gallery > div > div.grid button {
+            padding-top:.65rem !important;
+            padding-bottom:.65rem !important;
+          }
+          #landing-page #landing-news .divide-y > button {
+            min-height:96px;
+          }
+        }
+        @media (min-width:641px) {
+          #landing-page #landing-news,
+          #landing-page #landing-athletes,
+          #landing-page #landing-gallery {
+            padding-top:28px !important;
+            padding-bottom:28px !important;
+          }
+          #landing-page #landing-gallery > div {
+            padding-top:28px !important;
+            padding-bottom:28px !important;
           }
         }
 
