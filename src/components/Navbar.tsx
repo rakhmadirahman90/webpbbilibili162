@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, memo } from 'react';
-import { Globe, Home, ChevronDown, Menu, X, MapPin, UserPlus, FileText, Trophy, BrainCircuit, Youtube, Instagram, Facebook, Twitter, Radio, LogIn, LayoutDashboard, LogOut, Timer, HelpCircle, Info, Users, Award, Image as ImageIcon, Building2, Target, Shield, Newspaper, Sparkles, CreditCard } from 'lucide-react';
+import { Globe, Home, Search, ChevronDown, Menu, X, MapPin, UserPlus, FileText, Trophy, BrainCircuit, Youtube, Instagram, Facebook, Twitter, Radio, LogIn, LayoutDashboard, LogOut, Timer, HelpCircle, Info, Users, Award, Image as ImageIcon, Building2, Target, Shield, Newspaper, Sparkles, CreditCard } from 'lucide-react';
 import { supabase, warmupRouteData } from '../supabase';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
@@ -161,6 +161,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
   // Separate mobile expansion state so desktop hover state can never navigate/reset the mobile submenu.
   const [mobileOpenMenu, setMobileOpenMenu] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileSearch, setMobileSearch] = useState('');
 
   const syncSession = useCallback(async () => {
     try {
@@ -360,6 +361,16 @@ export default function Navbar({ onNavigate }: NavbarProps) {
   };
 
   const topMenus = navData.filter(i => i?.is_active !== false && isTopLevelMenuItem(i)).sort((a,b) => (a.order_index || 0) - (b.order_index || 0));
+  const normalizedMobileSearch = mobileSearch.trim().toLowerCase();
+  const visibleTopMenus = normalizedMobileSearch
+    ? topMenus.filter((menu: any) => {
+        const parentText = `${menu.label || ''} ${menu.path || ''}`.toLowerCase();
+        if (parentText.includes(normalizedMobileSearch)) return true;
+        return getSubMenus(menu.id).some((sub: any) =>
+          `${sub.label || ''} ${sub.path || ''}`.toLowerCase().includes(normalizedMobileSearch)
+        );
+      })
+    : topMenus;
 
   return <>
     <nav style={{display:"block",visibility:"visible",opacity:1}} className="fixed top-0 left-0 right-0 h-14 lg:h-16 z-[2147483002] bg-slate-950/95 backdrop-blur-xl border-b border-white/10 shadow-2xl !visible !opacity-100" aria-label="Navigasi utama PB Bilibili 162">
@@ -370,7 +381,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
         </button>
         <LiveClock />
         <div className="hidden lg:flex items-center gap-4 xl:gap-6 ml-auto min-w-0">
-          {topMenus.map(menu => { const subs = getSubMenus(menu.id); const drop = menu.type === 'dropdown' || subs.length > 0; return <div key={menu.id} className="relative" onMouseEnter={() => drop && setOpenMenu(menu.id)} onMouseLeave={() => drop && setOpenMenu(null)}>
+          {visibleTopMenus.map(menu => { const subs = getSubMenus(menu.id); const drop = menu.type === 'dropdown' || subs.length > 0; return <div key={menu.id} className="relative" onMouseEnter={() => drop && setOpenMenu(menu.id)} onMouseLeave={() => drop && setOpenMenu(null)}>
             <button type="button" onPointerDown={() => handleNavigationPointerDown(menu.path)} onClick={() => !drop && go(menu.path)} className="h-16 flex items-center gap-1.5 text-[11px] xl:text-xs font-bold uppercase tracking-wide text-slate-300 hover:text-white transition-colors whitespace-nowrap">{menu.path === 'home' || menu.path === 'beranda' ? <Home size={14} className="text-blue-400" /> : null}{menu.label}{drop && <ChevronDown size={12} className={openMenu === menu.id ? 'rotate-180' : ''} />}</button>
             {drop && openMenu === menu.id && <div className="absolute top-full left-0 w-64 pt-2"><div className="rounded-xl border border-white/10 bg-slate-900/98 shadow-2xl overflow-hidden">{subs.map(sub => { const isChampionMenu = String(sub.id || '') === 'peserta-juara' || String(sub.label || '').trim().toLowerCase() === 'daftar peserta juara'; const subTarget = isChampionMenu ? 'prestasi' : sub.path; return <button key={sub.id} type="button" onPointerDown={() => handleNavigationPointerDown(menu.path, subTarget)} onClick={() => go(menu.path, subTarget)} className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-slate-300 hover:bg-blue-500/10 hover:text-white">{iconFor(sub.path, sub.label)}<span>{sub.label}</span></button>; })}</div></div>}
           </div>})}
@@ -382,9 +393,27 @@ export default function Navbar({ onNavigate }: NavbarProps) {
       <aside aria-label="Menu navigasi seluler" style={{visibility:mobileOpen?"visible":"hidden"}} className={`lg:hidden fixed inset-y-0 left-0 z-[2147483002] w-[min(86vw,350px)] max-w-[350px] bg-[#0b1224] border-r border-white/10 shadow-2xl flex flex-col overflow-hidden transition-transform duration-150 ease-out ${mobileOpen ? 'translate-x-0 pointer-events-auto' : '-translate-x-full pointer-events-none'} touch-manipulation`} onClick={(e) => e.stopPropagation()}>
         <div className="h-16 min-h-16 shrink-0 px-4 flex items-center justify-between border-b border-white/10 bg-slate-950/95">
           <div className="flex items-center gap-2.5 min-w-0"><img src={branding.logo_url} className="w-9 h-9 object-contain shrink-0" alt="PB Bilibili 162" loading="eager"/><div className="min-w-0 font-black text-sm italic uppercase truncate">{branding.brand_name_main} <span className="text-blue-500">{branding.brand_name_accent}</span><span className="block text-[7px] tracking-[.18em] text-slate-500 not-italic mt-0.5">PROFESSIONAL CLUB</span></div></div>
-          <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMobileOpen(false); setMobileOpenMenu(null); }} className="w-10 h-10 min-w-10 rounded-xl bg-slate-800 border border-white/10 flex items-center justify-center text-slate-200 active:scale-95 touch-manipulation" aria-label="Tutup menu"><X size={19} className="pointer-events-none"/></button>
+          <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMobileOpen(false); setMobileOpenMenu(null); setMobileSearch(''); }} className="w-10 h-10 min-w-10 rounded-xl bg-slate-800 border border-white/10 flex items-center justify-center text-slate-200 active:scale-95 touch-manipulation" aria-label="Tutup menu"><X size={19} className="pointer-events-none"/></button>
         </div>
-        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 py-3 [scrollbar-width:thin] touch-pan-y">
+        <div className="shrink-0 px-3 pt-3 pb-2">
+          <div className="flex items-center gap-2 rounded-xl border border-blue-500/30 bg-[#111b31] px-3 py-2.5 shadow-inner">
+            <Search size={17} className="shrink-0 text-blue-400" />
+            <input
+              type="search"
+              value={mobileSearch}
+              onChange={(e) => setMobileSearch(e.target.value)}
+              placeholder="Cari menu..."
+              aria-label="Cari menu navigasi"
+              className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-white outline-none placeholder:text-slate-500"
+            />
+            {mobileSearch && (
+              <button type="button" onClick={() => setMobileSearch('')} aria-label="Hapus pencarian" className="text-slate-400 hover:text-white">
+                <X size={15} />
+              </button>
+            )}
+          </div>
+        </div>
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 py-2 [scrollbar-width:thin] touch-pan-y">
           <div className="space-y-0.5 pb-2">
             {topMenus.map(menu => {
               const subs = getSubMenus(menu.id);
@@ -422,6 +451,13 @@ export default function Navbar({ onNavigate }: NavbarProps) {
                 </div>}
               </div>;
             })}
+            {normalizedMobileSearch && visibleTopMenus.length === 0 && (
+              <div className="px-4 py-10 text-center">
+                <Search size={24} className="mx-auto mb-2 text-slate-600" />
+                <div className="text-xs font-bold text-slate-400">Menu tidak ditemukan</div>
+                <div className="mt-1 text-[10px] text-slate-600">Coba kata kunci lain.</div>
+              </div>
+            )}
           </div>
           <div className="border-t border-white/10 pt-2 mt-1 space-y-0.5">
             {session ? <><button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMobileOpen(false); navigate('/admin/dashboard'); }} className="w-full min-h-[46px] px-3 rounded-xl text-emerald-300 hover:bg-emerald-500/10 text-left font-bold touch-manipulation"><LayoutDashboard size={15} className="inline mr-2" />Dashboard</button><button type="button" onClick={logout} className="w-full min-h-[46px] px-3 rounded-xl text-red-300 hover:bg-red-500/10 text-left font-bold touch-manipulation"><LogOut size={15} className="inline mr-2" />Keluar</button></> : <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMobileOpen(false); navigate('/login'); }} className="w-full min-h-[46px] px-3 rounded-xl text-blue-300 hover:bg-blue-500/10 text-left font-bold touch-manipulation"><LogIn size={15} className="inline mr-2" />Login</button>}
