@@ -88,7 +88,7 @@ export default function AgendaPB162({ compact = false }: { compact?: boolean }) 
 
   // Landing menampilkan tepat 4 agenda: 2 kolom × 2 baris.
   // Halaman Agenda tetap menampilkan seluruh data.
-  const visible = compact ? items.slice(0, 4) : items;
+  const visible = compact ? items.slice(0, 4) : items; // Landing: 2 kolom × 2 agenda
 
   return <section id="agenda-pb162" className={compact ? "agenda-landing-compact landing-section w-full bg-[#050914]" : "w-full bg-[#070d1a] px-4 py-8 sm:px-6 sm:py-10"}>
     <div className={compact ? "mx-auto w-full max-w-7xl px-4 py-4 sm:px-8 sm:py-7 lg:px-10" : "mx-auto max-w-5xl"}>
@@ -97,7 +97,7 @@ export default function AgendaPB162({ compact = false }: { compact?: boolean }) 
           <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-blue-600 shadow-[0_0_18px_rgba(37,99,235,.35)] sm:h-11 sm:w-11">
             <CalendarDays size={19} />
           </span>
-          <h2 className="truncate text-[clamp(1.1rem,5vw,2rem)] font-extrabold uppercase leading-none tracking-[-.03em] text-white">Agenda PB Bilibili 162</h2>
+          <h2 className="truncate text-[clamp(1.1rem,5vw,2rem)] font-extrabold uppercase leading-none tracking-[-.03em] text-white">Agenda</h2>
         </div>
         {compact && <button type="button" onClick={() => { window.history.pushState({}, '', '/agenda'); window.dispatchEvent(new PopStateEvent('popstate')); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="shrink-0 rounded-full border border-blue-300/20 bg-white/[.05] px-3 py-1.5 text-[9px] font-black uppercase tracking-wider text-blue-100 transition hover:bg-blue-600 hover:text-white">
           Lihat Semua <ChevronRight size={13} className="inline" />
