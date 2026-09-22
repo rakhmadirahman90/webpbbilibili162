@@ -150,7 +150,8 @@ function attendanceFor(
 export async function loadAthletePerformanceData(): Promise<AthletePerformance[]> {
   const [rankingsRes, registrationsRes, statsRes, matchesRes, settingsRes] = await Promise.all([
     supabase.from('rankings').select('*').order('total_points', { ascending: false }),
-    supabase.from('pendaftaran').select('id,nama,foto_url,kategori,kategori_atlet'),
+    // pendaftaran adalah MASTER atlet. Hanya anggota berstatus aktif yang ditampilkan sebagai atlet terlacak.
+    supabase.from('pendaftaran').select('id,nama,foto_url,kategori,kategori_atlet,status,updated_at').eq('status', 'aktif').order('nama', { ascending: true }),
     supabase.from('atlet_stats').select('*'),
     supabase.from('pertandingan').select('id,pendaftaran_id,kategori_kegiatan,hasil,keterangan,created_at').order('created_at', { ascending: true }),
     supabase.from('site_settings').select('key,value,updated_at').in('key', ['rapor_atlet_data','absensi_list','users_list'])
