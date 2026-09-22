@@ -90,6 +90,7 @@ export default function AgendaPB162({ compact = false }: { compact?: boolean }) 
   // Halaman Agenda tetap menampilkan seluruh data.
   const visible = compact ? items.slice(0, 4) : items; // Landing: tepat 4 agenda; halaman Agenda: seluruh data
 
+  // Keep the landing agenda intentionally compact: four items in a 2 × 2 grid.
   return <section id="agenda-pb162" className={compact ? "agenda-landing-compact landing-section w-full bg-[#050914]" : "w-full bg-[#070d1a] px-4 py-8 sm:px-6 sm:py-10"}>
     <div className={compact ? "mx-auto w-full max-w-7xl px-4 py-4 sm:px-8 sm:py-7 lg:px-10" : "mx-auto max-w-5xl"}>
       <div className="mb-3 flex items-center justify-between gap-3 rounded-2xl border border-blue-500/80 bg-gradient-to-r from-[#071b3d] via-[#0b2f68] to-[#071b3d] px-3 py-2.5 shadow-[0_0_22px_rgba(37,99,235,.12)] sm:px-5 sm:py-3">
@@ -112,14 +113,14 @@ export default function AgendaPB162({ compact = false }: { compact?: boolean }) 
             type="button"
             onClick={() => setSelected(item)}
             className={compact
-              ? "group flex min-h-[132px] w-full items-center gap-1.5 rounded-xl border border-white/10 bg-[#0b1224] p-1.5 text-left shadow-lg transition hover:-translate-y-0.5 hover:border-blue-500/40 hover:bg-[#0d1730] focus:outline-none focus:ring-2 focus:ring-blue-500/50 sm:min-h-[128px] sm:gap-3 sm:p-3"
-              : "group flex w-full items-center gap-3 rounded-xl border border-white/10 bg-[#0b1224] p-2.5 text-left shadow-lg transition hover:-translate-y-0.5 hover:border-blue-500/40 hover:bg-[#0d1730] focus:outline-none focus:ring-2 focus:ring-blue-500/50 sm:gap-4 sm:p-3"}
+              ? "group relative flex min-h-[166px] w-full min-w-0 flex-col items-stretch gap-2 rounded-xl border border-white/10 bg-[#0b1224] p-2 text-left shadow-lg transition hover:-translate-y-0.5 hover:border-blue-500/40 hover:bg-[#0d1730] focus:outline-none focus:ring-2 focus:ring-blue-500/50 sm:min-h-[150px] sm:flex-row sm:items-center sm:gap-3 sm:p-3"
+              : "group flex w-full min-w-0 items-center gap-3 rounded-xl border border-white/10 bg-[#0b1224] p-2.5 text-left shadow-lg transition hover:-translate-y-0.5 hover:border-blue-500/40 hover:bg-[#0d1730] focus:outline-none focus:ring-2 focus:ring-blue-500/50 sm:gap-4 sm:p-3"}
           >
-            <div className="hidden h-16 w-20 shrink-0 overflow-hidden rounded-xl bg-slate-900 sm:block sm:h-16 sm:w-20">
+            <div className={compact ? "hidden h-16 w-20 shrink-0 overflow-hidden rounded-xl bg-slate-900 sm:block sm:h-16 sm:w-20" : "hidden h-16 w-20 shrink-0 overflow-hidden rounded-xl bg-slate-900 sm:block sm:h-16 sm:w-20"}>
               {item.image_url ? <img src={item.image_url} alt="" loading="lazy" className="h-full w-full object-cover transition duration-500 group-hover:scale-105" /> : <div className="flex h-full w-full items-center justify-center"><CalendarDays size={26} className="text-blue-500/40" /></div>}
             </div>
-            <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-3">
-              <div className="w-10 shrink-0 rounded-lg border border-blue-500/20 bg-blue-500/10 px-1 py-1.5 text-center sm:w-14">
+            <div className={compact ? "flex min-w-0 w-full flex-1 items-start gap-1.5 sm:items-center sm:gap-3" : "flex min-w-0 flex-1 items-center gap-1.5 sm:gap-3"}>
+              <div className={compact ? "w-11 shrink-0 rounded-lg border border-blue-500/20 bg-blue-500/10 px-1 py-1.5 text-center sm:w-14" : "w-10 shrink-0 rounded-lg border border-blue-500/20 bg-blue-500/10 px-1 py-1.5 text-center sm:w-14"}>
                 <div className="text-[9px] font-black uppercase tracking-wider text-blue-300">{new Intl.DateTimeFormat('id-ID', { month: 'short' }).format(new Date(`${item.event_date}T00:00:00`))}</div>
                 <div className="text-[17px] font-black leading-none text-white sm:text-xl">{item.event_date.slice(8, 10)}</div>
                 <div className="mt-1 text-[8px] font-bold text-slate-500">{item.event_date.slice(0, 4)}</div>
@@ -136,7 +137,7 @@ export default function AgendaPB162({ compact = false }: { compact?: boolean }) 
                 </div>
               </div>
             </div>
-            <ChevronRight size={17} className="shrink-0 text-slate-600 transition group-hover:translate-x-1 group-hover:text-blue-400" />
+            <ChevronRight size={17} className={compact ? "absolute right-2 top-1/2 -translate-y-1/2 shrink-0 text-slate-600 transition group-hover:translate-x-1 group-hover:text-blue-400 sm:right-2 sm:top-1/2" : "shrink-0 text-slate-600 transition group-hover:translate-x-1 group-hover:text-blue-400"} />
           </button>)}
         </div>}
 
