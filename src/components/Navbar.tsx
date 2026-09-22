@@ -394,7 +394,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
           style={{ display: 'flex', visibility: 'visible', opacity: 1, zIndex: 2147483005 }}
           data-mobile-header-actions="true"
         >
-          {/* Search MUST stay visible in the mobile header, immediately beside the sidebar/menu button. */}
+          {/* Search is a permanent mobile-header action: always visible immediately beside the menu button. */}
           <button
             id="mobile-search-toggle-btn"
             type="button"
@@ -421,7 +421,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
               minWidth: 46,
               minHeight: 46
             }}
-            className="!flex !visible !opacity-100 w-[46px] h-[46px] shrink-0 rounded-2xl bg-[#16243b] border border-blue-400/70 items-center justify-center text-white shadow-lg shadow-blue-950/40 active:scale-95 transition-transform touch-manipulation"
+            className="mobile-header-search-btn !flex !visible !opacity-100 w-[46px] h-[46px] shrink-0 rounded-2xl bg-[#16243b] border border-blue-400/70 items-center justify-center text-white shadow-lg shadow-blue-950/40 active:scale-95 transition-transform touch-manipulation"
           >
             <Search size={23} className="text-blue-300" strokeWidth={2.7} />
           </button>
