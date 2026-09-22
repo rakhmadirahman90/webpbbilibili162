@@ -161,6 +161,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
   // Separate mobile expansion state so desktop hover state can never navigate/reset the mobile submenu.
   const [mobileOpenMenu, setMobileOpenMenu] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [mobileSearch, setMobileSearch] = useState('');
   const mobileSearchInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -388,28 +389,53 @@ export default function Navbar({ onNavigate }: NavbarProps) {
           </div>})}
           {session ? <><button type="button" onClick={() => navigate('/admin/dashboard')} className="px-3 py-2 rounded-full bg-emerald-600 text-white text-[10px] font-bold uppercase"><LayoutDashboard size={13} className="inline mr-1" />Dashboard</button><button type="button" onClick={logout} className="p-2 rounded-full bg-red-500/10 text-red-300"><LogOut size={15}/></button></> : <button type="button" onClick={() => navigate('/login')} className="px-3 py-2 rounded-full bg-blue-600 text-white text-[10px] font-bold uppercase"><LogIn size={13} className="inline mr-1"/>Login</button>}
         </div>
-        <div className="lg:hidden ml-auto flex items-center gap-1.5 shrink-0 !flex !visible !opacity-100">
+        <div className="lg:hidden ml-auto flex items-center gap-1.5 shrink-0" style={{ display: 'flex', visibility: 'visible', opacity: 1 }}>
+          {/* Search is a permanent mobile header action; it must remain visible beside the menu button. */}
           <button
+            id="mobile-search-toggle-btn"
             type="button"
-            aria-label="Cari menu"
-            title="Cari menu"
+            aria-label="Cari"
+            title="Cari"
+            aria-expanded={mobileSearchOpen}
             onClick={() => {
-              setMobileOpen(true);
+              setMobileSearchOpen(v => !v);
               setMobileOpenMenu(null);
               window.setTimeout(() => mobileSearchInputRef.current?.focus(), 80);
             }}
-            className="!flex !visible !opacity-100 w-10 h-10 sm:w-11 sm:h-11 shrink-0 rounded-2xl bg-slate-800/90 border border-blue-400/25 flex items-center justify-center text-slate-200 shadow-lg active:scale-95 transition-transform touch-manipulation"
+            style={{ display: 'flex', visibility: 'visible', opacity: 1, flex: '0 0 44px' }}
+            className="w-11 h-11 shrink-0 rounded-2xl bg-slate-800/95 border border-blue-400/35 flex items-center justify-center text-slate-100 shadow-lg shadow-blue-950/30 active:scale-95 transition-transform touch-manipulation"
           >
-            <Search size={20} className="text-blue-300" strokeWidth={2.5} />
+            <Search size={21} className="text-blue-300" strokeWidth={2.7} />
           </button>
-          <button id="mobile-sidebar-toggle-btn" type="button" onClick={() => { setMobileOpen(v => { const next = !v; if (!next) setMobileOpenMenu(null); return next; }); }} aria-label={mobileOpen ? 'Tutup menu navigasi' : 'Buka menu navigasi'} aria-expanded={mobileOpen} style={{display:"flex",visibility:"visible",opacity:1}} className="w-11 h-11 shrink-0 rounded-2xl bg-slate-800/90 border border-white/15 flex items-center justify-center text-slate-200 shadow-lg active:scale-95 transition-transform touch-manipulation"><span className="flex flex-col gap-1.5 pointer-events-none"><i className={`block w-5 h-0.5 bg-blue-300 rounded ${mobileOpen ? 'rotate-45 translate-y-2' : ''}`} /><i className={`block w-4 h-0.5 bg-slate-300 rounded ml-auto ${mobileOpen ? 'opacity-0' : ''}`} /><i className={`block w-5 h-0.5 bg-blue-300 rounded ${mobileOpen ? '-rotate-45 -translate-y-2' : ''}`} /></span></button>
+          <button id="mobile-sidebar-toggle-btn" type="button" onClick={() => { setMobileOpen(v => { const next = !v; if (!next) setMobileOpenMenu(null); return next; }); }} aria-label={mobileOpen ? 'Tutup menu navigasi' : 'Buka menu navigasi'} aria-expanded={mobileOpen} style={{display:"flex",visibility:"visible",opacity:1,flex:"0 0 44px"}} className="w-11 h-11 shrink-0 rounded-2xl bg-slate-800/90 border border-white/15 flex items-center justify-center text-slate-200 shadow-lg active:scale-95 transition-transform touch-manipulation"><span className="flex flex-col gap-1.5 pointer-events-none"><i className={`block w-5 h-0.5 bg-blue-300 rounded ${mobileOpen ? 'rotate-45 translate-y-2' : ''}`} /><i className={`block w-4 h-0.5 bg-slate-300 rounded ml-auto ${mobileOpen ? 'opacity-0' : ''}`} /><i className={`block w-5 h-0.5 bg-blue-300 rounded ${mobileOpen ? '-rotate-45 -translate-y-2' : ''}`} /></span></button>
+        </div>
+      </div>
+      <div
+        className={`lg:hidden fixed left-2 right-2 top-[60px] z-[2147483003] transition-all duration-150 ${mobileSearchOpen ? 'translate-y-0 opacity-100 pointer-events-auto' : '-translate-y-2 opacity-0 pointer-events-none'}`}
+        aria-hidden={!mobileSearchOpen}
+      >
+        <div className="rounded-2xl border border-blue-500/35 bg-[#0b1224]/98 p-2.5 shadow-2xl backdrop-blur-xl">
+          <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-[#111b31] px-3 py-2.5">
+            <Search size={18} className="shrink-0 text-blue-400" />
+            <input
+              ref={mobileSearchInputRef}
+              type="search"
+              value={mobileSearch}
+              onChange={(e) => setMobileSearch(e.target.value)}
+              placeholder="Cari menu..."
+              aria-label="Cari menu"
+              className="min-w-0 flex-1 bg-transparent text-base font-semibold text-white outline-none placeholder:text-slate-500"
+            />
+            {mobileSearch && <button type="button" onClick={() => setMobileSearch('')} aria-label="Hapus pencarian" className="text-slate-400 hover:text-white"><X size={16}/></button>}
+            <button type="button" onClick={() => setMobileSearchOpen(false)} aria-label="Tutup pencarian" className="rounded-lg p-1 text-slate-400 hover:bg-white/5 hover:text-white"><X size={17}/></button>
+          </div>
         </div>
       </div>
       <div style={{visibility:mobileOpen?"visible":"hidden"}} className={`lg:hidden fixed inset-0 z-[2147483001] bg-black/70 backdrop-blur-sm transition-opacity duration-150 ${mobileOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => setMobileOpen(false)} aria-hidden="true" />
       <aside aria-label="Menu navigasi seluler" style={{visibility:mobileOpen?"visible":"hidden"}} className={`lg:hidden fixed inset-y-0 left-0 z-[2147483002] w-[min(86vw,350px)] max-w-[350px] bg-[#0b1224] border-r border-white/10 shadow-2xl flex flex-col overflow-hidden transition-transform duration-150 ease-out ${mobileOpen ? 'translate-x-0 pointer-events-auto' : '-translate-x-full pointer-events-none'} touch-manipulation`} onClick={(e) => e.stopPropagation()}>
         <div className="h-16 min-h-16 shrink-0 px-4 flex items-center justify-between border-b border-white/10 bg-slate-950/95">
           <div className="flex items-center gap-2.5 min-w-0"><img src={branding.logo_url} className="w-9 h-9 object-contain shrink-0" alt="PB Bilibili 162" loading="eager"/><div className="min-w-0 font-black text-sm italic uppercase truncate">{branding.brand_name_main} <span className="text-blue-500">{branding.brand_name_accent}</span><span className="block text-[7px] tracking-[.18em] text-slate-500 not-italic mt-0.5">PROFESSIONAL CLUB</span></div></div>
-          <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMobileOpen(false); setMobileOpenMenu(null); setMobileSearch(''); }} className="w-10 h-10 min-w-10 rounded-xl bg-slate-800 border border-white/10 flex items-center justify-center text-slate-200 active:scale-95 touch-manipulation" aria-label="Tutup menu"><X size={19} className="pointer-events-none"/></button>
+          <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMobileOpen(false); setMobileOpenMenu(null); setMobileSearch(''); setMobileSearchOpen(false); }} className="w-10 h-10 min-w-10 rounded-xl bg-slate-800 border border-white/10 flex items-center justify-center text-slate-200 active:scale-95 touch-manipulation" aria-label="Tutup menu"><X size={19} className="pointer-events-none"/></button>
         </div>
         <div className="shrink-0 px-3 pt-3 pb-2">
           <div className="flex items-center gap-2 rounded-xl border border-blue-500/30 bg-[#111b31] px-3 py-2.5 shadow-inner">
