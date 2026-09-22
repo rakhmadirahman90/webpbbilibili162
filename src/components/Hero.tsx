@@ -274,7 +274,7 @@ export default function Hero() {
   }
 
   return (
-    <section id="home" className="relative w-full pt-16 lg:pt-20 pb-2 sm:pb-4 bg-[#070d1a] overflow-hidden">
+    <section id="home" className="relative w-full pt-16 lg:pt-20 pb-0 sm:pb-2 bg-[#070d1a] overflow-hidden">
       <div className="max-w-7xl mx-auto px-2.5 sm:px-4 md:px-8 w-full">
         {/* Slider Aspect Ratio Container */}
         <div className="relative w-full aspect-[16/9] sm:aspect-[16/9] md:aspect-[2.1/1] lg:aspect-[2.25/1] min-h-[220px] sm:min-h-[280px] max-h-[580px] rounded-2xl lg:rounded-3xl border border-white/10 shadow-2xl overflow-hidden flex items-center justify-center">
