@@ -390,8 +390,8 @@ export default function Navbar({ onNavigate }: NavbarProps) {
           {session ? <><button type="button" onClick={() => navigate('/admin/dashboard')} className="px-3 py-2 rounded-full bg-emerald-600 text-white text-[10px] font-bold uppercase"><LayoutDashboard size={13} className="inline mr-1" />Dashboard</button><button type="button" onClick={logout} className="p-2 rounded-full bg-red-500/10 text-red-300"><LogOut size={15}/></button></> : <button type="button" onClick={() => navigate('/login')} className="px-3 py-2 rounded-full bg-blue-600 text-white text-[10px] font-bold uppercase"><LogIn size={13} className="inline mr-1"/>Login</button>}
         </div>
         <div
-          className="lg:hidden absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-2 shrink-0 overflow-visible"
-          style={{ display: 'flex', visibility: 'visible', opacity: 1, position: 'absolute', zIndex: 2147483005 }}
+          className="lg:hidden ml-auto relative flex items-center justify-end gap-2 shrink-0 overflow-visible"
+          style={{ display: 'flex', visibility: 'visible', opacity: 1, zIndex: 2147483005 }}
           data-mobile-header-actions="true"
         >
           {/* Search MUST stay visible in the mobile header, immediately beside the sidebar/menu button. */}
@@ -415,15 +415,15 @@ export default function Navbar({ onNavigate }: NavbarProps) {
               opacity: 1,
               position: 'relative',
               zIndex: 2147483006,
-              flex: '0 0 42px',
-              width: 42,
-              height: 42,
-              minWidth: 42,
-              minHeight: 42
+              flex: '0 0 46px',
+              width: 46,
+              height: 46,
+              minWidth: 46,
+              minHeight: 46
             }}
-            className="!flex !visible !opacity-100 w-[42px] h-[42px] shrink-0 rounded-2xl bg-[#16243b] border border-blue-400/60 items-center justify-center text-white shadow-lg shadow-blue-950/40 active:scale-95 transition-transform touch-manipulation"
+            className="!flex !visible !opacity-100 w-[46px] h-[46px] shrink-0 rounded-2xl bg-[#16243b] border border-blue-400/70 items-center justify-center text-white shadow-lg shadow-blue-950/40 active:scale-95 transition-transform touch-manipulation"
           >
-            <Search size={20} className="text-blue-300" strokeWidth={2.8} />
+            <Search size={23} className="text-blue-300" strokeWidth={2.7} />
           </button>
           <button
             id="mobile-sidebar-toggle-btn"
@@ -431,14 +431,12 @@ export default function Navbar({ onNavigate }: NavbarProps) {
             onClick={() => { setMobileSearchOpen(false); setMobileOpen(v => { const next = !v; if (!next) setMobileOpenMenu(null); return next; }); }}
             aria-label={mobileOpen ? 'Tutup menu navigasi' : 'Buka menu navigasi'}
             aria-expanded={mobileOpen}
-            style={{ display:'flex', visibility:'visible', opacity:1, position:'relative', zIndex:2147483006, flex:'0 0 42px', width:42, height:42, minWidth:42, minHeight:42 }}
-            className="!flex !visible !opacity-100 w-[42px] h-[42px] shrink-0 rounded-2xl bg-slate-800/90 border border-white/15 items-center justify-center text-slate-200 shadow-lg active:scale-95 transition-transform touch-manipulation"
+            style={{ display:'flex', visibility:'visible', opacity:1, position:'relative', zIndex:2147483006, flex:'0 0 46px', width:46, height:46, minWidth:46, minHeight:46 }}
+            className="!flex !visible !opacity-100 w-[46px] h-[46px] shrink-0 rounded-2xl bg-slate-800/95 border border-blue-300/25 items-center justify-center text-slate-200 shadow-lg active:scale-95 transition-transform touch-manipulation"
           >
-            <span className="flex w-5 flex-col items-center gap-1.5 pointer-events-none">
-              <i className={`block w-5 h-0.5 bg-blue-300 rounded transition-transform origin-center ${mobileOpen ? 'rotate-45 translate-y-2' : ''}`} />
-              <i className={`block w-4 h-0.5 bg-slate-300 rounded transition-opacity ${mobileOpen ? 'opacity-0' : ''}`} />
-              <i className={`block w-5 h-0.5 bg-blue-300 rounded transition-transform origin-center ${mobileOpen ? '-rotate-45 -translate-y-2' : ''}`} />
-            </span>
+            {mobileOpen
+              ? <X size={24} className="text-blue-300 pointer-events-none" strokeWidth={2.4} />
+              : <Menu size={25} className="text-blue-200 pointer-events-none" strokeWidth={2.4} />}
           </button>
         </div>
       </div>
