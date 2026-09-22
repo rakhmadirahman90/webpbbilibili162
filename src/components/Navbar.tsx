@@ -467,25 +467,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
           <div className="flex items-center gap-2.5 min-w-0"><img src={branding.logo_url} className="w-9 h-9 object-contain shrink-0" alt="PB Bilibili 162" loading="eager"/><div className="min-w-0 font-black text-sm italic uppercase truncate">{branding.brand_name_main} <span className="text-blue-500">{branding.brand_name_accent}</span><span className="block text-[7px] tracking-[.18em] text-slate-500 not-italic mt-0.5">PROFESSIONAL CLUB</span></div></div>
           <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMobileOpen(false); setMobileOpenMenu(null); setMobileSearch(''); setMobileSearchOpen(false); }} className="w-10 h-10 min-w-10 rounded-xl bg-slate-800 border border-white/10 flex items-center justify-center text-slate-200 active:scale-95 touch-manipulation" aria-label="Tutup menu"><X size={19} className="pointer-events-none"/></button>
         </div>
-        <div className="shrink-0 px-3 pt-3 pb-2">
-          <div className="flex items-center gap-2 rounded-xl border border-blue-500/30 bg-[#111b31] px-3 py-2.5 shadow-inner">
-            <Search size={17} className="shrink-0 text-blue-400" />
-            <input
-              ref={mobileSearchInputRef}
-              type="search"
-              value={mobileSearch}
-              onChange={(e) => setMobileSearch(e.target.value)}
-              placeholder="Cari menu..."
-              aria-label="Cari menu navigasi"
-              className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-white outline-none placeholder:text-slate-500"
-            />
-            {mobileSearch && (
-              <button type="button" onClick={() => setMobileSearch('')} aria-label="Hapus pencarian" className="text-slate-400 hover:text-white">
-                <X size={15} />
-              </button>
-            )}
-          </div>
-        </div>
+        {/* Pencarian hanya tersedia melalui ikon Search di header mobile. */}
         <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 py-2 [scrollbar-width:thin] touch-pan-y">
           <div className="space-y-0.5 pb-2">
             {visibleTopMenus.map(menu => {
