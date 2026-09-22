@@ -388,18 +388,19 @@ export default function Navbar({ onNavigate }: NavbarProps) {
           </div>})}
           {session ? <><button type="button" onClick={() => navigate('/admin/dashboard')} className="px-3 py-2 rounded-full bg-emerald-600 text-white text-[10px] font-bold uppercase"><LayoutDashboard size={13} className="inline mr-1" />Dashboard</button><button type="button" onClick={logout} className="p-2 rounded-full bg-red-500/10 text-red-300"><LogOut size={15}/></button></> : <button type="button" onClick={() => navigate('/login')} className="px-3 py-2 rounded-full bg-blue-600 text-white text-[10px] font-bold uppercase"><LogIn size={13} className="inline mr-1"/>Login</button>}
         </div>
-        <div className="lg:hidden ml-auto flex items-center gap-2 shrink-0">
+        <div className="lg:hidden ml-auto flex items-center gap-1.5 shrink-0 !flex !visible !opacity-100">
           <button
             type="button"
             aria-label="Cari menu"
+            title="Cari menu"
             onClick={() => {
               setMobileOpen(true);
               setMobileOpenMenu(null);
               window.setTimeout(() => mobileSearchInputRef.current?.focus(), 80);
             }}
-            className="w-11 h-11 shrink-0 rounded-2xl bg-slate-800/90 border border-white/15 flex items-center justify-center text-slate-200 shadow-lg active:scale-95 transition-transform touch-manipulation"
+            className="!flex !visible !opacity-100 w-10 h-10 sm:w-11 sm:h-11 shrink-0 rounded-2xl bg-slate-800/90 border border-blue-400/25 flex items-center justify-center text-slate-200 shadow-lg active:scale-95 transition-transform touch-manipulation"
           >
-            <Search size={21} className="text-blue-300" />
+            <Search size={20} className="text-blue-300" strokeWidth={2.5} />
           </button>
           <button id="mobile-sidebar-toggle-btn" type="button" onClick={() => { setMobileOpen(v => { const next = !v; if (!next) setMobileOpenMenu(null); return next; }); }} aria-label={mobileOpen ? 'Tutup menu navigasi' : 'Buka menu navigasi'} aria-expanded={mobileOpen} style={{display:"flex",visibility:"visible",opacity:1}} className="w-11 h-11 shrink-0 rounded-2xl bg-slate-800/90 border border-white/15 flex items-center justify-center text-slate-200 shadow-lg active:scale-95 transition-transform touch-manipulation"><span className="flex flex-col gap-1.5 pointer-events-none"><i className={`block w-5 h-0.5 bg-blue-300 rounded ${mobileOpen ? 'rotate-45 translate-y-2' : ''}`} /><i className={`block w-4 h-0.5 bg-slate-300 rounded ml-auto ${mobileOpen ? 'opacity-0' : ''}`} /><i className={`block w-5 h-0.5 bg-blue-300 rounded ${mobileOpen ? '-rotate-45 -translate-y-2' : ''}`} /></span></button>
         </div>
