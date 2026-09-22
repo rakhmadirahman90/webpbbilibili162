@@ -317,7 +317,19 @@ export function warmupRouteData(pathname?: string) {
   const tasks: Promise<any>[] = [];
   const warm = (promise: Promise<any>) => tasks.push(promise.catch(() => null));
 
-  if (path === '/' || path === '/berita' || path === '/news' || path.startsWith('/admin/berita')) {
+  if (path === '/') {
+    // Warm the exact LandingPage queries immediately so the first render can
+    // reuse the same in-flight/cached responses instead of starting a second
+    // request waterfall after the shell is already visible.
+    warm(supabase.from('pendaftaran').select('id,nama,foto_url,kategori,kategori_atlet,bilibili_cup1_photo_path,updated_at').order('nama', { ascending: true }));
+    warm(supabase.from('rankings').select('pendaftaran_id,player_name,total_points,photo_url').order('total_points', { ascending: false }));
+    warm(supabase.from('atlet_stats').select('pendaftaran_id,points,total_points,seed'));
+    warm(supabase.from('v_bilibili_162_cup1_athlete_seeded').select('*'));
+    warm(supabase.from('berita').select('id,judul,ringkasan,gambar_url,tanggal,views,comments_count:komentar(count)').order('tanggal', { ascending: false }).limit(7));
+    warm(supabase.from('gallery').select('id,title,type,url,thumbnail_url,description').order('created_at', { ascending: false }).limit(12));
+    warm(supabase.from('agenda_pb162').select('*').eq('is_published', true).order('event_date', { ascending: true }).order('start_time', { ascending: true }));
+  }
+  if (path === '/berita' || path === '/news' || path.startsWith('/admin/berita')) {
     warm(supabase.from('berita').select('*, comments_count:komentar(count)').order('tanggal', { ascending: false }));
   }
   if (path === '/peringkat' || path === '/rankings' || path === '/ranking' || path === '/atlet' || path === '/players' || path.startsWith('/admin/atlet') || path.startsWith('/admin/ranking')) {
