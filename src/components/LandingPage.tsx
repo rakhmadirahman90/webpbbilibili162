@@ -532,7 +532,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
                     </div>
                   </div>
 
-                  <button onClick={() => goNews()} className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 py-3.5 text-[10px] font-black uppercase tracking-[.16em] text-white shadow-lg shadow-blue-600/15 sm:hidden">
+                  <button onClick={() => goNews()} className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-2.5 text-[10px] font-black uppercase tracking-[.16em] text-white shadow-lg shadow-blue-600/15 sm:hidden">
                     Berita Lainnya / Selengkapnya <ArrowRight size={14} />
                   </button>
                 </>
@@ -638,7 +638,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
                     </button>
                   ))}
                 </div>
-                <button onClick={() => go('atlet')} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 py-3 text-[9px] font-black uppercase tracking-[.16em] text-slate-300 transition hover:border-blue-500/40 hover:text-white">
+                <button onClick={() => go('atlet')} className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 py-2.5 text-[9px] font-black uppercase tracking-[.16em] text-slate-300 transition hover:border-blue-500/40 hover:text-white">
                   Buka Profil & Data Atlet Lengkap <ArrowRight size={14} />
                 </button>
               </div>
@@ -1236,23 +1236,66 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           #landing-page *, #landing-page *::before, #landing-page *::after { animation-duration:.01ms!important; transition-duration:.01ms!important; }
         }
         @media (max-width: 640px) {
+          /* Final mobile rhythm: keep sections visually close without crowding. */
           #landing-page .landing-hero { min-height:calc(100svh - 58px); }
           #landing-page .landing-hero > div:nth-child(2) { min-height:calc(100svh - 58px); }
 
           #landing-page .landing-section { scroll-margin-top:76px; }
           #landing-page #landing-news,
           #landing-page #landing-athletes,
-          #landing-page #landing-gallery {
-            padding-top:24px !important;
-            padding-bottom:24px !important;
+          #landing-page #landing-gallery,
+          #landing-page #agenda-pb162.agenda-landing-compact {
+            padding-top:8px !important;
+            padding-bottom:8px !important;
           }
-          #landing-page .landing-section h2 { text-wrap:balance; }
-          #landing-page button { -webkit-tap-highlight-color:transparent; }
+
+          #landing-page #landing-news .landing-section-header-box,
+          #landing-page #landing-athletes .landing-section-header-box,
+          #landing-page #landing-gallery .landing-section-header-box,
+          #landing-page #agenda-pb162.agenda-landing-compact > div > div:first-child {
+            margin-top:0 !important;
+            margin-bottom:7px !important;
+          }
+
+          #landing-page #landing-gallery > div {
+            padding-top:8px !important;
+            padding-bottom:8px !important;
+          }
+
+          #landing-page #landing-news .landing-featured-news-meta {
+            margin-top:.5rem !important;
+          }
+
+          #landing-page #landing-athletes > div:not(.landing-section-header-box) {
+            margin-top:0 !important;
+          }
+
           #landing-page #landing-athletes .grid-cols-3 { gap:7px; }
           #landing-page #landing-athletes .grid-cols-3 > button { min-width:0; }
           #landing-page #landing-gallery button { touch-action:manipulation; }
           #landing-page #landing-gallery > div > button.group { border-radius:16px; }
-          #landing-page #landing-gallery p { line-height:1.55; }
+          #landing-page #landing-gallery p { line-height:1.45; }
+
+          /* Keep the search + sidebar actions visible as a fixed-size pair on mobile. */
+          [data-mobile-header-actions="true"] {
+            display:flex !important;
+            visibility:visible !important;
+            opacity:1 !important;
+            flex:0 0 auto !important;
+            min-width:100px !important;
+            gap:6px !important;
+          }
+          #mobile-search-toggle-btn,
+          #mobile-sidebar-toggle-btn {
+            display:flex !important;
+            visibility:visible !important;
+            opacity:1 !important;
+            flex:0 0 44px !important;
+            width:44px !important;
+            height:44px !important;
+            min-width:44px !important;
+            min-height:44px !important;
+          }
         }
       `}</style>
     </div>
