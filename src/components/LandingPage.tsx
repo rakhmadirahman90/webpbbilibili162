@@ -1185,6 +1185,53 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           }
         }
 
+        /* Mobile landing: tighten vertical rhythm for a compact professional layout. */
+        @media (max-width:640px) {
+          #landing-page #landing-news,
+          #landing-page #landing-athletes,
+          #landing-page #landing-gallery,
+          #landing-page #agenda-pb162.agenda-landing-compact {
+            padding-top:6px !important;
+            padding-bottom:6px !important;
+          }
+          #landing-page #landing-news {
+            margin-top:0 !important;
+          }
+          #landing-page .landing-section-header-box {
+            margin-bottom:7px !important;
+          }
+          #landing-page #landing-news .landing-section-header-box,
+          #landing-page #landing-athletes .landing-section-header-box,
+          #landing-page #landing-gallery .landing-section-header-box,
+          #landing-page #agenda-pb162.agenda-landing-compact > div > div:first-child {
+            margin-top:0 !important;
+          }
+          #landing-page #landing-gallery > div {
+            padding-top:6px !important;
+            padding-bottom:6px !important;
+          }
+          #landing-page #landing-news > div:not(.landing-section-header-box),
+          #landing-page #landing-athletes > div:not(.landing-section-header-box) {
+            margin-top:0 !important;
+          }
+          #landing-page #landing-news .landing-featured-news-title {
+            line-height:1.16 !important;
+          }
+          #landing-page #landing-news .landing-featured-news-meta {
+            margin-top:.55rem !important;
+          }
+          #landing-page #landing-athletes .grid {
+            margin-top:0 !important;
+          }
+          #landing-page #agenda-pb162.agenda-landing-compact > div {
+            padding-top:6px !important;
+            padding-bottom:6px !important;
+          }
+          #landing-page #agenda-pb162.agenda-landing-compact > div > div:first-child {
+            margin-bottom:7px !important;
+          }
+        }
+
         @media (prefers-reduced-motion: reduce) {
           #landing-page *, #landing-page *::before, #landing-page *::after { animation-duration:.01ms!important; transition-duration:.01ms!important; }
         }
