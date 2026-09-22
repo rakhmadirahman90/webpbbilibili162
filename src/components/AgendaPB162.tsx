@@ -113,7 +113,7 @@ export default function AgendaPB162({ compact = false }: { compact?: boolean }) 
             type="button"
             onClick={() => setSelected(item)}
             className={compact
-              ? "group relative flex min-h-[148px] w-full min-w-0 flex-col items-stretch gap-2 rounded-xl border border-white/10 bg-[#0b1224] p-2 text-left shadow-lg transition hover:-translate-y-0.5 hover:border-blue-500/40 hover:bg-[#0d1730] focus:outline-none focus:ring-2 focus:ring-blue-500/50 sm:min-h-[142px] sm:flex-row sm:items-center sm:gap-3 sm:p-3"
+              ? "group relative flex min-h-[158px] w-full min-w-0 flex-col items-stretch gap-2 rounded-xl border border-white/10 bg-[#0b1224] p-2 text-left shadow-lg transition hover:-translate-y-0.5 hover:border-blue-500/40 hover:bg-[#0d1730] focus:outline-none focus:ring-2 focus:ring-blue-500/50 sm:min-h-[142px] sm:flex-row sm:items-center sm:gap-3 sm:p-3"
               : "group flex w-full min-w-0 items-center gap-3 rounded-xl border border-white/10 bg-[#0b1224] p-2.5 text-left shadow-lg transition hover:-translate-y-0.5 hover:border-blue-500/40 hover:bg-[#0d1730] focus:outline-none focus:ring-2 focus:ring-blue-500/50 sm:gap-4 sm:p-3"}
           >
             <div className={compact ? "hidden h-16 w-20 shrink-0 overflow-hidden rounded-xl bg-slate-900 sm:block sm:h-16 sm:w-20" : "hidden h-16 w-20 shrink-0 overflow-hidden rounded-xl bg-slate-900 sm:block sm:h-16 sm:w-20"}>
