@@ -1232,23 +1232,26 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           }
         }
 
-        /* Final landing/footer spacing: reduce the empty band below the agenda. */
+        /* Agenda/footer spacing: keep natural flow so the last row is never clipped. */
         #landing-page {
-          margin-bottom:-36px !important;
+          margin-bottom:0 !important;
         }
         #landing-page #agenda-pb162.agenda-landing-compact {
           margin-bottom:0 !important;
-          padding-bottom:0 !important;
+          padding-bottom:12px !important;
         }
         #landing-page #agenda-pb162.agenda-landing-compact > div {
-          padding-bottom:0 !important;
+          padding-bottom:12px !important;
         }
         #landing-page #agenda-pb162.agenda-landing-compact > div > div:last-child {
           margin-bottom:0 !important;
         }
-        @media (min-width:641px) {
-          #landing-page {
-            margin-bottom:-24px !important;
+        @media (max-width:640px) {
+          #landing-page #agenda-pb162.agenda-landing-compact {
+            padding-bottom:10px !important;
+          }
+          #landing-page #agenda-pb162.agenda-landing-compact > div {
+            padding-bottom:10px !important;
           }
         }
 
