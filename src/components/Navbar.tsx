@@ -415,10 +415,10 @@ export default function Navbar({ onNavigate }: NavbarProps) {
         </div>
         <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 py-2 [scrollbar-width:thin] touch-pan-y">
           <div className="space-y-0.5 pb-2">
-            {topMenus.map(menu => {
+            {visibleTopMenus.map(menu => {
               const subs = getSubMenus(menu.id);
               const drop = menu.type === 'dropdown' || subs.length > 0;
-              const expanded = mobileOpenMenu === menu.id;
+              const expanded = normalizedMobileSearch ? true : mobileOpenMenu === menu.id;
               const isAtlet = String(menu?.path || '').trim().toLowerCase() === 'atlet' || String(menu?.label || '').trim().toLowerCase() === 'atlet';
               return <div key={menu.id} className="rounded-xl overflow-hidden">
                 <button type="button" aria-expanded={drop ? expanded : undefined} data-mobile-nav-parent={isAtlet ? 'atlet' : undefined} onClick={(e) => handleMobileParentClick(e, menu, drop)} className={`w-full min-h-[48px] px-3 flex items-center justify-between gap-3 rounded-xl text-left text-[14px] leading-5 font-bold uppercase tracking-[.01em] transition-colors touch-manipulation select-none ${expanded ? 'bg-blue-600/15 text-blue-300' : 'text-slate-200 hover:bg-white/5 active:bg-white/10'}`}>
@@ -437,7 +437,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
                         key={sub.id}
                         href={href}
                         onPointerDown={() => handleNavigationPointerDown(menu.path, subTarget)}
-                        onClick={() => { setMobileOpen(false); setMobileOpenMenu(null); }}
+                        onClick={() => { setMobileOpen(false); setMobileOpenMenu(null); setMobileSearch(''); }}
                         className="w-full min-h-[44px] px-2.5 flex items-center gap-2.5 text-left text-[13px] leading-5 text-slate-300 hover:text-white hover:bg-white/5 active:bg-white/10 rounded-lg touch-manipulation select-none"
                       >
                         <span className="w-5 min-w-5 flex justify-center pointer-events-none">{iconFor(sub.path, sub.label)}</span>
