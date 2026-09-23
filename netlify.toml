@@ -5,6 +5,11 @@
 [build.environment]
   NODE_VERSION = "20"
 
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+  external_node_modules = ["express", "serverless-http"]
+
 [[headers]]
   for = "/"
   [headers.values]
@@ -22,6 +27,14 @@
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
 
+# Express API -> Netlify Function. Keep this rule before the SPA fallback.
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+  force = true
+
+# SPA fallback for React Router/public pages.
 [[redirects]]
   from = "/*"
   to = "/index.html"
