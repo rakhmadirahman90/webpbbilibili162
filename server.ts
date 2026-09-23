@@ -72,9 +72,10 @@ async function injectNewsMetaTags(html: string, newsId: string, hostHeader?: str
   }
 }
 
-async function startServer() {
+export async function createApp() {
   try {
     const app = express();
+    (globalThis as any).__pbBilibiliApp = app;
     const PORT = 3000;
 
     app.set('trust proxy', true);
@@ -497,8 +498,7 @@ async function startServer() {
             },
             body: JSON.stringify(payload),
             signal: controller.signal
-          }).finally(() => clearTimeout(timeoutId));
-          if (!res.ok) {
+          }).finally(() => clearTimeout(timeoutId));          if (!res.ok) {
             delete payload.id;
             const insCtrl = new AbortController();
             const insTimer = setTimeout(() => insCtrl.abort(), 4000);
@@ -997,8 +997,7 @@ async function startServer() {
         const payloadStr = JSON.stringify({ table: 'konfigurasi_popup', eventType: 'UPSERT', data: items, value: items });
         for (const client of sseClients) {
           try { client.write(`data: ${payloadStr}\n\n`); } catch (e) {}
-        }
-        res.json({ success: true, data: items });
+        }        res.json({ success: true, data: items });
       } catch (err: any) {
         res.status(500).json({ error: err.message });
       }
@@ -1322,13 +1321,15 @@ async function startServer() {
       });
     }
 
-    app.listen(PORT, "0.0.0.0", () => {
-      console.log(`Server running on http://0.0.0.0:${PORT}`);
-    });
+    return app;
   } catch (error) {
     console.error("Critical server error during startup:", error);
-    process.exit(1);
+    throw error;
   }
 }
 
-startServer();
+if (process.env.NETLIFY_FUNCTION !== "true") {
+  createApp().catch((error) => {
+    console.error("Critical server error during startup:", error);
+  });
+}
