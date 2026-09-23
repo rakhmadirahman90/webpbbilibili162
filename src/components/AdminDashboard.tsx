@@ -133,7 +133,7 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="w-full h-full flex flex-col justify-between p-2.5 sm:p-5 md:p-8 space-y-2.5 sm:space-y-4 md:space-y-6 overflow-hidden md:overflow-visible min-h-0 select-none">
+    <div w-full min-h-full h-auto flex flex-col p-2.5 sm:p-5 md:p-8 gap-2.5 sm:gap-4 md:gap-6 overflow-visible min-h-0 select-none pb-8 sm:pb-10 md:pb-12">
       {/* Header Banner */}
       <div className="flex flex-row items-center justify-between gap-3 bg-gradient-to-r from-slate-900 via-[#0b1224] to-slate-900 p-3 sm:p-5 md:p-6 rounded-2xl md:rounded-3xl border border-white/10 shadow-2xl relative overflow-hidden shrink-0">
         <div className="absolute top-0 right-0 w-48 h-48 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
@@ -175,7 +175,7 @@ export default function AdminDashboard() {
 
       {/* Member Profile Highlights for Anggota */}
       {!isAdmin && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-2.5 sm:gap-4 md:gap-6 flex-1 min-h-0 items-stretch">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-2.5 sm:gap-4 md:gap-6 flex-none min-h-0 items-stretch">
           <div className="lg:col-span-1 bg-gradient-to-b from-slate-900 to-[#0b1224] p-3 sm:p-5 rounded-2xl md:rounded-3xl border border-blue-500/30 shadow-xl relative overflow-hidden flex flex-col justify-between shrink-0">
             <div className="flex items-center gap-3">
               <div className="relative shrink-0">
@@ -273,7 +273,7 @@ export default function AdminDashboard() {
 
       {/* Quick Navigation Panel for Admin */}
       {isAdmin && (
-        <div className="bg-[#0b1224]/90 p-2.5 sm:p-4 rounded-2xl md:rounded-3xl border border-white/10 shadow-xl flex flex-col justify-between flex-1 min-h-0 overflow-hidden">
+        <div className="bg-[#0b1224]/90 p-2.5 sm:p-4 rounded-2xl md:rounded-3xl border border-white/10 shadow-xl flex flex-col justify-between flex-none min-h-[220px] overflow-visible">
           <div className="flex items-center justify-between mb-1.5 sm:mb-2.5 shrink-0">
             <div className="flex items-center gap-2">
               <span className="w-1.5 h-3.5 sm:h-5 bg-blue-500 rounded-full shadow-[0_0_8px_rgba(59,130,246,0.6)]"></span>
