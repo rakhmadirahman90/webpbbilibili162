@@ -133,7 +133,7 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div w-full min-h-full h-auto flex flex-col p-2.5 sm:p-5 md:p-8 gap-2.5 sm:gap-4 md:gap-6 overflow-visible min-h-0 select-none pb-8 sm:pb-10 md:pb-12">
+    <div className="w-full min-h-full h-auto flex flex-col p-2.5 sm:p-5 md:p-8 gap-2.5 sm:gap-4 md:gap-6 overflow-visible min-h-0 select-none pb-8 sm:pb-10 md:pb-12">
       {/* Header Banner */}
       <div className="flex flex-row items-center justify-between gap-3 bg-gradient-to-r from-slate-900 via-[#0b1224] to-slate-900 p-3 sm:p-5 md:p-6 rounded-2xl md:rounded-3xl border border-white/10 shadow-2xl relative overflow-hidden shrink-0">
         <div className="absolute top-0 right-0 w-48 h-48 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
