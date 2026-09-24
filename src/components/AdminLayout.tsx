@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { supabase } from '../supabase';
 import Sidebar from './Sidebar';
@@ -40,6 +40,8 @@ export default function AdminLayout({ children, email }: AdminLayoutProps) {
   const location = useLocation();
   const [portalSession, setPortalSession] = useState<LocalPortalSession | null>(() => readLocalPortalSession());
   const [portalReady, setPortalReady] = useState(false);
+  const pathnameRef = useRef(location.pathname);
+  pathnameRef.current = location.pathname;
   const role = portalSession?.user?.user_metadata?.role === 'anggota' ? 'anggota' : 'admin';
   const isAdmin = role === 'admin';
   const portalEmail = portalSession?.user?.email || email || '';
@@ -71,6 +73,22 @@ export default function AdminLayout({ children, email }: AdminLayoutProps) {
       config: { presence: { key: String(session.user.id) } }
     });
 
+    const syncPresence = () => {
+      try {
+        window.dispatchEvent(new CustomEvent('presence-sync', {
+          detail: presence.presenceState()
+        }));
+      } catch {}
+    };
+
+    // Presence listeners MUST be registered before subscribe().
+    // AdminUsers consumes this single channel instead of creating a second
+    // channel with the same topic.
+    presence
+      .on('presence', { event: 'sync' }, syncPresence)
+      .on('presence', { event: 'join' }, syncPresence)
+      .on('presence', { event: 'leave' }, syncPresence);
+
     const track = async () => {
       const now = new Date().toISOString();
       const payload = {
@@ -81,7 +99,7 @@ export default function AdminLayout({ children, email }: AdminLayoutProps) {
         foto_url: metadata.foto_url || '',
         login_at: activity.login_at || now,
         last_seen_at: now,
-        pathname: typeof window !== 'undefined' ? window.location.pathname : '/admin'
+        pathname: pathnameRef.current || '/admin'
       };
       try {
         await presence.track(payload);
@@ -90,6 +108,7 @@ export default function AdminLayout({ children, email }: AdminLayoutProps) {
           login_at: payload.login_at,
           last_seen_at: now
         }));
+        syncPresence();
       } catch {}
     };
 
