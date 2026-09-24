@@ -434,45 +434,31 @@ const totalSeniorPutri = registrants.filter(r =>
     const profileUrl = `https://pbilibili162.99apps.id/api/share-athlete?athleteId=${encodeURIComponent(item.id)}`;
     const message = status === 'Diterima'
       ? [
-          '🏸 *PEMBERITAHUAN VERIFIKASI PENDAFTARAN*',
-          '*PB BILIBILI 162 PAREPARE*',
+          '🏸 *PB BILIBILI 162 PAREPARE*',
           '',
           `Halo *${item.nama.toUpperCase()}*,`,
-          'Pendaftaran Anda telah *DITERIMA & DIVERIFIKASI RESMI* oleh Admin.',
+          'Pendaftaran Anda telah *DITERIMA & AKTIF*.',
           '',
-          '📋 *INFORMASI ATLET*',
-          `• Nama: ${item.nama.toUpperCase()}`,
-          '• Status: ✅ *DITERIMA / AKTIF*',
-          `• Kelompok Usia: ${item.kategori || '-'}`,
-          `• Kategori Atlet: ${item.kategori_atlet || '-'}`,
-          `• Domisili: ${item.domisili || '-'}`,
+          `🎂 ${item.kategori || '-'} • ${item.kategori_atlet || '-'}`,
+          `📍 ${item.domisili || '-'}`,
           '',
-          '📸 *PROFIL & FOTO ATLET*',
+          '📸 *Profil & foto atlet:*',
           profileUrl,
           '',
-          '🌐 *LOGIN SISTEM*',
-          'https://pbilibili162.99apps.id/login',
-          '',
-          'Selamat bergabung dan salam olahraga!',
-          '*Pengurus PB BILIBILI 162*'
-        ].join('\n')
+          '_Pengurus PB BILIBILI 162_'
+        ].join('\\n')
       : [
-          '🏸 *PEMBERITAHUAN STATUS PENDAFTARAN*',
-          '*PB BILIBILI 162 PAREPARE*',
+          '🏸 *PB BILIBILI 162 PAREPARE*',
           '',
           `Halo *${item.nama.toUpperCase()}*,`,
-          'Berdasarkan hasil verifikasi berkas, pendaftaran Anda saat ini *BELUM DAPAT DITERIMA / DITOLAK*.',
+          'Pendaftaran Anda *DITOLAK*.',
+          `📝 Catatan: ${reason || 'Persyaratan pendaftaran belum terpenuhi.'}`,
           '',
-          '📋 *DETAIL PENDAFTARAN*',
-          `• Nama: ${item.nama.toUpperCase()}`,
-          '• Status: ❌ *DITOLAK*',
-          `• Catatan: ${reason || 'Persyaratan pendaftaran belum terpenuhi.'}`,
-          '',
-          '📸 *PROFIL & FOTO ATLET*',
+          '📸 *Profil & foto atlet:*',
           profileUrl,
           '',
-          '*Pengurus PB BILIBILI 162*'
-        ].join('\n');
+          '_Pengurus PB BILIBILI 162_'
+        ].join('\\n');
 
     const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
 
