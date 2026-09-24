@@ -17,7 +17,72 @@ export default function AdminAgendaPB162(){
  const set=(k:keyof FormState,v:any)=>setForm(f=>({...f,[k]:v}));
  return <div className="w-full p-3 sm:p-5 md:p-8 text-slate-200"><div className="max-w-6xl mx-auto space-y-5">
   <header className="rounded-3xl border border-white/10 bg-gradient-to-r from-slate-900 to-[#0b1224] p-5 sm:p-7"><div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"><div><div className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-blue-300"><CalendarDays size={15}/> Agenda PB Bilibili 162</div><h1 className="mt-2 text-2xl sm:text-3xl font-black italic uppercase text-white">Kelola Agenda <span className="text-blue-500">Realtime</span></h1><p className="mt-2 text-xs sm:text-sm text-slate-400">Setiap perubahan langsung diteruskan ke halaman publik.</p></div><span className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[9px] font-black uppercase ${live?'border-emerald-500/30 bg-emerald-500/10 text-emerald-300':'border-slate-700 bg-slate-900 text-slate-400'}`}><Radio size={13} className={live?'animate-pulse':''}/>{live?'Realtime terhubung':'Menghubungkan...'}</span></div></header>
-  <form onSubmit={save} className="rounded-3xl border border-white/10 bg-[#0b1224] p-4 sm:p-6 shadow-xl"><div className="flex items-center justify-between mb-4"><h2 className="font-black uppercase italic text-white">{editing?'Edit Agenda':'Tambah Agenda'}</h2>{editing&&<button type="button" onClick={()=>{setEditing(null);setForm(empty)}} className="p-2 rounded-xl bg-slate-800 text-slate-300"><X size={16}/></button>}</div><div className="grid grid-cols-1 md:grid-cols-2 gap-3"><label className="md:col-span-2 text-xs font-bold text-slate-300">Judul<input value={form.title} onChange={e=>set('title',e.target.value)} className="mt-1 w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-3 text-sm text-white outline-none focus:border-blue-500" placeholder="Contoh: Latihan Rutin PB Bilibili 162"/></label><label className="text-xs font-bold text-slate-300">Tanggal<input type="date" value={form.event_date} onChange={e=>set('event_date',e.target.value)} className="mt-1 w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-3 text-sm text-white"/></label><label className="text-xs font-bold text-slate-300">Kategori<input value={form.category||''} onChange={e=>set('category',e.target.value)} className="mt-1 w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-3 text-sm text-white"/></label><label className="text-xs font-bold text-slate-300">Mulai<input type="time" value={form.start_time||''} onChange={e=>set('start_time',e.target.value)} className="mt-1 w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-3 text-sm text-white"/></label><label className="text-xs font-bold text-slate-300">Selesai<input type="time" value={form.end_time||''} onChange={e=>set('end_time',e.target.value)} className="mt-1 w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-3 text-sm text-white"/></label><label className="text-xs font-bold text-slate-300">Lokasi<input value={form.location||''} onChange={e=>set('location',e.target.value)} className="mt-1 w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-3 text-sm text-white"/></label><label className="text-xs font-bold text-slate-300">Status<select value={form.status||'Terjadwal'} onChange={e=>set('status',e.target.value)} className="mt-1 w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-3 text-sm text-white"><option>Terjadwal</option><option>Berlangsung</option><option>Selesai</option><option>Dibatalkan</option></select></label><label className="md:col-span-2 text-xs font-bold text-slate-300">Keterangan<textarea value={form.description||''} onChange={e=>set('description',e.target.value)} rows={3} className="mt-1 w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-3 text-sm text-white" placeholder="Informasi tambahan..."/></label><label className="md:col-span-2 flex items-center gap-3 text-sm text-slate-300"><input type="checkbox" checked={form.is_published} onChange={e=>set('is_published',e.target.checked)} className="h-4 w-4 accent-blue-600"/> Tampilkan kepada publik</label></div><button disabled={saving} className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-xs font-black uppercase text-white hover:bg-blue-500 disabled:opacity-60">{editing?<Save size={15}/>:<Plus size={15}/>} {saving?'Menyimpan...':editing?'Simpan Perubahan':'Tambah Agenda'}</button></form>
+  <form onSubmit={save} className="rounded-3xl border border-white/10 bg-[#0b1224] p-4 sm:p-6 shadow-xl overflow-hidden">
+    <div className="flex items-start justify-between gap-3 mb-5">
+      <div>
+        <p className="text-[9px] font-black uppercase tracking-[0.18em] text-blue-400">Manajemen Agenda</p>
+        <h2 className="mt-1 text-lg sm:text-xl font-black uppercase italic text-white">{editing?'Edit Agenda':'Tambah Agenda'}</h2>
+        <p className="mt-1 text-[11px] leading-relaxed text-slate-500">Isi data kegiatan dengan lengkap. Tampilan formulir otomatis menyesuaikan ukuran layar.</p>
+      </div>
+      {editing&&<button type="button" onClick={()=>{setEditing(null);setForm(empty)}} className="shrink-0 p-2.5 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700" aria-label="Batal edit"><X size={17}/></button>}
+    </div>
+
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <label className="block min-w-0 md:col-span-2 text-[11px] font-bold text-slate-300">
+        <span className="block mb-1.5">Judul Agenda <span className="text-rose-400">*</span></span>
+        <input required value={form.title} onChange={e=>set('title',e.target.value)} className="block w-full min-w-0 h-12 rounded-xl border border-white/10 bg-slate-950 px-3.5 text-sm text-white outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15" placeholder="Contoh: Latihan Rutin PB Bilibili 162"/>
+      </label>
+
+      <label className="block min-w-0 text-[11px] font-bold text-slate-300">
+        <span className="block mb-1.5">Tanggal <span className="text-rose-400">*</span></span>
+        <input required type="date" value={form.event_date} onChange={e=>set('event_date',e.target.value)} className="block w-full min-w-0 h-12 rounded-xl border border-white/10 bg-slate-950 px-3.5 text-sm text-white outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15"/>
+      </label>
+
+      <label className="block min-w-0 text-[11px] font-bold text-slate-300">
+        <span className="block mb-1.5">Kategori</span>
+        <input value={form.category||''} onChange={e=>set('category',e.target.value)} className="block w-full min-w-0 h-12 rounded-xl border border-white/10 bg-slate-950 px-3.5 text-sm text-white outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15" placeholder="Kegiatan Klub"/>
+      </label>
+
+      <label className="block min-w-0 text-[11px] font-bold text-slate-300">
+        <span className="block mb-1.5">Mulai</span>
+        <input type="time" value={form.start_time||''} onChange={e=>set('start_time',e.target.value)} className="block w-full min-w-0 h-12 rounded-xl border border-white/10 bg-slate-950 px-3.5 text-sm text-white outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15"/>
+      </label>
+
+      <label className="block min-w-0 text-[11px] font-bold text-slate-300">
+        <span className="block mb-1.5">Selesai</span>
+        <input type="time" value={form.end_time||''} onChange={e=>set('end_time',e.target.value)} className="block w-full min-w-0 h-12 rounded-xl border border-white/10 bg-slate-950 px-3.5 text-sm text-white outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15"/>
+      </label>
+
+      <label className="block min-w-0 text-[11px] font-bold text-slate-300">
+        <span className="block mb-1.5">Lokasi</span>
+        <input value={form.location||''} onChange={e=>set('location',e.target.value)} className="block w-full min-w-0 h-12 rounded-xl border border-white/10 bg-slate-950 px-3.5 text-sm text-white outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15" placeholder="Contoh: GOR Tonrangeng"/>
+      </label>
+
+      <label className="block min-w-0 text-[11px] font-bold text-slate-300">
+        <span className="block mb-1.5">Status</span>
+        <select value={form.status||'Terjadwal'} onChange={e=>set('status',e.target.value)} className="block w-full min-w-0 h-12 rounded-xl border border-white/10 bg-slate-950 px-3.5 text-sm text-white outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15">
+          <option>Terjadwal</option><option>Berlangsung</option><option>Selesai</option><option>Dibatalkan</option>
+        </select>
+      </label>
+
+      <label className="block min-w-0 md:col-span-2 text-[11px] font-bold text-slate-300">
+        <span className="block mb-1.5">Keterangan</span>
+        <textarea value={form.description||''} onChange={e=>set('description',e.target.value)} rows={4} className="block w-full min-w-0 resize-y rounded-xl border border-white/10 bg-slate-950 px-3.5 py-3 text-sm leading-relaxed text-white outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15" placeholder="Informasi tambahan tentang agenda..."/>
+      </label>
+
+      <label className="md:col-span-2 flex min-w-0 items-center gap-3 rounded-xl border border-white/10 bg-slate-950/60 px-3.5 py-3 text-[11px] font-bold text-slate-300">
+        <input type="checkbox" checked={form.is_published} onChange={e=>set('is_published',e.target.checked)} className="h-5 w-5 shrink-0 accent-blue-600"/>
+        <span><span className="text-white">Tampilkan kepada publik</span><span className="block mt-0.5 text-[9px] font-medium text-slate-500">Agenda akan terlihat pada halaman publik jika diaktifkan.</span></span>
+      </label>
+    </div>
+
+    <div className="mt-5 flex flex-col sm:flex-row gap-2.5">
+      {editing&&<button type="button" onClick={()=>{setEditing(null);setForm(empty)}} className="order-2 sm:order-1 inline-flex min-h-12 w-full sm:w-auto items-center justify-center gap-2 rounded-xl border border-white/10 bg-slate-800 px-5 py-3 text-xs font-black uppercase text-slate-200 hover:bg-slate-700">Batal</button>}
+      <button type="submit" disabled={saving} className="order-1 sm:order-2 inline-flex min-h-12 w-full sm:flex-1 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-xs font-black uppercase tracking-wide text-white shadow-lg shadow-blue-600/15 hover:bg-blue-500 disabled:opacity-60">
+        {editing?<Save size={16}/>:<Plus size={16}/>} {saving?'Menyimpan...':editing?'Simpan Perubahan':'Tambah Agenda'}
+      </button>
+    </div>
+  </form>
   <section className="rounded-3xl border border-white/10 bg-[#0b1224] overflow-hidden"><div className="p-4 sm:p-5 border-b border-white/10 flex items-center justify-between"><h2 className="font-black uppercase italic text-white">Daftar Agenda</h2><span className="text-[10px] font-bold text-slate-500">{items.length} agenda</span></div>{loading?<div className="p-8 text-center text-sm text-slate-500">Memuat...</div>:!items.length?<div className="p-8 text-center text-sm text-slate-500">Belum ada agenda.</div>:<div className="divide-y divide-white/10">{items.map(x=><div key={x.id} className="p-4 sm:p-5 flex flex-col lg:flex-row lg:items-center gap-4"><div className="flex-1 min-w-0"><div className="flex flex-wrap gap-2"><span className="text-[9px] font-black uppercase text-blue-300 bg-blue-500/10 border border-blue-500/20 rounded-full px-2 py-1">{x.category||'Kegiatan Klub'}</span><span className="text-[9px] font-black uppercase text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-2 py-1">{x.is_published?'Publik':'Draft'}</span></div><h3 className="mt-2 font-black text-white uppercase">{x.title}</h3><div className="mt-2 flex flex-wrap gap-3 text-xs text-slate-400"><span className="flex items-center gap-1.5"><CalendarDays size={13} className="text-blue-400"/>{x.event_date}</span>{x.start_time&&<span className="flex items-center gap-1.5"><Clock3 size={13} className="text-amber-400"/>{x.start_time.slice(0,5)}{x.end_time?`–${x.end_time.slice(0,5)}`:''}</span>}{x.location&&<span className="flex items-center gap-1.5"><MapPin size={13} className="text-rose-400"/>{x.location}</span>}</div></div><div className="flex gap-2"><button onClick={()=>edit(x)} className="min-h-10 px-3 rounded-xl bg-blue-500/10 text-blue-300 border border-blue-500/20 text-xs font-bold"><Pencil size={14} className="inline mr-1"/>Edit</button><button onClick={()=>remove(x.id)} className="min-h-10 px-3 rounded-xl bg-red-500/10 text-red-300 border border-red-500/20 text-xs font-bold"><Trash2 size={14} className="inline mr-1"/>Hapus</button></div></div>)}</div>}</section>
  </div></div>
 }
