@@ -614,7 +614,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
                 </div>
               </button>
 
-              <div className="border-t border-white/10 bg-[#171717] px-4 py-4 sm:px-7 sm:py-5">
+              <div className="border-t border-blue-400/20 bg-gradient-to-b from-[#0b2f68] via-[#081f45] to-[#06152e] px-4 py-4 sm:px-7 sm:py-5">
                 <div className="mb-3.5 flex items-center justify-between gap-3">
                   <div className="text-[17px] font-extrabold uppercase tracking-[-.02em] text-white sm:text-xl">Profil Atlet</div>
                   <button onClick={() => go('atlet')} className="text-[11px] font-bold uppercase tracking-[.08em] text-slate-300 transition hover:text-blue-400 sm:text-xs">
@@ -626,12 +626,12 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
                     <button
                       key={athlete.id}
                       onClick={() => goAthleteDetail(athlete)}
-                      className={`group relative aspect-[.82] overflow-hidden rounded-xl border transition sm:rounded-2xl ${index === featuredAthleteIndex ? 'border-blue-500 ring-2 ring-blue-500/25' : 'border-white/10 hover:border-blue-400/60'}`}
+                      className={`group relative aspect-[4/5] overflow-hidden rounded-xl border bg-gradient-to-b from-[#0b2f68] via-[#081f45] to-[#06152e] transition sm:rounded-2xl ${index === featuredAthleteIndex ? 'border-blue-500 ring-2 ring-blue-500/25' : 'border-white/10 hover:border-blue-400/60'}`}
                     >
                       {athlete.photo ? (
-                        <LazyImage src={athlete.photo} alt={athlete.name} className="h-full w-full object-cover object-top transition duration-500 group-hover:scale-105" containerClassName="h-full w-full" width={320} />
+                        <LazyImage src={athlete.photo} alt={athlete.name} className="h-full w-full object-contain transition duration-500 group-hover:scale-[1.02]" containerClassName="h-full w-full bg-gradient-to-b from-[#0b2f68] via-[#081f45] to-[#06152e]" width={320} />
                       ) : (
-                        <div className="grid h-full place-items-center bg-[#0b1220]"><Users size={28} className="text-blue-500/30" /></div>
+                        <div className="grid h-full place-items-center bg-gradient-to-b from-[#0b2f68] via-[#081f45] to-[#06152e]"><Users size={28} className="text-blue-300/40" /></div>
                       )}
                       <div className={`absolute inset-0 transition ${index === featuredAthleteIndex ? 'bg-gradient-to-t from-blue-950/75 via-transparent to-transparent' : 'bg-gradient-to-t from-black/75 via-black/5 to-transparent'}`} />
                       <div className={`absolute inset-x-2 bottom-2 line-clamp-1 text-left text-[9px] font-black uppercase tracking-[.04em] ${index === featuredAthleteIndex ? 'text-blue-200' : 'text-white'}`}>{athlete.name}</div>
