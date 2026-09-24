@@ -103,6 +103,11 @@ export default function Login() {
       }
     }));
     sessionStorage.setItem('just_logged_in','true');
+    localStorage.setItem('pb_login_activity', JSON.stringify({
+      user_id: user.id,
+      login_at: new Date().toISOString(),
+      last_seen_at: new Date().toISOString()
+    }));
     window.dispatchEvent(new Event('local-session-changed'));
     window.location.replace('/admin');
   };
