@@ -103,7 +103,7 @@ async function injectAthleteMetaTags(html: string, athleteId: string): Promise<s
     const profileUrl = `${PUBLIC_DOMAIN}/atlet?athleteId=${encodeURIComponent(String(athlete.id))}`;
     let imageUrl = String(athlete.foto_url || '').trim();
     if (imageUrl && athlete.updated_at) imageUrl += `${imageUrl.includes('?') ? '&' : '?'}v=${encodeURIComponent(String(athlete.updated_at))}`;
-    if (!/^https?:\\/\\//i.test(imageUrl)) imageUrl = `${PUBLIC_DOMAIN}/logo_pb_bilibili_162.png`;
+    if (!/^https?:\/\//i.test(imageUrl)) imageUrl = `${PUBLIC_DOMAIN}/logo_pb_bilibili_162.png`;
 
     const metaInject = `
     <title>${escapeMetaValue(name)} - PB BILIBILI 162</title>
@@ -127,9 +127,9 @@ async function injectAthleteMetaTags(html: string, athleteId: string): Promise<s
     <link rel="image_src" href="${escapeMetaValue(imageUrl)}" />`;
 
     const modified = html
-      .replace(/<title>[\\s\\S]*?<\\/title>/gi, '')
-      .replace(/<meta\\s+(?:property|name)=["'](?:og:|twitter:)[^"']+["']\\s+content=["'][^"']*["']\\s*\\/?>/gi, '')
-      .replace(/<meta\\s+name=["']description["']\\s+content=["'][^"']*["']\\s*\\/?>/gi, '');
+      .replace(/<title>[\s\S]*?<\/title>/gi, '')
+      .replace(/<meta\s+(?:property|name)=["'](?:og:|twitter:)[^"']+["']\s+content=["'][^"']*["']\s*\/?\s*>/gi, '')
+      .replace(/<meta\s+name=["']description["']\s+content=["'][^"']*["']\s*\/?\s*>/gi, '');
     return modified.replace('<head>', `<head>${metaInject}`);
   } catch (err) {
     console.error("Failed to inject athlete meta tags:", err);
