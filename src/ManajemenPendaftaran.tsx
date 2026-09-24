@@ -420,47 +420,59 @@ const totalSeniorPutri = registrants.filter(r =>
 
   const sendWaStatusNotification = (item: Registrant, status: 'Diterima' | 'Ditolak', reason: string = '') => {
     const rawWa = (item.whatsapp || '').replace(/\D/g, '');
-    const phone = rawWa.startsWith('0') ? '62' + rawWa.slice(1) : rawWa;
+    const phone = rawWa.startsWith('0')
+      ? '62' + rawWa.slice(1)
+      : rawWa.startsWith('8')
+        ? '62' + rawWa
+        : rawWa;
 
-    if (!phone) {
+    if (!/^62\d{8,15}$/.test(phone)) {
       Swal.fire('No WhatsApp Tidak Valid', 'Nomor WhatsApp atlet ini tidak lengkap.', 'warning');
       return;
     }
 
     const profileUrl = `https://pbilibili162.99apps.id/api/share-athlete?athleteId=${encodeURIComponent(item.id)}`;
-
-    let message = '';
-    if (status === 'Diterima') {
-      message = 
-        `*PEMBERITAHUAN VERIFIKASI PENDAFTARAN ATLET*\n` +
-        `*PB BILIBILI 162 PAREPARE*\n\n` +
-        `Halo *${item.nama.toUpperCase()}*,\n` +
-        `Selamat! Pendaftaran Anda sebagai atlet/anggota baru di *PB BILIBILI 162* telah *DITERIMA & DIVERIFIKASI RESMI* oleh Admin.\n\n` +
-        `📋 *INFORMASI ATLET VERIFIED:*\n` +
-        `• Nama Atlet: ${item.nama.toUpperCase()}\n` +
-        `• Status Verifikasi: ✅ *DITERIMA (AKTIF)*\n` +
-        `• Kelompok Usia: ${item.kategori || '-'}\n` +
-        `• Kategori Atlet: ${item.kategori_atlet || 'MUDA'}\n` +
-        `• Domisili: ${item.domisili || '-'}\n\n` +
-        `🖼️ *PROFIL & FOTO ATLET:*\n${profileUrl}\n\n` +
-      `🌐 *AKSES LOGIN SISTEM:*\n` +
-        `Silakan login untuk mengecek profil atlet Anda di:\n` +
-        `https://pbilibili162.99apps.id/login\n\n` +
-        `Selamat bergabung dan salam olahraga!\n` +
-        `*Pengurus PB BILIBILI 162*`;
-    } else {
-      message = 
-        `*PEMBERITAHUAN STATUS PENDAFTARAN ATLET*\n` +
-        `*PB BILIBILI 162 PAREPARE*\n\n` +
-        `Halo *${item.nama.toUpperCase()}*,\n` +
-        `Mohon maaf, berdasarkan hasil verifikasi berkas, pendaftaran Anda di *PB BILIBILI 162* saat ini *BELUM DAPAT DITERIMA / DITOLAK*.\n\n` +
-        `📋 *DETAIL PENDAFTARAN:*\n` +
-        `• Nama: ${item.nama.toUpperCase()}\n` +
-        `• Status: ❌ *DITOLAK*\n` +
-        `• Catatan/Alasan: ${reason || 'Persyaratan pendaftaran belum terpenuhi.'}\n\n` +
-        `Apabila ada pertanyaan lebih lanjut, silakan hubungi Pengurus PB BILIBILI 162. Terima kasih.\n\n` +
-        `*Pengurus PB BILIBILI 162*`;
-    }
+    const message = status === 'Diterima'
+      ? [
+          '🏸 *PEMBERITAHUAN VERIFIKASI PENDAFTARAN*',
+          '*PB BILIBILI 162 PAREPARE*',
+          '',
+          `Halo *${item.nama.toUpperCase()}*,`,
+          'Pendaftaran Anda telah *DITERIMA & DIVERIFIKASI RESMI* oleh Admin.',
+          '',
+          '📋 *INFORMASI ATLET*',
+          `• Nama: ${item.nama.toUpperCase()}`,
+          '• Status: ✅ *DITERIMA / AKTIF*',
+          `• Kelompok Usia: ${item.kategori || '-'}`,
+          `• Kategori Atlet: ${item.kategori_atlet || '-'}`,
+          `• Domisili: ${item.domisili || '-'}`,
+          '',
+          '📸 *PROFIL & FOTO ATLET*',
+          profileUrl,
+          '',
+          '🌐 *LOGIN SISTEM*',
+          'https://pbilibili162.99apps.id/login',
+          '',
+          'Selamat bergabung dan salam olahraga!',
+          '*Pengurus PB BILIBILI 162*'
+        ].join('\n')
+      : [
+          '🏸 *PEMBERITAHUAN STATUS PENDAFTARAN*',
+          '*PB BILIBILI 162 PAREPARE*',
+          '',
+          `Halo *${item.nama.toUpperCase()}*,`,
+          'Berdasarkan hasil verifikasi berkas, pendaftaran Anda saat ini *BELUM DAPAT DITERIMA / DITOLAK*.',
+          '',
+          '📋 *DETAIL PENDAFTARAN*',
+          `• Nama: ${item.nama.toUpperCase()}`,
+          '• Status: ❌ *DITOLAK*',
+          `• Catatan: ${reason || 'Persyaratan pendaftaran belum terpenuhi.'}`,
+          '',
+          '📸 *PROFIL & FOTO ATLET*',
+          profileUrl,
+          '',
+          '*Pengurus PB BILIBILI 162*'
+        ].join('\n');
 
     const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
 
@@ -469,14 +481,12 @@ const totalSeniorPutri = registrants.filter(r =>
       html: `Ingin membuka WhatsApp untuk mengirim konfirmasi status <b>${status.toUpperCase()}</b> ke <b>${item.nama}</b> (${phone})?`,
       icon: 'info',
       showCancelButton: true,
-      confirmButtonText: '📱 Kirim Ke WhatsApp',
+      confirmButtonText: '📱 Buka WhatsApp',
       cancelButtonText: 'Nanti Saja',
       confirmButtonColor: '#10B981',
       cancelButtonColor: '#64748B'
     }).then((res) => {
-      if (res.isConfirmed) {
-        window.open(waUrl, '_blank');
-      }
+      if (res.isConfirmed) window.open(waUrl, '_blank');
     });
   };
 
@@ -493,23 +503,22 @@ const totalSeniorPutri = registrants.filter(r =>
       return;
     }
 
-    // Endpoint ini menghasilkan OG:image dinamis dari foto atlet di database.
     const profileUrl = `https://pbilibili162.99apps.id/api/share-athlete?athleteId=${encodeURIComponent(item.id)}`;
     const message = [
-      '*📋 PROFIL RESMI ATLET PB BILIBILI 162*',
+      '🏸 *PROFIL ATLET PB BILIBILI 162*',
       '',
-      `*Nama Lengkap:* ${item.nama || '-'}`,
-      `*Kategori Umur:* ${item.kategori || '-'}`,
-      `*Kategori Atlet:* ${item.kategori_atlet || '-'}`,
-      `*Jenis Kelamin:* ${item.jenis_kelamin || '-'}`,
-      `*Domisili:* ${item.domisili || '-'}`,
-      `*Status:* ${item.status || 'Aktif'}`,
+      `👤 Nama: *${item.nama || '-'}*`,
+      `🎂 Kategori Umur: ${item.kategori || '-'}`,
+      `🏸 Kategori Atlet: ${item.kategori_atlet || '-'}`,
+      `📍 Domisili: ${item.domisili || '-'}`,
+      `✅ Status: ${item.status || 'Aktif'}`,
       '',
-      '🔗 *Buka Profil Atlet:*',
-      profileUrl
-    ].join('\\n');
+      '📸 *Lihat profil dan foto atlet:*',
+      profileUrl,
+      '',
+      '_PB BILIBILI 162 • Parepare_'
+    ].join('\n');
 
-    // Membuka chat tujuan dengan pesan sudah terisi.
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
   };
 
@@ -522,42 +531,42 @@ const totalSeniorPutri = registrants.filter(r =>
         : rawWa;
 
     if (!/^62\d{8,15}$/.test(phone)) {
-      Swal.fire('No WhatsApp Tidak Ada', 'Nomor WhatsApp atlet ini tidak tersedia atau formatnya tidak valid.', 'warning');
+      Swal.fire('No WhatsApp Tidak Valid', 'Nomor WhatsApp atlet ini tidak tersedia atau formatnya tidak valid.', 'warning');
       return;
     }
 
     const statusCategory = getStatusCategory(item.status);
     const statusLabel = statusCategory === 'diterima'
-      ? '✅ DITERIMA (AKTIF)'
+      ? 'DITERIMA / AKTIF'
       : statusCategory === 'ditolak'
-        ? '❌ DITOLAK'
-        : '⏳ MENUNGGU VERIFIKASI';
+        ? 'DITOLAK'
+        : 'MENUNGGU VERIFIKASI';
 
-    // Gunakan link profil dinamis sebagai link pertama agar WhatsApp mengambil foto atlet,
-    // bukan logo website umum.
     const profileUrl = `https://pbilibili162.99apps.id/api/share-athlete?athleteId=${encodeURIComponent(item.id)}`;
+    const message = [
+      '🏸 *PB BILIBILI 162 PAREPARE*',
+      '*RINCIAN PENDAFTARAN & PROFIL ATLET*',
+      '',
+      `👤 Nama: *${item.nama || '-'}*`,
+      `🆔 ID Atlet: ${item.id}`,
+      `📱 WhatsApp: ${item.whatsapp || '-'}`,
+      `⚥ Jenis Kelamin: ${item.jenis_kelamin || '-'}`,
+      `🎂 Kategori Umur: ${item.kategori || '-'}`,
+      `🏸 Kategori Atlet: ${item.kategori_atlet || '-'}`,
+      `📍 Domisili: ${item.domisili || '-'}`,
+      `📋 Status Verifikasi: *${statusLabel}*`,
+      `📅 Tgl Registrasi: ${item.created_at ? new Date(item.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}`,
+      '',
+      '📸 *PROFIL & FOTO ATLET*',
+      profileUrl,
+      '',
+      '🔐 *AKSES SISTEM*',
+      'https://pbilibili162.99apps.id/login',
+      '',
+      '_Silakan simpan informasi ini untuk akses PB BILIBILI 162._'
+    ].join('\n');
 
-    const message = 
-      `*RINCIAN DOKUMEN & HISTORY PENDAFTARAN ATLET*\\n` +
-      `*PB BILIBILI 162 PAREPARE*\\n\\n` +
-      `Halo *${item.nama.toUpperCase()}*,\\n` +
-      `Berikut rincian dokumen pendaftaran dan status histori akun Anda di sistem PB BILIBILI 162:\\n\\n` +
-      `📋 *DETAIL PROFILE ATLET:*\\n` +
-      `• *ID Atlet:* ${item.id}\\n` +
-      `• *Nama Lengkap:* ${item.nama.toUpperCase()}\\n` +
-      `• *No. WhatsApp:* ${item.whatsapp}\\n` +
-      `• *Jenis Kelamin:* ${item.jenis_kelamin || '-'}\\n` +
-      `• *Kategori Umur:* ${item.kategori || '-'}\\n` +
-      `• *Kategori Atlet:* ${item.kategori_atlet || 'MUDA'}\\n` +
-      `• *Domisili:* ${item.domisili || '-'}\\n` +
-      `• *Status Verifikasi:* ${statusLabel}\\n` +
-      `• *Tgl Registrasi:* ${item.created_at ? new Date(item.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}\\n\\n` +
-      `🖼️ *LINK PROFIL & FOTO ATLET:*\\n${profileUrl}\\n\\n` +
-      `🌐 *LINK LOGIN SISTEM:*\\nhttps://pbilibili162.99apps.id/login\\n\\n` +
-      `⚠️ *PENTING:* Gunakan Email & Password yang Anda masukkan saat pendaftaran untuk login. Apabila lupa password, silakan minta reset ke Admin PB Bilibili 162.`;
-
-    const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
-    window.open(waUrl, '_blank');
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
   };
 
   const deleteOldFile = async (url: string) => {
