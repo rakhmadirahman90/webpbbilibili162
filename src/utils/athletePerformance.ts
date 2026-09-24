@@ -154,7 +154,7 @@ export async function loadAthletePerformanceData(): Promise<AthletePerformance[]
     supabase.from('pendaftaran').select('id,nama,foto_url,kategori,kategori_atlet,status,updated_at').eq('status', 'aktif').order('nama', { ascending: true }),
     supabase.from('atlet_stats').select('*'),
     supabase.from('pertandingan').select('id,pendaftaran_id,kategori_kegiatan,hasil,keterangan,created_at').order('created_at', { ascending: true }),
-    supabase.from('site_settings').select('key,value,updated_at').in('key', ['rapor_atlet_data','absensi_list','users_list'])
+    supabase.from('site_settings').select('key,value,updated_at').in('key', ['rapor_atlet_data','absensi_list','users_list','analisis_dummy_rapor_2026','analisis_dummy_absensi_2026'])
   ]);
 
   if (rankingsRes.error) throw rankingsRes.error;
@@ -168,8 +168,16 @@ export async function loadAthletePerformanceData(): Promise<AthletePerformance[]
   const settings = settingsRes.data || [];
 
   const setting = (key: string) => settings.find((s: any) => s.key === key);
-  const raporRows = asList(setting('rapor_atlet_data')?.value);
-  const attendanceRows = asList(setting('absensi_list')?.value);
+  // Data simulasi dipisahkan dari data operasional nyata.
+  // Jika data nyata tersedia, data nyata tetap diprioritaskan; dummy hanya mengisi kekosongan.
+  const raporRows = [
+    ...asList(setting('rapor_atlet_data')?.value),
+    ...asList(setting('analisis_dummy_rapor_2026')?.value)
+  ];
+  const attendanceRows = [
+    ...asList(setting('absensi_list')?.value),
+    ...asList(setting('analisis_dummy_absensi_2026')?.value)
+  ];
   const users = asList(setting('users_list')?.value);
 
   const registrationById = new Map(registrations.map((p: any) => [String(p.id), p]));
