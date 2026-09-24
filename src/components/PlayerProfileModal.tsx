@@ -92,6 +92,36 @@ type SeededCup1Data = {
   is_seeded: boolean;
 };
 
+
+function SmartProfilePhoto({ src, alt }: { src: string; alt: string }) {
+  const [objectPosition, setObjectPosition] = useState('50% 28%');
+  useEffect(() => {
+    let cancelled = false;
+    const Detector = (window as any).FaceDetector;
+    if (!Detector || !src) return;
+    const image = new Image();
+    image.crossOrigin = 'anonymous';
+    image.onload = async () => {
+      try {
+        const detector = new Detector({ fastMode: true, maxDetectedFaces: 3 });
+        const faces = await detector.detect(image);
+        const face = (faces || []).map((item: any) => item?.boundingBox).filter(Boolean)
+          .sort((a: any, b: any) => (b.width * b.height) - (a.width * a.height))[0];
+        if (!face || cancelled || !image.naturalWidth || !image.naturalHeight) return;
+        const x = Math.max(25, Math.min(75, ((face.x + face.width / 2) / image.naturalWidth) * 100));
+        const y = Math.max(16, Math.min(48, ((face.y + face.height * 0.38) / image.naturalHeight) * 100));
+        setObjectPosition(x.toFixed(1) + '% ' + y.toFixed(1) + '%');
+      } catch {}
+    };
+    image.src = src;
+    return () => { cancelled = true; };
+  }, [src]);
+  return <div className="relative h-full w-full overflow-hidden bg-gradient-to-b from-[#0b2f68] via-[#081f45] to-[#06152e]">
+    <img src={src} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full object-cover scale-110 blur-xl opacity-20" />
+    <img src={src} alt={alt} loading="eager" decoding="async" className="relative z-[1] block h-full w-full object-cover" style={{ objectPosition }} />
+  </div>;
+}
+
 const norm = (v = '') => v.toLowerCase().trim();
 
 const containsPlayer = (item: any, name: string) => {
@@ -423,13 +453,9 @@ export default function PlayerProfileModal({ player, globalRank, onClose }: Prop
                     <div className="absolute -right-16 -top-20 w-48 h-48 rounded-full bg-blue-500/10 blur-2xl" />
                     <div className="relative p-5 sm:p-6">
                       <div className="flex flex-col sm:flex-row sm:items-center gap-5">
-                        <div className="w-full sm:w-[38%] sm:min-h-[300px] shrink-0 rounded-[1.5rem] overflow-hidden border border-blue-400/15 bg-[#0b1930] shadow-lg">
+                        <div className="w-full sm:w-[38%] shrink-0 aspect-[4/5] rounded-[1.5rem] overflow-hidden border border-blue-400/20 bg-gradient-to-b from-[#0b2f68] via-[#081f45] to-[#06152e] shadow-lg">
                           {profile?.foto_url || player.photo_url ? (
-                            <img
-                              src={profile?.foto_url || player.photo_url}
-                              alt={profile?.nama || name}
-                              className="w-full h-[280px] sm:h-[320px] object-contain bg-white"
-                            />
+                            <SmartProfilePhoto src={profile?.foto_url || player.photo_url || ''} alt={profile?.nama || name} />
                           ) : (
                             <div className="h-[280px] sm:h-[320px] grid place-items-center text-slate-600">
                               <User size={64} />
