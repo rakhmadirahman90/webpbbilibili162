@@ -77,6 +77,61 @@ const FALLBACK_ATHLETES: Athlete[] = [
   { id: 'fallback-4', name: 'NEXT CHAMPION', photo: '', points: 0, seed: '—', category: 'ATLET', rank: 4 },
 ];
 
+
+function SmartAthleteThumbnail({ src, alt }: { src: string; alt: string }) {
+  const [objectPosition, setObjectPosition] = useState('50% 28%');
+
+  useEffect(() => {
+    let cancelled = false;
+    const Detector = (window as any).FaceDetector;
+    if (!Detector || !src) return;
+
+    const image = new Image();
+    image.crossOrigin = 'anonymous';
+    image.onload = async () => {
+      try {
+        const detector = new Detector({ fastMode: true, maxDetectedFaces: 3 });
+        const faces = await detector.detect(image);
+        const face = (faces || [])
+          .map((item: any) => item?.boundingBox)
+          .filter(Boolean)
+          .sort((a: any, b: any) => (b.width * b.height) - (a.width * a.height))[0];
+
+        if (!face || cancelled || !image.naturalWidth || !image.naturalHeight) return;
+
+        const x = Math.max(25, Math.min(75, ((face.x + face.width / 2) / image.naturalWidth) * 100));
+        const y = Math.max(16, Math.min(48, ((face.y + face.height * 0.38) / image.naturalHeight) * 100));
+        setObjectPosition(x.toFixed(1) + '% ' + y.toFixed(1) + '%');
+      } catch {
+        // Keep the safe upper-center portrait fallback on browsers without
+        // a working native FaceDetector implementation.
+      }
+    };
+    image.src = src;
+
+    return () => { cancelled = true; };
+  }, [src]);
+
+  return (
+    <div className="relative h-full w-full overflow-hidden bg-gradient-to-b from-[#0b2f68] via-[#081f45] to-[#06152e]">
+      <img
+        src={src}
+        alt=""
+        aria-hidden="true"
+        className="absolute inset-0 h-full w-full object-cover scale-110 blur-xl opacity-20"
+      />
+      <img
+        src={src}
+        alt={alt}
+        loading="lazy"
+        decoding="async"
+        className="relative z-[1] h-full w-full object-cover transition duration-500 group-hover:scale-[1.02]"
+        style={{ objectPosition }}
+      />
+    </div>
+  );
+}
+
 function CompactNewsTitle({ title }: { title: string }) {
   const displayTitle = (() => {
     const value = String(title || '').trim();
@@ -629,7 +684,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
                       className={`group relative aspect-[4/5] overflow-hidden rounded-xl border bg-gradient-to-b from-[#0b2f68] via-[#081f45] to-[#06152e] transition sm:rounded-2xl ${index === featuredAthleteIndex ? 'border-blue-500 ring-2 ring-blue-500/25' : 'border-white/10 hover:border-blue-400/60'}`}
                     >
                       {athlete.photo ? (
-                        <LazyImage src={athlete.photo} alt={athlete.name} className="h-full w-full object-contain transition duration-500 group-hover:scale-[1.02]" containerClassName="h-full w-full bg-gradient-to-b from-[#0b2f68] via-[#081f45] to-[#06152e]" width={320} />
+                        <SmartAthleteThumbnail src={athlete.photo} alt={athlete.name} />
                       ) : (
                         <div className="grid h-full place-items-center bg-gradient-to-b from-[#0b2f68] via-[#081f45] to-[#06152e]"><Users size={28} className="text-blue-300/40" /></div>
                       )}
