@@ -21,7 +21,7 @@ import AdminStructure from './AdminStructure';
 import PublicSejarah from './Sejarah';
 import PublicVisiMisi from './VisiMisi';
 import PublicFasilitas from './Fasilitas';
-import PublicStructure from './Structure';
+import PublicStructure from './StrukturOrganisasiPublic';
 import AdminProgram from './AdminProgram';
 import AdminPrestasi from './AdminPrestasi';
 import AdminFAQ from './AdminFAQ';
