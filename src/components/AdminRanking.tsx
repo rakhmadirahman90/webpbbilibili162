@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../supabase';
+import { getLatestTournamentSeedMap, seedLabel } from '../utils/seededSync';
 import { deleteAthleteCompletely } from '../utils/siteSettingsHelper';
 import Swal from 'sweetalert2';
 import {
@@ -104,35 +105,8 @@ export default function AdminRanking({ session }: { session?: any }) {
 
       if (pendaftaranError) throw pendaftaranError;
 
-      // Sumber Seed resmi: data seeded turnamen terbaru.
-      // C, C+ dan C- adalah kelas yang BERBEDA dan tidak boleh digabung.
-      // Jika nama atlet muncul beberapa kali, gunakan level tertinggi:
-      // A > B > C+ > C > C- > D.
-      const { data: tournamentRows } = await supabase
-        .from('seeded_tournaments')
-        .select('id')
-        .order('event_start', { ascending: false })
-        .order('created_at', { ascending: false })
-        .limit(1);
-
-      const latestTournamentId = tournamentRows?.[0]?.id;
-      const { data: seededRows } = latestTournamentId
-        ? await supabase
-            .from('seeded_players')
-            .select('player_name, seeded_quality')
-            .eq('tournament_id', latestTournamentId)
-        : { data: [] as any[] };
-
-      const seedRank: Record<string, number> = { A: 6, B: 5, 'C+': 4, C: 3, 'C-': 2, D: 1 };
-      const seededMap = new Map<string, string>();
-      for (const row of seededRows || []) {
-        const name = String(row.player_name || '').trim().toLowerCase();
-        if (!name) continue;
-        const quality = String(row.seeded_quality || '').trim().toUpperCase();
-        if (!seedRank[quality]) continue;
-        const current = seededMap.get(name);
-        if (!current || seedRank[quality] > seedRank[current]) seededMap.set(name, quality);
-      }
+      // Sumber tunggal Seed: turnamen seeded terbaru.
+      const seededMap = await getLatestTournamentSeedMap();
 
       const finalDataArray = (pendaftaranData || []).map((profile) => {
         const stat = (statsData || []).find((s) => 
@@ -143,8 +117,8 @@ export default function AdminRanking({ session }: { session?: any }) {
         const basePoints = Number(stat?.points) || 0;
         const addedPointsFromStats = Number(stat?.total_points) || 0;
 
-        const tournamentSeed = seededMap.get((profile.nama || '').trim().toLowerCase());
-        const normalizedSeed = tournamentSeed ? `Seed ${tournamentSeed}` : 'Non Seeded';
+        const tournamentSeed = seededMap.get((profile.nama || '').trim().toLocaleLowerCase('id-ID'));
+        const normalizedSeed = seedLabel(tournamentSeed || 'UNSEEDED');
 
         return {
           pendaftaran_id: profile.id,
