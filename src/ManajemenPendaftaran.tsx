@@ -431,7 +431,7 @@ const totalSeniorPutri = registrants.filter(r =>
       return;
     }
 
-    const profileUrl = `https://pbilibili162.99apps.id/api/share-athlete?athleteId=${encodeURIComponent(item.id)}`;
+    const profileUrl = `https://pbilibili162.99apps.id/api/share-athlete?athleteId=${encodeURIComponent(item.id)}&v=${Date.now()}`;
     const message = status === 'Diterima'
       ? [
           '🏸 *PB BILIBILI 162 PAREPARE*',
@@ -446,7 +446,7 @@ const totalSeniorPutri = registrants.filter(r =>
           profileUrl,
           '',
           '_Pengurus PB BILIBILI 162_'
-        ].join('\\n')
+        ].join('\n')
       : [
           '🏸 *PB BILIBILI 162 PAREPARE*',
           '',
@@ -458,7 +458,7 @@ const totalSeniorPutri = registrants.filter(r =>
           profileUrl,
           '',
           '_Pengurus PB BILIBILI 162_'
-        ].join('\\n');
+        ].join('\n');
 
     const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
 
@@ -541,7 +541,7 @@ const totalSeniorPutri = registrants.filter(r =>
       profileUrl,
       '',
       '_PB BILIBILI 162 • Parepare_'
-    ].join('\\n');
+    ].join('\n');
 
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
   };
