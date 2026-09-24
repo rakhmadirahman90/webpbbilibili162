@@ -129,20 +129,19 @@ export default {
 
       const supabaseAdmin = ctx.supabaseAdmin;
 
-      // Cari hanya nomor yang sedang login, bukan seluruh anggota aktif.
-      // Ini memangkas query dari puluhan baris menjadi maksimal satu baris.
-      // Data pendaftaran menyimpan nomor WhatsApp dalam format lokal (08...).
-      // Gunakan equality query langsung agar PostgREST tidak perlu memproses
-      // filter OR dan login tetap cepat serta stabil.
-      const localPhone = phone.startsWith("62") ? "0" + phone.slice(2) : phone;
+      // Nomor WhatsApp di database historis bisa tersimpan sebagai 08..., 62...,
+      // +62..., atau mengandung spasi/tanda baca. Jangan bergantung pada equality
+      // satu format karena itu membuat sebagian anggota tidak bisa login.
+      // Hanya mengambil anggota aktif (jumlah kecil) lalu mencocokkan nomor
+      // setelah normalisasi di Edge Function.
+      const activeStatuses = ["aktif", "verified", "Diterima", "diterima", "active"];
 
       const [memberResult, settingResult] = await Promise.all([
         supabaseAdmin
           .from("pendaftaran")
-          .select("id,nama,whatsapp,kategori,kategori_atlet,jenis_kelamin,domisili,pengalaman,foto_url,tanggal_lahir,status,password_hash,password_salt,must_change_password")
-          .eq("whatsapp", localPhone)
-          .in("status", ["aktif", "verified", "Diterima", "diterima", "active"])
-          .limit(1),
+          .select("id,nama,whatsapp,kategori,kategori_atlet,jenis_kelamin,domisili,pengalaman,foto_url,tanggal_lahir,status,password_hash,password_salt,must_change_password,updated_at")
+          .in("status", activeStatuses)
+          .order("updated_at", { ascending: false }),
         supabaseAdmin
           .from("site_settings")
           .select("value")
