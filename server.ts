@@ -72,6 +72,71 @@ async function injectNewsMetaTags(html: string, newsId: string, hostHeader?: str
   }
 }
 
+function escapeMetaValue(value: unknown): string {
+  return String(value ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+async function injectAthleteMetaTags(html: string, athleteId: string): Promise<string> {
+  try {
+    const encodedId = encodeURIComponent(String(athleteId || '').trim());
+    if (!encodedId) return html;
+    const response = await fetch(
+      `https://missjyvqfehamtpyodjr.supabase.co/rest/v1/pendaftaran?id=eq.${encodedId}&select=id,nama,kategori,kategori_atlet,domisili,foto_url,status,updated_at`,
+      { headers: { apikey: 'sb_publishable_trhfpzLX50WdkdaItRPFMQ_ewqF0fgn' } }
+    );
+    if (!response.ok) return html;
+    const rows = await response.json();
+    const athlete = Array.isArray(rows) ? rows[0] : null;
+    if (!athlete) return html;
+
+    const name = String(athlete.nama || 'Atlet PB BILIBILI 162').trim();
+    const category = String(athlete.kategori_atlet || athlete.kategori || 'Atlet PB BILIBILI 162').trim();
+    const domicile = String(athlete.domisili || '').trim();
+    const description = [
+      `Profil resmi ${name} — PB BILIBILI 162.`,
+      category ? `Kategori: ${category}.` : '',
+      domicile ? `Domisili: ${domicile}.` : '',
+      'Informasi profil atlet dan status akun.'
+    ].filter(Boolean).join(' ');
+
+    const PUBLIC_DOMAIN = 'https://pbilibili162.99apps.id';
+    const profileUrl = `${PUBLIC_DOMAIN}/atlet?athleteId=${encodeURIComponent(String(athlete.id))}`;
+    let imageUrl = String(athlete.foto_url || '').trim();
+    if (imageUrl && athlete.updated_at) imageUrl += `${imageUrl.includes('?') ? '&' : '?'}v=${encodeURIComponent(String(athlete.updated_at))}`;
+    if (!/^https?:\\/\\//i.test(imageUrl)) imageUrl = `${PUBLIC_DOMAIN}/logo_pb_bilibili_162.png`;
+
+    const metaInject = `
+    <title>${escapeMetaValue(name)} - PB BILIBILI 162</title>
+    <meta name="description" content="${escapeMetaValue(description)}" />
+    <meta property="og:type" content="profile" />
+    <meta property="og:site_name" content="PB BILIBILI 162" />
+    <meta property="og:url" content="${escapeMetaValue(profileUrl)}" />
+    <meta property="og:title" content="${escapeMetaValue(name)} - PB BILIBILI 162" />
+    <meta property="og:description" content="${escapeMetaValue(description)}" />
+    <meta property="og:image" content="${escapeMetaValue(imageUrl)}" />
+    <meta property="og:image:url" content="${escapeMetaValue(imageUrl)}" />
+    <meta property="og:image:secure_url" content="${escapeMetaValue(imageUrl)}" />
+    <meta property="og:image:alt" content="Foto profil ${escapeMetaValue(name)}" />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="${escapeMetaValue(name)} - PB BILIBILI 162" />
+    <meta name="twitter:description" content="${escapeMetaValue(description)}" />
+    <meta name="twitter:image" content="${escapeMetaValue(imageUrl)}" />
+    <link rel="image_src" href="${escapeMetaValue(imageUrl)}" />`;
+
+    const modified = html
+      .replace(/<title>[\\s\\S]*?<\\/title>/gi, '')
+      .replace(/<meta\\s+(?:property|name)=["'](?:og:|twitter:)[^"']+["']\\s+content=["'][^"']*["']\\s*\\/?>/gi, '')
+      .replace(/<meta\\s+name=["']description["']\\s+content=["'][^"']*["']\\s*\\/?>/gi, '');
+    return modified.replace('<head>', `<head>${metaInject}`);
+  } catch (err) {
+    console.error("Failed to inject athlete meta tags:", err);
+    return html;
+  }
+}
+
 export async function createApp() {
   try {
     const app = express();
@@ -1275,8 +1340,26 @@ export async function createApp() {
       const isAsset = req.path.includes('.') || req.path.startsWith('/api') || req.path.startsWith('/@');
       const urlObj = new URL(req.originalUrl || req.url, 'https://pbilibili162.99apps.id');
       const newsId = (req.query.newsId as string) || urlObj.searchParams.get('newsId') || urlObj.searchParams.get('id');
+      const athleteId = (req.query.athleteId as string) || urlObj.searchParams.get('athleteId');
 
-      if (newsId && !isAsset) {
+      if (athleteId && !isAsset) {
+        try {
+          if (process.env.NODE_ENV !== "production" && viteServer) {
+            const rawHtml = fs.readFileSync(path.join(process.cwd(), 'index.html'), 'utf-8');
+            const transformedHtml = await viteServer.transformIndexHtml(req.originalUrl, rawHtml);
+            const injectedHtml = await injectAthleteMetaTags(transformedHtml, athleteId);
+            return res.status(200).set({ 'Content-Type': 'text/html; charset=utf-8' }).end(injectedHtml);
+          } else {
+            const distPath = path.join(process.cwd(), 'dist');
+            const rawHtml = fs.readFileSync(path.join(distPath, 'index.html'), 'utf-8');
+            const injectedHtml = await injectAthleteMetaTags(rawHtml, athleteId);
+            return res.status(200).set({ 'Content-Type': 'text/html; charset=utf-8' }).end(injectedHtml);
+          }
+        } catch (e) {
+          console.error("Athlete meta injection failed:", e);
+          next();
+        }
+      } else if (newsId && !isAsset) {
         try {
           const host = req.get('x-forwarded-host') || req.get('host') || 'pbilibili162.99apps.id';
           if (process.env.NODE_ENV !== "production" && viteServer) {
