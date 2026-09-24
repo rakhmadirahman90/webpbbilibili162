@@ -24,7 +24,7 @@ const PBKDF2_ITERATIONS = 600000;
 const toBase64Url = (bytes: Uint8Array) => {
   let binary = "";
   bytes.forEach((b) => { binary += String.fromCharCode(b); });
-  return btoa(binary).replace(/\\+/g, "-").replace(/\\//g, "_").replace(/=+$/g, "");
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 };
 
 const fromBase64Url = (value: string) => {
