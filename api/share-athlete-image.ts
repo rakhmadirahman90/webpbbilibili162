@@ -1,5 +1,5 @@
 const SUPABASE_URL = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://missjyvqfehamtpyodjr.supabase.co').replace(/\/$/, '');
-const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON || process.env.SUPABASE_KEY || '';
+const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON || process.env.SUPABASE_KEY || 'sb_publishable_trhfpzLX50WdkdaItRPFMQ_ewqF0fgn';
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'GET') return res.status(405).send('Method Not Allowed');
@@ -26,11 +26,11 @@ export default async function handler(req: any, res: any) {
     const athlete = Array.isArray(rows) ? rows[0] : null;
     const photoUrl = String(athlete?.foto_url || '').trim();
 
-    if (!photoUrl || !/^https?:\\/\\//i.test(photoUrl)) {
+    if (!photoUrl || !/^https?:\/\//i.test(photoUrl)) {
       return res.status(404).send('Foto atlet tidak tersedia');
     }
 
-    const imageResponse = await fetch(photoUrl, { cache: 'no-store' });
+    const imageResponse = await fetch(photoUrl, { cache: 'no-store', redirect: 'follow' });
     if (!imageResponse.ok) {
       throw new Error(`Photo returned ${imageResponse.status}`);
     }
