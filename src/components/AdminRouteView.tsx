@@ -68,8 +68,14 @@ type Props = { session: any };
 
 export default function AdminRouteView({ session }: Props) {
   const location = useLocation();
-  const role = session?.user?.user_metadata?.role === 'anggota' ? 'anggota' : 'admin';
-  const isAdmin = role === 'admin';
+  // Fail-closed: only an explicit administrator role can access admin components.
+  const rawRole = String(
+    session?.user?.user_metadata?.role ??
+    session?.user?.role ??
+    ''
+  ).trim().toLowerCase();
+  const isAdmin = rawRole === 'admin' || rawRole === 'administrator';
+  const role = isAdmin ? 'admin' : 'anggota';
   const path = location.pathname.replace(/^\/admin\/?/, '').replace(/\/$/, '').toLowerCase();
   const render = (Component: React.ComponentType<any>) => <Component session={session} />;
   const adminOnly = (Component: React.ComponentType<any>) => isAdmin ? render(Component) : <Navigate to="/admin/dashboard" replace />;
