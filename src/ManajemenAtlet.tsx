@@ -963,62 +963,187 @@ export default function ManajemenAtlet() {
 
       {/* MODAL EDIT PROFIL & PERFORMA LENGKAP */}
       {isEditModalOpen && editingStats && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-3 sm:p-5 bg-slate-950/90 backdrop-blur-md overflow-y-auto">
-          <div className="bg-white w-full max-w-5xl rounded-[2rem] sm:rounded-[3rem] shadow-2xl overflow-hidden relative my-4">
-            <button onClick={() => setIsEditModalOpen(false)} className="absolute top-4 right-4 sm:top-6 sm:right-6 z-10 p-2.5 bg-slate-100 rounded-full hover:bg-red-500 hover:text-white transition-all">
-              <X size={20} />
-            </button>
-            <form onSubmit={handleUpdateStats} className="p-5 sm:p-8 lg:p-10 space-y-6 max-h-[92vh] overflow-y-auto">
-              <div>
-                <p className="text-[9px] font-black text-blue-600 uppercase tracking-[0.25em]">Master Data Atlet</p>
-                <h3 className="text-2xl sm:text-3xl font-black italic uppercase mt-1">Edit <span className="text-blue-600">Profil Lengkap</span></h3>
-                <p className="text-xs text-slate-500 mt-2">Semua data yang ditampilkan pada profil publik dikelola dari form ini.</p>
-              </div>
+        <div className="fixed inset-0 z-[110] bg-slate-950/90 backdrop-blur-md overflow-y-auto">
+          <div className="min-h-full flex items-start sm:items-center justify-center p-0 sm:p-4 lg:p-6">
+            <div className="w-full max-w-6xl my-0 sm:my-4 overflow-hidden rounded-none sm:rounded-3xl border border-slate-700/80 bg-[#071225] shadow-[0_25px_80px_rgba(0,0,0,.55)]">
 
-              <div className="grid grid-cols-1 lg:grid-cols-[180px_1fr] gap-5">
-                <div className="rounded-3xl bg-gradient-to-b from-[#0b2f68] via-[#081f45] to-[#06152e] p-3 aspect-[4/5] lg:aspect-auto lg:h-[225px]">
-                  {editingStats.foto_url ? <SmartAthletePhoto src={editingStats.foto_url} alt={editingStats.nama || 'Atlet'} /> : <div className="h-full grid place-items-center text-blue-300/40"><User size={55}/></div>}
+              {/* Modal Header */}
+              <div className="sticky top-0 z-20 flex items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8 bg-[#071225]/95 backdrop-blur-xl border-b border-slate-800">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400"><Edit3 size={15}/></div>
+                    <p className="text-[8px] sm:text-[9px] font-black text-blue-400 uppercase tracking-[0.22em]">Manajemen Atlet • Edit Data</p>
+                  </div>
+                  <h3 className="text-lg sm:text-2xl font-black text-white uppercase truncate">
+                    Edit <span className="text-blue-400">Profil Atlet</span>
+                  </h3>
+                  <p className="hidden sm:block text-[10px] text-slate-500 mt-1">Perbarui biodata, status, profil publik, dan performa atlet dalam satu form.</p>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <label className="space-y-1"><span className="field-label">Nama Lengkap</span><input required className="field-input" value={editingStats.nama || ''} onChange={e=>setEditingStats({...editingStats,nama:e.target.value})}/></label>
-                  <label className="space-y-1"><span className="field-label">Nama Panggilan</span><input className="field-input" value={editingStats.nama_panggilan || ''} onChange={e=>setEditingStats({...editingStats,nama_panggilan:e.target.value})}/></label>
-                  <label className="space-y-1"><span className="field-label">Nama Punggung</span><input className="field-input" value={editingStats.nama_punggung || ''} onChange={e=>setEditingStats({...editingStats,nama_punggung:e.target.value})}/></label>
-                  <label className="space-y-1"><span className="field-label">WhatsApp</span><input className="field-input" value={editingStats.whatsapp || ''} onChange={e=>setEditingStats({...editingStats,whatsapp:e.target.value})}/></label>
-                  <label className="space-y-1"><span className="field-label">Domisili</span><input className="field-input" value={editingStats.domisili || ''} onChange={e=>setEditingStats({...editingStats,domisili:e.target.value})}/></label>
-                  <label className="space-y-1"><span className="field-label">Jenis Kelamin</span><select className="field-input" value={editingStats.jenis_kelamin || ''} onChange={e=>setEditingStats({...editingStats,jenis_kelamin:e.target.value})}><option value="">Pilih</option><option value="Laki-laki">Laki-laki</option><option value="Perempuan">Perempuan</option></select></label>
-                  <label className="space-y-1"><span className="field-label">Tempat Lahir</span><input className="field-input" value={editingStats.tempat_lahir || ''} onChange={e=>setEditingStats({...editingStats,tempat_lahir:e.target.value})}/></label>
-                  <label className="space-y-1"><span className="field-label">Tanggal Lahir</span><input type="date" className="field-input" value={editingStats.tanggal_lahir || ''} onChange={e=>setEditingStats({...editingStats,tanggal_lahir:e.target.value})}/></label>
-                  <label className="space-y-1"><span className="field-label">Tahun Bergabung</span><input type="number" min="1900" max="2100" className="field-input" value={editingStats.tahun_bergabung ?? ''} onChange={e=>setEditingStats({...editingStats,tahun_bergabung:e.target.value as any})}/></label>
-                  <label className="space-y-1"><span className="field-label">Tangan Dominan</span><select className="field-input" value={editingStats.tangan_dominan || ''} onChange={e=>setEditingStats({...editingStats,tangan_dominan:e.target.value})}><option value="">Pilih</option><option value="Kanan">Kanan</option><option value="Kiri">Kiri</option><option value="Keduanya">Keduanya</option></select></label>
-                  <label className="space-y-1"><span className="field-label">Kategori Atlet</span><input className="field-input" value={editingStats.kategori_atlet || editingStats.kategori || ''} onChange={e=>setEditingStats({...editingStats,kategori_atlet:e.target.value,kategori:e.target.value})}/></label>
-                  <label className="space-y-1"><span className="field-label">Status</span><select className="field-input" value={editingStats.status || 'verified'} onChange={e=>setEditingStats({...editingStats,status:e.target.value})}><option value="verified">Verified / Aktif</option><option value="aktif">Aktif</option><option value="tidak_aktif">Tidak Aktif</option><option value="nonaktif">Nonaktif</option></select></label>
-                  <label className="space-y-1 sm:col-span-2"><span className="field-label">Alasan Status</span><input className="field-input" value={editingStats.alasan_status || ''} onChange={e=>setEditingStats({...editingStats,alasan_status:e.target.value})}/></label>
+                <button
+                  type="button"
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="shrink-0 h-10 w-10 rounded-xl border border-slate-700 bg-slate-900 text-slate-300 hover:bg-red-500/15 hover:text-red-400 hover:border-red-500/30 transition-all grid place-items-center"
+                  aria-label="Tutup edit atlet"
+                >
+                  <X size={19}/>
+                </button>
+              </div>
+
+              <form onSubmit={handleUpdateStats} className="max-h-[calc(100vh-65px)] overflow-y-auto custom-scrollbar">
+                <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+
+                  {/* Identity + photo */}
+                  <section className="rounded-2xl border border-slate-800 bg-slate-900/60 overflow-hidden">
+                    <div className="px-4 py-3 sm:px-5 border-b border-slate-800 flex items-center justify-between">
+                      <div>
+                        <h4 className="text-xs sm:text-sm font-black text-white uppercase tracking-wider">Identitas Atlet</h4>
+                        <p className="text-[9px] text-slate-500 mt-0.5">Data utama yang tampil pada profil atlet.</p>
+                      </div>
+                      <User size={16} className="text-blue-400"/>
+                    </div>
+
+                    <div className="p-4 sm:p-5 grid grid-cols-1 lg:grid-cols-[190px_1fr] gap-5">
+                      <div className="lg:sticky lg:top-24 self-start">
+                        <div className="mx-auto w-40 sm:w-44 lg:w-full max-w-[190px] aspect-[4/5] rounded-2xl overflow-hidden border border-blue-500/20 bg-[#061225] shadow-inner">
+                          {editingStats.foto_url ? (
+                            <SmartAthletePhoto src={editingStats.foto_url} alt={editingStats.nama || 'Atlet'} />
+                          ) : (
+                            <div className="h-full grid place-items-center text-blue-300/30"><User size={58}/></div>
+                          )}
+                        </div>
+                        <div className="mt-2 text-center">
+                          <span className="inline-flex items-center gap-1.5 text-[8px] font-black uppercase tracking-widest text-slate-500">
+                            <Camera size={11}/> Foto Profil
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                        <label className="space-y-1.5">
+                          <span className="field-label">Nama Lengkap <b className="text-red-400">*</b></span>
+                          <input required className="field-input" value={editingStats.nama || ''} onChange={e=>setEditingStats({...editingStats,nama:e.target.value})}/>
+                        </label>
+                        <label className="space-y-1.5">
+                          <span className="field-label">Nama Panggilan</span>
+                          <input className="field-input" value={editingStats.nama_panggilan || ''} onChange={e=>setEditingStats({...editingStats,nama_panggilan:e.target.value})}/>
+                        </label>
+                        <label className="space-y-1.5">
+                          <span className="field-label">Nama Punggung</span>
+                          <input className="field-input" value={editingStats.nama_punggung || ''} onChange={e=>setEditingStats({...editingStats,nama_punggung:e.target.value})}/>
+                        </label>
+                        <label className="space-y-1.5">
+                          <span className="field-label">WhatsApp</span>
+                          <input inputMode="tel" className="field-input" value={editingStats.whatsapp || ''} onChange={e=>setEditingStats({...editingStats,whatsapp:e.target.value})}/>
+                        </label>
+                        <label className="space-y-1.5">
+                          <span className="field-label">Domisili</span>
+                          <input className="field-input" value={editingStats.domisili || ''} onChange={e=>setEditingStats({...editingStats,domisili:e.target.value})}/>
+                        </label>
+                        <label className="space-y-1.5">
+                          <span className="field-label">Jenis Kelamin</span>
+                          <select className="field-input" value={editingStats.jenis_kelamin || ''} onChange={e=>setEditingStats({...editingStats,jenis_kelamin:e.target.value})}>
+                            <option value="">Pilih jenis kelamin</option><option value="Laki-laki">Laki-laki</option><option value="Perempuan">Perempuan</option>
+                          </select>
+                        </label>
+                        <label className="space-y-1.5">
+                          <span className="field-label">Tempat Lahir</span>
+                          <input className="field-input" value={editingStats.tempat_lahir || ''} onChange={e=>setEditingStats({...editingStats,tempat_lahir:e.target.value})}/>
+                        </label>
+                        <label className="space-y-1.5">
+                          <span className="field-label">Tanggal Lahir</span>
+                          <input type="date" className="field-input" value={editingStats.tanggal_lahir || ''} onChange={e=>setEditingStats({...editingStats,tanggal_lahir:e.target.value})}/>
+                        </label>
+                        <label className="space-y-1.5">
+                          <span className="field-label">Tahun Bergabung</span>
+                          <input type="number" min="1900" max="2100" inputMode="numeric" className="field-input" value={editingStats.tahun_bergabung ?? ''} onChange={e=>setEditingStats({...editingStats,tahun_bergabung:e.target.value as any})}/>
+                        </label>
+                        <label className="space-y-1.5">
+                          <span className="field-label">Tangan Dominan</span>
+                          <select className="field-input" value={editingStats.tangan_dominan || ''} onChange={e=>setEditingStats({...editingStats,tangan_dominan:e.target.value})}>
+                            <option value="">Pilih</option><option value="Kanan">Kanan</option><option value="Kiri">Kiri</option><option value="Keduanya">Keduanya</option>
+                          </select>
+                        </label>
+                        <label className="space-y-1.5">
+                          <span className="field-label">Kategori Atlet</span>
+                          <input className="field-input" value={editingStats.kategori_atlet || editingStats.kategori || ''} onChange={e=>setEditingStats({...editingStats,kategori_atlet:e.target.value,kategori:e.target.value})}/>
+                        </label>
+                        <label className="space-y-1.5">
+                          <span className="field-label">Status Atlet</span>
+                          <select className="field-input" value={editingStats.status || 'verified'} onChange={e=>setEditingStats({...editingStats,status:e.target.value})}>
+                            <option value="verified">Verified / Aktif</option><option value="aktif">Aktif</option><option value="tidak_aktif">Tidak Aktif</option><option value="nonaktif">Nonaktif</option>
+                          </select>
+                        </label>
+                        <label className="space-y-1.5 sm:col-span-2">
+                          <span className="field-label">Alasan Status</span>
+                          <input className="field-input" value={editingStats.alasan_status || ''} onChange={e=>setEditingStats({...editingStats,alasan_status:e.target.value})}/>
+                        </label>
+                      </div>
+                    </div>
+                  </section>
+
+                  {/* Public profile */}
+                  <section className="rounded-2xl border border-slate-800 bg-slate-900/60 overflow-hidden">
+                    <div className="px-4 py-3 sm:px-5 border-b border-slate-800 flex items-center justify-between">
+                      <div>
+                        <h4 className="text-xs sm:text-sm font-black text-white uppercase tracking-wider">Profil Publik</h4>
+                        <p className="text-[9px] text-slate-500 mt-0.5">Informasi tambahan untuk halaman profil atlet.</p>
+                      </div>
+                      <Award size={16} className="text-amber-400"/>
+                    </div>
+                    <div className="p-4 sm:p-5 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                      <label className="space-y-1.5"><span className="field-label">Hobi</span><input className="field-input" value={editingStats.hobi || ''} onChange={e=>setEditingStats({...editingStats,hobi:e.target.value})}/></label>
+                      <label className="space-y-1.5"><span className="field-label">Makanan Favorit</span><input className="field-input" value={editingStats.makanan_favorit || ''} onChange={e=>setEditingStats({...editingStats,makanan_favorit:e.target.value})}/></label>
+                      <label className="space-y-1.5 sm:col-span-2"><span className="field-label">Pengalaman</span><textarea rows={3} className="field-input resize-y" value={editingStats.pengalaman || ''} onChange={e=>setEditingStats({...editingStats,pengalaman:e.target.value})}/></label>
+                      <label className="space-y-1.5 sm:col-span-2"><span className="field-label">Biografi</span><textarea rows={3} className="field-input resize-y" value={editingStats.bio || ''} onChange={e=>setEditingStats({...editingStats,bio:e.target.value})}/></label>
+                      <label className="space-y-1.5 sm:col-span-2"><span className="field-label">Prestasi</span><textarea rows={4} className="field-input resize-y" value={editingStats.prestasi || ''} onChange={e=>setEditingStats({...editingStats,prestasi:e.target.value})}/></label>
+                    </div>
+                  </section>
+
+                  {/* Performance */}
+                  <section className="rounded-2xl border border-blue-500/15 bg-blue-500/[0.04] overflow-hidden">
+                    <div className="px-4 py-3 sm:px-5 border-b border-blue-500/15 flex items-center justify-between">
+                      <div>
+                        <h4 className="text-xs sm:text-sm font-black text-white uppercase tracking-wider">Performa & Peringkat</h4>
+                        <p className="text-[9px] text-slate-500 mt-0.5">Nilai yang digunakan pada ranking dan kartu atlet.</p>
+                      </div>
+                      <TrendingUp size={16} className="text-blue-400"/>
+                    </div>
+                    <div className="p-4 sm:p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                      <label className="space-y-1.5"><span className="field-label">Points</span><input type="number" inputMode="numeric" className="field-input" value={editingStats.points ?? 0} onChange={e=>setEditingStats({...editingStats,points:parseNumber(e.target.value)})}/></label>
+                      <label className="space-y-1.5"><span className="field-label">Seed</span><select className="field-input" value={editingStats.seed || 'UNSEEDED'} onChange={e=>handleSeedChange(e.target.value,true)}><option value="UNSEEDED">UNSEEDED</option><option value="C">C</option><option value="B-">B-</option><option value="B+">B+</option><option value="A">A</option></select></label>
+                      <label className="space-y-1.5 sm:col-span-2 lg:col-span-1"><span className="field-label">Foto URL</span><input className="field-input" value={editingStats.foto_url || ''} onChange={e=>setEditingStats({...editingStats,foto_url:e.target.value})}/></label>
+                    </div>
+                  </section>
+
+                  {/* Actions */}
+                  <div className="flex flex-col-reverse sm:flex-row gap-2.5 sm:items-center pt-1 pb-1">
+                    <button
+                      type="button"
+                      onClick={()=>editingStats && void handleDeleteAtlet(editingStats as Registrant)}
+                      className="w-full sm:w-auto px-5 py-3.5 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all font-black uppercase text-[9px] tracking-widest inline-flex items-center justify-center gap-2"
+                    >
+                      <Trash2 size={15}/> Hapus Atlet
+                    </button>
+                    <div className="hidden sm:block flex-1"/>
+                    <button
+                      type="button"
+                      onClick={()=>setIsEditModalOpen(false)}
+                      className="w-full sm:w-auto px-5 py-3.5 rounded-xl bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition-all font-black uppercase text-[9px] tracking-widest"
+                    >
+                      Batal
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSaving || isSubmitting}
+                      className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-900/20 transition-all font-black uppercase text-[9px] tracking-widest inline-flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      {isSaving || isSubmitting ? <Loader2 className="animate-spin" size={16}/> : <Save size={16}/>}
+                      Simpan Semua Data
+                    </button>
+                  </div>
                 </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <label className="space-y-1"><span className="field-label">Hobi</span><input className="field-input" value={editingStats.hobi || ''} onChange={e=>setEditingStats({...editingStats,hobi:e.target.value})}/></label>
-                <label className="space-y-1"><span className="field-label">Makanan Favorit</span><input className="field-input" value={editingStats.makanan_favorit || ''} onChange={e=>setEditingStats({...editingStats,makanan_favorit:e.target.value})}/></label>
-                <label className="space-y-1 sm:col-span-2"><span className="field-label">Pengalaman</span><textarea rows={3} className="field-input" value={editingStats.pengalaman || ''} onChange={e=>setEditingStats({...editingStats,pengalaman:e.target.value})}/></label>
-                <label className="space-y-1 sm:col-span-2"><span className="field-label">Biografi</span><textarea rows={3} className="field-input" value={editingStats.bio || ''} onChange={e=>setEditingStats({...editingStats,bio:e.target.value})}/></label>
-                <label className="space-y-1 sm:col-span-2"><span className="field-label">Prestasi</span><textarea rows={4} className="field-input" value={editingStats.prestasi || ''} onChange={e=>setEditingStats({...editingStats,prestasi:e.target.value})}/></label>
-              </div>
-
-              <div className="rounded-3xl bg-blue-50 border border-blue-100 p-5">
-                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-blue-600 mb-4">Performa Landing Page</p>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <label className="space-y-1"><span className="field-label">Points</span><input type="number" className="field-input" value={editingStats.points ?? 0} onChange={e=>setEditingStats({...editingStats,points:parseNumber(e.target.value)})}/></label>
-                  <label className="space-y-1"><span className="field-label">Seed</span><select className="field-input" value={editingStats.seed || 'UNSEEDED'} onChange={e=>handleSeedChange(e.target.value,true)}><option value="UNSEEDED">UNSEEDED</option><option value="C">C</option><option value="B-">B-</option><option value="B+">B+</option><option value="A">A</option></select></label>
-                  <label className="space-y-1"><span className="field-label">Foto URL</span><input className="field-input" value={editingStats.foto_url || ''} onChange={e=>setEditingStats({...editingStats,foto_url:e.target.value})}/></label>
-                </div>
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                <button type="button" onClick={()=>editingStats && void handleDeleteAtlet(editingStats as Registrant)} className="sm:w-auto px-5 py-4 rounded-2xl bg-red-50 text-red-600 border border-red-200 font-black uppercase text-[10px] tracking-widest inline-flex items-center justify-center gap-2"><Trash2 size={16}/> Hapus Atlet</button>
-                <button type="button" onClick={()=>setIsEditModalOpen(false)} className="sm:ml-auto sm:w-auto px-6 py-4 rounded-2xl bg-slate-100 text-slate-700 font-black uppercase text-[10px]">Batal</button>
-                <button type="submit" disabled={isSaving || isSubmitting} className="px-7 py-4 rounded-2xl bg-blue-600 text-white font-black uppercase text-[10px] tracking-widest inline-flex items-center justify-center gap-2">{isSaving || isSubmitting ? <Loader2 className="animate-spin" size={17}/> : <Save size={17}/>} Simpan Semua Data</button>
-              </div>
-            </form>
+              </form>
+            </div>
           </div>
         </div>
       )}
