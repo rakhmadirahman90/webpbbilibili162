@@ -703,7 +703,6 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
     setSaving(true);
 
     try {
-      const cleanName = memberData.nama.trim();
       if (!memberData.id) {
         throw new Error('Identitas akun anggota belum terhubung ke data pendaftaran. Silakan keluar lalu login kembali.');
       }
@@ -714,7 +713,7 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
       }
 
       const cleanWhatsApp = (memberData.whatsapp || '').trim();
-      if (cleanWhatsApp.replace(/\\D/g, '').length < 8) {
+      if (cleanWhatsApp.replace(/\D/g, '').length < 8) {
         throw new Error('Nomor WhatsApp tidak valid.');
       }
 
