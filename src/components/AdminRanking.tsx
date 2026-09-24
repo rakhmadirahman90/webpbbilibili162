@@ -105,8 +105,9 @@ export default function AdminRanking({ session }: { session?: any }) {
       if (pendaftaranError) throw pendaftaranError;
 
       // Sumber Seed resmi: data seeded turnamen terbaru.
-      // Satu atlet dapat muncul di beberapa kategori turnamen; gunakan level tertinggi
-      // dengan urutan A > B > C (termasuk C+/C-) > D > Non Seeded.
+      // C, C+ dan C- adalah kelas yang BERBEDA dan tidak boleh digabung.
+      // Jika nama atlet muncul beberapa kali, gunakan level tertinggi:
+      // A > B > C+ > C > C- > D.
       const { data: tournamentRows } = await supabase
         .from('seeded_tournaments')
         .select('id')
@@ -122,16 +123,15 @@ export default function AdminRanking({ session }: { session?: any }) {
             .eq('tournament_id', latestTournamentId)
         : { data: [] as any[] };
 
-      const seedRank: Record<string, number> = { A: 4, B: 3, C: 2, 'C+': 2, 'C-': 2, D: 1 };
+      const seedRank: Record<string, number> = { A: 6, B: 5, 'C+': 4, C: 3, 'C-': 2, D: 1 };
       const seededMap = new Map<string, string>();
       for (const row of seededRows || []) {
         const name = String(row.player_name || '').trim().toLowerCase();
         if (!name) continue;
         const quality = String(row.seeded_quality || '').trim().toUpperCase();
-        const normalized = quality === 'C+' || quality === 'C-' ? 'C' : quality;
-        if (!seedRank[normalized]) continue;
+        if (!seedRank[quality]) continue;
         const current = seededMap.get(name);
-        if (!current || seedRank[normalized] > seedRank[current]) seededMap.set(name, normalized);
+        if (!current || seedRank[quality] > seedRank[current]) seededMap.set(name, quality);
       }
 
       const finalDataArray = (pendaftaranData || []).map((profile) => {
@@ -479,7 +479,9 @@ const paginatedRankings = filteredRankings.slice(startIndex, startIndex + itemsP
             <option value="Semua">SEMUA SEED</option>
             <option value="Seed A">Seed A</option>
             <option value="Seed B">Seed B</option>
+            <option value="Seed C+">Seed C+</option>
             <option value="Seed C">Seed C</option>
+            <option value="Seed C-">Seed C-</option>
             <option value="Seed D">Seed D</option>
             <option value="Non Seeded">Non Seeded</option>
           </select>
@@ -668,7 +670,9 @@ const paginatedRankings = filteredRankings.slice(startIndex, startIndex + itemsP
                     <select className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-4 font-bold text-xs uppercase text-white" value={formData.seed} onChange={(e) => setFormData({ ...formData, seed: e.target.value })}>
                       <option value="Seed A">Seed A</option>
                       <option value="Seed B">Seed B</option>
+                      <option value="Seed C+">Seed C+</option>
                       <option value="Seed C">Seed C</option>
+                      <option value="Seed C-">Seed C-</option>
                       <option value="Seed D">Seed D</option>
                       <option value="Non Seeded">Non Seeded</option>
                     </select>
