@@ -104,6 +104,36 @@ export default function AdminRanking({ session }: { session?: any }) {
 
       if (pendaftaranError) throw pendaftaranError;
 
+      // Sumber Seed resmi: data seeded turnamen terbaru.
+      // Satu atlet dapat muncul di beberapa kategori turnamen; gunakan level tertinggi
+      // dengan urutan A > B > C (termasuk C+/C-) > D > Non Seeded.
+      const { data: tournamentRows } = await supabase
+        .from('seeded_tournaments')
+        .select('id')
+        .order('event_start', { ascending: false })
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      const latestTournamentId = tournamentRows?.[0]?.id;
+      const { data: seededRows } = latestTournamentId
+        ? await supabase
+            .from('seeded_players')
+            .select('player_name, seeded_quality')
+            .eq('tournament_id', latestTournamentId)
+        : { data: [] as any[] };
+
+      const seedRank: Record<string, number> = { A: 4, B: 3, C: 2, 'C+': 2, 'C-': 2, D: 1 };
+      const seededMap = new Map<string, string>();
+      for (const row of seededRows || []) {
+        const name = String(row.player_name || '').trim().toLowerCase();
+        if (!name) continue;
+        const quality = String(row.seeded_quality || '').trim().toUpperCase();
+        const normalized = quality === 'C+' || quality === 'C-' ? 'C' : quality;
+        if (!seedRank[normalized]) continue;
+        const current = seededMap.get(name);
+        if (!current || seedRank[normalized] > seedRank[current]) seededMap.set(name, normalized);
+      }
+
       const finalDataArray = (pendaftaranData || []).map((profile) => {
         const stat = (statsData || []).find((s) => 
           s.pendaftaran_id === profile.id ||
@@ -113,10 +143,8 @@ export default function AdminRanking({ session }: { session?: any }) {
         const basePoints = Number(stat?.points) || 0;
         const addedPointsFromStats = Number(stat?.total_points) || 0;
 
-        let normalizedSeed = stat?.seed || 'Non-Seed';
-        if (!normalizedSeed.includes('Seed') && normalizedSeed !== 'Non-Seed') {
-          normalizedSeed = `Seed ${normalizedSeed}`;
-        }
+        const tournamentSeed = seededMap.get((profile.nama || '').trim().toLowerCase());
+        const normalizedSeed = tournamentSeed ? `Seed ${tournamentSeed}` : 'Non Seeded';
 
         return {
           pendaftaran_id: profile.id,
@@ -258,7 +286,7 @@ export default function AdminRanking({ session }: { session?: any }) {
       }
 
       if (formData.pendaftaran_id) {
-        const dbSeed = formData.seed?.replace('Seed ', '') || 'Non-Seed';
+        const dbSeed = formData.seed === 'Non Seeded' ? 'UNSEEDED' : (formData.seed?.replace('Seed ', '') || 'UNSEEDED');
         supabase
           .from('atlet_stats')
           .update({
@@ -450,10 +478,10 @@ const paginatedRankings = filteredRankings.slice(startIndex, startIndex + itemsP
           <select className="bg-black/40 border border-white/5 rounded-xl px-4 py-3 font-bold text-xs outline-none uppercase text-zinc-300 hover:bg-zinc-800" value={selectedSeed} onChange={(e) => {setSelectedSeed(e.target.value); setCurrentPage(1);}}>
             <option value="Semua">SEMUA SEED</option>
             <option value="Seed A">Seed A</option>
-            <option value="Seed B+">Seed B+</option>
-            <option value="Seed B-">Seed B-</option>
+            <option value="Seed B">Seed B</option>
             <option value="Seed C">Seed C</option>
-            <option value="Non-Seed">Non-Seed</option>
+            <option value="Seed D">Seed D</option>
+            <option value="Non Seeded">Non Seeded</option>
           </select>
         </div>
 
@@ -639,10 +667,10 @@ const paginatedRankings = filteredRankings.slice(startIndex, startIndex + itemsP
                     <label className="text-[10px] font-black text-zinc-500 uppercase ml-2">Seed</label>
                     <select className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-4 font-bold text-xs uppercase text-white" value={formData.seed} onChange={(e) => setFormData({ ...formData, seed: e.target.value })}>
                       <option value="Seed A">Seed A</option>
-                      <option value="Seed B+">Seed B+</option>
-                      <option value="Seed B-">Seed B-</option>
+                      <option value="Seed B">Seed B</option>
                       <option value="Seed C">Seed C</option>
-                      <option value="Non-Seed">Non-Seed</option>
+                      <option value="Seed D">Seed D</option>
+                      <option value="Non Seeded">Non Seeded</option>
                     </select>
                   </div>
                 </div>
