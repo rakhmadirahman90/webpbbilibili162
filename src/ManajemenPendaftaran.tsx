@@ -23,6 +23,7 @@ import {
   Clock,
   Calendar,
   Download,
+  Share2,
   Activity,
   CheckCircle2,
   XCircle,
@@ -474,6 +475,34 @@ const totalSeniorPutri = registrants.filter(r =>
         window.open(waUrl, '_blank');
       }
     });
+  };
+
+  const handleShareProfileWhatsApp = (item: Registrant) => {
+    const rawWa = (item.whatsapp || '').replace(/\D/g, '');
+    const phone = rawWa.startsWith('0') ? '62' + rawWa.slice(1) : rawWa.startsWith('8') ? '62' + rawWa : rawWa;
+
+    if (!/^62\d{8,15}$/.test(phone)) {
+      Swal.fire('No WhatsApp Tidak Valid', 'Nomor WhatsApp atlet ini tidak tersedia atau formatnya tidak valid.', 'warning');
+      return;
+    }
+
+    const profileUrl = `https://pbilibili162.99apps.id/api/share-athlete?athleteId=${encodeURIComponent(item.id)}`;
+    const message = [
+      '*DETAIL PROFILE ATLET*',
+      '',
+      `*Nama Lengkap:* ${item.nama || '-'}`,
+      `*Kategori Umur:* ${item.kategori || '-'}`,
+      `*Kategori Atlet:* ${item.kategori_atlet || '-'}`,
+      `*Domisili:* ${item.domisili || '-'}`,
+      `*Status:* ${item.status || 'Aktif'}`,
+      '',
+      '📋 Profil resmi PB BILIBILI 162:',
+      profileUrl,
+      '',
+      'Foto profil pada pratinjau WhatsApp menggunakan foto atlet terbaru yang tersimpan di database.'
+    ].join('\\n');
+
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
   };
 
   const handleSendAccountHistory = (item: Registrant) => {
@@ -966,6 +995,13 @@ const totalSeniorPutri = registrants.filter(r =>
                          >
                            <XCircle size={13} />
                          </button>
+                        <button
+                          onClick={() => handleShareProfileWhatsApp(item)}
+                          className="p-1.5 bg-cyan-500/10 text-cyan-300 border border-cyan-400/20 rounded-lg hover:bg-cyan-600 hover:text-white transition-all shadow-sm"
+                          title="Bagikan Profil Atlet via WhatsApp"
+                        >
+                          <Share2 size={13} />
+                        </button>
                         <button 
                           onClick={() => handleSendAccountHistory(item)} 
                           className="p-1.5 bg-emerald-500/10 text-emerald-300 border border-emerald-400/20 rounded-lg hover:bg-green-600 hover:text-white transition-all shadow-sm border border-emerald-400/20"
@@ -1090,6 +1126,13 @@ const totalSeniorPutri = registrants.filter(r =>
                      >
                        <XCircle size={11} /> Tolak
                      </button>
+                    <button
+                      onClick={() => handleShareProfileWhatsApp(item)}
+                      className="py-2.5 bg-cyan-500/10 hover:bg-cyan-600 text-cyan-300 hover:text-white rounded-lg transition-all font-bold text-[9px] uppercase tracking-widest border border-cyan-400/20 flex items-center justify-center gap-1 col-span-2"
+                      title="Bagikan Profil Atlet via WhatsApp"
+                    >
+                      <Share2 size={11} /> Bagikan Profil via WA
+                    </button>
                     <button 
                       onClick={() => handleSendAccountHistory(item)} 
                       className="py-2.5 bg-emerald-500/10 hover:bg-emerald-600 text-emerald-300 hover:text-white rounded-lg transition-all font-bold text-[9px] uppercase tracking-widest border border-green-200 flex items-center justify-center gap-1 col-span-2"
