@@ -54,7 +54,7 @@ export default async function handler(req: any, res: any) {
     const status = String(athlete.status || 'Aktif').trim();
     // WhatsApp lebih konsisten mengambil gambar dari domain aplikasi sendiri.
     // Endpoint proxy akan mengambil foto asli dari Supabase server-side.
-    const image = `${PUBLIC_DOMAIN}/api/share-athlete-image?athleteId=${encodeURIComponent(String(athlete.id))}`;
+    const imageVersion = athlete.updated_at ? `&v=${encodeURIComponent(String(athlete.updated_at))}` : '';\n    const image = `${PUBLIC_DOMAIN}/api/share-athlete-image?athleteId=${encodeURIComponent(String(athlete.id))}${imageVersion}`;
 
     const canonical = `${PUBLIC_DOMAIN}/atlet?athleteId=${encodeURIComponent(String(athlete.id))}`;
     const title = `${name} - PB BILIBILI 162`;
