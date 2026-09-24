@@ -43,8 +43,7 @@ import {
   Tv,
   MessageSquare,
   Smartphone,
-  RefreshCw,
-  Handshake
+  RefreshCw
 } from 'lucide-react';
 import { supabase } from '../supabase';
 import { forceRefreshSiteSettings } from '../utils/siteSettingsHelper';
@@ -306,7 +305,7 @@ export default function Sidebar({ email, role = 'admin', isOpen, onClose }: Side
       items: [
         { name: 'Jadwal Latihan', path: 'jadwal', icon: Calendar, adminOnly: false },
         { name: 'Agenda PB Bilibili 162', path: 'agenda', icon: Calendar, adminOnly: true },
-        { name: 'Sponsorship', path: 'sponsorship', icon: Handshake, adminOnly: true },
+        { name: 'Sponsorship', path: 'sponsorship', icon: Wallet, adminOnly: true },
         { name: 'Peringkat & Poin', path: 'ranking', icon: Trophy, adminOnly: false },
         { name: 'Hasil Skor', path: 'skor', icon: Zap, adminOnly: false }, 
         ...(role !== 'admin' ? [{ name: 'Kas Club', path: 'kas', icon: Wallet, adminOnly: false }] : []),
