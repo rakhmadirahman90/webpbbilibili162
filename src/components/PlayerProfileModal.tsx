@@ -5,7 +5,6 @@ import {
   ArrowDownRight, Clock, Edit3
 } from 'lucide-react';
 import { supabase } from '../supabase';
-import { useNavigate } from 'react-router-dom';
 
 interface Player {
   id: string;
@@ -156,7 +155,6 @@ export default function PlayerProfileModal({ player, globalRank, onClose }: Prop
   const [analytics, setAnalytics] = useState<any>(null);
   const [seededCup1, setSeededCup1] = useState<SeededCup1Data | null>(null);
   const [memberSessionId, setMemberSessionId] = useState('');
-  const navigate = useNavigate();
 
   useEffect(() => {
     try {
