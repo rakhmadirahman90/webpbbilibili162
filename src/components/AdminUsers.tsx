@@ -338,29 +338,33 @@ export default function AdminUsers({ session }: { session: any }) {
   };
 
   const handleShareProfileWhatsApp = (user: UserRecord) => {
-    const rawPhone = String(user.whatsapp || '').replace(/[^\d+]/g, '').replace(/^\+/, '');
-    const phone = rawPhone.startsWith('0') ? `62${rawPhone.slice(1)}` : rawPhone.startsWith('8') ? `62${rawPhone}` : rawPhone;
+    const rawPhone = String(user.whatsapp || '').replace(/\D/g, '');
+    const phone = rawPhone.startsWith('0')
+      ? `62${rawPhone.slice(1)}`
+      : rawPhone.startsWith('8')
+        ? `62${rawPhone}`
+        : rawPhone;
+
     if (!/^62\d{8,15}$/.test(phone)) {
       void Swal.fire({ title: 'WhatsApp Tidak Valid', text: `Nomor WhatsApp ${user.nama} belum tersedia atau formatnya tidak valid.`, icon: 'warning', background: '#0F172A', color: '#fff' });
       return;
     }
+
     const profileUrl = `https://pbilibili162.99apps.id/api/share-athlete?athleteId=${encodeURIComponent(user.id)}`;
     const message = [
-      '*DETAIL PROFILE ATLET*',
+      '*📋 PROFIL RESMI ATLET PB BILIBILI 162*',
       '',
       `*Nama Lengkap:* ${user.nama || '-'}`,
       `*Kategori:* ${user.kategori || '-'}`,
       `*WhatsApp:* ${user.whatsapp || '-'}`,
       `*Status Akun:* ${user.status || 'Aktif'}`,
       '',
-      '📋 Profil resmi PB BILIBILI 162:',
-      profileUrl,
-      '',
-      'Foto pratinjau WhatsApp menggunakan foto atlet terbaru dari database. Jika foto belum tersedia, sistem menggunakan logo PB BILIBILI 162.'
-    ].join('\n');
-    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
-  };
+      '🔗 *Buka Profil Atlet:*',
+      profileUrl
+    ].join('\\n');
 
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
+  };
   const adminCount = users.filter(u => u.role === 'admin').length;
   const memberCount = users.filter(u => u.role === 'anggota').length;
   const defaultPasswordCount = users.filter(u => u.role === 'anggota' && u.mustChangePassword).length;
