@@ -997,6 +997,16 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
         <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 sm:gap-3 w-full md:w-auto">
           <button
             type="button"
+            onClick={() => setIsEditing(true)}
+            className="inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-blue-600/20 active:scale-95 transition-all cursor-pointer w-full sm:w-auto"
+            title="Edit profil saya"
+          >
+            <Edit3 size={16} className="shrink-0" />
+            <span>Edit Profil Saya</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setActiveMemberTab('kas')}
             className="inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-emerald-600/20 active:scale-95 transition-all cursor-pointer w-full sm:w-auto"
           >
