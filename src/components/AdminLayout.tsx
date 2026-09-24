@@ -79,7 +79,8 @@ export default function AdminLayout({ children, email }: AdminLayoutProps) {
         role: metadata.role || role,
         foto_url: metadata.foto_url || '',
         login_at: activity.login_at || now,
-        last_seen_at: now
+        last_seen_at: now,
+        pathname: typeof window !== 'undefined' ? window.location.pathname : '/admin'
       };
       try {
         await presence.track(payload);
