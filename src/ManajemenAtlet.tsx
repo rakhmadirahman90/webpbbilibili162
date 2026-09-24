@@ -185,6 +185,7 @@ export default function ManajemenAtlet() {
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
   const [isCropping, setIsCropping] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [photoUploadTarget, setPhotoUploadTarget] = useState<'add' | 'edit'>('add');
   const [cup1SeededMap, setCup1SeededMap] = useState<Map<string, any>>(new Map());
 
   const [showSuccess, setShowSuccess] = useState(false);
@@ -324,34 +325,27 @@ export default function ManajemenAtlet() {
   };
 
   const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const file = e.target.files[0];
-      setUploadingImage(true);
-      try {
-        const reader = new FileReader();
-        const source = await new Promise<string>((resolve, reject) => {
-          reader.onload = () => resolve(String(reader.result || ''));
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
-        });
-        const focused = await autoFocusPortrait(source);
-        setImageToCrop(focused);
-        setCrop({ x: 0, y: 0 });
-        setZoom(1);
-        setCroppedAreaPixels(null);
-        setIsCropping(true);
-      } catch {
-        Swal.fire({
-          icon: 'error',
-          title: 'Foto Tidak Dapat Diproses',
-          text: 'Silakan pilih foto lain.',
-          confirmButtonColor: '#2563EB',
-          background: '#0F172A',
-          color: '#fff'
-        });
-      } finally {
-        setUploadingImage(false);
-      }
+    if (!e.target.files?.length) return;
+    const file = e.target.files[0];
+    setUploadingImage(true);
+    try {
+      const reader = new FileReader();
+      const source = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(String(reader.result || ''));
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      const focused = await autoFocusPortrait(source);
+      setImageToCrop(focused);
+      setCrop({ x: 0, y: 0 });
+      setZoom(1);
+      setCroppedAreaPixels(null);
+      setIsCropping(true);
+    } catch {
+      Swal.fire({ icon:'error', title:'Foto Tidak Dapat Diproses', text:'Silakan pilih foto lain.', confirmButtonColor:'#2563EB', background:'#0F172A', color:'#fff' });
+    } finally {
+      setUploadingImage(false);
+      e.target.value = '';
     }
   };
 
@@ -366,176 +360,93 @@ export default function ManajemenAtlet() {
       const image = await createImage(imageToCrop);
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
-
       canvas.width = croppedAreaPixels.width;
       canvas.height = croppedAreaPixels.height;
-
-      ctx?.drawImage(
-        image,
-        croppedAreaPixels.x,
-        croppedAreaPixels.y,
-        croppedAreaPixels.width,
-        croppedAreaPixels.height,
-        0,
-        0,
-        croppedAreaPixels.width,
-        croppedAreaPixels.height
+      ctx?.drawImage(image, croppedAreaPixels.x, croppedAreaPixels.y, croppedAreaPixels.width, croppedAreaPixels.height, 0, 0, croppedAreaPixels.width, croppedAreaPixels.height);
+      const blob = await new Promise<Blob>((resolve, reject) =>
+        canvas.toBlob(b => b ? resolve(b) : reject(new Error('Gagal membuat foto')), 'image/jpeg', 0.82)
       );
 
-      const blob = await new Promise<Blob>((resolve) =>
-        canvas.toBlob((b) => resolve(b!), 'image/jpeg', 0.8)
-      );
-      const fileName = `atlet-${Date.now()}-${(newAtlet.nama || 'temp')
-        .replace(/\s+/g, '-')
-        .toLowerCase()}.jpg`;
+      const name = (photoUploadTarget === 'edit' ? editingStats?.nama : newAtlet.nama) || 'atlet';
+      const safeName = name.trim().replace(/[^a-zA-Z0-9_-]+/g, '-').toLowerCase();
+      const ownerId = photoUploadTarget === 'edit' ? String(editingStats?.id || Date.now()) : String(Date.now());
+      const fileName = `atlet-profil/${ownerId}-${safeName}-${Date.now()}.jpg`;
 
-      const { error } = await supabase.storage
-        .from(BUCKET_NAME)
-        .upload(fileName, blob);
-
+      const { error } = await supabase.storage.from(BUCKET_NAME).upload(fileName, blob, {
+        contentType:'image/jpeg', upsert:true, cacheControl:'31536000'
+      });
       if (error) throw error;
 
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from(BUCKET_NAME).getPublicUrl(fileName);
-
-      setNewAtlet((prev) => ({ ...prev, foto_url: publicUrl }));
+      const { data:{ publicUrl } } = supabase.storage.from(BUCKET_NAME).getPublicUrl(fileName);
+      if (photoUploadTarget === 'edit') {
+        setEditingStats(prev => prev ? {...prev, foto_url:publicUrl} : prev);
+        setNotifMessage('Foto Profil Berhasil Diperbarui');
+      } else {
+        setNewAtlet(prev => ({...prev, foto_url:publicUrl}));
+        setNotifMessage('Foto Profil Berhasil Diunggah');
+      }
       setIsCropping(false);
       setImageToCrop(null);
-
-      setNotifMessage('Foto Berhasil Diunggah!');
       setShowSuccess(true);
-      setTimeout(() => setShowSuccess(false), 3000);
-    } catch (err: any) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Upload Gagal',
-        text: "Upload Gagal! Pastikan Bucket '" + BUCKET_NAME + "' sudah dibuat di Supabase Storage.",
-        confirmButtonColor: '#EF4444',
-        background: '#0F172A',
-        color: '#fff'
-      });
+      setTimeout(()=>setShowSuccess(false),2500);
+    } catch (err:any) {
+      Swal.fire({ icon:'error', title:'Upload Foto Gagal', text:err?.message || 'Periksa Storage atlet_photos.', confirmButtonColor:'#EF4444', background:'#0F172A', color:'#fff' });
     } finally {
       setUploadingImage(false);
-    }
-  };
-
-  const handleAddNewAtlet = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (isSubmitting) return;
-
-    setIsSaving(true);
-    setIsSubmitting(true);
-
-    try {
-      const cleanName = newAtlet.nama.trim();
-
-      // 1. Simpan ke pendaftaran
-      const { error: pError } = await supabase.from('pendaftaran').upsert(
-        {
-          nama: cleanName,
-          whatsapp: newAtlet.whatsapp,
-          kategori: newAtlet.kategori,
-          domisili: newAtlet.domisili,
-          foto_url: newAtlet.foto_url,
-          status: 'verified',
-        },
-        { onConflict: 'nama' }
-      );
-
-      if (pError) throw pError;
-
-      // 2. Simpan ke rankings
-      const { error: rError } = await supabase.from('rankings').upsert(
-        {
-          player_name: cleanName,
-          pendaftaran_id: (await supabase.from('pendaftaran').select('id').eq('nama', cleanName).maybeSingle()).data?.id || null,
-          category: newAtlet.kategori,
-          seed: newAtlet.seed,
-          total_points: newAtlet.points,
-          photo_url: newAtlet.foto_url,
-          bio: newAtlet.bio,
-          achievement: newAtlet.prestasi,
-        },
-        { onConflict: 'player_name' }
-      );
-
-      if (rError) throw rError;
-
-      setNotifMessage('Atlet Berhasil Ditambahkan!');
-      setShowSuccess(true);
-      setIsAddModalOpen(false);
-
-      setNewAtlet({
-        nama: '',
-        whatsapp: '',
-        kategori: 'SENIOR',
-        domisili: '',
-        seed: 'UNSEEDED',
-        points: 0,
-        bio: 'Atlet PB Bilibili 162',
-        prestasi: 'Regular Player',
-        foto_url: '',
-      });
-
-      await fetchAtlets();
-      setTimeout(() => setShowSuccess(false), 3000);
-    } catch (err: any) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Gagal Menyimpan',
-        text: err.message,
-        confirmButtonColor: '#EF4444',
-        background: '#0F172A',
-        color: '#fff'
-      });
-    } finally {
-      setIsSaving(false);
-      setIsSubmitting(false);
     }
   };
 
   const handleUpdateStats = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingStats || !editingStats.nama || isSubmitting) return;
-
     setIsSaving(true);
     setIsSubmitting(true);
     try {
-      // Update pendaftaran (kategori mungkin berubah berdasarkan seed)
-      await supabase
-        .from('pendaftaran')
-        .update({ kategori: editingStats.kategori })
-        .eq('nama', editingStats.nama);
+      const athleteId = editingStats.id;
+      const profilePayload: Record<string, any> = {
+        nama: editingStats.nama,
+        nama_panggilan: editingStats.nama_panggilan || null,
+        nama_punggung: editingStats.nama_punggung || null,
+        whatsapp: editingStats.whatsapp || null,
+        domisili: editingStats.domisili || null,
+        jenis_kelamin: editingStats.jenis_kelamin || null,
+        tempat_lahir: editingStats.tempat_lahir || null,
+        tanggal_lahir: editingStats.tanggal_lahir || null,
+        tahun_bergabung: editingStats.tahun_bergabung ? Number(editingStats.tahun_bergabung) : null,
+        tangan_dominan: editingStats.tangan_dominan || null,
+        kategori: editingStats.kategori || editingStats.kategori_atlet || null,
+        status: editingStats.status || 'verified',
+        alasan_status: editingStats.alasan_status || null,
+        hobi: editingStats.hobi || null,
+        makanan_favorit: editingStats.makanan_favorit || null,
+        pengalaman: editingStats.pengalaman || null,
+        foto_url: editingStats.foto_url || null,
+      };
+      const { error: profileError } = athleteId
+        ? await supabase.from('pendaftaran').update(profilePayload).eq('id', athleteId)
+        : await supabase.from('pendaftaran').update(profilePayload).eq('nama', editingStats.nama);
+      if (profileError) throw profileError;
 
-      // Update rankings
-      const { error: rankError } = await supabase.from('rankings').upsert(
-        {
-          player_name: editingStats.nama,
-          category: editingStats.kategori,
-          seed: editingStats.seed,
-          total_points: editingStats.points,
-        },
-        { onConflict: 'player_name' }
-      );
-
+      const { error: rankError } = await supabase.from('rankings').upsert({
+        player_name: editingStats.nama,
+        pendaftaran_id: athleteId || null,
+        category: editingStats.kategori || editingStats.kategori_atlet,
+        seed: editingStats.seed || 'UNSEEDED',
+        total_points: Number(editingStats.points || 0),
+        photo_url: editingStats.foto_url || null,
+        bio: editingStats.bio || null,
+        achievement: editingStats.prestasi || null,
+      }, { onConflict:'player_name' });
       if (rankError) throw rankError;
 
       await fetchAtlets();
-      setNotifMessage('Data Performa Diperbarui!');
+      setNotifMessage('Profil Atlet Berhasil Diperbarui');
       setShowSuccess(true);
-      setTimeout(() => setShowSuccess(false), 3000);
+      setTimeout(()=>setShowSuccess(false),2500);
       setIsEditModalOpen(false);
       setSelectedAtlet(null);
-    } catch (err: any) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Gagal Menyimpan Performa',
-        text: err.message,
-        confirmButtonColor: '#EF4444',
-        background: '#0F172A',
-        color: '#fff'
-      });
+    } catch (err:any) {
+      Swal.fire({ icon:'error', title:'Gagal Menyimpan Profil', text:err?.message || 'Periksa data lalu coba lagi.', confirmButtonColor:'#EF4444', background:'#0F172A', color:'#fff' });
     } finally {
       setIsSaving(false);
       setIsSubmitting(false);
@@ -1011,11 +922,17 @@ export default function ManajemenAtlet() {
                             <div className="h-full grid place-items-center text-blue-300/30"><User size={58}/></div>
                           )}
                         </div>
-                        <div className="mt-2 text-center">
-                          <span className="inline-flex items-center gap-1.5 text-[8px] font-black uppercase tracking-widest text-slate-500">
-                            <Camera size={11}/> Foto Profil
-                          </span>
+                        <div className="mt-3 grid grid-cols-2 gap-2">
+                          <label className="cursor-pointer rounded-xl border border-blue-500/20 bg-blue-500/10 px-2 py-2.5 text-center text-[8px] font-black uppercase tracking-wider text-blue-300 hover:bg-blue-500/20 transition-all">
+                            <span className="inline-flex items-center justify-center gap-1"><Upload size={13}/> Galeri</span>
+                            <input type="file" accept="image/*" className="hidden" onChange={(e)=>{setPhotoUploadTarget('edit');void onFileChange(e)}} />
+                          </label>
+                          <label className="cursor-pointer rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-2 py-2.5 text-center text-[8px] font-black uppercase tracking-wider text-emerald-300 hover:bg-emerald-500/20 transition-all">
+                            <span className="inline-flex items-center justify-center gap-1"><Camera size={13}/> Kamera</span>
+                            <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e)=>{setPhotoUploadTarget('edit');void onFileChange(e)}} />
+                          </label>
                         </div>
+                        <p className="mt-2 text-center text-[8px] text-slate-600">Foto otomatis dipotong portrait 4:5 sebelum disimpan.</p>
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
@@ -1111,7 +1028,10 @@ export default function ManajemenAtlet() {
                     <div className="p-4 sm:p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                       <label className="space-y-1.5"><span className="field-label">Points</span><input type="number" inputMode="numeric" className="field-input" value={editingStats.points ?? 0} onChange={e=>setEditingStats({...editingStats,points:parseNumber(e.target.value)})}/></label>
                       <label className="space-y-1.5"><span className="field-label">Seed</span><select className="field-input" value={editingStats.seed || 'UNSEEDED'} onChange={e=>handleSeedChange(e.target.value,true)}><option value="UNSEEDED">UNSEEDED</option><option value="C">C</option><option value="B-">B-</option><option value="B+">B+</option><option value="A">A</option></select></label>
-                      <label className="space-y-1.5 sm:col-span-2 lg:col-span-1"><span className="field-label">Foto URL</span><input className="field-input" value={editingStats.foto_url || ''} onChange={e=>setEditingStats({...editingStats,foto_url:e.target.value})}/></label>
+                      <div className="sm:col-span-2 lg:col-span-1 rounded-xl border border-slate-700 bg-slate-900 px-3 py-3">
+                        <div className="field-label mb-1">Foto Profil</div>
+                        <div className="text-[9px] font-bold text-emerald-400 flex items-center gap-1.5"><ShieldCheck size={13}/> Dikelola melalui Galeri / Kamera</div>
+                      </div>
                     </div>
                   </section>
 
