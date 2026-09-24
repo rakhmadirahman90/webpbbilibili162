@@ -529,6 +529,7 @@ const totalSeniorPutri = registrants.filter(r =>
         : 'MENUNGGU VERIFIKASI';
 
     const profileUrl = `https://pbilibili162.99apps.id/api/share-athlete?athleteId=${encodeURIComponent(item.id)}&v=${Date.now()}`;
+    const loginUrl = 'https://pbilibili162.99apps.id/login';
     const message = [
       '🏸 *PB BILIBILI 162 PAREPARE*',
       '',
@@ -537,8 +538,16 @@ const totalSeniorPutri = registrants.filter(r =>
       `📍 ${item.domisili || '-'}`,
       `📋 Status: *${statusLabel}*`,
       '',
+      '🔐 *AKUN LOGIN ANGGOTA*',
+      `• *Username:* +${phone}`,
+      '• *Password Default:* *bili2162*',
+      '• Login pertama wajib mengganti password default.',
+      '',
       '📸 *Profil & foto atlet:*',
       profileUrl,
+      '',
+      '🌐 *Login aplikasi:*',
+      loginUrl,
       '',
       '_PB BILIBILI 162 • Parepare_'
     ].join('\n');
