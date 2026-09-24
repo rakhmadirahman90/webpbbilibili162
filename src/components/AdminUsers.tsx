@@ -119,6 +119,46 @@ export default function AdminUsers({ session }: { session: any }) {
     };
   }, []);
 
+  const enrichTournamentPhotos = async (rows: any[]) => {
+    const paths = Array.from(new Set(
+      rows
+        .filter((row: any) => !row?.foto_url && row?.bilibili_cup1_photo_path)
+        .map((row: any) => row.bilibili_cup1_photo_path as string)
+        .filter(Boolean)
+    ));
+
+    if (paths.length === 0) return rows;
+
+    try {
+      const { data: signedRows, error } = await supabase.storage
+        .from('turnamen-dokumen')
+        .createSignedUrls(paths, 60 * 60);
+
+      if (error) {
+        console.warn('[AdminUsers] Gagal membuat signed URL foto turnamen:', error.message);
+        return rows;
+      }
+
+      const signedByPath = new Map(
+        (signedRows || [])
+          .filter((row: any) => row?.path && row?.signedUrl)
+          .map((row: any) => [row.path, row.signedUrl])
+      );
+
+      return rows.map((row: any) => ({
+        ...row,
+        foto_url:
+          row.foto_url ||
+          (row.bilibili_cup1_photo_path
+            ? signedByPath.get(row.bilibili_cup1_photo_path) || ''
+            : '')
+      }));
+    } catch (error) {
+      console.warn('[AdminUsers] Sinkronisasi foto turnamen gagal:', error);
+      return rows;
+    }
+  };
+
   const fetchUsers = async () => {
     setLoading(true);
     try {
@@ -130,8 +170,12 @@ export default function AdminUsers({ session }: { session: any }) {
 
       if (error) throw error;
 
+      // Foto profil utama menjadi prioritas. Jika kosong, sinkronkan foto
+      // terbaru dari pendaftaran Turnamen BILIBILI CUP I melalui signed URL.
+      const enrichedData = await enrichTournamentPhotos(pendaftaranData || []);
+
       // Password selalu berasal dari hash server/database; tidak disimpan di localStorage.
-      const mapped: UserRecord[] = (pendaftaranData || []).map((item: any) => {
+      const mapped: UserRecord[] = enrichedData.map((item: any) => {
         return {
           id: item.id,
           nama: item.nama || 'Tanpa Nama',
