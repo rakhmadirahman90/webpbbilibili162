@@ -91,6 +91,100 @@ function AthleteAvatar({
   );
 }
 
+function AthleteAutocomplete({
+  label,
+  tone,
+  players,
+  selectedId,
+  onSelect
+}: {
+  label: string;
+  tone: 'blue' | 'purple';
+  players: AthletePerformance[];
+  selectedId: string;
+  onSelect: (id: string) => void;
+}) {
+  const selected = players.find(p => p.id === selectedId);
+  const [query, setQuery] = useState(selected?.nama || '');
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    setQuery(selected?.nama || '');
+  }, [selected?.id, selected?.nama]);
+
+  const results = players
+    .filter(p => p.nama && normName(p.nama).includes(normName(query)))
+    .slice(0, 8);
+
+  const border = tone === 'blue' ? 'border-blue-500/30' : 'border-purple-500/30';
+  const focus = tone === 'blue' ? 'focus:border-blue-500' : 'focus:border-purple-500';
+  const badge = tone === 'blue' ? 'text-blue-400 bg-blue-500/10' : 'text-purple-400 bg-purple-500/10';
+
+  return (
+    <div className="relative flex-1 min-w-0">
+      <div className={`flex items-center gap-2 bg-slate-950 border ${border} rounded-xl px-2 py-1.5`}>
+        <AthleteAvatar name={selected?.nama || query || 'Atlet'} fotoUrl={selected?.foto_url} size="sm" />
+        <div className="min-w-0 flex-1">
+          <div className={`text-[7px] font-black uppercase tracking-widest ${badge} inline-block rounded px-1.5 py-0.5 mb-0.5`}>
+            {label}
+          </div>
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setOpen(true);
+            }}
+            onFocus={() => setOpen(true)}
+            onBlur={() => setTimeout(() => setOpen(false), 180)}
+            placeholder="Ketik nama atlet..."
+            className={`w-full bg-transparent text-sm font-black text-white outline-none ${focus} placeholder:text-slate-600`}
+            aria-label={`Cari ${label}`}
+            autoComplete="off"
+          />
+        </div>
+        <Search size={14} className="text-slate-600 shrink-0" />
+      </div>
+
+      {open && query.trim() && (
+        <div className="absolute z-50 left-0 right-0 top-full mt-1 rounded-xl border border-slate-700 bg-slate-950 shadow-2xl overflow-hidden">
+          {results.length > 0 ? (
+            <div className="max-h-64 overflow-y-auto py-1">
+              {results.map(p => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => {
+                    onSelect(p.id);
+                    setQuery(p.nama);
+                    setOpen(false);
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2.5 text-left hover:bg-slate-800 transition-colors"
+                >
+                  <AthleteAvatar name={p.nama} fotoUrl={p.foto_url} size="sm" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-xs font-black text-white truncate">{p.nama}</span>
+                    <span className="block text-[8px] text-slate-500">{p.category || 'PB Bili Bili 162'} • {p.matchesPlayed} sparing • WR {p.winRate}%</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="px-3 py-4 text-center text-[9px] font-bold uppercase tracking-wider text-slate-500">
+              Atlet tidak ditemukan di database
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function normName(value: string) {
+  return String(value || '').toLowerCase().trim().replace(/\s+/g, ' ');
+}
+
 export default function AnalisisPerforma() {
   const [players, setPlayers] = useState<AthletePerformance[]>([]);
   const [selectedPlayer1Id, setSelectedPlayer1Id] = useState<string>('');
@@ -280,41 +374,23 @@ export default function AnalisisPerforma() {
               <p className="text-[10px] text-slate-500 mt-0.5">Pilih dua atlet untuk membandingkan metrik fisik dan performa latihan.</p>
             </div>
 
-            {/* Athlete selectors with profile photos */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-              <div className="flex items-center gap-2 bg-slate-950 border border-blue-500/20 rounded-xl px-2 py-1.5 min-w-0">
-                <AthleteAvatar name={p1?.nama || 'Atlet A'} fotoUrl={p1?.foto_url} size="sm" />
-                <select
-                  value={selectedPlayer1Id}
-                  onChange={(e) => setSelectedPlayer1Id(e.target.value)}
-                  className="bg-transparent text-xs font-bold text-white outline-none focus:border-indigo-500 cursor-pointer min-w-0 max-w-[145px]"
-                  aria-label="Pilih atlet pertama"
-                >
-                  {players.map(p => (
-                    <option key={p.id} value={p.id} className="bg-slate-900 text-white font-bold">
-                      {p.nama}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <span className="text-[10px] font-black text-slate-500 text-center">VS</span>
-
-              <div className="flex items-center gap-2 bg-slate-950 border border-purple-500/20 rounded-xl px-2 py-1.5 min-w-0">
-                <AthleteAvatar name={p2?.nama || 'Atlet B'} fotoUrl={p2?.foto_url} size="sm" />
-                <select
-                  value={selectedPlayer2Id}
-                  onChange={(e) => setSelectedPlayer2Id(e.target.value)}
-                  className="bg-transparent text-xs font-bold text-white outline-none focus:border-indigo-500 cursor-pointer min-w-0 max-w-[145px]"
-                  aria-label="Pilih atlet kedua"
-                >
-                  {players.map(p => (
-                    <option key={p.id} value={p.id} className="bg-slate-900 text-white font-bold">
-                      {p.nama}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            {/* Athlete autocomplete: type a name and choose from the live database */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:max-w-xl">
+              <AthleteAutocomplete
+                label="Atlet P1"
+                tone="blue"
+                players={players}
+                selectedId={selectedPlayer1Id}
+                onSelect={setSelectedPlayer1Id}
+              />
+              <span className="text-[10px] font-black text-slate-500 text-center shrink-0">VS</span>
+              <AthleteAutocomplete
+                label="Atlet P2"
+                tone="purple"
+                players={players}
+                selectedId={selectedPlayer2Id}
+                onSelect={setSelectedPlayer2Id}
+              />
             </div>
           </div>
 
