@@ -344,7 +344,7 @@ export default function AdminUsers({ session }: { session: any }) {
       void Swal.fire({ title: 'WhatsApp Tidak Valid', text: `Nomor WhatsApp ${user.nama} belum tersedia atau formatnya tidak valid.`, icon: 'warning', background: '#0F172A', color: '#fff' });
       return;
     }
-    const profileUrl = `https://pbilibili162.99apps.id/atlet?athleteId=${encodeURIComponent(user.id)}`;
+    const profileUrl = `https://pbilibili162.99apps.id/api/share-athlete?athleteId=${encodeURIComponent(user.id)}`;
     const message = [
       '*DETAIL PROFILE ATLET*',
       '',
