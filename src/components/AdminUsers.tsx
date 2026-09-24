@@ -605,6 +605,9 @@ export default function AdminUsers({ session }: { session: any }) {
               className="h-12 w-full rounded-2xl border border-blue-200/10 bg-[#061327] pl-11 pr-4 text-sm text-white placeholder:text-slate-500 outline-none transition focus:border-blue-400/60 focus:ring-4 focus:ring-blue-500/10"
             />
           </div>
+          <button type="button" onClick={handleBulkWa} className="h-12 inline-flex items-center justify-center gap-2 rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 text-[10px] font-black uppercase tracking-wider text-emerald-300 hover:bg-emerald-500/20 transition">
+            <Share2 size={15}/> Kirim Akun ke Semua WA
+          </button>
           <div className="grid grid-cols-2 sm:flex gap-2">
             <select value={roleFilter} onChange={(e)=>setRoleFilter(e.target.value as any)} className="h-12 rounded-2xl border border-blue-200/10 bg-[#061327] px-3 text-xs font-bold text-slate-200 outline-none focus:border-blue-400/60">
               <option value="all">Semua Role</option>
@@ -884,6 +887,50 @@ export default function AdminUsers({ session }: { session: any }) {
           )}
         </div>
       </div>
+
+      {showWaBulkModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-3 backdrop-blur-sm">
+          <div className="w-full max-w-2xl max-h-[88vh] overflow-hidden rounded-3xl border border-white/10 bg-[#07152a] shadow-2xl">
+            <div className="flex items-center justify-between border-b border-white/10 p-4">
+              <div>
+                <h3 className="text-sm font-black uppercase tracking-wider text-white">Distribusi Akun via WhatsApp</h3>
+                <p className="mt-1 text-[10px] text-slate-400">Deteksi nomor berdasarkan database pendaftaran.</p>
+              </div>
+              <button type="button" onClick={() => setShowWaBulkModal(false)} className="rounded-xl p-2 text-slate-400 hover:bg-white/5 hover:text-white"><XCircle size={20}/></button>
+            </div>
+            <div className="grid grid-cols-3 gap-2 p-4">
+              <div className="rounded-2xl border border-emerald-400/10 bg-emerald-500/5 p-3"><div className="text-[9px] uppercase text-slate-500">WA tersedia</div><div className="mt-1 text-xl font-black text-emerald-300">{waRecipients.length}</div></div>
+              <div className="rounded-2xl border border-amber-400/10 bg-amber-500/5 p-3"><div className="text-[9px] uppercase text-slate-500">Belum ada WA</div><div className="mt-1 text-xl font-black text-amber-300">{waMissing.length}</div></div>
+              <div className="rounded-2xl border border-red-400/10 bg-red-500/5 p-3"><div className="text-[9px] uppercase text-slate-500">Duplikat</div><div className="mt-1 text-xl font-black text-red-300">{waDuplicates.length}</div></div>
+            </div>
+            <div className="max-h-[52vh] overflow-y-auto px-4 pb-4 space-y-2">
+              {waRecipients.map((user) => (
+                <div key={user.id} className="flex items-center justify-between gap-3 rounded-2xl border border-white/5 bg-white/[.025] p-3">
+                  <div className="min-w-0">
+                    <div className="truncate text-xs font-black text-white">{user.nama}</div>
+                    <div className="text-[10px] text-emerald-300">+{normalizeWa(user.whatsapp)}</div>
+                  </div>
+                  <button type="button" onClick={() => openAccountWa(user)} className="shrink-0 inline-flex items-center gap-1.5 rounded-xl bg-emerald-500/10 px-3 py-2 text-[9px] font-black uppercase text-emerald-300 hover:bg-emerald-500/20">
+                    <Share2 size={13}/> Buka WA
+                  </button>
+                </div>
+              ))}
+              {waMissing.length > 0 && (
+                <div className="mt-3 rounded-2xl border border-amber-400/10 bg-amber-500/5 p-3">
+                  <div className="mb-2 text-[10px] font-black uppercase text-amber-300">Belum memiliki nomor WA valid</div>
+                  <div className="space-y-1 text-[10px] text-slate-400">{waMissing.map(u => <div key={u.id}>• {u.nama}</div>)}</div>
+                </div>
+              )}
+            </div>
+            <div className="flex justify-end gap-2 border-t border-white/10 p-4">
+              <button type="button" onClick={() => setShowWaBulkModal(false)} className="rounded-xl bg-slate-700 px-4 py-2 text-[10px] font-black uppercase text-white">Tutup</button>
+              <button type="button" onClick={() => waRecipients.forEach((u,i) => window.setTimeout(() => openAccountWa(u), i*250))} className="rounded-xl bg-emerald-600 px-4 py-2 text-[10px] font-black uppercase text-white">
+                Buka Semua Link WA
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Quick security tips */}
       <section className="grid grid-cols-1 xl:grid-cols-2 gap-3 shrink-0">
