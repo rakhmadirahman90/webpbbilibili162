@@ -78,11 +78,9 @@ export default function AdminUsers({ session }: { session: any }) {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'pendaftaran' }, () => fetchUsers())
       .subscribe();
 
-    const presence = supabase.channel('pb-bilibili-162-online-users');
-    const syncPresence = () => {
-      const state = presence.presenceState();
+    const applyPresenceState = (state: any) => {
       const onlineArray: any[] = [];
-      Object.entries(state).forEach(([presenceKey, metas]: any) => {
+      Object.entries(state || {}).forEach(([presenceKey, metas]: any) => {
         const list = Array.isArray(metas) ? metas : [];
         list.forEach((meta: any) => {
           const payload = meta || {};
@@ -98,20 +96,23 @@ export default function AdminUsers({ session }: { session: any }) {
         });
       });
       setOnlineUsers(onlineArray);
-      window.dispatchEvent(new CustomEvent('presence-sync', { detail: state }));
     };
 
-    presence
-      .on('presence', { event: 'sync' }, syncPresence)
-      .on('presence', { event: 'join' }, syncPresence)
-      .on('presence', { event: 'leave' }, syncPresence)
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') syncPresence();
-      });
+    // AdminLayout owns the single Presence channel. This component only
+    // consumes its realtime state, preventing duplicate subscribe() calls.
+    const handlePresenceSync = (event: Event) => {
+      const detail = (event as CustomEvent).detail;
+      applyPresenceState(detail);
+    };
+    window.addEventListener('presence-sync', handlePresenceSync);
+
+    // Ask AdminLayout for the current state in case the initial sync happened
+    // before this component mounted.
+    window.dispatchEvent(new CustomEvent('presence-request'));
 
     return () => {
+      window.removeEventListener('presence-sync', handlePresenceSync);
       supabase.removeChannel(channel);
-      void supabase.removeChannel(presence);
     };
   }, []);
 
