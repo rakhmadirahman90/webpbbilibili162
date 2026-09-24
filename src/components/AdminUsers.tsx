@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Users, UserCheck, ShieldCheck, Shield, KeyRound, Search, Filter, Plus, 
+  Users, UserCheck, ShieldCheck, Shield, KeyRound, Search, Filter, Plus, Share2, 
   Trash2, Edit3, CheckCircle, XCircle, AlertTriangle, Sparkles, Lock, Mail, Phone, Calendar, Image as ImageIcon,
   Activity, UserPlus, Eye, MoreVertical, SlidersHorizontal, Download, Upload, BookOpen, Lightbulb
 } from 'lucide-react';
@@ -337,6 +337,30 @@ export default function AdminUsers({ session }: { session: any }) {
     }
   };
 
+  const handleShareProfileWhatsApp = (user: UserRecord) => {
+    const rawPhone = String(user.whatsapp || '').replace(/[^\d+]/g, '').replace(/^\+/, '');
+    const phone = rawPhone.startsWith('0') ? `62${rawPhone.slice(1)}` : rawPhone.startsWith('8') ? `62${rawPhone}` : rawPhone;
+    if (!/^62\d{8,15}$/.test(phone)) {
+      void Swal.fire({ title: 'WhatsApp Tidak Valid', text: `Nomor WhatsApp ${user.nama} belum tersedia atau formatnya tidak valid.`, icon: 'warning', background: '#0F172A', color: '#fff' });
+      return;
+    }
+    const profileUrl = `https://pbilibili162.99apps.id/atlet?athleteId=${encodeURIComponent(user.id)}`;
+    const message = [
+      '*DETAIL PROFILE ATLET*',
+      '',
+      `*Nama Lengkap:* ${user.nama || '-'}`,
+      `*Kategori:* ${user.kategori || '-'}`,
+      `*WhatsApp:* ${user.whatsapp || '-'}`,
+      `*Status Akun:* ${user.status || 'Aktif'}`,
+      '',
+      '📋 Profil resmi PB BILIBILI 162:',
+      profileUrl,
+      '',
+      'Foto pratinjau WhatsApp menggunakan foto atlet terbaru dari database. Jika foto belum tersedia, sistem menggunakan logo PB BILIBILI 162.'
+    ].join('\n');
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
+  };
+
   const adminCount = users.filter(u => u.role === 'admin').length;
   const memberCount = users.filter(u => u.role === 'anggota').length;
   const defaultPasswordCount = users.filter(u => u.role === 'anggota' && u.mustChangePassword).length;
@@ -555,7 +579,8 @@ export default function AdminUsers({ session }: { session: any }) {
                         </div>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <button type="button" onClick={() => handleResetPassword(user)} title="Password" className="h-8 w-8 inline-flex items-center justify-center rounded-lg bg-blue-500/10 text-blue-300 ring-1 ring-blue-400/15 hover:bg-blue-500/20 transition"><KeyRound size={14}/></button>
+                        <button type="button" onClick={() => handleShareProfileWhatsApp(user)} title="Kirim Profil via WhatsApp" className="h-8 w-8 inline-flex items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-300 ring-1 ring-emerald-400/15 hover:bg-emerald-500/20 transition"><Share2 size={14}/></button>
+                         <button type="button" onClick={() => handleResetPassword(user)} title="Password" className="h-8 w-8 inline-flex items-center justify-center rounded-lg bg-blue-500/10 text-blue-300 ring-1 ring-blue-400/15 hover:bg-blue-500/20 transition"><KeyRound size={14}/></button>
                         <button type="button" onClick={() => handleOpenEdit(user)} title="Edit" className="h-8 w-8 inline-flex items-center justify-center rounded-lg bg-white/[.04] text-slate-300 ring-1 ring-white/10 hover:bg-white/[.08] transition"><Edit3 size={14}/></button>
                         <button type="button" onClick={() => handleDelete(user)} title="Hapus" className="h-8 w-8 inline-flex items-center justify-center rounded-lg bg-red-500/10 text-red-300 ring-1 ring-red-400/10 hover:bg-red-500/20 transition"><Trash2 size={14}/></button>
                       </div>
@@ -702,6 +727,13 @@ export default function AdminUsers({ session }: { session: any }) {
                         </td>
                         <td className="p-4 text-right">
                           <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              onClick={() => handleShareProfileWhatsApp(user)}
+                              title="Kirim Profil via WhatsApp"
+                              className="p-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 rounded-xl transition-all cursor-pointer"
+                            >
+                              <Share2 size={14} />
+                            </button>
                             <button
                               onClick={() => handleResetPassword(user)}
                               title="Reset Password"
