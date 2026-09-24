@@ -54,6 +54,7 @@ const hashPassword = async (password: string) => {
 
 const verifyPassword = async (password: string, storedHash: string) => {
   if (!storedHash) return false;
+  const normalizedPassword = String(password || "").trim();
 
   // Canonical format: pbkdf2$sha256$iterations$salt$derived
   const parts = storedHash.split("$");
@@ -63,7 +64,7 @@ const verifyPassword = async (password: string, storedHash: string) => {
     try {
       const salt = fromBase64Url(parts[3]);
       const expected = fromBase64Url(parts[4]);
-      const actual = await derivePasswordBytes(password, salt, iterations);
+      const actual = await derivePasswordBytes(normalizedPassword, salt, iterations);
       if (actual.length !== expected.length) return false;
       let diff = 0;
       for (let i = 0; i < actual.length; i++) diff |= actual[i] ^ expected[i];
