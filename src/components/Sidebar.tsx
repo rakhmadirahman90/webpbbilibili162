@@ -43,7 +43,8 @@ import {
   Tv,
   MessageSquare,
   Smartphone,
-  RefreshCw
+  RefreshCw,
+  Handshake
 } from 'lucide-react';
 import { supabase } from '../supabase';
 import { forceRefreshSiteSettings } from '../utils/siteSettingsHelper';
