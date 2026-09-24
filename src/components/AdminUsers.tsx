@@ -69,6 +69,9 @@ export default function AdminUsers({ session }: { session: any }) {
   const [onlineUsers, setOnlineUsers] = useState<any[]>([]);
   const [showOnlineModal, setShowOnlineModal] = useState(false);
   const [showWaBulkModal, setShowWaBulkModal] = useState(false);
+  const [waQueue, setWaQueue] = useState<UserRecord[]>([]);
+  const [waQueueIndex, setWaQueueIndex] = useState(0);
+  const [waOpenedCount, setWaOpenedCount] = useState(0);
 
   useEffect(() => {
     fetchUsers();
@@ -448,45 +451,60 @@ export default function AdminUsers({ session }: { session: any }) {
 
   const openAccountWa = (user: UserRecord) => {
     const phone = normalizeWa(user.whatsapp);
-    if (!/^62\d{8,15}$/.test(phone)) return;
+    if (!/^62\d{8,15}$/.test(phone)) return false;
     const url = `https://wa.me/${phone}?text=${encodeURIComponent(buildAccountWaMessage(user))}`;
-    window.open(url, '_blank', 'noopener,noreferrer');
+    const openedWindow = window.open(url, '_blank', 'noopener,noreferrer');
+    return Boolean(openedWindow);
   };
 
-  const handleBulkWa = async () => {
+  const handleBulkWa = () => {
     if (!waRecipients.length) {
-      await Swal.fire({ title: 'Tidak Ada Nomor WhatsApp', text: 'Belum ada anggota dengan nomor WhatsApp yang valid.', icon: 'warning', background: '#0F172A', color: '#fff' });
+      void Swal.fire({
+        title: 'Tidak Ada Nomor WhatsApp',
+        text: 'Belum ada anggota dengan nomor WhatsApp yang valid.',
+        icon: 'warning',
+        background: '#0F172A',
+        color: '#fff'
+      });
       return;
     }
-    const result = await Swal.fire({
-      title: 'Kirim Akun ke WhatsApp',
-      html: `<div class="text-left text-sm space-y-2"><p>Terdata <b>${users.filter(u => u.role === 'anggota').length}</b> anggota.</p><p><b class="text-emerald-400">${waRecipients.length}</b> nomor WhatsApp valid.</p><p><b class="text-amber-400">${waMissing.length}</b> anggota belum memiliki nomor WhatsApp valid.</p>${waDuplicates.length ? `<p><b class="text-red-400">${waDuplicates.length}</b> nomor terdeteksi duplikat.</p>` : ''}<p class="text-xs text-slate-400 mt-3">WhatsApp Web/Android tidak mengizinkan situs mengirim pesan diam-diam. Tombol ini membuka link wa.me dengan pesan akun yang sudah terisi untuk setiap anggota.</p></div>`,
-      icon: 'info',
-      showCancelButton: true,
-      confirmButtonText: `Buka ${waRecipients.length} Link WA`,
-      cancelButtonText: 'Batal',
-      background: '#0F172A',
-      color: '#fff',
-      confirmButtonColor: '#10B981'
-    });
-    if (!result.isConfirmed) return;
 
-    let opened = 0;
-    waRecipients.forEach((user, index) => {
-      window.setTimeout(() => {
-        openAccountWa(user);
-      }, index * 250);
-      opened++;
-    });
-    await Swal.fire({
-      title: 'Link WhatsApp Dibuat',
-      text: `${waRecipients.length} link akun anggota sudah diproses. Jika browser memblokir tab baru, gunakan daftar penerima di panel berikutnya untuk membukanya satu per satu.`,
-      icon: 'success',
-      background: '#0F172A',
-      color: '#fff',
-      confirmButtonColor: '#2563EB'
-    });
+    // Browser/Android hanya mengizinkan pembukaan WhatsApp dari gestur pengguna.
+    // Jangan memakai setTimeout untuk membuka banyak wa.me karena popup blocker
+    // akan mengizinkan link pertama saja. Gunakan antrean satu-per-satu yang
+    // tetap terkontrol oleh klik pengguna.
+    setWaQueue(waRecipients);
+    setWaQueueIndex(0);
+    setWaOpenedCount(0);
     setShowWaBulkModal(true);
+  };
+
+  const openNextWaAccount = () => {
+    const user = waQueue[waQueueIndex];
+    if (!user) return;
+
+    const opened = openAccountWa(user);
+    if (!opened) {
+      void Swal.fire({
+        title: 'WhatsApp Tidak Dibuka',
+        text: 'Browser memblokir pembukaan WhatsApp. Izinkan pop-up untuk situs ini lalu tekan tombol Buka WA lagi.',
+        icon: 'warning',
+        background: '#0F172A',
+        color: '#fff'
+      });
+      return;
+    }
+
+    const nextIndex = waQueueIndex + 1;
+    setWaOpenedCount(prev => prev + 1);
+    setWaQueueIndex(nextIndex);
+  };
+
+  const closeWaBulkQueue = () => {
+    setShowWaBulkModal(false);
+    setWaQueue([]);
+    setWaQueueIndex(0);
+    setWaOpenedCount(0);
   };
 
   const adminCount = users.filter(u => u.role === 'admin').length;
@@ -902,44 +920,100 @@ export default function AdminUsers({ session }: { session: any }) {
       </div>
 
       {showWaBulkModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-3 backdrop-blur-sm">
-          <div className="w-full max-w-2xl max-h-[88vh] overflow-hidden rounded-3xl border border-white/10 bg-[#07152a] shadow-2xl">
-            <div className="flex items-center justify-between border-b border-white/10 p-4">
-              <div>
-                <h3 className="text-sm font-black uppercase tracking-wider text-white">Distribusi Akun via WhatsApp</h3>
-                <p className="mt-1 text-[10px] text-slate-400">Deteksi nomor berdasarkan database pendaftaran.</p>
-              </div>
-              <button type="button" onClick={() => setShowWaBulkModal(false)} className="rounded-xl p-2 text-slate-400 hover:bg-white/5 hover:text-white"><XCircle size={20}/></button>
-            </div>
-            <div className="grid grid-cols-3 gap-2 p-4">
-              <div className="rounded-2xl border border-emerald-400/10 bg-emerald-500/5 p-3"><div className="text-[9px] uppercase text-slate-500">WA tersedia</div><div className="mt-1 text-xl font-black text-emerald-300">{waRecipients.length}</div></div>
-              <div className="rounded-2xl border border-amber-400/10 bg-amber-500/5 p-3"><div className="text-[9px] uppercase text-slate-500">Belum ada WA</div><div className="mt-1 text-xl font-black text-amber-300">{waMissing.length}</div></div>
-              <div className="rounded-2xl border border-red-400/10 bg-red-500/5 p-3"><div className="text-[9px] uppercase text-slate-500">Duplikat</div><div className="mt-1 text-xl font-black text-red-300">{waDuplicates.length}</div></div>
-            </div>
-            <div className="max-h-[52vh] overflow-y-auto px-4 pb-4 space-y-2">
-              {waRecipients.map((user) => (
-                <div key={user.id} className="flex items-center justify-between gap-3 rounded-2xl border border-white/5 bg-white/[.025] p-3">
-                  <div className="min-w-0">
-                    <div className="truncate text-xs font-black text-white">{user.nama}</div>
-                    <div className="text-[10px] text-emerald-300">+{normalizeWa(user.whatsapp)}</div>
-                  </div>
-                  <button type="button" onClick={() => openAccountWa(user)} className="shrink-0 inline-flex items-center gap-1.5 rounded-xl bg-emerald-500/10 px-3 py-2 text-[9px] font-black uppercase text-emerald-300 hover:bg-emerald-500/20">
-                    <Share2 size={13}/> Buka WA
-                  </button>
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-[#0b1224] border border-emerald-400/15 rounded-3xl w-full max-w-2xl shadow-2xl relative overflow-hidden max-h-[88vh] flex flex-col">
+            <div className="absolute top-0 right-0 w-40 h-40 bg-emerald-600/10 rounded-full blur-3xl pointer-events-none" />
+
+            <div className="p-5 sm:p-6 border-b border-white/5 shrink-0">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-base sm:text-lg font-black text-white uppercase italic tracking-wider">
+                    Kirim Akun ke WhatsApp
+                  </h3>
+                  <p className="mt-1 text-[10px] sm:text-xs text-slate-400">
+                    {waQueue.length > 0 ? `Antrean ${Math.min(waQueueIndex + 1, waQueue.length)} dari ${waQueue.length}` : 'Siap mengirim'}
+                  </p>
                 </div>
-              ))}
+                <button
+                  type="button"
+                  onClick={closeWaBulkQueue}
+                  className="rounded-xl p-2 text-slate-400 hover:bg-white/5 hover:text-white"
+                  aria-label="Tutup antrean WhatsApp"
+                >
+                  <XCircle size={20}/>
+                </button>
+              </div>
+
+              <div className="mt-4 grid grid-cols-3 gap-2">
+                <div className="rounded-2xl border border-emerald-400/10 bg-emerald-500/5 p-3">
+                  <div className="text-[9px] uppercase text-slate-500">WA valid</div>
+                  <div className="mt-1 text-xl font-black text-emerald-300">{waRecipients.length}</div>
+                </div>
+                <div className="rounded-2xl border border-blue-400/10 bg-blue-500/5 p-3">
+                  <div className="text-[9px] uppercase text-slate-500">Sudah dibuka</div>
+                  <div className="mt-1 text-xl font-black text-blue-300">{waOpenedCount}</div>
+                </div>
+                <div className="rounded-2xl border border-amber-400/10 bg-amber-500/5 p-3">
+                  <div className="text-[9px] uppercase text-slate-500">Belum dibuka</div>
+                  <div className="mt-1 text-xl font-black text-amber-300">{Math.max(waQueue.length - waQueueIndex, 0)}</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-5 sm:p-6 overflow-y-auto min-h-0">
+              {waQueueIndex < waQueue.length ? (
+                <>
+                  <div className="rounded-2xl border border-emerald-400/15 bg-emerald-500/5 p-4">
+                    <div className="text-[9px] font-black uppercase tracking-widest text-emerald-300">Penerima berikutnya</div>
+                    <div className="mt-2 text-lg font-black text-white">{waQueue[waQueueIndex]?.nama}</div>
+                    <div className="mt-1 text-xs text-emerald-300">+{normalizeWa(waQueue[waQueueIndex]?.whatsapp || '')}</div>
+                    <p className="mt-3 text-[10px] leading-relaxed text-slate-400">
+                      Tekan tombol di bawah untuk membuka chat WhatsApp dengan pesan akun atlet ini yang sudah terisi. Setelah kembali ke aplikasi, tekan lagi untuk penerima berikutnya.
+                    </p>
+                  </div>
+
+                  <div className="mt-4 rounded-2xl border border-blue-400/10 bg-blue-500/5 p-3 text-[10px] leading-relaxed text-blue-200/80">
+                    <b className="text-blue-300">Penting:</b> Website tidak dapat mengirim pesan WhatsApp secara diam-diam. Setiap chat harus dibuka melalui klik pengguna; ini mencegah browser Android hanya membuka 1 link lalu memblokir sisanya.
+                  </div>
+                </>
+              ) : (
+                <div className="rounded-2xl border border-emerald-400/15 bg-emerald-500/5 p-6 text-center">
+                  <CheckCircle className="mx-auto text-emerald-400" size={42}/>
+                  <div className="mt-3 text-lg font-black text-white">Semua antrean selesai</div>
+                  <p className="mt-1 text-xs text-slate-400">
+                    {waOpenedCount} dari {waQueue.length} nomor WhatsApp valid sudah dibuka.
+                  </p>
+                </div>
+              )}
+
               {waMissing.length > 0 && (
-                <div className="mt-3 rounded-2xl border border-amber-400/10 bg-amber-500/5 p-3">
-                  <div className="mb-2 text-[10px] font-black uppercase text-amber-300">Belum memiliki nomor WA valid</div>
-                  <div className="space-y-1 text-[10px] text-slate-400">{waMissing.map(u => <div key={u.id}>• {u.nama}</div>)}</div>
+                <div className="mt-4 rounded-2xl border border-amber-400/10 bg-amber-500/5 p-3">
+                  <div className="mb-2 text-[10px] font-black uppercase text-amber-300">Belum memiliki WhatsApp valid</div>
+                  <div className="space-y-1 text-[10px] text-slate-400">
+                    {waMissing.map(u => <div key={u.id}>• {u.nama}</div>)}
+                  </div>
                 </div>
               )}
             </div>
-            <div className="flex justify-end gap-2 border-t border-white/10 p-4">
-              <button type="button" onClick={() => setShowWaBulkModal(false)} className="rounded-xl bg-slate-700 px-4 py-2 text-[10px] font-black uppercase text-white">Tutup</button>
-              <button type="button" onClick={() => waRecipients.forEach((u,i) => window.setTimeout(() => openAccountWa(u), i*250))} className="rounded-xl bg-emerald-600 px-4 py-2 text-[10px] font-black uppercase text-white">
-                Buka Semua Link WA
+
+            <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2 border-t border-white/10 p-4">
+              <button
+                type="button"
+                onClick={closeWaBulkQueue}
+                className="rounded-xl bg-slate-700 px-4 py-3 text-[10px] font-black uppercase text-white"
+              >
+                Tutup
               </button>
+              {waQueueIndex < waQueue.length && (
+                <button
+                  type="button"
+                  onClick={openNextWaAccount}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-[10px] font-black uppercase tracking-wider text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-500"
+                >
+                  <Share2 size={15}/>
+                  Buka WA {waQueueIndex + 1} / {waQueue.length}
+                </button>
+              )}
             </div>
           </div>
         </div>
