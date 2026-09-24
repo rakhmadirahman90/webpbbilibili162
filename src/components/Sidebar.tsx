@@ -281,13 +281,15 @@ export default function Sidebar({ email, role = 'admin', isOpen, onClose }: Side
   };
 
     const allMenuItems = [
-    { 
-      section: 'Portal Utama', 
+    {
+      section: 'Portal Utama',
       items: [
         { name: role === 'admin' ? 'Dashboard Admin' : 'Dashboard Anggota', path: 'dashboard', icon: LayoutDashboard, adminOnly: false },
         { name: 'Profil Saya', path: 'profil', icon: UserCheck, adminOnly: false },
-        { name: 'Notifikasi Push', path: 'notifications', icon: Megaphone, adminOnly: false },
-        { name: 'Aplikasi Mobile & APK', path: 'pwa-apk', icon: Smartphone, adminOnly: false },
+        ...(role === 'admin' ? [
+          { name: 'Notifikasi Push', path: 'notifications', icon: Megaphone, adminOnly: true },
+          { name: 'Aplikasi Mobile & APK', path: 'pwa-apk', icon: Smartphone, adminOnly: true }
+        ] : [])
       ]
     },
     {
@@ -296,30 +298,29 @@ export default function Sidebar({ email, role = 'admin', isOpen, onClose }: Side
         { name: 'Analisis Performa', path: 'analisis-performa', icon: BarChart3, adminOnly: false },
         { name: 'Rapor Atlet', path: 'rapor-atlet', icon: HeartPulse, adminOnly: false },
         { name: 'Live Score Lapangan', path: 'live-score', icon: Tv, adminOnly: false },
-        { name: 'Testimoni & Ulasan', path: 'testimoni', icon: MessageSquare, adminOnly: false },
-        { name: 'Turnamen & Liga', path: 'turnamen-liga', icon: Trophy, adminOnly: false },
+        { name: 'Turnamen & Liga', path: 'turnamen-liga', icon: Trophy, adminOnly: false }
       ]
     },
-    { 
-      section: 'Informasi & Kegiatan', 
+    {
+      section: 'Informasi & Kegiatan',
       items: [
         { name: 'Jadwal Latihan', path: 'jadwal', icon: Calendar, adminOnly: false },
-        { name: 'Sponsorship', path: 'sponsorship', icon: Wallet, adminOnly: true },
         { name: 'Peringkat & Poin', path: 'ranking', icon: Trophy, adminOnly: false },
-        { name: 'Hasil Skor', path: 'skor', icon: Zap, adminOnly: false }, 
-        ...(role !== 'admin' ? [{ name: 'Kas Club', path: 'kas', icon: Wallet, adminOnly: false }] : []),
+        ...(role === 'admin' ? [
+          { name: 'Sponsorship', path: 'sponsorship', icon: Wallet, adminOnly: true },
+          { name: 'Hasil Skor', path: 'skor', icon: Zap, adminOnly: true }
+        ] : []),
+        { name: 'Kas Club', path: 'kas', icon: Wallet, adminOnly: false },
         { name: 'Rekap Iuran Peserta', path: 'rekap-keuangan', icon: FileSpreadsheet, adminOnly: false },
         { name: 'Berita & Pengumuman', path: 'berita', icon: Newspaper, adminOnly: false },
         { name: 'Galeri Media', path: 'galeri', icon: Image, adminOnly: false },
         { name: 'Dokumen Club', path: 'dokumen', icon: BookOpen, adminOnly: false },
-        ...(role !== 'admin' ? [
-          { name: 'Program Klub', path: 'program', icon: Target, adminOnly: false },
-          { name: 'Prestasi', path: 'prestasi', icon: Trophy, adminOnly: false },
-          { name: 'FAQ', path: 'faq', icon: MessageCircleQuestion, adminOnly: false }
-        ] : [])
+        { name: 'Program Klub', path: 'program', icon: Target, adminOnly: false },
+        { name: 'Prestasi', path: 'prestasi', icon: Trophy, adminOnly: false },
+        { name: 'FAQ', path: 'faq', icon: MessageCircleQuestion, adminOnly: false }
       ]
     },
-    ...(role !== 'admin' ? [{
+    {
       section: 'Profil Klub & Fasilitas',
       items: [
         { name: 'Sejarah Klub', path: 'sejarah', icon: Info, adminOnly: false },
@@ -328,9 +329,9 @@ export default function Sidebar({ email, role = 'admin', isOpen, onClose }: Side
         { name: 'Struktur Organisasi', path: 'struktur', icon: Network, adminOnly: false },
         { name: 'Inventaris', path: 'inventaris', icon: PackageOpen, adminOnly: false }
       ]
-    }] : []),
-    { 
-      section: 'Kelola Data & Atlet', 
+    },
+    {
+      section: 'Kelola Data & Atlet',
       adminOnly: true,
       items: [
         { name: 'Kelola User', path: 'users', icon: ShieldCheck, adminOnly: true },
@@ -338,7 +339,7 @@ export default function Sidebar({ email, role = 'admin', isOpen, onClose }: Side
         { name: 'Manajemen Atlet', path: 'atlet', icon: Users, adminOnly: true },
         { name: 'Absensi Latihan', path: 'absensi', icon: UserCheck, adminOnly: true },
         { name: 'Manajemen Poin', path: 'poin', icon: Star, adminOnly: true },
-        { name: 'Audit Log Poin', path: 'audit-poin', icon: History, adminOnly: true },
+        { name: 'Audit Log Poin', path: 'audit-poin', icon: History, adminOnly: true }
       ]
     },
     {
@@ -346,28 +347,28 @@ export default function Sidebar({ email, role = 'admin', isOpen, onClose }: Side
       adminOnly: true,
       items: [
         { name: 'Laporan & Rekap', path: 'laporan', icon: BarChart3, adminOnly: true },
-        { name: 'Kelola Kas', path: 'kas', icon: Wallet, adminOnly: true }, 
+        { name: 'Kelola Kas', path: 'kas', icon: Wallet, adminOnly: true },
         { name: 'Kelola Surat', path: 'surat', icon: Mail, adminOnly: true },
         { name: 'Kelola Inventaris', path: 'inventaris', icon: PackageOpen, adminOnly: true },
-        { name: 'Log Aktivitas', path: 'logs', icon: FileSearch, adminOnly: true },
+        { name: 'Log Aktivitas', path: 'logs', icon: FileSearch, adminOnly: true }
       ]
     },
-    { 
+    {
       section: 'Pengaturan Website',
-      adminOnly: true, 
+      adminOnly: true,
       items: [
         { name: 'Kelola Sejarah', path: 'sejarah', icon: Info, adminOnly: true },
         { name: 'Kelola Program', path: 'program', icon: Target, adminOnly: true },
         { name: 'Kelola Prestasi', path: 'prestasi', icon: Trophy, adminOnly: true },
-        { name: 'Kelola FAQ', path: 'faq', icon: MessageCircleQuestion, adminOnly: true }, 
-        { name: 'Kelola Visi Misi', path: 'visi-misi', icon: Info, adminOnly: true }, 
-        { name: 'Kelola Fasilitas', path: 'fasilitas', icon: Info, adminOnly: true }, 
+        { name: 'Kelola FAQ', path: 'faq', icon: MessageCircleQuestion, adminOnly: true },
+        { name: 'Kelola Visi Misi', path: 'visi-misi', icon: Info, adminOnly: true },
+        { name: 'Kelola Fasilitas', path: 'fasilitas', icon: Info, adminOnly: true },
         { name: 'Kelola Struktur', path: 'struktur', icon: Network, adminOnly: true },
-        { name: 'Kelola Tampilan', path: 'tampilan', icon: Layout, adminOnly: true }, 
-        { name: 'Kelola Navbar', path: 'navbar', icon: Menu, adminOnly: true }, 
+        { name: 'Kelola Tampilan', path: 'tampilan', icon: Layout, adminOnly: true },
+        { name: 'Kelola Navbar', path: 'navbar', icon: Menu, adminOnly: true },
         { name: 'Kelola Pop-up', path: 'popup', icon: Megaphone, adminOnly: true },
-        { name: 'Kelola Footer', path: 'footer', icon: LayoutGrid, adminOnly: true }, 
-        { name: 'Kelola Kontak', path: 'kontak', icon: Phone, adminOnly: true },
+        { name: 'Kelola Footer', path: 'footer', icon: LayoutGrid, adminOnly: true },
+        { name: 'Kelola Kontak', path: 'kontak', icon: Phone, adminOnly: true }
       ]
     }
   ];
