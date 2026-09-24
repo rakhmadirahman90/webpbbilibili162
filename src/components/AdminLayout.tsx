@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
+import { supabase } from '../supabase';
 import Sidebar from './Sidebar';
 import AdminRouteView from './AdminRouteView';
 import AdminAgendaPB162 from './AdminAgendaPB162';
