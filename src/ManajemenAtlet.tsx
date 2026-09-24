@@ -101,6 +101,42 @@ const autoFocusPortrait = async (dataUrl: string): Promise<string> => {
   return canvas.toDataURL('image/jpeg', 0.92);
 };
 
+
+function SmartAthletePhoto({ src, alt }: { src: string; alt: string }) {
+  const [objectPosition, setObjectPosition] = useState('50% 28%');
+
+  useEffect(() => {
+    let cancelled = false;
+    const Detector = (window as any).FaceDetector;
+    if (!Detector || !src) return;
+
+    const image = new Image();
+    image.crossOrigin = 'anonymous';
+    image.onload = async () => {
+      try {
+        const detector = new Detector({ fastMode: true, maxDetectedFaces: 3 });
+        const faces = await detector.detect(image);
+        const face = (faces || [])
+          .map((item: any) => item?.boundingBox)
+          .filter(Boolean)
+          .sort((a: any, b: any) => (b.width * b.height) - (a.width * a.height))[0];
+        if (!face || cancelled || !image.naturalWidth || !image.naturalHeight) return;
+        const x = Math.max(25, Math.min(75, ((face.x + face.width / 2) / image.naturalWidth) * 100));
+        const y = Math.max(16, Math.min(48, ((face.y + face.height * 0.38) / image.naturalHeight) * 100));
+        setObjectPosition(x.toFixed(1) + '% ' + y.toFixed(1) + '%');
+      } catch {}
+    };
+    image.src = src;
+    return () => { cancelled = true; };
+  }, [src]);
+
+  return (
+    <div className="relative h-full w-full overflow-hidden bg-gradient-to-b from-[#0b2f68] via-[#081f45] to-[#06152e]">
+      <img src={src} alt={alt} loading="lazy" decoding="async" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]" style={{ objectPosition }} />
+    </div>
+  );
+}
+
 const formatNumber = (val: number | string | undefined | null) => {
   if (val === undefined || val === null || val === '') return '';
   if (val === 0) return '';
@@ -609,13 +645,7 @@ export default function ManajemenAtlet() {
                 >
                   <div className="relative w-28 aspect-[4/5] sm:w-full shrink-0 rounded-2xl sm:rounded-[1.5rem] overflow-hidden sm:mb-4 bg-gradient-to-b from-[#0b2f68] via-[#081f45] to-[#06152e] shadow-inner">
                     {atlet.foto_url ? (
-                      <img
-                        src={atlet.foto_url}
-                        loading="lazy"
-                        decoding="async"
-                        className="w-full h-full object-contain group-hover:scale-[1.02] transition-transform duration-500"
-                        alt={atlet.nama}
-                      />
+                      <SmartAthletePhoto src={atlet.foto_url} alt={atlet.nama} />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-gradient-to-b from-[#0b2f68] via-[#081f45] to-[#06152e]">
                         <User className="text-blue-300/40" size={50} />
