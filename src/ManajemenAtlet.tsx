@@ -42,6 +42,65 @@ const createImage = (url: string): Promise<HTMLImageElement> =>
     image.src = url;
   });
 
+
+const autoFocusPortrait = async (dataUrl: string): Promise<string> => {
+  const image = await createImage(dataUrl);
+  const width = image.naturalWidth || image.width;
+  const height = image.naturalHeight || image.height;
+  if (!width || !height) return dataUrl;
+
+  let centerX = width / 2;
+  let centerY = height * 0.38;
+
+  try {
+    const Detector = (window as any).FaceDetector;
+    if (Detector) {
+      const detector = new Detector({ fastMode: true, maxDetectedFaces: 3 });
+      const faces = await detector.detect(image);
+      const face = (faces || [])
+        .map((item: any) => item?.boundingBox)
+        .filter(Boolean)
+        .sort((a: any, b: any) => (b.width * b.height) - (a.width * a.height))[0];
+      if (face) {
+        centerX = face.x + face.width / 2;
+        centerY = face.y + face.height * 0.55;
+      }
+    }
+  } catch {
+    // Unsupported FaceDetector: retain a safe portrait/top-center fallback.
+  }
+
+  const targetRatio = 4 / 5;
+  let cropWidth = width;
+  let cropHeight = cropWidth / targetRatio;
+  if (cropHeight > height) {
+    cropHeight = height;
+    cropWidth = cropHeight * targetRatio;
+  }
+
+  // Keep the detected face comfortably inside the upper-middle of the portrait.
+  const facePadding = Math.min(cropWidth * 0.16, width * 0.16);
+  const minX = cropWidth / 2;
+  const maxX = width - cropWidth / 2;
+  const minY = cropHeight * 0.32;
+  const maxY = height - cropHeight * 0.48;
+  const safeX = Math.max(minX, Math.min(maxX, centerX));
+  const safeY = Math.max(minY, Math.min(maxY, centerY + facePadding));
+
+  const sx = Math.max(0, Math.min(width - cropWidth, safeX - cropWidth / 2));
+  const sy = Math.max(0, Math.min(height - cropHeight, safeY - cropHeight * 0.38));
+
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(cropWidth);
+  canvas.height = Math.round(cropHeight);
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return dataUrl;
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(image, sx, sy, cropWidth, cropHeight, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL('image/jpeg', 0.92);
+};
+
 const formatNumber = (val: number | string | undefined | null) => {
   if (val === undefined || val === null || val === '') return '';
   if (val === 0) return '';
@@ -230,12 +289,32 @@ export default function ManajemenAtlet() {
   const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => {
-        setImageToCrop(reader.result as string);
+      setUploadingImage(true);
+      try {
+        const reader = new FileReader();
+        const source = await new Promise<string>((resolve, reject) => {
+          reader.onload = () => resolve(String(reader.result || ''));
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+        const focused = await autoFocusPortrait(source);
+        setImageToCrop(focused);
+        setCrop({ x: 0, y: 0 });
+        setZoom(1);
+        setCroppedAreaPixels(null);
         setIsCropping(true);
-      };
+      } catch {
+        Swal.fire({
+          icon: 'error',
+          title: 'Foto Tidak Dapat Diproses',
+          text: 'Silakan pilih foto lain.',
+          confirmButtonColor: '#2563EB',
+          background: '#0F172A',
+          color: '#fff'
+        });
+      } finally {
+        setUploadingImage(false);
+      }
     }
   };
 
@@ -805,7 +884,7 @@ export default function ManajemenAtlet() {
       {/* CROPPER MODAL */}
       {isCropping && imageToCrop && (
         <div className="fixed inset-0 z-[300] bg-black flex flex-col items-center justify-center p-4">
-          <div className="relative w-full max-w-lg aspect-[4/5] bg-zinc-900 rounded-3xl overflow-hidden">
+          <div className="relative w-full max-w-lg aspect-[4/5] bg-gradient-to-b from-[#0b2f68] via-[#081f45] to-[#06152e] rounded-3xl overflow-hidden border border-blue-400/30 shadow-[0_0_35px_rgba(37,99,235,.22)]">
             <Cropper
               image={imageToCrop}
               crop={crop}
