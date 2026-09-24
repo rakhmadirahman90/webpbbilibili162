@@ -356,23 +356,34 @@ export default function AdminUsers({ session }: { session: any }) {
       return;
     }
 
-    const profileUrl = `https://pbilibili162.99apps.id/api/share-athlete?athleteId=${encodeURIComponent(user.id)}`;
+    const profileUrl = `https://pbilibili162.99apps.id/api/share-athlete?athleteId=${encodeURIComponent(user.id)}&v=${Date.now()}`;
+    const loginUrl = 'https://pbilibili162.99apps.id/login';
     const message = [
-      '🏸 *PROFIL ATLET PB BILIBILI 162*',
+      '🏸 *PROFIL & AKUN ANGGOTA PB BILIBILI 162*',
       '',
-      `👤 Nama: *${user.nama || '-'}*`,
-      `🎂 Kategori: ${user.kategori || '-'}`,
-      `📱 WhatsApp: ${user.whatsapp || '-'}`,
-      `✅ Status Akun: ${user.status || 'Aktif'}`,
+      `👤 *Nama:* ${user.nama || '-'}`,
+      `🎂 *Kategori:* ${user.kategori || '-'}`,
+      `📱 *WhatsApp:* +${phone}`,
+      `✅ *Status Akun:* ${user.status || 'Aktif'}`,
       '',
-      '📸 *Lihat profil dan foto atlet:*',
+      '🔐 *AKUN LOGIN ANGGOTA*',
+      `• *Username:* +${phone}`,
+      '• *Password Default:* *bili2162*',
+      '',
+      '⚠️ *Login pertama wajib mengganti password default dengan password pribadi.*',
+      '',
+      '📸 *Profil & foto atlet:*',
       profileUrl,
+      '',
+      '🌐 *Login aplikasi:*',
+      loginUrl,
       '',
       '_PB BILIBILI 162 • Parepare_'
     ].join('\n');
 
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
   };
+
 
   const adminCount = users.filter(u => u.role === 'admin').length;
   const memberCount = users.filter(u => u.role === 'anggota').length;
