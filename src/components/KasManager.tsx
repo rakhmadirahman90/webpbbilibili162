@@ -104,7 +104,18 @@ export default function KasManager() {
   const stats = useMemo(() => {
     const masuk = filtered.filter(r => r.jenis_transaksi === 'Masuk').reduce((s, r) => s + Number(r.jumlah_bayar || 0), 0);
     const keluar = filtered.filter(r => r.jenis_transaksi === 'Keluar').reduce((s, r) => s + Number(r.jumlah_bayar || 0), 0);
-    const sebelumnya = normalized.filter(r => r.tanggal_transaksi < startDate).reduce((s, r) => s + (r.jenis_transaksi === 'Masuk' ? 1 : -1) * Number(r.jumlah_bayar || 0), 0);
+
+    // Saldo sebelumnya harus sama dengan snapshot WhatsApp:
+    // saldo penutupan aktual sampai kalender sehari sebelum hari ini.
+    // Total pemasukan/pengeluaran tetap mengikuti filter periode yang sedang dipilih.
+    const snapshotDate = localToday();
+    const previousDate = new Date(`${snapshotDate}T00:00:00+08:00`);
+    previousDate.setDate(previousDate.getDate() - 1);
+    const previousDateKey = `${previousDate.getFullYear()}-${String(previousDate.getMonth() + 1).padStart(2, '0')}-${String(previousDate.getDate()).padStart(2, '0')}`;
+    const sebelumnya = normalized
+      .filter(r => String(r.tanggal_transaksi || '').slice(0, 10) <= previousDateKey)
+      .reduce((s, r) => s + (r.jenis_transaksi === 'Masuk' ? 1 : -1) * Number(r.jumlah_bayar || 0), 0);
+
     const akhir = sebelumnya + masuk - keluar;
     return { masuk, keluar, sebelumnya, akhir, bendahara: akhir - MODAL_TETAP, count: filtered.length };
   }, [filtered, normalized, startDate]);
