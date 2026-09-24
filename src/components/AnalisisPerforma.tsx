@@ -160,15 +160,15 @@ export default function AnalisisPerforma() {
               <span className="px-3 py-1 bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 rounded-full text-[10px] font-black uppercase tracking-wider">
                 Module Analitik Pintar
               </span>
-              <span className="flex items-center gap-1 text-[10px] text-emerald-400 font-bold">
-                <Activity size={12} className="animate-pulse" /> Live Stats
+              <span className="flex items-center gap-1 text-[10px] text-amber-300 font-bold">
+                <Activity size={12} /> SIMULASI DATA 2026
               </span>
             </div>
             <h1 className="text-xl md:text-3xl font-black text-white uppercase italic tracking-tight">
               Analisis Performa <span className="text-indigo-400">& Statistik Atlet</span>
             </h1>
             <p className="text-slate-300 text-xs md:text-sm mt-1 max-w-2xl font-medium">
-              Dashboard visual interaktif untuk melacak konsistensi latihan, evaluasi radar keahlian fisik, perbandingan metrik head-to-head antar atlet PB Bili Bili 162.
+              Dashboard visual interaktif untuk melacak konsistensi latihan, evaluasi radar keahlian fisik, dan perbandingan head-to-head atlet PB Bili Bili 162. Periode simulasi Januari–September 2026; data dummy dibuat konsisten untuk pengujian analitik dan akan otomatis dapat digantikan data aktual.
             </p>
           </div>
         </div>
@@ -184,6 +184,7 @@ export default function AnalisisPerforma() {
           <div>
             <div className="text-[9px] font-black uppercase text-slate-500 tracking-wider">Total Atlet Terlacak</div>
             <div className="text-base font-black text-white">{players.length} Atlet</div>
+            <div className="text-[8px] text-amber-300 mt-0.5">Aktif + data simulasi terisi</div>
           </div>
         </div>
 
@@ -438,13 +439,16 @@ export default function AnalisisPerforma() {
         </div>
 
         {/* SECTION 3: ATTENDANCE TRENDS & PERFORMANCE HISTORY OVER TIME */}
-        <div className="lg:col-span-12 bg-slate-900 border border-slate-800 rounded-3xl p-6">
+        <div className="lg:col-span-12 bg-slate-900 border border-amber-500/20 rounded-3xl p-6">
+          <div className="mb-4 rounded-2xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-[10px] text-amber-200">
+            <strong>MODE SIMULASI:</strong> seluruh tren Januari–September 2026 di bawah merupakan data dummy yang dibangkitkan secara deterministik untuk pengujian dashboard. Angka ini bukan hasil pertandingan/latihan aktual dan tidak boleh dipakai sebagai klaim prestasi atlet.
+          </div>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b border-slate-800 pb-4">
             <div>
               <h3 className="text-sm font-black uppercase tracking-widest text-slate-200 flex items-center gap-2">
                 <TrendingUp size={16} className="text-emerald-400" /> Tren Kinerja & Kehadiran Latihan Makro
               </h3>
-              <p className="text-[10px] text-slate-500 mt-0.5">Statistik keseluruhan anggota klub PB Bili Bili 162 selama semester berjalan.</p>
+              <p className="text-[10px] text-slate-500 mt-0.5">Statistik keseluruhan anggota klub PB Bili Bili 162 untuk periode Januari–September 2026. Data nyata tetap diprioritaskan, sedangkan data simulasi hanya mengisi bagian yang belum tersedia.</p>
             </div>
           </div>
 
