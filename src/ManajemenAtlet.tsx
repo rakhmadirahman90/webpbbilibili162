@@ -29,6 +29,7 @@ import {
   Scissors,
   Plus,
   Upload,
+  Trash2,
 } from 'lucide-react';
 
 /* Removed Registrant interface */
@@ -960,70 +961,64 @@ export default function ManajemenAtlet() {
         />
       )}
 
-      {/* MODAL EDIT PERFORMANCE */}
+      {/* MODAL EDIT PROFIL & PERFORMA LENGKAP */}
       {isEditModalOpen && editingStats && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-          <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden relative">
-            <button
-              onClick={() => setIsEditModalOpen(false)}
-              className="absolute top-6 right-6 p-2 bg-slate-100 rounded-full hover:bg-red-500 hover:text-white transition-all"
-            >
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-3 sm:p-5 bg-slate-950/90 backdrop-blur-md overflow-y-auto">
+          <div className="bg-white w-full max-w-5xl rounded-[2rem] sm:rounded-[3rem] shadow-2xl overflow-hidden relative my-4">
+            <button onClick={() => setIsEditModalOpen(false)} className="absolute top-4 right-4 sm:top-6 sm:right-6 z-10 p-2.5 bg-slate-100 rounded-full hover:bg-red-500 hover:text-white transition-all">
               <X size={20} />
             </button>
-            <div className="p-10">
-              <h3 className="text-2xl font-black italic uppercase mb-8">
-                Edit <span className="text-blue-600">Performance</span>
-              </h3>
-              <form onSubmit={handleUpdateStats} className="space-y-5">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
-                      Points
-                    </label>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      className="w-full px-5 py-3 bg-slate-100 rounded-xl font-black"
-                      value={formatNumber(editingStats.points)}
-                      onChange={(e) =>
-                        setEditingStats({
-                          ...editingStats,
-                          points: parseNumber(e.target.value),
-                        })
-                      }
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
-                      Seed Level
-                    </label>
-                    <select
-                      className="w-full px-5 py-3 bg-slate-100 rounded-xl font-black uppercase"
-                      value={editingStats.seed || 'UNSEEDED'}
-                      onChange={(e) => handleSeedChange(e.target.value, true)}
-                    >
-                      <option value="UNSEEDED">UNSEEDED</option>
-                      <option value="C">SEED C (MUDA)</option>
-                      <option value="B-">SEED B- (SR)</option>
-                      <option value="B+">SEED B+ (SR)</option>
-                      <option value="A">SEED A (SR)</option>
-                    </select>
-                  </div>
+            <form onSubmit={handleUpdateStats} className="p-5 sm:p-8 lg:p-10 space-y-6 max-h-[92vh] overflow-y-auto">
+              <div>
+                <p className="text-[9px] font-black text-blue-600 uppercase tracking-[0.25em]">Master Data Atlet</p>
+                <h3 className="text-2xl sm:text-3xl font-black italic uppercase mt-1">Edit <span className="text-blue-600">Profil Lengkap</span></h3>
+                <p className="text-xs text-slate-500 mt-2">Semua data yang ditampilkan pada profil publik dikelola dari form ini.</p>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-[180px_1fr] gap-5">
+                <div className="rounded-3xl bg-gradient-to-b from-[#0b2f68] via-[#081f45] to-[#06152e] p-3 aspect-[4/5] lg:aspect-auto lg:h-[225px]">
+                  {editingStats.foto_url ? <SmartAthletePhoto src={editingStats.foto_url} alt={editingStats.nama || 'Atlet'} /> : <div className="h-full grid place-items-center text-blue-300/40"><User size={55}/></div>}
                 </div>
-                <button
-                  type="submit"
-                  disabled={isSaving || isSubmitting}
-                  className="w-full py-5 bg-blue-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-[0.3em] flex items-center justify-center gap-3"
-                >
-                  {isSaving || isSubmitting ? (
-                    <Loader2 className="animate-spin" size={18} />
-                  ) : (
-                    <Save size={18} />
-                  )}
-                  Save Performance
-                </button>
-              </form>
-            </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <label className="space-y-1"><span className="field-label">Nama Lengkap</span><input required className="field-input" value={editingStats.nama || ''} onChange={e=>setEditingStats({...editingStats,nama:e.target.value})}/></label>
+                  <label className="space-y-1"><span className="field-label">Nama Panggilan</span><input className="field-input" value={editingStats.nama_panggilan || ''} onChange={e=>setEditingStats({...editingStats,nama_panggilan:e.target.value})}/></label>
+                  <label className="space-y-1"><span className="field-label">Nama Punggung</span><input className="field-input" value={editingStats.nama_punggung || ''} onChange={e=>setEditingStats({...editingStats,nama_punggung:e.target.value})}/></label>
+                  <label className="space-y-1"><span className="field-label">WhatsApp</span><input className="field-input" value={editingStats.whatsapp || ''} onChange={e=>setEditingStats({...editingStats,whatsapp:e.target.value})}/></label>
+                  <label className="space-y-1"><span className="field-label">Domisili</span><input className="field-input" value={editingStats.domisili || ''} onChange={e=>setEditingStats({...editingStats,domisili:e.target.value})}/></label>
+                  <label className="space-y-1"><span className="field-label">Jenis Kelamin</span><select className="field-input" value={editingStats.jenis_kelamin || ''} onChange={e=>setEditingStats({...editingStats,jenis_kelamin:e.target.value})}><option value="">Pilih</option><option value="Laki-laki">Laki-laki</option><option value="Perempuan">Perempuan</option></select></label>
+                  <label className="space-y-1"><span className="field-label">Tempat Lahir</span><input className="field-input" value={editingStats.tempat_lahir || ''} onChange={e=>setEditingStats({...editingStats,tempat_lahir:e.target.value})}/></label>
+                  <label className="space-y-1"><span className="field-label">Tanggal Lahir</span><input type="date" className="field-input" value={editingStats.tanggal_lahir || ''} onChange={e=>setEditingStats({...editingStats,tanggal_lahir:e.target.value})}/></label>
+                  <label className="space-y-1"><span className="field-label">Tahun Bergabung</span><input type="number" min="1900" max="2100" className="field-input" value={editingStats.tahun_bergabung ?? ''} onChange={e=>setEditingStats({...editingStats,tahun_bergabung:e.target.value as any})}/></label>
+                  <label className="space-y-1"><span className="field-label">Tangan Dominan</span><select className="field-input" value={editingStats.tangan_dominan || ''} onChange={e=>setEditingStats({...editingStats,tangan_dominan:e.target.value})}><option value="">Pilih</option><option value="Kanan">Kanan</option><option value="Kiri">Kiri</option><option value="Keduanya">Keduanya</option></select></label>
+                  <label className="space-y-1"><span className="field-label">Kategori Atlet</span><input className="field-input" value={editingStats.kategori_atlet || editingStats.kategori || ''} onChange={e=>setEditingStats({...editingStats,kategori_atlet:e.target.value,kategori:e.target.value})}/></label>
+                  <label className="space-y-1"><span className="field-label">Status</span><select className="field-input" value={editingStats.status || 'verified'} onChange={e=>setEditingStats({...editingStats,status:e.target.value})}><option value="verified">Verified / Aktif</option><option value="aktif">Aktif</option><option value="tidak_aktif">Tidak Aktif</option><option value="nonaktif">Nonaktif</option></select></label>
+                  <label className="space-y-1 sm:col-span-2"><span className="field-label">Alasan Status</span><input className="field-input" value={editingStats.alasan_status || ''} onChange={e=>setEditingStats({...editingStats,alasan_status:e.target.value})}/></label>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <label className="space-y-1"><span className="field-label">Hobi</span><input className="field-input" value={editingStats.hobi || ''} onChange={e=>setEditingStats({...editingStats,hobi:e.target.value})}/></label>
+                <label className="space-y-1"><span className="field-label">Makanan Favorit</span><input className="field-input" value={editingStats.makanan_favorit || ''} onChange={e=>setEditingStats({...editingStats,makanan_favorit:e.target.value})}/></label>
+                <label className="space-y-1 sm:col-span-2"><span className="field-label">Pengalaman</span><textarea rows={3} className="field-input" value={editingStats.pengalaman || ''} onChange={e=>setEditingStats({...editingStats,pengalaman:e.target.value})}/></label>
+                <label className="space-y-1 sm:col-span-2"><span className="field-label">Biografi</span><textarea rows={3} className="field-input" value={editingStats.bio || ''} onChange={e=>setEditingStats({...editingStats,bio:e.target.value})}/></label>
+                <label className="space-y-1 sm:col-span-2"><span className="field-label">Prestasi</span><textarea rows={4} className="field-input" value={editingStats.prestasi || ''} onChange={e=>setEditingStats({...editingStats,prestasi:e.target.value})}/></label>
+              </div>
+
+              <div className="rounded-3xl bg-blue-50 border border-blue-100 p-5">
+                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-blue-600 mb-4">Performa Landing Page</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <label className="space-y-1"><span className="field-label">Points</span><input type="number" className="field-input" value={editingStats.points ?? 0} onChange={e=>setEditingStats({...editingStats,points:parseNumber(e.target.value)})}/></label>
+                  <label className="space-y-1"><span className="field-label">Seed</span><select className="field-input" value={editingStats.seed || 'UNSEEDED'} onChange={e=>handleSeedChange(e.target.value,true)}><option value="UNSEEDED">UNSEEDED</option><option value="C">C</option><option value="B-">B-</option><option value="B+">B+</option><option value="A">A</option></select></label>
+                  <label className="space-y-1"><span className="field-label">Foto URL</span><input className="field-input" value={editingStats.foto_url || ''} onChange={e=>setEditingStats({...editingStats,foto_url:e.target.value})}/></label>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                <button type="button" onClick={()=>editingStats && void handleDeleteAtlet(editingStats as Registrant)} className="sm:w-auto px-5 py-4 rounded-2xl bg-red-50 text-red-600 border border-red-200 font-black uppercase text-[10px] tracking-widest inline-flex items-center justify-center gap-2"><Trash2 size={16}/> Hapus Atlet</button>
+                <button type="button" onClick={()=>setIsEditModalOpen(false)} className="sm:ml-auto sm:w-auto px-6 py-4 rounded-2xl bg-slate-100 text-slate-700 font-black uppercase text-[10px]">Batal</button>
+                <button type="submit" disabled={isSaving || isSubmitting} className="px-7 py-4 rounded-2xl bg-blue-600 text-white font-black uppercase text-[10px] tracking-widest inline-flex items-center justify-center gap-2">{isSaving || isSubmitting ? <Loader2 className="animate-spin" size={17}/> : <Save size={17}/>} Simpan Semua Data</button>
+              </div>
+            </form>
           </div>
         </div>
       )}
