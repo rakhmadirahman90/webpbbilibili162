@@ -20,4 +20,13 @@ export interface Registrant {
   seeded_division?: string | null;
   seeded_partners?: string[];
   seeded_source_no?: number | null;
+  nama_panggilan?: string | null;
+  nama_punggung?: string | null;
+  tempat_lahir?: string | null;
+  tanggal_lahir?: string | null;
+  tahun_bergabung?: number | null;
+  tangan_dominan?: string | null;
+  hobi?: string | null;
+  makanan_favorit?: string | null;
+  pengalaman?: string | null;
 }
