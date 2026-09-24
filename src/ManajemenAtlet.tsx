@@ -528,18 +528,18 @@ export default function ManajemenAtlet() {
                   onClick={() => setSelectedAtlet(atlet)}
                   className="bg-gradient-to-br from-[#102847] to-[#08162a] p-3 md:p-4 rounded-3xl md:rounded-[2rem] shadow-lg shadow-black/20 hover:shadow-2xl hover:-translate-y-1 transition-all cursor-pointer group border border-white/10 hover:border-blue-400/30 relative overflow-hidden flex gap-3 sm:block"
                 >
-                  <div className="relative w-28 h-36 sm:w-full sm:h-auto sm:aspect-[4/5] shrink-0 rounded-2xl sm:rounded-[1.5rem] overflow-hidden sm:mb-4 bg-[#132947] shadow-inner">
+                  <div className="relative w-28 aspect-[4/5] sm:w-full shrink-0 rounded-2xl sm:rounded-[1.5rem] overflow-hidden sm:mb-4 bg-gradient-to-b from-[#0b2f68] via-[#081f45] to-[#06152e] shadow-inner">
                     {atlet.foto_url ? (
                       <img
                         src={atlet.foto_url}
                         loading="lazy"
                         decoding="async"
-                        className="w-full h-full object-cover object-[center_25%] group-hover:scale-105 transition-transform duration-500"
+                        className="w-full h-full object-contain group-hover:scale-[1.02] transition-transform duration-500"
                         alt={atlet.nama}
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-slate-200">
-                        <User className="text-slate-500" size={50} />
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-b from-[#0b2f68] via-[#081f45] to-[#06152e]">
+                        <User className="text-blue-300/40" size={50} />
                       </div>
                     )}
                     <div className="absolute top-3 left-3 bg-blue-950/80 backdrop-blur-xl text-white text-[8px] font-black px-3 py-1 rounded-full border border-white/20 uppercase">
@@ -658,13 +658,13 @@ export default function ManajemenAtlet() {
             </button>
 
             <div className="w-full md:w-[40%] bg-slate-50 p-10 border-r border-slate-100 flex flex-col items-center justify-center">
-              <div className="w-48 h-48 rounded-[2rem] overflow-hidden bg-slate-200 shadow-inner mb-6 relative group border-4 border-white">
+              <div className="w-48 aspect-[4/5] rounded-[2rem] overflow-hidden bg-gradient-to-b from-[#0b2f68] via-[#081f45] to-[#06152e] shadow-inner mb-6 relative group border-4 border-white">
                 {newAtlet.foto_url ? (
                   <img
                     src={newAtlet.foto_url}
                     loading="lazy"
                     decoding="async"
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain"
                     alt="Preview"
                   />
                 ) : (
