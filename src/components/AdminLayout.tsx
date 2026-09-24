@@ -42,8 +42,15 @@ export default function AdminLayout({ children, email }: AdminLayoutProps) {
   const [portalReady, setPortalReady] = useState(false);
   const pathnameRef = useRef(location.pathname);
   pathnameRef.current = location.pathname;
-  const role = portalSession?.user?.user_metadata?.role === 'anggota' ? 'anggota' : 'admin';
-  const isAdmin = role === 'admin';
+  // Fail-closed role resolution: ONLY an explicit "admin" role receives
+  // administrator navigation. Any missing/legacy/member value is treated as anggota.
+  const rawRole = String(
+    portalSession?.user?.user_metadata?.role ??
+    portalSession?.user?.role ??
+    ''
+  ).trim().toLowerCase();
+  const isAdmin = rawRole === 'admin' || rawRole === 'administrator';
+  const role = isAdmin ? 'admin' : 'anggota';
   const portalEmail = portalSession?.user?.email || email || '';
   const adminPath = location.pathname.replace(/^\/admin\/?/, '').replace(/\/$/, '').toLowerCase();
   const isDashboard = adminPath === '' || adminPath === 'dashboard';
@@ -145,7 +152,7 @@ export default function AdminLayout({ children, email }: AdminLayoutProps) {
       <header className="admin-mobile-header md:hidden sticky top-0 flex-shrink-0 px-4 py-2.5 backdrop-blur-xl border-b flex items-center justify-between z-40 shadow-lg">
         <button type="button" onClick={() => setIsSidebarOpen(true)} className="admin-mobile-menu-btn min-w-11 min-h-11 p-2 rounded-xl transition-colors flex items-center gap-2 touch-manipulation" aria-label="Buka menu navigasi" aria-expanded={isSidebarOpen}><MenuIcon size={22}/><span className="hidden xs:inline text-xs font-bold uppercase tracking-wider">Menu</span></button>
         <div className="flex items-center gap-2 min-w-0">
-          <a href="/admin/notifications" className="admin-mobile-notification-btn relative inline-flex min-h-10 min-w-10 items-center justify-center rounded-xl border border-emerald-400/25 bg-emerald-400/10 px-2.5 text-emerald-200 shadow-sm transition hover:bg-emerald-400/15" aria-label="Buka notifikasi WhatsApp" title="Notifikasi WhatsApp"><Bell size={17}/><span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-[#07101f]" aria-hidden="true" /></a>
+          {isAdmin && <a href="/admin/notifications" className="admin-mobile-notification-btn relative inline-flex min-h-10 min-w-10 items-center justify-center rounded-xl border border-emerald-400/25 bg-emerald-400/10 px-2.5 text-emerald-200 shadow-sm transition hover:bg-emerald-400/15" aria-label="Buka notifikasi WhatsApp" title="Notifikasi WhatsApp"><Bell size={17}/><span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-[#07101f]" aria-hidden="true" /></a>}
 
         </div>
         <span className="admin-mobile-badge text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full whitespace-nowrap">{isAdmin ? 'Admin Portal' : 'Portal Anggota'}</span>
