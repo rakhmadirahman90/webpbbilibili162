@@ -528,7 +528,7 @@ const totalSeniorPutri = registrants.filter(r =>
         ? 'DITOLAK'
         : 'MENUNGGU VERIFIKASI';
 
-    const profileUrl = `https://pbilibili162.99apps.id/api/share-athlete?athleteId=${encodeURIComponent(item.id)}`;
+    const profileUrl = `https://pbilibili162.99apps.id/api/share-athlete?athleteId=${encodeURIComponent(item.id)}&v=${Date.now()}`;
     const message = [
       '🏸 *PB BILIBILI 162 PAREPARE*',
       '',
