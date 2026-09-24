@@ -55,31 +55,40 @@ const hashPassword = async (password: string) => {
 const verifyPassword = async (password: string, storedHash: string) => {
   if (!storedHash) return false;
 
-  // New format: pbkdf2$sha256$iterations$salt$derived
+  // Canonical format: pbkdf2$sha256$iterations$salt$derived
   const parts = storedHash.split("$");
   if (parts.length === 5 && parts[0] === "pbkdf2" && parts[1] === "sha256") {
     const iterations = Number(parts[2]);
     if (!Number.isFinite(iterations) || iterations < 100000) return false;
-    const salt = fromBase64Url(parts[3]);
-    const expected = fromBase64Url(parts[4]);
-    const actual = await derivePasswordBytes(password, salt, iterations);
-    if (actual.length !== expected.length) return false;
-    let diff = 0;
-    for (let i = 0; i < actual.length; i++) diff |= actual[i] ^ expected[i];
-    return diff === 0;
+    try {
+      const salt = fromBase64Url(parts[3]);
+      const expected = fromBase64Url(parts[4]);
+      const actual = await derivePasswordBytes(password, salt, iterations);
+      if (actual.length !== expected.length) return false;
+      let diff = 0;
+      for (let i = 0; i < actual.length; i++) diff |= actual[i] ^ expected[i];
+      return diff === 0;
+    } catch {
+      return false;
+    }
   }
 
-  // Legacy format produced by the previous admin UI.
-  const legacy = storedHash.match(/^pbkdf2\\$sha256(\\d+)([A-Za-z0-9_-]{22})([A-Za-z0-9_-]{43})$/);
+  // Legacy format created by earlier AdminUsers versions:
+  // pbkdf2$sha256<iterations><salt><derived>
+  const legacy = storedHash.match(/^pbkdf2\$sha256(\d+)([A-Za-z0-9_-]{22})([A-Za-z0-9_-]{43})$/);
   if (legacy) {
     const iterations = Number(legacy[1]);
-    const salt = fromBase64Url(legacy[2]);
-    const expected = fromBase64Url(legacy[3]);
-    const actual = await derivePasswordBytes(password, salt, iterations);
-    if (actual.length !== expected.length) return false;
-    let diff = 0;
-    for (let i = 0; i < actual.length; i++) diff |= actual[i] ^ expected[i];
-    return diff === 0;
+    try {
+      const salt = fromBase64Url(legacy[2]);
+      const expected = fromBase64Url(legacy[3]);
+      const actual = await derivePasswordBytes(password, salt, iterations);
+      if (actual.length !== expected.length) return false;
+      let diff = 0;
+      for (let i = 0; i < actual.length; i++) diff |= actual[i] ^ expected[i];
+      return diff === 0;
+    } catch {
+      return false;
+    }
   }
 
   return false;
