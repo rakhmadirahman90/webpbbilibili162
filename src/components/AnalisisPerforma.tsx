@@ -50,6 +50,47 @@ interface PlayerStats {
   poin: number;
 }
 
+function AthleteAvatar({
+  name,
+  fotoUrl,
+  size = 'md',
+  className = ''
+}: {
+  name: string;
+  fotoUrl?: string;
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}) {
+  const sizeClass = size === 'lg' ? 'h-14 w-14' : size === 'sm' ? 'h-9 w-9' : 'h-11 w-11';
+  const textClass = size === 'lg' ? 'text-lg' : size === 'sm' ? 'text-[10px]' : 'text-xs';
+  const initials = name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(part => part.charAt(0).toUpperCase())
+    .join('') || 'AT';
+
+  return (
+    <div className={`relative shrink-0 ${sizeClass} ${className}`}>
+      {fotoUrl ? (
+        <img
+          src={fotoUrl}
+          alt={`Foto ${name}`}
+          className={`${sizeClass} rounded-full object-cover border-2 border-slate-700 bg-slate-800`}
+          loading="lazy"
+          onError={(e) => {
+            e.currentTarget.style.display = 'none';
+            e.currentTarget.nextElementSibling?.classList.remove('hidden');
+          }}
+        />
+      ) : null}
+      <div className={`${fotoUrl ? 'hidden ' : ''}${sizeClass} rounded-full border-2 border-indigo-500/40 bg-gradient-to-br from-indigo-600/30 to-slate-800 flex items-center justify-center text-indigo-300 font-black ${textClass}`}>
+        {initials}
+      </div>
+    </div>
+  );
+}
+
 export default function AnalisisPerforma() {
   const [players, setPlayers] = useState<AthletePerformance[]>([]);
   const [selectedPlayer1Id, setSelectedPlayer1Id] = useState<string>('');
@@ -193,6 +234,7 @@ export default function AnalisisPerforma() {
           <div className="p-3 bg-emerald-600/20 text-emerald-400 rounded-xl shrink-0">
             <Trophy size={18} />
           </div>
+          <AthleteAvatar name={topPerformer?.nama || 'Atlet'} fotoUrl={topPerformer?.foto_url} size="sm" />
           <div className="min-w-0 flex-1">
             <div className="text-[9px] font-black uppercase text-slate-500 tracking-wider">Top Win-Rate</div>
             <div className="text-sm font-black text-white truncate">{topPerformer?.nama}</div>
@@ -205,6 +247,7 @@ export default function AnalisisPerforma() {
           <div className="p-3 bg-amber-600/20 text-amber-400 rounded-xl shrink-0">
             <Flame size={18} />
           </div>
+          <AthleteAvatar name={highestStreak?.nama || 'Atlet'} fotoUrl={highestStreak?.foto_url} size="sm" />
           <div className="min-w-0 flex-1">
             <div className="text-[9px] font-black uppercase text-slate-500 tracking-wider">Streak Terpanjang</div>
             <div className="text-sm font-black text-white truncate">{highestStreak?.nama}</div>
@@ -237,34 +280,63 @@ export default function AnalisisPerforma() {
               <p className="text-[10px] text-slate-500 mt-0.5">Pilih dua atlet untuk membandingkan metrik fisik dan performa latihan.</p>
             </div>
 
-            {/* Selects */}
-            <div className="flex items-center gap-2">
-              <select
-                value={selectedPlayer1Id}
-                onChange={(e) => setSelectedPlayer1Id(e.target.value)}
-                className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-white outline-none focus:border-indigo-500 cursor-pointer min-w-[120px]"
-              >
-                {players.map(p => (
-                  <option key={p.id} value={p.id} className="bg-slate-900 text-white font-bold">
-                    {p.nama}
-                  </option>
-                ))}
-              </select>
+            {/* Athlete selectors with profile photos */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              <div className="flex items-center gap-2 bg-slate-950 border border-blue-500/20 rounded-xl px-2 py-1.5 min-w-0">
+                <AthleteAvatar name={p1?.nama || 'Atlet A'} fotoUrl={p1?.foto_url} size="sm" />
+                <select
+                  value={selectedPlayer1Id}
+                  onChange={(e) => setSelectedPlayer1Id(e.target.value)}
+                  className="bg-transparent text-xs font-bold text-white outline-none focus:border-indigo-500 cursor-pointer min-w-0 max-w-[145px]"
+                  aria-label="Pilih atlet pertama"
+                >
+                  {players.map(p => (
+                    <option key={p.id} value={p.id} className="bg-slate-900 text-white font-bold">
+                      {p.nama}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-              <span className="text-xs font-bold text-slate-500">VS</span>
+              <span className="text-[10px] font-black text-slate-500 text-center">VS</span>
 
-              <select
-                value={selectedPlayer2Id}
-                onChange={(e) => setSelectedPlayer2Id(e.target.value)}
-                className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-white outline-none focus:border-indigo-500 cursor-pointer min-w-[120px]"
-              >
-                {players.map(p => (
-                  <option key={p.id} value={p.id} className="bg-slate-900 text-white font-bold">
-                    {p.nama}
-                  </option>
-                ))}
-              </select>
+              <div className="flex items-center gap-2 bg-slate-950 border border-purple-500/20 rounded-xl px-2 py-1.5 min-w-0">
+                <AthleteAvatar name={p2?.nama || 'Atlet B'} fotoUrl={p2?.foto_url} size="sm" />
+                <select
+                  value={selectedPlayer2Id}
+                  onChange={(e) => setSelectedPlayer2Id(e.target.value)}
+                  className="bg-transparent text-xs font-bold text-white outline-none focus:border-indigo-500 cursor-pointer min-w-0 max-w-[145px]"
+                  aria-label="Pilih atlet kedua"
+                >
+                  {players.map(p => (
+                    <option key={p.id} value={p.id} className="bg-slate-900 text-white font-bold">
+                      {p.nama}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
+          </div>
+
+          {/* Selected athlete identity cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {[{ player: p1, tone: 'blue' }, { player: p2, tone: 'purple' }].map(({ player, tone }) => (
+              <div
+                key={`${tone}-${player?.id || 'empty'}`}
+                className={`flex items-center gap-3 rounded-2xl border bg-slate-950/80 p-3 ${tone === 'blue' ? 'border-blue-500/20' : 'border-purple-500/20'}`}
+              >
+                <AthleteAvatar name={player?.nama || 'Atlet'} fotoUrl={player?.foto_url} size="lg" />
+                <div className="min-w-0">
+                  <div className={`text-[8px] font-black uppercase tracking-widest ${tone === 'blue' ? 'text-blue-400' : 'text-purple-400'}`}>
+                    {tone === 'blue' ? 'Atlet P1' : 'Atlet P2'}
+                  </div>
+                  <div className="text-sm font-black text-white uppercase truncate">{player?.nama || 'Belum dipilih'}</div>
+                  <div className="text-[9px] text-slate-500 mt-0.5">
+                    {player?.category || 'PB Bili Bili 162'} • {player?.matchesPlayed || 0} sparing
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
 
           {/* Radar Chart and Bar metrics */}
@@ -391,6 +463,7 @@ export default function AnalisisPerforma() {
                       key={p.id}
                       className="p-2.5 bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl flex items-center justify-between gap-2"
                     >
+                      <AthleteAvatar name={p.nama} fotoUrl={p.foto_url} size="sm" />
                       <div className="min-w-0 flex-1">
                         <div className="font-black text-slate-200 uppercase text-[10px] truncate">{p.nama}</div>
                         <div className="flex gap-2 text-[8px] text-slate-500 mt-0.5">
