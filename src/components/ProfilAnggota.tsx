@@ -243,6 +243,13 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
     kategori: string;
     jenis_kelamin: string;
     pengalaman: string;
+    nama_panggilan: string;
+    nama_punggung: string;
+    tempat_lahir: string;
+    tahun_bergabung?: number | string;
+    tangan_dominan: string;
+    hobi: string;
+    makanan_favorit: string;
     foto_url: string;
     tanggal_lahir?: string;
     sektor_bermain?: string;
@@ -257,6 +264,13 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
     kategori: 'Senior',
     jenis_kelamin: 'Putra',
     pengalaman: '2 Tahun',
+    nama_panggilan: '',
+    nama_punggung: '',
+    tempat_lahir: '',
+    tahun_bergabung: '',
+    tangan_dominan: 'Kanan',
+    hobi: '',
+    makanan_favorit: '',
     foto_url: '',
     tanggal_lahir: '',
     sektor_bermain: 'Tunggal & Ganda',
@@ -579,6 +593,13 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
         kategori: dbMember?.kategori || dbMember?.kategori_atlet || extProfile.kategori || userMeta.kategori || 'Dewasa / Umum',
         jenis_kelamin: dbMember?.jenis_kelamin || extProfile.jenis_kelamin || userMeta.jenis_kelamin || 'Putra',
         pengalaman: dbMember?.pengalaman || extProfile.pengalaman || userMeta.pengalaman || '',
+        nama_panggilan: dbMember?.nama_panggilan || extProfile.nama_panggilan || userMeta.nama_panggilan || '',
+        nama_punggung: dbMember?.nama_punggung || extProfile.nama_punggung || userMeta.nama_punggung || '',
+        tempat_lahir: dbMember?.tempat_lahir || extProfile.tempat_lahir || userMeta.tempat_lahir || '',
+        tahun_bergabung: dbMember?.tahun_bergabung || extProfile.tahun_bergabung || userMeta.tahun_bergabung || '',
+        tangan_dominan: dbMember?.tangan_dominan || extProfile.tangan_dominan || userMeta.tangan_dominan || 'Kanan',
+        hobi: dbMember?.hobi || extProfile.hobi || userMeta.hobi || '',
+        makanan_favorit: dbMember?.makanan_favorit || extProfile.makanan_favorit || userMeta.makanan_favorit || '',
         foto_url: dbMember?.foto_url || extProfile.foto_url || userMeta.foto_url || userMeta.avatar_url || '',
         tanggal_lahir: dbMember?.tanggal_lahir || extProfile.tanggal_lahir || userMeta.tanggal_lahir || '',
         sektor_bermain: dbMember?.sektor_bermain || extProfile.sektor_bermain || userMeta.sektor_bermain || 'Tunggal & Ganda',
@@ -606,6 +627,13 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
               jenis_kelamin: initialMember.jenis_kelamin,
               domisili: initialMember.domisili,
               pengalaman: initialMember.pengalaman,
+              nama_panggilan: initialMember.nama_panggilan,
+              nama_punggung: initialMember.nama_punggung,
+              tempat_lahir: initialMember.tempat_lahir,
+              tahun_bergabung: initialMember.tahun_bergabung,
+              tangan_dominan: initialMember.tangan_dominan,
+              hobi: initialMember.hobi,
+              makanan_favorit: initialMember.makanan_favorit,
               foto_url: initialMember.foto_url,
               avatar_url: initialMember.foto_url,
               tanggal_lahir: initialMember.tanggal_lahir,
@@ -676,49 +704,56 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
 
     try {
       const cleanName = memberData.nama.trim();
+      if (!memberData.id) {
+        throw new Error('Identitas akun anggota belum terhubung ke data pendaftaran. Silakan keluar lalu login kembali.');
+      }
+
+      const cleanName = memberData.nama.trim();
+      if (cleanName.length < 2) {
+        throw new Error('Nama lengkap minimal 2 karakter.');
+      }
+
+      const cleanWhatsApp = (memberData.whatsapp || '').trim();
+      if (cleanWhatsApp.replace(/\\D/g, '').length < 8) {
+        throw new Error('Nomor WhatsApp tidak valid.');
+      }
+
+      const resolvedId = memberData.id.replace(/^member-/, '');
       const cleanPendaftaranPayload = {
         nama: cleanName,
-        whatsapp: memberData.whatsapp || '',
+        whatsapp: cleanWhatsApp,
         domisili: memberData.domisili || 'PAREPARE',
+        // Data resmi berikut hanya boleh berasal dari profil anggota yang sedang login.
         kategori: memberData.kategori || 'Dewasa / Umum',
         kategori_atlet: memberData.kategori || 'SENIOR',
         jenis_kelamin: memberData.jenis_kelamin || 'Putra',
         pengalaman: memberData.pengalaman || '',
-        foto_url: memberData.foto_url || ''
+        nama_panggilan: memberData.nama_panggilan || '',
+        nama_punggung: memberData.nama_punggung || '',
+        tempat_lahir: memberData.tempat_lahir || '',
+        tanggal_lahir: memberData.tanggal_lahir || null,
+        tahun_bergabung: memberData.tahun_bergabung ? Number(memberData.tahun_bergabung) : null,
+        tangan_dominan: memberData.tangan_dominan || 'Kanan',
+        hobi: memberData.hobi || '',
+        makanan_favorit: memberData.makanan_favorit || '',
+        foto_url: memberData.foto_url || '',
+        updated_at: new Date().toISOString()
       };
 
-      let resolvedId = memberData.id ? memberData.id.replace(/^member-/, '') : null;
+      const { data: savedMember, error: errUpdate } = await supabase
+        .from('pendaftaran')
+        .update(cleanPendaftaranPayload)
+        .eq('id', resolvedId)
+        .select('id')
+        .maybeSingle();
 
-      if (resolvedId && resolvedId.length > 20) {
-        // Update pendaftaran by ID
-        const { error: errUpdate } = await supabase
-          .from('pendaftaran')
-          .update(cleanPendaftaranPayload)
-          .eq('id', resolvedId);
+      if (errUpdate) {
+        console.error('Error updating member profile:', errUpdate);
+        throw new Error(errUpdate.message || 'Profil anggota gagal disimpan ke database.');
+      }
 
-        if (errUpdate) {
-          console.error('Error updating pendaftaran by ID:', errUpdate);
-        }
-      } else if (cleanName) {
-        // Fallback search or insert by name
-        const { data: existing } = await supabase
-          .from('pendaftaran')
-          .select('id')
-          .ilike('nama', cleanName)
-          .maybeSingle();
-
-        if (existing) {
-          resolvedId = existing.id;
-          await supabase.from('pendaftaran').update(cleanPendaftaranPayload).eq('id', resolvedId);
-        } else {
-          const { data: inserted } = await supabase
-            .from('pendaftaran')
-            .insert([{ ...cleanPendaftaranPayload, status: 'verified' }])
-            .select('id')
-            .maybeSingle();
-
-          if (inserted) resolvedId = inserted.id;
-        }
+      if (!savedMember?.id) {
+        throw new Error('Profil anggota tidak ditemukan atau tidak dapat diperbarui.');
       }
 
       // Sync Rankings and Atlet Stats in Supabase
@@ -776,6 +811,13 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
         kategori: memberData.kategori || 'Dewasa / Umum',
         jenis_kelamin: memberData.jenis_kelamin || 'Putra',
         pengalaman: memberData.pengalaman || '',
+        nama_panggilan: memberData.nama_panggilan || '',
+        nama_punggung: memberData.nama_punggung || '',
+        tempat_lahir: memberData.tempat_lahir || '',
+        tahun_bergabung: memberData.tahun_bergabung || '',
+        tangan_dominan: memberData.tangan_dominan || 'Kanan',
+        hobi: memberData.hobi || '',
+        makanan_favorit: memberData.makanan_favorit || '',
         foto_url: memberData.foto_url || '',
         tanggal_lahir: memberData.tanggal_lahir || '',
         sektor_bermain: memberData.sektor_bermain || 'Tunggal & Ganda',
@@ -817,6 +859,13 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
               avatar_url: memberData.foto_url,
               foto_url: memberData.foto_url,
               pengalaman: memberData.pengalaman,
+              nama_panggilan: memberData.nama_panggilan,
+              nama_punggung: memberData.nama_punggung,
+              tempat_lahir: memberData.tempat_lahir,
+              tahun_bergabung: memberData.tahun_bergabung,
+              tangan_dominan: memberData.tangan_dominan,
+              hobi: memberData.hobi,
+              makanan_favorit: memberData.makanan_favorit,
               tanggal_lahir: memberData.tanggal_lahir,
               sektor_bermain: memberData.sektor_bermain,
               ukuran_jersey: memberData.ukuran_jersey
@@ -1369,6 +1418,32 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
                   />
                 </div>
 
+                {/* Nama Panggilan */}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Nama Panggilan</label>
+                  <input
+                    type="text"
+                    disabled={!isEditing}
+                    value={memberData.nama_panggilan}
+                    onChange={(e) => setMemberData({ ...memberData, nama_panggilan: e.target.value })}
+                    className="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-2xl bg-[#070d1a] border border-white/10 text-white font-semibold text-sm outline-none focus:border-blue-500 disabled:opacity-75 disabled:cursor-not-allowed"
+                    placeholder="Nama yang biasa dipanggil"
+                  />
+                </div>
+
+                {/* Nama Punggung */}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Nama Punggung</label>
+                  <input
+                    type="text"
+                    disabled={!isEditing}
+                    value={memberData.nama_punggung}
+                    onChange={(e) => setMemberData({ ...memberData, nama_punggung: e.target.value })}
+                    className="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-2xl bg-[#070d1a] border border-white/10 text-white font-semibold text-sm outline-none focus:border-blue-500 disabled:opacity-75 disabled:cursor-not-allowed"
+                    placeholder="Nama pada jersey"
+                  />
+                </div>
+
                 {/* Email */}
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">
@@ -1453,6 +1528,34 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
                   </select>
                 </div>
 
+                {/* Tempat Lahir */}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Tempat Lahir</label>
+                  <input
+                    type="text"
+                    disabled={!isEditing}
+                    value={memberData.tempat_lahir}
+                    onChange={(e) => setMemberData({ ...memberData, tempat_lahir: e.target.value })}
+                    className="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-2xl bg-[#070d1a] border border-white/10 text-white font-semibold text-sm outline-none focus:border-blue-500 disabled:opacity-75 disabled:cursor-not-allowed"
+                    placeholder="Kota / Kabupaten"
+                  />
+                </div>
+
+                {/* Tahun Bergabung */}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Tahun Bergabung</label>
+                  <input
+                    type="number"
+                    min="2000"
+                    max={new Date().getFullYear()}
+                    disabled={!isEditing}
+                    value={memberData.tahun_bergabung || ''}
+                    onChange={(e) => setMemberData({ ...memberData, tahun_bergabung: e.target.value })}
+                    className="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-2xl bg-[#070d1a] border border-white/10 text-white font-semibold text-sm outline-none focus:border-blue-500 disabled:opacity-75 disabled:cursor-not-allowed"
+                    placeholder={String(new Date().getFullYear())}
+                  />
+                </div>
+
                 {/* Tanggal Lahir */}
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">
@@ -1485,6 +1588,47 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
                   </select>
                 </div>
 
+                {/* Tangan Dominan */}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Tangan Dominan</label>
+                  <select
+                    disabled={!isEditing}
+                    value={memberData.tangan_dominan || 'Kanan'}
+                    onChange={(e) => setMemberData({ ...memberData, tangan_dominan: e.target.value })}
+                    className="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-2xl bg-[#070d1a] border border-white/10 text-white font-semibold text-sm outline-none focus:border-blue-500 disabled:opacity-75 disabled:cursor-not-allowed"
+                  >
+                    <option value="Kanan">Kanan</option>
+                    <option value="Kiri">Kiri</option>
+                    <option value="Ambidextrous">Keduanya</option>
+                  </select>
+                </div>
+
+                {/* Hobi */}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Hobi</label>
+                  <input
+                    type="text"
+                    disabled={!isEditing}
+                    value={memberData.hobi}
+                    onChange={(e) => setMemberData({ ...memberData, hobi: e.target.value })}
+                    className="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-2xl bg-[#070d1a] border border-white/10 text-white font-semibold text-sm outline-none focus:border-blue-500 disabled:opacity-75 disabled:cursor-not-allowed"
+                    placeholder="Contoh: olahraga, musik"
+                  />
+                </div>
+
+                {/* Makanan Favorit */}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Makanan Favorit</label>
+                  <input
+                    type="text"
+                    disabled={!isEditing}
+                    value={memberData.makanan_favorit}
+                    onChange={(e) => setMemberData({ ...memberData, makanan_favorit: e.target.value })}
+                    className="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-2xl bg-[#070d1a] border border-white/10 text-white font-semibold text-sm outline-none focus:border-blue-500 disabled:opacity-75 disabled:cursor-not-allowed"
+                    placeholder="Makanan favorit"
+                  />
+                </div>
+
                 {/* Ukuran Jersey */}
                 <div className="space-y-1.5 md:col-span-2">
                   <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">
@@ -1505,6 +1649,19 @@ export default function ProfilAnggota({ session: propSession }: ProfilAnggotaPro
                     <option value="3XL">3XL</option>
                   </select>
                 </div>
+              </div>
+
+              {/* Pengalaman */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Pengalaman / Bio Singkat</label>
+                <textarea
+                  disabled={!isEditing}
+                  value={memberData.pengalaman}
+                  onChange={(e) => setMemberData({ ...memberData, pengalaman: e.target.value })}
+                  rows={4}
+                  className="w-full px-3.5 py-3 sm:px-4 sm:py-3 rounded-2xl bg-[#070d1a] border border-white/10 text-white font-semibold text-sm outline-none focus:border-blue-500 disabled:opacity-75 disabled:cursor-not-allowed resize-y"
+                  placeholder="Ceritakan pengalaman bermain atau informasi singkat Anda"
+                />
               </div>
 
               {/* Direct Photo File Upload */}
