@@ -52,7 +52,8 @@ export default async function handler(req: any, res: any) {
     const name = String(athlete.nama || 'Atlet PB BILIBILI 162').trim();
     const category = String(athlete.kategori_atlet || athlete.kategori || 'Atlet').trim();
     const status = String(athlete.status || 'Aktif').trim();
-    // Gunakan foto profil utama dari pendaftaran. URL lama Supabase dinormalisasi ke project aktif.\n    let rawPhoto = normalizeImageUrl(String(athlete.foto_url || ''));\n    rawPhoto = rawPhoto.replace(/^https:\/\/hykrsqsznmrtszhfywjz\\.supabase\\.co\//i, `${SUPABASE_URL}/`);
+    // Gunakan foto profil utama dari pendaftaran. URL lama Supabase dinormalisasi ke project aktif.
+    let rawPhoto = normalizeImageUrl(String(athlete.foto_url || ''));\n    rawPhoto = rawPhoto.replace(/^https:\/\/hykrsqsznmrtszhfywjz\\.supabase\\.co\//i, `${SUPABASE_URL}/`);
     let image = rawPhoto;
     if (image && athlete.updated_at) {
       image += `${image.includes('?') ? '&' : '?'}v=${encodeURIComponent(String(athlete.updated_at))}`;
