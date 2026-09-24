@@ -35,6 +35,7 @@ import {
   Network,
   Mail,
   Wallet,
+  CreditCard,
   FileText,
   FileSpreadsheet,
   BookOpen,
@@ -305,6 +306,7 @@ export default function Sidebar({ email, role = 'admin', isOpen, onClose }: Side
       section: 'Informasi & Kegiatan',
       items: [
         { name: 'Jadwal Latihan', path: 'jadwal', icon: Calendar, adminOnly: false },
+        { name: 'Rekening & QRIS Resmi', path: 'informasi-rekening-qris', icon: CreditCard, adminOnly: false },
         { name: 'Peringkat & Poin', path: 'ranking', icon: Trophy, adminOnly: false },
         ...(role === 'admin' ? [
           { name: 'Sponsorship', path: 'sponsorship', icon: Wallet, adminOnly: true },
