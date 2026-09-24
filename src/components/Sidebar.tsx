@@ -57,7 +57,7 @@ interface SidebarProps {
   onClose?: () => void;
 }
 
-export default function Sidebar({ email, role = 'admin', isOpen, onClose }: SidebarProps) {
+export default function Sidebar({ email, role = 'anggota', isOpen, onClose }: SidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const [dbStatus, setDbStatus] = useState<'online' | 'offline'>('online');
