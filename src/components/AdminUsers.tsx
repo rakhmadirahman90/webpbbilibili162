@@ -76,30 +76,42 @@ export default function AdminUsers({ session }: { session: any }) {
     const channel = supabase
       .channel('admin_users_realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'pendaftaran' }, () => fetchUsers())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'users_duplicate' }, () => fetchUsers())
       .subscribe();
-    
-    // Subscribe to presence
-    const handlePresenceSync = (e: any) => {
-      const state = e.detail;
+
+    const presence = supabase.channel('pb-bilibili-162-online-users');
+    const syncPresence = () => {
+      const state = presence.presenceState();
       const onlineArray: any[] = [];
-      Object.values(state).forEach((presences: any) => {
-        presences.forEach((presence: any) => {
-          if (presence.user_id && !onlineArray.find(u => u.user_id === presence.user_id)) {
-            onlineArray.push(presence);
-          } else if (presence.email && !onlineArray.find(u => u.email === presence.email)) {
-            onlineArray.push(presence);
+      Object.entries(state).forEach(([presenceKey, metas]: any) => {
+        const list = Array.isArray(metas) ? metas : [];
+        list.forEach((meta: any) => {
+          const payload = meta || {};
+          const key = String(payload.user_id || presenceKey);
+          if (!onlineArray.some((u) => String(u.user_id || u.presence_key) === key)) {
+            onlineArray.push({
+              ...payload,
+              presence_key: presenceKey,
+              user_id: key,
+              online_at: payload.login_at || payload.last_seen_at || new Date().toISOString()
+            });
           }
         });
       });
       setOnlineUsers(onlineArray);
+      window.dispatchEvent(new CustomEvent('presence-sync', { detail: state }));
     };
 
-    window.addEventListener('presence-sync', handlePresenceSync);
+    presence
+      .on('presence', { event: 'sync' }, syncPresence)
+      .on('presence', { event: 'join' }, syncPresence)
+      .on('presence', { event: 'leave' }, syncPresence)
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') syncPresence();
+      });
 
     return () => {
       supabase.removeChannel(channel);
-      window.removeEventListener('presence-sync', handlePresenceSync);
+      void supabase.removeChannel(presence);
     };
   }, []);
 
