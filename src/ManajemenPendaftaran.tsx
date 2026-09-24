@@ -427,6 +427,8 @@ const totalSeniorPutri = registrants.filter(r =>
       return;
     }
 
+    const profileUrl = `https://pbilibili162.99apps.id/api/share-athlete?athleteId=${encodeURIComponent(item.id)}`;
+
     let message = '';
     if (status === 'Diterima') {
       message = 
@@ -440,7 +442,8 @@ const totalSeniorPutri = registrants.filter(r =>
         `• Kelompok Usia: ${item.kategori || '-'}\n` +
         `• Kategori Atlet: ${item.kategori_atlet || 'MUDA'}\n` +
         `• Domisili: ${item.domisili || '-'}\n\n` +
-        `🌐 *AKSES LOGIN SISTEM:*\n` +
+        `🖼️ *PROFIL & FOTO ATLET:*\n${profileUrl}\n\n` +
+      `🌐 *AKSES LOGIN SISTEM:*\n` +
         `Silakan login untuk mengecek profil atlet Anda di:\n` +
         `https://pbilibili162.99apps.id/login\n\n` +
         `Selamat bergabung dan salam olahraga!\n` +
