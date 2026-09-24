@@ -545,26 +545,17 @@ const totalSeniorPutri = registrants.filter(r =>
     const profileUrl = `https://pbilibili162.99apps.id/api/share-athlete?athleteId=${encodeURIComponent(item.id)}`;
     const message = [
       '🏸 *PB BILIBILI 162 PAREPARE*',
-      '*RINCIAN PENDAFTARAN & PROFIL ATLET*',
       '',
-      `👤 Nama: *${item.nama || '-'}*`,
-      `🆔 ID Atlet: ${item.id}`,
-      `📱 WhatsApp: ${item.whatsapp || '-'}`,
-      `⚥ Jenis Kelamin: ${item.jenis_kelamin || '-'}`,
-      `🎂 Kategori Umur: ${item.kategori || '-'}`,
-      `🏸 Kategori Atlet: ${item.kategori_atlet || '-'}`,
-      `📍 Domisili: ${item.domisili || '-'}`,
-      `📋 Status Verifikasi: *${statusLabel}*`,
-      `📅 Tgl Registrasi: ${item.created_at ? new Date(item.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}`,
+      `👤 *${item.nama || '-'}*`,
+      `🎂 ${item.kategori || '-'} • ${item.kategori_atlet || '-'}`,
+      `📍 ${item.domisili || '-'}`,
+      `📋 Status: *${statusLabel}*`,
       '',
-      '📸 *PROFIL & FOTO ATLET*',
+      '📸 *Profil & foto atlet:*',
       profileUrl,
       '',
-      '🔐 *AKSES SISTEM*',
-      'https://pbilibili162.99apps.id/login',
-      '',
-      '_Silakan simpan informasi ini untuk akses PB BILIBILI 162._'
-    ].join('\n');
+      '_PB BILIBILI 162 • Parepare_'
+    ].join('\\n');
 
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
   };
