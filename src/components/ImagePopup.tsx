@@ -10,13 +10,13 @@ const SLIDE_DURATION = 5500;
 const SWIPE_THRESHOLD = 50;
 const SWIPE_VELOCITY = 450;
 
-function preloadImage(url: string): Promise<void> {
+function preloadImage(url: string): Promise<boolean> {
   return new Promise(resolve => {
-    if (!url) return resolve();
+    if (!url) return resolve(false);
     const img = new Image();
     img.decoding = 'async';
-    img.onload = () => resolve();
-    img.onerror = () => resolve();
+    img.onload = () => resolve(true);
+    img.onerror = () => resolve(false);
     img.src = url;
   });
 }
@@ -113,19 +113,26 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
         return;
       }
 
-      // Decode the first slide before mounting the modal so there is no blank-frame flash.
-      await preloadImage(String(activeItems[0].url_gambar));
-      if (requestId !== requestIdRef.current || activeView !== null) return;
+      // Validate every configured image before mounting the carousel.
+      // Broken/legacy storage URLs are skipped so the popup never opens on a blank slide.
+      const checkedItems: PopupItem[] = [];
+      for (const item of activeItems) {
+        if (requestId !== requestIdRef.current || activeView !== null) return;
+        if (await preloadImage(String(item.url_gambar))) checkedItems.push(item);
+      }
 
-      setPromoImages(activeItems);
-      setCurrentIndex(prev => Math.min(prev, activeItems.length - 1));
+      if (requestId !== requestIdRef.current || activeView !== null) return;
+      if (!checkedItems.length) {
+        setPromoImages([]);
+        setPopupOpen(false);
+        return;
+      }
+
+      setPromoImages(checkedItems);
+      setCurrentIndex(prev => Math.min(prev, checkedItems.length - 1));
       setIsExpanded(false);
       setIsAutoPlay(true);
       setPopupOpen(true);
-
-      activeItems.slice(1).forEach(item => {
-        if (item.url_gambar) void preloadImage(String(item.url_gambar));
-      });
     } catch (err) {
       console.warn('[ImagePopup] Popup fetch failed:', err);
       if (requestId === requestIdRef.current) setPopupOpen(false);
