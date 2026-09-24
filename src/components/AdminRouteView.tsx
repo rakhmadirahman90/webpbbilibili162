@@ -22,6 +22,7 @@ import PublicSejarah from './Sejarah';
 import PublicVisiMisi from './VisiMisi';
 import PublicFasilitas from './Fasilitas';
 import PublicStructure from './StrukturOrganisasiPublic';
+import InformasiRekeningQris from './InformasiRekeningQris';
 import AdminProgram from './AdminProgram';
 import AdminPrestasi from './AdminPrestasi';
 import AdminFAQ from './AdminFAQ';
@@ -117,6 +118,7 @@ export default function AdminRouteView({ session }: Props) {
       return adminOnly(AdminKeuanganTurnamen);
 
     case 'jadwal': return <JadwalLatihanView />;
+    case 'informasi-rekening-qris': return <div className="p-0 min-h-full"><InformasiRekeningQris /></div>;
     case 'ranking': return isAdmin ? render(AdminRanking) : <div className="p-4 md:p-8"><Ranking /></div>;
     case 'kas': return isAdmin ? render(KasManager) : <div className="p-4 md:p-8"><PublicKasView /></div>;
     case 'rekap-keuangan':
