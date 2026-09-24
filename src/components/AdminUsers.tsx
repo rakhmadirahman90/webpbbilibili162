@@ -430,7 +430,7 @@ export default function AdminUsers({ session }: { session: any }) {
       'https://pbilibili162.99apps.id/login',
       '',
       '_PB BILIBILI 162 • Parepare_'
-    ].join('\\n');
+    ].join('\n');
   };
 
   const openAccountWa = (user: UserRecord) => {
