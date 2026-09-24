@@ -215,10 +215,12 @@ export default function AdminUsers({ session }: { session: any }) {
       // Tabel pendaftaran tidak memiliki kolom email.
       // Email pada UI hanya identitas/tampilan yang diturunkan dari nama,
       // sehingga jangan dikirim ke PostgREST saat INSERT/UPDATE.
+      // Role tidak disimpan di tabel pendaftaran.
+      // Semua record pendaftaran adalah anggota; admin hanya akun master
+      // yang ditangani terpisah oleh sistem login.
       const payload = {
         nama: formData.nama.trim(),
         whatsapp: formData.whatsapp.trim() || '-',
-        role: formData.role,
         kategori: formData.kategori,
         kategori_atlet: formData.kategori
       };
