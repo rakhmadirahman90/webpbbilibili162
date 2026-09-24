@@ -318,32 +318,57 @@ export default function AnalisisPerforma() {
             </div>
           </div>
 
-          {/* Selected athlete identity cards */}
+          {/* Athlete profile + statistics cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {[{ player: p1, tone: 'blue' }, { player: p2, tone: 'purple' }].map(({ player, tone }) => (
-              <div
-                key={`${tone}-${player?.id || 'empty'}`}
-                className={`flex items-center gap-3 rounded-2xl border bg-slate-950/80 p-3 ${tone === 'blue' ? 'border-blue-500/20' : 'border-purple-500/20'}`}
-              >
-                <AthleteAvatar name={player?.nama || 'Atlet'} fotoUrl={player?.foto_url} size="lg" />
-                <div className="min-w-0">
-                  <div className={`text-[8px] font-black uppercase tracking-widest ${tone === 'blue' ? 'text-blue-400' : 'text-purple-400'}`}>
-                    {tone === 'blue' ? 'Atlet P1' : 'Atlet P2'}
+            {[{ player: p1, tone: 'blue' }, { player: p2, tone: 'purple' }].map(({ player, tone }) => {
+              const isBlue = tone === 'blue';
+              const border = isBlue ? 'border-blue-500/25' : 'border-purple-500/25';
+              const accent = isBlue ? 'text-blue-400' : 'text-purple-400';
+              const badge = isBlue ? 'bg-blue-500/10' : 'bg-purple-500/10';
+              return (
+                <div
+                  key={`${tone}-${player?.id || 'empty'}`}
+                  className={`rounded-2xl border ${border} bg-slate-950/90 p-3`}
+                >
+                  <div className="flex items-center gap-3">
+                    <AthleteAvatar name={player?.nama || 'Atlet'} fotoUrl={player?.foto_url} size="lg" />
+                    <div className="min-w-0 flex-1">
+                      <div className={`inline-flex rounded-full px-2 py-0.5 ${badge} ${accent} text-[8px] font-black uppercase tracking-widest`}>
+                        {isBlue ? 'Atlet P1' : 'Atlet P2'}
+                      </div>
+                      <div className="mt-1 text-sm font-black text-white uppercase truncate">
+                        {player?.nama || 'Belum dipilih'}
+                      </div>
+                      <div className="text-[9px] text-slate-500 truncate">
+                        {player?.category || 'PB Bili Bili 162'}
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-sm font-black text-white uppercase truncate">{player?.nama || 'Belum dipilih'}</div>
-                  <div className="text-[9px] text-slate-500 mt-0.5">
-                    {player?.category || 'PB Bili Bili 162'} • {player?.matchesPlayed || 0} sparing
+
+                  <div className="mt-3 grid grid-cols-3 gap-1.5">
+                    <div className="rounded-lg bg-slate-900 px-2 py-1.5 text-center">
+                      <div className={`text-[10px] font-black ${accent}`}>{player?.winRate ?? 0}%</div>
+                      <div className="text-[7px] font-bold uppercase text-slate-500">Win Rate</div>
+                    </div>
+                    <div className="rounded-lg bg-slate-900 px-2 py-1.5 text-center">
+                      <div className={`text-[10px] font-black ${accent}`}>{player?.attendanceRate ?? 0}%</div>
+                      <div className="text-[7px] font-bold uppercase text-slate-500">Kehadiran</div>
+                    </div>
+                    <div className="rounded-lg bg-slate-900 px-2 py-1.5 text-center">
+                      <div className={`text-[10px] font-black ${accent}`}>{player?.matchesPlayed ?? 0}</div>
+                      <div className="text-[7px] font-bold uppercase text-slate-500">Sparing</div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Radar Chart and Bar metrics */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
             
             {/* Visual Radar chart */}
-            <div className="bg-slate-950 border border-slate-800/60 rounded-2xl p-4 aspect-square flex items-center justify-center">
+            <div className="bg-slate-950 border border-slate-800/60 rounded-2xl p-2 sm:p-4 min-h-[300px] flex items-center justify-center">
               <ResponsiveContainer width="100%" height={260}>
                 <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
                   <PolarGrid stroke="#334155" />
@@ -366,9 +391,9 @@ export default function AnalisisPerforma() {
               {/* Metric Win-rate */}
               <div className="space-y-1">
                 <div className="flex justify-between text-[10px] font-bold">
-                  <span className="text-blue-400 truncate max-w-[120px]">{p1?.nama} ({p1?.winRate}%)</span>
+                  <span className="text-blue-400 truncate max-w-[145px] inline-flex items-center gap-1.5"><AthleteAvatar name={p1?.nama || 'Atlet'} fotoUrl={p1?.foto_url} size="sm" />{p1?.nama} ({p1?.winRate}%)</span>
                   <span className="text-slate-400">Win Rate</span>
-                  <span className="text-purple-400 truncate max-w-[120px]">{p2?.nama} ({p2?.winRate}%)</span>
+                  <span className="text-purple-400 truncate max-w-[145px] inline-flex items-center gap-1.5 justify-end">{p2?.nama} ({p2?.winRate}%)<AthleteAvatar name={p2?.nama || 'Atlet'} fotoUrl={p2?.foto_url} size="sm" /></span>
                 </div>
                 <div className="h-2 bg-slate-950 rounded-full overflow-hidden flex">
                   <div className="bg-blue-500 transition-all" style={{ width: `${(p1?.winRate || 50) / 2}%` }} />
@@ -379,9 +404,9 @@ export default function AnalisisPerforma() {
               {/* Metric Attendance */}
               <div className="space-y-1">
                 <div className="flex justify-between text-[10px] font-bold">
-                  <span className="text-blue-400 truncate max-w-[120px]">{p1?.nama} ({p1?.attendanceRate}%)</span>
+                  <span className="text-blue-400 truncate max-w-[145px] inline-flex items-center gap-1.5"><AthleteAvatar name={p1?.nama || 'Atlet'} fotoUrl={p1?.foto_url} size="sm" />{p1?.nama} ({p1?.attendanceRate}%)</span>
                   <span className="text-slate-400">Kehadiran Latihan</span>
-                  <span className="text-purple-400 truncate max-w-[120px]">{p2?.nama} ({p2?.attendanceRate}%)</span>
+                  <span className="text-purple-400 truncate max-w-[145px] inline-flex items-center gap-1.5 justify-end">{p2?.nama} ({p2?.attendanceRate}%)<AthleteAvatar name={p2?.nama || 'Atlet'} fotoUrl={p2?.foto_url} size="sm" /></span>
                 </div>
                 <div className="h-2 bg-slate-950 rounded-full overflow-hidden flex">
                   <div className="bg-blue-500 transition-all" style={{ width: `${(p1?.attendanceRate || 50) / 2}%` }} />
