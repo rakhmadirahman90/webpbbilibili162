@@ -30,7 +30,7 @@ export default async function handler(req: any, res: any) {
   if (!athleteId) return res.status(400).send('Profil atlet tidak ditemukan');
 
   try {
-    const endpoint = `${SUPABASE_URL}/rest/v1/pendaftaran?id=eq.${encodeURIComponent(athleteId)}&select=id,nama,kategori,kategori_atlet,domisili,whatsapp,status,foto_url,updated_at`;
+    const endpoint = `${SUPABASE_URL}/rest/v1/pendaftaran?id=eq.${encodeURIComponent(athleteId)}&select=id,nama,kategori,kategori_atlet,domisili,whatsapp,status,foto_url,bilibili_cup1_photo_path,updated_at`;
     const response = await fetch(endpoint, {
       headers: {
         apikey: SUPABASE_KEY,
@@ -52,7 +52,7 @@ export default async function handler(req: any, res: any) {
     const name = String(athlete.nama || 'Atlet PB BILIBILI 162').trim();
     const category = String(athlete.kategori_atlet || athlete.kategori || 'Atlet').trim();
     const status = String(athlete.status || 'Aktif').trim();
-    const rawPhoto = normalizeImageUrl(String(athlete.foto_url || ''));
+    // Gunakan foto profil utama dari pendaftaran. URL lama Supabase dinormalisasi ke project aktif.\n    let rawPhoto = normalizeImageUrl(String(athlete.foto_url || ''));\n    rawPhoto = rawPhoto.replace(/^https:\/\/hykrsqsznmrtszhfywjz\\.supabase\\.co\//i, `${SUPABASE_URL}/`);
     let image = rawPhoto;
     if (image && athlete.updated_at) {
       image += `${image.includes('?') ? '&' : '?'}v=${encodeURIComponent(String(athlete.updated_at))}`;
@@ -63,7 +63,7 @@ export default async function handler(req: any, res: any) {
 
     const canonical = `${PUBLIC_DOMAIN}/atlet?athleteId=${encodeURIComponent(String(athlete.id))}`;
     const title = `${name} - PB BILIBILI 162`;
-    const description = `Profil resmi ${name} • ${category} • Status: ${status}. PB BILIBILI 162.`.slice(0, 200);
+    const description = `Profil resmi ${name} • ${category} • Status: ${status}. Foto profil atlet PB BILIBILI 162.`.slice(0, 200);
     const crawler = isCrawler(String(req.headers?.['user-agent'] || ''));
 
     const html = `<!doctype html>
