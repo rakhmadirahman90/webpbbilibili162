@@ -2,9 +2,10 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   X, ArrowLeft, User, Trophy, Medal, Calendar, MapPin, Award, Camera, PlayCircle,
   Newspaper, ExternalLink, Loader2, History, ShieldCheck, ArrowUpRight, Activity,
-  ArrowDownRight, Clock
+  ArrowDownRight, Clock, Edit3
 } from 'lucide-react';
 import { supabase } from '../supabase';
+import { useNavigate } from 'react-router-dom';
 
 interface Player {
   id: string;
@@ -154,8 +155,26 @@ export default function PlayerProfileModal({ player, globalRank, onClose }: Prop
   const [rapor, setRapor] = useState<RaporData | null>(null);
   const [analytics, setAnalytics] = useState<any>(null);
   const [seededCup1, setSeededCup1] = useState<SeededCup1Data | null>(null);
+  const [memberSessionId, setMemberSessionId] = useState('');
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('local_admin_session');
+      const parsed = raw ? JSON.parse(raw) : null;
+      const id = String(parsed?.user?.id || parsed?.id || '').replace(/^member-/, '');
+      const role = String(parsed?.user?.user_metadata?.role || parsed?.user?.role || '').toLowerCase();
+      if (id && role === 'anggota') setMemberSessionId(id);
+    } catch {}
+  }, []);
 
   const name = player?.player_name || '';
+  const canEditOwnProfile = Boolean(memberSessionId && player?.pendaftaran_id && memberSessionId === String(player.pendaftaran_id).replace(/^member-/, ''));
+  const openOwnProfileEditor = () => {
+    if (!canEditOwnProfile) return;
+    onClose();
+    navigate('/admin/profil');
+  };
 
   useEffect(() => {
     if (!player) return;
@@ -479,6 +498,17 @@ export default function PlayerProfileModal({ player, globalRank, onClose }: Prop
                           <p className="mt-1 text-xs font-semibold text-slate-400 uppercase tracking-wide">
                             {profile?.kategori_atlet || profile?.kategori || player.category || 'Atlet PB BILIBILI 162'}
                           </p>
+                          {canEditOwnProfile && (
+                            <button
+                              type="button"
+                              onClick={openOwnProfileEditor}
+                              className="mb-3 inline-flex items-center justify-center gap-2 rounded-xl border border-blue-400/30 bg-blue-500/15 px-4 py-2.5 text-[10px] font-black uppercase tracking-wider text-blue-200 shadow-lg shadow-blue-500/10 transition hover:bg-blue-500 hover:text-white active:scale-95"
+                              title="Edit profil saya"
+                            >
+                              <Edit3 size={15} />
+                              Edit Profil Saya
+                            </button>
+                          )}
                           <div className="mt-4 flex flex-wrap gap-2">
                             <span className="inline-flex items-center gap-1.5 rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-[10px] font-bold text-slate-300">
                               <MapPin size={13} className="text-blue-400" />
