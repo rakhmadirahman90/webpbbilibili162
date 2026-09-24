@@ -212,9 +212,11 @@ export default function AdminUsers({ session }: { session: any }) {
 
     setSaving(true);
     try {
+      // Tabel pendaftaran tidak memiliki kolom email.
+      // Email pada UI hanya identitas/tampilan yang diturunkan dari nama,
+      // sehingga jangan dikirim ke PostgREST saat INSERT/UPDATE.
       const payload = {
         nama: formData.nama.trim(),
-        email: formData.email.trim() || `${formData.nama.toLowerCase().replace(/[^a-z0-9]/g, '')}@pbbilibili162.com`,
         whatsapp: formData.whatsapp.trim() || '-',
         role: formData.role,
         kategori: formData.kategori,
