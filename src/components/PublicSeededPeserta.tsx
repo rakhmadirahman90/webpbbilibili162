@@ -33,9 +33,14 @@ export default function PublicSeededPeserta(){
    if(showInitialLoader&&playersRef.current.length===0&&mountedRef.current)setLoading(true);
    if(mountedRef.current){setRefreshing(true);setError('');}
    try{
+    const {data:tournaments,error:te}=await supabase.from('seeded_tournaments').select('id').order('event_start',{ascending:false}).order('created_at',{ascending:false}).limit(1);
+    if(te) throw te;
+    const latestTournamentId=tournaments?.[0]?.id;
     const all:Player[]=[];
     for(let from=0;;from+=1000){
-     const {data,error:e}=await supabase.from('seeded_players').select('id,player_name,club_name,gender,seeded_quality').order('player_name',{ascending:true}).range(from,from+999);
+     let query=supabase.from('seeded_players').select('id,player_name,club_name,gender,seeded_quality').order('player_name',{ascending:true}).range(from,from+999);
+     if(latestTournamentId) query=query.eq('tournament_id',latestTournamentId);
+     const {data,error:e}=await query;
      if(e)throw e;
      const batch=(data||[]) as Player[]; all.push(...batch); if(batch.length<1000)break;
     }
