@@ -89,6 +89,9 @@ export default function AdminLayout({ children, email }: AdminLayoutProps) {
       .on('presence', { event: 'join' }, syncPresence)
       .on('presence', { event: 'leave' }, syncPresence);
 
+    const handlePresenceRequest = () => syncPresence();
+    window.addEventListener('presence-request', handlePresenceRequest);
+
     const track = async () => {
       const now = new Date().toISOString();
       const payload = {
@@ -120,6 +123,7 @@ export default function AdminLayout({ children, email }: AdminLayoutProps) {
 
     return () => {
       window.clearInterval(heartbeat);
+      window.removeEventListener('presence-request', handlePresenceRequest);
       void presence.untrack();
       void supabase.removeChannel(presence);
     };
