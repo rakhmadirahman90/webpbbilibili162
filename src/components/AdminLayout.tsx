@@ -57,6 +57,52 @@ export default function AdminLayout({ children, email }: AdminLayoutProps) {
       window.removeEventListener('storage', syncPortalSession);
     };
   }, []);
+  useEffect(() => {
+    const session = readLocalPortalSession();
+    if (!session?.user?.id) return;
+
+    const metadata = session.user.user_metadata || {};
+    const activityRaw = localStorage.getItem('pb_login_activity');
+    let activity: any = {};
+    try { activity = activityRaw ? JSON.parse(activityRaw) : {}; } catch {}
+
+    const presence = supabase.channel('pb-bilibili-162-online-users', {
+      config: { presence: { key: String(session.user.id) } }
+    });
+
+    const track = async () => {
+      const now = new Date().toISOString();
+      const payload = {
+        user_id: String(session.user.id),
+        email: session.user.email || '',
+        nama: metadata.nama || session.user.email || 'User',
+        role: metadata.role || role,
+        foto_url: metadata.foto_url || '',
+        login_at: activity.login_at || now,
+        last_seen_at: now
+      };
+      try {
+        await presence.track(payload);
+        localStorage.setItem('pb_login_activity', JSON.stringify({
+          user_id: String(session.user.id),
+          login_at: payload.login_at,
+          last_seen_at: now
+        }));
+      } catch {}
+    };
+
+    presence.subscribe((status) => {
+      if (status === 'SUBSCRIBED') void track();
+    });
+
+    const heartbeat = window.setInterval(() => { void track(); }, 30000);
+
+    return () => {
+      window.clearInterval(heartbeat);
+      void presence.untrack();
+      void supabase.removeChannel(presence);
+    };
+  }, [portalSession?.user?.id]);
   useEffect(() => { setIsSidebarOpen(false); }, [location.pathname]);
   useEffect(() => { if (typeof document === 'undefined') return; document.body.style.overflow = isSidebarOpen ? 'hidden' : ''; return () => { document.body.style.overflow = ''; }; }, [isSidebarOpen]);
   useEffect(() => { cleanupDuplicateTournamentMenu(); const observer = new MutationObserver(() => cleanupDuplicateTournamentMenu()); const root = document.getElementById('admin-sidebar') || document.body; observer.observe(root, { childList: true, subtree: true }); const timer = window.setTimeout(cleanupDuplicateTournamentMenu, 1000); return () => { observer.disconnect(); window.clearTimeout(timer); }; }, [location.pathname]);
