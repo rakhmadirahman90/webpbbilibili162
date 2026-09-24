@@ -386,8 +386,8 @@ const paginatedRankings = filteredRankings.slice(startIndex, startIndex + itemsP
   };
 
   return (
-    <div className="min-h-screen bg-[#070d1a] text-white p-4 md:p-12 font-sans">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-[#070d1a] text-white px-3 py-4 sm:px-5 sm:py-6 md:p-10 lg:p-12 font-sans overflow-x-hidden">
+      <div className="w-full max-w-7xl mx-auto">
         {successMsg && (
           <div className="fixed top-10 left-1/2 -translate-x-1/2 z-[150] bg-blue-600 text-white px-6 py-3 rounded-full font-bold text-xs uppercase flex items-center gap-3 shadow-2xl animate-in fade-in slide-in-from-top-4">
             <Zap size={16} fill="white" /> {successMsg}
@@ -395,27 +395,27 @@ const paginatedRankings = filteredRankings.slice(startIndex, startIndex + itemsP
         )}
 
         {/* HEADER */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-12">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-5 mb-7 sm:mb-9">
           <div className="animate-in slide-in-from-left duration-500">
-            <h1 className="text-5xl font-black italic tracking-tighter uppercase leading-none">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black italic tracking-tighter uppercase leading-none">
               MANAJEMEN<span className="text-blue-600"> RANKING</span>
             </h1>
             <div className="flex items-center gap-2 mt-2">
                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest">
+                <p className="text-zinc-500 text-[9px] sm:text-[10px] font-bold uppercase tracking-widest leading-relaxed">
                   Sistem Sinkronisasi Total Points & Added Points Real-Time
                 </p>
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-3 w-full md:w-auto animate-in slide-in-from-right duration-500">
-            <button onClick={exportToExcel} className="flex-1 bg-emerald-600 hover:bg-emerald-500 px-4 py-3 rounded-xl font-bold uppercase text-[10px] flex items-center justify-center gap-2 transition-all">
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2.5 w-full lg:w-auto animate-in slide-in-from-right duration-500">
+            <button onClick={exportToExcel} className="w-full sm:flex-1 bg-emerald-600 hover:bg-emerald-500 px-4 py-3 rounded-xl font-bold uppercase text-[10px] flex items-center justify-center gap-2 transition-all">
               <TableIcon size={14} /> Excel
             </button>
-            <button onClick={exportToPDF} className="flex-1 bg-red-600 hover:bg-red-500 px-4 py-3 rounded-xl font-bold uppercase text-[10px] flex items-center justify-center gap-2 transition-all">
+            <button onClick={exportToPDF} className="w-full sm:flex-1 bg-red-600 hover:bg-red-500 px-4 py-3 rounded-xl font-bold uppercase text-[10px] flex items-center justify-center gap-2 transition-all">
               <FileText size={14} /> PDF
             </button>
-            <button onClick={fetchRankings} disabled={loading} className="flex-1 bg-zinc-900 border border-white/10 px-4 py-3 rounded-xl font-bold uppercase text-[10px] flex items-center justify-center gap-2 hover:bg-zinc-800 transition-all">
+            <button onClick={fetchRankings} disabled={loading} className="w-full sm:flex-1 bg-zinc-900 border border-white/10 px-4 py-3 rounded-xl font-bold uppercase text-[10px] flex items-center justify-center gap-2 hover:bg-zinc-800 transition-all">
               <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Sync
             </button>
             {isAdmin && (
@@ -423,7 +423,7 @@ const paginatedRankings = filteredRankings.slice(startIndex, startIndex + itemsP
                   setEditingId(null); 
                   setFormData({ player_name: '', category: 'SENIOR', seed: 'Seed A', poin: 0, bonus: 0, photo_url: '' }); 
                   setIsModalOpen(true); 
-              }} className="flex-1 bg-blue-600 hover:bg-blue-500 px-6 py-3 rounded-xl font-bold uppercase text-[10px] flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-600/20 cursor-pointer">
+              }} className="w-full sm:flex-1 bg-blue-600 hover:bg-blue-500 px-6 py-3 rounded-xl font-bold uppercase text-[10px] flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-600/20 cursor-pointer">
                 <Plus size={14} /> Tambah
               </button>
             )}
@@ -431,13 +431,13 @@ const paginatedRankings = filteredRankings.slice(startIndex, startIndex + itemsP
         </div>
 
         {/* FILTER BAR */}
-        <div className="bg-zinc-900/40 border border-white/5 p-3 rounded-2xl mb-8 flex flex-col md:flex-row gap-3 backdrop-blur-sm shadow-inner">
+        <div className="bg-zinc-900/40 border border-white/5 p-3 sm:p-4 rounded-2xl mb-5 sm:mb-7 grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_220px_200px] gap-2.5 backdrop-blur-sm shadow-inner">
           <div className="relative flex-grow">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
             <input
               type="text"
               placeholder="CARI NAMA ATLET..."
-              className="w-full bg-black/40 border border-white/5 rounded-xl py-3 pl-12 pr-4 outline-none text-xs font-bold uppercase focus:border-blue-500/50 transition-all"
+              className="w-full bg-black/40 border border-white/5 rounded-xl py-3.5 pl-12 pr-4 outline-none text-xs font-bold uppercase focus:border-blue-500/50 transition-all"
               value={searchTerm}
               onChange={(e) => {setSearchTerm(e.target.value); setCurrentPage(1);}}
             />
@@ -457,118 +457,106 @@ const paginatedRankings = filteredRankings.slice(startIndex, startIndex + itemsP
           </select>
         </div>
 
-        {/* TABLE DENGAN PERINGKAT TERBARU */}
-        <div className="bg-zinc-900/20 border border-white/5 rounded-3xl overflow-hidden shadow-2xl animate-in fade-in duration-700">
+        {/* DESKTOP TABLE */}
+        <div className="hidden md:block bg-zinc-900/20 border border-white/5 rounded-3xl overflow-hidden shadow-2xl animate-in fade-in duration-700">
           <div className="overflow-x-auto">
-            <table className="w-full text-left min-w-[1000px]">
+            <table className="w-full text-left">
               <thead className="bg-white/[0.02] border-b border-white/5 text-zinc-500">
                 <tr>
-                  <th className="p-5 text-[10px] font-black uppercase text-center w-20">Rank</th>
-                  <th className="p-5 text-[10px] font-black uppercase">Profil Atlet</th>
-                  <th className="p-5 text-[10px] font-black uppercase">Kategori</th>
-                  <th className="p-5 text-[10px] font-black uppercase">Seeded</th>
-                  <th className="p-5 text-[10px] font-black uppercase">Base Points</th>
-                  <th className="p-5 text-[10px] font-black uppercase text-emerald-500">Added Points (Stats)</th>
-                  <th className="p-5 text-[10px] font-black uppercase text-center">Total Ranking</th>
-                  {isAdmin && <th className="p-5 text-[10px] font-black uppercase text-right">Aksi</th>}
+                  <th className="p-4 lg:p-5 text-[10px] font-black uppercase text-center w-20">Rank</th>
+                  <th className="p-4 lg:p-5 text-[10px] font-black uppercase">Profil Atlet</th>
+                  <th className="p-4 lg:p-5 text-[10px] font-black uppercase">Kategori</th>
+                  <th className="p-4 lg:p-5 text-[10px] font-black uppercase">Seeded</th>
+                  <th className="p-4 lg:p-5 text-[10px] font-black uppercase">Base Points</th>
+                  <th className="p-4 lg:p-5 text-[10px] font-black uppercase text-emerald-500">Added Points</th>
+                  <th className="p-4 lg:p-5 text-[10px] font-black uppercase text-center">Total Ranking</th>
+                  {isAdmin && <th className="p-4 lg:p-5 text-[10px] font-black uppercase text-right">Aksi</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
                 {loading ? (
-                  <tr><td colSpan={isAdmin ? 8 : 7} className="p-32 text-center text-xs font-bold uppercase text-zinc-500 animate-pulse">
-                    <div className="flex flex-col items-center gap-4">
-                        <Loader2 className="animate-spin text-blue-600" size={32} />
-                        Syncing Database...
-                    </div>
+                  <tr><td colSpan={isAdmin ? 8 : 7} className="p-24 text-center text-xs font-bold uppercase text-zinc-500 animate-pulse">
+                    <div className="flex flex-col items-center gap-4"><Loader2 className="animate-spin text-blue-600" size={32}/>Syncing Database...</div>
                   </td></tr>
                 ) : paginatedRankings.length > 0 ? (
-                  paginatedRankings.map((item, index) => (
+                  paginatedRankings.map((item,index)=>(
                     <tr key={item.id} className="hover:bg-white/[0.02] transition-all group">
-                      <td className="p-5 text-center font-black italic text-xl text-zinc-700 group-hover:text-blue-500">
-                        {String(startIndex + index + 1).padStart(2, '0')}
-                      </td>
-                      <td className="p-5">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 bg-zinc-800 rounded-full border border-white/10 overflow-hidden ring-2 ring-blue-600/20 group-hover:ring-blue-500/50 transition-all">
-                            {item.photo_url ? <img src={item.photo_url} className="w-full h-full object-cover" alt="" /> : <User size={20} className="m-auto mt-3 text-zinc-600" />}
+                      <td className="p-4 lg:p-5 text-center font-black italic text-xl text-zinc-700 group-hover:text-blue-500">{String(startIndex+index+1).padStart(2,'0')}</td>
+                      <td className="p-4 lg:p-5">
+                        <div className="flex items-center gap-3">
+                          <div className="w-11 h-11 bg-zinc-800 rounded-full border border-white/10 overflow-hidden ring-2 ring-blue-600/20 shrink-0">
+                            {item.photo_url ? <img src={item.photo_url} className="w-full h-full object-cover" alt={item.player_name}/> : <User size={20} className="m-auto mt-2.5 text-zinc-600"/>}
                           </div>
-                          <div>
-                            <p className="font-black uppercase italic text-sm text-white group-hover:text-blue-400 leading-tight">{item.player_name}</p>
-                            <p className="text-[8px] text-zinc-600 font-bold uppercase tracking-tighter mt-1">ID: {item.pendaftaran_id?.slice(0, 8) || 'Manual'}</p>
-                          </div>
+                          <div className="min-w-0"><p className="font-black uppercase italic text-sm text-white truncate">{item.player_name}</p><p className="text-[8px] text-zinc-600 font-bold uppercase mt-1">ID: {item.pendaftaran_id?.slice(0,8)||'Manual'}</p></div>
                         </div>
                       </td>
-                      <td className="p-5">
-                        <span className={`px-3 py-1 rounded-full text-[9px] font-bold uppercase ${item.category === 'MUDA' ? 'bg-orange-500/10 text-orange-500' : 'bg-purple-500/10 text-purple-500'}`}>
-                          {item.category}
-                        </span>
-                      </td>
-                      <td className="p-5">
-                        <span className="bg-blue-600/10 border border-blue-600/20 px-3 py-1 rounded-full text-[9px] font-bold text-blue-500 uppercase">{item.seed}</span>
-                      </td>
-                      <td className="p-5 font-bold text-zinc-400 text-xs">{(item.poin || 0).toLocaleString()}</td>
-                      <td className="p-5 font-bold text-emerald-500 text-xs">+{ (item.bonus || 0).toLocaleString()}</td>
-                      <td className="p-5 text-center">
-                        <span className="text-xl font-black text-white group-hover:text-blue-500 transition-colors">
-                          {(item.poin + item.bonus).toLocaleString()}
-                        </span>
-                      </td>
-                      {isAdmin && (
-                        <td className="p-5 text-right">
-                          <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
-                              <button onClick={() => { setEditingId(item.id); setFormData(item); setIsModalOpen(true); }} className="p-2.5 bg-zinc-900 hover:bg-blue-600 rounded-xl transition-colors"><Edit3 size={16} /></button>
-                              <button onClick={() => handleDelete(item.id)} className="p-2.5 bg-zinc-900 hover:bg-red-600 rounded-xl transition-colors"><Trash2 size={16} /></button>
-                          </div>
-                        </td>
-                      )}
+                      <td className="p-4 lg:p-5"><span className={`px-3 py-1 rounded-full text-[9px] font-bold uppercase ${item.category==='MUDA'?'bg-orange-500/10 text-orange-500':'bg-purple-500/10 text-purple-500'}`}>{item.category}</span></td>
+                      <td className="p-4 lg:p-5"><span className="bg-blue-600/10 border border-blue-600/20 px-3 py-1 rounded-full text-[9px] font-bold text-blue-500 uppercase">{item.seed}</span></td>
+                      <td className="p-4 lg:p-5 font-bold text-zinc-400 text-xs">{(item.poin||0).toLocaleString()}</td>
+                      <td className="p-4 lg:p-5 font-bold text-emerald-500 text-xs">+{(item.bonus||0).toLocaleString()}</td>
+                      <td className="p-4 lg:p-5 text-center"><span className="text-xl font-black text-white">{(item.poin+item.bonus).toLocaleString()}</span></td>
+                      {isAdmin && <td className="p-4 lg:p-5 text-right"><div className="flex justify-end gap-2"><button onClick={()=>{setEditingId(item.id);setFormData(item);setIsModalOpen(true)}} className="p-2.5 bg-zinc-900 hover:bg-blue-600 rounded-xl transition-colors"><Edit3 size={16}/></button><button onClick={()=>handleDelete(item.id)} className="p-2.5 bg-zinc-900 hover:bg-red-600 rounded-xl transition-colors"><Trash2 size={16}/></button></div></td>}
                     </tr>
                   ))
-                ) : (
-                  <tr><td colSpan={isAdmin ? 8 : 7} className="p-20 text-center text-zinc-500 uppercase font-bold text-xs italic">
-                    <div className="flex flex-col items-center gap-2 opacity-20">
-                        <AlertCircle size={48} />
-                        Data tidak ditemukan dalam database ranking.
-                    </div>
-                  </td></tr>
-                )}
+                ) : <tr><td colSpan={isAdmin?8:7} className="p-20 text-center text-zinc-500 uppercase font-bold text-xs italic"><div className="flex flex-col items-center gap-2 opacity-20"><AlertCircle size={48}/>Data tidak ditemukan dalam database ranking.</div></td></tr>}
               </tbody>
             </table>
           </div>
+        </div>
 
-          {/* PAGINATION */}
-          {!loading && totalPages > 1 && (
-            <div className="p-6 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 bg-white/[0.01]">
-              <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest">
-                Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredRankings.length)} of {filteredRankings.length} entries
-              </p>
-              <div className="flex gap-2">
-                <button 
-                  onClick={() => goToPage(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  className="p-3 bg-zinc-900 rounded-xl hover:bg-zinc-800 disabled:opacity-30 transition-all border border-white/5"
-                >
-                  <ChevronLeft size={16} />
-                </button>
-                {[...Array(totalPages)].map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => goToPage(i + 1)}
-                    className={`w-10 h-10 rounded-xl font-black text-xs transition-all ${currentPage === i + 1 ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' : 'bg-zinc-900 text-zinc-500 hover:bg-zinc-800 border border-white/5'}`}
-                  >
-                    {i + 1}
-                  </button>
-                ))}
-                <button 
-                  onClick={() => goToPage(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  className="p-3 bg-zinc-900 rounded-xl hover:bg-zinc-800 disabled:opacity-30 transition-all border border-white/5"
-                >
-                  <ChevronRight size={16} />
-                </button>
-              </div>
+        {/* MOBILE CARDS */}
+        <div className="md:hidden space-y-3">
+          {loading ? (
+            <div className="rounded-2xl border border-white/5 bg-zinc-900/30 p-12 flex flex-col items-center gap-3 text-zinc-500">
+              <Loader2 className="animate-spin text-blue-500" size={28}/><span className="text-[9px] font-black uppercase tracking-widest">Syncing Database...</span>
             </div>
+          ) : paginatedRankings.length > 0 ? paginatedRankings.map((item,index)=>{
+            const rank=startIndex+index+1;
+            return (
+              <article key={item.id} className="rounded-2xl border border-white/7 bg-zinc-900/50 p-3.5 shadow-lg">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-blue-600/10 border border-blue-500/15 grid place-items-center shrink-0">
+                    <span className="text-sm font-black italic text-blue-400">{rank}</span>
+                  </div>
+                  <div className="w-12 h-12 rounded-full bg-zinc-800 border border-white/10 overflow-hidden ring-2 ring-blue-600/20 shrink-0">
+                    {item.photo_url ? <img src={item.photo_url} className="w-full h-full object-cover" alt={item.player_name}/> : <User size={19} className="m-auto mt-3 text-zinc-600"/>}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-black uppercase text-sm text-white truncate">{item.player_name}</h3>
+                    <div className="flex flex-wrap gap-1.5 mt-1">
+                      <span className="px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400 text-[8px] font-black uppercase">{item.category}</span>
+                      <span className="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 text-[8px] font-black uppercase">{item.seed}</span>
+                    </div>
+                  </div>
+                  {isAdmin && <div className="flex gap-1.5 shrink-0"><button aria-label={`Edit ${item.player_name}`} onClick={()=>{setEditingId(item.id);setFormData(item);setIsModalOpen(true)}} className="w-9 h-9 grid place-items-center bg-zinc-800 rounded-xl hover:bg-blue-600"><Edit3 size={14}/></button><button aria-label={`Hapus ${item.player_name}`} onClick={()=>handleDelete(item.id)} className="w-9 h-9 grid place-items-center bg-zinc-800 rounded-xl hover:bg-red-600"><Trash2 size={14}/></button></div>}
+                </div>
+                <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-white/5">
+                  <div className="rounded-xl bg-black/20 p-2 text-center"><div className="text-[8px] font-black uppercase text-zinc-500">Base</div><div className="mt-0.5 text-sm font-black text-zinc-200">{(item.poin||0).toLocaleString()}</div></div>
+                  <div className="rounded-xl bg-emerald-500/5 p-2 text-center"><div className="text-[8px] font-black uppercase text-emerald-500">Added</div><div className="mt-0.5 text-sm font-black text-emerald-400">+{(item.bonus||0).toLocaleString()}</div></div>
+                  <div className="rounded-xl bg-blue-500/10 p-2 text-center"><div className="text-[8px] font-black uppercase text-blue-400">Total</div><div className="mt-0.5 text-sm font-black text-white">{(item.poin+item.bonus).toLocaleString()}</div></div>
+                </div>
+              </article>
+            );
+          }) : (
+            <div className="rounded-2xl border border-white/5 bg-zinc-900/30 p-12 text-center text-zinc-500"><AlertCircle className="mx-auto mb-2 opacity-30" size={38}/><p className="text-[9px] font-black uppercase">Data tidak ditemukan</p></div>
           )}
         </div>
+
+        {/* PAGINATION */}
+        {!loading && totalPages > 1 && (
+          <div className="mt-3 sm:mt-4 p-3 sm:p-5 border border-white/5 rounded-2xl bg-white/[0.01] flex flex-col sm:flex-row justify-between items-center gap-3">
+            <p className="text-zinc-500 text-[9px] font-bold uppercase tracking-wider text-center sm:text-left">
+              {startIndex + 1}-{Math.min(startIndex + itemsPerPage, filteredRankings.length)} dari {filteredRankings.length} atlet
+            </p>
+            <div className="flex items-center gap-1.5 max-w-full overflow-x-auto pb-0.5">
+              <button onClick={()=>goToPage(currentPage-1)} disabled={currentPage===1} className="w-9 h-9 shrink-0 grid place-items-center bg-zinc-900 rounded-xl disabled:opacity-30 border border-white/5"><ChevronLeft size={15}/></button>
+              {Array.from({length:totalPages},(_,i)=>i+1).map(page=>(
+                <button key={page} onClick={()=>goToPage(page)} className={`w-9 h-9 shrink-0 rounded-xl font-black text-[10px] ${currentPage===page?'bg-blue-600 text-white':'bg-zinc-900 text-zinc-500 border border-white/5'}`}>{page}</button>
+              ))}
+              <button onClick={()=>goToPage(currentPage+1)} disabled={currentPage===totalPages} className="w-9 h-9 shrink-0 grid place-items-center bg-zinc-900 rounded-xl disabled:opacity-30 border border-white/5"><ChevronRight size={15}/></button>
+            </div>
+          </div>
+        )}
         
         <div className="mt-8 flex items-center gap-3 bg-blue-600/5 border border-blue-600/10 p-4 rounded-2xl">
             <Info className="text-blue-500" size={20} />
@@ -580,17 +568,17 @@ const paginatedRankings = filteredRankings.slice(startIndex, startIndex + itemsP
 
       {/* MODAL EDIT/TAMBAH */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl animate-in fade-in duration-300">
-          <div className="bg-zinc-950 w-full max-w-lg rounded-[2.5rem] border border-white/10 overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
-            <div className="p-8 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
+        <div className="fixed inset-0 z-[110] flex items-start sm:items-center justify-center p-0 sm:p-4 bg-black/95 backdrop-blur-xl animate-in fade-in duration-300">
+          <div className="bg-zinc-950 w-full max-w-lg min-h-[100dvh] sm:min-h-0 sm:max-h-[92dvh] rounded-none sm:rounded-[2.5rem] border border-white/10 overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
+            <div className="p-4 sm:p-6 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
               <div>
-                <h3 className="font-black uppercase italic text-2xl">{editingId ? 'EDIT' : 'TAMBAH'} DATA RANKING</h3>
+                <h3 className="font-black uppercase italic text-lg sm:text-2xl">{editingId ? 'EDIT' : 'TAMBAH'} DATA RANKING</h3>
                 <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest">Update profil & kalkulasi poin atlet</p>
               </div>
               <button onClick={() => setIsModalOpen(false)} className="p-3 bg-zinc-900 rounded-2xl hover:bg-red-600 transition-all"><X size={24} /></button>
             </div>
             
-            <form onSubmit={handleSubmit} className="p-8 space-y-6 max-h-[70vh] overflow-y-auto no-scrollbar">
+            <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-5 sm:space-y-6 max-h-[calc(100dvh-82px)] sm:max-h-[75vh] overflow-y-auto no-scrollbar">
               {formError && (
                   <div className="bg-red-600/10 border border-red-600/20 p-4 rounded-xl text-red-500 text-[10px] font-bold uppercase flex items-center gap-2">
                       <AlertCircle size={14} /> {formError}
