@@ -68,6 +68,7 @@ export default function AdminUsers({ session }: { session: any }) {
   const [saving, setSaving] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState<any[]>([]);
   const [showOnlineModal, setShowOnlineModal] = useState(false);
+  const [showWaBulkModal, setShowWaBulkModal] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -384,6 +385,96 @@ export default function AdminUsers({ session }: { session: any }) {
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
   };
 
+
+  const normalizeWa = (raw: string) => {
+    const digits = String(raw || '').replace(/\D/g, '');
+    if (!digits || digits === '-') return '';
+    if (digits.startsWith('0')) return '62' + digits.slice(1);
+    if (digits.startsWith('8')) return '62' + digits;
+    return digits;
+  };
+
+  const waRecipients = users.filter((u) => u.role === 'anggota' && /^62\d{8,15}$/.test(normalizeWa(u.whatsapp)));
+  const waMissing = users.filter((u) => u.role === 'anggota' && !/^62\d{8,15}$/.test(normalizeWa(u.whatsapp)));
+  const waDuplicates = (() => {
+    const seen = new Map<string, UserRecord[]>();
+    waRecipients.forEach((u) => {
+      const n = normalizeWa(u.whatsapp);
+      const list = seen.get(n) || [];
+      list.push(u);
+      seen.set(n, list);
+    });
+    return Array.from(seen.entries()).filter(([, list]) => list.length > 1);
+  })();
+
+  const buildAccountWaMessage = (user: UserRecord) => {
+    const phone = normalizeWa(user.whatsapp);
+    const profileUrl = `https://pbilibili162.99apps.id/api/share-athlete?athleteId=${encodeURIComponent(user.id)}&v=${Date.now()}`;
+    return [
+      '🏸 *PB BILIBILI 162 PAREPARE*',
+      '',
+      `👤 *${user.nama || '-'}*`,
+      `🎂 *Kategori:* ${user.kategori || '-'}`,
+      `📱 *WhatsApp:* +${phone}`,
+      `✅ *Status Akun:* ${user.status || 'Aktif'}`,
+      '',
+      '🔐 *AKUN LOGIN ANGGOTA*',
+      `• *Username:* +${phone}`,
+      '• *Password Default:* *bili2162*',
+      '• Login pertama wajib mengganti password default.',
+      '',
+      '📸 *Profil & foto atlet:*',
+      profileUrl,
+      '',
+      '🌐 *Login aplikasi:*',
+      'https://pbilibili162.99apps.id/login',
+      '',
+      '_PB BILIBILI 162 • Parepare_'
+    ].join('\\n');
+  };
+
+  const openAccountWa = (user: UserRecord) => {
+    const phone = normalizeWa(user.whatsapp);
+    if (!/^62\d{8,15}$/.test(phone)) return;
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(buildAccountWaMessage(user))}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleBulkWa = async () => {
+    if (!waRecipients.length) {
+      await Swal.fire({ title: 'Tidak Ada Nomor WhatsApp', text: 'Belum ada anggota dengan nomor WhatsApp yang valid.', icon: 'warning', background: '#0F172A', color: '#fff' });
+      return;
+    }
+    const result = await Swal.fire({
+      title: 'Kirim Akun ke WhatsApp',
+      html: `<div class="text-left text-sm space-y-2"><p>Terdata <b>${users.filter(u => u.role === 'anggota').length}</b> anggota.</p><p><b class="text-emerald-400">${waRecipients.length}</b> nomor WhatsApp valid.</p><p><b class="text-amber-400">${waMissing.length}</b> anggota belum memiliki nomor WhatsApp valid.</p>${waDuplicates.length ? `<p><b class="text-red-400">${waDuplicates.length}</b> nomor terdeteksi duplikat.</p>` : ''}<p class="text-xs text-slate-400 mt-3">WhatsApp Web/Android tidak mengizinkan situs mengirim pesan diam-diam. Tombol ini membuka link wa.me dengan pesan akun yang sudah terisi untuk setiap anggota.</p></div>`,
+      icon: 'info',
+      showCancelButton: true,
+      confirmButtonText: `Buka ${waRecipients.length} Link WA`,
+      cancelButtonText: 'Batal',
+      background: '#0F172A',
+      color: '#fff',
+      confirmButtonColor: '#10B981'
+    });
+    if (!result.isConfirmed) return;
+
+    let opened = 0;
+    waRecipients.forEach((user, index) => {
+      window.setTimeout(() => {
+        openAccountWa(user);
+      }, index * 250);
+      opened++;
+    });
+    await Swal.fire({
+      title: 'Link WhatsApp Dibuat',
+      text: `${waRecipients.length} link akun anggota sudah diproses. Jika browser memblokir tab baru, gunakan daftar penerima di panel berikutnya untuk membukanya satu per satu.`,
+      icon: 'success',
+      background: '#0F172A',
+      color: '#fff',
+      confirmButtonColor: '#2563EB'
+    });
+    setShowWaBulkModal(true);
+  };
 
   const adminCount = users.filter(u => u.role === 'admin').length;
   const memberCount = users.filter(u => u.role === 'anggota').length;
