@@ -38,8 +38,35 @@ const createSalt = () => {
     .join("");
 };
 
-const hashPassword = (salt: string, password: string) =>
-  hash(salt + ":" + password);
+const PBKDF2_ITERATIONS = 600000;
+
+const toBase64Url = (bytes: Uint8Array) => {
+  let binary = "";
+  bytes.forEach((b) => { binary += String.fromCharCode(b); });
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+};
+
+const hashPassword = async (password: string) => {
+  const saltBytes = crypto.getRandomValues(new Uint8Array(16));
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(password),
+    "PBKDF2",
+    false,
+    ["deriveBits"],
+  );
+  const bits = await crypto.subtle.deriveBits(
+    { name: "PBKDF2", salt: saltBytes, iterations: PBKDF2_ITERATIONS, hash: "SHA-256" },
+    key,
+    256,
+  );
+  const salt = toBase64Url(saltBytes);
+  const derived = toBase64Url(new Uint8Array(bits));
+  return {
+    salt,
+    hash: `pbkdf2$sha256${PBKDF2_ITERATIONS}${salt}${derived}`,
+  };
+};
 
 const createOtp = () =>
   String(crypto.getRandomValues(new Uint32Array(1))[0] % 1_000_000).padStart(6, "0");
@@ -239,14 +266,13 @@ Deno.serve(async (req) => {
         return json({ ok: false, message: "Akun anggota aktif tidak ditemukan." }, 403);
       }
 
-      const salt = createSalt();
-      const passwordHash = await hashPassword(salt, newPassword);
+      const passwordData = await hashPassword(newPassword);
 
       const { error: updateError } = await supabase
         .from("pendaftaran")
         .update({
-          password_hash: passwordHash,
-          password_salt: salt,
+          password_hash: passwordData.hash,
+          password_salt: passwordData.salt,
           must_change_password: false,
           password_changed_at: new Date().toISOString(),
         })
