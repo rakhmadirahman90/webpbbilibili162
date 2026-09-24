@@ -386,11 +386,6 @@ export default function PlayerProfileModal({ player, globalRank, onClose }: Prop
     { id: 'berita', label: 'Berita', count: news.length },
   ];
 
-  const navigate = (path: string) => {
-    onClose();
-    window.location.href = path;
-  };
-
   return (
     <div className="fixed inset-0 z-[2147483003] bg-[#050a14]/95 backdrop-blur-xl flex items-center justify-center p-0 sm:p-4">
       <div className="relative w-full sm:max-w-2xl h-[100dvh] sm:h-[92vh] bg-[#071226] text-white overflow-hidden sm:rounded-[2rem] shadow-2xl border border-blue-500/20 flex flex-col">
