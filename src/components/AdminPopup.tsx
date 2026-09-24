@@ -116,6 +116,13 @@ function SortablePopupItem({ item, toggleStatus, startEdit, handleDelete, movePo
             src={item.url_gambar} 
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
             alt={item.judul} 
+            onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
+              const img = e.currentTarget;
+              img.onerror = null;
+              img.src = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(
+                '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="750" viewBox="0 0 600 750"><rect width="600" height="750" fill="#0f172a"/><text x="300" y="350" text-anchor="middle" fill="#94a3b8" font-family="Arial" font-size="24">GAMBAR TIDAK DITEMUKAN</text><text x="300" y="390" text-anchor="middle" fill="#64748b" font-family="Arial" font-size="16">Silakan unggah ulang gambar</text></svg>'
+              );
+            }}
         />
         <div className="absolute inset-0 z-20 bg-gradient-to-t from-[#0F172A] via-transparent to-transparent opacity-80" />
         <div className="absolute top-3 left-3 sm:top-5 sm:left-5 z-30 flex flex-col gap-1.5 sm:gap-2 max-w-[calc(100%-4rem)]">
