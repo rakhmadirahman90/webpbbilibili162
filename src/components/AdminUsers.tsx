@@ -452,8 +452,23 @@ export default function AdminUsers({ session }: { session: any }) {
   const openAccountWa = (user: UserRecord) => {
     const phone = normalizeWa(user.whatsapp);
     if (!/^62\d{8,15}$/.test(phone)) return false;
+
     const url = `https://wa.me/${phone}?text=${encodeURIComponent(buildAccountWaMessage(user))}`;
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+    // Di Android/iOS, window.open() sering dianggap popup dan diblokir.
+    // Navigasi langsung dari event klik pengguna membuka WhatsApp tanpa
+    // bergantung pada izin popup browser.
+    if (isMobile) {
+      window.location.assign(url);
+      return true;
+    }
+
+    // Desktop tetap membuka tab baru.
     const openedWindow = window.open(url, '_blank', 'noopener,noreferrer');
+    if (openedWindow) {
+      try { openedWindow.opener = null; } catch {}
+    }
     return Boolean(openedWindow);
   };
 
