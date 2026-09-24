@@ -307,6 +307,14 @@ const Players: React.FC<{ initialFilter?: string }> = ({
     }
   }, [processedPlayers]);
 
+  useEffect(() => {
+    if (!processedPlayers.length) return;
+    const athleteId = new URLSearchParams(window.location.search).get('athleteId') || '';
+    if (!athleteId) return;
+    const target = processedPlayers.find((item) => String(item.id) === String(athleteId));
+    if (target) setSelectedPlayer(target);
+  }, [processedPlayers]);
+
   const counts = useMemo(() => ({
     all: processedPlayers.length,
     senior: processedPlayers.filter((p) => p.ageGroup === 'Senior').length,
