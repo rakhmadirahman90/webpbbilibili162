@@ -30,6 +30,7 @@ const terbilang = (nominal: number) => {
 
 interface KasEntry { id: string; created_at: string; tanggal_transaksi: string; nama_pembayar: string; kategori: string; jumlah_bayar: number; jumlah_bola: number; tipe_anggota: string; jenis_transaksi: 'Masuk' | 'Keluar'; keterangan?: string | null; lampiran_url?: string | null; lampiran_nama?: string | null; lampiran_type?: string | null; lampiran_size?: number | null; }
 interface Atlet { id: string; player_name: string; }
+interface KasFormData { nama_pembayar: string; kategori: string; jumlah_bayar: number; jumlah_bola: number; tipe_anggota: string; jenis_transaksi: 'Masuk' | 'Keluar'; tanggal_transaksi: string; keterangan: string; lampiran_url: string; lampiran_nama: string; lampiran_type: string; lampiran_size: number | null; }
 
 const emptyForm = () => ({ nama_pembayar: '', kategori: DAFTAR_PEMASUKAN[0], jumlah_bayar: 10000, jumlah_bola: 0, tipe_anggota: 'Anggota Tetap', jenis_transaksi: 'Masuk' as 'Masuk' | 'Keluar', tanggal_transaksi: localToday(), keterangan: '', lampiran_url: '', lampiran_nama: '', lampiran_type: '', lampiran_size: null });
 
@@ -44,7 +45,7 @@ export default function KasManager() {
   const [activeMobileTab, setActiveMobileTab] = useState<'list' | 'form'>('list');
   const [startDate, setStartDate] = useState(() => `${localToday().slice(0, 8)}01`);
   const [endDate, setEndDate] = useState(localToday);
-  const [formData, setFormData] = useState(emptyForm);\n  const [uploadingAttachment, setUploadingAttachment] = useState(false);
+  const [formData, setFormData] = useState<KasFormData>(emptyForm);\n  const [uploadingAttachment, setUploadingAttachment] = useState(false);
   const pageSize = 8;
 
   const loadKas = useCallback(async (resetPeriod = false) => {
