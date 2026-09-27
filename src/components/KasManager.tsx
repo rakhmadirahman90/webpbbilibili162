@@ -4,7 +4,7 @@ import Swal from 'sweetalert2';
 import { broadcastKasChange } from './KasRealtimeNotifier';
 import KasRealtimeNotifier from './KasRealtimeNotifier';
 import RekapIuranSeptember from './RekapIuranSeptember';
-import { Wallet, Plus, Search, FileText, Loader2, Filter, Trash2, Edit3, X, ArrowUpCircle, ArrowDownCircle, ChevronLeft, ChevronRight, RefreshCw, Bell, Calendar, MessageCircle, TrendingUp, TrendingDown, CircleDollarSign } from 'lucide-react';
+import { Wallet, Plus, Search, FileText, Loader2, Filter, Trash2, Paperclip, Image as ImageIcon, Edit3, X, ArrowUpCircle, ArrowDownCircle, ChevronLeft, ChevronRight, RefreshCw, Bell, Calendar, MessageCircle, TrendingUp, TrendingDown, CircleDollarSign } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -28,10 +28,10 @@ const terbilang = (nominal: number) => {
   return `Terbilang: ${f(nominal).replace(/\s+/g, ' ').trim()} Rupiah`;
 };
 
-interface KasEntry { id: string; created_at: string; tanggal_transaksi: string; nama_pembayar: string; kategori: string; jumlah_bayar: number; jumlah_bola: number; tipe_anggota: string; jenis_transaksi: 'Masuk' | 'Keluar'; keterangan?: string | null; }
+interface KasEntry { id: string; created_at: string; tanggal_transaksi: string; nama_pembayar: string; kategori: string; jumlah_bayar: number; jumlah_bola: number; tipe_anggota: string; jenis_transaksi: 'Masuk' | 'Keluar'; keterangan?: string | null; lampiran_url?: string | null; lampiran_nama?: string | null; lampiran_type?: string | null; lampiran_size?: number | null; }
 interface Atlet { id: string; player_name: string; }
 
-const emptyForm = () => ({ nama_pembayar: '', kategori: DAFTAR_PEMASUKAN[0], jumlah_bayar: 10000, jumlah_bola: 0, tipe_anggota: 'Anggota Tetap', jenis_transaksi: 'Masuk' as 'Masuk' | 'Keluar', tanggal_transaksi: localToday(), keterangan: '' });
+const emptyForm = () => ({ nama_pembayar: '', kategori: DAFTAR_PEMASUKAN[0], jumlah_bayar: 10000, jumlah_bola: 0, tipe_anggota: 'Anggota Tetap', jenis_transaksi: 'Masuk' as 'Masuk' | 'Keluar', tanggal_transaksi: localToday(), keterangan: '', lampiran_url: '', lampiran_nama: '', lampiran_type: '', lampiran_size: null });
 
 export default function KasManager() {
   const [kasData, setKasData] = useState<KasEntry[]>([]);
@@ -44,7 +44,7 @@ export default function KasManager() {
   const [activeMobileTab, setActiveMobileTab] = useState<'list' | 'form'>('list');
   const [startDate, setStartDate] = useState(() => `${localToday().slice(0, 8)}01`);
   const [endDate, setEndDate] = useState(localToday);
-  const [formData, setFormData] = useState(emptyForm);
+  const [formData, setFormData] = useState(emptyForm);\n  const [uploadingAttachment, setUploadingAttachment] = useState(false);
   const pageSize = 8;
 
   const loadKas = useCallback(async (resetPeriod = false) => {
@@ -130,7 +130,7 @@ export default function KasManager() {
     if (!formData.nama_pembayar.trim() || !formData.tanggal_transaksi || Number(formData.jumlah_bayar) <= 0) { await Swal.fire({ icon: 'warning', title: 'Data belum lengkap', text: 'Nama, tanggal, dan nominal harus diisi.' }); return; }
     setSaving(true);
     try {
-      const finalData = { ...formData, nama_pembayar: formData.nama_pembayar.trim(), jumlah_bayar: Number(formData.jumlah_bayar), jumlah_bola: Number(formData.jumlah_bola || 0), jenis_transaksi: DAFTAR_PEMASUKAN.includes(formData.kategori) ? 'Masuk' as const : formData.jenis_transaksi, keterangan: formData.keterangan.trim() || null };
+      const finalData = { ...formData, nama_pembayar: formData.nama_pembayar.trim(), jumlah_bayar: Number(formData.jumlah_bayar), jumlah_bola: Number(formData.jumlah_bola || 0), jenis_transaksi: DAFTAR_PEMASUKAN.includes(formData.kategori) ? 'Masuk' as const : formData.jenis_transaksi, keterangan: formData.keterangan.trim() || null, lampiran_url: formData.lampiran_url || null, lampiran_nama: formData.lampiran_nama || null, lampiran_type: formData.lampiran_type || null, lampiran_size: formData.lampiran_size || null };
       if (editingId) {
         const { data, error } = await supabase.from('kas_pb').update(finalData).eq('id', editingId).select().single(); if (error) throw error;
         await broadcastKasChange('UPDATE', data || { id: editingId, ...finalData });
@@ -144,7 +144,25 @@ export default function KasManager() {
     finally { setSaving(false); }
   };
 
-  const editKas = (row: KasEntry) => { setEditingId(row.id); setFormData({ nama_pembayar: row.nama_pembayar || '', kategori: row.kategori || DAFTAR_PEMASUKAN[0], jumlah_bayar: Number(row.jumlah_bayar || 0), jumlah_bola: Number(row.jumlah_bola || 0), tipe_anggota: row.tipe_anggota || 'Anggota Tetap', jenis_transaksi: row.jenis_transaksi, tanggal_transaksi: row.tanggal_transaksi, keterangan: row.keterangan || '' }); setActiveMobileTab('form'); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+  const editKas = (row: KasEntry) => { setEditingId(row.id); setFormData({ nama_pembayar: row.nama_pembayar || '', kategori: row.kategori || DAFTAR_PEMASUKAN[0], jumlah_bayar: Number(row.jumlah_bayar || 0), jumlah_bola: Number(row.jumlah_bola || 0), tipe_anggota: row.tipe_anggota || 'Anggota Tetap', jenis_transaksi: row.jenis_transaksi, tanggal_transaksi: row.tanggal_transaksi, keterangan: row.keterangan || '', lampiran_url: row.lampiran_url || '', lampiran_nama: row.lampiran_nama || '', lampiran_type: row.lampiran_type || '', lampiran_size: row.lampiran_size || null }); setActiveMobileTab('form'); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+  const handleAttachmentUpload = async (file: File | null) => {
+    if (!file) return;
+    const allowed = ['image/jpeg','image/png','image/webp','image/heic','image/heif','application/pdf'];
+    if (!allowed.includes(file.type)) { await Swal.fire({ icon: 'warning', title: 'Format tidak didukung', text: 'Gunakan JPG, PNG, WEBP, HEIC/HEIF, atau PDF.' }); return; }
+    if (file.size > 12 * 1024 * 1024) { await Swal.fire({ icon: 'warning', title: 'File terlalu besar', text: 'Ukuran maksimal 12 MB.' }); return; }
+    setUploadingAttachment(true);
+    try {
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]+/g, '-');
+      const path = `kas/${localToday()}/${Date.now()}-${safeName}`;
+      const { error } = await supabase.storage.from('uploads').upload(path, file, { upsert: false, contentType: file.type || undefined });
+      if (error) throw error;
+      const { data } = supabase.storage.from('uploads').getPublicUrl(path);
+      setFormData(f => ({ ...f, lampiran_url: data.publicUrl, lampiran_nama: file.name, lampiran_type: file.type, lampiran_size: file.size }));
+      await Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Lampiran berhasil diupload', showConfirmButton: false, timer: 1600 });
+    } catch (error: any) { await Swal.fire({ icon: 'error', title: 'Upload gagal', text: error?.message || 'Tidak dapat mengupload lampiran.' }); }
+    finally { setUploadingAttachment(false); }
+  };
+
   const deleteKas = async (row: KasEntry) => {
     const result = await Swal.fire({ icon: 'warning', title: 'Hapus transaksi?', html: `<b>${row.nama_pembayar || '-'}</b><br>${rupiah(Number(row.jumlah_bayar))}<br><small>${row.tanggal_transaksi}</small>`, showCancelButton: true, confirmButtonColor: '#EF4444', cancelButtonColor: '#374151', confirmButtonText: 'Ya, Hapus', cancelButtonText: 'Batal', background: '#0F172A', color: '#fff' });
     if (!result.isConfirmed) return;
@@ -154,7 +172,7 @@ export default function KasManager() {
 
   const testNotification = async () => {
     const source = latestIncome || latestExpense;
-    const mock = source ? { ...source, id: `test_${Date.now()}_${source.id}`, keterangan: source.keterangan || 'Simulasi notifikasi kas real-time' } : { id: `test_${Date.now()}`, nama_pembayar: 'Simulasi Kas PB Bilibili 162', kategori: 'Sumbangan Sukarela', jumlah_bayar: 150000, jumlah_bola: 0, tipe_anggota: 'Umum', jenis_transaksi: 'Masuk' as const, tanggal_transaksi: localToday(), keterangan: 'Simulasi notifikasi kas real-time', created_at: new Date().toISOString() };
+    const mock = source ? { ...source, id: `test_${Date.now()}_${source.id}`, keterangan: source.keterangan || 'Simulasi notifikasi kas real-time' } : { id: `test_${Date.now()}`, nama_pembayar: 'Simulasi Kas PB Bilibili 162', kategori: 'Sumbangan Sukarela', jumlah_bayar: 150000, jumlah_bola: 0, tipe_anggota: 'Umum', jenis_transaksi: 'Masuk' as const, tanggal_transaksi: localToday(), keterangan: 'Simulasi notifikasi kas real-time', lampiran_url: '', lampiran_nama: '', lampiran_type: '', created_at: new Date().toISOString() };
     try { await broadcastKasChange('INSERT', mock); Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Notifikasi test dikirim', showConfirmButton: false, timer: 2200 }); }
     catch (error: any) { Swal.fire({ icon: 'error', title: 'Gagal mengirim notifikasi test', text: error?.message || 'Coba lagi.' }); }
   };
@@ -234,6 +252,18 @@ export default function KasManager() {
               <label className="block text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400">Nominal (Rp)<div className="relative mt-1"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-500">Rp</span><input type="text" inputMode="numeric" className={inputClass+' pl-10 py-3 font-black text-blue-400'} value={formData.jumlah_bayar?formatRupiah(formData.jumlah_bayar):''} onChange={e=>setFormData(f=>({...f,jumlah_bayar:parseRupiah(e.target.value)}))}/></div>{formData.jumlah_bayar>0&&<div className="mt-1.5 rounded-lg border border-blue-900/30 bg-blue-950/40 px-3 py-1.5 text-[9px] font-bold italic text-blue-300">{terbilang(formData.jumlah_bayar)}</div>}<div className="mt-2 flex flex-wrap gap-1.5"><button type="button" onClick={()=>setFormData(f=>({...f,jumlah_bayar:10000}))} className="rounded-md border border-white/5 bg-white/5 px-2.5 py-1 text-[9px] font-black text-slate-300">Set 10k</button><button type="button" onClick={()=>setFormData(f=>({...f,jumlah_bayar:(f.jumlah_bayar||0)+10000}))} className="rounded-md border border-white/5 bg-white/5 px-2.5 py-1 text-[9px] font-black text-slate-300">+10k</button><button type="button" onClick={()=>setFormData(f=>({...f,jumlah_bayar:(f.jumlah_bayar||0)+50000}))} className="rounded-md border border-white/5 bg-white/5 px-2.5 py-1 text-[9px] font-black text-slate-300">+50k</button><button type="button" onClick={()=>setFormData(f=>({...f,jumlah_bayar:(f.jumlah_bayar||0)+100000}))} className="rounded-md border border-white/5 bg-white/5 px-2.5 py-1 text-[9px] font-black text-slate-300">+100k</button></div></label>
               <label className="block text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400">Tipe Anggota<select className={inputClass+' mt-1'} value={formData.tipe_anggota} onChange={e=>setFormData(f=>({...f,tipe_anggota:e.target.value}))}><option>Anggota Tetap</option><option>Anggota Binaan</option><option>Anggota Tidak Tetap</option><option>Umum</option></select></label>
               <label className="block text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400">Keterangan<input className={inputClass+' mt-1'} value={formData.keterangan} onChange={e=>setFormData(f=>({...f,keterangan:e.target.value}))} placeholder="Catatan transaksi"/></label>
+              <div className="rounded-xl border border-white/10 bg-black/30 p-3">
+                <div className="mb-2 flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-slate-400"><Paperclip size={14} className="text-blue-400"/> Lampiran Bukti <span className="text-slate-600">(Opsional)</span></div>
+                <input id="kas-attachment" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,application/pdf" className="hidden" onChange={e=>void handleAttachmentUpload(e.target.files?.[0] || null)}/>
+                <div className="flex flex-wrap gap-2">
+                  <label htmlFor="kas-attachment" className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-blue-500/30 bg-blue-600/10 px-3 py-2 text-[10px] font-black text-blue-300">{uploadingAttachment?<Loader2 size={14} className="animate-spin"/>:<Paperclip size={14}/>} {uploadingAttachment?'Mengupload...':'Pilih File / Gambar'}</label>
+                  {formData.lampiran_url && <button type="button" onClick={()=>setFormData(f=>({...f,lampiran_url:'',lampiran_nama:'',lampiran_type:'',lampiran_size:null}))} className="rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-[10px] font-black text-red-300">Hapus Lampiran</button>}
+                </div>
+                {formData.lampiran_url && <div className="mt-3 overflow-hidden rounded-xl border border-white/10 bg-slate-950/60 p-2">
+                  {String(formData.lampiran_type||'').startsWith('image/') ? <img src={formData.lampiran_url} alt={formData.lampiran_nama || 'Lampiran kas'} className="max-h-52 w-full rounded-lg object-contain"/> : <a href={formData.lampiran_url} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-[10px] font-bold text-blue-300"><FileText size={18}/> {formData.lampiran_nama || 'Buka dokumen'}</a>}
+                  <div className="mt-1 truncate text-[9px] text-slate-500">{formData.lampiran_nama || formData.lampiran_url}</div>
+                </div>}
+              </div>
               <button disabled={saving} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-xs font-black text-white shadow-lg shadow-blue-900/20 disabled:opacity-50">{saving?<Loader2 size={17} className="animate-spin"/>:editingId?<Edit3 size={17}/>:<Plus size={17}/>} {saving?'Menyimpan...':editingId?'Simpan Perubahan':'Simpan Transaksi'}</button>
             </form>
           </div>
