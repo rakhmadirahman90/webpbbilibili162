@@ -38,8 +38,27 @@ const attachmentLine = (tx: any, fallbackTx?: any) => {
   } catch {}
   return `• Bukti/Lampiran: *${name}*${source ? `\n  ${previewUrl}` : ''}`;
 };
-const detail = (tx: any, income: boolean, latestAttachment?: any) => { if (!tx) return 'Nihil'; return ['• Status: ✅ BERHASIL', `• Jenis: ${income ? '📥 Pemasukan' : '📤 Pengeluaran'}`, `• Tanggal & Waktu: *${formatDateTime(tx)}*`, `• Nama/Keterangan: *${tx.nama_pembayar || '-' }*`, `• Kategori: ${tx.kategori || '-'}`, `• Jumlah: *${formatRupiah(tx.jumlah_bayar)}*`, `• Catatan: ${tx.keterangan || '-'}`].join('\n'); };
-const buildWaText = ({ startDate, endDate, previous, income, expense, saldo, latestIncome, latestExpense, latestAttachment }: { startDate: string; endDate: string; previous: number; income: number; expense: number; saldo: number; latestIncome: any; latestExpense: any; latestAttachment?: any; }) => { const modalTetap = 600000; const bendahara = saldo - modalTetap; return `📢 *LAPORAN REAL-TIME KAS (PB BILIBILI 162)*\n\n` + `*Detail Transaksi Penerimaan Terbaru:*:\n` + `${detail(latestIncome, true, latestAttachment)}\n\n` + `*Detail Transaksi Pengeluaran Terbaru:*: ${detail(latestExpense, false, latestAttachment)}\n\n` + `*Status Keuangan Klub (Snapshot ${startDate} s/d ${endDate}):*\n` + `• Saldo Sebelumnya (saldo penutupan hari sebelum snapshot): ${formatRupiah(previous)}\n` + `• Total Pemasukan Periode: ${formatRupiah(income)}\n` + `• Total Pengeluaran Periode: ${formatRupiah(expense)}\n` + `• Detail Pemasukan Terakhir: ${latestIncome ? `${latestIncome.nama_pembayar || latestIncome.kategori || '-'} — ${formatRupiah(latestIncome.jumlah_bayar)}` : 'Nihil'}\n` + `• Detail Pengeluaran Terakhir: ${latestExpense ? `${latestExpense.nama_pembayar || latestExpense.kategori || '-'} — ${formatRupiah(latestExpense.jumlah_bayar)}` : 'Nihil'}\n` + `• *Sisa Saldo Akhir: ${formatRupiah(saldo)}*\n` + `  - Modal Tetap (Pengelola Bola): ${formatRupiah(modalTetap)}\n` + `  - Kas Bendahara: ${formatRupiah(bendahara)}\n\n` + `🔗 *Akses Kas Klub:* ${window.location.origin}/kas\n\n` + `Admin PB Bilibili 162`; };
+const detail = (tx: any, income: boolean) => { if (!tx) return 'Nihil'; return ['• Status: ✅ BERHASIL', `• Jenis: ${income ? '📥 Pemasukan' : '📤 Pengeluaran'}`, `• Tanggal & Waktu: *${formatDateTime(tx)}*`, `• Nama/Keterangan: *${tx.nama_pembayar || '-'}*`, `• Kategori: ${tx.kategori || '-'}`, `• Jumlah: *${formatRupiah(tx.jumlah_bayar)}*`, `• Catatan: ${tx.keterangan || '-'}`].join('\\n'); };
+const buildWaText = ({ startDate, endDate, previous, income, expense, saldo, latestIncome, latestExpense, latestAttachment }: { startDate: string; endDate: string; previous: number; income: number; expense: number; saldo: number; latestIncome: any; latestExpense: any; latestAttachment?: any; }) => {
+  const modalTetap = 600000;
+  const bendahara = saldo - modalTetap;
+  const proof = latestAttachment ? `\\n📎 *Bukti Transaksi Terakhir:* *${latestAttachment.lampiran_nama || 'Bukti transaksi kas'}*\\n${attachmentLine(null, latestAttachment)}\\n` : '';
+  return `📢 *LAPORAN REAL-TIME KAS (PB BILIBILI 162)*\\n\\n` +
+    `*Detail Transaksi Penerimaan Terbaru:*:\\n${detail(latestIncome, true)}\\n\\n` +
+    `*Detail Transaksi Pengeluaran Terbaru:*: ${detail(latestExpense, false)}\\n\\n` +
+    `*Status Keuangan Klub (Snapshot ${startDate} s/d ${endDate}):*\\n` +
+    `• Saldo Sebelumnya (saldo penutupan hari sebelum snapshot): ${formatRupiah(previous)}\\n` +
+    `• Total Pemasukan Periode: ${formatRupiah(income)}\\n` +
+    `• Total Pengeluaran Periode: ${formatRupiah(expense)}\\n` +
+    `• Detail Pemasukan Terakhir: ${latestIncome ? `${latestIncome.nama_pembayar || latestIncome.kategori || '-'} — ${formatRupiah(latestIncome.jumlah_bayar)}` : 'Nihil'}\\n` +
+    `• Detail Pengeluaran Terakhir: ${latestExpense ? `${latestExpense.nama_pembayar || latestExpense.kategori || '-'} — ${formatRupiah(latestExpense.jumlah_bayar)}` : 'Nihil'}\\n` +
+    proof +
+    `• *Sisa Saldo Akhir: ${formatRupiah(saldo)}*\\n` +
+    `  - Modal Tetap (Pengelola Bola): ${formatRupiah(modalTetap)}\\n` +
+    `  - Kas Bendahara: ${formatRupiah(bendahara)}\\n\\n` +
+    `🔗 *Akses Kas Klub:* ${window.location.origin}/kas\\n\\n` +
+    `Admin PB Bilibili 162`;
+};
 const getGlobalChannel = async () => { if (activeGlobalChannel) return activeGlobalChannel; if (activeGlobalChannelPromise) return activeGlobalChannelPromise; activeGlobalChannelPromise = new Promise((resolve, reject) => { const channel = supabase.channel('global-kas-db-changes', { config: { broadcast: { self: true } } }); channel.subscribe((status: string, error?: any) => { if (status === 'SUBSCRIBED') { activeGlobalChannel = channel; activeGlobalChannelPromise = null; resolve(channel); } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') { activeGlobalChannelPromise = null; try { supabase.removeChannel(channel); } catch {} reject(error || new Error(`Realtime channel status: ${status}`)); } }); }); return activeGlobalChannelPromise; };
 export const broadcastKasChange = async (eventType: 'INSERT' | 'UPDATE' | 'DELETE', payloadData: any) => { const payload = { eventType, new: eventType !== 'DELETE' ? payloadData : null, old: eventType !== 'INSERT' ? payloadData : null }; broadcastDataChange('kas_pb', eventType, payloadData); try { const channel = await getGlobalChannel(); await channel.send({ type: 'broadcast', event: 'kas-changed', payload }); } catch (error) { console.warn('[KasRealtime] broadcast skipped:', error); } };
 export default function KasRealtimeNotifier() {
