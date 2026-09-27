@@ -17,12 +17,13 @@ const formatDateTime = (tx: any) => { const date = String(tx?.tanggal_transaksi 
 const DEFAULT_KAS_LOGO = 'https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/assets/branding/logo-1775228962198.png';
 const hasAttachment = (tx: any) => !!String(tx?.lampiran_url || '').trim();
 const attachmentLine = (tx: any, fallbackTx?: any) => {
-  // If the latest transaction has no attachment, keep the most recent uploaded
-  // proof from the same snapshot date instead of falling back to the PB logo.
+  // Prefer the transaction attachment; otherwise use the latest uploaded proof
+  // supplied by the snapshot. Never substitute the club logo when no proof exists.
   const source = hasAttachment(tx) ? tx : (hasAttachment(fallbackTx) ? fallbackTx : null);
-  const imageUrl = source?.lampiran_url || DEFAULT_KAS_LOGO;
-  const name = source?.lampiran_nama || 'Bukti transaksi kas';
-  let previewUrl = `${window.location.origin}/api/kas-share?b=assets&p=${encodeURIComponent('branding/logo-1775228962198.png')}`;
+  if (!source) return '';
+  const imageUrl = source.lampiran_url;
+  const name = source.lampiran_nama || 'Bukti transaksi kas';
+  let previewUrl = '';
   try {
     const u = new URL(imageUrl);
     const marker = '/storage/v1/object/public/';
@@ -37,7 +38,7 @@ const attachmentLine = (tx: any, fallbackTx?: any) => {
   } catch {}
   return `• Bukti/Lampiran: *${name}*${source ? `\n  ${previewUrl}` : ''}`;
 };
-const detail = (tx: any, income: boolean, latestAttachment?: any) => { if (!tx) return 'Nihil'; return ['• Status: ✅ BERHASIL', `• Jenis: ${income ? '📥 Pemasukan' : '📤 Pengeluaran'}`, `• Tanggal & Waktu: *${formatDateTime(tx)}*`, `• Nama/Keterangan: *${tx.nama_pembayar || '-'}*`, `• Kategori: ${tx.kategori || '-'}`, `• Jumlah: *${formatRupiah(tx.jumlah_bayar)}*`, `• Catatan: ${tx.keterangan || '-'}`, attachmentLine(tx, latestAttachment)].join('\n'); };
+const detail = (tx: any, income: boolean, latestAttachment?: any) => { if (!tx) return 'Nihil'; return ['• Status: ✅ BERHASIL', `• Jenis: ${income ? '📥 Pemasukan' : '📤 Pengeluaran'}`, `• Tanggal & Waktu: *${formatDateTime(tx)}*`, `• Nama/Keterangan: *${tx.nama_pembayar || '-' }*`, `• Kategori: ${tx.kategori || '-'}`, `• Jumlah: *${formatRupiah(tx.jumlah_bayar)}*`, `• Catatan: ${tx.keterangan || '-'}`].join('\n'); };
 const buildWaText = ({ startDate, endDate, previous, income, expense, saldo, latestIncome, latestExpense, latestAttachment }: { startDate: string; endDate: string; previous: number; income: number; expense: number; saldo: number; latestIncome: any; latestExpense: any; latestAttachment?: any; }) => { const modalTetap = 600000; const bendahara = saldo - modalTetap; return `📢 *LAPORAN REAL-TIME KAS (PB BILIBILI 162)*\n\n` + `*Detail Transaksi Penerimaan Terbaru:*:\n` + `${detail(latestIncome, true, latestAttachment)}\n\n` + `*Detail Transaksi Pengeluaran Terbaru:*: ${detail(latestExpense, false, latestAttachment)}\n\n` + `*Status Keuangan Klub (Snapshot ${startDate} s/d ${endDate}):*\n` + `• Saldo Sebelumnya (saldo penutupan hari sebelum snapshot): ${formatRupiah(previous)}\n` + `• Total Pemasukan Periode: ${formatRupiah(income)}\n` + `• Total Pengeluaran Periode: ${formatRupiah(expense)}\n` + `• Detail Pemasukan Terakhir: ${latestIncome ? `${latestIncome.nama_pembayar || latestIncome.kategori || '-'} — ${formatRupiah(latestIncome.jumlah_bayar)}` : 'Nihil'}\n` + `• Detail Pengeluaran Terakhir: ${latestExpense ? `${latestExpense.nama_pembayar || latestExpense.kategori || '-'} — ${formatRupiah(latestExpense.jumlah_bayar)}` : 'Nihil'}\n` + `• *Sisa Saldo Akhir: ${formatRupiah(saldo)}*\n` + `  - Modal Tetap (Pengelola Bola): ${formatRupiah(modalTetap)}\n` + `  - Kas Bendahara: ${formatRupiah(bendahara)}\n\n` + `🔗 *Akses Kas Klub:* ${window.location.origin}/kas\n\n` + `Admin PB Bilibili 162`; };
 const getGlobalChannel = async () => { if (activeGlobalChannel) return activeGlobalChannel; if (activeGlobalChannelPromise) return activeGlobalChannelPromise; activeGlobalChannelPromise = new Promise((resolve, reject) => { const channel = supabase.channel('global-kas-db-changes', { config: { broadcast: { self: true } } }); channel.subscribe((status: string, error?: any) => { if (status === 'SUBSCRIBED') { activeGlobalChannel = channel; activeGlobalChannelPromise = null; resolve(channel); } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') { activeGlobalChannelPromise = null; try { supabase.removeChannel(channel); } catch {} reject(error || new Error(`Realtime channel status: ${status}`)); } }); }); return activeGlobalChannelPromise; };
 export const broadcastKasChange = async (eventType: 'INSERT' | 'UPDATE' | 'DELETE', payloadData: any) => { const payload = { eventType, new: eventType !== 'DELETE' ? payloadData : null, old: eventType !== 'INSERT' ? payloadData : null }; broadcastDataChange('kas_pb', eventType, payloadData); try { const channel = await getGlobalChannel(); await channel.send({ type: 'broadcast', event: 'kas-changed', payload }); } catch (error) { console.warn('[KasRealtime] broadcast skipped:', error); } };
@@ -71,7 +72,7 @@ export default function KasRealtimeNotifier() {
       const saldo = previous + income - expense;
       const latestIncome = latest(daily, true);
       const latestExpense = latest(daily, false);
-      const latestAttachment = [...daily].filter(hasAttachment).sort((a, b) => String(b.created_at || b.tanggal_transaksi || '').localeCompare(String(a.created_at || a.tanggal_transaksi || '')))[0] || null;
+      const latestAttachment = [...all].filter(hasAttachment).sort((a, b) => String(b.created_at || b.tanggal_transaksi || '').localeCompare(String(a.created_at || a.tanggal_transaksi || '')))[0] || null;
       const eventInSnapshot = !!eventTx && String(eventTx.tanggal_transaksi || '').slice(0, 10) === snapshotDate;
       const title = eventInSnapshot ? eventType === 'INSERT' ? 'TRANSAKSI KAS BARU!' : eventType === 'DELETE' ? 'TRANSAKSI KAS DIHAPUS!' : 'UPDATE KAS TERBARU!' : 'LAPORAN KAS TERBARU';
       const waText = buildWaText({ startDate: snapshotDate, endDate: snapshotDate, previous, income, expense, saldo, latestIncome, latestExpense, latestAttachment });
