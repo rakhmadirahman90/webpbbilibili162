@@ -86,9 +86,8 @@ export default function AgendaPB162({ compact = false }: { compact?: boolean }) 
     };
   }, [selected]);
 
-  // Landing menampilkan tepat 4 agenda: 2 kolom × 2 baris.
-  // Halaman Agenda tetap menampilkan seluruh data.
-  const visible = compact ? items.slice(0, 4) : items; // Landing: tepat 4 agenda; halaman Agenda: seluruh data
+  // Landing: tepat 4 agenda dalam 2 kolom × 2 baris. Halaman Agenda: seluruh data.
+  const visible = compact ? items.slice(0, 4) : items;
 
   // Keep the landing agenda intentionally compact: four items in a 2 × 2 grid.
   return <section id="agenda-pb162" className={compact ? "agenda-landing-compact landing-section w-full bg-[#050914]" : "w-full bg-[#070d1a] px-4 py-8 sm:px-6 sm:py-10"}>
