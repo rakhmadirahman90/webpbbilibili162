@@ -45,7 +45,8 @@ export default function KasManager() {
   const [activeMobileTab, setActiveMobileTab] = useState<'list' | 'form'>('list');
   const [startDate, setStartDate] = useState(() => `${localToday().slice(0, 8)}01`);
   const [endDate, setEndDate] = useState(localToday);
-  const [formData, setFormData] = useState<KasFormData>(emptyForm);\n  const [uploadingAttachment, setUploadingAttachment] = useState(false);
+  const [formData, setFormData] = useState<KasFormData>(emptyForm);
+  const [uploadingAttachment, setUploadingAttachment] = useState(false);
   const pageSize = 8;
 
   const loadKas = useCallback(async (resetPeriod = false) => {
