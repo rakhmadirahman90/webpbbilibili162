@@ -390,7 +390,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
           {session ? <><button type="button" onClick={() => navigate('/admin/dashboard')} className="px-3 py-2 rounded-full bg-emerald-600 text-white text-[10px] font-bold uppercase"><LayoutDashboard size={13} className="inline mr-1" />Dashboard</button><button type="button" onClick={logout} className="p-2 rounded-full bg-red-500/10 text-red-300"><LogOut size={15}/></button></> : <button type="button" onClick={() => navigate('/login')} className="px-3 py-2 rounded-full bg-blue-600 text-white text-[10px] font-bold uppercase"><LogIn size={13} className="inline mr-1"/>Login</button>}
         </div>
         <div
-          className="lg:hidden absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 flex items-center justify-end gap-2 shrink-0 overflow-visible"
+          className="!flex lg:hidden absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 items-center justify-end gap-1.5 shrink-0 overflow-visible"
           style={{ display: 'flex', visibility: 'visible', opacity: 1, zIndex: 2147483005 }}
           data-mobile-header-actions="true"
         >
@@ -415,13 +415,13 @@ export default function Navbar({ onNavigate }: NavbarProps) {
               opacity: 1,
               position: 'relative',
               zIndex: 2147483006,
-              flex: '0 0 48px',
-              width: 48,
-              height: 48,
-              minWidth: 48,
-              minHeight: 48
+              flex: '0 0 44px',
+              width: 44,
+              height: 44,
+              minWidth: 44,
+              minHeight: 44
             }}
-            className="mobile-header-search-btn !flex !visible !opacity-100 w-[48px] h-[48px] shrink-0 rounded-2xl bg-[#16243b] border border-blue-400/70 items-center justify-center text-white shadow-lg shadow-blue-950/40 active:scale-95 transition-transform touch-manipulation"
+            className="mobile-header-search-btn !flex !visible !opacity-100 w-[44px] h-[44px] shrink-0 rounded-2xl bg-[#16243b] border border-blue-400/70 items-center justify-center text-white shadow-lg shadow-blue-950/40 active:scale-95 transition-transform touch-manipulation"
           >
             <Search size={23} className="text-blue-300" strokeWidth={2.7} />
           </button>
@@ -431,8 +431,8 @@ export default function Navbar({ onNavigate }: NavbarProps) {
             onClick={() => { setMobileSearchOpen(false); setMobileOpen(v => { const next = !v; if (!next) setMobileOpenMenu(null); return next; }); }}
             aria-label={mobileOpen ? 'Tutup menu navigasi' : 'Buka menu navigasi'}
             aria-expanded={mobileOpen}
-            style={{ display:'flex', visibility:'visible', opacity:1, position:'relative', zIndex:2147483006, flex:'0 0 48px', width:48, height:48, minWidth:48, minHeight:48 }}
-            className="!flex !visible !opacity-100 w-[48px] h-[48px] shrink-0 rounded-2xl bg-slate-800/95 border border-blue-300/25 items-center justify-center text-slate-200 shadow-lg active:scale-95 transition-transform touch-manipulation"
+            style={{ display:'flex', visibility:'visible', opacity:1, position:'relative', zIndex:2147483006, flex:'0 0 44px', width:44, height:44, minWidth:44, minHeight:44 }}
+            className="!flex !visible !opacity-100 w-[44px] h-[44px] shrink-0 rounded-2xl bg-slate-800/95 border border-blue-300/25 items-center justify-center text-slate-200 shadow-lg active:scale-95 transition-transform touch-manipulation"
           >
             {mobileOpen
               ? <X size={24} className="text-blue-300 pointer-events-none" strokeWidth={2.4} />
