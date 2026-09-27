@@ -10,10 +10,13 @@ if (s.includes(marker)) {
 }
 
 // Price is intentionally explicit because the club may use Rp4.000 or Rp5.000 per shuttlecock.
-s = s.replace(
-  "const emptyForm = () => ({ nama_pembayar: '', kategori: DAFTAR_PEMASUKAN[0], jumlah_bayar: 10000, jumlah_bola: 0, tipe_anggota: 'Anggota Tetap', jenis_transaksi: 'Masuk' as 'Masuk' | 'Keluar', tanggal_transaksi: localToday(), keterangan: '' });",
-  "const HARGA_BOLA_OPTIONS = [4000, 5000];\nconst formatHargaBola = (value: number) => `Rp ${formatRupiah(value)} / bola`;\nconst emptyForm = () => ({ nama_pembayar: '', kategori: DAFTAR_PEMASUKAN[0], jumlah_bayar: 10000, jumlah_bola: 0, tipe_anggota: 'Anggota Tetap', jenis_transaksi: 'Masuk' as 'Masuk' | 'Keluar', tanggal_transaksi: localToday(), keterangan: '' });"
-);
+// Ensure shuttlecock price constants are present even after KasManager gains attachment fields.
+if (!s.includes('const HARGA_BOLA_OPTIONS =')) {
+  s = s.replace(
+    'const DAFTAR_PENGELUARAN =',
+    'const HARGA_BOLA_OPTIONS = [4000, 5000];\\nconst formatHargaBola = (value: number) => \'Rp \' + formatRupiah(value) + \' / bola\';\\nconst DAFTAR_PENGELUARAN ='
+  );
+}
 
 s = s.replace(
   "const [atlets, setAtlets] = useState<Atlet[]>([]);",
