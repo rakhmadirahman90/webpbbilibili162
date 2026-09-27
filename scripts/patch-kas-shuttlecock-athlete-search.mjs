@@ -14,7 +14,7 @@ if (s.includes(marker)) {
 if (!s.includes('const HARGA_BOLA_OPTIONS =')) {
   s = s.replace(
     'const DAFTAR_PENGELUARAN =',
-    'const HARGA_BOLA_OPTIONS = [4000, 5000];\\nconst formatHargaBola = (value: number) => \'Rp \' + formatRupiah(value) + \' / bola\';\\nconst DAFTAR_PENGELUARAN ='
+    'const HARGA_BOLA_OPTIONS = [4000, 5000];\nconst formatHargaBola = (value: number) => \'Rp \' + formatRupiah(value) + \' / bola\';\nconst DAFTAR_PENGELUARAN ='
   );
 }
 
