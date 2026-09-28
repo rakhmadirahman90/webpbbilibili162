@@ -575,7 +575,7 @@ export default function AdminBerita({ session }: { session?: any }) {
 
       {/* MODAL BERITA */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 bg-black/95 backdrop-blur-md">
           <div className="bg-[#0c0c0c] w-full max-w-3xl rounded-2xl sm:rounded-[3rem] overflow-hidden border border-white/10 flex flex-col max-h-[calc(100dvh-24px)] sm:max-h-[90dvh]">
             <div className="p-8 border-b border-white/5 flex justify-between items-center bg-zinc-900/50">
                <h3 className="text-2xl font-black italic uppercase tracking-tighter">{editingId ? 'Edit' : 'Tulis'} <span className="text-blue-600">Berita</span></h3>
@@ -693,7 +693,7 @@ export default function AdminBerita({ session }: { session?: any }) {
 
       {/* MODAL MODERASI & REPLY KOMENTAR */}
       {isCommentModalOpen && selectedNewsForComments && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/98 backdrop-blur-xl">
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-2 sm:p-4 bg-black/98 backdrop-blur-xl">
           <div className="bg-[#0c0c0c] w-full max-w-2xl rounded-2xl sm:rounded-[3rem] overflow-hidden border border-white/10 flex flex-col max-h-[calc(100dvh-24px)] sm:max-h-[85dvh]">
             <div className="p-8 border-b border-white/5 flex justify-between items-center bg-zinc-900/50">
               <div>
