@@ -26,7 +26,6 @@ import {
 import { PlayerDetailModal } from './PlayerDetailModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import LazyImage from './LazyImage';
-import Navbar from './Navbar';
 
 const Players: React.FC<{ initialFilter?: string }> = ({
   initialFilter = 'Semua',
@@ -352,8 +351,7 @@ const Players: React.FC<{ initialFilter?: string }> = ({
 
   return (
     <>
-      <Navbar onNavigate={handlePublicNavigate} />
-      <section id="atlet" className="w-full flex-grow pt-16 sm:pt-18 pb-28 sm:pb-36 bg-[#0b0e14] text-white flex flex-col overflow-hidden font-sans relative">
+      <section id="atlet" className="w-full flex-grow pt-3 sm:pt-5 pb-28 sm:pb-36 bg-[#0b0e14] text-white flex flex-col overflow-hidden font-sans relative">
         <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-blue-600/5 blur-[120px] rounded-full pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-indigo-600/5 blur-[120px] rounded-full pointer-events-none" />
 
