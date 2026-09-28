@@ -3691,7 +3691,7 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
 
       {isModalOpen && (
         <div className="fixed inset-0 z-[999] flex items-center justify-center p-2 sm:p-4 bg-black/95 backdrop-blur-md overflow-y-auto">
-          <div className="bg-[#0F172A] border border-white/10 w-full max-w-[98%] md:max-w-[95%] h-[95vh] md:h-[90vh] rounded-2xl md:rounded-[2.5rem] flex flex-col md:flex-row overflow-hidden shadow-2xl">
+          <div className="bg-[#0F172A] border border-white/10 w-full max-w-[98%] md:max-w-[95%] h-[95dvh] md:h-[90dvh] rounded-2xl md:rounded-[2.5rem] flex flex-col md:flex-row overflow-hidden shadow-2xl">
             
             {/* Mobile Tab Switcher when not preview only */}
             {!isPreviewOnly && (
@@ -4894,7 +4894,7 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       {/* MODAL SURAT MASUK */}
       {isMasukModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="bg-[#0f172a] border border-white/10 rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+          <div className="bg-[#0f172a] border border-white/10 rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90dvh]">
             <div className="p-5 border-b border-white/10 flex items-center justify-between bg-black/30">
               <h3 className="text-base font-black text-white uppercase italic tracking-wider flex items-center gap-2">
                 <Mail className="text-purple-500" size={18} />
@@ -5055,7 +5055,7 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
       {/* VIEW FILE MODAL */}
       {viewFileModalUrl && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="bg-[#0f172a] border border-white/10 rounded-3xl w-full max-w-4xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+          <div className="bg-[#0f172a] border border-white/10 rounded-3xl w-full max-w-4xl overflow-hidden shadow-2xl flex flex-col max-h-[90dvh]">
             <div className="p-4 border-b border-white/10 flex items-center justify-between bg-black/30">
               <h3 className="text-sm font-black text-white uppercase italic tracking-wider">Pratinjau Lampiran Surat Masuk</h3>
               <button onClick={() => setViewFileModalUrl(null)} className="p-2 hover:bg-white/10 rounded-xl text-zinc-400 hover:text-white transition-all cursor-pointer">
@@ -5064,7 +5064,7 @@ Dalam rangka menyemarakkan syiar Islam dan memperdalam pemahaman keagamaan di bu
             </div>
             <div className="p-6 flex-1 overflow-auto flex items-center justify-center bg-black/60">
               {viewFileModalUrl.startsWith('data:image/') || viewFileModalUrl.startsWith('http') ? (
-                <img src={viewFileModalUrl} alt="Lampiran Surat Masuk" className="max-w-full max-h-[70vh] object-contain rounded-xl shadow-2xl" />
+                <img src={viewFileModalUrl} alt="Lampiran Surat Masuk" className="max-w-full max-h-[70dvh] object-contain rounded-xl shadow-2xl" />
               ) : (
                 <iframe src={viewFileModalUrl} className="w-full h-[70vh] rounded-xl border border-white/10 bg-white" title="PDF Viewer" />
               )}
