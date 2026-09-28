@@ -649,7 +649,7 @@ export default function AdminPopup() {
   };
 
   return (
-    <div className="min-h-screen lg:h-screen bg-[#070d1a] text-white flex flex-col overflow-y-auto lg:overflow-hidden p-2 sm:p-5 md:p-8 font-sans w-full max-w-full overflow-x-hidden">
+    <div className="min-h-full lg:h-full bg-[#070d1a] text-white flex flex-col overflow-y-auto lg:overflow-hidden p-2 sm:p-5 md:p-8 font-sans w-full max-w-full overflow-x-hidden">
       <div className="max-w-7xl mx-auto w-full flex flex-col h-full min-w-0">
         <header className="mb-4 sm:mb-6 flex flex-col sm:flex-row gap-3 sm:gap-4 justify-between items-start sm:items-center shrink-0 w-full overflow-hidden">
           <div className="min-w-0 max-w-full">
