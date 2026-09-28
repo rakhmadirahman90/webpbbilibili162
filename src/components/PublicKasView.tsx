@@ -28,6 +28,10 @@ interface KasEntry {
   jumlah_bola: number;
   jenis_transaksi: 'Masuk' | 'Keluar';
   keterangan?: string;
+  lampiran_url?: string | null;
+  lampiran_nama?: string | null;
+  lampiran_type?: string | null;
+  lampiran_size?: number | null;
 }
 
 interface PublicKasViewProps {
@@ -56,6 +60,19 @@ export default function PublicKasView({ memberOnlyName }: PublicKasViewProps = {
   const [startDate, setStartDate] = useState(firstDayOfMonth);
   const [endDate, setEndDate] = useState(today);
   const [hasSetInitialDates, setHasSetInitialDates] = useState(false);
+  const [previewAttachment, setPreviewAttachment] = useState<KasEntry | null>(null);
+
+  const getAttachmentKind = (row: KasEntry | null) => {
+    const type = String(row?.lampiran_type || '').toLowerCase().trim();
+    const name = String(row?.lampiran_nama || row?.lampiran_url || '').toLowerCase();
+    if (type.startsWith('image/') || /\\.(jpe?g|png|webp|gif|heic|heif|bmp|avif)(?:[?#]|$)/i.test(name)) return 'image';
+    if (type === 'application/pdf' || /\\.pdf(?:[?#]|$)/i.test(name)) return 'pdf';
+    return 'file';
+  };
+
+  const openAttachment = (row: KasEntry) => {
+    if (row.lampiran_url) setPreviewAttachment(row);
+  };
 
   const fetchData = async (forceResetDates = false) => {
     setLoading(true);
@@ -692,6 +709,7 @@ export default function PublicKasView({ memberOnlyName }: PublicKasViewProps = {
                 <th className="p-6 text-[10px] font-black uppercase tracking-widest text-center border-r border-white/5">Tipe</th>
                 <th className="p-6 text-[10px] font-black uppercase tracking-widest text-right border-r border-white/5">Nominal</th>
                 <th className="p-6 text-[10px] font-black uppercase tracking-widest">Catatan</th>
+                <th className="p-6 text-[10px] font-black uppercase tracking-widest">Bukti</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
@@ -758,6 +776,18 @@ export default function PublicKasView({ memberOnlyName }: PublicKasViewProps = {
                     <td className="p-6 text-xs text-slate-600 font-medium">
                       {item.keterangan || <span className="text-slate-300 italic font-normal">-</span>}
                     </td>
+                    <td className="p-6">
+                      {item.lampiran_url ? (
+                        <button type="button" onClick={() => openAttachment(item)} className="group flex w-24 flex-col overflow-hidden rounded-xl border border-blue-100 bg-slate-50 text-left shadow-sm hover:border-blue-300 hover:shadow-md transition-all" title={item.lampiran_nama || 'Lihat bukti transaksi'}>
+                          {getAttachmentKind(item) === 'image' ? (
+                            <img src={item.lampiran_url} alt={item.lampiran_nama || 'Bukti transaksi'} loading="lazy" className="h-16 w-full object-cover transition-transform group-hover:scale-105" />
+                          ) : (
+                            <div className="flex h-16 w-full items-center justify-center bg-blue-50 text-blue-600"><FileText size={24}/></div>
+                          )}
+                          <span className="truncate px-2 py-1.5 text-[8px] font-black uppercase text-blue-700">{item.lampiran_nama || 'Lihat bukti'}</span>
+                        </button>
+                      ) : <span className="text-slate-300">—</span>}
+                    </td>
                   </tr>
                 );
               })}
@@ -821,6 +851,17 @@ export default function PublicKasView({ memberOnlyName }: PublicKasViewProps = {
                       {item.keterangan}
                     </div>
                   )}
+
+                  {item.lampiran_url && (
+                    <button type="button" onClick={() => openAttachment(item)} className="flex w-full items-center gap-3 rounded-xl border border-blue-100 bg-blue-50/60 p-2.5 text-left hover:bg-blue-50 transition-all">
+                      {getAttachmentKind(item) === 'image' ? (
+                        <img src={item.lampiran_url} alt={item.lampiran_nama || 'Bukti transaksi'} loading="lazy" className="h-14 w-16 shrink-0 rounded-lg object-cover border border-blue-100" />
+                      ) : (
+                        <div className="flex h-14 w-16 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-blue-600"><FileText size={24}/></div>
+                      )}
+                      <div className="min-w-0"><div className="text-[8px] font-black uppercase tracking-wider text-blue-600">Bukti Transaksi • Lihat</div><div className="truncate text-[10px] font-bold text-slate-700">{item.lampiran_nama || 'Dokumen transaksi'}</div></div>
+                    </button>
+                  )}
                 </div>
               );
             })
@@ -861,6 +902,27 @@ export default function PublicKasView({ memberOnlyName }: PublicKasViewProps = {
            </div>
         </div>
       </div>
+
+      {previewAttachment && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 p-3 sm:p-6" role="dialog" aria-modal="true" onClick={() => setPreviewAttachment(null)}>
+          <div className="relative flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-slate-950 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
+              <div className="min-w-0"><p className="text-[10px] font-black uppercase tracking-widest text-blue-300">Bukti Transaksi</p><p className="truncate text-xs font-bold text-white">{previewAttachment.lampiran_nama || 'Lampiran transaksi'}</p></div>
+              <button type="button" onClick={() => setPreviewAttachment(null)} className="rounded-xl bg-white/10 px-3 py-2 text-xs font-black text-white">Tutup</button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-auto bg-black/30 p-3 sm:p-5">
+              {getAttachmentKind(previewAttachment) === 'image' ? (
+                <div className="flex min-h-[220px] items-center justify-center"><img src={previewAttachment.lampiran_url || ''} alt={previewAttachment.lampiran_nama || 'Bukti transaksi'} className="max-h-[70vh] max-w-full rounded-xl object-contain" /></div>
+              ) : getAttachmentKind(previewAttachment) === 'pdf' ? (
+                <iframe src={previewAttachment.lampiran_url || ''} title={previewAttachment.lampiran_nama || 'Dokumen PDF'} className="h-[70vh] w-full rounded-xl bg-white" />
+              ) : (
+                <div className="flex min-h-[260px] flex-col items-center justify-center gap-3 text-center"><FileText size={56} className="text-blue-300"/><p className="max-w-lg text-sm font-bold text-white">{previewAttachment.lampiran_nama || 'Dokumen transaksi'}</p><a href={previewAttachment.lampiran_url || '#'} target="_blank" rel="noreferrer" className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-black text-white">Buka Dokumen</a></div>
+              )}
+            </div>
+            <div className="flex items-center justify-between gap-3 border-t border-white/10 px-4 py-3"><div className="min-w-0 text-[9px] text-slate-400"><span>{previewAttachment.tanggal_transaksi}</span><span className="mx-1.5">•</span><span className="font-bold text-white">{previewAttachment.nama_pembayar || '-'}</span></div><a href={previewAttachment.lampiran_url || '#'} target="_blank" rel="noreferrer" className="rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-[9px] font-black text-blue-300">Buka Asli</a></div>
+          </div>
+        </div>
+      )}
 
       {/* Footer Info */}
       <div className="mt-8 md:mt-12 flex flex-col md:flex-row justify-between items-center gap-3 text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em] md:tracking-[0.4em] text-slate-400 text-center">
