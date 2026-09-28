@@ -117,3 +117,50 @@ button,a{touch-action:manipulation}
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}
 }
+
+
+/* PB162 global UI audit hardening 2026-09-28 */
+/* Shared overflow guards for public + admin layouts. */
+#root, #root > div, main, .admin-main { min-width:0; }
+#root :where(h1,h2,h3,h4,p,span,a,button,label,td,th){overflow-wrap:anywhere;}
+#root :where(img,video,canvas,iframe,svg){max-width:100%;}
+#root :where(input,select,textarea,button){min-width:0;}
+#root :where(.flex,.grid)>*{min-width:0;}
+
+/* Desktop: keep wide content inside the available viewport and preserve table scrolling. */
+@media(min-width:768px){
+  .admin-main{width:100%;min-width:0;overflow-x:hidden;}
+  .admin-main .overflow-x-auto{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .admin-main :where(.max-w-7xl,.max-w-6xl,.max-w-5xl,.max-w-4xl){width:100%;min-width:0;}
+  #admin-sidebar{flex:0 0 264px;width:264px;max-width:264px;}
+}
+
+/* Phones/tablets: no clipped cards, controls, dialogs, navigation or action rows. */
+@media(max-width:767px){
+  .admin-mobile-header{width:100%;max-width:100vw;min-width:0;gap:.5rem;}
+  .admin-mobile-header>*{min-width:0;}
+  .admin-sidebar-shell{position:fixed;inset:0;z-index:100;pointer-events:none;}
+  .admin-sidebar-shell.is-open{pointer-events:auto;}
+  #admin-sidebar{width:min(88vw,340px)!important;max-width:calc(100vw - 24px)!important;}
+  #admin-sidebar .truncate{min-width:0;}
+  #sidebar-navigation-menu{width:100%;min-width:0;overflow-x:hidden!important;}
+  #sidebar-navigation-menu a,#sidebar-navigation-menu button{width:100%;max-width:100%;min-width:0;}
+  #sidebar-navigation-menu a>div,#sidebar-navigation-menu button>div{min-width:0;}
+  .admin-main{width:100%!important;max-width:100vw!important;min-width:0!important;overflow-x:hidden!important;}
+  .admin-main :where(section,article,form,header,footer,.rounded-3xl,.rounded-2xl){max-width:100%;min-width:0;}
+  .admin-main :where(.flex){max-width:100%;}
+  .admin-main :where(.flex.flex-row){flex-wrap:wrap;}
+  .admin-main :where(input,select,textarea){width:100%;max-width:100%;font-size:16px;}
+  .admin-main :where(button,a){max-width:100%;}
+  .admin-main :where([role="dialog"],.fixed.inset-0>div){max-width:calc(100vw - 16px);}
+  .admin-main table{max-width:none;}
+  .admin-main .overflow-x-auto{width:100%;max-width:100%;overflow-x:auto!important;}
+  .admin-main :where(td,th){white-space:normal;}
+}
+
+/* Very narrow phones: preserve touch targets while reducing outer spacing. */
+@media(max-width:380px){
+  #admin-sidebar{width:calc(100vw - 16px)!important;max-width:calc(100vw - 16px)!important;}
+  .admin-main{padding-left:6px!important;padding-right:6px!important;}
+  .admin-mobile-header{padding-left:.65rem!important;padding-right:.65rem!important;}
+}
