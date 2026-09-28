@@ -47,6 +47,7 @@ export default function KasManager() {
   const [endDate, setEndDate] = useState(localToday);
   const [formData, setFormData] = useState<KasFormData>(emptyForm);
   const [uploadingAttachment, setUploadingAttachment] = useState(false);
+  const [previewAttachment, setPreviewAttachment] = useState<KasEntry | null>(null);
   const pageSize = 8;
 
   const loadKas = useCallback(async (resetPeriod = false) => {
@@ -206,6 +207,12 @@ export default function KasManager() {
     finally { setUploadingAttachment(false); }
   };
 
+  const isImageAttachment = (row: KasEntry | null) => String(row?.lampiran_type || '').startsWith('image/');
+  const openAttachment = (row: KasEntry) => {
+    if (!row.lampiran_url) return;
+    setPreviewAttachment(row);
+  };
+
   const deleteKas = async (row: KasEntry) => {
     const result = await Swal.fire({ icon: 'warning', title: 'Hapus transaksi?', html: `<b>${row.nama_pembayar || '-'}</b><br>${rupiah(Number(row.jumlah_bayar))}<br><small>${row.tanggal_transaksi}</small>`, showCancelButton: true, confirmButtonColor: '#EF4444', cancelButtonColor: '#374151', confirmButtonText: 'Ya, Hapus', cancelButtonText: 'Batal', background: '#0F172A', color: '#fff' });
     if (!result.isConfirmed) return;
@@ -315,13 +322,60 @@ export default function KasManager() {
         <div className={`lg:col-span-8 ${activeMobileTab==='list'?'block':'hidden md:block'} min-w-0`}>
           <div className="overflow-hidden rounded-2xl md:rounded-[2.5rem] border border-white/10 bg-[#0b1224]/95 shadow-xl">
             <div className="flex flex-col gap-2 border-b border-white/10 p-3 sm:p-5 sm:flex-row sm:items-center sm:justify-between"><div><h3 className="text-sm sm:text-lg font-black uppercase tracking-tight text-white">Riwayat Transaksi Kas</h3><p className="mt-0.5 text-[9px] sm:text-xs text-slate-500">{filtered.length} transaksi pada periode aktif • sumber <b className="text-blue-400">kas_pb</b></p></div><span className="rounded-full bg-blue-500/10 px-3 py-1 text-[9px] font-black text-blue-300">Halaman {page}/{totalPages}</span></div>
-            {loading?<div className="p-12 text-center text-sm text-slate-500"><Loader2 className="mx-auto mb-2 animate-spin"/>Memuat data kas...</div>:visible.length===0?<div className="p-12 text-center text-sm text-slate-500">Tidak ada transaksi pada periode/filter ini.</div>:<div className="overflow-x-auto"><table className="w-full min-w-[850px] text-left"><thead className="bg-black/30 text-[9px] uppercase tracking-wider text-slate-500"><tr><th className="p-3">Tanggal</th><th className="p-3">Nama</th><th className="p-3">Kategori</th><th className="p-3">Jenis</th><th className="p-3 text-right">Nominal</th><th className="p-3">Bola</th><th className="p-3">Keterangan</th><th className="p-3 text-right">Aksi</th></tr></thead><tbody>{visible.map(row=><tr key={row.id} className="border-t border-white/5 hover:bg-white/[0.025]"><td className="p-3 text-[10px] font-bold text-slate-300">{row.tanggal_transaksi}</td><td className="p-3 text-[10px] font-black text-white">{row.nama_pembayar||'-'}</td><td className="p-3 text-[10px] text-slate-300">{row.kategori||'-'}</td><td className="p-3">{row.jenis_transaksi==='Masuk'?<span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-1 text-[9px] font-black text-emerald-300"><ArrowUpCircle size={12}/>Masuk</span>:<span className="inline-flex items-center gap-1 rounded-full bg-red-500/10 px-2 py-1 text-[9px] font-black text-red-300"><ArrowDownCircle size={12}/>Keluar</span>}</td><td className={`p-3 text-right text-[10px] font-black ${row.jenis_transaksi==='Masuk'?'text-emerald-300':'text-red-300'}`}>{rupiah(Number(row.jumlah_bayar))}</td><td className="p-3 text-[10px] text-slate-300">{row.jumlah_bola||0}</td><td className="max-w-[240px] p-3 text-[10px] text-slate-400">{row.keterangan||'-'}</td><td className="p-3"><div className="flex justify-end gap-1.5"><button type="button" onClick={()=>editKas(row)} title="Edit" className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-300"><Edit3 size={14}/></button><button type="button" onClick={()=>void deleteKas(row)} title="Hapus" className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-red-500/10 text-red-300"><Trash2 size={14}/></button></div></td></tr>)}</tbody></table></div>}
+            {loading?<div className="p-12 text-center text-sm text-slate-500"><Loader2 className="mx-auto mb-2 animate-spin"/>Memuat data kas...</div>:visible.length===0?<div className="p-12 text-center text-sm text-slate-500">Tidak ada transaksi pada periode/filter ini.</div>:<div className="overflow-x-auto"><table className="w-full min-w-[850px] text-left"><thead className="bg-black/30 text-[9px] uppercase tracking-wider text-slate-500"><tr><th className="p-3">Tanggal</th><th className="p-3">Nama</th><th className="p-3">Kategori</th><th className="p-3">Jenis</th><th className="p-3 text-right">Nominal</th><th className="p-3">Bola</th><th className="p-3">Keterangan</th><th className="p-3">Bukti</th><th className="p-3 text-right">Aksi</th></tr></thead><tbody>{visible.map(row=><tr key={row.id} className="border-t border-white/5 hover:bg-white/[0.025]"><td className="p-3 text-[10px] font-bold text-slate-300">{row.tanggal_transaksi}</td><td className="p-3 text-[10px] font-black text-white">{row.nama_pembayar||'-'}</td><td className="p-3 text-[10px] text-slate-300">{row.kategori||'-'}</td><td className="p-3">{row.jenis_transaksi==='Masuk'?<span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-1 text-[9px] font-black text-emerald-300"><ArrowUpCircle size={12}/>Masuk</span>:<span className="inline-flex items-center gap-1 rounded-full bg-red-500/10 px-2 py-1 text-[9px] font-black text-red-300"><ArrowDownCircle size={12}/>Keluar</span>}</td><td className={`p-3 text-right text-[10px] font-black ${row.jenis_transaksi==='Masuk'?'text-emerald-300':'text-red-300'}`}>{rupiah(Number(row.jumlah_bayar))}</td><td className="p-3 text-[10px] text-slate-300">{row.jumlah_bola||0}</td><td className="max-w-[240px] p-3 text-[10px] text-slate-400">{row.keterangan||'-'}</td>
+                    <td className="p-3">
+                      {row.lampiran_url ? (
+                        <button type="button" onClick={()=>openAttachment(row)} title={row.lampiran_nama || 'Lihat bukti transaksi'} className="group relative h-11 w-14 overflow-hidden rounded-lg border border-blue-500/20 bg-slate-950/70 text-left">
+                          {String(row.lampiran_type || '').startsWith('image/') ? (
+                            <img src={row.lampiran_url} alt={row.lampiran_nama || 'Bukti transaksi'} loading="lazy" className="h-full w-full object-cover transition-transform group-hover:scale-105" />
+                          ) : (
+                            <span className="flex h-full w-full items-center justify-center text-blue-300"><FileText size={18}/></span>
+                          )}
+                          <span className="absolute inset-x-0 bottom-0 bg-black/70 px-1 py-0.5 text-center text-[7px] font-black text-white">LIHAT</span>
+                        </button>
+                      ) : <span className="text-[9px] text-slate-600">—</span>}
+                    </td>
+                    <td className="p-3"><div className="flex justify-end gap-1.5"><button type="button" onClick={()=>editKas(row)} title="Edit" className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-300"><Edit3 size={14}/></button><button type="button" onClick={()=>void deleteKas(row)} title="Hapus" className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-red-500/10 text-red-300"><Trash2 size={14}/></button></div></td></tr>)}</tbody></table></div>}
             <div className="flex items-center justify-between border-t border-white/10 p-3 sm:p-4"><button type="button" disabled={page<=1} onClick={()=>setCurrentPage(p=>Math.max(1,p-1))} className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-[9px] font-black text-slate-300 disabled:opacity-30"><ChevronLeft size={14}/> Sebelumnya</button><span className="text-[9px] font-bold text-slate-500">{filtered.length?`${(page-1)*pageSize+1}-${Math.min(page*pageSize,filtered.length)}`:'0'} / {filtered.length}</span><button type="button" disabled={page>=totalPages} onClick={()=>setCurrentPage(p=>Math.min(totalPages,p+1))} className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-[9px] font-black text-slate-300 disabled:opacity-30">Berikutnya <ChevronRight size={14}/></button></div>
           </div>
         </div>
       </div>
 
       <section className="rounded-2xl border border-blue-500/20 bg-gradient-to-r from-blue-950/50 via-slate-900/90 to-slate-950 p-3 sm:p-5 shadow-xl"><div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between"><div><div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-blue-300"><MessageCircle size={15}/> Ringkasan Informasi Kas</div><p className="mt-1 text-[10px] leading-relaxed text-slate-400">Saldo akhir dihitung dari saldo sebelumnya + pemasukan periode − pengeluaran periode. Modal tetap pengelola bola dipisahkan dari kas bendahara.</p></div><div className="grid grid-cols-2 gap-x-6 gap-y-1 text-[9px] sm:text-[10px]"><div className="text-slate-500">Saldo Sebelumnya <b className="ml-1 text-slate-200">{rupiah(stats.sebelumnya)}</b></div><div className="text-slate-500">Pemasukan <b className="ml-1 text-emerald-300">{rupiah(stats.masuk)}</b></div><div className="text-slate-500">Pengeluaran <b className="ml-1 text-red-300">{rupiah(stats.keluar)}</b></div><div className="text-slate-500">Saldo Akhir Periode <b className="ml-1 text-blue-300">{rupiah(stats.akhir)}</b><br/><span className="text-[8px] text-slate-500">Saldo Terakhir Saat Ini <b className="ml-1 text-emerald-300">{rupiah(stats.saldoTerakhir)}</b></span></div><div className="text-slate-500">Modal Tetap <b className="ml-1 text-slate-200">{rupiah(MODAL_TETAP)}</b></div><div className="text-slate-500">Kas Bendahara <b className="ml-1 text-blue-300">{rupiah(stats.bendahara)}</b></div></div></div></section>
+      {previewAttachment && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-3 sm:p-6" role="dialog" aria-modal="true" onClick={()=>setPreviewAttachment(null)}>
+          <div className="relative flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#0b1224] shadow-2xl" onClick={e=>e.stopPropagation()}>
+            <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
+              <div className="min-w-0">
+                <p className="text-[10px] font-black uppercase tracking-widest text-blue-300">Bukti Transaksi</p>
+                <p className="truncate text-xs font-bold text-white">{previewAttachment.lampiran_nama || 'Lampiran transaksi'}</p>
+              </div>
+              <button type="button" onClick={()=>setPreviewAttachment(null)} className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/5 text-slate-300 hover:bg-white/10" aria-label="Tutup">
+                <X size={18}/>
+              </button>
+            </div>
+            <div className="flex min-h-0 flex-1 items-center justify-center overflow-auto bg-black/30 p-3 sm:p-5">
+              {isImageAttachment(previewAttachment) ? (
+                <img src={previewAttachment.lampiran_url || ''} alt={previewAttachment.lampiran_nama || 'Bukti transaksi'} className="max-h-[68vh] max-w-full rounded-xl object-contain shadow-lg" />
+              ) : (
+                <div className="flex flex-col items-center gap-3 py-10 text-center">
+                  <FileText size={48} className="text-blue-300"/>
+                  <p className="max-w-md text-xs text-slate-300">{previewAttachment.lampiran_nama || 'Dokumen transaksi'}</p>
+                  <a href={previewAttachment.lampiran_url || '#'} target="_blank" rel="noreferrer" className="rounded-xl bg-blue-600 px-4 py-2 text-[10px] font-black text-white">Buka Dokumen</a>
+                </div>
+              )}
+            </div>
+            <div className="flex items-center justify-between gap-3 border-t border-white/10 px-4 py-3">
+              <div className="min-w-0 text-[9px] text-slate-500">
+                <span>{previewAttachment.tanggal_transaksi}</span>
+                <span className="mx-1.5">•</span>
+                <span className="font-bold text-slate-300">{previewAttachment.nama_pembayar || '-'}</span>
+              </div>
+              <a href={previewAttachment.lampiran_url || '#'} target="_blank" rel="noreferrer" className="shrink-0 rounded-lg border border-blue-500/20 bg-blue-500/10 px-3 py-2 text-[9px] font-black text-blue-300">Buka Asli</a>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
