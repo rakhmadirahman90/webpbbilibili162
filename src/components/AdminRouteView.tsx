@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import AdminDashboard from './AdminDashboard';
+import AdminAgendaPB162 from './AdminAgendaPB162';
 import ProfilAnggota from './ProfilAnggota';
 import AdminUsers from './AdminUsers';
 import AdminAbsensi from './AdminAbsensi';
@@ -123,6 +124,7 @@ export default function AdminRouteView({ session }: Props) {
     case 'keuangan-turnamen':
       return adminOnly(AdminKeuanganTurnamen);
 
+    case 'agenda': return adminOnly(AdminAgendaPB162);
     case 'jadwal': return <JadwalLatihanView />;
     case 'informasi-rekening-qris': return <div className="p-0 min-h-full"><InformasiRekeningQris /></div>;
     case 'ranking': return isAdmin ? render(AdminRanking) : <div className="p-4 md:p-8"><Ranking /></div>;
