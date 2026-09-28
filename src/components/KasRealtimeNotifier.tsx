@@ -120,9 +120,10 @@ export default function KasRealtimeNotifier() {
       if (!mounted) return;
       const all = !error && Array.isArray(data) ? data : [];
       const daily = all.filter(tx => inFilter(tx, snapshotDate, snapshotEndDate));
+      const accountingDaily = all.filter(tx => { const d = String(tx.tanggal_transaksi || '').slice(0, 10); return !!d && d >= snapshotDate && d <= snapshotEndDate; });
       const previous = all.filter(tx => String(tx.tanggal_transaksi || '').slice(0, 10) <= previousDateKey).reduce((s, tx) => s + (isMasuk(tx) ? 1 : -1) * Number(tx.jumlah_bayar || 0), 0);
-      const income = daily.filter(isMasuk).reduce((s, tx) => s + Number(tx.jumlah_bayar || 0), 0);
-      const expense = daily.filter(tx => !isMasuk(tx)).reduce((s, tx) => s + Number(tx.jumlah_bayar || 0), 0);
+      const income = accountingDaily.filter(isMasuk).reduce((s, tx) => s + Number(tx.jumlah_bayar || 0), 0);
+      const expense = accountingDaily.filter(tx => !isMasuk(tx)).reduce((s, tx) => s + Number(tx.jumlah_bayar || 0), 0);
       const saldo = previous + income - expense;
       // Current balance is independent of today's snapshot/filter: it is the
       // net value of every transaction currently stored in kas_pb.
