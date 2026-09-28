@@ -864,7 +864,7 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
 
       {detail && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 p-3 backdrop-blur-sm">
-          <div className="max-h-[92vh] w-full max-w-2xl overflow-hidden rounded-3xl border border-white/10 bg-[#0b1224] shadow-2xl">
+          <div className="max-h-[92dvh] w-full max-w-2xl overflow-hidden rounded-3xl border border-white/10 bg-[#0b1224] shadow-2xl">
             <div className="flex items-center justify-between border-b border-white/5 px-4 py-4 sm:px-5">
               <div className="min-w-0">
                 <p className="text-[9px] font-black uppercase tracking-widest text-blue-400">Rekap Lengkap Peserta</p>
@@ -874,7 +874,7 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
               <button type="button" onClick={() => setDetail(null)} className="rounded-xl p-2 text-slate-400 hover:bg-white/5 hover:text-white" aria-label="Tutup detail"><X size={18} /></button>
             </div>
 
-            <div className="max-h-[calc(92vh-78px)] space-y-4 overflow-y-auto p-4 sm:p-5">
+            <div className="max-h-[calc(92dvh-78px)] space-y-4 overflow-y-auto p-4 sm:p-5">
               <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
                 <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3">
                   <p className="text-[8px] font-black uppercase text-emerald-400">{selectedMonth} {selectedYear}</p>
@@ -973,7 +973,7 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
 
       {transactionModalOpen && isAdmin && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/80 p-3 backdrop-blur-sm">
-          <div className="max-h-[92vh] w-full max-w-xl overflow-hidden rounded-3xl border border-white/10 bg-[#0b1224] shadow-2xl">
+          <div className="max-h-[92dvh] w-full max-w-xl overflow-hidden rounded-3xl border border-white/10 bg-[#0b1224] shadow-2xl">
             <div className="flex items-center justify-between border-b border-white/5 px-4 py-4 sm:px-5">
               <div>
                 <p className="text-[9px] font-black uppercase tracking-widest text-violet-400">Kelola Data Iuran</p>
@@ -983,7 +983,7 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
                 <X size={18} />
               </button>
             </div>
-            <div className="max-h-[calc(92vh-78px)] overflow-y-auto p-4 sm:p-5">
+            <div className="max-h-[calc(92dvh-78px)] overflow-y-auto p-4 sm:p-5">
               <div className="grid gap-3 sm:grid-cols-2">
                 <label className="block sm:col-span-2">
                   <span className="mb-1.5 block text-[9px] font-black uppercase tracking-wider text-slate-500">Peserta / Anggota</span>
