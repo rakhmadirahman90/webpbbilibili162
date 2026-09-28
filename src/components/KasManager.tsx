@@ -317,7 +317,7 @@ export default function KasManager() {
                   {formData.lampiran_url && <button type="button" onClick={()=>setFormData(f=>({...f,lampiran_url:'',lampiran_nama:'',lampiran_type:'',lampiran_size:null}))} className="rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-[10px] font-black text-red-300">Hapus Lampiran</button>}
                 </div>
                 {formData.lampiran_url && <div className="mt-3 overflow-hidden rounded-xl border border-white/10 bg-slate-950/60 p-2">
-                  {String(formData.lampiran_type||'').startsWith('image/') ? <img src={formData.lampiran_url} alt={formData.lampiran_nama || 'Lampiran kas'} className="max-h-52 w-full rounded-lg object-contain"/> : <a href={formData.lampiran_url} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-[10px] font-bold text-blue-300"><FileText size={18}/> {formData.lampiran_nama || 'Buka dokumen'}</a>}
+                  {getAttachmentKind({ ...formData, id: 'form-preview', created_at: '', tanggal_transaksi: formData.tanggal_transaksi, nama_pembayar: formData.nama_pembayar, kategori: formData.kategori, jumlah_bayar: formData.jumlah_bayar, jumlah_bola: formData.jumlah_bola, tipe_anggota: formData.tipe_anggota, jenis_transaksi: formData.jenis_transaksi } as KasEntry) === 'image' ? <img src={formData.lampiran_url} alt={formData.lampiran_nama || 'Lampiran kas'} className="max-h-52 w-full rounded-lg object-contain"/> : <a href={formData.lampiran_url} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-[10px] font-bold text-blue-300"><FileText size={18}/> {formData.lampiran_nama || 'Buka dokumen'}</a>}
                   <div className="mt-1 truncate text-[9px] text-slate-500">{formData.lampiran_nama || formData.lampiran_url}</div>
                 </div>}
               </div>
@@ -333,7 +333,7 @@ export default function KasManager() {
                     <td className="p-3">
                       {row.lampiran_url ? (
                         <button type="button" onClick={()=>openAttachment(row)} title={row.lampiran_nama || 'Lihat bukti transaksi'} className="group relative h-11 w-14 overflow-hidden rounded-lg border border-blue-500/20 bg-slate-950/70 text-left">
-                          {String(row.lampiran_type || '').startsWith('image/') ? (
+                          {getAttachmentKind(row) === 'image' ? (
                             <img src={row.lampiran_url} alt={row.lampiran_nama || 'Bukti transaksi'} loading="lazy" className="h-full w-full object-cover transition-transform group-hover:scale-105" />
                           ) : (
                             <span className="flex h-full w-full items-center justify-center text-blue-300"><FileText size={18}/></span>
