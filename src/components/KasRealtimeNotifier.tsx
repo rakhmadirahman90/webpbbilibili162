@@ -82,11 +82,11 @@ const buildWaText = ({ startDate, endDate, previous, income, expense, saldo, sal
     `• Total pemasukan: ${formatRupiah(income)}`,
     `• Total pengeluaran: ${formatRupiah(expense)}`,
     `• Saldo akhir periode: *${formatRupiah(saldo)}*`,
-    `• Saldo terakhir saat ini: *${formatRupiah(saldoTerakhir)}*`,
     '',
-    '📊 *PEMBAGIAN SALDO*',
+    '📊 *SALDO TERAKHIR & PEMBAGIAN SALDO*',
+    `• Saldo terakhir saat ini: *${formatRupiah(saldoTerakhir)}*`,
     `• Modal tetap: ${formatRupiah(modalTetap)}`,
-    `• Kas bendahara: ${formatRupiah(bendahara)}`,
+    `• Kas bendahara (sisa): *${formatRupiah(bendahara)}*`,
     proof ? proof.trim() : '',
     '',
     `🔗 *Akses Kelola Kas:* ${window.location.origin}/kas`,
@@ -135,7 +135,7 @@ export default function KasRealtimeNotifier() {
       const title = eventInSnapshot ? eventType === 'INSERT' ? 'TRANSAKSI KAS BARU!' : eventType === 'DELETE' ? 'TRANSAKSI KAS DIHAPUS!' : 'UPDATE KAS TERBARU!' : 'LAPORAN KAS TERBARU';
       const waText = buildWaText({ startDate: snapshotDate, endDate: snapshotEndDate, previous, income, expense, saldo, saldoTerakhir, latestIncome, latestExpense, latestAttachment });
       const waHref = `https://api.whatsapp.com/send?text=${encodeURIComponent(waText)}`;
-      if (mounted) await Swal.fire({ icon: eventType === 'DELETE' ? 'warning' : 'success', title, html: `<div style="text-align:left;font-size:13px;line-height:1.6"><b>Snapshot:</b> ${snapshotDate}<br/><b>Saldo Sebelumnya:</b> ${formatRupiah(previous)}<br/><b>Total Pemasukan:</b> ${formatRupiah(income)}<br/><b>Total Pengeluaran:</b> ${formatRupiah(expense)}<br/><b>Saldo Akhir Periode:</b> ${formatRupiah(saldo)}<br/><b>Saldo Terakhir Saat Ini:</b> ${formatRupiah(saldoTerakhir)}<br/><br/><b>Penerimaan Terbaru:</b> ${latestIncome ? `${latestIncome.nama_pembayar || latestIncome.kategori} — ${formatRupiah(latestIncome.jumlah_bayar)}` : 'Nihil'}<br/><b>Pengeluaran Terbaru:</b> ${latestExpense ? `${latestExpense.nama_pembayar || latestExpense.kategori} — ${formatRupiah(latestExpense.jumlah_bayar)}` : 'Nihil'}</div>`, showCancelButton: true, confirmButtonText: 'Buka WhatsApp', cancelButtonText: 'Tutup', confirmButtonColor: '#25D366' }).then(result => { if (result.isConfirmed) window.open(waHref, '_blank', 'noopener,noreferrer'); });
+      if (mounted) await Swal.fire({ icon: eventType === 'DELETE' ? 'warning' : 'success', title, html: `<div style="text-align:left;font-size:13px;line-height:1.6"><b>Snapshot:</b> ${snapshotDate}<br/><b>Saldo Sebelumnya:</b> ${formatRupiah(previous)}<br/><b>Total Pemasukan:</b> ${formatRupiah(income)}<br/><b>Total Pengeluaran:</b> ${formatRupiah(expense)}<br/><b>Saldo Akhir Periode:</b> ${formatRupiah(saldo)}<br/><br/><b>Saldo Terakhir Saat Ini:</b> ${formatRupiah(saldoTerakhir)}<br/><b>Modal Tetap:</b> ${formatRupiah(modalTetap)}<br/><b>Kas Bendahara:</b> ${formatRupiah(bendahara)}<br/><br/><b>Penerimaan Terbaru:</b> ${latestIncome ? `${latestIncome.nama_pembayar || latestIncome.kategori} — ${formatRupiah(latestIncome.jumlah_bayar)}` : 'Nihil'}<br/><b>Pengeluaran Terbaru:</b> ${latestExpense ? `${latestExpense.nama_pembayar || latestExpense.kategori} — ${formatRupiah(latestExpense.jumlah_bayar)}` : 'Nihil'}</div>`, showCancelButton: true, confirmButtonText: 'Buka WhatsApp', cancelButtonText: 'Tutup', confirmButtonColor: '#25D366' }).then(result => { if (result.isConfirmed) window.open(waHref, '_blank', 'noopener,noreferrer'); });
     };
     const startRealtime = async () => {
       try {
