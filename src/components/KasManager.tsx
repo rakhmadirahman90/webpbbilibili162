@@ -104,22 +104,47 @@ export default function KasManager() {
   const visible = filtered.slice((page - 1) * pageSize, page * pageSize);
 
   const stats = useMemo(() => {
-    const masuk = filtered.filter(r => r.jenis_transaksi === 'Masuk').reduce((s, r) => s + Number(r.jumlah_bayar || 0), 0);
-    const keluar = filtered.filter(r => r.jenis_transaksi === 'Keluar').reduce((s, r) => s + Number(r.jumlah_bayar || 0), 0);
+    // Single source of truth: every calculation is rebuilt from the current
+    // kas_pb rows returned by Supabase. Filters affect the period report only;
+    // they must never be mixed with the opening/current balance calculation.
+    const allRows = normalized;
+    const periodRows = filtered;
 
-    // Saldo sebelumnya harus sama dengan snapshot WhatsApp:
-    // saldo penutupan aktual sampai kalender sehari sebelum hari ini.
-    // Total pemasukan/pengeluaran tetap mengikuti filter periode yang sedang dipilih.
-    const snapshotDate = localToday();
-    const previousDate = new Date(`${snapshotDate}T00:00:00+08:00`);
-    previousDate.setDate(previousDate.getDate() - 1);
-    const previousDateKey = `${previousDate.getFullYear()}-${String(previousDate.getMonth() + 1).padStart(2, '0')}-${String(previousDate.getDate()).padStart(2, '0')}`;
-    const sebelumnya = normalized
-      .filter(r => String(r.tanggal_transaksi || '').slice(0, 10) <= previousDateKey)
-      .reduce((s, r) => s + (r.jenis_transaksi === 'Masuk' ? 1 : -1) * Number(r.jumlah_bayar || 0), 0);
+    const sum = (rows: KasEntry[]) => rows.reduce(
+      (total, row) => total + (row.jenis_transaksi === 'Masuk' ? 1 : -1) * Number(row.jumlah_bayar || 0),
+      0
+    );
 
-    const akhir = sebelumnya + masuk - keluar;
-    return { masuk, keluar, sebelumnya, akhir, bendahara: akhir - MODAL_TETAP, count: filtered.length };
+    const masuk = periodRows
+      .filter(r => r.jenis_transaksi === 'Masuk')
+      .reduce((s, r) => s + Number(r.jumlah_bayar || 0), 0);
+    const keluar = periodRows
+      .filter(r => r.jenis_transaksi === 'Keluar')
+      .reduce((s, r) => s + Number(r.jumlah_bayar || 0), 0);
+
+    // Opening balance = all transactions strictly before the selected period.
+    const sebelumnya = startDate
+      ? sum(allRows.filter(r => String(r.tanggal_transaksi || '').slice(0, 10) < startDate))
+      : 0;
+
+    // Period ending balance is opening + net movement inside the selected period.
+    const akhirPeriode = sebelumnya + masuk - keluar;
+
+    // Current/last balance ALWAYS uses every current row in kas_pb, regardless
+    // of pagination or date filter. Editing/deleting any row therefore changes
+    // this value immediately after Supabase is reloaded.
+    const saldoTerakhir = sum(allRows);
+
+    return {
+      masuk,
+      keluar,
+      sebelumnya,
+      akhir: akhirPeriode,
+      saldoTerakhir,
+      bendahara: saldoTerakhir - MODAL_TETAP,
+      bendaharaPeriode: akhirPeriode - MODAL_TETAP,
+      count: periodRows.length
+    };
   }, [filtered, normalized, startDate]);
 
   const latestIncome = useMemo(() => [...normalized].filter(r => r.jenis_transaksi === 'Masuk').sort((a, b) => String(b.created_at || b.tanggal_transaksi).localeCompare(String(a.created_at || a.tanggal_transaksi)))[0] || null, [normalized]);
@@ -280,7 +305,7 @@ export default function KasManager() {
         </div>
       </div>
 
-      <section className="rounded-2xl border border-blue-500/20 bg-gradient-to-r from-blue-950/50 via-slate-900/90 to-slate-950 p-3 sm:p-5 shadow-xl"><div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between"><div><div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-blue-300"><MessageCircle size={15}/> Ringkasan Informasi Kas</div><p className="mt-1 text-[10px] leading-relaxed text-slate-400">Saldo akhir dihitung dari saldo sebelumnya + pemasukan periode − pengeluaran periode. Modal tetap pengelola bola dipisahkan dari kas bendahara.</p></div><div className="grid grid-cols-2 gap-x-6 gap-y-1 text-[9px] sm:text-[10px]"><div className="text-slate-500">Saldo Sebelumnya <b className="ml-1 text-slate-200">{rupiah(stats.sebelumnya)}</b></div><div className="text-slate-500">Pemasukan <b className="ml-1 text-emerald-300">{rupiah(stats.masuk)}</b></div><div className="text-slate-500">Pengeluaran <b className="ml-1 text-red-300">{rupiah(stats.keluar)}</b></div><div className="text-slate-500">Saldo Akhir <b className="ml-1 text-blue-300">{rupiah(stats.akhir)}</b></div><div className="text-slate-500">Modal Tetap <b className="ml-1 text-slate-200">{rupiah(MODAL_TETAP)}</b></div><div className="text-slate-500">Kas Bendahara <b className="ml-1 text-blue-300">{rupiah(stats.bendahara)}</b></div></div></div></section>
+      <section className="rounded-2xl border border-blue-500/20 bg-gradient-to-r from-blue-950/50 via-slate-900/90 to-slate-950 p-3 sm:p-5 shadow-xl"><div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between"><div><div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-blue-300"><MessageCircle size={15}/> Ringkasan Informasi Kas</div><p className="mt-1 text-[10px] leading-relaxed text-slate-400">Saldo akhir dihitung dari saldo sebelumnya + pemasukan periode − pengeluaran periode. Modal tetap pengelola bola dipisahkan dari kas bendahara.</p></div><div className="grid grid-cols-2 gap-x-6 gap-y-1 text-[9px] sm:text-[10px]"><div className="text-slate-500">Saldo Sebelumnya <b className="ml-1 text-slate-200">{rupiah(stats.sebelumnya)}</b></div><div className="text-slate-500">Pemasukan <b className="ml-1 text-emerald-300">{rupiah(stats.masuk)}</b></div><div className="text-slate-500">Pengeluaran <b className="ml-1 text-red-300">{rupiah(stats.keluar)}</b></div><div className="text-slate-500">Saldo Akhir Periode <b className="ml-1 text-blue-300">{rupiah(stats.akhir)}</b><br/><span className="text-[8px] text-slate-500">Saldo Terakhir Saat Ini <b className="ml-1 text-emerald-300">{rupiah(stats.saldoTerakhir)}</b></span></div><div className="text-slate-500">Modal Tetap <b className="ml-1 text-slate-200">{rupiah(MODAL_TETAP)}</b></div><div className="text-slate-500">Kas Bendahara <b className="ml-1 text-blue-300">{rupiah(stats.bendahara)}</b></div></div></div></section>
     </div>
   );
 }
