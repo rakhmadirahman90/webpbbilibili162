@@ -190,7 +190,7 @@ export default function AdminFooter() {
   };
 
   return (
-    <div className="h-screen bg-[#070d1a] text-white flex flex-col overflow-hidden p-4 md:p-8 font-sans">
+    <div className="h-full min-h-0 bg-[#070d1a] text-white flex flex-col overflow-hidden p-3 sm:p-4 md:p-8 font-sans">
       <div className="max-w-7xl mx-auto w-full flex flex-col h-full overflow-hidden">
         <div className="flex justify-between items-center mb-6 shrink-0">
           <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-3 italic uppercase tracking-tighter">
