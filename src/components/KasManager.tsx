@@ -207,7 +207,14 @@ export default function KasManager() {
     finally { setUploadingAttachment(false); }
   };
 
-  const isImageAttachment = (row: KasEntry | null) => String(row?.lampiran_type || '').startsWith('image/');
+  const getAttachmentKind = (row: KasEntry | null) => {
+    const type = String(row?.lampiran_type || '').toLowerCase().trim();
+    const name = String(row?.lampiran_nama || row?.lampiran_url || '').toLowerCase();
+    if (type.startsWith('image/') || /\\.(jpe?g|png|webp|gif|heic|heif|bmp|avif)(?:[?#]|$)/i.test(name)) return 'image';
+    if (type === 'application/pdf' || /\\.pdf(?:[?#]|$)/i.test(name)) return 'pdf';
+    return 'file';
+  };
+  const isImageAttachment = (row: KasEntry | null) => getAttachmentKind(row) === 'image';
   const openAttachment = (row: KasEntry) => {
     if (!row.lampiran_url) return;
     setPreviewAttachment(row);
