@@ -54,7 +54,7 @@ const detail = (tx: any, income: boolean) => {
   ].join('\n');
 };
 
-const buildWaText = ({ startDate, endDate, previous, income, expense, saldo, latestIncome, latestExpense, latestAttachment }: { startDate: string; endDate: string; previous: number; income: number; expense: number; saldo: number; latestIncome: any; latestExpense: any; latestAttachment?: any; }) => {
+const buildWaText = ({ startDate, endDate, previous, income, expense, saldo, saldoTerakhir, latestIncome, latestExpense, latestAttachment }: { startDate: string; endDate: string; previous: number; income: number; expense: number; saldo: number; latestIncome: any; latestExpense: any; latestAttachment?: any; }) => {
   const modalTetap = 600000;
   const bendahara = saldo - modalTetap;
   const proof = latestAttachment
@@ -80,7 +80,8 @@ const buildWaText = ({ startDate, endDate, previous, income, expense, saldo, lat
     `• Saldo sebelumnya: ${formatRupiah(previous)}`,
     `• Total pemasukan: ${formatRupiah(income)}`,
     `• Total pengeluaran: ${formatRupiah(expense)}`,
-    `• Saldo akhir: *${formatRupiah(saldo)}*`,
+    `• Saldo akhir periode: *${formatRupiah(saldo)}*`,
+    `• Saldo terakhir saat ini: *${formatRupiah(saldoTerakhir)}*`,
     '',
     '📊 *PEMBAGIAN SALDO*',
     `• Modal tetap: ${formatRupiah(modalTetap)}`,
@@ -122,14 +123,17 @@ export default function KasRealtimeNotifier() {
       const income = daily.filter(isMasuk).reduce((s, tx) => s + Number(tx.jumlah_bayar || 0), 0);
       const expense = daily.filter(tx => !isMasuk(tx)).reduce((s, tx) => s + Number(tx.jumlah_bayar || 0), 0);
       const saldo = previous + income - expense;
+      // Current balance is independent of today's snapshot/filter: it is the
+      // net value of every transaction currently stored in kas_pb.
+      const saldoTerakhir = all.reduce((total, tx) => total + (isMasuk(tx) ? 1 : -1) * Number(tx.jumlah_bayar || 0), 0);
       const latestIncome = latest(daily, true);
       const latestExpense = latest(daily, false);
       const latestAttachment = [...all].filter(hasAttachment).sort((a, b) => String(b.created_at || b.tanggal_transaksi || '').localeCompare(String(a.created_at || a.tanggal_transaksi || '')))[0] || null;
       const eventInSnapshot = !!eventTx && String(eventTx.tanggal_transaksi || '').slice(0, 10) === snapshotDate;
       const title = eventInSnapshot ? eventType === 'INSERT' ? 'TRANSAKSI KAS BARU!' : eventType === 'DELETE' ? 'TRANSAKSI KAS DIHAPUS!' : 'UPDATE KAS TERBARU!' : 'LAPORAN KAS TERBARU';
-      const waText = buildWaText({ startDate: snapshotDate, endDate: snapshotDate, previous, income, expense, saldo, latestIncome, latestExpense, latestAttachment });
+      const waText = buildWaText({ startDate: snapshotDate, endDate: snapshotDate, previous, income, expense, saldo, saldoTerakhir, latestIncome, latestExpense, latestAttachment });
       const waHref = `https://api.whatsapp.com/send?text=${encodeURIComponent(waText)}`;
-      if (mounted) await Swal.fire({ icon: eventType === 'DELETE' ? 'warning' : 'success', title, html: `<div style="text-align:left;font-size:13px;line-height:1.6"><b>Snapshot:</b> ${snapshotDate}<br/><b>Saldo Sebelumnya:</b> ${formatRupiah(previous)}<br/><b>Total Pemasukan:</b> ${formatRupiah(income)}<br/><b>Total Pengeluaran:</b> ${formatRupiah(expense)}<br/><b>Saldo Akhir:</b> ${formatRupiah(saldo)}<br/><br/><b>Penerimaan Terbaru:</b> ${latestIncome ? `${latestIncome.nama_pembayar || latestIncome.kategori} — ${formatRupiah(latestIncome.jumlah_bayar)}` : 'Nihil'}<br/><b>Pengeluaran Terbaru:</b> ${latestExpense ? `${latestExpense.nama_pembayar || latestExpense.kategori} — ${formatRupiah(latestExpense.jumlah_bayar)}` : 'Nihil'}</div>`, showCancelButton: true, confirmButtonText: 'Buka WhatsApp', cancelButtonText: 'Tutup', confirmButtonColor: '#25D366' }).then(result => { if (result.isConfirmed) window.open(waHref, '_blank', 'noopener,noreferrer'); });
+      if (mounted) await Swal.fire({ icon: eventType === 'DELETE' ? 'warning' : 'success', title, html: `<div style="text-align:left;font-size:13px;line-height:1.6"><b>Snapshot:</b> ${snapshotDate}<br/><b>Saldo Sebelumnya:</b> ${formatRupiah(previous)}<br/><b>Total Pemasukan:</b> ${formatRupiah(income)}<br/><b>Total Pengeluaran:</b> ${formatRupiah(expense)}<br/><b>Saldo Akhir Periode:</b> ${formatRupiah(saldo)}<br/><b>Saldo Terakhir Saat Ini:</b> ${formatRupiah(saldoTerakhir)}<br/><br/><b>Penerimaan Terbaru:</b> ${latestIncome ? `${latestIncome.nama_pembayar || latestIncome.kategori} — ${formatRupiah(latestIncome.jumlah_bayar)}` : 'Nihil'}<br/><b>Pengeluaran Terbaru:</b> ${latestExpense ? `${latestExpense.nama_pembayar || latestExpense.kategori} — ${formatRupiah(latestExpense.jumlah_bayar)}` : 'Nihil'}</div>`, showCancelButton: true, confirmButtonText: 'Buka WhatsApp', cancelButtonText: 'Tutup', confirmButtonColor: '#25D366' }).then(result => { if (result.isConfirmed) window.open(waHref, '_blank', 'noopener,noreferrer'); });
     };
     const startRealtime = async () => {
       try {
