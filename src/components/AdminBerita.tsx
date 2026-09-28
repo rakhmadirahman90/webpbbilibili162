@@ -481,7 +481,7 @@ export default function AdminBerita({ session }: { session?: any }) {
     .sort((a, b) => sortBy === 'baru' ? new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime() : new Date(a.tanggal).getTime() - new Date(b.tanggal).getTime());
 
   return (
-    <div className="min-h-screen bg-[#070d1a] text-white p-6 md:p-12 relative overflow-hidden">
+    <div className="min-h-full bg-[#070d1a] text-white p-3 sm:p-6 md:p-8 lg:p-10 relative overflow-x-hidden">
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/10 blur-[120px] rounded-full -z-10" />
       
       <div className="max-w-7xl mx-auto relative z-10">
@@ -576,7 +576,7 @@ export default function AdminBerita({ session }: { session?: any }) {
       {/* MODAL BERITA */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md">
-          <div className="bg-[#0c0c0c] w-full max-w-3xl rounded-[3rem] overflow-hidden border border-white/10 flex flex-col max-h-[90vh]">
+          <div className="bg-[#0c0c0c] w-full max-w-3xl rounded-2xl sm:rounded-[3rem] overflow-hidden border border-white/10 flex flex-col max-h-[calc(100dvh-24px)] sm:max-h-[90dvh]">
             <div className="p-8 border-b border-white/5 flex justify-between items-center bg-zinc-900/50">
                <h3 className="text-2xl font-black italic uppercase tracking-tighter">{editingId ? 'Edit' : 'Tulis'} <span className="text-blue-600">Berita</span></h3>
                <button onClick={closeModal} className="p-3 hover:bg-red-500/10 hover:text-red-500 rounded-full text-zinc-500 transition-all"><X size={24}/></button>
@@ -694,7 +694,7 @@ export default function AdminBerita({ session }: { session?: any }) {
       {/* MODAL MODERASI & REPLY KOMENTAR */}
       {isCommentModalOpen && selectedNewsForComments && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/98 backdrop-blur-xl">
-          <div className="bg-[#0c0c0c] w-full max-w-2xl rounded-[3rem] overflow-hidden border border-white/10 flex flex-col max-h-[85vh]">
+          <div className="bg-[#0c0c0c] w-full max-w-2xl rounded-2xl sm:rounded-[3rem] overflow-hidden border border-white/10 flex flex-col max-h-[calc(100dvh-24px)] sm:max-h-[85dvh]">
             <div className="p-8 border-b border-white/5 flex justify-between items-center bg-zinc-900/50">
               <div>
                 <h3 className="text-xl font-black italic uppercase tracking-tighter">Moderasi & <span className="text-blue-600">Reply</span></h3>
