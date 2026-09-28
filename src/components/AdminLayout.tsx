@@ -6,7 +6,7 @@ import AdminRouteView from './AdminRouteView';
 import AdminAgendaPB162 from './AdminAgendaPB162';
 import { Menu as MenuIcon, Bell } from 'lucide-react';
 
-interface AdminLayoutProps { children: React.ReactNode; email: string; }
+interface AdminLayoutProps { children?: React.ReactNode; email: string; }
 
 type LocalPortalSession = { user?: { email?: string; user_metadata?: { role?: string; [key: string]: any }; [key: string]: any } };
 
@@ -35,7 +35,7 @@ function cleanupDuplicateTournamentMenu() {
   groups.forEach((button) => { const section = button.parentElement?.parentElement; if (!section) return; const linksInSection = section.querySelectorAll('a').length; const count = button.querySelector('.font-mono'); if (count) count.textContent = String(linksInSection); });
 }
 
-export default function AdminLayout({ children, email }: AdminLayoutProps) {
+export default function AdminLayout({ email }: AdminLayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const location = useLocation();
   const [portalSession, setPortalSession] = useState<LocalPortalSession | null>(() => readLocalPortalSession());
@@ -139,7 +139,7 @@ export default function AdminLayout({ children, email }: AdminLayoutProps) {
   useEffect(() => { if (typeof document === 'undefined') return; document.body.style.overflow = isSidebarOpen ? 'hidden' : ''; return () => { document.body.style.overflow = ''; }; }, [isSidebarOpen]);
   useEffect(() => { cleanupDuplicateTournamentMenu(); const observer = new MutationObserver(() => cleanupDuplicateTournamentMenu()); const root = document.getElementById('admin-sidebar') || document.body; observer.observe(root, { childList: true, subtree: true }); const timer = window.setTimeout(cleanupDuplicateTournamentMenu, 1000); return () => { observer.disconnect(); window.clearTimeout(timer); }; }, [location.pathname]);
   const content = isDashboard
-    ? children
+    ? <AdminDashboard />
     : adminPath === 'agenda'
       ? (isAdmin ? <AdminAgendaPB162 /> : <AdminDashboard />)
       : <AdminRouteView session={{ user: { email: portalEmail, user_metadata: portalSession?.user?.user_metadata || { role } } }} />;
