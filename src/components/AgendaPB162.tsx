@@ -16,6 +16,7 @@ type AgendaItem = {
   image_url?: string | null;
 image_position?: string | null;
 image_zoom?: number | null;
+image_rotation?: number | null;
 };
 
 const dateLabel = (value: string) => new Intl.DateTimeFormat('id-ID', {
@@ -118,7 +119,7 @@ export default function AgendaPB162({ compact = false }: { compact?: boolean }) 
               : "group flex w-full min-w-0 items-center gap-3 rounded-xl border border-white/10 bg-[#0b1224] p-2.5 text-left shadow-lg transition hover:-translate-y-0.5 hover:border-blue-500/40 hover:bg-[#0d1730] focus:outline-none focus:ring-2 focus:ring-blue-500/50 sm:gap-4 sm:p-3"}
           >
             <div className={compact ? "hidden h-16 w-20 shrink-0 overflow-hidden rounded-xl bg-slate-900 sm:block sm:h-16 sm:w-20" : "hidden h-16 w-20 shrink-0 overflow-hidden rounded-xl bg-slate-900 sm:block sm:h-16 sm:w-20"}>
-              {item.image_url ? <img src={item.image_url} alt="" loading="lazy" className="h-full w-full object-cover transition duration-500 group-hover:scale-105" style={{ objectPosition: item.image_position || "50% 50%", transform: `scale(${(item.image_zoom || 100) / 100})` }} /> : <div className="flex h-full w-full items-center justify-center"><CalendarDays size={26} className="text-blue-500/40" /></div>}
+              {item.image_url ? <img src={item.image_url} alt="" loading="lazy" className="h-full w-full object-cover transition duration-500 group-hover:scale-105" style={{ objectPosition: item.image_position || "50% 50%", transform: `scale(${(item.image_zoom || 100) / 100}) rotate(${item.image_rotation || 0}deg)` }} /> : <div className="flex h-full w-full items-center justify-center"><CalendarDays size={26} className="text-blue-500/40" /></div>}
             </div>
             <div className={compact ? "flex min-w-0 w-full flex-1 items-start gap-1.5 sm:items-center sm:gap-3" : "flex min-w-0 flex-1 items-center gap-1.5 sm:gap-3"}>
               <div className={compact ? "w-11 shrink-0 rounded-lg border border-blue-500/20 bg-blue-500/10 px-1 py-1.5 text-center sm:w-14" : "w-10 shrink-0 rounded-lg border border-blue-500/20 bg-blue-500/10 px-1 py-1.5 text-center sm:w-14"}>
@@ -148,7 +149,7 @@ export default function AgendaPB162({ compact = false }: { compact?: boolean }) 
     {selected && <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/75 p-0 backdrop-blur-sm sm:items-center sm:p-4" onMouseDown={(e) => e.target === e.currentTarget && setSelected(null)}>
       <article className="max-h-[92vh] w-full overflow-y-auto rounded-t-3xl border border-white/10 bg-[#0b1224] shadow-2xl sm:max-w-2xl sm:rounded-3xl">
         <div className="relative">
-          {selected.image_url ? <img src={selected.image_url} alt={selected.title} className="aspect-video w-full object-cover" style={{ objectPosition: selected.image_position || "50% 50%", transform: `scale(${(selected.image_zoom || 100) / 100})` }} /> : <div className="flex aspect-video w-full items-center justify-center bg-gradient-to-br from-blue-950 via-[#0b1224] to-slate-950"><CalendarDays size={56} className="text-blue-500/40" /></div>}
+          {selected.image_url ? <img src={selected.image_url} alt={selected.title} className="aspect-video w-full object-cover" style={{ objectPosition: selected.image_position || "50% 50%", transform: `scale(${(selected.image_zoom || 100) / 100}) rotate(${selected.image_rotation || 0}deg)` }} /> : <div className="flex aspect-video w-full items-center justify-center bg-gradient-to-br from-blue-950 via-[#0b1224] to-slate-950"><CalendarDays size={56} className="text-blue-500/40" /></div>}
           <button type="button" onClick={() => setSelected(null)} aria-label="Tutup detail agenda" className="absolute right-3 top-3 rounded-full border border-white/20 bg-black/60 p-2 text-white backdrop-blur transition hover:bg-black/80"><X size={18} /></button>
         </div>
         <div className="p-5 sm:p-7">
