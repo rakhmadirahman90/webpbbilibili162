@@ -670,7 +670,7 @@ export default function ManajemenAtlet() {
       {/* MODAL TAMBAH ATLET BARU */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/95 backdrop-blur-xl overflow-y-auto">
-          <div className="bg-white w-full max-w-4xl rounded-[3rem] shadow-2xl relative flex flex-col md:flex-row overflow-y-auto max-h-[90vh] lg:max-h-none lg:overflow-visible">
+          <div className="bg-white w-full max-w-4xl rounded-2xl sm:rounded-[3rem] shadow-2xl relative flex flex-col md:flex-row overflow-y-auto max-h-[calc(100dvh-32px)] lg:max-h-[90dvh]">
             <button
               onClick={() => setIsAddModalOpen(false)}
               className="absolute top-6 right-6 z-10 p-3 bg-slate-100 rounded-full hover:bg-red-500 hover:text-white transition-all"
@@ -900,7 +900,7 @@ export default function ManajemenAtlet() {
                 </button>
               </div>
 
-              <form onSubmit={handleUpdateStats} className="max-h-[calc(100vh-65px)] overflow-y-auto custom-scrollbar">
+              <form onSubmit={handleUpdateStats} className="max-h-[calc(100dvh-65px)] overflow-y-auto custom-scrollbar">
                 <div className="p-4 sm:p-6 lg:p-8 space-y-6">
 
                   {/* Identity + photo */}
