@@ -28,7 +28,7 @@ const terbilang = (nominal: number) => {
   return `Terbilang: ${f(nominal).replace(/\s+/g, ' ').trim()} Rupiah`;
 };
 
-interface KasEntry { id: string; created_at: string; tanggal_transaksi: string; nama_pembayar: string; kategori: string; jumlah_bayar: number; jumlah_bola: number; tipe_anggota: string; jenis_transaksi: 'Masuk' | 'Keluar'; keterangan?: string | null; lampiran_url?: string | null; lampiran_nama?: string | null; lampiran_type?: string | null; lampiran_size?: number | null; }
+interface KasEntry { id: string; created_at: string; tanggal_transaksi: string; nama_pembayar: string; kategori: string; jumlah_bayar: number; jumlah_bola: number; tipe_anggota: string; jenis_transaksi: 'Masuk' | 'Keluar'; keterangan?: string | null; lampiran_url?: string | null; lampiran_nama?: string | null; lampiran_type?: string | null; lampiran_size?: number | null; updated_at?: string | null; }
 interface Atlet { id: string; player_name: string; }
 interface KasFormData { nama_pembayar: string; kategori: string; jumlah_bayar: number; jumlah_bola: number; tipe_anggota: string; jenis_transaksi: 'Masuk' | 'Keluar'; tanggal_transaksi: string; keterangan: string; lampiran_url: string; lampiran_nama: string; lampiran_type: string; lampiran_size: number | null; }
 
@@ -93,7 +93,11 @@ export default function KasManager() {
   const filtered = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
     return normalized.filter(row => {
-      const dateOk = (!startDate || row.tanggal_transaksi >= startDate) && (!endDate || row.tanggal_transaksi <= endDate);
+      const activityDate = String(row.updated_at || row.tanggal_transaksi || '').slice(0, 10);
+      const transactionDate = String(row.tanggal_transaksi || '').slice(0, 10);
+      // A date filter includes transactions recorded on that date OR edited on that date.
+      const dateOk = ((!startDate || transactionDate >= startDate) && (!endDate || transactionDate <= endDate))
+        || ((!startDate || activityDate >= startDate) && (!endDate || activityDate <= endDate));
       const text = [row.nama_pembayar, row.kategori, row.tipe_anggota, row.jenis_transaksi, row.keterangan].map(v => String(v || '')).join(' ').toLowerCase();
       return dateOk && (!q || text.includes(q));
     });
@@ -159,8 +163,17 @@ export default function KasManager() {
     try {
       const finalData = { ...formData, nama_pembayar: formData.nama_pembayar.trim(), jumlah_bayar: Number(formData.jumlah_bayar), jumlah_bola: Number(formData.jumlah_bola || 0), jenis_transaksi: DAFTAR_PEMASUKAN.includes(formData.kategori) ? 'Masuk' as const : formData.jenis_transaksi, keterangan: formData.keterangan.trim() || null, lampiran_url: formData.lampiran_url || null, lampiran_nama: formData.lampiran_nama || null, lampiran_type: formData.lampiran_type || null, lampiran_size: formData.lampiran_size || null };
       if (editingId) {
-        const { data, error } = await supabase.from('kas_pb').update(finalData).eq('id', editingId).select().single(); if (error) throw error;
-        await broadcastKasChange('UPDATE', data || { id: editingId, ...finalData });
+        // Persist the edit time when the DB exposes updated_at. If an older
+        // schema does not have the column, retry with the existing schema.
+        let updatePayload: any = { ...finalData, updated_at: new Date().toISOString() };
+        let result = await supabase.from('kas_pb').update(updatePayload).eq('id', editingId).select().single();
+        if (result.error && /updated_at|column/i.test(String(result.error.message || ''))) {
+          updatePayload = finalData;
+          result = await supabase.from('kas_pb').update(updatePayload).eq('id', editingId).select().single();
+        }
+        if (result.error) throw result.error;
+        const data = result.data;
+        await broadcastKasChange('UPDATE', data || { id: editingId, ...updatePayload });
       } else {
         const { data, error } = await supabase.from('kas_pb').insert(finalData).select().single(); if (error) throw error;
         await broadcastKasChange('INSERT', data);
