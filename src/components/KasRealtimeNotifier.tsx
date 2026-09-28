@@ -90,7 +90,7 @@ const buildWaText = ({ startDate, endDate, previous, income, expense, saldo, lat
     `🔗 *Akses Kelola Kas:* ${window.location.origin}/kas`,
     '',
     'Admin PB Bilibili 162',
-  ].filter(Boolean).join('\n');
+  ].join('\n');
 };
 const getGlobalChannel = async () => { if (activeGlobalChannel) return activeGlobalChannel; if (activeGlobalChannelPromise) return activeGlobalChannelPromise; activeGlobalChannelPromise = new Promise((resolve, reject) => { const channel = supabase.channel('global-kas-db-changes', { config: { broadcast: { self: true } } }); channel.subscribe((status: string, error?: any) => { if (status === 'SUBSCRIBED') { activeGlobalChannel = channel; activeGlobalChannelPromise = null; resolve(channel); } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') { activeGlobalChannelPromise = null; try { supabase.removeChannel(channel); } catch {} reject(error || new Error(`Realtime channel status: ${status}`)); } }); }); return activeGlobalChannelPromise; };
 export const broadcastKasChange = async (eventType: 'INSERT' | 'UPDATE' | 'DELETE', payloadData: any) => { const payload = { eventType, new: eventType !== 'DELETE' ? payloadData : null, old: eventType !== 'INSERT' ? payloadData : null }; broadcastDataChange('kas_pb', eventType, payloadData); try { const channel = await getGlobalChannel(); await channel.send({ type: 'broadcast', event: 'kas-changed', payload }); } catch (error) { console.warn('[KasRealtime] broadcast skipped:', error); } };
