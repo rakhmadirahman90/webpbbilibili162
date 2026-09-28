@@ -112,7 +112,10 @@ export default function KasManager() {
     // kas_pb rows returned by Supabase. Filters affect the period report only;
     // they must never be mixed with the opening/current balance calculation.
     const allRows = normalized;
-    const periodRows = filtered;
+    const periodRows = allRows.filter(row => {
+      const d = String(row.tanggal_transaksi || '').slice(0, 10);
+      return (!startDate || d >= startDate) && (!endDate || d <= endDate);
+    });
 
     const sum = (rows: KasEntry[]) => rows.reduce(
       (total, row) => total + (row.jenis_transaksi === 'Masuk' ? 1 : -1) * Number(row.jumlah_bayar || 0),
