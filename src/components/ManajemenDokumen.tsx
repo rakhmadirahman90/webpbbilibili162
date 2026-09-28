@@ -69,8 +69,8 @@ export default function ManajemenDokumen({ session }: { session?: any }) {
 
   const filtered = docs.filter(d => `${d.title || ''} ${d.description || ''}`.toLowerCase().includes(search.toLowerCase()));
 
-  return <div className="p-4 md:p-8 bg-[#070d1a] min-h-screen text-white">
-    {previewUrl && <div className="fixed inset-0 z-[1000] flex items-center justify-center p-3 bg-black/90"><div className="relative w-full max-w-5xl h-[90dvh] bg-zinc-900 rounded-2xl overflow-hidden"><button onClick={() => setPreviewUrl(null)} className="absolute top-3 right-3 z-10 p-2 bg-black/60 rounded-full"><X/></button><iframe src={previewUrl} className="w-full h-full border-none" title="Preview"/></div></div>}
+  return <div className="p-3 sm:p-4 md:p-8 bg-[#070d1a] min-h-full text-white">
+    {previewUrl && <div className="fixed inset-0 z-[1000] flex items-center justify-center p-2 sm:p-3 bg-black/90"><div className="relative w-full max-w-5xl h-[90dvh] bg-zinc-900 rounded-2xl overflow-hidden"><button onClick={() => setPreviewUrl(null)} className="absolute top-3 right-3 z-10 p-2 bg-black/60 rounded-full"><X/></button><iframe src={previewUrl} className="w-full h-full border-none" title="Preview"/></div></div>}
     <div className="max-w-6xl mx-auto"><h1 className="text-2xl md:text-4xl font-black italic uppercase flex items-center gap-3"><FileText className="text-blue-500"/>Manajemen <span className="text-blue-500">Dokumen</span></h1><p className="text-[10px] text-zinc-500 font-bold uppercase tracking-[.25em] mt-2">Sumber data tunggal: public.documents — Supabase</p></div>
     <div className="max-w-6xl mx-auto mt-8 grid lg:grid-cols-3 gap-6">
       <div className="bg-zinc-900/70 p-5 rounded-2xl border border-zinc-800 h-fit">
