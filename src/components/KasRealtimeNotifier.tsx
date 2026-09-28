@@ -54,9 +54,9 @@ const detail = (tx: any, income: boolean) => {
   ].join('\n');
 };
 
-const buildWaText = ({ startDate, endDate, previous, income, expense, saldo, saldoTerakhir, latestIncome, latestExpense, latestAttachment }: { startDate: string; endDate: string; previous: number; income: number; expense: number; saldo: number; latestIncome: any; latestExpense: any; latestAttachment?: any; }) => {
+const buildWaText = ({ startDate, endDate, previous, income, expense, saldo, saldoTerakhir, latestIncome, latestExpense, latestAttachment }: { startDate: string; endDate: string; previous: number; income: number; expense: number; saldo: number; saldoTerakhir: number; latestIncome: any; latestExpense: any; latestAttachment?: any; }) => {
   const modalTetap = 600000;
-  const bendahara = saldo - modalTetap;
+  const bendahara = saldoTerakhir - modalTetap;
   const proof = latestAttachment
     ? `\n${attachmentLine(null, latestAttachment)}\n`
     : '';
