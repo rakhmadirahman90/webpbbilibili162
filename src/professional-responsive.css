@@ -149,13 +149,13 @@ button,a{touch-action:manipulation}
   .admin-main{width:100%!important;max-width:100vw!important;min-width:0!important;overflow-x:hidden!important;}
   .admin-main :where(section,article,form,header,footer,.rounded-3xl,.rounded-2xl){max-width:100%;min-width:0;}
   .admin-main :where(.flex){max-width:100%;}
-  .admin-main :where(.flex.flex-row){flex-wrap:wrap;}
-  .admin-main :where(input,select,textarea){width:100%;max-width:100%;font-size:16px;}
+  /* Keep intentional horizontal action/tool rows intact; individual pages can opt into wrapping. */
+  .admin-main :where(input,select,textarea){max-width:100%;font-size:16px;}
   .admin-main :where(button,a){max-width:100%;}
   .admin-main :where([role="dialog"],.fixed.inset-0>div){max-width:calc(100vw - 16px);}
   .admin-main table{max-width:none;}
   .admin-main .overflow-x-auto{width:100%;max-width:100%;overflow-x:auto!important;}
-  .admin-main :where(td,th){white-space:normal;}
+  /* Preserve table row semantics and horizontal scrolling; wrapping every cell can destroy dense admin tables. */
 }
 
 /* Very narrow phones: preserve touch targets while reducing outer spacing. */
