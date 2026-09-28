@@ -1288,25 +1288,26 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
         }
 
         /* Agenda/footer spacing: keep natural flow so the last row is never clipped. */
+        /* Keep the agenda cards close to the footer, matching the compact header rhythm. */
         #landing-page {
           margin-bottom:0 !important;
         }
         #landing-page #agenda-pb162.agenda-landing-compact {
           margin-bottom:0 !important;
-          padding-bottom:12px !important;
+          padding-bottom:4px !important;
         }
         #landing-page #agenda-pb162.agenda-landing-compact > div {
-          padding-bottom:12px !important;
+          padding-bottom:4px !important;
         }
         #landing-page #agenda-pb162.agenda-landing-compact > div > div:last-child {
           margin-bottom:0 !important;
         }
         @media (max-width:640px) {
           #landing-page #agenda-pb162.agenda-landing-compact {
-            padding-bottom:10px !important;
+            padding-bottom:2px !important;
           }
           #landing-page #agenda-pb162.agenda-landing-compact > div {
-            padding-bottom:10px !important;
+            padding-bottom:2px !important;
           }
         }
 
