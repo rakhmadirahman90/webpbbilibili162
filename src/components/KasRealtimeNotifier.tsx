@@ -17,8 +17,6 @@ const formatDateTime = (tx: any) => { const date = String(tx?.tanggal_transaksi 
 const DEFAULT_KAS_LOGO = 'https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/assets/branding/logo-1775228962198.png';
 const hasAttachment = (tx: any) => !!String(tx?.lampiran_url || '').trim();
 const attachmentLine = (tx: any, fallbackTx?: any) => {
-  // Prefer the transaction attachment; otherwise use the latest uploaded proof
-  // supplied by the snapshot. Never substitute the club logo when no proof exists.
   const source = hasAttachment(tx) ? tx : (hasAttachment(fallbackTx) ? fallbackTx : null);
   if (!source) return '';
   const imageUrl = source.lampiran_url;
@@ -33,31 +31,66 @@ const attachmentLine = (tx: any, fallbackTx?: any) => {
       const slash = rest.indexOf('/');
       const bucket = slash > 0 ? rest.slice(0, slash) : '';
       const path = slash > 0 ? rest.slice(slash + 1) : '';
-      if (bucket && path) previewUrl = `${window.location.origin}/api/kas-share?b=${encodeURIComponent(bucket)}&p=${encodeURIComponent(path)}`;
+      if (bucket && path) {
+        previewUrl = `${window.location.origin}/api/kas-share?b=${encodeURIComponent(bucket)}&p=${encodeURIComponent(path)}`;
+      }
     }
   } catch {}
-  return `• Bukti/Lampiran: *${name}*${source ? `\n  ${previewUrl}` : ''}`;
+  return `📎 *Bukti Transaksi Terakhir*
+• File: *${name}*
+• Preview: ${previewUrl}`;
 };
-const detail = (tx: any, income: boolean) => { if (!tx) return 'Nihil'; return ['• Status: ✅ BERHASIL', `• Jenis: ${income ? '📥 Pemasukan' : '📤 Pengeluaran'}`, `• Tanggal & Waktu: *${formatDateTime(tx)}*`, `• Nama/Keterangan: *${tx.nama_pembayar || '-'}*`, `• Kategori: ${tx.kategori || '-'}`, `• Jumlah: *${formatRupiah(tx.jumlah_bayar)}*`, `• Catatan: ${tx.keterangan || '-'}`].join('\\n'); };
+
+const detail = (tx: any, income: boolean) => {
+  if (!tx) return 'Nihil';
+  return [
+    `• Status: *BERHASIL*`,
+    `• Jenis: ${income ? '📥 Pemasukan' : '📤 Pengeluaran'}`,
+    `• Tanggal: *${formatDateTime(tx)}*`,
+    `• Nama: *${tx.nama_pembayar || '-'}*`,
+    `• Kategori: ${tx.kategori || '-'}`,
+    `• Jumlah: *${formatRupiah(tx.jumlah_bayar)}*`,
+    `• Catatan: ${tx.keterangan || '-'}`,
+  ].join('\n');
+};
+
 const buildWaText = ({ startDate, endDate, previous, income, expense, saldo, latestIncome, latestExpense, latestAttachment }: { startDate: string; endDate: string; previous: number; income: number; expense: number; saldo: number; latestIncome: any; latestExpense: any; latestAttachment?: any; }) => {
   const modalTetap = 600000;
   const bendahara = saldo - modalTetap;
-  const proof = latestAttachment ? `\\n📎 *Bukti Transaksi Terakhir:* *${latestAttachment.lampiran_nama || 'Bukti transaksi kas'}*\\n${attachmentLine(null, latestAttachment)}\\n` : '';
-  return `📢 *LAPORAN REAL-TIME KAS (PB BILIBILI 162)*\\n\\n` +
-    `*Detail Transaksi Penerimaan Terbaru:*:\\n${detail(latestIncome, true)}\\n\\n` +
-    `*Detail Transaksi Pengeluaran Terbaru:*: ${detail(latestExpense, false)}\\n\\n` +
-    `*Status Keuangan Klub (Snapshot ${startDate} s/d ${endDate}):*\\n` +
-    `• Saldo Sebelumnya (saldo penutupan hari sebelum snapshot): ${formatRupiah(previous)}\\n` +
-    `• Total Pemasukan Periode: ${formatRupiah(income)}\\n` +
-    `• Total Pengeluaran Periode: ${formatRupiah(expense)}\\n` +
-    `• Detail Pemasukan Terakhir: ${latestIncome ? `${latestIncome.nama_pembayar || latestIncome.kategori || '-'} — ${formatRupiah(latestIncome.jumlah_bayar)}` : 'Nihil'}\\n` +
-    `• Detail Pengeluaran Terakhir: ${latestExpense ? `${latestExpense.nama_pembayar || latestExpense.kategori || '-'} — ${formatRupiah(latestExpense.jumlah_bayar)}` : 'Nihil'}\\n` +
-    proof +
-    `• *Sisa Saldo Akhir: ${formatRupiah(saldo)}*\\n` +
-    `  - Modal Tetap (Pengelola Bola): ${formatRupiah(modalTetap)}\\n` +
-    `  - Kas Bendahara: ${formatRupiah(bendahara)}\\n\\n` +
-    `🔗 *Akses Kas Klub:* ${window.location.origin}/kas\\n\\n` +
-    `Admin PB Bilibili 162`;
+  const proof = latestAttachment
+    ? `\n${attachmentLine(null, latestAttachment)}\n`
+    : '';
+
+  return [
+    '📢 *LAPORAN REAL-TIME KAS*',
+    '*PB BILIBILI 162*',
+    '',
+    '━━━━━━━━━━━━━━━━━━━━',
+    `📅 *PERIODE LAPORAN*`,
+    `${startDate} s/d ${endDate}`,
+    '━━━━━━━━━━━━━━━━━━━━',
+    '',
+    '📥 *PEMASUKAN TERBARU*',
+    detail(latestIncome, true),
+    '',
+    '📤 *PENGELUARAN TERBARU*',
+    detail(latestExpense, false),
+    '',
+    '💰 *RINGKASAN KEUANGAN*',
+    `• Saldo sebelumnya: ${formatRupiah(previous)}`,
+    `• Total pemasukan: ${formatRupiah(income)}`,
+    `• Total pengeluaran: ${formatRupiah(expense)}`,
+    `• Saldo akhir: *${formatRupiah(saldo)}*`,
+    '',
+    '📊 *PEMBAGIAN SALDO*',
+    `• Modal tetap: ${formatRupiah(modalTetap)}`,
+    `• Kas bendahara: ${formatRupiah(bendahara)}`,
+    proof ? proof.trim() : '',
+    '',
+    `🔗 *Akses Kelola Kas:* ${window.location.origin}/kas`,
+    '',
+    'Admin PB Bilibili 162',
+  ].filter(Boolean).join('\n');
 };
 const getGlobalChannel = async () => { if (activeGlobalChannel) return activeGlobalChannel; if (activeGlobalChannelPromise) return activeGlobalChannelPromise; activeGlobalChannelPromise = new Promise((resolve, reject) => { const channel = supabase.channel('global-kas-db-changes', { config: { broadcast: { self: true } } }); channel.subscribe((status: string, error?: any) => { if (status === 'SUBSCRIBED') { activeGlobalChannel = channel; activeGlobalChannelPromise = null; resolve(channel); } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') { activeGlobalChannelPromise = null; try { supabase.removeChannel(channel); } catch {} reject(error || new Error(`Realtime channel status: ${status}`)); } }); }); return activeGlobalChannelPromise; };
 export const broadcastKasChange = async (eventType: 'INSERT' | 'UPDATE' | 'DELETE', payloadData: any) => { const payload = { eventType, new: eventType !== 'DELETE' ? payloadData : null, old: eventType !== 'INSERT' ? payloadData : null }; broadcastDataChange('kas_pb', eventType, payloadData); try { const channel = await getGlobalChannel(); await channel.send({ type: 'broadcast', event: 'kas-changed', payload }); } catch (error) { console.warn('[KasRealtime] broadcast skipped:', error); } };
