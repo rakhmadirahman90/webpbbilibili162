@@ -160,7 +160,16 @@ export default function AgendaPB162({ compact = false }: { compact?: boolean }) 
             <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3"><div className="mb-1 text-[9px] font-black uppercase tracking-wider text-slate-500">Waktu</div><div className="text-sm font-bold text-white">{timeLabel(selected)}</div></div>
             <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3 sm:col-span-2"><div className="mb-1 text-[9px] font-black uppercase tracking-wider text-slate-500">Lokasi</div><div className="text-sm font-bold text-white">{selected.location || 'Lokasi belum ditentukan'}</div></div>
           </div>
-          {selected.description && <div className="mt-5 border-t border-white/10 pt-5"><div className="mb-2 text-[9px] font-black uppercase tracking-wider text-slate-500">Informasi Kegiatan</div><p className="text-sm leading-7 text-slate-300">{selected.description}</p></div>}
+          {selected.description && <div className="mt-5 border-t border-white/10 pt-5">
+            <div className="mb-2 text-[9px] font-black uppercase tracking-wider text-slate-500">Informasi Kegiatan</div>
+            <div className="whitespace-pre-line break-words [overflow-wrap:anywhere] text-[13px] leading-[1.75] text-slate-300 sm:text-sm sm:leading-7">
+              {String(selected.description)
+                .replace(/\r\n?/g, '\n')
+                .replace(/[ \t]+\n/g, '\n')
+                .replace(/\n{3,}/g, '\n\n')
+                .trim()}
+            </div>
+          </div>}
           <button type="button" onClick={() => setSelected(null)} className="mt-6 w-full rounded-xl bg-blue-600 px-4 py-3 text-xs font-black uppercase tracking-wider text-white transition hover:bg-blue-500">Tutup Detail</button>
         </div>
       </article>
