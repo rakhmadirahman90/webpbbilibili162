@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { supabase } from '../supabase';
 import Sidebar from './Sidebar';
 import AdminRouteView from './AdminRouteView';
+import AdminDashboard from './AdminDashboard';
 import AdminAgendaPB162 from './AdminAgendaPB162';
 import { Menu as MenuIcon, Bell } from 'lucide-react';
 
