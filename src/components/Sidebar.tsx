@@ -305,6 +305,9 @@ export default function Sidebar({ email, role = 'anggota', isOpen, onClose }: Si
     {
       section: 'Informasi & Kegiatan',
       items: [
+        ...(role === 'admin' ? [
+          { name: 'Kelola Agenda PB Bilibili 162', path: 'agenda', icon: Calendar, adminOnly: true }
+        ] : []),
         { name: 'Jadwal Latihan', path: 'jadwal', icon: Calendar, adminOnly: false },
         { name: 'Rekening & QRIS Resmi', path: 'informasi-rekening-qris', icon: CreditCard, adminOnly: false },
         { name: 'Peringkat & Poin', path: 'ranking', icon: Trophy, adminOnly: false },
