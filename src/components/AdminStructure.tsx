@@ -383,7 +383,7 @@ export default function AdminStructure() {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-screen bg-[#070d1a] text-white font-sans overflow-hidden">
+    <div className="flex flex-col lg:flex-row h-full min-h-0 bg-[#070d1a] text-white font-sans overflow-hidden">
       <AnimatePresence>
         {toast && <Toast message={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
       </AnimatePresence>
@@ -418,7 +418,7 @@ export default function AdminStructure() {
       )}
 
       {/* --- PANEL KIRI: EDITOR --- */}
-      <div className="w-full lg:w-[450px] h-screen overflow-y-auto border-r border-white/5 bg-[#0A0A0A] p-6 custom-scrollbar relative z-20">
+      <div className="w-full lg:w-[450px] max-h-[45dvh] lg:max-h-none lg:h-full overflow-y-auto border-r border-white/5 bg-[#0A0A0A] p-6 custom-scrollbar relative z-20">
         <header className="flex items-center gap-4 mb-8">
           <div className="p-3 bg-blue-600 rounded-2xl shadow-lg shadow-blue-600/20"><Shield size={20} /></div>
           <div>
@@ -591,7 +591,7 @@ export default function AdminStructure() {
       </div>
 
       {/* --- PANEL KANAN: LIVE PREVIEW --- */}
-      <div className="flex-1 h-screen overflow-y-auto bg-[#FBFCFE] relative custom-scrollbar z-10">
+      <div className="flex-1 min-h-0 lg:h-full overflow-y-auto bg-[#FBFCFE] relative custom-scrollbar z-10">
         <div className="sticky top-0 z-50 p-4 flex justify-center pointer-events-none">
             <div className="bg-white/90 backdrop-blur-md px-6 py-2 rounded-full border border-slate-200 shadow-xl flex items-center gap-3 pointer-events-auto">
               <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
