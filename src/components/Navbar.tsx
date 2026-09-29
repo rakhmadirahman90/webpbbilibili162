@@ -461,26 +461,26 @@ export default function Navbar({ onNavigate }: NavbarProps) {
           </div>
         </div>
       </div>
-      <div style={{visibility:mobileOpen?"visible":"hidden"}} className={`lg:hidden fixed inset-0 z-[2147483001] bg-black/70 backdrop-blur-sm transition-opacity duration-150 ${mobileOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => setMobileOpen(false)} aria-hidden="true" />
-      <aside aria-label="Menu navigasi seluler" style={{visibility:mobileOpen?"visible":"hidden"}} className={`lg:hidden fixed inset-y-0 left-0 z-[2147483002] w-[min(86vw,350px)] max-w-[350px] bg-[#0b1224] border-r border-white/10 shadow-2xl flex flex-col overflow-hidden transition-transform duration-150 ease-out ${mobileOpen ? 'translate-x-0 pointer-events-auto' : '-translate-x-full pointer-events-none'} touch-manipulation`} onClick={(e) => e.stopPropagation()}>
-        <div className="h-16 min-h-16 shrink-0 px-4 flex items-center justify-between border-b border-white/10 bg-slate-950/95">
-          <div className="flex items-center gap-2.5 min-w-0"><img src={branding.logo_url} className="w-9 h-9 object-contain shrink-0" alt="PB Bilibili 162" loading="eager"/><div className="min-w-0 font-black text-sm italic uppercase truncate">{branding.brand_name_main} <span className="text-blue-500">{branding.brand_name_accent}</span><span className="block text-[7px] tracking-[.18em] text-slate-500 not-italic mt-0.5">PROFESSIONAL CLUB</span></div></div>
-          <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMobileOpen(false); setMobileOpenMenu(null); setMobileSearch(''); setMobileSearchOpen(false); }} className="w-10 h-10 min-w-10 rounded-xl bg-slate-800 border border-white/10 flex items-center justify-center text-slate-200 active:scale-95 touch-manipulation" aria-label="Tutup menu"><X size={19} className="pointer-events-none"/></button>
+      <div style={{visibility:mobileOpen?"visible":"hidden"}} className={`lg:hidden fixed inset-0 z-[2147483001] bg-slate-950/75 backdrop-blur-[6px] transition-opacity duration-300 ${mobileOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => setMobileOpen(false)} aria-hidden="true" />
+      <aside aria-label="Menu navigasi seluler" style={{visibility:mobileOpen?"visible":"hidden"}} className={`lg:hidden fixed inset-y-0 left-0 z-[2147483002] w-[min(88vw,370px)] max-w-[370px] bg-gradient-to-b from-[#081121] via-[#0a1428] to-[#07101f] border-r border-blue-400/20 shadow-[24px_0_70px_rgba(0,0,0,.55)] flex flex-col overflow-hidden transition-transform duration-300 ease-out ${mobileOpen ? 'translate-x-0 pointer-events-auto' : '-translate-x-full pointer-events-none'} touch-manipulation`} onClick={(e) => e.stopPropagation()}>
+        <div className="relative min-h-[82px] shrink-0 px-4 flex items-center justify-between border-b border-blue-400/15 bg-gradient-to-r from-blue-950/45 via-slate-950/95 to-cyan-950/25 overflow-hidden before:absolute before:-top-16 before:-left-10 before:h-32 before:w-32 before:rounded-full before:bg-blue-500/10 before:blur-2xl">
+          <div className="relative z-10 flex items-center gap-3 min-w-0"><span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-blue-400/20 bg-blue-500/10 shadow-lg shadow-blue-950/40"><img src={branding.logo_url} className="w-10 h-10 object-contain shrink-0" alt="PB Bilibili 162" loading="eager"/></span><div className="min-w-0 font-black text-sm italic uppercase truncate">{branding.brand_name_main} <span className="text-blue-500">{branding.brand_name_accent}</span><span className="block text-[7px] tracking-[.18em] text-slate-500 not-italic mt-0.5">PROFESSIONAL CLUB</span></div></div>
+          <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMobileOpen(false); setMobileOpenMenu(null); setMobileSearch(''); setMobileSearchOpen(false); }} className="relative z-10 w-11 h-11 min-w-11 rounded-2xl bg-white/[.06] border border-blue-300/20 flex items-center justify-center text-slate-200 shadow-lg active:scale-90 transition-all touch-manipulation" aria-label="Tutup menu"><X size={19} className="pointer-events-none"/></button>
         </div>
         {/* Pencarian hanya tersedia melalui ikon Search di header mobile. */}
-        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 py-2 [scrollbar-width:thin] touch-pan-y">
-          <div className="space-y-0.5 pb-2">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3.5 py-4 [scrollbar-width:thin] touch-pan-y">
+          <div className="space-y-2 pb-3">
             {visibleTopMenus.map(menu => {
               const subs = getSubMenus(menu.id);
               const drop = menu.type === 'dropdown' || subs.length > 0;
               const expanded = normalizedMobileSearch ? true : mobileOpenMenu === menu.id;
               const isAtlet = String(menu?.path || '').trim().toLowerCase() === 'atlet' || String(menu?.label || '').trim().toLowerCase() === 'atlet';
-              return <div key={menu.id} className="rounded-xl overflow-hidden">
-                <button type="button" aria-expanded={drop ? expanded : undefined} data-mobile-nav-parent={isAtlet ? 'atlet' : undefined} onClick={(e) => handleMobileParentClick(e, menu, drop)} className={`w-full min-h-[48px] px-3 flex items-center justify-between gap-3 rounded-xl text-left text-[14px] leading-5 font-bold uppercase tracking-[.01em] transition-colors touch-manipulation select-none ${expanded ? 'bg-blue-600/15 text-blue-300' : 'text-slate-200 hover:bg-white/5 active:bg-white/10'}`}>
-                  <span className="flex items-center gap-3 min-w-0 pointer-events-none"><span className="w-6 min-w-6 flex justify-center">{iconFor(menu.path, menu.label)}</span><span className="truncate">{menu.label}</span></span>
+              return <div key={menu.id} className={`rounded-2xl overflow-hidden border transition-all duration-200 ${expanded ? 'border-blue-400/20 bg-blue-500/[.07] shadow-lg shadow-blue-950/20' : 'border-white/[.045] bg-white/[.025]'}`}>
+                <button type="button" aria-expanded={drop ? expanded : undefined} data-mobile-nav-parent={isAtlet ? 'atlet' : undefined} onClick={(e) => handleMobileParentClick(e, menu, drop)} className={`w-full min-h-[56px] px-3.5 flex items-center justify-between gap-3 rounded-2xl text-left text-[13px] leading-5 font-extrabold uppercase tracking-[.035em] transition-all touch-manipulation select-none ${expanded ? 'bg-gradient-to-r from-blue-500/15 to-cyan-400/[.04] text-blue-200' : 'text-slate-200 active:bg-white/[.08]'}`}>
+                  <span className="flex items-center gap-3 min-w-0 pointer-events-none"><span className={`w-9 h-9 min-w-9 rounded-xl flex items-center justify-center border ${expanded ? 'border-blue-400/20 bg-blue-500/15' : 'border-white/[.06] bg-white/[.035]'}`}>{iconFor(menu.path, menu.label)}</span><span className="truncate">{menu.label}</span></span>
                   {drop && <ChevronDown size={15} className={`shrink-0 transition-transform pointer-events-none ${expanded ? 'rotate-180 text-blue-400' : 'text-slate-500'}`}/>} 
                 </button>
-                {drop && expanded && <div className="ml-4 pl-3 border-l border-blue-500/40 py-0.5 my-0.5">
+                {drop && expanded && <div className="mx-3 mb-2.5 mt-0.5 pl-3 border-l border-blue-400/25 py-1 space-y-1">
                   {subs.map(sub => {
                     const isChampionMenu = String(sub.id || '') === 'peserta-juara' || String(sub.label || '').trim().toLowerCase() === 'daftar peserta juara';
                     const subTarget = isChampionMenu ? 'prestasi' : sub.path;
@@ -493,13 +493,13 @@ export default function Navbar({ onNavigate }: NavbarProps) {
                         href={href}
                         onPointerDown={() => handleNavigationPointerDown(menu.path, subTarget)}
                         onClick={() => { setMobileOpen(false); setMobileOpenMenu(null); setMobileSearch(''); }}
-                        className="w-full min-h-[44px] px-2.5 flex items-center gap-2.5 text-left text-[13px] leading-5 text-slate-300 hover:text-white hover:bg-white/5 active:bg-white/10 rounded-lg touch-manipulation select-none"
+                        className="w-full min-h-[43px] px-2.5 flex items-center gap-2.5 text-left text-[12px] font-semibold leading-5 text-slate-300 hover:text-white hover:bg-white/5 active:bg-blue-500/10 rounded-xl touch-manipulation select-none"
                       >
                         <span className="w-5 min-w-5 flex justify-center pointer-events-none">{iconFor(sub.path, sub.label)}</span>
                         <span className="truncate pointer-events-none">{sub.label}</span>
                       </a>;
                     }
-                    return <button key={sub.id} type="button" onPointerDown={() => handleNavigationPointerDown(menu.path, subTarget)} onClick={(e) => handleMobileMenuClick(e, menu.path, subTarget)} className="w-full min-h-[44px] px-2.5 flex items-center gap-2.5 text-left text-[13px] leading-5 text-slate-300 hover:text-white hover:bg-white/5 active:bg-white/10 rounded-lg touch-manipulation select-none">
+                    return <button key={sub.id} type="button" onPointerDown={() => handleNavigationPointerDown(menu.path, subTarget)} onClick={(e) => handleMobileMenuClick(e, menu.path, subTarget)} className="w-full min-h-[43px] px-2.5 flex items-center gap-2.5 text-left text-[12px] font-semibold leading-5 text-slate-300 hover:text-white hover:bg-white/5 active:bg-blue-500/10 rounded-xl touch-manipulation select-none">
                       <span className="w-5 min-w-5 flex justify-center pointer-events-none">{iconFor(sub.path, sub.label)}</span><span className="truncate pointer-events-none">{sub.label}</span>
                     </button>;
                   })}
@@ -514,8 +514,8 @@ export default function Navbar({ onNavigate }: NavbarProps) {
               </div>
             )}
           </div>
-          <div className="border-t border-white/10 pt-2 mt-1 space-y-0.5">
-            {session ? <><button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMobileOpen(false); navigate('/admin/dashboard'); }} className="w-full min-h-[46px] px-3 rounded-xl text-emerald-300 hover:bg-emerald-500/10 text-left font-bold touch-manipulation"><LayoutDashboard size={15} className="inline mr-2" />Dashboard</button><button type="button" onClick={logout} className="w-full min-h-[46px] px-3 rounded-xl text-red-300 hover:bg-red-500/10 text-left font-bold touch-manipulation"><LogOut size={15} className="inline mr-2" />Keluar</button></> : <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMobileOpen(false); navigate('/login'); }} className="w-full min-h-[46px] px-3 rounded-xl text-blue-300 hover:bg-blue-500/10 text-left font-bold touch-manipulation"><LogIn size={15} className="inline mr-2" />Login</button>}
+          <div className="border-t border-blue-400/10 pt-3 mt-2 grid grid-cols-2 gap-2 pb-[max(14px,env(safe-area-inset-bottom))]">
+            {session ? <><button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMobileOpen(false); navigate('/admin/dashboard'); }} className="w-full min-h-[48px] px-3 rounded-2xl border border-emerald-400/15 bg-emerald-500/[.07] text-emerald-300 text-center font-bold touch-manipulation active:scale-[.98]"><LayoutDashboard size={15} className="inline mr-2" />Dashboard</button><button type="button" onClick={logout} className="w-full min-h-[48px] px-3 rounded-2xl border border-red-400/15 bg-red-500/[.07] text-red-300 text-center font-bold touch-manipulation active:scale-[.98]"><LogOut size={15} className="inline mr-2" />Keluar</button></> : <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMobileOpen(false); navigate('/login'); }} className="w-full min-h-[46px] px-3 rounded-xl text-blue-300 hover:bg-blue-500/10 text-left font-bold touch-manipulation"><LogIn size={15} className="inline mr-2" />Login</button>}
           </div>
         </div>
       </aside>
