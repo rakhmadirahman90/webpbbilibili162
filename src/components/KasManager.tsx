@@ -217,7 +217,7 @@ export default function KasManager() {
         html: `<div class="text-left text-xs space-y-3">
           <div class="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3 font-bold text-emerald-700">Transaksi berhasil disimpan. Tekan tombol hijau di bawah untuk membuka WhatsApp dan mengirim notifikasi.</div>
           <textarea id="kas-save-wa-message" class="swal2-textarea !m-0 !w-full !text-xs !h-44 !rounded-xl">${waMessage}</textarea>
-          <button id="kas-wa-direct-link" type="button" class="flex min-h-[54px] w-full items-center justify-center rounded-xl bg-[#25D366] px-4 py-3 text-center text-sm font-black text-white shadow-lg">💬 KIRIM FOTO + DATA KE WHATSAPP</button>
+          <button id="kas-wa-direct-link" type="button" class="flex min-h-[54px] w-full items-center justify-center rounded-xl bg-[#25D366] px-4 py-3 text-center text-sm font-black text-white shadow-lg">💬 KIRIM DATA KE WHATSAPP</button>
         </div>`,
         showConfirmButton: false,
         showCancelButton: true,
@@ -226,7 +226,7 @@ export default function KasManager() {
           const textarea = document.getElementById('kas-save-wa-message') as HTMLTextAreaElement | null;
           const button = document.getElementById('kas-wa-direct-link') as HTMLButtonElement | null;
           if (button) button.addEventListener('click', () => {
-            void shareKasToWhatsApp(savedRow as KasEntry, textarea?.value || waMessage);
+            openWhatsAppNotification(textarea?.value || waMessage);
           });
         }
       });
@@ -275,18 +275,10 @@ export default function KasManager() {
     catch (error: any) { Swal.fire({ icon: 'error', title: 'Gagal menghapus', text: error?.message || 'Perubahan ditolak database.', background: '#0F172A', color: '#fff' }); }
   };
 
-  const shareKasToWhatsApp = async (row: KasEntry, message: string) => {
-    // navigator.share harus dipanggil langsung dari gesture pengguna. Fetch async sebelum
-    // navigator.share membuat Chrome Android kehilangan user activation dan tombol tampak diam.
-    const fallback = () => { window.location.assign(`https://wa.me/?text=${encodeURIComponent(message)}`); };
-    if (!row.lampiran_url || getAttachmentKind(row) !== 'image' || !navigator.share) { fallback(); return; }
-    try {
-      // Coba share URL gambar + teks langsung terlebih dahulu; ini mempertahankan gesture klik.
-      await navigator.share({ title: 'Bukti Transaksi PB Bilibili 162', text: message, url: row.lampiran_url });
-    } catch (error: any) {
-      if (error?.name === 'AbortError') return;
-      fallback();
-    }
+  const openWhatsAppNotification = (message: string) => {
+    const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
+    const popup = window.open(url, '_blank');
+    if (!popup) window.location.href = url;
   };
 
   const testNotification = async () => {
@@ -315,10 +307,10 @@ export default function KasManager() {
           <div class="rounded-xl border border-slate-200 p-3"><div class="font-black">${typeIcon} ${String(mock.jenis_transaksi||'').toUpperCase()} — ${mock.tanggal_transaksi||'-'}</div><div class="mt-1">${mock.nama_pembayar||'-'} • ${rupiah(Number(mock.jumlah_bayar||0))}</div><div class="mt-1 text-slate-500">${mock.kategori||'-'}${mock.keterangan ? ' • '+mock.keterangan : ''}</div></div>
           ${hasImageAttachment ? `<div class="overflow-hidden rounded-xl border border-emerald-200 bg-black/5"><a href="${mock.lampiran_url}" target="_blank" rel="noopener noreferrer" class="block"><img src="${mock.lampiran_url}" alt="Bukti transaksi" class="max-h-56 w-full cursor-pointer object-contain"/></a><div class="px-3 py-2 text-[10px] font-bold text-emerald-700">Preview bukti transaksi yang akan diprioritaskan di WhatsApp</div></div>` : `<div class="rounded-xl border border-slate-200 bg-slate-50 p-3 text-[10px] text-slate-500">Tidak ada bukti gambar pada transaksi ini. Preview WhatsApp akan menggunakan logo PB Bilibili 162.</div>`}
           <textarea id="kas-test-wa-message" class="swal2-textarea !m-0 !w-full !text-xs !h-48 !rounded-xl">${message}</textarea>
-          <button id="kas-test-wa-link" type="button" class="flex min-h-[54px] w-full items-center justify-center rounded-xl bg-[#25D366] px-4 py-3 text-center text-sm font-black text-white shadow-lg">💬 KIRIM FOTO + DATA KE WHATSAPP</button>
+          <button id="kas-test-wa-link" type="button" class="flex min-h-[54px] w-full items-center justify-center rounded-xl bg-[#25D366] px-4 py-3 text-center text-sm font-black text-white shadow-lg">💬 KIRIM DATA KE WHATSAPP</button>
         </div>`,
         showConfirmButton:false, showCancelButton:true, cancelButtonText:'Tutup',
-        didOpen:()=>{const ta=document.getElementById('kas-test-wa-message') as HTMLTextAreaElement|null;const btn=document.getElementById('kas-test-wa-link') as HTMLButtonElement|null;if(btn)btn.addEventListener('click',()=>{void shareKasToWhatsApp(mock as KasEntry,ta?.value||message);});}
+        didOpen:()=>{const ta=document.getElementById('kas-test-wa-message') as HTMLTextAreaElement|null;const btn=document.getElementById('kas-test-wa-link') as HTMLButtonElement|null;if(btn)btn.addEventListener('click',()=>{openWhatsAppNotification(ta?.value||message);});}
       });
     } catch(error:any){Swal.fire({icon:'error',title:'Gagal menampilkan notifikasi',text:error?.message||'Coba lagi.'});}
   };
