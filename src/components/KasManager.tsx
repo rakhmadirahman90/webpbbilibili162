@@ -227,8 +227,8 @@ export default function KasManager() {
       const latestKeluar = latestByType('Keluar');
       const periodMasuk = rowsWithSaved.filter(r => String(r.jenis_transaksi||'').toLowerCase()==='masuk').reduce((s,r)=>s+Number(r.jumlah_bayar||0),0);
       const periodKeluar = rowsWithSaved.filter(r => String(r.jenis_transaksi||'').toLowerCase()==='keluar').reduce((s,r)=>s+Number(r.jumlah_bayar||0),0);
-      const currentBalance = saldoAwal + totalPemasukan - totalPengeluaran;
-      const beforePeriod = currentBalance - periodMasuk + periodKeluar;
+      const currentBalance = stats.saldoTerakhir;
+      const beforePeriod = stats.sebelumnya;
       const endPeriod = beforePeriod + periodMasuk - periodKeluar;
       const modalTetap = 600000;
       const bendahara = Math.max(0, currentBalance - modalTetap);
