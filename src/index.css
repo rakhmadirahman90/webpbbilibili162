@@ -541,3 +541,15 @@ body.swal2-shown:has(main.pt-16) {overflow-y:auto!important;padding-right:0!impo
   body:has(#atlet) main{min-height:0!important;padding-bottom:0!important;margin-bottom:0!important;}
   body:has(#atlet) footer{margin-top:0!important;}
 }
+
+/* public-fixed-navbar-content-offset-v1 */
+@media (max-width:1023px){
+  body:not(:has(#admin-sidebar)) main{padding-top:3.5rem;}
+  body:not(:has(#admin-sidebar)) main > section:first-child,
+  body:not(:has(#admin-sidebar)) main > div:first-child{scroll-margin-top:3.5rem;}
+}
+@media (min-width:1024px){
+  body:not(:has(#admin-sidebar)) main{padding-top:4rem;}
+  body:not(:has(#admin-sidebar)) main > section:first-child,
+  body:not(:has(#admin-sidebar)) main > div:first-child{scroll-margin-top:4rem;}
+}
