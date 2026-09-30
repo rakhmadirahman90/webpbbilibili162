@@ -43,6 +43,8 @@ const Players: React.FC<{ initialFilter?: string }> = ({
     setCurrentAgeGroup(normalizeFilter(initialFilter));
   }, [initialFilter]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const playersPerPage = 12;
   const [selectedPlayer, setSelectedPlayer] = useState<any | null>(null);
   const [dbPlayers, setDbPlayers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -328,6 +330,27 @@ const Players: React.FC<{ initialFilter?: string }> = ({
     });
   }, [searchTerm, currentAgeGroup, processedPlayers]);
 
+  const totalPages = Math.max(1, Math.ceil(filteredPlayers.length / playersPerPage));
+  const paginatedPlayers = useMemo(
+    () => filteredPlayers.slice((currentPage - 1) * playersPerPage, currentPage * playersPerPage),
+    [filteredPlayers, currentPage]
+  );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, currentAgeGroup]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [currentPage, totalPages]);
+
+  const goToPlayerPage = (page: number) => {
+    setCurrentPage(Math.min(Math.max(page, 1), totalPages));
+    window.requestAnimationFrame(() => {
+      document.getElementById('player-grid-top')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
+
   if (landingAthletePending && !selectedPlayer) {
     return (
       <div className="fixed inset-0 z-[2147483003] bg-[#050a14] flex items-center justify-center" aria-label="Memuat detail atlet">
@@ -430,9 +453,9 @@ const Players: React.FC<{ initialFilter?: string }> = ({
             <div className="relative w-full">
               {filteredPlayers.length > 0 ? (
                 <>
-                  <div className="mb-4 flex items-center justify-between gap-3">
+                  <div id="player-grid-top" className="mb-4 flex items-center justify-between gap-3 scroll-mt-24">
                     <p className="text-[10px] sm:text-xs font-bold text-zinc-500 uppercase tracking-[0.18em]">
-                      Menampilkan <span className="text-blue-400">{filteredPlayers.length}</span> atlet
+                      Menampilkan <span className="text-blue-400">{paginatedPlayers.length}</span> dari <span className="text-blue-400">{filteredPlayers.length}</span> atlet
                     </p>
                     <span className="hidden sm:block text-[10px] text-zinc-600 uppercase tracking-widest">
                       Klik kartu untuk melihat profil
@@ -440,7 +463,7 @@ const Players: React.FC<{ initialFilter?: string }> = ({
                   </div>
 
                   <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-5">
-                    {filteredPlayers.map((player, index) => (
+                    {paginatedPlayers.map((player, index) => (
                       <motion.article
                         key={player.id}
                         initial={{ opacity: 0, y: 16 }}
@@ -492,6 +515,36 @@ const Players: React.FC<{ initialFilter?: string }> = ({
                       </motion.article>
                     ))}
                   </div>
+
+                  {totalPages > 1 && (
+                    <nav className="mt-7 sm:mt-9 w-full rounded-2xl border border-white/10 bg-[#111722]/90 p-3 sm:p-4" aria-label="Pagination profil pemain">
+                      <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                        <p className="text-[10px] font-black uppercase tracking-[0.16em] text-zinc-500">
+                          Halaman <span className="text-blue-400">{currentPage}</span> dari <span className="text-white">{totalPages}</span>
+                        </p>
+                        <div className="flex w-full sm:w-auto items-center justify-center gap-2">
+                          <button type="button" onClick={() => goToPlayerPage(currentPage - 1)} disabled={currentPage === 1} className="h-10 w-10 shrink-0 rounded-xl border border-white/10 bg-[#0b111c] text-zinc-300 flex items-center justify-center transition-all hover:border-blue-500/50 hover:text-white disabled:opacity-30 disabled:pointer-events-none" aria-label="Halaman sebelumnya">
+                            <ChevronLeft size={18} />
+                          </button>
+                          <div className="flex min-w-0 items-center justify-center gap-1.5">
+                            {Array.from({ length: totalPages }, (_, i) => i + 1)
+                              .filter((page) => totalPages <= 5 || page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1)
+                              .map((page, index, visible) => (
+                                <React.Fragment key={page}>
+                                  {index > 0 && page - visible[index - 1] > 1 && <span className="px-0.5 text-zinc-600">…</span>}
+                                  <button type="button" onClick={() => goToPlayerPage(page)} aria-current={currentPage === page ? 'page' : undefined} className={`h-10 min-w-10 rounded-xl px-2 text-[11px] font-black border transition-all ${currentPage === page ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-950/40' : 'bg-[#0b111c] border-white/10 text-zinc-400 hover:border-blue-500/40 hover:text-white'}`}>
+                                    {page}
+                                  </button>
+                                </React.Fragment>
+                              ))}
+                          </div>
+                          <button type="button" onClick={() => goToPlayerPage(currentPage + 1)} disabled={currentPage === totalPages} className="h-10 w-10 shrink-0 rounded-xl border border-white/10 bg-[#0b111c] text-zinc-300 flex items-center justify-center transition-all hover:border-blue-500/50 hover:text-white disabled:opacity-30 disabled:pointer-events-none" aria-label="Halaman berikutnya">
+                            <ChevronRight size={18} />
+                          </button>
+                        </div>
+                      </div>
+                    </nav>
+                  )}
                 </>
               ) : (
                 <div className="py-24 text-center bg-[#141a27]/60 rounded-2xl sm:rounded-3xl border border-white/8">
