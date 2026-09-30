@@ -236,11 +236,18 @@ export default function KasManager() {
       // Hitung saldo dari snapshot database yang sama agar saldo sebelumnya,
       // saldo akhir periode, dan saldo terakhir selalu konsisten.
       const signedAmount = (r: KasEntry) => (r.jenis_transaksi === 'Masuk' ? 1 : -1) * Number(r.jumlah_bayar || 0);
-      const beforePeriod = allRowsWithSaved
-        .filter((r) => String(r.tanggal_transaksi || '').slice(0, 10) < String(savedRow.tanggal_transaksi || '').slice(0, 10))
-        .reduce((sum, r) => sum + signedAmount(r), 0);
-      const endPeriod = beforePeriod + periodMasuk - periodKeluar;
-      const currentBalance = allRowsWithSaved.reduce((sum, r) => sum + signedAmount(r), 0);
+      // Basis saldo berkelanjutan: laporan tervalidasi 27-09-2026 ditutup pada Rp 2.066.000.
+      // Transaksi setelah tanggal basis meneruskan saldo tersebut; transaksi sebelum/tepat tanggal
+      // basis tetap tersimpan sebagai histori dan tidak dihitung dua kali.
+      const BALANCE_BASE_DATE = '2026-09-27';
+      const BALANCE_BASE_AMOUNT = 2066000;
+      const reportDate = String(savedRow.tanggal_transaksi || '').slice(0, 10);
+      const afterBaseRows = allRowsWithSaved.filter((r) => String(r.tanggal_transaksi || '').slice(0, 10) > BALANCE_BASE_DATE);
+      const beforePeriod = reportDate <= BALANCE_BASE_DATE
+        ? allRowsWithSaved.filter((r) => String(r.tanggal_transaksi || '').slice(0, 10) < reportDate).reduce((sum, r) => sum + signedAmount(r), 0)
+        : BALANCE_BASE_AMOUNT + afterBaseRows.filter((r) => String(r.tanggal_transaksi || '').slice(0, 10) < reportDate).reduce((sum, r) => sum + signedAmount(r), 0);
+      const endPeriod = reportDate === BALANCE_BASE_DATE ? BALANCE_BASE_AMOUNT : beforePeriod + periodMasuk - periodKeluar;
+      const currentBalance = BALANCE_BASE_AMOUNT + afterBaseRows.reduce((sum, r) => sum + signedAmount(r), 0);
       const modalTetap = 600000;
       const bendahara = Math.max(0, currentBalance - modalTetap);
       const rowText = (row: KasEntry | undefined, masuk: boolean) => !row ? 'Nihil' : `• Status: *BERHASIL*\n• Jenis: ${masuk ? '📥 Pemasukan' : '📤 Pengeluaran'}\n• Tanggal: *${fmtWita(row)}*\n• Nama: *${row.nama_pembayar || '-'}*\n• Kategori: ${row.kategori || '-'}\n• Jumlah: *${rupiah(Number(row.jumlah_bayar || 0))}*${row.keterangan ? `\n• Catatan: ${row.keterangan}` : ''}`;
