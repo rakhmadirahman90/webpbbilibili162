@@ -419,7 +419,8 @@ export default function Navbar({ onNavigate }: NavbarProps) {
               width: 44,
               height: 44,
               minWidth: 44,
-              minHeight: 44
+              minHeight: 44,
+              boxShadow: 'none'
             }}
             className="mobile-header-search-btn !flex !visible !opacity-100 w-[44px] h-[44px] shrink-0 rounded-2xl bg-[#16243b] border border-blue-400/70 items-center justify-center text-white active:scale-95 transition-transform touch-manipulation"
           >
