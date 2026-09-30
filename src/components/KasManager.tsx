@@ -276,27 +276,17 @@ export default function KasManager() {
   };
 
   const shareKasToWhatsApp = async (row: KasEntry, message: string) => {
-    const isImage = Boolean(row.lampiran_url) && getAttachmentKind(row) === 'image';
-    if (isImage && row.lampiran_url && navigator.share) {
-      try {
-        const response = await fetch(row.lampiran_url, { cache: 'no-store' });
-        if (!response.ok) throw new Error('Gagal mengambil gambar bukti transaksi.');
-        const blob = await response.blob();
-        const extFromName = (row.lampiran_nama || '').split('.').pop()?.toLowerCase();
-        const mime = blob.type || row.lampiran_type || 'image/jpeg';
-        const ext = extFromName || (mime.includes('webp') ? 'webp' : mime.includes('png') ? 'png' : 'jpg');
-        const file = new File([blob], row.lampiran_nama || `bukti-transaksi.${ext}`, { type: mime });
-        const shareData: ShareData = { text: message, files: [file] };
-        if (!navigator.canShare || navigator.canShare({ files: [file] })) {
-          await navigator.share(shareData);
-          return;
-        }
-      } catch (error: any) {
-        if (error?.name === 'AbortError') return;
-        console.warn('Share gambar gagal, menggunakan fallback WhatsApp:', error);
-      }
+    // navigator.share harus dipanggil langsung dari gesture pengguna. Fetch async sebelum
+    // navigator.share membuat Chrome Android kehilangan user activation dan tombol tampak diam.
+    const fallback = () => { window.location.assign(`https://wa.me/?text=${encodeURIComponent(message)}`); };
+    if (!row.lampiran_url || getAttachmentKind(row) !== 'image' || !navigator.share) { fallback(); return; }
+    try {
+      // Coba share URL gambar + teks langsung terlebih dahulu; ini mempertahankan gesture klik.
+      await navigator.share({ title: 'Bukti Transaksi PB Bilibili 162', text: message, url: row.lampiran_url });
+    } catch (error: any) {
+      if (error?.name === 'AbortError') return;
+      fallback();
     }
-    window.location.href = `https://wa.me/?text=${encodeURIComponent(message)}`;
   };
 
   const testNotification = async () => {
@@ -323,7 +313,7 @@ export default function KasManager() {
             <div class="mt-2 text-slate-600">${stats.count} transaksi • Masuk ${rupiah(stats.masuk)} • Keluar ${rupiah(stats.keluar)}</div>
           </div>
           <div class="rounded-xl border border-slate-200 p-3"><div class="font-black">${typeIcon} ${String(mock.jenis_transaksi||'').toUpperCase()} — ${mock.tanggal_transaksi||'-'}</div><div class="mt-1">${mock.nama_pembayar||'-'} • ${rupiah(Number(mock.jumlah_bayar||0))}</div><div class="mt-1 text-slate-500">${mock.kategori||'-'}${mock.keterangan ? ' • '+mock.keterangan : ''}</div></div>
-          ${hasImageAttachment ? `<div class="overflow-hidden rounded-xl border border-emerald-200 bg-black/5"><img src="${mock.lampiran_url}" alt="Bukti transaksi" class="max-h-56 w-full object-contain"/><div class="px-3 py-2 text-[10px] font-bold text-emerald-700">Preview bukti transaksi yang akan diprioritaskan di WhatsApp</div></div>` : `<div class="rounded-xl border border-slate-200 bg-slate-50 p-3 text-[10px] text-slate-500">Tidak ada bukti gambar pada transaksi ini. Preview WhatsApp akan menggunakan logo PB Bilibili 162.</div>`}
+          ${hasImageAttachment ? `<div class="overflow-hidden rounded-xl border border-emerald-200 bg-black/5"><a href="${mock.lampiran_url}" target="_blank" rel="noopener noreferrer" class="block"><img src="${mock.lampiran_url}" alt="Bukti transaksi" class="max-h-56 w-full cursor-pointer object-contain"/></a><div class="px-3 py-2 text-[10px] font-bold text-emerald-700">Preview bukti transaksi yang akan diprioritaskan di WhatsApp</div></div>` : `<div class="rounded-xl border border-slate-200 bg-slate-50 p-3 text-[10px] text-slate-500">Tidak ada bukti gambar pada transaksi ini. Preview WhatsApp akan menggunakan logo PB Bilibili 162.</div>`}
           <textarea id="kas-test-wa-message" class="swal2-textarea !m-0 !w-full !text-xs !h-48 !rounded-xl">${message}</textarea>
           <button id="kas-test-wa-link" type="button" class="flex min-h-[54px] w-full items-center justify-center rounded-xl bg-[#25D366] px-4 py-3 text-center text-sm font-black text-white shadow-lg">💬 KIRIM FOTO + DATA KE WHATSAPP</button>
         </div>`,
