@@ -561,9 +561,9 @@ body.swal2-shown:has(main.pt-16) {overflow-y:auto!important;padding-right:0!impo
 /* public-global-sticky-navbar-safe-offset-v1 */
 /* Satu sumber offset untuk seluruh halaman publik agar header/judul pertama
    tidak pernah berada di bawah navbar sticky/fixed. Admin tidak disentuh. */
-:root{--pb-public-navbar-h:4.75rem;--pb-public-nav-gap:.05rem;--pb-public-nav-safe:calc(var(--pb-public-navbar-h) + var(--pb-public-nav-gap));}
-@media (min-width:768px){:root{--pb-public-navbar-h:5rem;--pb-public-nav-gap:.1rem;}}
-@media (min-width:1024px){:root{--pb-public-navbar-h:5rem;--pb-public-nav-gap:.2rem;}}
+:root{--pb-public-navbar-h:4rem;--pb-public-nav-gap:0rem;--pb-public-nav-safe:calc(var(--pb-public-navbar-h) + var(--pb-public-nav-gap));}
+@media (min-width:768px){:root{--pb-public-navbar-h:4.25rem;--pb-public-nav-gap:0rem;}}
+@media (min-width:1024px){:root{--pb-public-navbar-h:4.5rem;--pb-public-nav-gap:.1rem;}}
 
 body:not(:has(#admin-sidebar)) main.public-view-shell,
 body:not(:has(#admin-sidebar)) main.min-h-screen{
