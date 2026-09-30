@@ -421,7 +421,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
               minWidth: 44,
               minHeight: 44
             }}
-            className="mobile-header-search-btn !flex !visible !opacity-100 w-[44px] h-[44px] shrink-0 rounded-2xl bg-[#16243b] border border-blue-400/70 items-center justify-center text-white shadow-lg shadow-blue-950/40 active:scale-95 transition-transform touch-manipulation"
+            className="mobile-header-search-btn !flex !visible !opacity-100 w-[44px] h-[44px] shrink-0 rounded-2xl bg-[#16243b] border border-blue-400/70 items-center justify-center text-white active:scale-95 transition-transform touch-manipulation"
           >
             <Search size={23} className="text-blue-300" strokeWidth={2.7} />
           </button>
