@@ -227,9 +227,15 @@ export default function KasManager() {
       const latestKeluar = latestByType('Keluar');
       const periodMasuk = rowsWithSaved.filter(r => String(r.jenis_transaksi||'').toLowerCase()==='masuk').reduce((s,r)=>s+Number(r.jumlah_bayar||0),0);
       const periodKeluar = rowsWithSaved.filter(r => String(r.jenis_transaksi||'').toLowerCase()==='keluar').reduce((s,r)=>s+Number(r.jumlah_bayar||0),0);
-      const currentBalance = stats.saldoTerakhir;
-      const beforePeriod = stats.sebelumnya;
+      // Hitung ulang dari snapshot kas terbaru + baris yang baru disimpan.
+      // Jangan memakai stats periode UI karena laporan pasca-simpan hanya untuk tanggal transaksi ini.
+      const allRowsWithSaved = [savedRow, ...kasData.filter((r) => r.id !== savedRow.id)];
+      const signedAmount = (r: KasEntry) => (r.jenis_transaksi === 'Masuk' ? 1 : -1) * Number(r.jumlah_bayar || 0);
+      const beforePeriod = allRowsWithSaved
+        .filter((r) => String(r.tanggal_transaksi || '').slice(0, 10) < String(savedRow.tanggal_transaksi || '').slice(0, 10))
+        .reduce((sum, r) => sum + signedAmount(r), 0);
       const endPeriod = beforePeriod + periodMasuk - periodKeluar;
+      const currentBalance = allRowsWithSaved.reduce((sum, r) => sum + signedAmount(r), 0);
       const modalTetap = 600000;
       const bendahara = Math.max(0, currentBalance - modalTetap);
       const rowText = (row: KasEntry | undefined, masuk: boolean) => !row ? 'Nihil' : `• Status: *BERHASIL*\n• Jenis: ${masuk ? '📥 Pemasukan' : '📤 Pengeluaran'}\n• Tanggal: *${fmtWita(row)}*\n• Nama: *${row.nama_pembayar || '-'}*\n• Kategori: ${row.kategori || '-'}\n• Jumlah: *${rupiah(Number(row.jumlah_bayar || 0))}*${row.keterangan ? `\n• Catatan: ${row.keterangan}` : ''}`;
