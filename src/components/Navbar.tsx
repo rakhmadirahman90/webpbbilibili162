@@ -397,6 +397,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
           <button type="button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); setMobileSearchOpen(v => !v); setMobileOpen(false); setMobileOpenMenu(null); window.setTimeout(() => mobileSearchInputRef.current?.focus(), 80); }} className="w-11 h-11 min-w-11 rounded-2xl bg-[#16243b] border border-blue-400/70 flex items-center justify-center text-blue-300 active:scale-95 transition-transform touch-manipulation" aria-label="Buka pencarian"><Search size={22} strokeWidth={2.6}/></button>
           <button id="mobile-sidebar-toggle-btn" type="button" onClick={() => { setMobileSearchOpen(false); setMobileOpen(v => { const next = !v; if (!next) setMobileOpenMenu(null); return next; }); }} aria-label={mobileOpen ? 'Tutup menu navigasi' : 'Buka menu navigasi'} aria-expanded={mobileOpen} className={`w-11 h-11 min-w-11 rounded-2xl bg-slate-800/95 border border-blue-300/25 items-center justify-center text-blue-200 active:scale-95 transition-transform touch-manipulation ${mobileOpen ? 'hidden' : 'flex'}`}><Menu size={25} className="pointer-events-none" strokeWidth={2.4}/></button>
         </div>
+      </div>
       <div
         className={`lg:hidden fixed left-2 right-2 top-[60px] z-[2147483003] transition-all duration-150 ${mobileSearchOpen ? 'translate-y-0 opacity-100 pointer-events-auto' : '-translate-y-2 opacity-0 pointer-events-none'}`}
         aria-hidden={!mobileSearchOpen}
