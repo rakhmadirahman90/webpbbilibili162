@@ -91,18 +91,29 @@ export default function KasManager() {
   }, [loadKas]);
 
   const normalized = useMemo(() => kasData.map(item => ({ ...item, jenis_transaksi: DAFTAR_PEMASUKAN.includes(item.kategori) ? 'Masuk' as const : item.jenis_transaksi })), [kasData]);
+  const transactionDateKey = (row: KasEntry) => String(row.tanggal_transaksi || '').slice(0, 10);
+  const inSelectedTransactionPeriod = useCallback((row: KasEntry) => {
+    const d = transactionDateKey(row);
+    if (!d) return false;
+    return (!startDate || d >= startDate) && (!endDate || d <= endDate);
+  }, [startDate, endDate]);
+
+  // Filter tanggal WAJIB berdasarkan tanggal_transaksi, bukan created_at/updated_at.
+  // Waktu input/edit hanya metadata dan tidak boleh memindahkan transaksi ke periode lain.
+  const periodTransactions = useMemo(() =>
+    normalized
+      .filter(inSelectedTransactionPeriod)
+      .sort((a, b) => transactionDateKey(a).localeCompare(transactionDateKey(b)) || String(a.created_at || '').localeCompare(String(b.created_at || ''))),
+    [normalized, inSelectedTransactionPeriod]
+  );
+
   const filtered = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
-    return normalized.filter(row => {
-      const activityDate = String(row.updated_at || row.tanggal_transaksi || '').slice(0, 10);
-      const transactionDate = String(row.tanggal_transaksi || '').slice(0, 10);
-      // A date filter includes transactions recorded on that date OR edited on that date.
-      const dateOk = ((!startDate || transactionDate >= startDate) && (!endDate || transactionDate <= endDate))
-        || ((!startDate || activityDate >= startDate) && (!endDate || activityDate <= endDate));
+    return periodTransactions.filter(row => {
       const text = [row.nama_pembayar, row.kategori, row.tipe_anggota, row.jenis_transaksi, row.keterangan].map(v => String(v || '')).join(' ').toLowerCase();
-      return dateOk && (!q || text.includes(q));
+      return !q || text.includes(q);
     });
-  }, [normalized, searchTerm, startDate, endDate]);
+  }, [periodTransactions, searchTerm]);
   useEffect(() => setCurrentPage(1), [searchTerm, startDate, endDate]);
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const page = Math.min(currentPage, totalPages);
@@ -113,10 +124,7 @@ export default function KasManager() {
     // kas_pb rows returned by Supabase. Filters affect the period report only;
     // they must never be mixed with the opening/current balance calculation.
     const allRows = normalized;
-    const periodRows = allRows.filter(row => {
-      const d = String(row.tanggal_transaksi || '').slice(0, 10);
-      return (!startDate || d >= startDate) && (!endDate || d <= endDate);
-    });
+    const periodRows = periodTransactions;
 
     const sum = (rows: KasEntry[]) => rows.reduce(
       (total, row) => total + (row.jenis_transaksi === 'Masuk' ? 1 : -1) * Number(row.jumlah_bayar || 0),
@@ -153,7 +161,7 @@ export default function KasManager() {
       bendaharaPeriode: akhirPeriode - MODAL_TETAP,
       count: periodRows.length
     };
-  }, [filtered, normalized, startDate]);
+  }, [normalized, periodTransactions, startDate, endDate]);
 
   const latestIncome = useMemo(() => [...normalized].filter(r => r.jenis_transaksi === 'Masuk').sort((a, b) => String(b.created_at || b.tanggal_transaksi).localeCompare(String(a.created_at || a.tanggal_transaksi)))[0] || null, [normalized]);
   const latestExpense = useMemo(() => [...normalized].filter(r => r.jenis_transaksi === 'Keluar').sort((a, b) => String(b.created_at || b.tanggal_transaksi).localeCompare(String(a.created_at || a.tanggal_transaksi)))[0] || null, [normalized]);
@@ -236,17 +244,64 @@ export default function KasManager() {
 
   const exportPdf = async () => {
     try {
+      // PDF selalu memakai seluruh transaksi pada periode tanggal_transaksi yang dipilih.
+      // Pencarian/paginasi layar tidak boleh menghilangkan rincian dari LPJ.
+      const reportRows = [...periodTransactions];
+      const incomeRows = reportRows.filter(r => r.jenis_transaksi === 'Masuk');
+      const expenseRows = reportRows.filter(r => r.jenis_transaksi === 'Keluar');
       const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4', compress: true });
-      doc.setFont('helvetica', 'bold').setFontSize(18).setTextColor(30, 64, 175); doc.text('PB. BILI BILI 162', 14, 16);
-      doc.setFont('helvetica', 'bold').setFontSize(13).setTextColor(20); doc.text('LAPORAN PERTANGGUNGJAWABAN KEUANGAN KAS', 148, 25, { align: 'center' });
-      doc.setFont('helvetica', 'normal').setFontSize(9).setTextColor(90); doc.text(`Periode: ${startDate || 'Semua'} s/d ${endDate || 'Semua'}`, 148, 31, { align: 'center' });
-      autoTable(doc, { startY: 38, head: [['Tanggal', 'Nama', 'Jenis', 'Kategori', 'Bola', 'Nominal', 'Keterangan']], body: filtered.map(r => [r.tanggal_transaksi, r.nama_pembayar || '-', r.jenis_transaksi, r.kategori || '-', r.jumlah_bola || 0, rupiah(Number(r.jumlah_bayar)), r.keterangan || '-']), theme: 'striped', headStyles: { fillColor: [30, 64, 175], textColor: 255, fontSize: 8 }, bodyStyles: { fontSize: 7.5 }, margin: { bottom: 55 } });
-      const y = Math.min(((doc as any).lastAutoTable?.finalY || 150) + 10, 220);
-      doc.setFont('helvetica', 'bold').setFontSize(9).setTextColor(40); doc.text(`Saldo Sebelumnya: ${rupiah(stats.sebelumnya)}`, 150, y, { align: 'right' }); doc.text(`Total Pemasukan: ${rupiah(stats.masuk)}`, 150, y + 6, { align: 'right' }); doc.text(`Total Pengeluaran: ${rupiah(stats.keluar)}`, 150, y + 12, { align: 'right' }); doc.setTextColor(30, 64, 175); doc.text(`Saldo Akhir Kas: ${rupiah(stats.akhir)}`, 150, y + 19, { align: 'right' }); doc.setFont('helvetica', 'normal').setTextColor(70); doc.text(`Modal Tetap: ${rupiah(MODAL_TETAP)}`, 150, y + 26, { align: 'right' }); doc.text(`Kas Bendahara: ${rupiah(stats.bendahara)}`, 150, y + 32, { align: 'right' });
+      const fmtDate = (v: string) => {
+        const [y,m,d] = String(v || '').slice(0,10).split('-');
+        return y && m && d ? `${d}/${m}/${y}` : (v || '-');
+      };
+      const drawHeader = () => {
+        doc.setFont('helvetica', 'bold').setFontSize(18).setTextColor(30, 64, 175); doc.text('PB. BILI BILI 162', 14, 16);
+        doc.setFont('helvetica', 'bold').setFontSize(13).setTextColor(20); doc.text('LAPORAN PERTANGGUNGJAWABAN KEUANGAN KAS', 148, 25, { align: 'center' });
+        doc.setFont('helvetica', 'normal').setFontSize(9).setTextColor(90); doc.text(`Periode tanggal transaksi: ${startDate ? fmtDate(startDate) : 'Awal'} s/d ${endDate ? fmtDate(endDate) : 'Akhir'}`, 148, 31, { align: 'center' });
+      };
+      const tableBody = (rows: KasEntry[]) => rows.map((r, idx) => [
+        String(idx + 1), fmtDate(r.tanggal_transaksi), r.nama_pembayar || '-', r.kategori || '-',
+        String(r.jumlah_bola || 0), rupiah(Number(r.jumlah_bayar)), r.keterangan || '-'
+      ]);
+      drawHeader();
+      doc.setFont('helvetica','bold').setFontSize(10).setTextColor(22,101,52); doc.text(`RINCIAN PENERIMAAN (${incomeRows.length} transaksi)`, 14, 38);
+      autoTable(doc, {
+        startY: 42, head: [['No','Tanggal Transaksi','Nama','Kategori','Bola','Nominal','Keterangan']],
+        body: tableBody(incomeRows), theme: 'striped',
+        headStyles: { fillColor: [22, 101, 52], textColor: 255, fontSize: 8 },
+        bodyStyles: { fontSize: 7.5, cellPadding: 2 }, margin: { left:14, right:14, bottom:18 },
+        columnStyles: { 0:{cellWidth:10}, 1:{cellWidth:27}, 4:{cellWidth:14}, 5:{cellWidth:31} }
+      });
+      let y = ((doc as any).lastAutoTable?.finalY || 42) + 6;
+      doc.setFont('helvetica','bold').setFontSize(9).setTextColor(22,101,52);
+      doc.text(`Total Penerimaan: ${rupiah(incomeRows.reduce((s,r)=>s+Number(r.jumlah_bayar||0),0))}`, 283, y, {align:'right'});
+
+      if (y > 145) { doc.addPage(); drawHeader(); y = 40; } else y += 10;
+      doc.setFont('helvetica','bold').setFontSize(10).setTextColor(185,28,28); doc.text(`RINCIAN PENGELUARAN (${expenseRows.length} transaksi)`, 14, y);
+      autoTable(doc, {
+        startY: y + 4, head: [['No','Tanggal Transaksi','Nama/Penerima','Kategori','Bola','Nominal','Keterangan']],
+        body: tableBody(expenseRows), theme: 'striped',
+        headStyles: { fillColor: [185, 28, 28], textColor: 255, fontSize: 8 },
+        bodyStyles: { fontSize: 7.5, cellPadding: 2 }, margin: { left:14, right:14, bottom:35 },
+        columnStyles: { 0:{cellWidth:10}, 1:{cellWidth:27}, 4:{cellWidth:14}, 5:{cellWidth:31} }
+      });
+      y = ((doc as any).lastAutoTable?.finalY || y) + 6;
+      if (y > 165) { doc.addPage(); drawHeader(); y = 42; }
+      doc.setFont('helvetica','bold').setFontSize(9).setTextColor(185,28,28);
+      doc.text(`Total Pengeluaran: ${rupiah(expenseRows.reduce((s,r)=>s+Number(r.jumlah_bayar||0),0))}`, 283, y, {align:'right'});
+      y += 9;
+      doc.setTextColor(40);
+      doc.text(`Saldo Sebelumnya: ${rupiah(stats.sebelumnya)}`, 283, y, { align: 'right' });
+      doc.text(`Total Pemasukan: ${rupiah(stats.masuk)}`, 283, y + 6, { align: 'right' });
+      doc.text(`Total Pengeluaran: ${rupiah(stats.keluar)}`, 283, y + 12, { align: 'right' });
+      doc.setTextColor(30, 64, 175); doc.text(`Saldo Akhir Kas: ${rupiah(stats.akhir)}`, 283, y + 19, { align: 'right' });
+      doc.setFont('helvetica', 'normal').setTextColor(70);
+      doc.text(`Modal Tetap: ${rupiah(MODAL_TETAP)}`, 283, y + 26, { align: 'right' });
+      doc.text(`Kas Bendahara (periode): ${rupiah(stats.bendaharaPeriode)}`, 283, y + 32, { align: 'right' });
       const fileName = `LPJ_KAS_PB162_${startDate || 'semua'}_TO_${endDate || 'semua'}.pdf`; doc.save(fileName);
-      const message = `*LAPORAN KAS PB BILIBILI 162*\n\nPeriode: *${startDate || 'Semua'} s/d ${endDate || 'Semua'}*\n• Saldo Sebelumnya: ${rupiah(stats.sebelumnya)}\n• Total Pemasukan: ${rupiah(stats.masuk)}\n• Total Pengeluaran: ${rupiah(stats.keluar)}\n• *Saldo Akhir Kas: ${rupiah(stats.akhir)}*\n  - Modal Tetap: ${rupiah(MODAL_TETAP)}\n  - Kas Bendahara: ${rupiah(stats.bendahara)}\n\nLaporan PDF sudah diunduh.\n\nAdmin PB Bilibili 162`;
-      const { isConfirmed } = await Swal.fire({ title: '📱 Kirim Ringkasan Kas ke WhatsApp', html: `<div class="text-left text-xs space-y-3"><div class="rounded-xl bg-emerald-50 border border-emerald-200 p-3 text-emerald-800 font-bold">PDF berhasil dibuat. Anda dapat mengirim ringkasannya melalui WhatsApp.</div><textarea id="kas-wa-message" class="swal2-textarea !m-0 !w-full !text-xs !h-36 !rounded-xl">${message}</textarea></div>`, showCancelButton: true, confirmButtonText: '💬 Buka WhatsApp', cancelButtonText: 'Tutup', confirmButtonColor: '#25D366', focusConfirm: false, preConfirm: () => (document.getElementById('kas-wa-message') as HTMLTextAreaElement)?.value || message });
-      if (isConfirmed) { const msg = (document.getElementById('kas-wa-message') as HTMLTextAreaElement)?.value || message; window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank'); }
+      const message = `*LAPORAN KAS PB BILIBILI 162*\n\nPeriode tanggal transaksi: *${startDate || 'Semua'} s/d ${endDate || 'Semua'}*\n• Jumlah transaksi: ${reportRows.length}\n• Saldo Sebelumnya: ${rupiah(stats.sebelumnya)}\n• Total Pemasukan: ${rupiah(stats.masuk)}\n• Total Pengeluaran: ${rupiah(stats.keluar)}\n• *Saldo Akhir Kas: ${rupiah(stats.akhir)}*\n  - Modal Tetap: ${rupiah(MODAL_TETAP)}\n  - Kas Bendahara: ${rupiah(stats.bendaharaPeriode)}\n\nLaporan PDF sudah diunduh.\n\nAdmin PB Bilibili 162`;
+      const { isConfirmed, value } = await Swal.fire({ title: '📱 Kirim Ringkasan Kas ke WhatsApp', html: `<div class="text-left text-xs space-y-3"><div class="rounded-xl bg-emerald-50 border border-emerald-200 p-3 text-emerald-800 font-bold">PDF berhasil dibuat dengan ${reportRows.length} transaksi sesuai tanggal transaksi.</div><textarea id="kas-wa-message" class="swal2-textarea !m-0 !w-full !text-xs !h-36 !rounded-xl">${message}</textarea></div>`, showCancelButton: true, confirmButtonText: '💬 Buka WhatsApp', cancelButtonText: 'Tutup', confirmButtonColor: '#25D366', focusConfirm: false, preConfirm: () => (document.getElementById('kas-wa-message') as HTMLTextAreaElement)?.value || message });
+      if (isConfirmed) window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(value || message)}`, '_blank');
     } catch (error: any) { console.error(error); Swal.fire({ icon: 'error', title: 'Gagal membuat PDF', text: error?.message || 'Terjadi kesalahan.' }); }
   };
 
