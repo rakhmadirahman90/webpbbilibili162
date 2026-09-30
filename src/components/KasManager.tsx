@@ -211,7 +211,9 @@ export default function KasManager() {
       // Jika ada bukti gambar, jadikan URL gambar sebagai satu-satunya URL preview agar
       // WhatsApp tidak memilih OG/logo website. Logo website hanya dipakai bila tanpa lampiran.
       const savedFallbackSite = `\n\n🔗 *Preview transaksi:*\nhttps://pbilibili162.99apps.id/kas-share?id=${encodeURIComponent(savedRow.id)}&v=${encodeURIComponent(String(savedRow.updated_at || savedRow.created_at || Date.now()))}\n\n🔗 *Akses Kelola Kas:* https://pbilibili162.99apps.id/kas\n\n🌐 *Info lebih lanjut:* https://pbilibili162.99apps.id/`;
-      const waMessage = `*PB BILIBILI 162 - INFORMASI KAS*\n\n${typeIcon} Transaksi *${String(savedRow.jenis_transaksi || '').toUpperCase()}* ${actionLabel}\n\n📅 Tanggal: *${savedRow.tanggal_transaksi || '-'}*\n👤 Nama/Penerima: *${savedRow.nama_pembayar || '-'}*\n📂 Kategori: *${savedRow.kategori || '-'}*\n💰 Nominal: *${rupiah(Number(savedRow.jumlah_bayar || 0))}*${Number(savedRow.jumlah_bola || 0) > 0 ? `\n🏸 Jumlah Bola: *${savedRow.jumlah_bola}*` : ''}${savedRow.keterangan ? `\n📝 Keterangan: ${savedRow.keterangan}` : ''}${savedAttachment}${savedFallbackSite}\n\n_Admin PB Bilibili 162_`;
+      const transactionLabel = savedRow.jenis_transaksi === 'Keluar' ? 'PENGELUARAN' : 'PENERIMAAN';
+      const partyLabel = savedRow.jenis_transaksi === 'Keluar' ? 'Penerima' : 'Nama/Pembayar';
+      const waMessage = `🏸 *PB BILIBILI 162*\n*NOTIFIKASI ${transactionLabel} KAS*\n\n${typeIcon} *TRANSAKSI ${String(savedRow.jenis_transaksi || '').toUpperCase()} — ${actionLabel}*\n\n📅 *Tanggal Transaksi*\n${savedRow.tanggal_transaksi || '-'}\n\n👤 *${partyLabel}*\n${savedRow.nama_pembayar || '-'}\n\n📂 *Kategori*\n${savedRow.kategori || '-'}\n\n💰 *Nominal*\n${rupiah(Number(savedRow.jumlah_bayar || 0))}${Number(savedRow.jumlah_bola || 0) > 0 ? `\n\n🏸 *Jumlah Bola*\n${savedRow.jumlah_bola}` : ''}${savedRow.keterangan ? `\n\n📝 *Keterangan*\n${savedRow.keterangan}` : ''}${savedAttachment}\n\n━━━━━━━━━━━━━━${savedFallbackSite}\n\n_Admin PB Bilibili 162_`;
       const waUrl = `https://wa.me/?text=${encodeURIComponent(waMessage)}`;
       await Swal.fire({
         icon: 'success',
