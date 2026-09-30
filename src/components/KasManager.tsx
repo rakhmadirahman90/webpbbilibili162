@@ -205,7 +205,7 @@ export default function KasManager() {
       const actionLabel = wasEditing ? 'DIPERBARUI' : 'DITAMBAHKAN';
       const typeIcon = savedRow.jenis_transaksi === 'Keluar' ? '🔴' : '🟢';
       const savedHasImage = Boolean(savedRow.lampiran_url) && getAttachmentKind(savedRow as KasEntry) === 'image';
-      const savedAttachment = savedRow.lampiran_url ? `\n\n📎 *Bukti transaksi:*\n${savedRow.lampiran_url}` : '';
+      const savedAttachment = savedRow.lampiran_url ? `\n\n📎 *Bukti transaksi terlampir*` : '';
       // Jika ada bukti gambar, jadikan URL gambar sebagai satu-satunya URL preview agar
       // WhatsApp tidak memilih OG/logo website. Logo website hanya dipakai bila tanpa lampiran.
       const savedFallbackSite = savedHasImage ? '' : `\n\n🌐 Akses PB Bilibili 162:\nhttps://pbilibili162.99apps.id/`;
@@ -217,16 +217,16 @@ export default function KasManager() {
         html: `<div class="text-left text-xs space-y-3">
           <div class="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3 font-bold text-emerald-700">Transaksi berhasil disimpan. Tekan tombol hijau di bawah untuk membuka WhatsApp dan mengirim notifikasi.</div>
           <textarea id="kas-save-wa-message" class="swal2-textarea !m-0 !w-full !text-xs !h-44 !rounded-xl">${waMessage}</textarea>
-          <a id="kas-wa-direct-link" href="${waUrl}" target="_blank" rel="noopener noreferrer" class="flex min-h-[54px] w-full items-center justify-center rounded-xl bg-[#25D366] px-4 py-3 text-center text-sm font-black text-white no-underline shadow-lg">💬 KIRIM LANGSUNG KE WHATSAPP</a>
+          <button id="kas-wa-direct-link" type="button" class="flex min-h-[54px] w-full items-center justify-center rounded-xl bg-[#25D366] px-4 py-3 text-center text-sm font-black text-white shadow-lg">💬 KIRIM FOTO + DATA KE WHATSAPP</button>
         </div>`,
         showConfirmButton: false,
         showCancelButton: true,
         cancelButtonText: 'Selesai',
         didOpen: () => {
           const textarea = document.getElementById('kas-save-wa-message') as HTMLTextAreaElement | null;
-          const link = document.getElementById('kas-wa-direct-link') as HTMLAnchorElement | null;
-          if (textarea && link) textarea.addEventListener('input', () => {
-            link.href = `https://wa.me/?text=${encodeURIComponent(textarea.value || waMessage)}`;
+          const button = document.getElementById('kas-wa-direct-link') as HTMLButtonElement | null;
+          if (button) button.addEventListener('click', () => {
+            void shareKasToWhatsApp(savedRow as KasEntry, textarea?.value || waMessage);
           });
         }
       });
@@ -275,6 +275,30 @@ export default function KasManager() {
     catch (error: any) { Swal.fire({ icon: 'error', title: 'Gagal menghapus', text: error?.message || 'Perubahan ditolak database.', background: '#0F172A', color: '#fff' }); }
   };
 
+  const shareKasToWhatsApp = async (row: KasEntry, message: string) => {
+    const isImage = Boolean(row.lampiran_url) && getAttachmentKind(row) === 'image';
+    if (isImage && row.lampiran_url && navigator.share) {
+      try {
+        const response = await fetch(row.lampiran_url, { cache: 'no-store' });
+        if (!response.ok) throw new Error('Gagal mengambil gambar bukti transaksi.');
+        const blob = await response.blob();
+        const extFromName = (row.lampiran_nama || '').split('.').pop()?.toLowerCase();
+        const mime = blob.type || row.lampiran_type || 'image/jpeg';
+        const ext = extFromName || (mime.includes('webp') ? 'webp' : mime.includes('png') ? 'png' : 'jpg');
+        const file = new File([blob], row.lampiran_nama || `bukti-transaksi.${ext}`, { type: mime });
+        const shareData: ShareData = { text: message, files: [file] };
+        if (!navigator.canShare || navigator.canShare({ files: [file] })) {
+          await navigator.share(shareData);
+          return;
+        }
+      } catch (error: any) {
+        if (error?.name === 'AbortError') return;
+        console.warn('Share gambar gagal, menggunakan fallback WhatsApp:', error);
+      }
+    }
+    window.location.href = `https://wa.me/?text=${encodeURIComponent(message)}`;
+  };
+
   const testNotification = async () => {
     const source = latestFilteredTransaction;
     if (!source) {
@@ -286,7 +310,7 @@ export default function KasManager() {
       const typeIcon = mock.jenis_transaksi === 'Keluar' ? '🔴' : '🟢';
       const filterLabel = `${startDate || 'Awal'} s/d ${endDate || 'Akhir'}`;
       const hasImageAttachment = Boolean(mock.lampiran_url) && getAttachmentKind(mock as KasEntry) === 'image';
-      const attachmentLine = mock.lampiran_url ? `\n\n📎 *Bukti transaksi:*\n${mock.lampiran_url}` : '';
+      const attachmentLine = mock.lampiran_url ? `\n\n📎 *Bukti transaksi terlampir*` : '';
       const fallbackSite = hasImageAttachment ? '' : `\n\n🌐 https://pbilibili162.99apps.id/`;
       const message = `*PB BILIBILI 162 - NOTIFIKASI KAS TERBARU*\n\n📆 Filter tanggal transaksi: *${filterLabel}*\n\n${typeIcon} Transaksi terbaru pada filter: *${String(mock.jenis_transaksi || 'TRANSAKSI').toUpperCase()}*\n📅 Tanggal Transaksi: *${mock.tanggal_transaksi || '-'}*\n👤 Nama/Penerima: *${mock.nama_pembayar || '-'}*\n📂 Kategori: *${mock.kategori || '-'}*\n💰 Nominal: *${rupiah(Number(mock.jumlah_bayar || 0))}*${Number(mock.jumlah_bola || 0)>0 ? `\n🏸 Jumlah Bola: *${mock.jumlah_bola}*` : ''}${mock.keterangan ? `\n📝 Keterangan: ${mock.keterangan}` : ''}${attachmentLine}\n\n📊 *RINGKASAN FILTER*\n• Jumlah transaksi: *${stats.count}*\n• Pemasukan: *${rupiah(stats.masuk)}*\n• Pengeluaran: *${rupiah(stats.keluar)}*\n• Saldo akhir periode: *${rupiah(stats.akhir)}*${fallbackSite}\n\n_Admin PB Bilibili 162_`;
       const waUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
@@ -301,10 +325,10 @@ export default function KasManager() {
           <div class="rounded-xl border border-slate-200 p-3"><div class="font-black">${typeIcon} ${String(mock.jenis_transaksi||'').toUpperCase()} — ${mock.tanggal_transaksi||'-'}</div><div class="mt-1">${mock.nama_pembayar||'-'} • ${rupiah(Number(mock.jumlah_bayar||0))}</div><div class="mt-1 text-slate-500">${mock.kategori||'-'}${mock.keterangan ? ' • '+mock.keterangan : ''}</div></div>
           ${hasImageAttachment ? `<div class="overflow-hidden rounded-xl border border-emerald-200 bg-black/5"><img src="${mock.lampiran_url}" alt="Bukti transaksi" class="max-h-56 w-full object-contain"/><div class="px-3 py-2 text-[10px] font-bold text-emerald-700">Preview bukti transaksi yang akan diprioritaskan di WhatsApp</div></div>` : `<div class="rounded-xl border border-slate-200 bg-slate-50 p-3 text-[10px] text-slate-500">Tidak ada bukti gambar pada transaksi ini. Preview WhatsApp akan menggunakan logo PB Bilibili 162.</div>`}
           <textarea id="kas-test-wa-message" class="swal2-textarea !m-0 !w-full !text-xs !h-48 !rounded-xl">${message}</textarea>
-          <a id="kas-test-wa-link" href="${waUrl}" target="_blank" rel="noopener noreferrer" class="flex min-h-[54px] w-full items-center justify-center rounded-xl bg-[#25D366] px-4 py-3 text-center text-sm font-black text-white no-underline shadow-lg">💬 KIRIM DATA TERBARU KE WHATSAPP</a>
+          <button id="kas-test-wa-link" type="button" class="flex min-h-[54px] w-full items-center justify-center rounded-xl bg-[#25D366] px-4 py-3 text-center text-sm font-black text-white shadow-lg">💬 KIRIM FOTO + DATA KE WHATSAPP</button>
         </div>`,
         showConfirmButton:false, showCancelButton:true, cancelButtonText:'Tutup',
-        didOpen:()=>{const ta=document.getElementById('kas-test-wa-message') as HTMLTextAreaElement|null;const link=document.getElementById('kas-test-wa-link') as HTMLAnchorElement|null;if(ta&&link)ta.addEventListener('input',()=>{link.href=`https://wa.me/?text=${encodeURIComponent(ta.value||message)}`;});}
+        didOpen:()=>{const ta=document.getElementById('kas-test-wa-message') as HTMLTextAreaElement|null;const btn=document.getElementById('kas-test-wa-link') as HTMLButtonElement|null;if(btn)btn.addEventListener('click',()=>{void shareKasToWhatsApp(mock as KasEntry,ta?.value||message);});}
       });
     } catch(error:any){Swal.fire({icon:'error',title:'Gagal menampilkan notifikasi',text:error?.message||'Coba lagi.'});}
   };
