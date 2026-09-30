@@ -533,3 +533,11 @@ body.swal2-shown:has(main.pt-16) {overflow-y:auto!important;padding-right:0!impo
     filter:none!important;
   }
 }
+
+/* players-mobile-footer-tight-v3 */
+@media (max-width:767px){
+  body:has(#atlet){min-height:auto!important;}
+  body:has(#atlet) #atlet{padding-bottom:0!important;margin-bottom:0!important;min-height:0!important;}
+  body:has(#atlet) main{min-height:0!important;padding-bottom:0!important;margin-bottom:0!important;}
+  body:has(#atlet) footer{margin-top:0!important;}
+}
