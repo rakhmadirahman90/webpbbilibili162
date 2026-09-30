@@ -163,9 +163,16 @@ export default function KasManager() {
     };
   }, [normalized, periodTransactions, startDate, endDate]);
 
-  const latestIncome = useMemo(() => [...normalized].filter(r => r.jenis_transaksi === 'Masuk').sort((a, b) => String(b.created_at || b.tanggal_transaksi).localeCompare(String(a.created_at || a.tanggal_transaksi)))[0] || null, [normalized]);
-  const latestExpense = useMemo(() => [...normalized].filter(r => r.jenis_transaksi === 'Keluar').sort((a, b) => String(b.created_at || b.tanggal_transaksi).localeCompare(String(a.created_at || a.tanggal_transaksi)))[0] || null, [normalized]);
-  const latestDate = normalized.length ? [...normalized].sort((a, b) => String(a.tanggal_transaksi).localeCompare(String(b.tanggal_transaksi))).at(-1)?.tanggal_transaksi || localToday() : localToday();
+  // Notifikasi mengikuti data yang sedang tampil pada filter periode terbaru.
+  // Urutan utama = tanggal_transaksi, lalu waktu update/input sebagai tie-breaker.
+  const notificationRows = useMemo(() => [...periodTransactions].sort((a, b) =>
+    transactionDateKey(b).localeCompare(transactionDateKey(a)) ||
+    String(b.updated_at || b.created_at || '').localeCompare(String(a.updated_at || a.created_at || ''))
+  ), [periodTransactions]);
+  const latestIncome = useMemo(() => notificationRows.find(r => r.jenis_transaksi === 'Masuk') || null, [notificationRows]);
+  const latestExpense = useMemo(() => notificationRows.find(r => r.jenis_transaksi === 'Keluar') || null, [notificationRows]);
+  const latestFilteredTransaction = notificationRows[0] || null;
+  const latestDate = latestFilteredTransaction?.tanggal_transaksi || endDate || startDate || localToday();
 
   const resetForm = () => { setEditingId(null); setFormData(emptyForm()); setActiveMobileTab('list'); };
   const saveKas = async (e: React.FormEvent) => {
@@ -264,25 +271,33 @@ export default function KasManager() {
   };
 
   const testNotification = async () => {
-    const source = latestIncome || latestExpense;
-    const mock: any = source ? { ...source, id: `test_${Date.now()}_${source.id}`, keterangan: source.keterangan || 'Simulasi notifikasi kas real-time' } : { id: `test_${Date.now()}`, nama_pembayar: 'Simulasi Kas PB Bilibili 162', kategori: 'Sumbangan Sukarela', jumlah_bayar: 150000, jumlah_bola: 0, tipe_anggota: 'Umum', jenis_transaksi: 'Masuk' as const, tanggal_transaksi: localToday(), keterangan: 'Simulasi notifikasi kas real-time', lampiran_url: '', lampiran_nama: '', lampiran_type: '', created_at: new Date().toISOString() };
+    const source = latestFilteredTransaction;
+    if (!source) {
+      await Swal.fire({ icon:'info', title:'Tidak ada transaksi pada filter ini', text:`Tidak ditemukan transaksi berdasarkan tanggal transaksi ${startDate || 'awal'} s/d ${endDate || 'akhir'}.` });
+      return;
+    }
+    const mock:any = { ...source };
     try {
-      await broadcastKasChange('INSERT', mock);
       const typeIcon = mock.jenis_transaksi === 'Keluar' ? '🔴' : '🟢';
-      const message = `*PB BILIBILI 162 - NOTIFIKASI KAS*\n\n${typeIcon} *${String(mock.jenis_transaksi || 'TRANSAKSI').toUpperCase()}*\n📅 Tanggal: *${mock.tanggal_transaksi || '-'}*\n👤 Nama/Penerima: *${mock.nama_pembayar || '-'}*\n📂 Kategori: *${mock.kategori || '-'}*\n💰 Nominal: *${rupiah(Number(mock.jumlah_bayar || 0))}*${Number(mock.jumlah_bola || 0)>0 ? `\n🏸 Jumlah Bola: *${mock.jumlah_bola}*` : ''}${mock.keterangan ? `\n📝 Keterangan: ${mock.keterangan}` : ''}\n\n🌐 https://pbilibili162.99apps.id/\n\n_Admin PB Bilibili 162_`;
+      const filterLabel = `${startDate || 'Awal'} s/d ${endDate || 'Akhir'}`;
+      const message = `*PB BILIBILI 162 - NOTIFIKASI KAS TERBARU*\n\n📆 Filter tanggal transaksi: *${filterLabel}*\n\n${typeIcon} Transaksi terbaru pada filter: *${String(mock.jenis_transaksi || 'TRANSAKSI').toUpperCase()}*\n📅 Tanggal Transaksi: *${mock.tanggal_transaksi || '-'}*\n👤 Nama/Penerima: *${mock.nama_pembayar || '-'}*\n📂 Kategori: *${mock.kategori || '-'}*\n💰 Nominal: *${rupiah(Number(mock.jumlah_bayar || 0))}*${Number(mock.jumlah_bola || 0)>0 ? `\n🏸 Jumlah Bola: *${mock.jumlah_bola}*` : ''}${mock.keterangan ? `\n📝 Keterangan: ${mock.keterangan}` : ''}\n\n📊 *RINGKASAN FILTER*\n• Jumlah transaksi: *${stats.count}*\n• Pemasukan: *${rupiah(stats.masuk)}*\n• Pengeluaran: *${rupiah(stats.keluar)}*\n• Saldo akhir periode: *${rupiah(stats.akhir)}*\n\n🌐 https://pbilibili162.99apps.id/\n\n_Admin PB Bilibili 162_`;
       const waUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
       await Swal.fire({
-        icon: 'success',
-        title: 'Notifikasi siap dikirim',
-        html: `<div class="text-left text-xs space-y-3"><div class="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3 font-bold text-emerald-700">Test notifikasi berhasil. Tekan tombol hijau untuk membuka WhatsApp.</div><textarea id="kas-test-wa-message" class="swal2-textarea !m-0 !w-full !text-xs !h-44 !rounded-xl">${message}</textarea><a id="kas-test-wa-link" href="${waUrl}" target="_blank" rel="noopener noreferrer" class="flex min-h-[54px] w-full items-center justify-center rounded-xl bg-[#25D366] px-4 py-3 text-center text-sm font-black text-white no-underline shadow-lg">💬 KIRIM KE WHATSAPP</a></div>`,
-        showConfirmButton: false, showCancelButton: true, cancelButtonText: 'Tutup',
-        didOpen: () => {
-          const ta=document.getElementById('kas-test-wa-message') as HTMLTextAreaElement|null;
-          const link=document.getElementById('kas-test-wa-link') as HTMLAnchorElement|null;
-          if(ta&&link) ta.addEventListener('input',()=>{link.href=`https://wa.me/?text=${encodeURIComponent(ta.value||message)}`;});
-        }
+        icon: mock.jenis_transaksi === 'Keluar' ? 'warning' : 'success',
+        title: 'Notifikasi Data Terbaru',
+        html: `<div class="text-left text-xs space-y-3">
+          <div class="rounded-xl border border-blue-500/20 bg-blue-500/10 p-3">
+            <div class="font-black text-blue-700">FILTER AKTIF</div><div class="mt-1 font-bold">${filterLabel}</div>
+            <div class="mt-2 text-slate-600">${stats.count} transaksi • Masuk ${rupiah(stats.masuk)} • Keluar ${rupiah(stats.keluar)}</div>
+          </div>
+          <div class="rounded-xl border border-slate-200 p-3"><div class="font-black">${typeIcon} ${String(mock.jenis_transaksi||'').toUpperCase()} — ${mock.tanggal_transaksi||'-'}</div><div class="mt-1">${mock.nama_pembayar||'-'} • ${rupiah(Number(mock.jumlah_bayar||0))}</div><div class="mt-1 text-slate-500">${mock.kategori||'-'}${mock.keterangan ? ' • '+mock.keterangan : ''}</div></div>
+          <textarea id="kas-test-wa-message" class="swal2-textarea !m-0 !w-full !text-xs !h-48 !rounded-xl">${message}</textarea>
+          <a id="kas-test-wa-link" href="${waUrl}" target="_blank" rel="noopener noreferrer" class="flex min-h-[54px] w-full items-center justify-center rounded-xl bg-[#25D366] px-4 py-3 text-center text-sm font-black text-white no-underline shadow-lg">💬 KIRIM DATA TERBARU KE WHATSAPP</a>
+        </div>`,
+        showConfirmButton:false, showCancelButton:true, cancelButtonText:'Tutup',
+        didOpen:()=>{const ta=document.getElementById('kas-test-wa-message') as HTMLTextAreaElement|null;const link=document.getElementById('kas-test-wa-link') as HTMLAnchorElement|null;if(ta&&link)ta.addEventListener('input',()=>{link.href=`https://wa.me/?text=${encodeURIComponent(ta.value||message)}`;});}
       });
-    } catch (error: any) { Swal.fire({ icon: 'error', title: 'Gagal mengirim notifikasi test', text: error?.message || 'Coba lagi.' }); }
+    } catch(error:any){Swal.fire({icon:'error',title:'Gagal menampilkan notifikasi',text:error?.message||'Coba lagi.'});}
   };
 
   const exportPdf = async () => {
