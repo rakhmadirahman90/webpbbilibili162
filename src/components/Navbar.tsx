@@ -394,38 +394,6 @@ export default function Navbar({ onNavigate }: NavbarProps) {
           style={{ display: 'flex', visibility: 'visible', opacity: 1, zIndex: 2147483005 }}
           data-mobile-header-actions="true"
         >
-          {/* Search is a permanent mobile-header action: always visible immediately beside the menu button. */}
-          <button
-            id="mobile-search-toggle-btn"
-            type="button"
-            aria-label="Buka pencarian"
-            title="Cari"
-            aria-expanded={mobileSearchOpen}
-            onClick={(event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              setMobileSearchOpen(v => !v);
-              setMobileOpen(false);
-              setMobileOpenMenu(null);
-              window.setTimeout(() => mobileSearchInputRef.current?.focus(), 80);
-            }}
-            style={{
-              display: 'flex',
-              visibility: 'visible',
-              opacity: 1,
-              position: 'relative',
-              zIndex: 2147483006,
-              flex: '0 0 44px',
-              width: 44,
-              height: 44,
-              minWidth: 44,
-              minHeight: 44,
-              boxShadow: 'none'
-            }}
-            className="mobile-header-search-btn !flex !visible !opacity-100 w-[44px] h-[44px] shrink-0 rounded-2xl bg-[#16243b] border border-blue-400/70 items-center justify-center text-white active:scale-95 transition-transform touch-manipulation"
-          >
-            <Search size={23} className="text-blue-300" strokeWidth={2.7} />
-          </button>
           <button
             id="mobile-sidebar-toggle-btn"
             type="button"
