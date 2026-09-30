@@ -509,3 +509,27 @@ body.swal2-shown:has(main.pt-16) {overflow-y:auto!important;padding-right:0!impo
   }
 }
 
+
+
+/* Mobile navbar search: render as one physical layer on Android/Chromium. */
+@media(max-width:1023px){
+  #mobile-search-toggle-btn{
+    box-shadow:none!important;
+    filter:none!important;
+    transform:none!important;
+    transition:none!important;
+    background-image:none!important;
+    outline:none!important;
+    -webkit-appearance:none!important;
+    appearance:none!important;
+    isolation:isolate!important;
+    will-change:auto!important;
+  }
+  #mobile-search-toggle-btn::before,
+  #mobile-search-toggle-btn::after{
+    content:none!important;
+    display:none!important;
+    box-shadow:none!important;
+    filter:none!important;
+  }
+}
