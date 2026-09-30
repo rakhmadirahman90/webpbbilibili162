@@ -211,9 +211,34 @@ export default function KasManager() {
       // Jika ada bukti gambar, jadikan URL gambar sebagai satu-satunya URL preview agar
       // WhatsApp tidak memilih OG/logo website. Logo website hanya dipakai bila tanpa lampiran.
       const savedFallbackSite = `\n\n🔗 *Preview transaksi:*\nhttps://pbilibili162.99apps.id/kas-share?id=${encodeURIComponent(savedRow.id)}&v=${encodeURIComponent(String(savedRow.updated_at || savedRow.created_at || Date.now()))}\n\n🔗 *Akses Kelola Kas:* https://pbilibili162.99apps.id/kas\n\n🌐 *Info lebih lanjut:* https://pbilibili162.99apps.id/`;
-      const transactionLabel = savedRow.jenis_transaksi === 'Keluar' ? 'PENGELUARAN' : 'PENERIMAAN';
-      const partyLabel = savedRow.jenis_transaksi === 'Keluar' ? 'Penerima' : 'Nama/Pembayar';
-      const waMessage = `🏸 *PB BILIBILI 162*\n*NOTIFIKASI ${transactionLabel} KAS*\n\n${typeIcon} *TRANSAKSI ${String(savedRow.jenis_transaksi || '').toUpperCase()} — ${actionLabel}*\n\n📅 *Tanggal Transaksi*\n${savedRow.tanggal_transaksi || '-'}\n\n👤 *${partyLabel}*\n${savedRow.nama_pembayar || '-'}\n\n📂 *Kategori*\n${savedRow.kategori || '-'}\n\n💰 *Nominal*\n${rupiah(Number(savedRow.jumlah_bayar || 0))}${Number(savedRow.jumlah_bola || 0) > 0 ? `\n\n🏸 *Jumlah Bola*\n${savedRow.jumlah_bola}` : ''}${savedRow.keterangan ? `\n\n📝 *Keterangan*\n${savedRow.keterangan}` : ''}${savedAttachment}\n\n━━━━━━━━━━━━━━${savedFallbackSite}\n\n_Admin PB Bilibili 162_`;
+      const fmtWita = (row: KasEntry) => {
+        const raw = String(row.updated_at || row.created_at || '');
+        if (!raw) return String(row.tanggal_transaksi || '-');
+        const d = new Date(raw);
+        const time = new Intl.DateTimeFormat('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Makassar', hour12: false }).format(d).replace('.', '.');
+        return `${row.tanggal_transaksi || '-'}, ${time} WITA`;
+      };
+      const periodRows = kasData.filter((r) => r.tanggal_transaksi === savedRow.tanggal_transaksi);
+      const rowsWithSaved = [savedRow, ...periodRows.filter((r) => r.id !== savedRow.id)];
+      const latestByType = (type: string) => rowsWithSaved
+        .filter((r) => String(r.jenis_transaksi || '').toLowerCase() === type.toLowerCase())
+        .sort((a, b) => String(b.updated_at || b.created_at || '').localeCompare(String(a.updated_at || a.created_at || '')))[0];
+      const latestMasuk = latestByType('Masuk');
+      const latestKeluar = latestByType('Keluar');
+      const periodMasuk = rowsWithSaved.filter(r => String(r.jenis_transaksi||'').toLowerCase()==='masuk').reduce((s,r)=>s+Number(r.jumlah_bayar||0),0);
+      const periodKeluar = rowsWithSaved.filter(r => String(r.jenis_transaksi||'').toLowerCase()==='keluar').reduce((s,r)=>s+Number(r.jumlah_bayar||0),0);
+      const currentBalance = saldoAwal + totalPemasukan - totalPengeluaran;
+      const beforePeriod = currentBalance - periodMasuk + periodKeluar;
+      const endPeriod = beforePeriod + periodMasuk - periodKeluar;
+      const modalTetap = 600000;
+      const bendahara = Math.max(0, currentBalance - modalTetap);
+      const rowText = (row: KasEntry | undefined, masuk: boolean) => !row ? 'Nihil' : `• Status: *BERHASIL*\n• Jenis: ${masuk ? '📥 Pemasukan' : '📤 Pengeluaran'}\n• Tanggal: *${fmtWita(row)}*\n• Nama: *${row.nama_pembayar || '-'}*\n• Kategori: ${row.kategori || '-'}\n• Jumlah: *${rupiah(Number(row.jumlah_bayar || 0))}*${row.keterangan ? `\n• Catatan: ${row.keterangan}` : ''}`;
+      const previewUrl = `https://pbilibili162.99apps.id/kas-share?id=${encodeURIComponent(savedRow.id)}&v=${encodeURIComponent(String(savedRow.updated_at || savedRow.created_at || Date.now()))}`;
+      const fileName = savedRow.lampiran_nama || (savedRow.lampiran_url ? decodeURIComponent(String(savedRow.lampiran_url).split('/').pop() || 'Bukti transaksi') : '');
+      const proofBlock = savedRow.lampiran_url
+        ? `📎 *Bukti Transaksi Terakhir*\n• File: *${fileName}*\n• Preview: ${previewUrl}`
+        : `📎 *Bukti Transaksi Terakhir*\n• File: Nihil\n• Preview logo: ${previewUrl}`;
+      const waMessage = `📢 *LAPORAN REAL-TIME KAS*\n*PB BILIBILI 162*\n\n━━━━━━━━━━━━━━━━━━━━\n📅 *PERIODE LAPORAN*\n${savedRow.tanggal_transaksi || '-'} s/d ${savedRow.tanggal_transaksi || '-'}\n━━━━━━━━━━━━━━━━━━━━\n\n📥 *PEMASUKAN TERBARU*\n${rowText(latestMasuk, true)}\n\n📤 *PENGELUARAN TERBARU*\n${rowText(latestKeluar, false)}\n\n💰 *RINGKASAN KEUANGAN*\n• Saldo sebelumnya: ${rupiah(beforePeriod)}\n• Total pemasukan: ${rupiah(periodMasuk)}\n• Total pengeluaran: ${rupiah(periodKeluar)}\n• Saldo akhir periode: *${rupiah(endPeriod)}*\n• Saldo terakhir saat ini: *${rupiah(currentBalance)}*\n\n📊 *PEMBAGIAN SALDO*\n• Modal tetap: ${rupiah(modalTetap)}\n• Kas bendahara: ${rupiah(bendahara)}\n\n${proofBlock}\n\n🔗 *Akses Kelola Kas:* https://pbilibili162.99apps.id/kas\n\n🌐 *Info lebih lanjut:* https://pbilibili162.99apps.id/\n\n_Admin PB Bilibili 162_`;
       const waUrl = `https://wa.me/?text=${encodeURIComponent(waMessage)}`;
       await Swal.fire({
         icon: 'success',
