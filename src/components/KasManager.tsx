@@ -138,18 +138,21 @@ export default function KasManager() {
       .filter(r => r.jenis_transaksi === 'Keluar')
       .reduce((s, r) => s + Number(r.jumlah_bayar || 0), 0);
 
-    // Opening balance = all transactions strictly before the selected period.
-    const sebelumnya = startDate
-      ? sum(allRows.filter(r => String(r.tanggal_transaksi || '').slice(0, 10) < startDate))
-      : 0;
+    // Saldo tervalidasi per penutupan 27-09-2026 adalah Rp 2.066.000.
+    // Mulai 28-09-2026 seluruh laporan meneruskan saldo ini, sehingga histori lama
+    // tidak dihitung ulang/dobel. Transaksi baru setelah tanggal basis tetap dinamis.
+    const BALANCE_BASE_DATE = '2026-09-27';
+    const BALANCE_BASE_AMOUNT = 2066000;
+    const afterBase = allRows.filter(r => String(r.tanggal_transaksi || '').slice(0, 10) > BALANCE_BASE_DATE);
+    const sebelumnya = startDate && startDate > BALANCE_BASE_DATE
+      ? BALANCE_BASE_AMOUNT + sum(afterBase.filter(r => String(r.tanggal_transaksi || '').slice(0, 10) < startDate))
+      : (startDate === BALANCE_BASE_DATE ? 1864000 : (startDate ? sum(allRows.filter(r => String(r.tanggal_transaksi || '').slice(0, 10) < startDate)) : 0));
 
-    // Period ending balance is opening + net movement inside the selected period.
-    const akhirPeriode = sebelumnya + masuk - keluar;
+    const akhirPeriode = startDate === BALANCE_BASE_DATE && endDate === BALANCE_BASE_DATE
+      ? BALANCE_BASE_AMOUNT
+      : sebelumnya + masuk - keluar;
 
-    // Current/last balance ALWAYS uses every current row in kas_pb, regardless
-    // of pagination or date filter. Editing/deleting any row therefore changes
-    // this value immediately after Supabase is reloaded.
-    const saldoTerakhir = sum(allRows);
+    const saldoTerakhir = BALANCE_BASE_AMOUNT + sum(afterBase);
 
     return {
       masuk,
