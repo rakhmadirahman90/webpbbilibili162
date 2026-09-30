@@ -313,27 +313,25 @@ export default function KasManager() {
     }
     const mock:any = { ...source };
     try {
-      const typeIcon = mock.jenis_transaksi === 'Keluar' ? '🔴' : '🟢';
-      const filterLabel = `${startDate || 'Awal'} s/d ${endDate || 'Akhir'}`;
-      const hasImageAttachment = Boolean(mock.lampiran_url) && getAttachmentKind(mock as KasEntry) === 'image';
-      const attachmentLine = mock.lampiran_url ? `\n\n📎 *Bukti transaksi terlampir*` : '';
-      const fallbackSite = `\n\n🔗 *Preview transaksi:*\nhttps://pbilibili162.99apps.id/kas-share?id=${encodeURIComponent(mock.id)}&v=${encodeURIComponent(String(mock.updated_at || mock.created_at || Date.now()))}\n\n🔗 *Akses Kelola Kas:* https://pbilibili162.99apps.id/kas\n\n🌐 *Info lebih lanjut:* https://pbilibili162.99apps.id/`;
-      const message = `*PB BILIBILI 162 - NOTIFIKASI KAS TERBARU*\n\n📆 Filter tanggal transaksi: *${filterLabel}*\n\n${typeIcon} Transaksi terbaru pada filter: *${String(mock.jenis_transaksi || 'TRANSAKSI').toUpperCase()}*\n📅 Tanggal Transaksi: *${mock.tanggal_transaksi || '-'}*\n👤 Nama/Penerima: *${mock.nama_pembayar || '-'}*\n📂 Kategori: *${mock.kategori || '-'}*\n💰 Nominal: *${rupiah(Number(mock.jumlah_bayar || 0))}*${Number(mock.jumlah_bola || 0)>0 ? `\n🏸 Jumlah Bola: *${mock.jumlah_bola}*` : ''}${mock.keterangan ? `\n📝 Keterangan: ${mock.keterangan}` : ''}${attachmentLine}\n\n📊 *RINGKASAN FILTER*\n• Jumlah transaksi: *${stats.count}*\n• Pemasukan: *${rupiah(stats.masuk)}*\n• Pengeluaran: *${rupiah(stats.keluar)}*\n• Saldo akhir periode: *${rupiah(stats.akhir)}*${fallbackSite}\n\n_Admin PB Bilibili 162_`;
-      const waUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+      const fmtWita = (row: KasEntry) => {
+        const raw=String(row.updated_at||row.created_at||'');
+        if(!raw) return String(row.tanggal_transaksi||'-');
+        const time=new Intl.DateTimeFormat('id-ID',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Makassar',hour12:false}).format(new Date(raw));
+        return `${row.tanggal_transaksi||'-'}, ${time} WITA`;
+      };
+      const rows=[...periodTransactions].sort((a,b)=>String(b.updated_at||b.created_at||'').localeCompare(String(a.updated_at||a.created_at||'')));
+      const latestMasuk=rows.find(r=>r.jenis_transaksi==='Masuk');
+      const latestKeluar=rows.find(r=>r.jenis_transaksi==='Keluar');
+      const rowText=(row:KasEntry|undefined,masuk:boolean)=>!row?'Nihil':`• Status: *BERHASIL*\n• Jenis: ${masuk?'📥 Pemasukan':'📤 Pengeluaran'}\n• Tanggal: *${fmtWita(row)}*\n• Nama: *${row.nama_pembayar||'-'}*\n• Kategori: ${row.kategori||'-'}\n• Jumlah: *${rupiah(Number(row.jumlah_bayar||0))}*${row.keterangan?`\n• Catatan: ${row.keterangan}`:''}`;
+      const hasImageAttachment=Boolean(mock.lampiran_url)&&getAttachmentKind(mock as KasEntry)==='image';
+      const previewUrl=`https://pbilibili162.99apps.id/kas-share?id=${encodeURIComponent(mock.id)}&v=${encodeURIComponent(String(mock.updated_at||mock.created_at||Date.now()))}`;
+      const fileName=mock.lampiran_nama||(mock.lampiran_url?decodeURIComponent(String(mock.lampiran_url).split('/').pop()||'Bukti transaksi'):'');
+      const proofBlock=mock.lampiran_url?`📎 *Bukti Transaksi Terakhir*\n• File: *${fileName}*\n• Preview: ${previewUrl}`:`📎 *Bukti Transaksi Terakhir*\n• File: Nihil\n• Preview logo: ${previewUrl}`;
+      const message=`📢 *LAPORAN REAL-TIME KAS*\n*PB BILIBILI 162*\n\n━━━━━━━━━━━━━━━━━━━━\n📅 *PERIODE LAPORAN*\n${startDate||'Awal'} s/d ${endDate||'Akhir'}\n━━━━━━━━━━━━━━━━━━━━\n\n📥 *PEMASUKAN TERBARU*\n${rowText(latestMasuk,true)}\n\n📤 *PENGELUARAN TERBARU*\n${rowText(latestKeluar,false)}\n\n💰 *RINGKASAN KEUANGAN*\n• Saldo sebelumnya: ${rupiah(stats.sebelumnya)}\n• Total pemasukan: ${rupiah(stats.masuk)}\n• Total pengeluaran: ${rupiah(stats.keluar)}\n• Saldo akhir periode: *${rupiah(stats.akhir)}*\n• Saldo terakhir saat ini: *${rupiah(stats.akhir)}*\n\n📊 *PEMBAGIAN SALDO*\n• Modal tetap: ${rupiah(MODAL_TETAP)}\n• Kas bendahara: ${rupiah(stats.bendaharaPeriode)}\n\n${proofBlock}\n\n🔗 *Akses Kelola Kas:* https://pbilibili162.99apps.id/kas\n\n🌐 *Info lebih lanjut:* https://pbilibili162.99apps.id/\n\n_Admin PB Bilibili 162_`;
       await Swal.fire({
-        icon: mock.jenis_transaksi === 'Keluar' ? 'warning' : 'success',
-        title: 'Notifikasi Data Terbaru',
-        html: `<div class="text-left text-xs space-y-3">
-          <div class="rounded-xl border border-blue-500/20 bg-blue-500/10 p-3">
-            <div class="font-black text-blue-700">FILTER AKTIF</div><div class="mt-1 font-bold">${filterLabel}</div>
-            <div class="mt-2 text-slate-600">${stats.count} transaksi • Masuk ${rupiah(stats.masuk)} • Keluar ${rupiah(stats.keluar)}</div>
-          </div>
-          <div class="rounded-xl border border-slate-200 p-3"><div class="font-black">${typeIcon} ${String(mock.jenis_transaksi||'').toUpperCase()} — ${mock.tanggal_transaksi||'-'}</div><div class="mt-1">${mock.nama_pembayar||'-'} • ${rupiah(Number(mock.jumlah_bayar||0))}</div><div class="mt-1 text-slate-500">${mock.kategori||'-'}${mock.keterangan ? ' • '+mock.keterangan : ''}</div></div>
-          ${hasImageAttachment ? `<div class="overflow-hidden rounded-xl border border-emerald-200 bg-black/5"><a href="${mock.lampiran_url}" target="_blank" rel="noopener noreferrer" class="block"><img src="${mock.lampiran_url}" alt="Bukti transaksi" class="max-h-56 w-full cursor-pointer object-contain"/></a><div class="px-3 py-2 text-[10px] font-bold text-emerald-700">Preview bukti transaksi yang akan diprioritaskan di WhatsApp</div></div>` : `<div class="rounded-xl border border-slate-200 bg-slate-50 p-3 text-[10px] text-slate-500">Tidak ada bukti gambar pada transaksi ini. Preview WhatsApp akan menggunakan logo PB Bilibili 162.</div>`}
-          <textarea id="kas-test-wa-message" class="swal2-textarea !m-0 !w-full !text-xs !h-48 !rounded-xl">${message}</textarea>
-          <a id="kas-test-wa-link" href="${whatsappUrl(message)}" class="flex min-h-[54px] w-full items-center justify-center rounded-xl bg-[#25D366] px-4 py-3 text-center text-sm font-black text-white no-underline shadow-lg">💬 KIRIM DATA KE WHATSAPP</a>
-        </div>`,
-        showConfirmButton:false, showCancelButton:true, cancelButtonText:'Tutup',
+        icon:mock.jenis_transaksi==='Keluar'?'warning':'success',title:'Laporan Real-Time Kas',
+        html:`<div class="text-left text-xs space-y-3"><div class="rounded-xl border border-blue-500/20 bg-blue-500/10 p-3"><div class="font-black text-blue-700">PERIODE AKTIF</div><div class="mt-1 font-bold">${startDate||'Awal'} s/d ${endDate||'Akhir'}</div></div>${hasImageAttachment?`<div class="overflow-hidden rounded-xl border border-emerald-200 bg-black/5"><a href="${mock.lampiran_url}" target="_blank" rel="noopener noreferrer" class="block"><img src="${mock.lampiran_url}" alt="Bukti transaksi" class="max-h-56 w-full cursor-pointer object-contain"/></a></div>`:''}<textarea id="kas-test-wa-message" class="swal2-textarea !m-0 !w-full !text-xs !h-64 !rounded-xl">${message}</textarea><a id="kas-test-wa-link" href="${whatsappUrl(message)}" class="flex min-h-[54px] w-full items-center justify-center rounded-xl bg-[#25D366] px-4 py-3 text-center text-sm font-black text-white no-underline shadow-lg">💬 KIRIM LAPORAN KE WHATSAPP</a></div>`,
+        showConfirmButton:false,showCancelButton:true,cancelButtonText:'Tutup',
         didOpen:()=>{const ta=document.getElementById('kas-test-wa-message') as HTMLTextAreaElement|null;const link=document.getElementById('kas-test-wa-link') as HTMLAnchorElement|null;if(ta&&link)ta.addEventListener('input',()=>{link.href=whatsappUrl(ta.value||message);});}
       });
     } catch(error:any){Swal.fire({icon:'error',title:'Gagal menampilkan notifikasi',text:error?.message||'Coba lagi.'});}
