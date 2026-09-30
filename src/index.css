@@ -564,3 +564,28 @@ body.swal2-shown:has(main.pt-16) {overflow-y:auto!important;padding-right:0!impo
   body:has([class*="agenda" i]) main.public-view-shell{padding-bottom:0!important;margin-bottom:-7rem!important;min-height:0!important;}
   body:has([class*="agenda" i]) main.public-view-shell > :last-child{margin-bottom:0!important;padding-bottom:0!important;min-height:0!important;}
 }
+
+
+/* public-global-sticky-navbar-safe-offset-v1 */
+/* Satu sumber offset untuk seluruh halaman publik agar header/judul pertama
+   tidak pernah berada di bawah navbar sticky/fixed. Admin tidak disentuh. */
+:root{--pb-public-nav-safe:6.25rem;}
+@media (min-width:768px){:root{--pb-public-nav-safe:6.5rem;}}
+@media (min-width:1024px){:root{--pb-public-nav-safe:7rem;}}
+
+body:not(:has(#admin-sidebar)) main.public-view-shell,
+body:not(:has(#admin-sidebar)) main.min-h-screen{
+  padding-top:var(--pb-public-nav-safe)!important;
+}
+
+body:not(:has(#admin-sidebar)) main.public-view-shell > section:first-child,
+body:not(:has(#admin-sidebar)) main.public-view-shell > div:first-child,
+body:not(:has(#admin-sidebar)) main.min-h-screen > section:first-child,
+body:not(:has(#admin-sidebar)) main.min-h-screen > div:first-child{
+  scroll-margin-top:var(--pb-public-nav-safe)!important;
+}
+
+/* Agenda sebelumnya memiliki padding section sendiri; offset shell tetap presisi. */
+body:has(#agenda-pb162) main.public-view-shell{
+  padding-top:var(--pb-public-nav-safe)!important;
+}
