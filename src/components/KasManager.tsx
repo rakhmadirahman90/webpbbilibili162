@@ -218,8 +218,14 @@ export default function KasManager() {
         const time = new Intl.DateTimeFormat('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Makassar', hour12: false }).format(d).replace('.', '.');
         return `${row.tanggal_transaksi || '-'}, ${time} WITA`;
       };
-      const periodRows = kasData.filter((r) => r.tanggal_transaksi === savedRow.tanggal_transaksi);
-      const rowsWithSaved = [savedRow, ...periodRows.filter((r) => r.id !== savedRow.id)];
+      // Ambil snapshot database TERBARU setelah simpan/update. React state belum tentu
+      // sudah berubah ketika loadKas selesai, sehingga jangan jadikan kasData sebagai dasar laporan WA.
+      const { data: freshKasRows, error: freshKasError } = await supabase
+        .from('kas_pb').select('*').order('tanggal_transaksi', { ascending: true }).order('created_at', { ascending: true });
+      if (freshKasError) throw freshKasError;
+      const allRowsWithSaved = (freshKasRows || []) as KasEntry[];
+      const periodRows = allRowsWithSaved.filter((r) => r.tanggal_transaksi === savedRow.tanggal_transaksi);
+      const rowsWithSaved = periodRows;
       const latestByType = (type: string) => rowsWithSaved
         .filter((r) => String(r.jenis_transaksi || '').toLowerCase() === type.toLowerCase())
         .sort((a, b) => String(b.updated_at || b.created_at || '').localeCompare(String(a.updated_at || a.created_at || '')))[0];
@@ -227,9 +233,8 @@ export default function KasManager() {
       const latestKeluar = latestByType('Keluar');
       const periodMasuk = rowsWithSaved.filter(r => String(r.jenis_transaksi||'').toLowerCase()==='masuk').reduce((s,r)=>s+Number(r.jumlah_bayar||0),0);
       const periodKeluar = rowsWithSaved.filter(r => String(r.jenis_transaksi||'').toLowerCase()==='keluar').reduce((s,r)=>s+Number(r.jumlah_bayar||0),0);
-      // Hitung ulang dari snapshot kas terbaru + baris yang baru disimpan.
-      // Jangan memakai stats periode UI karena laporan pasca-simpan hanya untuk tanggal transaksi ini.
-      const allRowsWithSaved = [savedRow, ...kasData.filter((r) => r.id !== savedRow.id)];
+      // Hitung saldo dari snapshot database yang sama agar saldo sebelumnya,
+      // saldo akhir periode, dan saldo terakhir selalu konsisten.
       const signedAmount = (r: KasEntry) => (r.jenis_transaksi === 'Masuk' ? 1 : -1) * Number(r.jumlah_bayar || 0);
       const beforePeriod = allRowsWithSaved
         .filter((r) => String(r.tanggal_transaksi || '').slice(0, 10) < String(savedRow.tanggal_transaksi || '').slice(0, 10))
