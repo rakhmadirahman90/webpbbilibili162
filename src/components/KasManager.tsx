@@ -258,10 +258,15 @@ export default function KasManager() {
       // transaksi (penerimaan maupun pengeluaran). Logo hanya dipakai jika keduanya
       // benar-benar tidak memiliki lampiran.
       const latestProofRow = [...allRowsWithSaved]
-        .filter((r) => Boolean(r.lampiran_url))
+        .filter((r) => Boolean(r.lampiran_url) && getAttachmentKind(r) === 'image')
         .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')))[0];
       const previewSource = latestProofRow || savedRow;
-      const previewUrl = `https://pbilibili162.99apps.id/kas-share?id=${encodeURIComponent(previewSource.id)}&v=${encodeURIComponent(String(previewSource.created_at || Date.now()))}`;
+      // Cache key wajib unik mengikuti ID bukti yang benar-benar dipakai. Ini mencegah
+      // WhatsApp mempertahankan kartu logo dari transaksi terbaru yang tidak punya gambar.
+      const previewVersion = latestProofRow
+        ? `proof-${latestProofRow.id}-${latestProofRow.created_at || Date.now()}`
+        : `logo-${savedRow.id}-${Date.now()}`;
+      const previewUrl = `https://pbilibili162.99apps.id/kas-share?id=${encodeURIComponent(previewSource.id)}&v=${encodeURIComponent(previewVersion)}`;
       const fileName = latestProofRow
         ? (latestProofRow.lampiran_nama || decodeURIComponent(String(latestProofRow.lampiran_url || '').split('/').pop() || 'Bukti transaksi'))
         : '';
