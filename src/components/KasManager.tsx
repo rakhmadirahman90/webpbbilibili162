@@ -198,20 +198,26 @@ export default function KasManager() {
       const actionLabel = wasEditing ? 'DIPERBARUI' : 'DITAMBAHKAN';
       const typeIcon = savedRow.jenis_transaksi === 'Keluar' ? '🔴' : '🟢';
       const waMessage = `*PB BILIBILI 162 - INFORMASI KAS*\n\n${typeIcon} Transaksi *${String(savedRow.jenis_transaksi || '').toUpperCase()}* ${actionLabel}\n\n📅 Tanggal: *${savedRow.tanggal_transaksi || '-'}*\n👤 Nama/Penerima: *${savedRow.nama_pembayar || '-'}*\n📂 Kategori: *${savedRow.kategori || '-'}*\n💰 Nominal: *${rupiah(Number(savedRow.jumlah_bayar || 0))}*${Number(savedRow.jumlah_bola || 0) > 0 ? `\n🏸 Jumlah Bola: *${savedRow.jumlah_bola}*` : ''}${savedRow.keterangan ? `\n📝 Keterangan: ${savedRow.keterangan}` : ''}\n\n🌐 Akses PB Bilibili 162:\nhttps://pbilibili162.99apps.id/\n\n_Admin PB Bilibili 162_`;
-      const resultWa = await Swal.fire({
+      const waUrl = `https://wa.me/?text=${encodeURIComponent(waMessage)}`;
+      await Swal.fire({
         icon: 'success',
         title: wasEditing ? 'Data kas berhasil diperbarui' : 'Data kas berhasil disimpan',
-        html: `<div class="text-left text-xs space-y-3"><div class="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3 font-bold text-emerald-700">Transaksi berhasil disimpan. Kirim informasi transaksi ini ke WhatsApp?</div><textarea id="kas-save-wa-message" class="swal2-textarea !m-0 !w-full !text-xs !h-48 !rounded-xl">${waMessage}</textarea></div>`,
+        html: `<div class="text-left text-xs space-y-3">
+          <div class="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3 font-bold text-emerald-700">Transaksi berhasil disimpan. Tekan tombol hijau di bawah untuk membuka WhatsApp dan mengirim notifikasi.</div>
+          <textarea id="kas-save-wa-message" class="swal2-textarea !m-0 !w-full !text-xs !h-44 !rounded-xl">${waMessage}</textarea>
+          <a id="kas-wa-direct-link" href="${waUrl}" target="_blank" rel="noopener noreferrer" class="flex min-h-[54px] w-full items-center justify-center rounded-xl bg-[#25D366] px-4 py-3 text-center text-sm font-black text-white no-underline shadow-lg">💬 KIRIM LANGSUNG KE WHATSAPP</a>
+        </div>`,
+        showConfirmButton: false,
         showCancelButton: true,
-        confirmButtonText: '💬 Kirim ke WhatsApp',
         cancelButtonText: 'Selesai',
-        confirmButtonColor: '#25D366',
-        focusConfirm: false,
-        preConfirm: () => (document.getElementById('kas-save-wa-message') as HTMLTextAreaElement)?.value || waMessage
+        didOpen: () => {
+          const textarea = document.getElementById('kas-save-wa-message') as HTMLTextAreaElement | null;
+          const link = document.getElementById('kas-wa-direct-link') as HTMLAnchorElement | null;
+          if (textarea && link) textarea.addEventListener('input', () => {
+            link.href = `https://wa.me/?text=${encodeURIComponent(textarea.value || waMessage)}`;
+          });
+        }
       });
-      if (resultWa.isConfirmed) {
-        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(resultWa.value || waMessage)}`, '_blank');
-      }
       resetForm();
     } catch (error: any) {
       Swal.fire({ icon: 'error', title: 'Gagal menyimpan data', text: error?.message || 'Perubahan ditolak database.', background: '#0F172A', color: '#fff' });
