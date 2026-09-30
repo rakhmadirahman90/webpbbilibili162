@@ -223,7 +223,7 @@ export default function KasManager() {
       const { data: freshKasRows, error: freshKasError } = await supabase
         .from('kas_pb').select('*').order('tanggal_transaksi', { ascending: true }).order('created_at', { ascending: true });
       if (freshKasError) throw freshKasError;
-      const allRowsWithSaved = (freshKasRows || []) as KasEntry[];
+      const allRowsWithSaved = ((freshKasRows || []) as KasEntry[]).map((row) => ({ ...row, jenis_transaksi: DAFTAR_PEMASUKAN.includes(row.kategori) ? 'Masuk' as const : row.jenis_transaksi }));
       const periodRows = allRowsWithSaved.filter((r) => r.tanggal_transaksi === savedRow.tanggal_transaksi);
       const rowsWithSaved = periodRows;
       const latestByType = (type: string) => rowsWithSaved
