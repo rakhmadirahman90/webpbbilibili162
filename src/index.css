@@ -561,6 +561,6 @@ body.swal2-shown:has(main.pt-16) {overflow-y:auto!important;padding-right:0!impo
 
 /* agenda-footer-tight-final-v2 */
 @media (max-width:1023px){
-  body:has([class*="agenda" i]) main.public-view-shell{padding-bottom:0!important;margin-bottom:-3.5rem!important;min-height:0!important;}
+  body:has([class*="agenda" i]) main.public-view-shell{padding-bottom:0!important;margin-bottom:-7rem!important;min-height:0!important;}
   body:has([class*="agenda" i]) main.public-view-shell > :last-child{margin-bottom:0!important;padding-bottom:0!important;min-height:0!important;}
 }
