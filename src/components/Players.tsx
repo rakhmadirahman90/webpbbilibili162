@@ -374,7 +374,7 @@ const Players: React.FC<{ initialFilter?: string }> = ({
 
   return (
     <>
-      <section id="atlet" className="w-full pt-3 sm:pt-5 pb-3 sm:pb-5 bg-[#0b0e14] text-white flex flex-col overflow-hidden font-sans relative">
+      <section id="atlet" className="w-full pt-3 sm:pt-5 pb-0 bg-[#0b0e14] text-white flex flex-col overflow-hidden font-sans relative">
         <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-blue-600/5 blur-[120px] rounded-full pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-indigo-600/5 blur-[120px] rounded-full pointer-events-none" />
 
