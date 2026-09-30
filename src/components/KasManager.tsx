@@ -175,6 +175,8 @@ export default function KasManager() {
   const latestDate = latestFilteredTransaction?.tanggal_transaksi || endDate || startDate || localToday();
 
   const resetForm = () => { setEditingId(null); setFormData(emptyForm()); setActiveMobileTab('list'); };
+  const whatsappUrl = (message: string) => `https://wa.me/?text=${encodeURIComponent(message)}`;
+
   const saveKas = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.nama_pembayar.trim() || !formData.tanggal_transaksi || Number(formData.jumlah_bayar) <= 0) { await Swal.fire({ icon: 'warning', title: 'Data belum lengkap', text: 'Nama, tanggal, dan nominal harus diisi.' }); return; }
@@ -275,7 +277,6 @@ export default function KasManager() {
     catch (error: any) { Swal.fire({ icon: 'error', title: 'Gagal menghapus', text: error?.message || 'Perubahan ditolak database.', background: '#0F172A', color: '#fff' }); }
   };
 
-  const whatsappUrl = (message: string) => `https://wa.me/?text=${encodeURIComponent(message)}`;
 
   const testNotification = async () => {
     const source = latestFilteredTransaction;
