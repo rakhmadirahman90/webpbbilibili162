@@ -172,11 +172,11 @@ export default function KasManager() {
     e.preventDefault();
     if (!formData.nama_pembayar.trim() || !formData.tanggal_transaksi || Number(formData.jumlah_bayar) <= 0) { await Swal.fire({ icon: 'warning', title: 'Data belum lengkap', text: 'Nama, tanggal, dan nominal harus diisi.' }); return; }
     setSaving(true);
+    const wasEditing = Boolean(editingId);
     try {
       const finalData = { ...formData, nama_pembayar: formData.nama_pembayar.trim(), jumlah_bayar: Number(formData.jumlah_bayar), jumlah_bola: Number(formData.jumlah_bola || 0), jenis_transaksi: DAFTAR_PEMASUKAN.includes(formData.kategori) ? 'Masuk' as const : formData.jenis_transaksi, keterangan: formData.keterangan.trim() || null, lampiran_url: formData.lampiran_url || null, lampiran_nama: formData.lampiran_nama || null, lampiran_type: formData.lampiran_type || null, lampiran_size: formData.lampiran_size || null };
+      let savedRow: any = null;
       if (editingId) {
-        // Persist the edit time when the DB exposes updated_at. If an older
-        // schema does not have the column, retry with the existing schema.
         let updatePayload: any = { ...finalData, updated_at: new Date().toISOString() };
         let result = await supabase.from('kas_pb').update(updatePayload).eq('id', editingId).select().single();
         if (result.error && /updated_at|column/i.test(String(result.error.message || ''))) {
@@ -184,16 +184,38 @@ export default function KasManager() {
           result = await supabase.from('kas_pb').update(updatePayload).eq('id', editingId).select().single();
         }
         if (result.error) throw result.error;
-        const data = result.data;
-        await broadcastKasChange('UPDATE', data || { id: editingId, ...updatePayload });
+        savedRow = result.data || { id: editingId, ...updatePayload };
+        await broadcastKasChange('UPDATE', savedRow);
       } else {
-        const { data, error } = await supabase.from('kas_pb').insert(finalData).select().single(); if (error) throw error;
-        await broadcastKasChange('INSERT', data);
+        const { data, error } = await supabase.from('kas_pb').insert(finalData).select().single();
+        if (error) throw error;
+        savedRow = data || finalData;
+        await broadcastKasChange('INSERT', savedRow);
       }
-      resetForm(); await loadKas(false);
-      Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: editingId ? 'Data kas diperbarui' : 'Data kas berhasil disimpan', showConfirmButton: false, timer: 2200 });
-    } catch (error: any) { Swal.fire({ icon: 'error', title: 'Gagal menyimpan data', text: error?.message || 'Perubahan ditolak database.', background: '#0F172A', color: '#fff' }); }
-    finally { setSaving(false); }
+      await loadKas(false);
+
+      // Restore the post-save WhatsApp action for both new and edited transactions.
+      const actionLabel = wasEditing ? 'DIPERBARUI' : 'DITAMBAHKAN';
+      const typeIcon = savedRow.jenis_transaksi === 'Keluar' ? '🔴' : '🟢';
+      const waMessage = `*PB BILIBILI 162 - INFORMASI KAS*\n\n${typeIcon} Transaksi *${String(savedRow.jenis_transaksi || '').toUpperCase()}* ${actionLabel}\n\n📅 Tanggal: *${savedRow.tanggal_transaksi || '-'}*\n👤 Nama/Penerima: *${savedRow.nama_pembayar || '-'}*\n📂 Kategori: *${savedRow.kategori || '-'}*\n💰 Nominal: *${rupiah(Number(savedRow.jumlah_bayar || 0))}*${Number(savedRow.jumlah_bola || 0) > 0 ? `\n🏸 Jumlah Bola: *${savedRow.jumlah_bola}*` : ''}${savedRow.keterangan ? `\n📝 Keterangan: ${savedRow.keterangan}` : ''}\n\n🌐 Akses PB Bilibili 162:\nhttps://pbilibili162.99apps.id/\n\n_Admin PB Bilibili 162_`;
+      const resultWa = await Swal.fire({
+        icon: 'success',
+        title: wasEditing ? 'Data kas berhasil diperbarui' : 'Data kas berhasil disimpan',
+        html: `<div class="text-left text-xs space-y-3"><div class="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3 font-bold text-emerald-700">Transaksi berhasil disimpan. Kirim informasi transaksi ini ke WhatsApp?</div><textarea id="kas-save-wa-message" class="swal2-textarea !m-0 !w-full !text-xs !h-48 !rounded-xl">${waMessage}</textarea></div>`,
+        showCancelButton: true,
+        confirmButtonText: '💬 Kirim ke WhatsApp',
+        cancelButtonText: 'Selesai',
+        confirmButtonColor: '#25D366',
+        focusConfirm: false,
+        preConfirm: () => (document.getElementById('kas-save-wa-message') as HTMLTextAreaElement)?.value || waMessage
+      });
+      if (resultWa.isConfirmed) {
+        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(resultWa.value || waMessage)}`, '_blank');
+      }
+      resetForm();
+    } catch (error: any) {
+      Swal.fire({ icon: 'error', title: 'Gagal menyimpan data', text: error?.message || 'Perubahan ditolak database.', background: '#0F172A', color: '#fff' });
+    } finally { setSaving(false); }
   };
 
   const editKas = (row: KasEntry) => { setEditingId(row.id); setFormData({ nama_pembayar: row.nama_pembayar || '', kategori: row.kategori || DAFTAR_PEMASUKAN[0], jumlah_bayar: Number(row.jumlah_bayar || 0), jumlah_bola: Number(row.jumlah_bola || 0), tipe_anggota: row.tipe_anggota || 'Anggota Tetap', jenis_transaksi: row.jenis_transaksi, tanggal_transaksi: row.tanggal_transaksi, keterangan: row.keterangan || '', lampiran_url: row.lampiran_url || '', lampiran_nama: row.lampiran_nama || '', lampiran_type: row.lampiran_type || '', lampiran_size: row.lampiran_size || null }); setActiveMobileTab('form'); window.scrollTo({ top: 0, behavior: 'smooth' }); };
