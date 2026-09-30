@@ -375,7 +375,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
     : topMenus;
 
   return <>
-    <nav style={{display:"block",visibility:"visible",opacity:1,position:"relative"}} className="fixed top-0 left-0 right-0 h-14 lg:h-16 z-[2147483002] bg-slate-950/95 backdrop-blur-xl border-b border-white/10 shadow-2xl !visible !opacity-100" aria-label="Navigasi utama PB Bilibili 162">
+    <nav style={{display:"block",visibility:"visible",opacity:1,position:"fixed",top:0,left:0,right:0}} className="fixed top-0 left-0 right-0 h-14 lg:h-16 z-[2147483002] bg-slate-950/95 backdrop-blur-xl border-b border-white/10 shadow-2xl !visible !opacity-100" aria-label="Navigasi utama PB Bilibili 162">
       <div className="max-w-7xl mx-auto h-full px-2.5 sm:px-4 md:px-8 flex items-center gap-2 sm:gap-3 min-w-0">
         <button type="button" onPointerDown={() => handleNavigationPointerDown('home')} onClick={() => go('home')} className="flex items-center gap-1.5 sm:gap-2 shrink-0 min-w-0" aria-label="Beranda PB Bilibili 162">
           <img src={branding.logo_url} alt="PB Bilibili 162" className="w-9 h-9 lg:w-10 lg:h-10 object-contain shrink-0" loading="eager" decoding="async" onError={e => { e.currentTarget.src = '/logo_pb_bilibili_162.svg'; }} />
