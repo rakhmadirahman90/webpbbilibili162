@@ -93,7 +93,7 @@ export default function AgendaPB162({ compact = false }: { compact?: boolean }) 
   const visible = compact ? items.slice(0, 4) : items;
 
   // Keep the landing agenda intentionally compact: four items in a 2 × 2 grid.
-  return <section id="agenda-pb162" className={compact ? "agenda-landing-compact landing-section w-full bg-[#050914]" : "w-full bg-[#070d1a] px-4 py-8 sm:px-6 sm:py-10"}>
+  return <section id="agenda-pb162" className={compact ? "agenda-landing-compact landing-section w-full bg-[#050914]" : "w-full bg-[#070d1a] px-4 pt-8 pb-0 sm:px-6 sm:pt-10 sm:pb-1"}>
     <div className={compact ? "mx-auto w-full max-w-6xl px-4 py-4 sm:px-8 sm:py-7 lg:px-10" : "mx-auto max-w-5xl"}>
       <div className="mb-3 flex items-center justify-between gap-3 rounded-2xl border border-blue-500/80 bg-gradient-to-r from-[#071b3d] via-[#0b2f68] to-[#071b3d] px-3 py-2.5 shadow-[0_0_22px_rgba(37,99,235,.12)] sm:px-5 sm:py-3">
         <div className="flex min-w-0 items-center gap-3">
