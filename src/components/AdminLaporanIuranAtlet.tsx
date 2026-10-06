@@ -204,6 +204,7 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
   const [incomeCategoryFilter, setIncomeCategoryFilter] = useState('all');
   const [members, setMembers] = useState<Member[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [statusOverrides, setStatusOverrides] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState<PlayerReport | null>(null);
   const [loggedInMemberName, setLoggedInMemberName] = useState('');
@@ -270,13 +271,11 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
         return rows as Transaction[];
       };
 
-      const [memberRows, transactionRows] = await Promise.all([
-        fetchAllMembers(),
-        fetchAllTransactions(),
+      const [memberRows, transactionRows, overrideRes] = await Promise.all([
+        fetchAllMembers(), fetchAllTransactions(), supabase.from('iuran_status_override').select('member_name,year,month,paid').eq('year',2026),
       ]);
-
-      setMembers(memberRows);
-      setTransactions(transactionRows);
+      setMembers(memberRows); setTransactions(transactionRows);
+      if(!overrideRes.error){const map:Record<string,boolean>={};(overrideRes.data||[]).forEach((x:any)=>map[`${normalizeName(x.member_name)}|2026|${x.month}`]=!!x.paid);setStatusOverrides(map);}
     } catch (error: any) {
       console.error('Gagal memuat laporan iuran:', error);
       Swal.fire({
@@ -299,6 +298,7 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
       .channel('laporan_iuran_atlet_realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'kas_pb' }, loadData)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'pendaftaran' }, loadData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'iuran_status_override' }, loadData)
       .subscribe();
 
     return () => {
@@ -576,6 +576,12 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
     XLSX.writeFile(workbook, `Laporan_Iuran_Atlet_${selectedMonth}_${selectedYear}.xlsx`);
   };
 
+  const recapMonths2026 = [8,9,10,11];
+  const recap2026 = useMemo(() => members.map(member => ({...member, months:recapMonths2026.map(mi=>{const month=MONTHS[mi];const paidAmount=transactions.filter(t=>normalizeName(t.nama_pembayar)===normalizeName(member.nama)&&PAYMENT_CATEGORIES.includes(t.kategori)&&isTransactionInPeriod(t,month,2026,mi)).reduce((s,t)=>s+Number(t.jumlah_bayar||0),0);const key=`${normalizeName(member.nama)}|2026|${mi+1}`;return {paid:Object.prototype.hasOwnProperty.call(statusOverrides,key)?statusOverrides[key]:paidAmount>=10000,amount:paidAmount};})})),[members,transactions,statusOverrides]);
+  const updateRecapStatus=async(name:string,mi:number,paid:boolean)=>{const {error}=await supabase.from('iuran_status_override').upsert({member_name:name,year:2026,month:mi+1,paid,updated_at:new Date().toISOString()},{onConflict:'member_name,year,month'});if(error){Swal.fire({icon:'error',title:'Gagal mengubah status',text:error.message,background:'#0b1224',color:'#fff'});return;}setStatusOverrides(v=>({...v,[`${normalizeName(name)}|2026|${mi+1}`]:paid}));};
+  const exportRecapExcel=()=>{const ws=XLSX.utils.json_to_sheet(recap2026.map((r,i)=>({No:i+1,'Nama Peserta':r.nama.toUpperCase(),September:r.months[0].paid?'✓':'✕',Oktober:r.months[1].paid?'✓':'✕',November:r.months[2].paid?'✓':'✕',Desember:r.months[3].paid?'✓':'✕'})));ws['!cols']=[{wch:6},{wch:32},{wch:14},{wch:14},{wch:14},{wch:14}];const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Rekap Sep-Des');XLSX.writeFile(wb,'Rekap_Iuran_Peserta_Sep-Des_2026.xlsx');};
+  const exportRecapPDF=()=>{const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});doc.setFont('helvetica','bold');doc.setFontSize(16);doc.text('REKAP IURAN PESERTA PB BILIBILI 162',14,16);doc.setFontSize(9);doc.text('September - Desember 2026 | Rp10.000 per bulan',14,22);autoTable(doc,{startY:28,head:[['No','Nama Peserta','September','Oktober','November','Desember']],body:recap2026.map((r,i)=>[i+1,r.nama.toUpperCase(),...r.months.map(m=>m.paid?'✓':'✕')]),styles:{fontSize:9,halign:'center'},columnStyles:{1:{halign:'left',fontStyle:'bold'}},headStyles:{fillColor:[37,99,235],textColor:255}});doc.save('Rekap_Iuran_Peserta_Sep-Des_2026.pdf');};
+
   const exportPDF = () => {
     if (!filteredReports.length) return;
     const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
@@ -647,6 +653,8 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
             </div>
           </div>
         </section>
+
+        <section className="rounded-3xl border border-blue-500/20 bg-[#0b1224] p-4 sm:p-6 shadow-xl"><div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="text-lg font-black text-white">Rekap Iuran September – Desember 2026</h2><p className="text-[10px] text-slate-400">✓ sudah bayar Rp10.000 • ✕ belum bayar • status dapat diedit admin.</p></div><div className="flex gap-2"><button onClick={exportRecapExcel} className="rounded-xl bg-emerald-600 px-3 py-2 text-[10px] font-black text-white">EXCEL</button><button onClick={exportRecapPDF} className="rounded-xl bg-blue-600 px-3 py-2 text-[10px] font-black text-white">PDF</button></div></div><div className="overflow-x-auto"><table className="w-full min-w-[680px] text-left"><thead><tr className="border-b border-white/10 text-[9px] uppercase text-slate-400"><th className="p-3">No</th><th className="p-3">Nama Peserta</th>{recapMonths2026.map(mi=><th key={mi} className="p-3 text-center">{MONTHS[mi]}</th>)}</tr></thead><tbody>{recap2026.map((r,idx)=><tr key={r.id} className="border-b border-white/5"><td className="p-3 text-xs text-slate-500">{idx+1}</td><td className="p-3 text-xs font-black text-white">{r.nama}</td>{r.months.map((m,j)=><td key={j} className="p-3 text-center"><button type="button" onClick={()=>updateRecapStatus(r.nama,recapMonths2026[j],!m.paid)} className={`inline-flex min-w-20 items-center justify-center rounded-xl px-3 py-2 text-[11px] font-black ${m.paid?'bg-emerald-500/15 text-emerald-300':'bg-red-500/15 text-red-300'}`} title="Klik untuk mengubah status">{m.paid?'✓ LUNAS':'✕ BELUM'}</button></td>)}</tr>)}</tbody></table></div></section>
 
         <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-4">
