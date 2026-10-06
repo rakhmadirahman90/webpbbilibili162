@@ -42,6 +42,7 @@ export default function PublicKasView({ memberOnlyName }: PublicKasViewProps = {
   const [loading, setLoading] = useState(true);
   const [kasData, setKasData] = useState<KasEntry[]>([]);
   const [members, setMembers] = useState<string[]>([]);
+  const [publicTab,setPublicTab]=useState<'kas'|'iuran'>('kas');
   const [searchTerm, setSearchTerm] = useState('');
   
   // Pagination State
@@ -590,12 +591,15 @@ export default function PublicKasView({ memberOnlyName }: PublicKasViewProps = {
         </button>
       </div>
 
-      {!memberOnlyName && <section className="mb-6 md:mb-10 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      {!memberOnlyName && <div className="mb-6 grid grid-cols-2 gap-2 rounded-2xl bg-slate-100 p-1.5 md:mb-8"><button type="button" onClick={()=>setPublicTab('kas')} className={`rounded-xl px-3 py-3 text-[10px] font-black uppercase tracking-wider transition ${publicTab==='kas'?'bg-slate-900 text-white shadow-lg':'text-slate-500 hover:bg-white'}`}><Wallet size={14} className="mr-1.5 inline"/>Transparansi Kas</button><button type="button" onClick={()=>setPublicTab('iuran')} className={`rounded-xl px-3 py-3 text-[10px] font-black uppercase tracking-wider transition ${publicTab==='iuran'?'bg-blue-600 text-white shadow-lg':'text-slate-500 hover:bg-white'}`}><CheckCircle2 size={14} className="mr-1.5 inline"/>Rekap Iuran</button></div>}
+
+      {!memberOnlyName && publicTab==='iuran' && <div><section className="mb-6 md:mb-10 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="flex flex-col gap-3 bg-slate-950 p-4 text-white sm:flex-row sm:items-center sm:justify-between md:p-6"><div><div className="text-[9px] font-black uppercase tracking-[.2em] text-blue-300">Rekap Iuran Anggota</div><h3 className="mt-1 text-lg font-black">September – Desember 2026</h3><p className="mt-1 text-[10px] text-slate-400">Status pembayaran seluruh anggota aktif • sinkron otomatis dari Kas.</p></div><div className="flex gap-2"><button onClick={exportIuranPdf} className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-3 py-2 text-[9px] font-black"><FileText size={13}/> PDF</button><button onClick={exportIuranCsv} className="flex items-center gap-1.5 rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-[9px] font-black"><Download size={13}/> CSV</button></div></div>
         <div className="overflow-x-auto"><table className="w-full min-w-[650px] text-left"><thead className="bg-slate-50 text-[9px] font-black uppercase text-slate-500"><tr><th className="px-4 py-3">No</th><th className="px-4 py-3">Nama Anggota</th>{iuranMonths.map(m=><th key={m.key} className="px-3 py-3 text-center">{m.label}</th>)}<th className="px-4 py-3 text-center">Rekap</th></tr></thead><tbody>{iuranRecap.map((r,i)=><tr key={r.name} className="border-t border-slate-100"><td className="px-4 py-3 text-[10px] text-slate-400">{i+1}</td><td className="px-4 py-3 text-[10px] font-black text-slate-800">{r.name}</td>{r.status.map((v,j)=><td key={j} className="px-3 py-3 text-center">{v?<span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-[8px] font-black text-emerald-700"><CheckCircle2 size={10}/> LUNAS</span>:<span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-1 text-[8px] font-black text-rose-600"><XCircle size={10}/> BELUM</span>}</td>)}<td className="px-4 py-3 text-center text-[10px] font-black text-slate-700">{r.status.filter(Boolean).length}/4</td></tr>)}</tbody></table></div>
         <div className="grid grid-cols-2 gap-2 border-t border-slate-100 bg-slate-50 p-3 sm:grid-cols-4">{iuranMonths.map((m,j)=>{const n=iuranRecap.filter(r=>r.status[j]).length;return <div key={m.key} className="rounded-xl bg-white p-3 text-center"><div className="text-[9px] font-black uppercase text-slate-400">{m.label} 2026</div><div className="mt-1 text-sm font-black text-slate-900">{n} Lunas</div><div className="text-[8px] text-slate-400">{Math.max(0,members.length-n)} belum</div></div>})}</div>
-      </section>}
+      </section></div>}
 
+      {(memberOnlyName || publicTab==='kas') && <>
       {/* Filter Section */}
       <div className={`grid grid-cols-1 ${memberOnlyName ? 'sm:grid-cols-2' : 'sm:grid-cols-2 lg:grid-cols-3'} gap-4 md:gap-6 mb-6 md:mb-10 bg-slate-50 p-4 xs:p-6 md:p-8 rounded-2xl md:rounded-[2.5rem] border border-slate-100 shadow-inner`}>
         {!memberOnlyName && (
@@ -942,6 +946,8 @@ export default function PublicKasView({ memberOnlyName }: PublicKasViewProps = {
           </div>
         </div>
       )}
+
+      </>}
 
       {/* Footer Info */}
       <div className="mt-8 md:mt-12 flex flex-col md:flex-row justify-between items-center gap-3 text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em] md:tracking-[0.4em] text-slate-400 text-center">
