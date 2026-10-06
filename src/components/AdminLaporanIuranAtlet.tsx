@@ -892,9 +892,8 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
             </>
           )}
         </section>
-      </div>
-
         </>}
+      </div>
 
       {detail && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 p-3 backdrop-blur-sm">
