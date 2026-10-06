@@ -205,6 +205,7 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
   const [members, setMembers] = useState<Member[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [statusOverrides, setStatusOverrides] = useState<Record<string, boolean>>({});
+  const [adminTab,setAdminTab]=useState<'laporan'|'rekap'>('laporan');
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState<PlayerReport | null>(null);
   const [loggedInMemberName, setLoggedInMemberName] = useState('');
@@ -665,6 +666,9 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
           </div>
         </section>
 
+        <section className="rounded-2xl border border-white/10 bg-[#0b1224] p-1.5 shadow-xl"><div className="grid grid-cols-2 gap-1.5"><button type="button" onClick={()=>setAdminTab('laporan')} className={`rounded-xl px-3 py-3 text-[10px] font-black uppercase tracking-wider transition ${adminTab==='laporan'?'bg-blue-600 text-white shadow-lg':'text-slate-400 hover:bg-white/5'}`}><Wallet size={14} className="mr-1.5 inline"/>Laporan Iuran</button><button type="button" onClick={()=>setAdminTab('rekap')} className={`rounded-xl px-3 py-3 text-[10px] font-black uppercase tracking-wider transition ${adminTab==='rekap'?'bg-violet-600 text-white shadow-lg':'text-slate-400 hover:bg-white/5'}`}><CheckCircle2 size={14} className="mr-1.5 inline"/>Rekap Sep–Des</button></div></section>
+
+        {adminTab==='rekap' && <>
         <section className="rounded-3xl border border-blue-500/20 bg-[#0b1224] p-4 sm:p-6 shadow-xl">
           <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div><h2 className="text-lg font-black leading-tight text-white sm:text-xl">Rekap Iuran September – Desember 2026</h2><p className="mt-1 text-[10px] leading-4 text-slate-400">✓ sudah bayar Rp10.000 • ✕ belum bayar • ketuk status untuk mengubah.</p></div>
@@ -673,7 +677,9 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
           <div className="hidden overflow-x-auto sm:block"><table className="w-full min-w-[760px] table-auto text-left"><thead><tr className="border-b border-white/10 text-[9px] uppercase text-slate-400"><th className="w-12 p-3">No</th><th className="min-w-[190px] p-3">Nama Peserta</th>{recapMonths2026.map(mi=><th key={mi} className="min-w-[115px] p-3 text-center">{MONTHS[mi]}</th>)}</tr></thead><tbody>{recap2026.map((r,idx)=><tr key={r.id} className="border-b border-white/5"><td className="p-3 text-xs text-slate-500">{idx+1}</td><td className="p-3 text-xs font-black text-white">{r.nama}</td>{r.months.map((m,j)=><td key={j} className="p-3 text-center"><button type="button" onClick={()=>updateRecapStatus(r.nama,recapMonths2026[j],!m.paid)} className={`inline-flex min-w-[92px] items-center justify-center whitespace-nowrap rounded-xl px-3 py-2 text-[10px] font-black ${m.paid?'bg-emerald-500/15 text-emerald-300':'bg-red-500/15 text-red-300'}`}>{m.paid?'✓ LUNAS':'✕ BELUM'}</button></td>)}</tr>)}</tbody></table></div>
           <div className="space-y-3 sm:hidden">{recap2026.map((r,idx)=><article key={r.id} className="rounded-2xl border border-white/10 bg-[#091426] p-3"><div className="mb-3 flex items-center gap-3"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white/5 text-[10px] font-black text-slate-400">{idx+1}</span><strong className="min-w-0 break-words text-sm font-black text-white">{r.nama}</strong></div><div className="grid grid-cols-2 gap-2">{r.months.map((m,j)=><button key={j} type="button" onClick={()=>updateRecapStatus(r.nama,recapMonths2026[j],!m.paid)} className={`min-w-0 rounded-xl border px-2 py-2.5 text-center ${m.paid?'border-emerald-500/20 bg-emerald-500/10':'border-red-500/20 bg-red-500/10'}`}><span className="block text-[8px] font-black uppercase tracking-wide text-slate-400">{MONTHS[recapMonths2026[j]]}</span><strong className={`mt-1 block whitespace-nowrap text-[10px] font-black ${m.paid?'text-emerald-300':'text-red-300'}`}>{m.paid?'✓ LUNAS':'✕ BELUM'}</strong></button>)}</div></article>)}</div>
         </section>
+        </>}
 
+        {adminTab==='laporan' && <>
         <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-4">
             <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-wider text-slate-400"><Users size={14} /> Total Atlet</div>
@@ -887,6 +893,8 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
           )}
         </section>
       </div>
+
+        </>}
 
       {detail && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 p-3 backdrop-blur-sm">
