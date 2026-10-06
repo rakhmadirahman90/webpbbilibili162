@@ -147,10 +147,11 @@ export default function AgendaPB162({ compact = false }: { compact?: boolean }) 
     </div>
 
     {selected && <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/75 p-0 backdrop-blur-sm sm:items-center sm:p-4" onMouseDown={(e) => e.target === e.currentTarget && setSelected(null)}>
-      <article className="max-h-[92vh] w-full overflow-y-auto rounded-t-3xl border border-white/10 bg-[#0b1224] shadow-2xl sm:max-w-2xl sm:rounded-3xl">
+      <article className="relative max-h-[92vh] w-full overflow-y-auto rounded-t-3xl border border-white/10 bg-[#0b1224] shadow-2xl sm:max-w-2xl sm:rounded-3xl">
+        <button type="button" onClick={() => setSelected(null)} aria-label="Tutup detail agenda" className="sticky top-3 z-[120] float-right mr-3 -mb-12 mt-3 grid h-11 w-11 place-items-center rounded-full border border-white/30 bg-[#07101f]/95 text-white shadow-xl backdrop-blur-md transition hover:bg-rose-600 active:scale-95"><X size={22} strokeWidth={2.5}/></button>
         <div className="relative aspect-video w-full overflow-hidden bg-black">
           {selected.image_url ? <img src={selected.image_url} alt={selected.title} className="h-full w-full object-cover will-change-transform" style={{ objectPosition: selected.image_position || "50% 50%", transform: `scale(${(selected.image_zoom || 100) / 100}) rotate(${selected.image_rotation || 0}deg)`, transformOrigin: 'center center' }} /> : <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-blue-950 via-[#0b1224] to-slate-950"><CalendarDays size={56} className="text-blue-500/40" /></div>}
-          <button type="button" onClick={() => setSelected(null)} aria-label="Tutup detail agenda" className="absolute right-3 top-3 rounded-full border border-white/20 bg-black/60 p-2 text-white backdrop-blur transition hover:bg-black/80"><X size={18} /></button>
+
         </div>
         <div className="p-5 sm:p-7">
           <div className="flex flex-wrap items-center gap-2">
