@@ -502,6 +502,17 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
       const { error } = await query;
       if (error) throw error;
 
+      // Status rekap selalu mengikuti entri penerimaan iuran. Jika transaksi iuran
+      // Rp10.000+ disimpan untuk suatu bulan, hapus override lama agar transaksi menjadi sumber utama.
+      if (transactionForm.jenis_transaksi === 'Masuk' && PAYMENT_CATEGORIES.includes(transactionForm.kategori) && amount >= 10000) {
+        const noteMonths = parseMonthsFromNote(transactionForm.keterangan);
+        const dateMonth = monthFromDate(transactionForm.tanggal_transaksi);
+        const dateYear = yearFromDate(transactionForm.tanggal_transaksi);
+        const monthsToSync = noteMonths.length ? noteMonths.map(m => MONTHS.indexOf(m)).filter(i => i >= 0) : [dateMonth];
+        if (dateYear === 2026) {
+          await Promise.all(monthsToSync.map(mi => supabase.from('iuran_status_override').delete().eq('member_name', transactionForm.nama_pembayar.trim()).eq('year', 2026).eq('month', mi + 1)));
+        }
+      }
       const wasEditing = Boolean(editingTransactionId);
       setTransactionModalOpen(false);
       setEditingTransactionId(null);
@@ -577,7 +588,7 @@ export default function AdminLaporanIuranAtlet({ isAdmin = true, session }: Prop
   };
 
   const recapMonths2026 = [8,9,10,11];
-  const recap2026 = useMemo(() => members.map(member => ({...member, months:recapMonths2026.map(mi=>{const month=MONTHS[mi];const paidAmount=transactions.filter(t=>normalizeName(t.nama_pembayar)===normalizeName(member.nama)&&PAYMENT_CATEGORIES.includes(t.kategori)&&isTransactionInPeriod(t,month,2026,mi)).reduce((s,t)=>s+Number(t.jumlah_bayar||0),0);const key=`${normalizeName(member.nama)}|2026|${mi+1}`;return {paid:Object.prototype.hasOwnProperty.call(statusOverrides,key)?statusOverrides[key]:paidAmount>=10000,amount:paidAmount};})})),[members,transactions,statusOverrides]);
+  const recap2026 = useMemo(() => members.map(member => ({...member, months:recapMonths2026.map(mi=>{const month=MONTHS[mi];const paidAmount=transactions.filter(t=>normalizeName(t.nama_pembayar)===normalizeName(member.nama)&&PAYMENT_CATEGORIES.includes(t.kategori)&&isTransactionInPeriod(t,month,2026,mi)).reduce((s,t)=>s+Number(t.jumlah_bayar||0),0);const key=`${normalizeName(member.nama)}|2026|${mi+1}`;const automaticPaid=paidAmount>=10000;const overridePaid=statusOverrides[key];return {paid:automaticPaid || overridePaid===true,amount:paidAmount};})})),[members,transactions,statusOverrides]);
   const updateRecapStatus=async(name:string,mi:number,paid:boolean)=>{const {error}=await supabase.from('iuran_status_override').upsert({member_name:name,year:2026,month:mi+1,paid,updated_at:new Date().toISOString()},{onConflict:'member_name,year,month'});if(error){Swal.fire({icon:'error',title:'Gagal mengubah status',text:error.message,background:'#0b1224',color:'#fff'});return;}setStatusOverrides(v=>({...v,[`${normalizeName(name)}|2026|${mi+1}`]:paid}));};
   const exportRecapExcel=()=>{const ws=XLSX.utils.json_to_sheet(recap2026.map((r,i)=>({No:i+1,'Nama Peserta':r.nama.toUpperCase(),September:r.months[0].paid?'✓':'✕',Oktober:r.months[1].paid?'✓':'✕',November:r.months[2].paid?'✓':'✕',Desember:r.months[3].paid?'✓':'✕'})));ws['!cols']=[{wch:6},{wch:32},{wch:14},{wch:14},{wch:14},{wch:14}];const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Rekap Sep-Des');XLSX.writeFile(wb,'Rekap_Iuran_Peserta_Sep-Des_2026.xlsx');};
   const exportRecapPDF=()=>{const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});doc.setFont('helvetica','bold');doc.setFontSize(16);doc.text('REKAP IURAN PESERTA PB BILIBILI 162',14,16);doc.setFontSize(9);doc.text('September - Desember 2026 | Rp10.000 per bulan',14,22);autoTable(doc,{startY:28,head:[['No','Nama Peserta','September','Oktober','November','Desember']],body:recap2026.map((r,i)=>[i+1,r.nama.toUpperCase(),...r.months.map(m=>m.paid?'✓':'✕')]),styles:{fontSize:9,halign:'center'},columnStyles:{1:{halign:'left',fontStyle:'bold'}},headStyles:{fillColor:[37,99,235],textColor:255}});doc.save('Rekap_Iuran_Peserta_Sep-Des_2026.pdf');};
