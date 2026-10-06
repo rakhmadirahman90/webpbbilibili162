@@ -5,7 +5,7 @@ import Swal from 'sweetalert2';
 import { 
   Wallet, FileText, Loader2, ArrowUpCircle, ArrowDownCircle, Calendar,
   ChevronLeft, ChevronRight, Search, Info, TrendingUp, TrendingDown,
-  Package, Zap
+  Package, Zap, Download, CheckCircle2, XCircle
 } from 'lucide-react'; 
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -41,6 +41,7 @@ interface PublicKasViewProps {
 export default function PublicKasView({ memberOnlyName }: PublicKasViewProps = {}) {
   const [loading, setLoading] = useState(true);
   const [kasData, setKasData] = useState<KasEntry[]>([]);
+  const [members, setMembers] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   
   // Pagination State
@@ -85,6 +86,10 @@ export default function PublicKasView({ memberOnlyName }: PublicKasViewProps = {
 
       const fetchedKas = Array.isArray(data) ? data : [];
       setKasData(fetchedKas as KasEntry[]);
+      if (!memberOnlyName) {
+        const { data: memberData } = await supabase.from('pendaftaran').select('nama,status').order('nama');
+        if (memberData) setMembers(memberData.filter((m:any)=>String(m.status||'aktif').toLowerCase()==='aktif').map((m:any)=>String(m.nama||'').trim()).filter(Boolean));
+      }
 
       if (fetchedKas.length > 0 && (!hasSetInitialDates || forceResetDates)) {
         const sorted = [...fetchedKas].sort((a, b) =>
@@ -199,6 +204,14 @@ export default function PublicKasView({ memberOnlyName }: PublicKasViewProps = {
 
   const modalTetap = 600000;
   const saldoBendahara = saldoAkhirPeriode - modalTetap;
+
+  const iuranMonths = [9,10,11,12].map(month=>({month,key:`2026-${String(month).padStart(2,'0')}`,label:['','Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'][month]}));
+  const normName=(s:string)=>String(s||'').trim().replace(/\s+/g,' ').toUpperCase();
+  const iuranRows=kasData.filter(x=>x.jenis_transaksi==='Masuk' && x.kategori.toLowerCase().includes('iuran bulanan'));
+  const paidFor=(name:string,key:string)=>iuranRows.some(x=>{const note=(x.keterangan||'').toLowerCase(); const tx=x.tanggal_transaksi.slice(0,7); if(normName(x.nama_pembayar)!==normName(name))return false; if(key==='2026-09')return tx===key||/sept/.test(note); if(key==='2026-10')return tx===key||/okt/.test(note); if(key==='2026-11')return tx===key||/nov/.test(note); return tx===key||/des/.test(note);});
+  const iuranRecap=members.map(name=>({name,status:iuranMonths.map(m=>paidFor(name,m.key))}));
+  const exportIuranCsv=()=>{const lines=[['Nama Anggota',...iuranMonths.map(m=>m.label+' 2026'),'Total Bulan Lunas'],...iuranRecap.map(r=>[r.name,...r.status.map(v=>v?'LUNAS':'BELUM'),String(r.status.filter(Boolean).length)])];const csv='\uFEFF'+lines.map(row=>row.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(';')).join('\n');const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='rekap-iuran-pb-bilibili-162-september-desember-2026.csv';a.click();URL.revokeObjectURL(url);};
+  const exportIuranPdf=()=>{const doc=new jsPDF({orientation:'l',unit:'mm',format:'a4'});doc.setFontSize(16);doc.text('REKAP IURAN PB BILIBILI 162',14,16);doc.setFontSize(9);doc.text('Periode September - Desember 2026',14,22);autoTable(doc,{startY:27,head:[['No','Nama Anggota',...iuranMonths.map(m=>m.label),'Lunas']],body:iuranRecap.map((r,i)=>[i+1,r.name,...r.status.map(v=>v?'LUNAS':'BELUM'),r.status.filter(Boolean).length+'/4']),styles:{fontSize:7,cellPadding:2},headStyles:{fillColor:[15,23,42]}});doc.save('rekap-iuran-pb-bilibili-162-september-desember-2026.pdf');};
 
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
   const currentItems = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -576,6 +589,12 @@ export default function PublicKasView({ memberOnlyName }: PublicKasViewProps = {
           <FileText size={16} className="group-hover:rotate-12 transition-transform" /> UNDUH LAPORAN PDF
         </button>
       </div>
+
+      {!memberOnlyName && <section className="mb-6 md:mb-10 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex flex-col gap-3 bg-slate-950 p-4 text-white sm:flex-row sm:items-center sm:justify-between md:p-6"><div><div className="text-[9px] font-black uppercase tracking-[.2em] text-blue-300">Rekap Iuran Anggota</div><h3 className="mt-1 text-lg font-black">September – Desember 2026</h3><p className="mt-1 text-[10px] text-slate-400">Status pembayaran seluruh anggota aktif • sinkron otomatis dari Kas.</p></div><div className="flex gap-2"><button onClick={exportIuranPdf} className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-3 py-2 text-[9px] font-black"><FileText size={13}/> PDF</button><button onClick={exportIuranCsv} className="flex items-center gap-1.5 rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-[9px] font-black"><Download size={13}/> CSV</button></div></div>
+        <div className="overflow-x-auto"><table className="w-full min-w-[650px] text-left"><thead className="bg-slate-50 text-[9px] font-black uppercase text-slate-500"><tr><th className="px-4 py-3">No</th><th className="px-4 py-3">Nama Anggota</th>{iuranMonths.map(m=><th key={m.key} className="px-3 py-3 text-center">{m.label}</th>)}<th className="px-4 py-3 text-center">Rekap</th></tr></thead><tbody>{iuranRecap.map((r,i)=><tr key={r.name} className="border-t border-slate-100"><td className="px-4 py-3 text-[10px] text-slate-400">{i+1}</td><td className="px-4 py-3 text-[10px] font-black text-slate-800">{r.name}</td>{r.status.map((v,j)=><td key={j} className="px-3 py-3 text-center">{v?<span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-[8px] font-black text-emerald-700"><CheckCircle2 size={10}/> LUNAS</span>:<span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-1 text-[8px] font-black text-rose-600"><XCircle size={10}/> BELUM</span>}</td>)}<td className="px-4 py-3 text-center text-[10px] font-black text-slate-700">{r.status.filter(Boolean).length}/4</td></tr>)}</tbody></table></div>
+        <div className="grid grid-cols-2 gap-2 border-t border-slate-100 bg-slate-50 p-3 sm:grid-cols-4">{iuranMonths.map((m,j)=>{const n=iuranRecap.filter(r=>r.status[j]).length;return <div key={m.key} className="rounded-xl bg-white p-3 text-center"><div className="text-[9px] font-black uppercase text-slate-400">{m.label} 2026</div><div className="mt-1 text-sm font-black text-slate-900">{n} Lunas</div><div className="text-[8px] text-slate-400">{Math.max(0,members.length-n)} belum</div></div>})}</div>
+      </section>}
 
       {/* Filter Section */}
       <div className={`grid grid-cols-1 ${memberOnlyName ? 'sm:grid-cols-2' : 'sm:grid-cols-2 lg:grid-cols-3'} gap-4 md:gap-6 mb-6 md:mb-10 bg-slate-50 p-4 xs:p-6 md:p-8 rounded-2xl md:rounded-[2.5rem] border border-slate-100 shadow-inner`}>
