@@ -105,6 +105,7 @@ export default function AdminLaporanIuran() {
   const [selectedMonthIndex, setSelectedMonthIndex] = useState(todayDate.getMonth());
   const [athletes, setAthletes] = useState<Athlete[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
+  const [overrides,setOverrides]=useState<Record<string,boolean>>({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -120,7 +121,7 @@ export default function AdminLaporanIuran() {
       const [rankingsRes, membersRes, kasRes] = await Promise.all([
         supabase.from('rankings').select('id, player_name, category').order('player_name', { ascending: true }),
         supabase.from('pendaftaran').select('id, nama, kategori_atlet, kategori').order('nama', { ascending: true }),
-        supabase.from('kas_pb').select('id, tanggal_transaksi, nama_pembayar, kategori, jumlah_bayar, tipe_anggota, keterangan, created_at').order('tanggal_transaksi', { ascending: false }),
+        supabase.from('kas_pb').select('id, tanggal_transaksi, nama_pembayar, kategori, jumlah_bayar, tipe_anggota, keterangan, created_at').order('tanggal_transaksi', { ascending: false })
       ]);
 
       if (rankingsRes.error) throw rankingsRes.error;
@@ -164,6 +165,8 @@ export default function AdminLaporanIuran() {
 
       setAthletes(nextAthletes);
       setPayments(nextPayments);
+      const overrideQuery:any = await supabase.from('iuran_status_override').select('member_name,year,month,paid').eq('year',2026);
+      if(!overrideQuery.error){const map:Record<string,boolean>={};(overrideQuery.data||[]).forEach((x:any)=>map[`${normalizeName(x.member_name)}|${x.year}|${x.month}`]=!!x.paid);setOverrides(map);}
     } catch (error: any) {
       console.error('Laporan iuran gagal dimuat:', error);
       Swal.fire({
@@ -187,6 +190,7 @@ export default function AdminLaporanIuran() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'kas_pb' }, () => loadData(true))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'rankings' }, () => loadData(true))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'pendaftaran' }, () => loadData(true))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'iuran_status_override' }, () => loadData(true))
       .subscribe();
     const handleKasUpdate = () => loadData(true);
     window.addEventListener('kas-updated', handleKasUpdate);
@@ -268,18 +272,14 @@ export default function AdminLaporanIuran() {
       const relevant = payments.filter(p => normalizeName(p.name) === normalizeName(athlete.name))
         .filter(p => p.category === IURAN_BULANAN || p.category === IURAN_BINAAN)
         .filter(p => paymentBelongsToMonth(p, 2026, monthIndex));
-      const amount = relevant.reduce((sum,p)=>sum+p.amount,0);
-      return { amount, paid: amount >= TARGET_IURAN };
+      const amount = relevant.reduce((sum,p)=>sum+p.amount,0); const key=`${normalizeName(athlete.name)}|2026|${monthIndex+1}`; const paid=Object.prototype.hasOwnProperty.call(overrides,key)?overrides[key]:amount>=TARGET_IURAN;
+      return { amount, paid };
     })
-  })), [athletes, payments]);
+  })), [athletes, payments, overrides]);
 
-  const exportRecap2026Excel = () => {
-    const rows = recap2026.map((row,index) => ({ No:index+1, 'Nama Atlet':row.name.toUpperCase(), Kategori:row.category, September:row.months[0].paid?'LUNAS':'BELUM BAYAR', Oktober:row.months[1].paid?'LUNAS':'BELUM BAYAR', November:row.months[2].paid?'LUNAS':'BELUM BAYAR', Desember:row.months[3].paid?'LUNAS':'BELUM BAYAR', 'Total Bulan Lunas':row.months.filter(m=>m.paid).length }));
-    const ws=XLSX.utils.json_to_sheet(rows); ws['!cols']=[{wch:6},{wch:30},{wch:16},{wch:16},{wch:16},{wch:16},{wch:16},{wch:18}]; const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Sep-Des 2026'); XLSX.writeFile(wb,'Rekap_Iuran_PB_Bilibili_162_Sep-Des_2026.xlsx');
-  };
-  const exportRecap2026PDF = () => {
-    const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4',compress:true}); doc.setFont('helvetica','bold').setFontSize(16); doc.text('PB. BILIBILI 162 — REKAP IURAN SEPTEMBER–DESEMBER 2026',14,16); autoTable(doc,{startY:23,head:[['No','Nama Atlet','Kategori','Sep','Okt','Nov','Des','Lunas']],body:recap2026.map((r,i)=>[i+1,r.name.toUpperCase(),r.category,...r.months.map(m=>m.paid?'LUNAS':'BELUM'),r.months.filter(m=>m.paid).length+'/4']),headStyles:{fillColor:[30,64,175],textColor:255,fontSize:8},bodyStyles:{fontSize:7.5}}); doc.save('Rekap_Iuran_PB_Bilibili_162_Sep-Des_2026.pdf');
-  };
+  const setRecapStatus=async(name:string,monthIndex:number,paid:boolean)=>{const month=monthIndex+1;const {error}=await supabase.from('iuran_status_override').upsert({member_name:name,year:2026,month,paid,updated_at:new Date().toISOString()},{onConflict:'member_name,year,month'});if(error){Swal.fire({icon:'error',title:'Gagal Mengubah Status',text:error.message});return;}setOverrides(v=>({...v,[`${normalizeName(name)}|2026|${month}`]:paid}));};
+  const exportRecap2026Excel = () => { const rows=recap2026.map((r,i)=>({No:i+1,'Nama Peserta':r.name.toUpperCase(),September:r.months[0].paid?'✓':'✕',Oktober:r.months[1].paid?'✓':'✕',November:r.months[2].paid?'✓':'✕',Desember:r.months[3].paid?'✓':'✕'}));const ws=XLSX.utils.json_to_sheet(rows);ws['!cols']=[{wch:6},{wch:32},{wch:14},{wch:14},{wch:14},{wch:14}];const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Rekap Iuran');XLSX.writeFile(wb,'Rekap_Iuran_Peserta_Sep-Des_2026.xlsx');};
+  const exportRecap2026PDF = () => {const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});doc.setFont('helvetica','bold').setFontSize(16);doc.text('REKAP IURAN PESERTA PB BILIBILI 162',14,16);doc.setFontSize(9);doc.text('September - Desember 2026 | Target Rp10.000 / bulan',14,22);autoTable(doc,{startY:28,head:[['No','Nama Peserta','September','Oktober','November','Desember']],body:recap2026.map((r,i)=>[i+1,r.name.toUpperCase(),...r.months.map(m=>m.paid?'✓':'✕')]),styles:{fontSize:9,halign:'center'},columnStyles:{1:{halign:'left',fontStyle:'bold'}},headStyles:{fillColor:[30,64,175],textColor:255}});doc.save('Rekap_Iuran_Peserta_Sep-Des_2026.pdf');};
 
   const todayPayments = useMemo(() => {
     return payments
@@ -441,8 +441,8 @@ export default function AdminLaporanIuran() {
 
       <section className="iuran-table-card" style={{marginBottom:'1.25rem'}}>
         <div className="iuran-table-head"><div><h2>Rekap Iuran September – Desember 2026</h2><p>Ringkasan pembayaran seluruh atlet aktif dalam satu tabel.</p></div><div className="iuran-report-actions"><button type="button" className="iuran-btn success" onClick={exportRecap2026Excel}><FileSpreadsheet size={15}/><span>Excel</span></button><button type="button" className="iuran-btn primary" onClick={exportRecap2026PDF}><FileText size={15}/><span>PDF</span></button></div></div>
-        <div className="iuran-desktop-table-wrap"><table className="iuran-table"><thead><tr><th>No</th><th>Atlet</th><th>Kategori</th>{recapMonths.map(m=><th key={m}>{MONTHS_ID[m]}</th>)}<th>Rekap</th></tr></thead><tbody>{recap2026.map((row,index)=><tr key={row.id}><td>{index+1}</td><td><div className="iuran-athlete-name">{row.name}</div></td><td><span className="iuran-category-chip">{row.category}</span></td>{row.months.map((m,i)=><td key={i}><span className={`iuran-status ${m.paid?'paid':'unpaid'}`}>{m.paid?'LUNAS':'BELUM'}</span></td>)}<td><strong>{row.months.filter(m=>m.paid).length}/4</strong></td></tr>)}</tbody></table></div>
-        <div className="iuran-mobile-list">{recap2026.map((row,index)=><article className="iuran-mobile-item" key={row.id}><div className="iuran-mobile-top"><span className="iuran-mobile-no">#{index+1}</span><strong>{row.months.filter(m=>m.paid).length}/4 bulan lunas</strong></div><div className="iuran-mobile-athlete"><div className="iuran-athlete-avatar">{row.name.slice(0,1).toUpperCase()}</div><div><strong>{row.name}</strong><span>{row.category}</span></div></div><div className="iuran-mobile-money">{row.months.map((m,i)=><div key={i}><span>{MONTHS_ID[recapMonths[i]].slice(0,3)}</span><b className={m.paid?'text-emerald-600':'text-rose-600'}>{m.paid?'LUNAS':'BELUM'}</b></div>)}</div></article>)}</div>
+        <div className="iuran-desktop-table-wrap"><table className="iuran-table"><thead><tr><th>No</th><th>Atlet</th><th>Kategori</th>{recapMonths.map(m=><th key={m}>{MONTHS_ID[m]}</th>)}<th>Rekap</th></tr></thead><tbody>{recap2026.map((row,index)=><tr key={row.id}><td>{index+1}</td><td><div className="iuran-athlete-name">{row.name}</div></td><td><span className="iuran-category-chip">{row.category}</span></td>{row.months.map((m,i)=><td key={i}><span className={`iuran-status ${m.paid?'paid':'unpaid'}`}>{m.paid?'✓':'✕'}</span><button type="button" onClick={()=>setRecapStatus(row.name,recapMonths[i],!m.paid)} className="ml-2 rounded-lg border border-slate-200 px-2 py-1 text-[10px] font-bold">Ubah</button></td>)}<td><strong>{row.months.filter(m=>m.paid).length}/4</strong></td></tr>)}</tbody></table></div>
+        <div className="iuran-mobile-list">{recap2026.map((row,index)=><article className="iuran-mobile-item" key={row.id}><div className="iuran-mobile-top"><span className="iuran-mobile-no">#{index+1}</span><strong>{row.months.filter(m=>m.paid).length}/4 bulan lunas</strong></div><div className="iuran-mobile-athlete"><div className="iuran-athlete-avatar">{row.name.slice(0,1).toUpperCase()}</div><div><strong>{row.name}</strong><span>{row.category}</span></div></div><div className="iuran-mobile-money">{row.months.map((m,i)=><div key={i}><span>{MONTHS_ID[recapMonths[i]].slice(0,3)}</span><b className={m.paid?'text-emerald-600':'text-rose-600'}>{m.paid?'✓':'✕'}</b><button type="button" onClick={()=>setRecapStatus(row.name,recapMonths[i],!m.paid)} className="mt-1 text-[9px] font-bold text-blue-600">Ubah</button></div>)}</div></article>)}</div>
       </section>
 
       <section className="iuran-progress-card">
