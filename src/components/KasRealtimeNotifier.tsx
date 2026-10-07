@@ -42,20 +42,23 @@ const attachmentLine = (tx: any, fallbackTx?: any) => {
 • Preview: ${previewUrl}`;
 };
 
-const detail = (tx: any, income: boolean) => {
-  if (!tx) return 'Nihil';
-  return [
-    `• Status: *BERHASIL*`,
-    `• Jenis: ${income ? '📥 Pemasukan' : '📤 Pengeluaran'}`,
-    `• Tanggal: *${formatDateTime(tx)}*`,
-    `• Nama: *${tx.nama_pembayar || '-'}*`,
-    `• Kategori: ${tx.kategori || '-'}`,
-    `• Jumlah: *${formatRupiah(tx.jumlah_bayar)}*`,
-    `• Catatan: ${tx.keterangan || '-'}`,
-  ].join('\n');
+const detailList = (items: any[], income: boolean) => {
+  if (!items.length) return 'Nihil';
+  return [...items]
+    .sort((a, b) => String(b.created_at || b.updated_at || b.tanggal_transaksi || '').localeCompare(String(a.created_at || a.updated_at || a.tanggal_transaksi || '')))
+    .map((tx, index) => [
+      `*${index + 1}. ${tx.nama_pembayar || (income ? 'Pemasukan' : 'Pengeluaran')}*`,
+      `• Status: *BERHASIL*`,
+      `• Jenis: ${income ? '📥 Pemasukan' : '📤 Pengeluaran'}`,
+      `• Tanggal: *${formatDateTime(tx)}*`,
+      `• Kategori: ${tx.kategori || '-'}`,
+      `• Jumlah: *${formatRupiah(tx.jumlah_bayar)}*`,
+      `• Catatan: ${tx.keterangan || '-'}`,
+    ].join('\n'))
+    .join('\n\n');
 };
 
-const buildWaText = ({ startDate, endDate, previous, income, expense, saldo, saldoTerakhir, latestIncome, latestExpense, latestAttachment }: { startDate: string; endDate: string; previous: number; income: number; expense: number; saldo: number; saldoTerakhir: number; latestIncome: any; latestExpense: any; latestAttachment?: any; }) => {
+const buildWaText = ({ startDate, endDate, previous, income, expense, saldo, saldoTerakhir, incomeItems, expenseItems, latestAttachment }: { startDate: string; endDate: string; previous: number; income: number; expense: number; saldo: number; saldoTerakhir: number; incomeItems: any[]; expenseItems: any[]; latestAttachment?: any; }) => {
   const modalTetap = 600000;
   const bendahara = saldoTerakhir - modalTetap;
   const proof = latestAttachment
@@ -71,11 +74,11 @@ const buildWaText = ({ startDate, endDate, previous, income, expense, saldo, sal
     `${startDate} s/d ${endDate}`,
     '━━━━━━━━━━━━━━━━━━━━',
     '',
-    '📥 *PEMASUKAN TERBARU*',
-    detail(latestIncome, true),
+    '📥 *DAFTAR PEMASUKAN PERIODE INI*',
+    detailList(incomeItems, true),
     '',
-    '📤 *PENGELUARAN TERBARU*',
-    detail(latestExpense, false),
+    '📤 *DAFTAR PENGELUARAN PERIODE INI*',
+    detailList(expenseItems, false),
     '',
     '💰 *RINGKASAN KEUANGAN*',
     `• Saldo sebelumnya: ${formatRupiah(previous)}`,
@@ -128,12 +131,14 @@ export default function KasRealtimeNotifier() {
       // Current balance is independent of today's snapshot/filter: it is the
       // net value of every transaction currently stored in kas_pb.
       const saldoTerakhir = all.reduce((total, tx) => total + (isMasuk(tx) ? 1 : -1) * Number(tx.jumlah_bayar || 0), 0);
-      const latestIncome = latest(daily, true);
-      const latestExpense = latest(daily, false);
+      const incomeItems = daily.filter(tx => isMasuk(tx));
+      const expenseItems = daily.filter(tx => !isMasuk(tx));
+      const latestIncome = latest(incomeItems, true);
+      const latestExpense = latest(expenseItems, false);
       const latestAttachment = [...all].filter(hasAttachment).sort((a, b) => String(b.updated_at || b.created_at || b.tanggal_transaksi || '').localeCompare(String(a.updated_at || a.created_at || a.tanggal_transaksi || '')))[0] || null;
       const eventInSnapshot = !!eventTx && inFilter(eventTx, snapshotDate, snapshotEndDate);
       const title = eventInSnapshot ? eventType === 'INSERT' ? 'TRANSAKSI KAS BARU!' : eventType === 'DELETE' ? 'TRANSAKSI KAS DIHAPUS!' : 'UPDATE KAS TERBARU!' : 'LAPORAN KAS TERBARU';
-      const waText = buildWaText({ startDate: snapshotDate, endDate: snapshotEndDate, previous, income, expense, saldo, saldoTerakhir, latestIncome, latestExpense, latestAttachment });
+      const waText = buildWaText({ startDate: snapshotDate, endDate: snapshotEndDate, previous, income, expense, saldo, saldoTerakhir, incomeItems, expenseItems, latestAttachment });
       const waHref = `https://api.whatsapp.com/send?text=${encodeURIComponent(waText)}`;
       if (mounted) await Swal.fire({ icon: eventType === 'DELETE' ? 'warning' : 'success', title, html: `<div style="text-align:left;font-size:13px;line-height:1.6"><b>Snapshot:</b> ${snapshotDate}<br/><b>Saldo Sebelumnya:</b> ${formatRupiah(previous)}<br/><b>Total Pemasukan:</b> ${formatRupiah(income)}<br/><b>Total Pengeluaran:</b> ${formatRupiah(expense)}<br/><b>Saldo Akhir Periode:</b> ${formatRupiah(saldo)}<br/><br/><b>Saldo Terakhir Saat Ini:</b> ${formatRupiah(saldoTerakhir)}<br/><b>Modal Tetap:</b> ${formatRupiah(modalTetap)}<br/><b>Kas Bendahara:</b> ${formatRupiah(bendahara)}<br/><br/><b>Penerimaan Terbaru:</b> ${latestIncome ? `${latestIncome.nama_pembayar || latestIncome.kategori} — ${formatRupiah(latestIncome.jumlah_bayar)}` : 'Nihil'}<br/><b>Pengeluaran Terbaru:</b> ${latestExpense ? `${latestExpense.nama_pembayar || latestExpense.kategori} — ${formatRupiah(latestExpense.jumlah_bayar)}` : 'Nihil'}</div>`, showCancelButton: true, confirmButtonText: 'Buka WhatsApp', cancelButtonText: 'Tutup', confirmButtonColor: '#25D366' }).then(result => { if (result.isConfirmed) window.open(waHref, '_blank', 'noopener,noreferrer'); });
     };
