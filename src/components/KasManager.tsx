@@ -253,7 +253,9 @@ export default function KasManager() {
       const currentBalance = BALANCE_BASE_AMOUNT + afterBaseRows.reduce((sum, r) => sum + signedAmount(r), 0);
       const modalTetap = 600000;
       const bendahara = Math.max(0, currentBalance - modalTetap);
-      const rowText = (row: KasEntry | undefined, masuk: boolean) => !row ? 'Nihil' : `• Status: *BERHASIL*\n• Jenis: ${masuk ? '📥 Pemasukan' : '📤 Pengeluaran'}\n• Tanggal: *${fmtWita(row)}*\n• Nama: *${row.nama_pembayar || '-'}*\n• Kategori: ${row.kategori || '-'}\n• Jumlah: *${rupiah(Number(row.jumlah_bayar || 0))}*${row.keterangan ? `\n• Catatan: ${row.keterangan}` : ''}`;
+      const incomeRows = rowsWithSaved.filter(r => String(r.jenis_transaksi || '').toLowerCase() === 'masuk').sort((a,b)=>String(b.updated_at||b.created_at||'').localeCompare(String(a.updated_at||a.created_at||'')));
+      const expenseRows = rowsWithSaved.filter(r => String(r.jenis_transaksi || '').toLowerCase() === 'keluar').sort((a,b)=>String(b.updated_at||b.created_at||'').localeCompare(String(a.updated_at||a.created_at||'')));
+      const rowList = (items: KasEntry[], masuk: boolean) => items.length ? items.map((row,index) => `*${index + 1}. ${row.nama_pembayar || (masuk ? 'Pemasukan' : 'Pengeluaran')}*\n• Status: *BERHASIL*\n• Jenis: ${masuk ? '📥 Pemasukan' : '📤 Pengeluaran'}\n• Tanggal: *${fmtWita(row)}*\n• Kategori: ${row.kategori || '-'}\n• Jumlah: *${rupiah(Number(row.jumlah_bayar || 0))}*${row.keterangan ? `\n• Catatan: ${row.keterangan}` : ''}`).join('\n\n') : 'Nihil';
       // Bukti WA mengambil file/gambar PALING TERAKHIR yang tersedia pada salah satu
       // transaksi (penerimaan maupun pengeluaran). Logo hanya dipakai jika keduanya
       // benar-benar tidak memiliki lampiran.
@@ -273,7 +275,7 @@ export default function KasManager() {
       const proofBlock = latestProofRow
         ? `📎 *Bukti Transaksi Terakhir*\n• File: *${fileName}*\n• Preview: ${previewUrl}`
         : `📎 *Bukti Transaksi Terakhir*\n• File: Nihil\n• Preview logo: ${previewUrl}`;
-      const waMessage = `📢 *LAPORAN REAL-TIME KAS*\n*PB BILIBILI 162*\n\n━━━━━━━━━━━━━━━━━━━━\n📅 *PERIODE LAPORAN*\n${savedRow.tanggal_transaksi || '-'} s/d ${savedRow.tanggal_transaksi || '-'}\n━━━━━━━━━━━━━━━━━━━━\n\n📥 *PEMASUKAN TERBARU*\n${rowText(latestMasuk, true)}\n\n📤 *PENGELUARAN TERBARU*\n${rowText(latestKeluar, false)}\n\n💰 *RINGKASAN KEUANGAN*\n• Saldo sebelumnya: ${rupiah(beforePeriod)}\n• Total pemasukan: ${rupiah(periodMasuk)}\n• Total pengeluaran: ${rupiah(periodKeluar)}\n📊 *PEMBAGIAN SALDO*\n• Saldo kas saat ini: *${rupiah(currentBalance)}*\n• Modal tetap: ${rupiah(modalTetap)}\n• Kas bendahara: *${rupiah(bendahara)}*\n\n${proofBlock}\n\n🔗 *Akses Kelola Kas:* https://pbilibili162.99apps.id/kas\n\n🌐 *Info lebih lanjut:* https://pbilibili162.99apps.id/\n\n_Admin PB Bilibili 162_`;
+      const waMessage = `📢 *LAPORAN REAL-TIME KAS*\n*PB BILIBILI 162*\n\n━━━━━━━━━━━━━━━━━━━━\n📅 *PERIODE LAPORAN*\n${savedRow.tanggal_transaksi || '-'} s/d ${savedRow.tanggal_transaksi || '-'}\n━━━━━━━━━━━━━━━━━━━━\n\n📥 *DAFTAR PEMASUKAN PERIODE INI*\n${rowList(incomeRows, true)}\n\n📤 *DAFTAR PENGELUARAN PERIODE INI*\n${rowList(expenseRows, false)}\n\n💰 *RINGKASAN KEUANGAN*\n• Saldo sebelumnya: ${rupiah(beforePeriod)}\n• Total pemasukan: ${rupiah(periodMasuk)}\n• Total pengeluaran: ${rupiah(periodKeluar)}\n📊 *PEMBAGIAN SALDO*\n• Saldo kas saat ini: *${rupiah(currentBalance)}*\n• Modal tetap: ${rupiah(modalTetap)}\n• Kas bendahara: *${rupiah(bendahara)}*\n\n${proofBlock}\n\n🔗 *Akses Kelola Kas:* https://pbilibili162.99apps.id/kas\n\n🌐 *Info lebih lanjut:* https://pbilibili162.99apps.id/\n\n_Admin PB Bilibili 162_`;
       const waUrl = `https://wa.me/?text=${encodeURIComponent(waMessage)}`;
       await Swal.fire({
         icon: 'success',
