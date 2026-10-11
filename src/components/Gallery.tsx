@@ -263,8 +263,33 @@ export default function Gallery() {
   const handleShare = async (item: GalleryItem, platform: 'wa' | 'fb' | 'copy') => {
     const shareUrl = getShareUrl(item);
     const text = getGalleryWhatsAppText(item);
-    if (platform === 'wa') window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
-    if (platform === 'fb') window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`, '_blank');
+    if (platform === 'wa') {
+      // Attach the primary photo on supported Android browsers. This restores
+      // a real image in WhatsApp, independent of OG link-preview caching.
+      if (item.type === 'image' && typeof navigator.share === 'function') {
+        const firstPhoto = splitUrls(item.url)[0];
+        if (firstPhoto) {
+          try {
+            const response = await fetch(firstPhoto);
+            if (!response.ok) throw new Error('Unable to fetch gallery photo');
+            const blob = await response.blob();
+            if (!blob.type.startsWith('image/')) throw new Error('Gallery media is not an image');
+            const ext = blob.type.includes('png') ? 'png' : blob.type.includes('webp') ? 'webp' : 'jpg';
+            const photo = new File([blob], 'PB-Bilibili-162-Galeri.' + ext, { type: blob.type });
+            if (typeof navigator.canShare !== 'function' || navigator.canShare({ files: [photo] })) {
+              await navigator.share({ files: [photo], text });
+              return;
+            }
+          } catch (error) {
+            if (error instanceof DOMException && error.name === 'AbortError') return;
+            console.warn('[gallery-share] Photo attachment unavailable, using WhatsApp link', error);
+          }
+        }
+      }
+      window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(text), '_blank');
+      return;
+    }
+    if (platform === 'fb') window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(shareUrl), '_blank');
     if (platform === 'copy') {
       try {
         await navigator.clipboard.writeText(shareUrl);
