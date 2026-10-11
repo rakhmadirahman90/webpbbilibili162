@@ -354,7 +354,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           supabase.from('rankings').select('pendaftaran_id,player_name,total_points,photo_url').order('total_points', { ascending: false }),
           supabase.from('atlet_stats').select('pendaftaran_id,points,total_points,seed'),
           supabase.from('v_bilibili_162_cup1_athlete_seeded').select('*'),
-          supabase.from('berita').select('id,judul,ringkasan,gambar_url,tanggal,views,comments_count:komentar(count)').order('tanggal', { ascending: false }).limit(7),
+          supabase.from('berita').select('id,judul,ringkasan,gambar_url,tanggal,created_at,views,comments_count:komentar(count)').order('created_at', { ascending: false }).limit(7),
           supabase.from('gallery').select('id,title,type,url,thumbnail_url,description').order('created_at', { ascending: false }).limit(12),
         ]);
 
@@ -518,16 +518,9 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
               // Penulisan judul utama ditampilkan dengan kapitalisasi yang rapi:
               // singkatan/nama klub tetap kapital, sedangkan kata biasa mengikuti
               // penulisan kalimat yang normal.
-              const featuredIndex = news.findIndex((item) =>
-                String(item.judul || '').trim().toLowerCase() === featuredTitle.toLowerCase()
-              );
-              const featured = featuredIndex >= 0 ? news[featuredIndex] : news[0];
-              const featuredDisplayTitle = featuredIndex >= 0
-                ? featuredTitle
-                : featured.judul;
-              const others = news
-                .filter((_, index) => index !== (featuredIndex >= 0 ? featuredIndex : 0))
-                .slice(0, 4);
+              const featured = news[0];
+              const featuredDisplayTitle = featured.judul;
+              const others = news.slice(1, 5);
               const image = String(featured.gambar_url || '').split(/[,\s]+/)[0];
               return (
                 <>
