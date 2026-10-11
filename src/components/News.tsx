@@ -626,15 +626,14 @@ export default function News() {
   const handleShare = async (news: Berita, platform: 'wa' | 'wa_link' | 'fb' | 'x' | 'copy' | 'native') => {
     // Official production domain to ensure web scrapers and external platforms load image metadata
     const publicDomain = 'https://pbilibili162.99apps.id';
-    const shareUrl = `${publicDomain}/berita?newsId=${news.id}`;
+    const shareUrl = `${publicDomain}/api/share-berita?id=${news.id}`;
     const titleClean = news.judul.trim();
     const dateInfo = formatJournalisticDate(news.tanggal);
     const summaryText = news.ringkasan || (news.konten ? news.konten.substring(0, 160).replace(/\n/g, ' ').trim() + '...' : '');
 
-    // Resolve direct, public-accessible image URL with retry & fallback
-    const directImageUrl = await resolveShareImageUrl(news, publicDomain);
+    // Text-first sharing: WhatsApp generates its preview from the link metadata.
 
-    const cleanSummary = summaryText.replace(/<[^>]*>/g, '').replace(/\\s+/g, ' ').trim();
+    const cleanSummary = summaryText.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
     const waText = `🏸 *KABAR TERBARU PB BILIBILI 162*
 ━━━━━━━━━━━━━━━━━━━━
 
@@ -652,19 +651,6 @@ _Bersama dalam sportivitas dan silaturahmi_`;
 
     if (platform === 'native' && typeof navigator !== 'undefined' && navigator.share) {
       try {
-        let imageFile: File | null = null;
-        try {
-          // Attempt to fetch image blob to attach directly in Web Share API if supported
-          const imgRes = await fetch(directImageUrl);
-          if (imgRes.ok) {
-            const blob = await imgRes.blob();
-            const ext = blob.type.includes('png') ? 'png' : 'jpg';
-            imageFile = new File([blob], `berita-${news.id}.${ext}`, { type: blob.type || 'image/jpeg' });
-          }
-        } catch {
-          // If image fetch fails, proceed with text & url share
-        }
-
         // WhatsApp Android may discard text when both URL and image are attached.
         // Share one fully formatted text payload with the link embedded exactly once.
         const shareData: ShareData = { text: waText };
