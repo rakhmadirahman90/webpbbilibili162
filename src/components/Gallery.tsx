@@ -279,7 +279,12 @@ export default function Gallery() {
       '🔗 *Lihat Dokumentasi Lengkap:*',
       getShareUrl(item),
       '',
-      '_Sportivitas • Persaudaraan • Silaturahmi_'
+      '_Sportivitas • Persaudaraan • Silaturahmi_',
+      '',
+      '━━━━━━━━━━━━━━━━',
+      '✍️ *Admin PB Bilibili 162*',
+      '🌐 *Website Resmi PB Bilibili 162:*',
+      'https://pbilibili162.99apps.id/'
     ].join('\n');
   };
 
