@@ -665,15 +665,9 @@ _Bersama dalam sportivitas dan silaturahmi_`;
           // If image fetch fails, proceed with text & url share
         }
 
-        const shareData: ShareData = {
-          title: `${titleClean} - PB BILIBILI 162`,
-          text: waText,
-          url: shareUrl,
-        };
-
-        if (imageFile && navigator.canShare && navigator.canShare({ files: [imageFile] })) {
-          shareData.files = [imageFile];
-        }
+        // WhatsApp Android may discard text when both URL and image are attached.
+        // Share one fully formatted text payload with the link embedded exactly once.
+        const shareData: ShareData = { text: waText };
 
         await navigator.share(shareData);
         return;
