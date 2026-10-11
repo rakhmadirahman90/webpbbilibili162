@@ -57,6 +57,13 @@ export default async function handler(req: any, res: any) {
     const pageTitle = `${title} - PB Bilibili 162`;
     const crawler = isCrawler(String(req.headers?.['user-agent'] || ''));
 
+    // Human clicks from WhatsApp must open the full article immediately.
+    // Keep this endpoint HTML only for link-preview crawlers.
+    if (!crawler) {
+      res.setHeader('Cache-Control', 'no-store');
+      return res.redirect(302, canonical);
+    }
+
     const imageTags = image ? `
       <meta property="og:image" content="${escapeHtml(image)}" />
       <meta property="og:image:secure_url" content="${escapeHtml(image)}" />
