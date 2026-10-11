@@ -642,7 +642,7 @@ export default function News() {
 
 📅 *Tanggal:* ${dateInfo.fullDateline}
 
-${cleanSummary ? `📌 *Ringkasan Berita*\\n${cleanSummary}\\n\\n` : ''}🔗 *Baca Berita Lengkap & Lihat Dokumentasi:*
+${cleanSummary ? `📌 *Ringkasan Berita*\n${cleanSummary}\n\n` : ''}🔗 *Baca Berita Lengkap & Lihat Dokumentasi:*
 ${shareUrl}
 
 ━━━━━━━━━━━━━━━━━━━━
@@ -667,7 +667,7 @@ _Bersama dalam sportivitas dan silaturahmi_`;
 
         const shareData: ShareData = {
           title: `${titleClean} - PB BILIBILI 162`,
-          text: `*${titleClean}*\n\n_${dateInfo.publisher}, ${dateInfo.fullDateline}_\n\n"${summaryText}"\n`,
+          text: waText,
           url: shareUrl,
         };
 
