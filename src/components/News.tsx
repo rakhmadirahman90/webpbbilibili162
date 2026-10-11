@@ -634,15 +634,21 @@ export default function News() {
     // Resolve direct, public-accessible image URL with retry & fallback
     const directImageUrl = await resolveShareImageUrl(news, publicDomain);
 
-    const waText = 
-`*${titleClean.toUpperCase()}*
+    const cleanSummary = summaryText.replace(/<[^>]*>/g, '').replace(/\\s+/g, ' ').trim();
+    const waText = `🏸 *KABAR TERBARU PB BILIBILI 162*
+━━━━━━━━━━━━━━━━━━━━
 
-📰 _${dateInfo.publisher}, ${dateInfo.fullDateline}_
+📰 *${titleClean}*
 
-"${summaryText}"
+📅 *Tanggal:* ${dateInfo.fullDateline}
 
-✨ *Baca Berita Selengkapnya & Lihat Foto:*
-${shareUrl}`;
+${cleanSummary ? `📌 *Ringkasan Berita*\\n${cleanSummary}\\n\\n` : ''}🔗 *Baca Berita Lengkap & Lihat Dokumentasi:*
+${shareUrl}
+
+━━━━━━━━━━━━━━━━━━━━
+🏸 *PB BILIBILI 162*
+_Bersama dalam sportivitas dan silaturahmi_`;
+
 
     if (platform === 'native' && typeof navigator !== 'undefined' && navigator.share) {
       try {
@@ -680,7 +686,7 @@ ${shareUrl}`;
     switch (platform) {
       case 'wa_link':
         // Sending URL alone triggers WhatsApp OpenGraph link preview card with large image banner
-        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareUrl)}`, '_blank');
+        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(waText)}`, '_blank');
         break;
       case 'wa':
       case 'native':
