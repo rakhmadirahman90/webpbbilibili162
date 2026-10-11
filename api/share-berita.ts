@@ -33,7 +33,7 @@ export default async function handler(req: any, res: any) {
     // Keep the crawler query deliberately minimal. The previous version selected
     // optional columns and Supabase returned HTTP 400, causing WhatsApp to get
     // a 500 page with no OG image at all.
-    const endpoint = `${SUPABASE_URL}/rest/v1/berita?id=eq.${encodeURIComponent(id)}&select=id,judul,gambar_url,tanggal`;
+    const endpoint = `${SUPABASE_URL}/rest/v1/berita?id=eq.${encodeURIComponent(id)}&select=id,judul,gambar_url,tanggal,ringkasan`;
     const response = await fetch(endpoint, {
       headers: {
         apikey: SUPABASE_KEY,
@@ -53,7 +53,7 @@ export default async function handler(req: any, res: any) {
     const title = String(news.judul || 'Berita PB Bilibili 162').trim();
     const image = normalizeImageUrl(news.gambar_url);
     const canonical = `${PUBLIC_DOMAIN}/berita?newsId=${encodeURIComponent(news.id)}`;
-    const description = `Berita PB Bilibili 162 — ${title}`.slice(0, 200);
+    const description = String(news.ringkasan || `Informasi kegiatan terbaru PB Bilibili 162: ${title}`).replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim().slice(0, 240);
     const pageTitle = `${title} - PB Bilibili 162`;
     const crawler = isCrawler(String(req.headers?.['user-agent'] || ''));
 
