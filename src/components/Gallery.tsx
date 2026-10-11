@@ -47,6 +47,29 @@ export default function Gallery() {
   const [likedItems, setLikedItems] = useState<Set<string>>(new Set());
   const [copySuccess, setCopySuccess] = useState<string | null>(null);
   const [sharePreviewItem, setSharePreviewItem] = useState<GalleryItem | null>(null);
+  const [preparedShare, setPreparedShare] = useState<{ id: string; file: File } | null>(null);
+  const [preparingShare, setPreparingShare] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    setPreparedShare(null);
+    if (!sharePreviewItem || sharePreviewItem.type !== 'image') {
+      setPreparingShare(false);
+      return;
+    }
+    const photoUrl = splitUrls(sharePreviewItem.url)[0];
+    if (!photoUrl) return;
+    setPreparingShare(true);
+    fetch(photoUrl).then(async response => {
+      if (!response.ok) throw new Error('Image download failed');
+      const blob = await response.blob();
+      if (!blob.type.startsWith('image/')) throw new Error('Invalid image');
+      const ext = blob.type.includes('png') ? 'png' : blob.type.includes('webp') ? 'webp' : 'jpg';
+      if (!cancelled) setPreparedShare({ id: sharePreviewItem.id, file: new File([blob], 'PB-Bilibili-162.' + ext, { type: blob.type }) });
+    }).catch(error => console.warn('[gallery-share] Image prefetch failed:', error))
+      .finally(() => { if (!cancelled) setPreparingShare(false); });
+    return () => { cancelled = true; };
+  }, [sharePreviewItem]);
+
   const [activeImgIndex, setActiveImgIndex] = useState(0);
   const [urlInitialized, setUrlInitialized] = useState(false);
   const lastGallerySignature = useRef('');
@@ -260,44 +283,28 @@ export default function Gallery() {
     ].join('\n');
   };
 
-  const handleShare = async (item: GalleryItem, platform: 'wa' | 'fb' | 'copy') => {
+  const handleShare = (item: GalleryItem, platform: 'wa' | 'fb' | 'copy') => {
     const shareUrl = getShareUrl(item);
     const text = getGalleryWhatsAppText(item);
     if (platform === 'wa') {
-      // Attach the primary photo on supported Android browsers. This restores
-      // a real image in WhatsApp, independent of OG link-preview caching.
-      if (item.type === 'image' && typeof navigator.share === 'function') {
-        const firstPhoto = splitUrls(item.url)[0];
-        if (firstPhoto) {
-          try {
-            const response = await fetch(firstPhoto);
-            if (!response.ok) throw new Error('Unable to fetch gallery photo');
-            const blob = await response.blob();
-            if (!blob.type.startsWith('image/')) throw new Error('Gallery media is not an image');
-            const ext = blob.type.includes('png') ? 'png' : blob.type.includes('webp') ? 'webp' : 'jpg';
-            const photo = new File([blob], 'PB-Bilibili-162-Galeri.' + ext, { type: blob.type });
-            if (typeof navigator.canShare !== 'function' || navigator.canShare({ files: [photo] })) {
-              await navigator.share({ files: [photo], text });
-              return;
-            }
-          } catch (error) {
-            if (error instanceof DOMException && error.name === 'AbortError') return;
-            console.warn('[gallery-share] Photo attachment unavailable, using WhatsApp link', error);
-          }
-        }
+      const file = preparedShare?.id === item.id ? preparedShare.file : null;
+      if (item.type === 'image' && file && typeof navigator.share === 'function' &&
+          (typeof navigator.canShare !== 'function' || navigator.canShare({ files: [file] }))) {
+        // Invoke share synchronously within the click gesture: no awaited fetch.
+        navigator.share({ files: [file], text }).catch(error => {
+          if (error?.name !== 'AbortError') console.error('[gallery-share] Native file share failed', error);
+        });
+        return;
       }
       window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(text), '_blank');
       return;
     }
     if (platform === 'fb') window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(shareUrl), '_blank');
     if (platform === 'copy') {
-      try {
-        await navigator.clipboard.writeText(shareUrl);
+      navigator.clipboard.writeText(shareUrl).then(() => {
         setCopySuccess(item.id);
         window.setTimeout(() => setCopySuccess(null), 2000);
-      } catch (error) {
-        console.error('Gagal menyalin tautan galeri:', error);
-      }
+      }).catch(error => console.error('Gagal menyalin tautan galeri:', error));
     }
   };
 
@@ -423,7 +430,7 @@ export default function Gallery() {
                   </div>
                 </div>
                 <div className="p-4 bg-slate-50 border-t border-slate-200 flex flex-col gap-2.5">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full"><button onClick={() => { handleShare(item, 'wa'); setSharePreviewItem(null); }} className="flex items-center justify-center gap-2 px-4 py-3 bg-[#25D366] hover:bg-emerald-600 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md shadow-emerald-200 transition-all active:scale-95"><Share2 size={16} /> <span>Bagikan ke WhatsApp</span></button><button onClick={() => { handleShare(item, 'wa'); setSharePreviewItem(null); }} className="flex items-center justify-center gap-2 px-4 py-3 bg-emerald-800 hover:bg-emerald-900 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all active:scale-95"><MessageCircle size={16} /> <span>Kirim Card Gambar WA</span></button></div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full"><button disabled={item.type === 'image' && preparingShare} onClick={() => { handleShare(item, 'wa'); setSharePreviewItem(null); }} className="flex items-center justify-center gap-2 px-4 py-3 bg-[#25D366] hover:bg-emerald-600 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md shadow-emerald-200 transition-all active:scale-95"><Share2 size={16} /> <span>Bagikan ke WhatsApp</span></button><button disabled={item.type === 'image' && preparingShare} onClick={() => { handleShare(item, 'wa'); setSharePreviewItem(null); }} className="flex items-center justify-center gap-2 px-4 py-3 bg-emerald-800 hover:bg-emerald-900 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all active:scale-95"><MessageCircle size={16} /> <span>Kirim Card Gambar WA</span></button></div>
                   <div className="flex items-center justify-between gap-2 w-full pt-1"><button onClick={() => handleShare(item, 'copy')} className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-bold text-xs uppercase rounded-lg transition-all active:scale-95"><Link2 size={13} /><span>{copySuccess === item.id ? 'Tersalin!' : 'Salin Tautan'}</span></button><button onClick={() => setSharePreviewItem(null)} className="px-3 py-1.5 text-slate-500 hover:text-slate-800 text-xs font-bold uppercase rounded-lg">Tutup</button></div>
                 </div>
               </motion.div>
