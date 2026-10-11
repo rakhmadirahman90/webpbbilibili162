@@ -242,8 +242,8 @@ export default function Gallery() {
   const getDetailUrl = (item: GalleryItem) => `${PUBLIC_DOMAIN}/galeri?gallery=${encodeURIComponent(item.id)}`;
 
   const getGalleryWhatsAppText = (item: GalleryItem) => {
-    const title = String(item.title || 'Dokumentasi Kegiatan').replace(/\\s+/g, ' ').trim();
-    const description = String(item.description || '').replace(/<[^>]*>/g, '').replace(/\\s+/g, ' ').trim().slice(0, 320);
+    const title = String(item.title || 'Dokumentasi Kegiatan').replace(/\s+/g, ' ').trim();
+    const description = String(item.description || '').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim().slice(0, 320);
     const mediaLabel = item.type === 'video' ? '🎬 *VIDEO KEGIATAN*' : '📸 *GALERI FOTO KEGIATAN*';
     return `🏸 *DOKUMENTASI PB BILIBILI 162*
 ━━━━━━━━━━━━━━━━━━━━
@@ -252,7 +252,7 @@ ${mediaLabel}
 
 📌 *${title}*
 
-${description ? `📝 *Informasi Dokumentasi*\\n${description}\\n\\n` : ''}🔗 *Lihat Dokumentasi Selengkapnya:*
+${description ? `📝 *Informasi Dokumentasi*\n${description}\n\n` : ''}🔗 *Lihat Dokumentasi Selengkapnya:*
 ${getShareUrl(item)}
 
 ━━━━━━━━━━━━━━━━━━━━
