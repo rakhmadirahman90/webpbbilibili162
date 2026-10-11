@@ -238,7 +238,7 @@ export default function Gallery() {
     });
   };
 
-  const getShareUrl = (item: GalleryItem) => `${PUBLIC_DOMAIN}/api/share-galeri?id=${encodeURIComponent(item.id)}&v=20`;
+  const getShareUrl = (item: GalleryItem) => `${PUBLIC_DOMAIN}/api/share-galeri?id=${encodeURIComponent(item.id)}&v=26`;
   const getDetailUrl = (item: GalleryItem) => `${PUBLIC_DOMAIN}/galeri?gallery=${encodeURIComponent(item.id)}`;
 
   const getGalleryWhatsAppText = (item: GalleryItem) => {
