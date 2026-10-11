@@ -1250,7 +1250,7 @@ _Bersama dalam sportivitas dan silaturahmi_`;
                       <MessageCircle size={14} className="text-slate-400" /> {comments.length} KOMENTAR
                     </span>
                     <button 
-                      onClick={() => setSharePreviewNews(selectedNews)}
+                      onClick={() => selectedNews && handleShare(selectedNews, 'wa')}
                       className="ml-auto flex items-center gap-1.5 px-3 py-1 bg-[#25D366] hover:bg-emerald-600 text-white rounded-full text-[11px] font-black uppercase tracking-wider shadow-sm transition-all active:scale-95 cursor-pointer"
                       title="Pratinjau & Bagikan Berita ke WhatsApp"
                     >
@@ -1371,7 +1371,7 @@ _Bersama dalam sportivitas dan silaturahmi_`;
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                       <button 
-                        onClick={() => setSharePreviewNews(selectedNews)} 
+                        onClick={() => selectedNews && handleShare(selectedNews, 'wa')} 
                         className="flex items-center gap-2 px-4 py-2 bg-[#25D366] hover:bg-emerald-600 text-white rounded-full font-black text-xs uppercase shadow-md shadow-emerald-200 transition-all active:scale-95 cursor-pointer"
                         title="Pratinjau & Bagikan ke WhatsApp"
                       >
@@ -1379,7 +1379,7 @@ _Bersama dalam sportivitas dan silaturahmi_`;
                         <span>Pratinjau WA</span>
                       </button>
                       <button 
-                        onClick={() => setSharePreviewNews(selectedNews)} 
+                        onClick={() => selectedNews && handleShare(selectedNews, 'wa')} 
                         className="w-9 h-9 bg-emerald-800 hover:bg-emerald-900 text-white rounded-full flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-md shadow-emerald-100 cursor-pointer"
                         title="Pratinjau Pesan WhatsApp"
                       >
@@ -1570,7 +1570,7 @@ _Bersama dalam sportivitas dan silaturahmi_`;
       <AnimatePresence>
         {sharePreviewNews && (() => {
           const publicDomain = 'https://pbilibili162.99apps.id';
-          const shareUrl = `${publicDomain}/berita?newsId=${sharePreviewNews.id}`;
+          const shareUrl = `${publicDomain}/api/share-berita?id=${sharePreviewNews.id}`;
           const titleClean = sharePreviewNews.judul.trim();
           const dateInfo = formatJournalisticDate(sharePreviewNews.tanggal);
           const firstImg = sharePreviewNews.gambar_url ? sharePreviewNews.gambar_url.split(/[\s,]+/)[0] : '';
@@ -1649,23 +1649,8 @@ _Bersama dalam sportivitas dan silaturahmi_`;
                       </p>
                     </div>
 
-                    {/* 3. Text Message formatting with WhatsApp asterisk & italics */}
-                    <div className="text-xs sm:text-[13px] text-slate-800 space-y-1.5 leading-relaxed font-sans text-left">
-                      <p className="font-black text-slate-900">
-                        *{titleClean.toUpperCase()}*
-                      </p>
-                      <p className="italic text-slate-700 text-[11.5px]">
-                        📰 _{dateInfo.publisher}, {dateInfo.fullDateline}_
-                      </p>
-                      <p className="text-slate-800 text-[11.5px] leading-relaxed">
-                        "{summaryText}"
-                      </p>
-                      <p className="text-slate-900 font-bold text-[11px] pt-1">
-                        ✨ *Baca Berita Selengkapnya & Lihat Foto:*
-                      </p>
-                      <p className="text-blue-700 font-bold underline break-all text-[11px]">
-                        {shareUrl}
-                      </p>
+                    {/* WhatsApp message matches the actual text sent by the share handler */}
+                    <div className="whitespace-pre-wrap break-words text-left text-xs leading-relaxed text-slate-900">{`🏸 KABAR TERBARU PB BILIBILI 162\n━━━━━━━━━━━━━━━━━━━━\n\n📰 ${titleClean}\n\n📅 Tanggal: ${dateInfo.fullDateline}\n\n📌 Ringkasan Berita\n${summaryText}\n\n🔗 Baca Berita Lengkap & Lihat Dokumentasi:\n${shareUrl}\n\n━━━━━━━━━━━━━━━━━━━━\n🏸 PB BILIBILI 162\nBersama dalam sportivitas dan silaturahmi`}
                     </div>
 
                     {/* Timestamp & Double Checkmark Status */}
