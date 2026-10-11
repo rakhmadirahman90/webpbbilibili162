@@ -241,10 +241,28 @@ export default function Gallery() {
   const getShareUrl = (item: GalleryItem) => `${PUBLIC_DOMAIN}/api/share-galeri?id=${encodeURIComponent(item.id)}&v=20`;
   const getDetailUrl = (item: GalleryItem) => `${PUBLIC_DOMAIN}/galeri?gallery=${encodeURIComponent(item.id)}`;
 
+  const getGalleryWhatsAppText = (item: GalleryItem) => {
+    const title = String(item.title || 'Dokumentasi Kegiatan').replace(/\\s+/g, ' ').trim();
+    const description = String(item.description || '').replace(/<[^>]*>/g, '').replace(/\\s+/g, ' ').trim().slice(0, 320);
+    const mediaLabel = item.type === 'video' ? '🎬 *VIDEO KEGIATAN*' : '📸 *GALERI FOTO KEGIATAN*';
+    return `🏸 *DOKUMENTASI PB BILIBILI 162*
+━━━━━━━━━━━━━━━━━━━━
+
+${mediaLabel}
+
+📌 *${title}*
+
+${description ? `📝 *Informasi Dokumentasi*\\n${description}\\n\\n` : ''}🔗 *Lihat Dokumentasi Selengkapnya:*
+${getShareUrl(item)}
+
+━━━━━━━━━━━━━━━━━━━━
+🏸 *PB BILIBILI 162*
+_Bersama dalam sportivitas dan silaturahmi_`;
+  };
+
   const handleShare = async (item: GalleryItem, platform: 'wa' | 'fb' | 'copy') => {
     const shareUrl = getShareUrl(item);
-    const title = String(item.title || 'Dokumentasi PB Bilibili 162').trim();
-    const text = `*${title}*\n\n📸 ${item.type === 'video' ? 'Video' : 'Foto'} Dokumentasi PB Bilibili 162\n\n${shareUrl}`;
+    const text = getGalleryWhatsAppText(item);
     if (platform === 'wa') window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
     if (platform === 'fb') window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`, '_blank');
     if (platform === 'copy') {
@@ -375,7 +393,7 @@ export default function Gallery() {
   </div>
 ) : null}
                     <div className="bg-white/95 rounded-lg p-2.5 mb-2.5 border-l-4 border-[#25D366] shadow-2xs text-left"><p className="font-extrabold text-slate-900 text-xs sm:text-sm leading-snug mb-1">{titleClean}</p><p className="text-[11px] text-slate-600 leading-relaxed">{dateText ? `${dateText} — ` : ''}{mediaLabel} PB Bilibili 162</p><p className="text-[10px] text-emerald-700 font-bold mt-1.5 flex items-center gap-1"><Link2 size={11} /> pbilibili162.99apps.id</p></div>
-                    <div className="text-xs sm:text-[13px] text-slate-800 space-y-1.5 leading-relaxed font-sans text-left"><p className="font-black text-slate-900">*{titleClean}*</p><p className="italic text-slate-700 text-[11.5px]">📸 _{mediaLabel} PB Bilibili 162_</p><p className="text-slate-900 font-bold text-[11px] pt-1">✨ *Lihat {item.type === 'video' ? 'Video' : 'Foto'} Selengkapnya:*</p><p className="text-blue-700 font-bold underline break-all text-[11px]">{shareUrl}</p></div>
+                    <div className="whitespace-pre-wrap break-words text-xs sm:text-[13px] text-slate-800 leading-relaxed text-left">{getGalleryWhatsAppText(item)}</div>
                     <div className="flex items-center justify-end gap-1 mt-2 text-[10px] text-slate-500 font-medium"><span>SEKARANG</span><span className="text-[#34B7F1] font-extrabold text-xs leading-none">✓✓</span></div>
                   </div>
                 </div>
