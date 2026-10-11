@@ -243,21 +243,21 @@ export default function Gallery() {
 
   const getGalleryWhatsAppText = (item: GalleryItem) => {
     const title = String(item.title || 'Dokumentasi Kegiatan').replace(/\s+/g, ' ').trim();
-    const description = String(item.description || '').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim().slice(0, 320);
-    const mediaLabel = item.type === 'video' ? '🎬 *VIDEO KEGIATAN*' : '📸 *GALERI FOTO KEGIATAN*';
-    return `🏸 *DOKUMENTASI PB BILIBILI 162*
-━━━━━━━━━━━━━━━━━━━━
-
-${mediaLabel}
-
-📌 *${title}*
-
-${description ? `📝 *Informasi Dokumentasi*\n${description}\n\n` : ''}🔗 *Lihat Dokumentasi Selengkapnya:*
-${getShareUrl(item)}
-
-━━━━━━━━━━━━━━━━━━━━
-🏸 *PB BILIBILI 162*
-_Bersama dalam sportivitas dan silaturahmi_`;
+    const description = String(item.description || '').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim().slice(0, 180);
+    const label = item.type === 'video' ? '🎬 *VIDEO KEGIATAN*' : '📸 *GALERI FOTO*';
+    return [
+      '🏸 *PB BILIBILI 162*',
+      label,
+      '━━━━━━━━━━━━━━━━',
+      '',
+      '*' + title + '*',
+      ...(description ? ['', '📝 ' + description] : []),
+      '',
+      '🔗 *Lihat Dokumentasi Lengkap:*',
+      getShareUrl(item),
+      '',
+      '_Sportivitas • Persaudaraan • Silaturahmi_'
+    ].join('\n');
   };
 
   const handleShare = async (item: GalleryItem, platform: 'wa' | 'fb' | 'copy') => {
