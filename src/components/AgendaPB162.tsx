@@ -95,8 +95,11 @@ export default function AgendaPB162({ compact = false }: { compact?: boolean }) 
     const seen = new Set<string>();
     return items.filter(item => {
       const normalizedTitle = (item.title || '').normalize('NFKC')
-        .replace(/[\\p{Extended_Pictographic}\\uFE0F\\u200D]/gu, '')
-        .replace(/[^\\p{L}\\p{N}]+/gu, ' ').trim().toLocaleLowerCase('id-ID');
+        .replace(/[^a-zA-Z0-9 ]+/g, ' ')
+        .toLocaleLowerCase('id-ID')
+        .replace(/\binternal\b/g, 'intern')
+        .replace(/\s+/g, ' ')
+        .trim();
       const key = item.event_date + '|' + normalizedTitle;
       if (seen.has(key)) return false;
       seen.add(key);
