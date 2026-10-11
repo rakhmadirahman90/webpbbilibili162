@@ -89,8 +89,23 @@ export default function AgendaPB162({ compact = false }: { compact?: boolean }) 
     };
   }, [selected]);
 
-  // Landing: tepat 4 agenda dalam 2 kolom × 2 baris. Halaman Agenda: seluruh data.
-  const visible = compact ? items.slice(0, 4) : items;
+  // Remove repeated agenda entries with the same normalized title and date.
+  // Keep the first item according to the existing chronological sorting.
+  const uniqueItems = useMemo(() => {
+    const seen = new Set<string>();
+    return items.filter(item => {
+      const normalizedTitle = (item.title || '').normalize('NFKC')
+        .replace(/[\\p{Extended_Pictographic}\\uFE0F\\u200D]/gu, '')
+        .replace(/[^\\p{L}\\p{N}]+/gu, ' ').trim().toLocaleLowerCase('id-ID');
+      const key = item.event_date + '|' + normalizedTitle;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [items]);
+
+  // Show up to four distinct agenda items on the landing page.
+  const visible = compact ? uniqueItems.slice(0, 4) : uniqueItems;
 
   // Keep the landing agenda intentionally compact: four items in a 2 × 2 grid.
   return <section id="agenda-pb162" className={compact ? "agenda-landing-compact landing-section w-full bg-[#050914]" : "w-full bg-[#070d1a] px-4 pt-8 pb-0 sm:px-6 sm:pt-10 sm:pb-1"}>
