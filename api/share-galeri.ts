@@ -55,7 +55,15 @@ export default async function handler(req: any, res: any) {
     const version = String(req.query?.v || '24').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 24) || '24';
     const detailUrl = `${PUBLIC_DOMAIN}/galeri?gallery=${encodeURIComponent(id)}`;
 
-    const previewUrl = `${PUBLIC_DOMAIN}/api/gallery-share-image?id=${encodeURIComponent(id)}&v=${encodeURIComponent(version)}`;
+    // WhatsApp previews are more reliable with a directly accessible JPEG than
+    // with a serverless proxy returning WebP. Use Supabase image rendering.
+    const firstPhoto = String(gallery?.url || gallery?.image_url || gallery?.foto_url || '').split(',')[0].trim();
+    const jpegPreview = firstPhoto.includes('/storage/v1/object/public/')
+      ? firstPhoto.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/') + (firstPhoto.includes('?') ? '&' : '?') + 'width=1200&height=900&resize=contain&format=jpeg'
+      : '';
+    const previewUrl = mediaType !== 'video' && jpegPreview
+      ? jpegPreview
+      : `${PUBLIC_DOMAIN}/api/gallery-share-image?id=${encodeURIComponent(id)}&v=${encodeURIComponent(version)}`;
     const rawUrl = String(req.query?.image || gallery?.url || gallery?.image_url || gallery?.foto_url || gallery?.media_url || '');
     const youtube = mediaType === 'video' ? youtubeId(rawUrl) : '';
     const ua = String(req.headers?.['user-agent'] || '');
