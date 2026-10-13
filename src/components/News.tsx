@@ -644,9 +644,12 @@ export default function News() {
 ${cleanSummary ? `📌 *Ringkasan Berita*\n${cleanSummary}\n\n` : ''}🔗 *Baca Berita Lengkap & Lihat Dokumentasi:*
 ${shareUrl}
 
+_Sportivitas • Persaudaraan • Silaturahmi_
+
 ━━━━━━━━━━━━━━━━━━━━
-🏸 *PB BILIBILI 162*
-_Bersama dalam sportivitas dan silaturahmi_`;
+✍️ *Admin PB Bilibili 162*
+🌐 *Website Resmi PB Bilibili 162:*
+${publicDomain}/`;
 
 
     if (platform === 'native' && typeof navigator !== 'undefined' && navigator.share) {
