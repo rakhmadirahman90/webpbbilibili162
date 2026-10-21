@@ -12,7 +12,7 @@ if (!rawUrl && typeof process !== 'undefined' && process.env) {
 
 let envUrl = (rawUrl && typeof rawUrl === 'string' && rawUrl.trim() !== '' && rawUrl !== 'undefined'
   ? rawUrl
-  : 'https://missjyvqfehamtpyodjr.supabase.co').trim();
+  : 'https://hoyrgpbfbakogenxdijt.supabase.co').trim();
 if (envUrl.endsWith('/rest/v1/')) envUrl = envUrl.substring(0, envUrl.length - 9);
 else if (envUrl.endsWith('/rest/v1')) envUrl = envUrl.substring(0, envUrl.length - 8);
 if (envUrl.endsWith('/')) envUrl = envUrl.substring(0, envUrl.length - 1);
