@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Download, ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react';
 import { supabase } from '../supabase';
+import { resolveMediaUrl } from '../utils/resolveMediaUrl';
 import { getSiteSetting, parsePopupList } from '../utils/siteSettingsHelper';
 
 interface ImagePopupProps { activeView?: string | null; }
@@ -78,7 +79,7 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
           .filter((item: PopupItem) => item && item.is_active !== false)
           .map((item: PopupItem) => ({
             ...item,
-            url_gambar: item.url_gambar || item.image_url || ''
+            url_gambar: resolveMediaUrl(item.url_gambar || item.image_url || '')
           }))
           .filter((item: PopupItem) => item && item.url_gambar)
           .sort((a: PopupItem, b: PopupItem) => Number(a.urutan ?? 0) - Number(b.urutan ?? 0));
@@ -100,7 +101,7 @@ function ImagePopup({ activeView = null }: ImagePopupProps = {}) {
         if (error) throw error;
 
         activeItems = (data || [])
-          .map((item: PopupItem) => ({ ...item, url_gambar: item.url_gambar || item.image_url || '' }))
+          .map((item: PopupItem) => ({ ...item, url_gambar: resolveMediaUrl(item.url_gambar || item.image_url || '') }))
           .filter((item: PopupItem) => item && item.url_gambar)
           .sort((a: PopupItem, b: PopupItem) => Number(a.urutan ?? 0) - Number(b.urutan ?? 0));
       }
