@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import { saveSiteSetting, getSiteSetting, parsePopupList } from '../utils/siteSettingsHelper';
 import { broadcastDataChange } from '../utils/realtimeHelper';
+import { resolveMediaUrl } from '../utils/resolveMediaUrl';
 import { 
   Plus, Trash2, Image as ImageIcon, Save, 
   Loader2, Power, PowerOff, Upload, X, Camera, Edit3, GripVertical, FileText, Download, ExternalLink, Eye
@@ -113,7 +114,7 @@ function SortablePopupItem({ item, toggleStatus, startEdit, handleDelete, movePo
         </div>
 
         <img 
-            src={item.url_gambar} 
+            src={resolveMediaUrl(item.url_gambar)} 
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
             alt={item.judul} 
             onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
@@ -282,7 +283,7 @@ export default function AdminPopup() {
           mergedMap.set(item.id, item);
         }
       }
-      merged = Array.from(mergedMap.values());
+      merged = Array.from(mergedMap.values()).map(item => ({ ...item, url_gambar: resolveMediaUrl(item.url_gambar || (item as any).image_url || '') }));
 
       // Ensure proper sorting: active popups first (real-time active), then inactive ones, sorted by urutan within each group
       merged.sort((a, b) => {
@@ -352,6 +353,7 @@ export default function AdminPopup() {
   const persistPopups = async (updatedList: PopupConfig[]) => {
     const standardizedList = updatedList.map((item, idx) => ({
       ...item,
+      url_gambar: resolveMediaUrl(item.url_gambar),
       urutan: idx
     }));
 
