@@ -53,17 +53,43 @@ export default function KasManager() {
   const loadKas = useCallback(async (resetPeriod = false) => {
     setLoading(true);
     try {
-      const [kasRes, membersRes] = await Promise.all([
-        supabase.from('kas_pb').select('*').order('tanggal_transaksi', { ascending: false }).order('created_at', { ascending: false }),
-        supabase.from('pendaftaran').select('id, nama, atlet_stats (player_name)').order('nama', { ascending: true })
-      ]);
-      if (kasRes.error) throw kasRes.error;
-      const next = (kasRes.data || []) as KasEntry[];
+      // A temporary mobile-network failure must not permanently block Kelola Kas.
+      // Keep member lookup independent: failure there must not hide valid cash records.
+      let next: KasEntry[] | null = null;
+      let lastError: any = null;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const response = await supabase.from('kas_pb').select('*')
+            .order('tanggal_transaksi', { ascending: false })
+            .order('created_at', { ascending: false });
+          if (response.error) throw response.error;
+          next = (response.data || []) as KasEntry[];
+          break;
+        } catch (error) {
+          lastError = error;
+          if (attempt < 2) await new Promise(resolve => setTimeout(resolve, 700 * (attempt + 1)));
+        }
+      }
+      if (next === null) throw lastError || new Error('Koneksi database tidak tersedia');
       setKasData(next);
       try { localStorage.setItem('cached_kas_pb', JSON.stringify(next)); } catch {}
-      if (membersRes.data) {
-        const members = membersRes.data.map((item: any) => ({ id: item.id, player_name: item.nama || (Array.isArray(item.atlet_stats) ? item.atlet_stats[0]?.player_name : item.atlet_stats?.player_name) || 'Unknown' }));
-        setAtlets(members); try { localStorage.setItem('cached_kas_atlets', JSON.stringify(members)); } catch {}
+      try {
+        const membersRes = await supabase.from('pendaftaran')
+          .select('id, nama, atlet_stats (player_name)').order('nama', { ascending: true });
+        if (membersRes.data) {
+          const members = membersRes.data.map((item: any) => ({
+            id: item.id,
+            player_name: item.nama || (Array.isArray(item.atlet_stats) ? item.atlet_stats[0]?.player_name : item.atlet_stats?.player_name) || 'Unknown'
+          }));
+          setAtlets(members);
+          try { localStorage.setItem('cached_kas_atlets', JSON.stringify(members)); } catch {}
+        }
+      } catch (memberError) {
+        console.warn('[KasManager] member lookup temporarily unavailable', memberError);
+        try {
+          const cachedMembers = JSON.parse(localStorage.getItem('cached_kas_atlets') || '[]');
+          if (Array.isArray(cachedMembers)) setAtlets(cachedMembers);
+        } catch {}
       }
       if (next.length && resetPeriod) {
         const latest = [...next].sort((a, b) => String(a.tanggal_transaksi).localeCompare(String(b.tanggal_transaksi))).at(-1)?.tanggal_transaksi || localToday();
@@ -71,12 +97,21 @@ export default function KasManager() {
         setEndDate(localToday() >= latest ? localToday() : latest);
       }
     } catch (error: any) {
-      console.error('[KasManager] load failed', error);
+      console.error('[KasManager] load failed after retries', error);
+      let hasCache = false;
       try {
         const cached = JSON.parse(localStorage.getItem('cached_kas_pb') || '[]');
-        if (Array.isArray(cached) && cached.length) setKasData(cached);
+        if (Array.isArray(cached) && cached.length) {
+          setKasData(cached);
+          hasCache = true;
+        }
       } catch {}
-      Swal.fire({ icon: 'error', title: 'Gagal memuat data kas', text: error?.message || 'Periksa koneksi database.' });
+      void Swal.fire({
+        toast: true, position: 'top-end', icon: 'warning', showConfirmButton: false,
+        timer: 5500, timerProgressBar: true,
+        title: hasCache ? 'Menampilkan data kas tersimpan' : 'Koneksi kas sementara terganggu',
+        text: hasCache ? 'Data mungkin belum terbaru. Muat ulang saat koneksi stabil.' : 'Periksa koneksi internet lalu muat ulang halaman.'
+      });
     } finally { setLoading(false); }
   }, []);
 
