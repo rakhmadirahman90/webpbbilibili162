@@ -1,47 +1,22 @@
-/** Fast image URL optimizer for public web images. */
+/** Keep original image URLs reliable; Supabase render/image can fail on some plans or files. */
+import { resolveMediaUrl } from './resolveMediaUrl';
 
 export function getOptimizedImageUrl(url: string, width?: number, quality: number = 78): string {
   if (!url) return '';
-  const trimmedUrl = url.trim().split(/[\s,]+/)[0];
-  if (!trimmedUrl) return '';
-
-  // Local/data/SVG assets should stay on their native URL.
-  if (trimmedUrl.startsWith('/') || trimmedUrl.startsWith('data:') || /\.svg(?:\?|$)/i.test(trimmedUrl)) {
-    return trimmedUrl;
-  }
-
+  const trimmed = resolveMediaUrl(url.trim());
+  if (!trimmed) return '';
+  if (trimmed.startsWith('/') || trimmed.startsWith('data:') || trimmed.startsWith('blob:')) return trimmed;
   try {
-    // Supabase public Storage supports server-side image transformations.
-    // Only rewrite explicitly public objects; signed/private KTP/document URLs are untouched.
-    const publicMarker = '/storage/v1/object/public/';
-    const supabaseIndex = trimmedUrl.indexOf(publicMarker);
-    if (supabaseIndex >= 0) {
-      const origin = trimmedUrl.slice(0, supabaseIndex);
-      const objectPath = trimmedUrl.slice(supabaseIndex + publicMarker.length);
-      const transformed = new URL(`${origin}/storage/v1/render/image/public/${objectPath}`);
-      if (width) transformed.searchParams.set('width', String(Math.min(Math.max(width, 160), 1600)));
-      transformed.searchParams.set('quality', String(Math.min(Math.max(quality, 45), 85)));
-      transformed.searchParams.set('resize', 'contain');
-      return transformed.toString();
+    const parsed = new URL(trimmed);
+    // Do not proxy Supabase media or convert object/public to render/image/public.
+    // Direct URLs work without image transformation subscriptions and preserve signed tokens.
+    if (parsed.hostname.endsWith('.supabase.co') && parsed.pathname.startsWith('/storage/v1/')) {
+      return trimmed;
     }
-
-    // Signed/private Supabase Storage URLs must be loaded directly.\n    // The external image proxy cannot reliably access time-limited signed URLs,\n    // which caused athlete cards to appear as placeholders while detail view worked.\n    if (/\\/storage\\/v1\\/object\\/(sign|authenticated)\\//i.test(trimmedUrl)) {\n      return trimmedUrl;\n    }\n\n    // Unsplash has native responsive WebP support.
-    if (trimmedUrl.includes('images.unsplash.com')) {
-      const imageUrl = new URL(trimmedUrl);
-      imageUrl.searchParams.set('fm', 'webp');
-      imageUrl.searchParams.set('q', String(quality));
-      imageUrl.searchParams.set('w', String(width || 1200));
-      imageUrl.searchParams.set('fit', 'max');
-      return imageUrl.toString();
-    }
-
-    // External public images: use a cached WebP resize proxy.
-    const cleanUrl = trimmedUrl.replace(/^https?:\/\//, '');
-    const params = new URLSearchParams({ url: cleanUrl, output: 'webp', q: String(quality) });
-    if (width) params.set('w', String(Math.min(Math.max(width, 160), 1600)));
-    return `https://images.weserv.nl/?${params.toString()}`;
+    // External media should also load from their original origin rather than a third-party proxy.
+    return trimmed;
   } catch {
-    return trimmedUrl;
+    return trimmed;
   }
 }
 
