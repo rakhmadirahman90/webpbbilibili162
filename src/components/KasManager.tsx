@@ -138,7 +138,7 @@ export default function KasManager() {
   const periodTransactions = useMemo(() =>
     normalized
       .filter(inSelectedTransactionPeriod)
-      .sort((a, b) => transactionDateKey(a).localeCompare(transactionDateKey(b)) || String(a.created_at || '').localeCompare(String(b.created_at || ''))),
+      .sort((a, b) => transactionDateKey(b).localeCompare(transactionDateKey(a)) || String(b.created_at || '').localeCompare(String(a.created_at || '')) || String(b.id).localeCompare(String(a.id))),
     [normalized, inSelectedTransactionPeriod]
   );
 
