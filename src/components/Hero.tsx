@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { resolveMediaUrl } from '../utils/resolveMediaUrl';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { getOptimizedImageUrl } from '../utils/imageOptimizer'; 
 import { getSiteSetting, appendCacheBustParam } from '../utils/siteSettingsHelper';
@@ -166,9 +167,9 @@ export const defaultSlides = [
     id: 1786206064378,
     title: 'PB Bilibili Video Hero',
     subtitle: 'PB BILIBILI 162 PROFESSIONAL CLUB',
-    image: 'https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/assets/hero-sliders/hero-video-1786206060056.webm',
-    videoUrl: 'https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/assets/hero-sliders/hero-video-1786206060056.webm',
-    poster: 'https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/assets/hero-sliders/hero-poster-1786206060056.webp',
+    image: 'https://hoyrgpbfbakogenxdijt.supabase.co/storage/v1/object/public/assets/hero-sliders/hero-video-1786206060056.webm',
+    videoUrl: 'https://hoyrgpbfbakogenxdijt.supabase.co/storage/v1/object/public/assets/hero-sliders/hero-video-1786206060056.webm',
+    poster: 'https://hoyrgpbfbakogenxdijt.supabase.co/storage/v1/object/public/assets/hero-sliders/hero-poster-1786206060056.webp',
     type: 'video',
     active: true
   },
@@ -176,7 +177,7 @@ export const defaultSlides = [
     id: 1786206064379,
     title: 'Ketua & Pembina PB Bilibili 162',
     subtitle: 'Pusat Pembinaan Bulutangkis Standar BWF',
-    image: 'https://missjyvqfehamtpyodjr.supabase.co/storage/v1/object/public/logos/ketua.png',
+    image: 'https://hoyrgpbfbakogenxdijt.supabase.co/storage/v1/object/public/logos/ketua.png',
     type: 'image',
     active: false
   },
@@ -286,9 +287,9 @@ export default function Hero() {
               const rawMediaSrc = slide.videoUrl || (isVideoUrl(slide.image, slide.type) ? slide.image : null) || slide.image;
               const rawPosterSrc = slide.poster || (slide.image && slide.image !== rawMediaSrc ? slide.image : undefined);
 
-              const mediaSrc = appendCacheBustParam(rawMediaSrc, slideTs);
-              const posterSrc = appendCacheBustParam(rawPosterSrc, slideTs);
-              const imageSrc = appendCacheBustParam(slide.image, slideTs);
+              const mediaSrc = appendCacheBustParam(resolveMediaUrl(rawMediaSrc), slideTs);
+              const posterSrc = appendCacheBustParam(resolveMediaUrl(rawPosterSrc), slideTs);
+              const imageSrc = appendCacheBustParam(resolveMediaUrl(slide.image), slideTs);
 
               const isVideo = slide.type === 'video' || isVideoUrl(rawMediaSrc, slide.type) || isVideoUrl(slide.image, slide.type);
               const isCurrent = index === currentSlide;
