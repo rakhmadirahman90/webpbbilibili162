@@ -3,6 +3,7 @@ import { Globe, Home, Search, ChevronDown, Menu, X, MapPin, UserPlus, FileText, 
 import { supabase, warmupRouteData } from '../supabase';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
+import { resolveMediaUrl } from '../utils/resolveMediaUrl';
 
 export const DEFAULT_NAV_ITEMS = [
   { id: 'home', label: 'Beranda', path: 'home', type: 'link', parent_id: null, order_index: 0, is_active: true },
@@ -198,7 +199,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
     try {
       const { data } = await supabase.from('site_settings').select('value').eq('key', 'navbar_branding').maybeSingle();
       const value = typeof data?.value === 'string' ? JSON.parse(data.value) : data?.value;
-      if (value) setBranding({ logo_url: value.logo_url || '/logo_pb_bilibili_162.svg', brand_name_main: value.brand_name_main || 'PB Bilibili', brand_name_accent: value.brand_name_accent || '162' });
+      if (value) setBranding({ logo_url: resolveMediaUrl(value.logo_url) || '/logo_pb_bilibili_162.svg', brand_name_main: value.brand_name_main || 'PB Bilibili', brand_name_accent: value.brand_name_accent || '162' });
     } catch { }
   }, []);
 
@@ -378,7 +379,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
     <nav style={{display:"block",visibility:"visible",opacity:1,position:"fixed",top:0,left:0,right:0}} className="fixed top-0 left-0 right-0 h-14 lg:h-16 z-[2147483002] bg-slate-950/95 backdrop-blur-xl border-b border-white/10 shadow-2xl !visible !opacity-100" aria-label="Navigasi utama PB Bilibili 162">
       <div className="max-w-7xl mx-auto h-full px-2.5 sm:px-4 md:px-8 flex items-center gap-2 sm:gap-3 min-w-0">
         <button type="button" onPointerDown={() => handleNavigationPointerDown('home')} onClick={() => go('home')} className="flex items-center gap-1.5 sm:gap-2 shrink-0 min-w-0" aria-label="Beranda PB Bilibili 162">
-          <img src={branding.logo_url} alt="PB Bilibili 162" className="w-9 h-9 lg:w-10 lg:h-10 object-contain shrink-0" loading="eager" decoding="async" onError={e => { e.currentTarget.src = '/logo_pb_bilibili_162.svg'; }} />
+          <img src={resolveMediaUrl(branding.logo_url)} alt="PB Bilibili 162" className="w-9 h-9 lg:w-10 lg:h-10 object-contain shrink-0" loading="eager" decoding="async" onError={e => { const img = e.currentTarget; img.onerror = null; img.src = '/logo_pb_bilibili_162.svg'; }} />
           <span className="hidden xs:flex flex-col text-left leading-none min-w-0"><span className="font-black italic text-xs sm:text-sm lg:text-base uppercase whitespace-nowrap">{branding.brand_name_main} <b className="text-blue-500">{branding.brand_name_accent}</b></span><span className="text-[6px] sm:text-[7px] tracking-[.2em] text-slate-400 uppercase mt-1">Professional Club</span></span>
         </button>
         <LiveClock />
@@ -422,7 +423,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
       <div style={{visibility:mobileOpen?"visible":"hidden"}} className={`lg:hidden fixed inset-0 z-[2147483001] bg-slate-950/75 backdrop-blur-[6px] transition-opacity duration-300 ${mobileOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => setMobileOpen(false)} aria-hidden="true" />
       <aside aria-label="Menu navigasi seluler" style={{visibility:mobileOpen?"visible":"hidden"}} className={`lg:hidden fixed inset-y-0 left-0 z-[2147483002] w-[min(88vw,370px)] max-w-[370px] bg-gradient-to-b from-[#081121] via-[#0a1428] to-[#07101f] border-r border-blue-400/20 shadow-[24px_0_70px_rgba(0,0,0,.55)] flex flex-col overflow-hidden transition-transform duration-300 ease-out ${mobileOpen ? 'translate-x-0 pointer-events-auto' : '-translate-x-full pointer-events-none'} touch-manipulation`} onClick={(e) => e.stopPropagation()}>
         <div className="relative min-h-[82px] shrink-0 px-4 flex items-center justify-between border-b border-blue-400/15 bg-gradient-to-r from-blue-950/45 via-slate-950/95 to-cyan-950/25 overflow-hidden before:absolute before:-top-16 before:-left-10 before:h-32 before:w-32 before:rounded-full before:bg-blue-500/10 before:blur-2xl">
-          <div className="relative z-10 flex items-center gap-3 min-w-0"><span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-blue-400/20 bg-blue-500/10 shadow-lg shadow-blue-950/40"><img src={branding.logo_url} className="w-10 h-10 object-contain shrink-0" alt="PB Bilibili 162" loading="eager"/></span><div className="min-w-0 font-black text-sm italic uppercase truncate">{branding.brand_name_main} <span className="text-blue-500">{branding.brand_name_accent}</span><span className="block text-[7px] tracking-[.18em] text-slate-500 not-italic mt-0.5">PROFESSIONAL CLUB</span></div></div>
+          <div className="relative z-10 flex items-center gap-3 min-w-0"><span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-blue-400/20 bg-blue-500/10 shadow-lg shadow-blue-950/40"><img src={resolveMediaUrl(branding.logo_url)} className="w-10 h-10 object-contain shrink-0" alt="PB Bilibili 162" loading="eager" onError={e => { const img = e.currentTarget; img.onerror = null; img.src = '/logo_pb_bilibili_162.svg'; }}/></span><div className="min-w-0 font-black text-sm italic uppercase truncate">{branding.brand_name_main} <span className="text-blue-500">{branding.brand_name_accent}</span><span className="block text-[7px] tracking-[.18em] text-slate-500 not-italic mt-0.5">PROFESSIONAL CLUB</span></div></div>
           <div className="relative z-10 flex items-center gap-2"><button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMobileSearchOpen(v => !v); window.setTimeout(() => mobileSearchInputRef.current?.focus(), 80); }} className="w-11 h-11 min-w-11 rounded-2xl bg-[#16243b] border border-blue-400/70 flex items-center justify-center text-blue-300 active:scale-95 transition-transform touch-manipulation" aria-label="Buka pencarian"><Search size={22} strokeWidth={2.6}/></button><button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMobileOpen(false); setMobileOpenMenu(null); setMobileSearch(''); setMobileSearchOpen(false); }} className="w-11 h-11 min-w-11 rounded-2xl bg-slate-800/95 border border-blue-300/25 flex items-center justify-center text-blue-300 active:scale-95 transition-transform touch-manipulation" aria-label="Tutup menu"><X size={22} className="pointer-events-none"/></button></div>
         </div>
         {/* Pencarian hanya tersedia melalui ikon Search di header mobile. */}
