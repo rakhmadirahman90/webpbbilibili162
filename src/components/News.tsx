@@ -616,7 +616,16 @@ export default function News() {
     // Text-first sharing: WhatsApp generates its preview from the link metadata.
 
     const cleanSummary = summaryText.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
-    const waText = `🏸 *KABAR TERBARU PB BILIBILI 162*
+    // News dated within the past seven days is considered recent.
+    // Older, invalid or future dates use the timeless news heading.
+    const dateValue = String(news.tanggal || '').trim();
+    const parsedDate = /^\d{4}-\d{2}-\d{2}/.test(dateValue)
+      ? new Date(`${dateValue.slice(0, 10)}T00:00:00+08:00`)
+      : new Date(dateValue);
+    const ageMs = Date.now() - parsedDate.getTime();
+    const isRecentNews = Number.isFinite(ageMs) && ageMs >= 0 && ageMs <= 7 * 24 * 60 * 60 * 1000;
+    const newsHeader = isRecentNews ? 'KABAR TERBARU PB BILIBILI 162' : 'KABAR BERITA PB BILIBILI 162';
+    const waText = `🏸 *${newsHeader}*
 ━━━━━━━━━━━━━━━━━━━━
 
 📰 *${titleClean}*
