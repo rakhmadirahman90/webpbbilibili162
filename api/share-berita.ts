@@ -1,5 +1,5 @@
 const PUBLIC_DOMAIN = 'https://pbilibili162.99apps.id';
-const SUPABASE_URL = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://missjyvqfehamtpyodjr.supabase.co').replace(/\/$/, '');
+const SUPABASE_URL = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://hoyrgpbfbakogenxdijt.supabase.co').replace(/\/$/, '');
 const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON || process.env.SUPABASE_KEY || 'sb_publishable_trhfpzLX50WdkdaItRPFMQ_ewQF0fgn';
 
 function escapeHtml(value: unknown): string {
@@ -29,6 +29,16 @@ export default async function handler(req: any, res: any) {
   const id = String(req.query?.id || req.query?.newsId || '').trim();
   if (!id) return res.status(400).send('Berita tidak ditemukan');
 
+  // A normal browser should always open the complete React news article.
+  // Redirect before any API fetch so stale or missing server credentials cannot
+  // accidentally expose the minimal crawler-only preview to human visitors.
+  const canonicalUrl = `${PUBLIC_DOMAIN}/berita?newsId=${encodeURIComponent(id)}`;
+  if (!isCrawler(String(req.headers?.['user-agent'] || ''))) {
+    res.setHeader('Cache-Control', 'private, no-store, max-age=0');
+    res.setHeader('Vary', 'User-Agent');
+    return res.redirect(302, canonicalUrl);
+  }
+
   try {
     // Keep the crawler query deliberately minimal. The previous version selected
     // optional columns and Supabase returned HTTP 400, causing WhatsApp to get
@@ -55,7 +65,7 @@ export default async function handler(req: any, res: any) {
     const canonical = `${PUBLIC_DOMAIN}/berita?newsId=${encodeURIComponent(news.id)}`;
     const description = String(news.ringkasan || `Informasi kegiatan terbaru PB Bilibili 162: ${title}`).replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim().slice(0, 240);
     const pageTitle = `${title} - PB Bilibili 162`;
-    const crawler = isCrawler(String(req.headers?.['user-agent'] || ''));
+    const crawler = true;
 
     // Human clicks from WhatsApp must open the full article immediately.
     // Keep this endpoint HTML only for link-preview crawlers.
@@ -109,6 +119,7 @@ export default async function handler(req: any, res: any) {
 </html>`;
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Vary', 'User-Agent');
     res.setHeader('Cache-Control', crawler ? 'public, max-age=0, s-maxage=60, stale-while-revalidate=300' : 'no-store');
     return res.status(200).send(html);
   } catch (error) {
