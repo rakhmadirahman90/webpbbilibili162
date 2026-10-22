@@ -209,27 +209,9 @@ export default function News() {
 
   // Helper untuk mendapatkan semua gambar dari berita
   const getNewsImages = (news: Berita): string[] => {
-    const list: string[] = [];
-    if (news.gambar_url) {
-      const urls = news.gambar_url.split(/[\s,]+/).map(u => u.trim()).filter(Boolean);
-      list.push(...urls);
-    }
-    
-    // Berikan beberapa gambar badminton estetik sebagai tambahan agar selalu memiliki slider interaktif yang menawan
-    if (list.length < 3) {
-      if (news.judul.toLowerCase().includes('sea games') || news.judul.toLowerCase().includes('alwi') || news.judul.toLowerCase().includes('emas')) {
-        list.push(
-          "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?q=80&w=1200",
-          "https://images.unsplash.com/photo-1554068865-24cecd4e34b8?q=80&w=1200"
-        );
-      } else {
-        list.push(
-          "https://images.unsplash.com/photo-1613918431201-49638531a8cb?q=80&w=1200",
-          "https://images.unsplash.com/photo-1560079007-a5327045b403?q=80&w=1200"
-        );
-      }
-    }
-    return list;
+    // Only show actual article photos. Never pad a gallery with unrelated stock URLs.
+    const urls = (news.gambar_url || '').match(/https?:\/\/[^\s"'<>]+/g) || [];
+    return Array.from(new Set(urls.map(url => getOptimizedImageUrl(url)).filter(Boolean)));
   };
 
   useEffect(() => {
