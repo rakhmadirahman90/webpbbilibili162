@@ -345,12 +345,32 @@ export default function KasManager() {
     if (file.size > 12 * 1024 * 1024) { await Swal.fire({ icon: 'warning', title: 'File terlalu besar', text: 'Ukuran maksimal 12 MB.' }); return; }
     setUploadingAttachment(true);
     try {
-      const { data: authData, error: authError } = await supabase.auth.getUser();
+      let { data: authData, error: authError } = await supabase.auth.getUser();
       if (authError || !authData.user) {
-        throw new Error('Sesi login aplikasi belum terhubung dengan Supabase Auth. Upload memerlukan autentikasi yang sah. Hubungi administrator untuk sinkronisasi akun; jangan mengubah RLS menjadi publik.');
+        // Login portal lama tidak otomatis membuat sesi Supabase Auth.
+        // Jangan mengunggah secara anonim atau menggunakan service-role key di browser.
+        const credentials = await Swal.fire({
+          title: 'Verifikasi admin untuk upload',
+          html: '<p style="font-size:14px;margin-bottom:12px">Masuk menggunakan akun Supabase Auth administrator yang sudah diverifikasi. Password tidak disimpan di aplikasi.</p>',
+          input: 'password',
+          inputLabel: 'Password akun Supabase Auth',
+          inputPlaceholder: 'Masukkan password pribadi',
+          inputAttributes: { autocomplete: 'current-password' },
+          showCancelButton: true,
+          confirmButtonText: 'Verifikasi & upload',
+          cancelButtonText: 'Batal',
+          inputValidator: value => !value ? 'Password wajib diisi.' : undefined
+        });
+        if (!credentials.isConfirmed) return;
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: 'rakhmadi.rahman90@gmail.com',
+          password: credentials.value
+        });
+        if (signInError) throw new Error('Verifikasi Supabase Auth gagal. Pastikan password pribadi akun admin telah dibuat melalui pemulihan email.');
+        ({ data: authData, error: authError } = await supabase.auth.getUser());
       }
-      if (authData.user.app_metadata?.role !== 'admin') {
-        throw new Error('Akun Supabase ini belum memiliki izin admin untuk mengunggah lampiran. Minta administrator memeriksa peran akun.');
+      if (authError || !authData.user || authData.user.app_metadata?.role !== 'admin') {
+        throw new Error('Akun Supabase Auth belum memiliki peran admin yang sah. Upload dibatalkan tanpa mengubah data transaksi.');
       }
       const safeName = file.name.replace(/[^a-zA-Z0-9._-]+/g, '-');
       const path = `kas/${localToday()}/${Date.now()}-${safeName}`;
