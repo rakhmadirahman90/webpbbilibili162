@@ -345,6 +345,13 @@ export default function KasManager() {
     if (file.size > 12 * 1024 * 1024) { await Swal.fire({ icon: 'warning', title: 'File terlalu besar', text: 'Ukuran maksimal 12 MB.' }); return; }
     setUploadingAttachment(true);
     try {
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      if (authError || !authData.user) {
+        throw new Error('Sesi login aplikasi belum terhubung dengan Supabase Auth. Upload memerlukan autentikasi yang sah. Hubungi administrator untuk sinkronisasi akun; jangan mengubah RLS menjadi publik.');
+      }
+      if (authData.user.app_metadata?.role !== 'admin') {
+        throw new Error('Akun Supabase ini belum memiliki izin admin untuk mengunggah lampiran. Minta administrator memeriksa peran akun.');
+      }
       const safeName = file.name.replace(/[^a-zA-Z0-9._-]+/g, '-');
       const path = `kas/${localToday()}/${Date.now()}-${safeName}`;
       const { error } = await supabase.storage.from('uploads').upload(path, file, { upsert: false, contentType: file.type || undefined });
@@ -352,7 +359,7 @@ export default function KasManager() {
       const { data } = supabase.storage.from('uploads').getPublicUrl(path);
       setFormData(f => ({ ...f, lampiran_url: data.publicUrl, lampiran_nama: file.name, lampiran_type: file.type, lampiran_size: file.size }));
       await Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Lampiran berhasil diupload', showConfirmButton: false, timer: 1600 });
-    } catch (error: any) { await Swal.fire({ icon: 'error', title: 'Upload gagal', text: error?.message || 'Tidak dapat mengupload lampiran.' }); }
+    } catch (error: any) { await Swal.fire({ icon: 'error', title: 'Upload lampiran gagal', text: error?.message || 'Tidak dapat mengupload lampiran.', footer: 'Data transaksi tidak disimpan ulang secara otomatis.' }); }
     finally { setUploadingAttachment(false); }
   };
 
@@ -549,7 +556,7 @@ export default function KasManager() {
                   <div className="mt-1 truncate text-[9px] text-slate-500">{formData.lampiran_nama || formData.lampiran_url}</div>
                 </div>}
               </div>
-              <button disabled={saving} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-xs font-black text-white shadow-lg shadow-blue-900/20 disabled:opacity-50">{saving?<Loader2 size={17} className="animate-spin"/>:editingId?<Edit3 size={17}/>:<Plus size={17}/>} {saving?'Menyimpan...':editingId?'Simpan Perubahan':'Simpan Transaksi'}</button>
+              <button disabled={saving || uploadingAttachment} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-xs font-black text-white shadow-lg shadow-blue-900/20 disabled:opacity-50">{saving?<Loader2 size={17} className="animate-spin"/>:editingId?<Edit3 size={17}/>:<Plus size={17}/>} {saving?'Menyimpan...':editingId?'Simpan Perubahan':'Simpan Transaksi'}</button>
             </form>
           </div>
         </div>
