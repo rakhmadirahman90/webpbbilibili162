@@ -372,6 +372,22 @@ export default function KasManager() {
       if (authError || !authData.user || authData.user.app_metadata?.role !== 'admin') {
         throw new Error('Akun Supabase Auth belum memiliki peran admin yang sah. Upload dibatalkan tanpa mengubah data transaksi.');
       }
+      // Storage RLS reads the JWT claims, not the latest auth.users record.
+      // Refresh after admin role changes so app_metadata.role is included in the access token.
+      const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError || !refreshed.session) {
+        throw new Error('Sesi Supabase kedaluwarsa. Silakan verifikasi ulang akun administrator.');
+      }
+      const claimsPayload = (() => {
+        try {
+          const part = refreshed.session.access_token.split('.')[1];
+          const base64 = part.replace(/-/g, '+').replace(/_/g, '/');
+          return JSON.parse(atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, '=')));
+        } catch { return null; }
+      })();
+      if (claimsPayload?.app_metadata?.role !== 'admin') {
+        throw new Error('Token Supabase belum memuat peran admin. Keluar dari sesi Supabase lalu masuk kembali.');
+      }
       const safeName = file.name.replace(/[^a-zA-Z0-9._-]+/g, '-');
       const path = `kas/${localToday()}/${Date.now()}-${safeName}`;
       const { error } = await supabase.storage.from('uploads').upload(path, file, { upsert: false, contentType: file.type || undefined });
