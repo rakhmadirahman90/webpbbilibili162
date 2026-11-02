@@ -1,6 +1,6 @@
 import sharp from 'sharp';
 
-const SUPABASE_URL = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://hoyrgpbfbakogenxdijt.supabase.co').replace(/\\/+$/, '');
+const SUPABASE_URL = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://hoyrgpbfbakogenxdijt.supabase.co').replace(/\/+$/, '');
 const ALLOWED_HOSTS = new Set([new URL(SUPABASE_URL).hostname, 'hoyrgpbfbakogenxdijt.supabase.co']);
 
 function getSource(req: any): URL | null {
@@ -22,7 +22,7 @@ function getSource(req: any): URL | null {
   }
 
   const bucket = String(req.query?.b || req.query?.bucket || 'uploads');
-  const path = String(req.query?.p || req.query?.path || '').trim().replace(/^\\/+/, '');
+  const path = String(req.query?.p || req.query?.path || '').trim().replace(/^\/+/, '');
   if (!['uploads', 'assets'].includes(bucket) || !path || path.length > 500 || path.includes('..') || !/^[A-Za-z0-9._/-]+$/.test(path)) return null;
   const encoded = path.split('/').map(encodeURIComponent).join('/');
   return new URL(`${SUPABASE_URL}/storage/v1/object/public/${bucket}/${encoded}`);
