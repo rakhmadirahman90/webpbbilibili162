@@ -59,17 +59,36 @@ export default async function handler(req: any, res: any) {
     if (!original.length) return res.status(502).send('Gambar bukti transaksi kosong.');
     if (original.length > 20 * 1024 * 1024) return res.status(413).send('Ukuran gambar terlalu besar.');
 
-    // Open Graph/WhatsApp performs more reliably with a landscape 1200x630
-    // preview. Keep the complete proof visible inside the canvas (no crop).
+    // Landscape Open Graph canvas without white side bars:
+    // use a softly blurred, darkened copy of the same photo as the backdrop,
+    // then place the complete, uncropped original photo on top.
     const isOg = String(req.query?.mode || '').toLowerCase() === 'og';
-    const jpeg = await sharp(original, { failOn: 'error', limitInputPixels: 50_000_000 })
-      .rotate()
-      .resize(isOg
-        ? { width: 1200, height: 630, fit: 'contain', background: '#ffffff', withoutEnlargement: true }
-        : { width: 1200, height: 1600, fit: 'inside', withoutEnlargement: true })
-      .flatten({ background: '#ffffff' })
-      .jpeg({ quality: 84, mozjpeg: true, progressive: true })
-      .toBuffer();
+    let jpeg: Buffer;
+    if (isOg) {
+      const background = await sharp(original, { failOn: 'error', limitInputPixels: 50_000_000 })
+        .rotate()
+        .resize(1200, 630, { fit: 'cover', position: 'attention' })
+        .blur(32)
+        .modulate({ brightness: 0.68, saturation: 0.82 })
+        .jpeg({ quality: 82 })
+        .toBuffer();
+      const foreground = await sharp(original, { failOn: 'error', limitInputPixels: 50_000_000 })
+        .rotate()
+        .resize(1200, 630, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 }, withoutEnlargement: true })
+        .png()
+        .toBuffer();
+      jpeg = await sharp(background)
+        .composite([{ input: foreground, gravity: 'centre' }])
+        .jpeg({ quality: 88, mozjpeg: true, progressive: true })
+        .toBuffer();
+    } else {
+      jpeg = await sharp(original, { failOn: 'error', limitInputPixels: 50_000_000 })
+        .rotate()
+        .resize({ width: 1200, height: 1600, fit: 'inside', withoutEnlargement: true })
+        .flatten({ background: '#ffffff' })
+        .jpeg({ quality: 84, mozjpeg: true, progressive: true })
+        .toBuffer();
+    }
 
     res.setHeader('Content-Type', 'image/jpeg');
     res.setHeader('Content-Disposition', 'inline; filename="pb-bilibili-162-proof.jpg"');
