@@ -59,26 +59,15 @@ export default async function handler(req: any, res: any) {
     if (!original.length) return res.status(502).send('Gambar bukti transaksi kosong.');
     if (original.length > 20 * 1024 * 1024) return res.status(413).send('Ukuran gambar terlalu besar.');
 
-    // Landscape Open Graph canvas without white side bars:
-    // use a softly blurred, darkened copy of the same photo as the backdrop,
-    // then place the complete, uncropped original photo on top.
+    // Landscape Open Graph thumbnail: fill the entire frame with the original
+    // photo. No blur, padding, or side bars; cover scales the photo to the frame
+    // and crops only the excess edges needed to match the 1200x630 ratio.
     const isOg = String(req.query?.mode || '').toLowerCase() === 'og';
     let jpeg: Buffer;
     if (isOg) {
-      const background = await sharp(original, { failOn: 'error', limitInputPixels: 50_000_000 })
+      jpeg = await sharp(original, { failOn: 'error', limitInputPixels: 50_000_000 })
         .rotate()
         .resize(1200, 630, { fit: 'cover', position: 'attention' })
-        .blur(32)
-        .modulate({ brightness: 0.68, saturation: 0.82 })
-        .jpeg({ quality: 82 })
-        .toBuffer();
-      const foreground = await sharp(original, { failOn: 'error', limitInputPixels: 50_000_000 })
-        .rotate()
-        .resize(1200, 630, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 }, withoutEnlargement: true })
-        .png()
-        .toBuffer();
-      jpeg = await sharp(background)
-        .composite([{ input: foreground, gravity: 'centre' }])
         .jpeg({ quality: 88, mozjpeg: true, progressive: true })
         .toBuffer();
     } else {
