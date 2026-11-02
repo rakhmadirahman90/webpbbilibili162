@@ -1,4 +1,4 @@
-const SUPABASE_URL = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://hoyrgpbfbakogenxdijt.supabase.co').replace(/\\/$/, '');
+const SUPABASE_URL = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://hoyrgpbfbakogenxdijt.supabase.co').replace(/\/+$/, '');
 const ALLOWED_HOSTS = new Set([new URL(SUPABASE_URL).hostname, 'hoyrgpbfbakogenxdijt.supabase.co']);
 
 function getSource(req: any): URL | null {
@@ -7,13 +7,20 @@ function getSource(req: any): URL | null {
     try {
       const url = new URL(raw);
       if (url.protocol !== 'https:' || !ALLOWED_HOSTS.has(url.hostname)) return null;
-      if (!/^\\/storage\\/v1\\/object\\/(public|sign)\\/(uploads|assets)\\//.test(url.pathname)) return null;
+      const allowedPath =
+        url.pathname.startsWith('/storage/v1/object/public/uploads/') ||
+        url.pathname.startsWith('/storage/v1/object/public/assets/') ||
+        url.pathname.startsWith('/storage/v1/object/sign/uploads/') ||
+        url.pathname.startsWith('/storage/v1/object/sign/assets/');
+      if (!allowedPath) return null;
       return url;
-    } catch { return null; }
+    } catch {
+      return null;
+    }
   }
 
   const bucket = String(req.query?.b || req.query?.bucket || 'uploads');
-  const path = String(req.query?.p || req.query?.path || '').trim().replace(/^\\/+/, '');
+  const path = String(req.query?.p || req.query?.path || '').trim().replace(/^\/+/, '');
   if (!['uploads', 'assets'].includes(bucket) || !path || path.length > 500 || path.includes('..') || !/^[A-Za-z0-9._/-]+$/.test(path)) return null;
   const encoded = path.split('/').map(encodeURIComponent).join('/');
   return new URL(`${SUPABASE_URL}/storage/v1/object/public/${bucket}/${encoded}`);
@@ -28,7 +35,7 @@ export default async function handler(req: any, res: any) {
     const upstream = await fetch(source.toString(), {
       method: req.method,
       headers: {
-        'User-Agent': 'PB-Bilibili-162-WhatsApp-Preview/2.0',
+        'User-Agent': 'PB-Bilibili-162-WhatsApp-Preview/2.1',
         'Accept': 'image/jpeg,image/png,image/webp,image/gif,*/*;q=0.5'
       },
       redirect: 'error'
@@ -40,24 +47,22 @@ export default async function handler(req: any, res: any) {
 
     const contentType = (upstream.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
     if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(contentType)) {
+      console.error('[kas-share-image] unsupported content type', contentType);
       return res.status(415).send('Lampiran bukan format gambar yang didukung.');
     }
 
+    const buffer = req.method === 'HEAD' ? null : Buffer.from(await upstream.arrayBuffer());
+    if (buffer && buffer.length > 20 * 1024 * 1024) return res.status(413).send('Ukuran gambar terlalu besar.');
+
     res.setHeader('Content-Type', contentType);
-    res.setHeader('Content-Disposition', 'inline; filename="pb-bilibili-162-proof"');
+    res.setHeader('Content-Disposition', 'inline; filename="pb-bilibili-162-proof.webp"');
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=3600');
     res.setHeader('Access-Control-Allow-Origin', '*');
-
-    if (req.method === 'HEAD') {
-      const length = upstream.headers.get('content-length');
-      if (length) res.setHeader('Content-Length', length);
-      return res.status(200).end();
-    }
-
-    const buffer = Buffer.from(await upstream.arrayBuffer());
-    if (buffer.length > 20 * 1024 * 1024) return res.status(413).send('Ukuran gambar terlalu besar.');
-    res.setHeader('Content-Length', String(buffer.length));
+    const length = upstream.headers.get('content-length');
+    if (length) res.setHeader('Content-Length', length);
+    if (req.method === 'HEAD') return res.status(200).end();
+    if (buffer) res.setHeader('Content-Length', String(buffer.length));
     return res.status(200).send(buffer);
   } catch (error) {
     console.error('[kas-share-image] failed:', error);
