@@ -59,11 +59,14 @@ export default async function handler(req: any, res: any) {
     if (!original.length) return res.status(502).send('Gambar bukti transaksi kosong.');
     if (original.length > 20 * 1024 * 1024) return res.status(413).send('Ukuran gambar terlalu besar.');
 
-    // WhatsApp/Open Graph gets a broadly compatible JPEG regardless of the
-    // original upload format. Keep the whole proof visible; do not crop it.
+    // Open Graph/WhatsApp performs more reliably with a landscape 1200x630
+    // preview. Keep the complete proof visible inside the canvas (no crop).
+    const isOg = String(req.query?.mode || '').toLowerCase() === 'og';
     const jpeg = await sharp(original, { failOn: 'error', limitInputPixels: 50_000_000 })
       .rotate()
-      .resize({ width: 1200, height: 1600, fit: 'inside', withoutEnlargement: true })
+      .resize(isOg
+        ? { width: 1200, height: 630, fit: 'contain', background: '#ffffff', withoutEnlargement: true }
+        : { width: 1200, height: 1600, fit: 'inside', withoutEnlargement: true })
       .flatten({ background: '#ffffff' })
       .jpeg({ quality: 84, mozjpeg: true, progressive: true })
       .toBuffer();
